@@ -166,6 +166,20 @@ type RunOptions struct {
 	// LogDir is the directory for per-entry log files. When set, test script
 	// output (IT/e2e) is redirected to per-entry files instead of the terminal.
 	LogDir string
+	// ExtraHelmArgs are appended to every helm command for every entry. CI uses
+	// this to inject license-key --set-file flags whose values would otherwise be
+	// shell-escaped incorrectly via --set.
+	ExtraHelmArgs []string
+	// ExtraHelmSets are key=value strings applied as extra --set pairs for every
+	// entry. CI uses this for invariant flags like
+	// orchestration.upgrade.allowPreReleaseImages=true.
+	ExtraHelmSets []string
+	// NamespaceOverride, when non-empty, replaces the computed namespace for
+	// every entry. Used by per-scenario CI workflows that pre-create the
+	// namespace (with vault secrets, TLS certs, docker pull-secrets) before
+	// invoking matrix run, so the install lands in the same namespace.
+	// Only meaningful when filters narrow the run to a single entry.
+	NamespaceOverride string
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -283,7 +297,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 	var resolved []dryRunEntry
 	for _, version := range versions {
 		for _, entry := range groups[version] {
-			namespace := buildNamespace(opts.NamespacePrefix, entry)
+			namespace := resolveNamespace(opts, entry)
 			platform := resolvePlatform(opts, entry)
 			kubeCtx := resolveKubeContext(opts, platform)
 			envFile := resolveEnvFile(opts, entry.Version)
@@ -641,7 +655,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				flow:        entry.Flow,
 			})
 
-			namespace := buildNamespace(opts.NamespacePrefix, entry)
+			namespace := resolveNamespace(opts, entry)
 			results = append(results, RunResult{Entry: entry, Namespace: namespace})
 		}
 	}
@@ -876,7 +890,7 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 			if runCtx.Err() != nil {
 				results[idx] = RunResult{
 					Entry:     e,
-					Namespace: buildNamespace(opts.NamespacePrefix, e),
+					Namespace: resolveNamespace(opts, e),
 					Error:     fmt.Errorf("skipped: run cancelled"),
 				}
 				if opts.OnEntryComplete != nil {
@@ -941,6 +955,16 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 func buildNamespace(prefix string, entry Entry) string {
 	base := buildBaseNamespace(entry)
 	return prefix + "-" + base
+}
+
+// resolveNamespace returns opts.NamespaceOverride when set, otherwise the
+// matrix-formula namespace. Used by per-scenario CI workflows that pre-create
+// the namespace and need matrix run to deploy into that exact namespace.
+func resolveNamespace(opts RunOptions, entry Entry) string {
+	if opts.NamespaceOverride != "" {
+		return opts.NamespaceOverride
+	}
+	return buildNamespace(opts.NamespacePrefix, entry)
 }
 
 // buildBaseNamespace constructs the namespace suffix for a matrix entry without the prefix.
@@ -1355,8 +1379,17 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 //   - Install (default): Single-step fresh install.
 func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex int) RunResult {
 	start := time.Now()
-	namespace := buildNamespace(opts.NamespacePrefix, entry)
+	namespace := resolveNamespace(opts, entry)
 	baseNamespace := buildBaseNamespace(entry)
+	// When the caller overrides the namespace (per-scenario CI workflow), feed
+	// the override directly into RuntimeFlags and clear the prefix so
+	// EffectiveNamespace() resolves to the override verbatim.
+	flagsNamespace := baseNamespace
+	flagsNamespacePrefix := opts.NamespacePrefix
+	if opts.NamespaceOverride != "" {
+		flagsNamespace = opts.NamespaceOverride
+		flagsNamespacePrefix = ""
+	}
 
 	if opts.OnEntryStart != nil {
 		opts.OnEntryStart(entry, namespace)
@@ -1426,8 +1459,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			}(),
 		},
 		Deployment: config.DeploymentFlags{
-			Namespace:            baseNamespace,
-			NamespacePrefix:      opts.NamespacePrefix,
+			Namespace:            flagsNamespace,
+			NamespacePrefix:      flagsNamespacePrefix,
 			Release:              "integration",
 			Scenario:             entry.Scenario,
 			Scenarios:            []string{entry.Scenario},
@@ -1436,6 +1469,14 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			Flow:                 entry.Flow,
 			Timeout:              opts.HelmTimeout,
 			DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
+			ExtraHelmArgs:        append([]string(nil), opts.ExtraHelmArgs...),
+			// Always include allowPreReleaseImages=true for CI deployments —
+			// matches the legacy Taskfile install/upgrade behaviour. User-supplied
+			// --extra-helm-set values are merged on top and take precedence.
+			ExtraHelmSets: mergeHelmSets(
+				map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
+				parseHelmSetPairs(opts.ExtraHelmSets),
+			),
 		},
 		Ingress: config.IngressFlags{
 			// Ingress: use the namespace as subdomain so each entry gets a unique hostname.
@@ -1462,7 +1503,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			SkipDockerLogin: true,
 		},
 		Secrets: config.SecretsFlags{
-			ExternalSecrets:       true,
+			// When the caller pre-creates the namespace (--namespace-override) it
+			// also pre-applies platform secrets/TLS via cluster-setup-secrets. Skip
+			// the runner's ExternalSecrets path in that case — re-running it on
+			// EKS would try to read aws-camunda-cloud-tls from the global "certs"
+			// namespace, which CI service accounts don't have RBAC for.
+			ExternalSecrets:       opts.NamespaceOverride == "",
 			AutoGenerateSecrets:   true,
 			UseVaultBackedSecrets: useVault,
 		},
@@ -1783,6 +1829,43 @@ var bitnamiPGPasswordMapping = map[string][]string{
 	"webmodeler-postgresql-admin-password":        {"webModelerPostgresql.auth.postgresPassword"},
 }
 
+// mergeHelmSets returns a new map containing all entries from base, with entries
+// from override applied on top. nil maps are tolerated. Returns nil when both
+// maps are empty so downstream code stays nil-clean.
+func mergeHelmSets(base, override map[string]string) map[string]string {
+	if len(base) == 0 && len(override) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(base)+len(override))
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range override {
+		out[k] = v
+	}
+	return out
+}
+
+// parseHelmSetPairs converts a slice of "key=value" strings into a map suitable
+// for config.DeploymentFlags.ExtraHelmSets. Entries without "=" are skipped.
+func parseHelmSetPairs(pairs []string) map[string]string {
+	if len(pairs) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(pairs))
+	for _, p := range pairs {
+		idx := strings.Index(p, "=")
+		if idx <= 0 {
+			continue
+		}
+		out[p[:idx]] = p[idx+1:]
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 // extractBitnamiPGPasswords reads the "integration-test-credentials" Kubernetes Secret from the
 // given namespace and returns a map of Helm --set key=value pairs that provide Bitnami PostgreSQL
 // passwords explicitly. This prevents the PASSWORDS ERROR that occurs during `helm upgrade --force`
@@ -2026,10 +2109,11 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	step2Flags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	step2Flags.Deployment.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
 	step2Flags.Deployment.Flow = "install"             // Must match Step 1's Flow so $FLOW in index prefixes resolves identically.
-	step2Flags.Deployment.ExtraHelmArgs = []string{"--force"}
-	step2Flags.Deployment.ExtraHelmSets = map[string]string{
-		"orchestration.upgrade.allowPreReleaseImages": "true",
-	}
+	step2Flags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
+	step2Flags.Deployment.ExtraHelmSets = mergeHelmSets(
+		flags.Deployment.ExtraHelmSets,
+		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
+	)
 
 	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
 	// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`
@@ -2109,10 +2193,11 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 	upgradeFlags := *flags
 	upgradeFlags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	upgradeFlags.Deployment.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
-	upgradeFlags.Deployment.ExtraHelmArgs = []string{"--force"}
-	upgradeFlags.Deployment.ExtraHelmSets = map[string]string{
-		"orchestration.upgrade.allowPreReleaseImages": "true",
-	}
+	upgradeFlags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
+	upgradeFlags.Deployment.ExtraHelmSets = mergeHelmSets(
+		flags.Deployment.ExtraHelmSets,
+		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
+	)
 
 	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
 	// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`

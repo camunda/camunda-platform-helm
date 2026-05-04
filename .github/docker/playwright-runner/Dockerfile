@@ -51,7 +51,6 @@
 #      kubectl:             47 MB → 12 MB
 #      aws-iam-auth:        61 MB → 24 MB
 #      yq:                  13 MB →  5 MB
-#      task:                 8 MB →  3 MB
 #      jq:                   2 MB →  1 MB
 #
 # 4. MINIMAL FONTS (saves ~60 MB)
@@ -138,7 +137,6 @@ ARG HELM_VERSION=3.19.4
 ARG KUBECTL_VERSION=1.27.16
 ARG JQ_VERSION=1.8.1
 ARG YQ_VERSION=4.50.1
-ARG TASK_VERSION=3.30.1
 ARG AWS_IAM_AUTH_VERSION=0.6.26
 
 WORKDIR /tools
@@ -165,9 +163,6 @@ RUN curl -fsSL -o jq "https://github.com/jqlang/jq/releases/download/jq-${JQ_VER
 RUN curl -fsSL -o yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
     && chmod +x yq
 
-# Task - For running Taskfile.yaml tasks
-RUN curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz" | tar -xzf - task
-
 # aws-iam-authenticator - For EKS authentication
 # WHY THIS INSTEAD OF AWS CLI:
 # - aws-iam-authenticator is a single 61 MB binary (24 MB compressed)
@@ -183,7 +178,7 @@ RUN echo "=== Original binary sizes ===" && ls -lh /tools/
 # ------------------------------------------------------------------------------
 # Compress all binaries with UPX
 # ------------------------------------------------------------------------------
-RUN upx --best helm kubectl yq task aws-iam-authenticator \
+RUN upx --best helm kubectl yq aws-iam-authenticator \
     && upx --best jq || true  # jq sometimes fails with UPX
 
 # Show compressed sizes for build log
@@ -286,7 +281,6 @@ COPY --from=tools /tools/helm /usr/local/bin/
 COPY --from=tools /tools/kubectl /usr/local/bin/
 COPY --from=tools /tools/jq /usr/local/bin/
 COPY --from=tools /tools/yq /usr/local/bin/
-COPY --from=tools /tools/task /usr/local/bin/
 COPY --from=tools /tools/aws-iam-authenticator /usr/local/bin/
 
 # ==============================================================================
@@ -365,7 +359,6 @@ RUN echo "=== Verifying tool installations ===" \
     && kubectl version --client \
     && jq --version \
     && yq --version \
-    && task --version \
     && gke-gcloud-auth-plugin --version \
     && aws-iam-authenticator version \
     && (zbctl version 2>/dev/null || true) \

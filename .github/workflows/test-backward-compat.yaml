@@ -100,8 +100,10 @@ jobs:
             shortname: qaelupg
           - name: qa-opensearch-upg
             shortname: qaosupg
+            key: upg
           - name: qa-elasticsearch-mt-upg
             shortname: qaelmtupg
+            key: mtupg
             e2e-enabled: false
           - name: qa-elasticsearch-document-upg
             shortname: qaeldocupg
@@ -110,7 +112,7 @@ jobs:
     with:
       auth: ${{ matrix.scenario.auth || 'keycloak' }}
       helmChartVersion: ""
-      identifier: compat-88p-${{ matrix.version.tag }}-${{ matrix.scenario.shortname }}-${{ github.run_id }}
+      identifier: compat-88p-${{ matrix.version.tag }}-${{ matrix.scenario.shortname }}${{ matrix.scenario.key && format('-{0}', matrix.scenario.key) || '' }}-${{ github.run_id }}
       platforms: gke
       infra-type: preemptible
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}

@@ -307,6 +307,85 @@ func TestFilter(t *testing.T) {
 			t.Errorf("Filter(shortname=zzzz): got %d entries, want 0", len(got))
 		}
 	})
+
+	t.Run("shortname exact match filters precisely", func(t *testing.T) {
+		// "es" with ShortnameExact=true should NOT match "eske" or "eshy" or "esoi"
+		got := Filter(entries, FilterOptions{ShortnameFilter: "es", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=es, exact=true): got %d entries, want 0 (no entry has shortname exactly 'es')", len(got))
+		}
+	})
+
+	t.Run("shortname exact match finds exact shortname", func(t *testing.T) {
+		// "eske" with ShortnameExact=true should match all entries with shortname=="eske"
+		got := Filter(entries, FilterOptions{ShortnameFilter: "eske", ShortnameExact: true})
+		if len(got) != 4 {
+			t.Errorf("Filter(shortname=eske, exact=true): got %d entries, want 4", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eske" {
+				t.Errorf("Filter(shortname=eske, exact=true): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname exact with substring does not match", func(t *testing.T) {
+		// "esk" with ShortnameExact=true should NOT match "eske" (substring match disabled)
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esk", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=esk, exact=true): got %d entries, want 0", len(got))
+		}
+	})
+
+	t.Run("shortname exact with comma-separated values", func(t *testing.T) {
+		// "eske,esoi" with ShortnameExact=true should match those exact shortnames
+		got := Filter(entries, FilterOptions{ShortnameFilter: "eske,esoi", ShortnameExact: true})
+		if len(got) != 5 {
+			t.Errorf("Filter(shortname=eske,esoi, exact=true): got %d entries, want 5 (4 eske + 1 esoi)", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eske" && e.Shortname != "esoi" {
+				t.Errorf("Filter(shortname=eske,esoi, exact=true): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname non-exact allows substring match", func(t *testing.T) {
+		// Confirm the default (ShortnameExact=false) still does substring matching
+		// "esk" should match "eske" entries
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esk", ShortnameExact: false})
+		if len(got) != 4 {
+			t.Errorf("Filter(shortname=esk, exact=false): got %d entries, want 4", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname fallback to scenario only when shortname unmatched", func(t *testing.T) {
+		// When scenario filter matches but shortname doesn't match anything,
+		// the fallback drops the shortname filter and uses scenario alone.
+		// "oidc" scenario exists, but shortname "dynamic-xyz" doesn't.
+		got := Filter(entries, FilterOptions{ScenarioFilter: "oidc", ShortnameFilter: "dynamic-xyz", ShortnameExact: true})
+		// Should fall back to scenario-only filter and find the oidc entry
+		if len(got) != 1 || got[0].Scenario != "oidc" {
+			t.Errorf("Filter(scenario=oidc, shortname=dynamic-xyz, exact=true): got %d entries, want 1 oidc entry (fallback)", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname no fallback when shortname matches", func(t *testing.T) {
+		// When both filters match, use the combined AND result (no fallback needed).
+		got := Filter(entries, FilterOptions{ScenarioFilter: "elasticsearch", ShortnameFilter: "eske", ShortnameExact: true})
+		// Should match entries with scenario containing "elasticsearch" AND shortname exactly "eske"
+		if len(got) != 4 {
+			t.Errorf("Filter(scenario=elasticsearch, shortname=eske, exact=true): got %d entries, want 4", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname fallback not triggered without scenario filter", func(t *testing.T) {
+		// Without a scenario filter, shortname-only filter that matches nothing returns empty.
+		got := Filter(entries, FilterOptions{ShortnameFilter: "dynamic-xyz", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=dynamic-xyz, exact=true, no scenario): got %d entries, want 0", len(got))
+		}
+	})
 }
 
 // --- GroupByVersion / VersionOrder tests ---

@@ -40,6 +40,7 @@ func newMatrixListCommand() *cobra.Command {
 		includeDisabled bool
 		scenarioFilter  string
 		shortnameFilter string
+		shortnameExact  bool
 		flowFilter      string
 		outputFormat    string
 		platform        string
@@ -97,6 +98,7 @@ This command does not require cluster access.`,
 			entries = matrix.Filter(entries, matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
+				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
 			})
@@ -115,6 +117,7 @@ This command does not require cluster access.`,
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
+	f.BoolVar(&shortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&outputFormat, "format", "table", "Output format: table, json")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform")
@@ -177,6 +180,10 @@ func newMatrixRunCommand() *cobra.Command {
 		useQA                    bool
 		yes                      bool
 		logDir                   string
+		extraHelmArgs            []string
+		extraHelmSets            []string
+		namespaceOverride        string
+		shortnameExact           bool
 	)
 
 	cmd := &cobra.Command{
@@ -364,11 +371,19 @@ This command calls deploy.Execute() for each matrix entry.`,
 			entries = matrix.Filter(entries, matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
+				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
 			})
 
 			if len(entries) == 0 {
+				// Per-scenario CI workflows (signalled by --namespace-override or
+				// any explicit filter) always expect exactly one entry. A silent
+				// no-op here would let Playwright run against an empty namespace.
+				if namespaceOverride != "" || shortnameFilter != "" || scenarioFilter != "" || flowFilter != "" {
+					return fmt.Errorf("no matrix entries matched the filters (versions=%v, scenario-filter=%q, shortname-filter=%q, flow-filter=%q, platform=%q); check ci-test-config.yaml has an entry for this scenario+flow combination",
+						versions, scenarioFilter, shortnameFilter, flowFilter, platform)
+				}
 				fmt.Fprintln(os.Stdout, "No matrix entries matched the filters.")
 				return nil
 			}
@@ -474,6 +489,9 @@ This command calls deploy.Execute() for each matrix entry.`,
 				EnsureDockerHub:       ensureDockerHub,
 				UseLatest:             useLatest,
 				UseQA:                 useQA,
+				ExtraHelmArgs:         extraHelmArgs,
+				ExtraHelmSets:         extraHelmSets,
+				NamespaceOverride:     namespaceOverride,
 				OnEntryStart: func(entry matrix.Entry, namespace string) {
 					if statusDisplay != nil {
 						statusDisplay.OnEntryStart(entry, namespace)
@@ -519,6 +537,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
+	f.BoolVar(&shortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
@@ -562,7 +581,9 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
-
+	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
+	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
+	f.StringVar(&namespaceOverride, "namespace-override", "", "Override the computed namespace for every entry. Use only with filters that narrow the run to a single entry (typically called from per-scenario CI workflows that pre-create the namespace).")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

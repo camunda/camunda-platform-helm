@@ -242,6 +242,14 @@ integration:
           identity: keycloak
           persistence: rdbms-external
           platforms: [gke]
+        # rdbms: persistence layer points Camunda at an external PostgreSQL cluster
+        # (postgresql-cluster-rw.<namespace>.svc.cluster.local). The CloudNativePG
+        # `Cluster` + auth Secret are NOT part of the chart — they're a CI-only
+        # fixture that must exist before helm install or Camunda pods crash-loop
+        # connecting. Provisioned by `pre-setup-scripts/pre-install-rdbms.sh`,
+        # auto-discovered by versionmatrix.HasPreInstallScript and run by the
+        # matrix runner immediately before `helm install` (replaces the legacy
+        # Taskfile `setup.pre` rdbms branch).
         - name: rdbms
           enabled: true
           auth: keycloak
@@ -260,12 +268,9 @@ integration:
           exclude: []
           flow: install
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [hub-legacy]
           platforms: [gke]
-          infra-type:
-            gke: distroci
-            eks: preemptible
         - name: hub-legacy
           enabled: false
           auth: keycloak
@@ -292,6 +297,102 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+        - name: qa-elasticsearch-upg
+          enabled: false
+          flow: install
+          shortname: qaelupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch
+          enabled: false
+          flow: install
+          shortname: qael
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch
+          enabled: false
+          flow: install
+          shortname: qaos
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch-upg
+          enabled: false
+          flow: install
+          shortname: qaosupg
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt
+          enabled: false
+          flow: install
+          shortname: qaelmt
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          flow: install
+          shortname: qaelmtupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba
+          enabled: false
+          flow: install
+          shortname: qaelrba
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
+          qa: true
+          platforms: [gke]
+        - name: qa-document-store
+          enabled: false
+          flow: install
+          shortname: qadoc
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
+        - name: qa-document-store-upg
+          enabled: false
+          flow: install
+          shortname: qadocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
+        - name: qa-license
+          enabled: false
+          flow: install
+          shortname: lic
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license]
+          qa: true
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch

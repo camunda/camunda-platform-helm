@@ -85,7 +85,15 @@ jobs:
           TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
         run: |
           kubectl create namespace ${{ env.TEST_NAMESPACE }}
-          task docker-login --taskfile test/integration/scenarios/lib/init-seed-taskfile.yaml
+          # Docker Hub pull secret (replaces legacy `task docker-login --taskfile lib/init-seed-taskfile.yaml`).
+          if [[ -n "${TEST_DOCKER_USERNAME:-}" && -n "${TEST_DOCKER_PASSWORD:-}" ]]; then
+            kubectl create secret docker-registry index-docker-io \
+              --namespace ${{ env.TEST_NAMESPACE }} \
+              --docker-server "https://index.docker.io/v1/" \
+              --docker-username "${TEST_DOCKER_USERNAME}" \
+              --docker-password "${TEST_DOCKER_PASSWORD}" \
+              --dry-run=client -o yaml | kubectl apply -f -
+          fi
       - name: Prepare Camunda Helm chart installation
         run: |
           make helm.repos-add
