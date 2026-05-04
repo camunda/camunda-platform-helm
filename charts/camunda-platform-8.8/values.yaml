@@ -2630,6 +2630,10 @@ orchestration:
           minRetryDelay: PT10s
           ## @param orchestration.migration.data.tasks.retry.retryDelayMultiplier can be used to define the delay multiplier.
           retryDelayMultiplier: 2.0
+      ## @param orchestration.migration.data.extraVolumes can be used to define extra volumes for the migration data job pod
+      extraVolumes: []
+      ## @param orchestration.migration.data.extraVolumeMounts can be used to mount extra volumes for the migration data job pod
+      extraVolumeMounts: []
     identity:
       ## @param orchestration.migration.identity.enabled if true, the migration of Management Identity data to the orchestration clusters Identity occurs
       enabled: false
@@ -2665,6 +2669,10 @@ orchestration:
         existingSecretKey: ""
       ## @param orchestration.migration.identity.env can be used to set extra environment variables in the identity migration job container
       env: []
+      ## @param orchestration.migration.identity.extraVolumes can be used to define extra volumes for the migration identity job pod
+      extraVolumes: []
+      ## @param orchestration.migration.identity.extraVolumeMounts can be used to mount extra volumes for the migration identity job pod
+      extraVolumeMounts: []
     ## @extra orchestration.migration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
     # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
     # It uses a hard requirement for scheduling and works based on the pod labels
