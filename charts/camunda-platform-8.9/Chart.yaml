@@ -72,11 +72,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Remove integration tests"
+    - kind: added
+      description: "Add companion chart deployment support to deploy-camunda"
     - kind: fixed
-      description: "Add aws-enabled property to secondary-storage config"
+      description: "Add missing properties and annotations to values.schema.json"
     - kind: fixed
-      description: "Use internal cluster url for connectors in console release info"
-    - kind: fixed
-      description: "#5874 remove prerelease annotation"
+      description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
