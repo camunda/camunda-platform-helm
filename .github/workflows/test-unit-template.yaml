@@ -28,6 +28,7 @@ permissions:
 jobs:
   init:
     name: Unit - Generate test matrix
+    if: inputs.camunda-helm-dir != ''
     runs-on: ubuntu-latest
     outputs:
       unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}

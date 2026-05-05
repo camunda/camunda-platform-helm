@@ -253,6 +253,15 @@ integration:
         # both because modular-upgrade-minor requires real infra it doesn't provision).
         # One entry per shortname covers both.
         # ===========================================================================
+        # Used by camunda/connectors FEATURE_BRANCH_HELM_TEST workflow (stable/8.9).
+        - name: keycloak-original
+          enabled: true
+          flow: install
+          shortname: keyco
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
         - name: qa-elasticsearch
           enabled: false
           flow: install
