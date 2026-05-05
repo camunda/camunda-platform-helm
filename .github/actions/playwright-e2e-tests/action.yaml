@@ -106,7 +106,7 @@ runs:
       id: check-tools
       shell: bash
       run: |
-        if command -v helm &> /dev/null && command -v kubectl &> /dev/null && command -v task &> /dev/null; then
+        if command -v helm &> /dev/null && command -v kubectl &> /dev/null; then
           echo "Tools are pre-installed in container, skipping installation"
           echo "skip-install=true" >> "$GITHUB_OUTPUT"
         else
@@ -134,7 +134,6 @@ runs:
           helm
           kubectl
           oc
-          task
           yq
           zbctl
           jq
