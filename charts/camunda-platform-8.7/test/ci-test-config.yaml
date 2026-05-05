@@ -112,7 +112,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           qa: true
-          platforms: [gke]
+          platforms: [gke, eks]
         - name: qa-elasticsearch-rba
           enabled: false
           flow: install

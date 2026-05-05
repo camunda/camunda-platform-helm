@@ -319,7 +319,7 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           qa: true
-          platforms: [gke]
+          platforms: [gke, eks]
         - name: qa-elasticsearch-tasklist-v1
           enabled: false
           flow: install
@@ -373,6 +373,15 @@ integration:
         - name: qa-elasticsearch-upg
           enabled: false
           flow: install
+          shortname: qaelupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-upg
+          enabled: false
+          flow: modular-upgrade-minor
           shortname: qaelupg
           auth: keycloak
           identity: keycloak
@@ -437,7 +446,7 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           qa: true
-          platforms: [gke]
+          platforms: [gke, eks]
         # kcor is referenced by .github/workflows/test-backward-compat.yaml's
         # compat-camunda-docker job (camunda/docker-build-helm-integration.yml).
         # The 8.10 chart already exposes keycloak-original under shortname `keorg`;
