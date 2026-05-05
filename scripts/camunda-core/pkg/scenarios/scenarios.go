@@ -53,7 +53,7 @@ type DeploymentConfig struct {
 // Validate checks that required fields are set and feature constraints are satisfied.
 func (c *DeploymentConfig) Validate() error {
 	if c.Identity == "" {
-		return errors.New("--identity is required (keycloak, keycloak-external, oidc, basic, hybrid)")
+		return errors.New("--identity is required (keycloak, keycloak-external, oidc, auth0, basic, hybrid)")
 	}
 	if c.Persistence == "" {
 		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle)")
@@ -63,7 +63,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate identity values
-	validIdentities := []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}
+	validIdentities := []string{"keycloak", "keycloak-external", "oidc", "auth0", "basic", "hybrid"}
 	if !contains(validIdentities, c.Identity) {
 		return fmt.Errorf("invalid --identity value %q: must be one of: %s", c.Identity, strings.Join(validIdentities, ", "))
 	}
@@ -341,6 +341,8 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 
 	// Derive identity
 	switch {
+	case strings.Contains(s, "auth0"):
+		config.Identity = "auth0"
 	case strings.Contains(s, "oidc") || strings.Contains(s, "entra"):
 		config.Identity = "oidc"
 	case strings.Contains(s, "basic"):

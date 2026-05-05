@@ -1,0 +1,125 @@
+# Auth0 OIDC configuration for 8.10
+# Layer 2: Auth method - External OIDC provider (Auth0)
+#
+# Client IDs are populated by `deploy-camunda auth0 ensure-clients`, which
+# emits AUTH0_<COMPONENT>_CLIENT_ID env vars (and *_CLIENT_SECRET for
+# confidential clients). For values that go into the K8s secret (private
+# client_secrets), the chart references the existingSecret created by the
+# same command.
+
+global:
+  elasticsearch:
+    enabled: true
+  host: "$CAMUNDA_HOSTNAME"
+  ingress:
+    enabled: true
+    className: nginx
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+  security:
+    authentication:
+      method: oidc
+  identity:
+    auth:
+      enabled: true
+      type: "GENERIC"
+      issuer: "$AUTH0_ISSUER_URL"
+      issuerBackendUrl: "$AUTH0_ISSUER_URL"
+      publicIssuerUrl: "$AUTH0_ISSUER_URL"
+      tokenUrl: "$AUTH0_ISSUER_URL/oauth/token"
+      jwksUrl: "$AUTH0_ISSUER_URL/.well-known/jwks.json"
+      authUrl: "$AUTH0_ISSUER_URL/authorize"
+      identity:
+        clientId: $AUTH0_IDENTITY_CLIENT_ID
+        audience: $AUTH0_AUDIENCE
+        initialClaimName: https://camunda.com/claims/email
+        initialClaimValue: $AUTH0_INITIAL_ADMIN_EMAIL
+        redirectUrl: "https://{{ .Values.global.host }}/identity"
+        secret:
+          existingSecret: client-secret-for-components
+          existingSecretKey: auth0-identity
+      orchestration:
+        clientId: $AUTH0_ORCHESTRATION_CLIENT_ID
+        audience: $AUTH0_AUDIENCE
+        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
+        secret:
+          existingSecret: client-secret-for-components
+          existingSecretKey: auth0-orchestration
+      optimize:
+        clientId: $AUTH0_OPTIMIZE_CLIENT_ID
+        audience: $AUTH0_AUDIENCE
+        redirectUrl: "https://{{ .Values.global.host }}/optimize"
+        secret:
+          existingSecret: client-secret-for-components
+          existingSecretKey: auth0-optimize
+      connectors:
+        clientId: $AUTH0_CONNECTORS_CLIENT_ID
+        audience: $AUTH0_AUDIENCE
+        clientApiAudience: $AUTH0_AUDIENCE
+        secret:
+          existingSecret: client-secret-for-components
+          existingSecretKey: auth0-connectors
+      webModeler:
+        clientId: $AUTH0_WEB_MODELER_CLIENT_ID
+        clientApiAudience: $AUTH0_AUDIENCE
+        publicApiAudience: $AUTH0_AUDIENCE
+        redirectUrl: "https://{{ .Values.global.host }}/modeler"
+      console:
+        wellKnown: "$AUTH0_ISSUER_URL/.well-known/openid-configuration"
+        clientId: $AUTH0_CONSOLE_CLIENT_ID
+        audience: $AUTH0_AUDIENCE
+        redirectUrl: "https://{{ .Values.global.host }}/"
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "client-secret-for-components"
+    secretKeys:
+      adminPasswordKey: identity-postgresql-admin-password
+      userPasswordKey: identity-postgresql-user-password
+
+identityKeycloak:
+  enabled: false
+
+connectors:
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        clientId: $AUTH0_CONNECTORS_CLIENT_ID
+        audience: $AUTH0_AUDIENCE
+        clientApiAudience: $AUTH0_AUDIENCE
+        secret:
+          existingSecret: client-secret-for-components
+          existingSecretKey: auth0-connectors
+
+orchestration:
+  security:
+    authentication:
+      method: oidc
+      unprotectedApi: false
+      oidc:
+        clientId: $AUTH0_ORCHESTRATION_CLIENT_ID
+        audience: $AUTH0_AUDIENCE
+        # Auth0 puts the calling client_id under the standard "azp" claim on
+        # both user-flow and M2M tokens — no Auth0 Action needed for client_id.
+        # For email, deploy a post-login Action that sets
+        # https://camunda.com/claims/email = event.user.email.
+        usernameClaim: https://camunda.com/claims/email
+        clientIdClaim: azp
+        preferUsernameClaim: true
+    authorizations:
+      enabled: true
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - $AUTH0_INITIAL_ADMIN_EMAIL
+        connectors:
+          clients:
+            - $AUTH0_CONNECTORS_CLIENT_ID

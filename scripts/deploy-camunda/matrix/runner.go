@@ -26,6 +26,7 @@ import (
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
+	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/entra"
 	"scripts/prepare-helm-values/pkg/env"
 )
@@ -226,6 +227,11 @@ type RunResult struct {
 	// Populated only when the entry uses OIDC authentication. Used during cleanup to
 	// delete the corresponding Entra app registration.
 	venomOpts *entra.Options
+
+	// auth0Opts stores the Auth0 options used to provision per-component clients
+	// for Auth0 entries. Populated only when entry.Identity == "auth0". Used
+	// during cleanup to delete the corresponding Auth0 clients.
+	auth0Opts *auth0.Options
 }
 
 // Run executes the matrix entries, building RuntimeFlags for each and calling deploy.Execute().
@@ -1424,6 +1430,14 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 		entra.CleanupVenomApp(ctx, *result.venomOpts)
 	}
 
+	// Clean up Auth0 clients for Auth0 entries (best-effort, before namespace deletion).
+	if result.auth0Opts != nil {
+		logging.Logger.Info().
+			Str("namespace", result.Namespace).
+			Msg("Cleaning up Auth0 clients")
+		auth0.CleanupClients(ctx, *result.auth0Opts)
+	}
+
 	// Delete the namespace.
 	if result.Namespace != "" {
 		logging.Logger.Info().
@@ -1806,6 +1820,97 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		})
 	}
 
+	// Auth0 hook: provision per-component Auth0 clients before deployment.
+	// Mirrors the Entra two-phase pattern: client creation + env var injection
+	// runs synchronously now; the K8s secret is created via a PreInstallHook
+	// so it survives namespace recreation by deploy.Execute().
+	var auth0Opts *auth0.Options
+	if auth0.IsAuth0Identity(entry.Identity) {
+		opts := auth0.Options{
+			Namespace:     namespace,
+			KubeContext:   kubeCtx,
+			IngressHost:   flags.ResolveIngressHostname(),
+			SkipK8sSecret: true, // Phase 2 deferred to PreInstallHook.
+		}
+
+		// Read AUTH0_* credentials from the version-specific env file (same
+		// pattern as Entra above). The env file is loaded explicitly because
+		// flags.EnvFile isn't injected into os.Environ.
+		if envFile != "" {
+			envMap, err := env.ReadFile(envFile)
+			if err != nil {
+				logging.Logger.Warn().Err(err).Str("envFile", envFile).Msg("Could not read env file for Auth0 credentials")
+			} else {
+				if v, ok := envMap["AUTH0_DOMAIN"]; ok && v != "" {
+					opts.Domain = v
+				}
+				if v, ok := envMap["AUTH0_AUDIENCE"]; ok && v != "" {
+					opts.Audience = v
+				}
+				if v, ok := envMap["AUTH0_MGMT_TOKEN"]; ok && v != "" {
+					opts.MgmtToken = v
+				}
+				if v, ok := envMap["AUTH0_MGMT_CLIENT_ID"]; ok && v != "" {
+					opts.MgmtClientID = v
+				}
+				if v, ok := envMap["AUTH0_MGMT_CLIENT_SECRET"]; ok && v != "" {
+					opts.MgmtClientSecret = v
+				}
+			}
+		}
+
+		logging.Logger.Info().
+			Str("namespace", namespace).
+			Msg("Auth0 entry detected — provisioning per-component clients (Phase 1: API + env vars)")
+
+		prov, err := auth0.EnsureClients(ctx, opts)
+		if err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("auth0: provision clients: %w", err)}
+		}
+		auth0Opts = &opts
+
+		// Inject AUTH0_* env vars per-entry so buildScenarioEnv merges them
+		// into the isolated env map for values.Process(). Avoids os.Setenv
+		// races across parallel entries that each have distinct client_ids.
+		if flags.ExtraEnv == nil {
+			flags.ExtraEnv = make(map[string]string)
+		}
+		audience := opts.Audience
+		if audience == "" {
+			audience = auth0.DefaultAudience
+		}
+		flags.ExtraEnv["AUTH0_AUDIENCE"] = audience
+		// Issuer URL has trailing slash on Auth0 (matches what Auth0 puts in iss claim).
+		flags.ExtraEnv["AUTH0_ISSUER_URL"] = strings.TrimSuffix(opts.Domain, "/") + "/"
+		// Initial admin email defaults to the test user. Override via AUTH0_INITIAL_ADMIN_EMAIL.
+		if v := os.Getenv("AUTH0_INITIAL_ADMIN_EMAIL"); v != "" {
+			flags.ExtraEnv["AUTH0_INITIAL_ADMIN_EMAIL"] = v
+		} else {
+			flags.ExtraEnv["AUTH0_INITIAL_ADMIN_EMAIL"] = "demo@camunda.com"
+		}
+
+		// Per-component client_ids. Component names are upper-cased and spaces
+		// replaced with underscores: "Web Modeler" → "AUTH0_WEB_MODELER_CLIENT_ID".
+		envify := func(component string) string {
+			s := strings.ToUpper(component)
+			s = strings.ReplaceAll(s, " ", "_")
+			s = strings.ReplaceAll(s, "-", "_")
+			return s
+		}
+		for _, c := range prov.All() {
+			flags.ExtraEnv["AUTH0_"+envify(c.Component)+"_CLIENT_ID"] = c.ClientID
+		}
+
+		// Phase 2: write the K8s secret in a PreInstallHook so it lands after
+		// namespace creation/reset.
+		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
+			logging.Logger.Info().
+				Str("namespace", namespace).
+				Msg("Auth0 Phase 2 — creating client-secret-for-components K8s secret (PreInstallHook)")
+			return auth0.CreateK8sSecret(hookCtx, kubeCtx, namespace, opts.SecretName, prov, nil)
+		})
+	}
+
 	logging.Logger.Info().
 		Str("version", entry.Version).
 		Str("scenario", entry.Scenario).
@@ -1885,7 +1990,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		diag = appendTestOutputToDiagnostics(deployErr, namespace, diag)
 	}
 
-	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts}
+	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts, auth0Opts: auth0Opts}
 
 	// Per-entry cleanup: delete namespace and Entra app after deployment + tests complete.
 	// This runs regardless of success/failure, after diagnostics have been collected.
