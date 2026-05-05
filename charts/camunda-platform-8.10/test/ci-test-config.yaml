@@ -1105,7 +1105,7 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: qa-document-store-upg
           enabled: false
-          flow: install
+          flow: install,modular-upgrade-minor
           shortname: qadocupg
           auth: keycloak
           identity: keycloak
