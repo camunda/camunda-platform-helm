@@ -247,11 +247,20 @@ integration:
         # All disabled so they don't appear in the regular CI matrix; matrix run resolves
         # them via --shortname-filter + --include-disabled.
         #
-        # Note on duplicate shortnames: compat workflow reuses qaosupg/qaelmtupg across
-        # tasklist-v1 install scenarios and *-upg upgrade-minor scenarios. Both deploy
-        # via the same flow=install path here (compat workflow uses flow: install for
-        # both because modular-upgrade-minor requires real infra it doesn't provision).
-        # One entry per shortname covers both.
+        # Note on duplicate shortnames: matrix lookup is keyed by (shortname, flow), so
+        # the same shortname can appear on multiple rows when each row carries a distinct
+        # flow. Specifically:
+        #   - qaosupg / qaelmtupg are reused by the compat workflow across tasklist-v1
+        #     install scenarios and *-upg upgrade-minor scenarios. The compat workflow
+        #     uses flow=install for both (modular-upgrade-minor requires real infra it
+        #     doesn't provision), so for compat purposes one flow=install entry per
+        #     shortname is enough.
+        #   - The OpenSearch nightly upgrade-minor workflow additionally needs a
+        #     (qaosupg, flow=modular-upgrade-minor) row pointing at qa-opensearch-upg;
+        #     that row coexists with the compat entry because (shortname, flow) differs.
+        # When adding new dual-purpose shortnames, keep one row per (shortname, flow)
+        # pair and use shortname suffixes (e.g. qaosupg2) only when both rows would
+        # otherwise share the same flow.
         # ===========================================================================
         - name: qa-elasticsearch
           enabled: false
