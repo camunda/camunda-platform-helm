@@ -73,8 +73,10 @@ jobs:
           # Namespaces end with -{hex} or -{hex}-upgp/-upgm
           HEX_PREFIXES=($(echo "$ALL_NS" | grep -oP '[a-f0-9]{6}(?=(-upgp|-upgm)?$)' || true))
 
-          # Extract old-style trailing numeric run IDs for backward compatibility
-          NUM_PREFIXES=($(echo "$ALL_NS" | grep -oP '\d+$' || true))
+          # Extract old-style trailing numeric run IDs for backward compatibility.
+          # Require at least 8 digits so we don't pick up incidental short trailing
+          # digits on unrelated namespaces (GitHub Actions run IDs are 10+ digits).
+          NUM_PREFIXES=($(echo "$ALL_NS" | grep -oP '\d{8,}$' || true))
 
           # Combine, deduplicate, and add "." to protect OpenSearch system indices
           KEEP_PREFIXES=($(printf '%s\n' "${HEX_PREFIXES[@]}" "${NUM_PREFIXES[@]}" "." | sort -u))
