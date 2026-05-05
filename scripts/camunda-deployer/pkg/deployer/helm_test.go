@@ -83,18 +83,20 @@ func TestShortenPaths_NoAbsolutePaths(t *testing.T) {
 
 // stubHelm replaces the package-level helm function variables with test stubs
 // and returns a restore function that must be called (typically via defer) to
-// reset the originals.
+// reset the originals. The wait-flag detector is pinned to "--wait" so tests
+// don't depend on the local Helm CLI version.
 func stubHelm(
 	runFn func(ctx context.Context, args []string, workDir string) error,
 	repoAddFn func(ctx context.Context, name, url string) error,
 	repoUpdateFn func(ctx context.Context) error,
 ) func() {
-	origRun, origAdd, origUpdate := helmRun, helmRepoAdd, helmRepoUpdate
+	origRun, origAdd, origUpdate, origWait := helmRun, helmRepoAdd, helmRepoUpdate, helmWaitFlag
 	helmRun = runFn
 	helmRepoAdd = repoAddFn
 	helmRepoUpdate = repoUpdateFn
+	helmWaitFlag = func(context.Context) string { return "--wait" }
 	return func() {
-		helmRun, helmRepoAdd, helmRepoUpdate = origRun, origAdd, origUpdate
+		helmRun, helmRepoAdd, helmRepoUpdate, helmWaitFlag = origRun, origAdd, origUpdate, origWait
 	}
 }
 
@@ -297,6 +299,108 @@ func TestDeployCompanionChart(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpgradeInstall_WaitFlagDelegatesToHelmWaitFlag(t *testing.T) {
+	tests := []struct {
+		name     string
+		flag     string
+		wantArg  string
+		wantWait bool
+	}{
+		{name: "helm v3 returns --wait", flag: "--wait", wantArg: "--wait", wantWait: true},
+		{name: "helm v4 returns --wait=legacy", flag: "--wait=legacy", wantArg: "--wait=legacy", wantWait: true},
+		{name: "wait disabled emits no flag", flag: "--wait=legacy", wantWait: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var capturedArgs []string
+			restore := stubHelm(
+				func(ctx context.Context, args []string, workDir string) error {
+					capturedArgs = args
+					return nil
+				},
+				func(ctx context.Context, name, url string) error { return nil },
+				func(ctx context.Context) error { return nil },
+			)
+			defer restore()
+
+			origWait := helmWaitFlag
+			helmWaitFlag = func(context.Context) string { return tt.flag }
+			defer func() { helmWaitFlag = origWait }()
+
+			err := upgradeInstall(context.Background(), types.Options{
+				ChartPath:   "/charts/x",
+				ReleaseName: "r",
+				Namespace:   "ns",
+				Wait:        tt.wantWait,
+			})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			argsStr := strings.Join(capturedArgs, " ")
+			if tt.wantWait {
+				if !containsArg(capturedArgs, tt.wantArg) {
+					t.Errorf("args = %q, want exact arg %q", argsStr, tt.wantArg)
+				}
+				other := "--wait"
+				if tt.wantArg == "--wait" {
+					other = "--wait=legacy"
+				}
+				if containsArg(capturedArgs, other) {
+					t.Errorf("args = %q, must not contain exact arg %q", argsStr, other)
+				}
+			} else {
+				if containsArg(capturedArgs, "--wait") || containsArg(capturedArgs, "--wait=legacy") {
+					t.Errorf("args = %q, should not contain any --wait variant when Wait=false", argsStr)
+				}
+			}
+		})
+	}
+}
+
+func TestDeployCompanionChart_UsesHelmWaitFlag(t *testing.T) {
+	var capturedArgs []string
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error {
+			capturedArgs = args
+			return nil
+		},
+		func(ctx context.Context, name, url string) error { return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	origWait := helmWaitFlag
+	helmWaitFlag = func(context.Context) string { return "--wait=legacy" }
+	defer func() { helmWaitFlag = origWait }()
+
+	err := deployCompanionChart(context.Background(), types.CompanionChart{
+		ChartRef:    "/charts/local",
+		ReleaseName: "local",
+	}, types.Options{Namespace: "ns"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	argsStr := strings.Join(capturedArgs, " ")
+	if !containsArg(capturedArgs, "--wait=legacy") {
+		t.Errorf("args = %q, want exact arg --wait=legacy", argsStr)
+	}
+	if containsArg(capturedArgs, "--wait") {
+		t.Errorf("args = %q, must not contain bare --wait alongside --wait=legacy", argsStr)
+	}
+}
+
+func containsArg(args []string, want string) bool {
+	for _, a := range args {
+		if a == want {
+			return true
+		}
+	}
+	return false
 }
 
 func TestDeployCompanionChart_HelmErrorType(t *testing.T) {

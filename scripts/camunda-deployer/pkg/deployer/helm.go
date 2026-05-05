@@ -16,6 +16,7 @@ var (
 	helmRun        = helm.Run
 	helmRepoAdd    = helm.RepoAdd
 	helmRepoUpdate = helm.RepoUpdate
+	helmWaitFlag   = helm.WaitFlag
 )
 
 // HelmError is a structured error for helm command failures that separates
@@ -95,7 +96,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 
 	// Deployment behavior
 	if o.Wait {
-		args = append(args, "--wait")
+		args = append(args, helmWaitFlag(ctx))
 	}
 	if o.Atomic {
 		args = append(args, "--atomic")
@@ -195,7 +196,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		cc.ChartRef,
 		"-n", o.Namespace,
 		"--create-namespace",
-		"--wait",
+		helmWaitFlag(ctx),
 	}
 
 	// Pin chart version (required for remote charts)

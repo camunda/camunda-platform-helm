@@ -6,11 +6,42 @@ import (
 	"scripts/camunda-core/pkg/executil"
 	"scripts/camunda-core/pkg/logging"
 	"strings"
+	"sync"
 	"time"
 )
 
 func Run(ctx context.Context, args []string, workDir string) error {
 	return executil.RunCommand(ctx, "helm", args, nil, workDir)
+}
+
+var (
+	waitFlagOnce  sync.Once
+	waitFlagValue string
+)
+
+// WaitFlag returns the appropriate --wait argument for the installed Helm CLI.
+// Helm v4 redefined --wait; --wait=legacy preserves v3 behavior. Detection runs
+// once per process and falls back to "--wait" if `helm version` fails.
+func WaitFlag(ctx context.Context) string {
+	waitFlagOnce.Do(func() {
+		waitFlagValue = detectWaitFlag(ctx)
+	})
+	return waitFlagValue
+}
+
+func detectWaitFlag(ctx context.Context) string {
+	out, err := executil.RunCommandCapture(ctx, "helm", []string{"version", "--short"}, nil, "")
+	if err != nil {
+		return "--wait"
+	}
+	return waitFlagFromOutput(out)
+}
+
+func waitFlagFromOutput(out []byte) string {
+	if strings.HasPrefix(strings.TrimSpace(string(out)), "v4") {
+		return "--wait=legacy"
+	}
+	return "--wait"
 }
 
 func DependencyUpdate(ctx context.Context, chartPath string) error {
