@@ -306,6 +306,15 @@ integration:
           persistence: elasticsearch
           qa: true
           platforms: [gke]
+        - name: qa-elasticsearch-upg
+          enabled: false
+          flow: modular-upgrade-minor
+          shortname: qaelupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
         - name: qa-elasticsearch
           enabled: false
           flow: install
@@ -372,7 +381,7 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           qa: true
-          platforms: [gke]
+          platforms: [gke, eks]
         - name: qa-document-store-upg
           enabled: false
           flow: install
@@ -382,7 +391,7 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           qa: true
-          platforms: [gke]
+          platforms: [gke, eks]
         - name: qa-license
           enabled: false
           flow: install
