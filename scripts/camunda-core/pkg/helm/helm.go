@@ -32,9 +32,16 @@ func WaitFlag(ctx context.Context) string {
 func detectWaitFlag(ctx context.Context) string {
 	out, err := executil.RunCommandCapture(ctx, "helm", []string{"version", "--short"}, nil, "")
 	if err != nil {
+		logging.Logger.Warn().Err(err).Msg("helm version detection failed; defaulting wait flag to --wait")
 		return "--wait"
 	}
-	return waitFlagFromOutput(out)
+	version := strings.TrimSpace(string(out))
+	flag := waitFlagFromOutput(out)
+	logging.Logger.Info().
+		Str("helmVersion", version).
+		Str("waitFlag", flag).
+		Msg("detected helm CLI version")
+	return flag
 }
 
 func waitFlagFromOutput(out []byte) string {
