@@ -342,6 +342,15 @@ integration:
           persistence: opensearch
           qa: true
           platforms: [gke]
+        - name: qa-opensearch-upg
+          enabled: false
+          flow: modular-upgrade-minor
+          shortname: qaosupg
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
         - name: qa-elasticsearch-mt
           enabled: false
           flow: install
