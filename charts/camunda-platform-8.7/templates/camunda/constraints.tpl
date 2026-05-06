@@ -6,6 +6,19 @@ A template to handle constraints.
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 
 {{/*
+Fail with a message if Resource-Based Authorization (RBA) and Multi-Tenancy are both enabled.
+These features cannot run together. Checked first so the user sees the unsupported-combination
+error before any Multi-Tenancy prerequisite errors.
+*/}}
+{{- if and .Values.global.rba.enabled .Values.global.multitenancy.enabled }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Resource-Based Authorization (\"global.rba.enabled\") and Multi-Tenancy (\"global.multitenancy.enabled\") cannot be enabled at the same time."
+      "Please disable one of them."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:
 - Identity chart/service.
 - Identity PostgreSQL chart/service.
