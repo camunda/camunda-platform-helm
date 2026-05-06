@@ -79,8 +79,7 @@ spec:
               (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true")
               (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)) "true")
             }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "%s -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/%s" .Values.orchestration.javaOpts (include "camundaPlatform.getTlsSecretKey" .) | trim | quote }}
+            {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "orchestration") | nindent 12 }}
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.orchestration.javaOpts | quote }}

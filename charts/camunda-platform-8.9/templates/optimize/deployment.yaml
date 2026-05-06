@@ -76,8 +76,7 @@ spec:
             {{- end}}
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s %s" (include "camundaPlatform.getTlsSecretKey" .) .Values.optimize.javaOpts | trim | quote }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize") | nindent 12 }}
             {{- else if .Values.optimize.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.optimize.javaOpts | quote }}
@@ -176,8 +175,7 @@ spec:
             {{- end}}
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s %s" (include "camundaPlatform.getTlsSecretKey" .) .Values.optimize.javaOpts | trim | quote }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize") | nindent 12 }}
             {{- else if .Values.optimize.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.optimize.javaOpts | quote }}

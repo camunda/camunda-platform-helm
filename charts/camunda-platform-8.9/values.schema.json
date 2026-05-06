@@ -260,6 +260,31 @@
                                     "description": "(DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch",
                                     "default": ""
                                 },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "secret": {
                                     "type": "object",
                                     "properties": {
@@ -374,6 +399,31 @@
                                     "type": "string",
                                     "description": "(DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch",
                                     "default": ""
+                                },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
                                 },
                                 "secret": {
                                     "type": "object",

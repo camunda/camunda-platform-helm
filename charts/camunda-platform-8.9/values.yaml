@@ -182,6 +182,10 @@ global:
   ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth or orchestration.data.secondaryStorage.elasticsearch.auth)
   ## @param global.elasticsearch.auth.username (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.username or orchestration.data.secondaryStorage.elasticsearch.auth.username) the username for external elasticsearch
+  ## @extra global.elasticsearch.tls.jks configuration to provide the jks secret.
+  ## @param global.elasticsearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
+  ## @param global.elasticsearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
+  ## @param global.elasticsearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
   elasticsearch:
     enabled: false
     external: false
@@ -194,6 +198,11 @@ global:
         existingSecret: ""
         ## @param global.elasticsearch.tls.secret.existingSecretKey (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate
         existingSecretKey: "externaldb.jks"
+      jks:
+        secret:
+          existingSecret: ""
+          existingSecretKey: ""
+          inlineSecret: ""
     auth:
       username: ""
       ## @extra global.elasticsearch.auth.secret (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.secret or orchestration.data.secondaryStorage.elasticsearch.auth.secret)
@@ -228,6 +237,10 @@ global:
   ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth or orchestration.data.secondaryStorage.opensearch.auth)
   ## @param global.opensearch.auth.username (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.username or orchestration.data.secondaryStorage.opensearch.auth.username) the username for external opensearch
+  ## @extra global.opensearch.tls.jks configuration to provide the jks secret.
+  ## @param global.opensearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
+  ## @param global.opensearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
+  ## @param global.opensearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
   opensearch:
     enabled: false
     aws:
@@ -241,6 +254,11 @@ global:
         existingSecret: ""
         ## @param global.opensearch.tls.secret.existingSecretKey (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate
         existingSecretKey: "externaldb.jks"
+      jks:
+        secret:
+          existingSecret: ""
+          existingSecretKey: ""
+          inlineSecret: ""
     auth:
       username: ""
       ## @extra global.opensearch.auth.secret (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.secret or orchestration.data.secondaryStorage.opensearch.auth.secret)
