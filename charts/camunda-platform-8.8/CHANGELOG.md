@@ -1,5 +1,23 @@
 # Changelog
 
+## [13.8.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.7.2...camunda-platform-8.8-13.8.0) (2026-05-06)
+
+
+### Features
+
+* add companion chart deployment support to deploy-camunda ([#5979](https://github.com/camunda/camunda-platform-helm/issues/5979)) ([b52f467](https://github.com/camunda/camunda-platform-helm/commit/b52f467af948aa1ed685646a8b91d6d2f9349110))
+* add elasticsearch-self-signed-upgrade scenario for 8.7-&gt;8.8 TLS upgrade testing ([#5974](https://github.com/camunda/camunda-platform-helm/issues/5974)) ([77145ba](https://github.com/camunda/camunda-platform-helm/commit/77145ba9550f65fc57044e4cef6e09e2cef5d1b9))
+
+
+### Bug Fixes
+
+* add missing properties and annotations to values.schema.json ([#5938](https://github.com/camunda/camunda-platform-helm/issues/5938)) ([6c39f8a](https://github.com/camunda/camunda-platform-helm/commit/6c39f8a12b3ea3ead768674b4d09bdbff388d411))
+* **ci:** extend nightly matrix coverage for missing platform/flow combinations ([#6064](https://github.com/camunda/camunda-platform-helm/issues/6064)) ([05e1f6d](https://github.com/camunda/camunda-platform-helm/commit/05e1f6d2fe50c9409970cfbcb35faaefe83c7656))
+* migration-data-job volume mount to /tmp ([#5978](https://github.com/camunda/camunda-platform-helm/issues/5978)) ([2df0549](https://github.com/camunda/camunda-platform-helm/commit/2df0549e53a6d4377341ee994c3b75437b3c4c94))
+* resolve SM nightly upgrade scenario failures for groups 2-4 ([#5984](https://github.com/camunda/camunda-platform-helm/issues/5984)) ([1b1e8e4](https://github.com/camunda/camunda-platform-helm/commit/1b1e8e44f49c5c247239c5a3e2d2bbf98c2273e3))
+* set service account on orchestration migration jobs ([#5973](https://github.com/camunda/camunda-platform-helm/issues/5973)) ([8bef9d0](https://github.com/camunda/camunda-platform-helm/commit/8bef9d050b2fef22f5fac4fb7c1359bf87bd61eb))
+* support extraVolumeMounts and extraVolumes for migration jobs ([#6059](https://github.com/camunda/camunda-platform-helm/issues/6059)) ([999fa18](https://github.com/camunda/camunda-platform-helm/commit/999fa18c2cbed3f36f790f6a982f8d4f9110e38d))
+
 ## [13.7.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.7.1...camunda-platform-8.8-13.7.2) (2026-04-22)
 
 
