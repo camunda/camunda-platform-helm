@@ -72,7 +72,17 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Remove integration tests"
+    - kind: added
+      description: "Add elasticsearch-self-signed-upgrade scenario for 8.7->8.8 TLS upgrade testing"
+    - kind: added
+      description: "Add companion chart deployment support to deploy-camunda"
     - kind: fixed
-      description: "Keep persistence enabled in web modeler postgresql"
+      description: "Add missing properties and annotations to values.schema.json"
+    - kind: fixed
+      description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
+    - kind: fixed
+      description: "Set service account on orchestration migration jobs"
+    - kind: fixed
+      description: "Migration-data-job volume mount to /tmp"
+    - kind: fixed
+      description: "Support extraVolumeMounts and extraVolumes for migration jobs"
