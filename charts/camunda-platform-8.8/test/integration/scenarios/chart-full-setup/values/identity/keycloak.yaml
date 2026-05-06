@@ -193,11 +193,12 @@ identityKeycloak:
       # Use PVC for upgrade stability across pod replacements/restarts.
       persistence:
         enabled: true
-      # Right-sized for CI: CPU P99 61m (from 500m), memory P99 92Mi (from 256Mi).
+      # Right-sized for CI: CPU P99 61m, but startup (realm import) is burst-heavy.
+      # 250m ensures reliable startup on burstable EKS nodes (t-core-16-unstable).
       resources:
         requests:
-          cpu: 80m
-          memory: 125Mi
+          cpu: 250m
+          memory: 180Mi
         limits:
           cpu: 500m
           memory: 512Mi
