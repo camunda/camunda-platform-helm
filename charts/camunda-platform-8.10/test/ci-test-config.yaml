@@ -306,6 +306,15 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+        # Used by camunda/connectors FEATURE_BRANCH_HELM_TEST workflow (main/8.10).
+        - name: keycloak-original
+          enabled: true
+          flow: install
+          shortname: keyco
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
         - name: qa-elasticsearch-upg
           enabled: false
           flow: install

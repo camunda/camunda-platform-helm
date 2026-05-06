@@ -173,9 +173,9 @@ get_first_version() {
     --manual-trigger "8.7" \
     --active-versions "$AV"
   assert_success
-  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"keycloak-original\") | .flow" matrix_versions.txt | jq -s -c'
+  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"keycloak-original\") | .flow" matrix_versions.txt | jq -s -c "unique"'
   assert_success
-  # Only install should remain for keycloak-original
+  # Only install should remain for keycloak-original (multiple entries may exist with different shortnames)
   assert_output '["install"]'
 }
 

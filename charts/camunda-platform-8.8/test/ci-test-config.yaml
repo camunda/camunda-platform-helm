@@ -207,6 +207,15 @@ integration:
         # tasklist-v1 install scenarios and *-upg upgrade-minor scenarios. Both deploy
         # via the same flow=install path here. One entry per shortname covers both.
         # ===========================================================================
+        # Used by camunda/connectors FEATURE_BRANCH_HELM_TEST workflow (stable/8.8).
+        - name: keycloak-original
+          enabled: true
+          flow: install
+          shortname: keyco
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
         # `es` is the test-integration-template default shortname; used by the
         # compat-camunda-simple job (camunda/camunda-helm-integration.yml).
         - name: elasticsearch
