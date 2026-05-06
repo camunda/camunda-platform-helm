@@ -65,7 +65,7 @@ integration:
         - name: oidc
           enabled: true
           shortname: esoi
-          tier: 1
+          tier: 2
           exclude: []
           auth: oidc
           persistence: elasticsearch
@@ -93,7 +93,7 @@ integration:
         - name: opensearch-external
           enabled: true
           shortname: osex
-          tier: 1
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
