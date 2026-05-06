@@ -48,6 +48,9 @@ inputs:
   manual-flow:
     description: Optional override of flows (comma-separated)
     default: "none"
+  tier:
+    description: Filter scenarios by tier (1=PR CI, 2=merge-queue only; 0 or empty=all)
+    default: ""
 outputs:
   matrix:
     description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
@@ -85,6 +88,7 @@ runs:
           --manual-trigger "${{ inputs.manual-trigger }}" \
           --manual-scenario "${{ inputs.manual-scenario }}" \
           --manual-flow "${{ inputs.manual-flow }}" \
+          --tier "${{ inputs.tier }}" \
           --active-versions "${{ steps.get-chart-versions.outputs.active }}" \
           --all-modified-files "${{ steps.changed-files.outputs.all_modified_files }}"
     - name: Generate matrix Camunda versions
