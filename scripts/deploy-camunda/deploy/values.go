@@ -25,7 +25,20 @@ import (
 // Returns the list of processed file paths in the output directory.
 func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, platform string, envOverrides map[string]string) ([]string, error) {
 	// Common directory is a sibling to the scenario directory
-	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
+	// (e.g. scenarios/chart-full-setup → scenarios/common). The previous
+	// implementation went `Dir(scenarioPath) + ".." + "common"`, which walked
+	// one level too high (test/integration/common, which doesn't exist), so
+	// os.Stat failed and every common values file was silently skipped.
+	// That regressed nightlies after the install path switched from Taskfile
+	// setup.exec (which listed the common files explicitly via -f) to
+	// deploy-camunda matrix run (which relies on this auto-discovery): the
+	// most damaging loss was global.image.pullSecrets from
+	// common/values-integration-test-pull-secrets.yaml. Without it, components
+	// that don't set their own pullSecrets (orchestration in particular) fell
+	// back to anonymous Docker Hub pulls, hit the rate limit on shared GKE
+	// node IPs, sat in ImagePullBackOff, and never reached Ready — which is
+	// what produced the sustained 502s through the orchestration ingress.
+	commonDir := filepath.Join(filepath.Dir(scenarioPath), "common")
 
 	logging.Logger.Debug().
 		Str("scenarioPath", scenarioPath).
