@@ -70,6 +70,7 @@ type CIScenario struct {
 	Flow      string   `yaml:"flow"`
 	Platforms []string `yaml:"platforms"`
 	Exclude   []string `yaml:"exclude"`
+	Tier      int      `yaml:"tier,omitempty"`
 
 	// InfraType maps platform names to infrastructure pool types, e.g.,
 	// {"gke": "distroci", "eks": "preemptible"}.

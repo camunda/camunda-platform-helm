@@ -40,20 +40,10 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
-          auth: keycloak
-          shortname: eskee
-          flow: install
-          exclude: []
-          infra-type:
-            gke: distroci
-          identity: keycloak
-          persistence: elasticsearch
-          platforms: [gke]
-        - name: elasticsearch
-          enabled: true
           flow: install,upgrade-minor
           auth: keycloak
           shortname: eske
+          tier: 1
           exclude: []
           infra-type:
             gke: distroci
@@ -74,6 +64,7 @@ integration:
         - name: opensearch-external
           enabled: true
           shortname: osex
+          tier: 1
           exclude: []
           auth: keycloak
           identity: keycloak
@@ -115,6 +106,7 @@ integration:
           enabled: true
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
+          tier: 1
           auth: oidc
           flow: install,upgrade-minor
           skip-e2e: true  # OIDC auth incompatible with Keycloak-dependent smoke tests
@@ -129,6 +121,7 @@ integration:
           enabled: true
           exclude: []
           shortname: kemt
+          tier: 2
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
@@ -141,6 +134,7 @@ integration:
           enabled: true
           exclude: []
           shortname: kerba
+          tier: 2
           auth: keycloak
           flow: upgrade-minor
           infra-type:
@@ -154,6 +148,7 @@ integration:
           enabled: true
           exclude: []
           shortname: keorg
+          tier: 2
           auth: keycloak
           flow: install
           infra-type:
@@ -166,6 +161,7 @@ integration:
           enabled: true
           exclude: []
           shortname: gatkc
+          tier: 1
           auth: keycloak
           flow: install
           identity: keycloak
@@ -179,6 +175,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: esarm
+          tier: 1
           exclude: []
           infra-type:
             gke: arm
@@ -192,6 +189,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: nosec
+          tier: 2
           exclude: []
           flow: install
           skip-e2e: true  # No Elasticsearch means no secondary storage for E2E tests
@@ -204,6 +202,7 @@ integration:
           enabled: true
           exclude: []
           shortname: docstr
+          tier: 2
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
@@ -232,6 +231,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: rdbms
+          tier: 2
           flow: install
           exclude: []
           infra-type:
