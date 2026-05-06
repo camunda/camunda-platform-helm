@@ -158,6 +158,67 @@ deploy-camunda prepare-values \
 
 ---
 
+### Watch a Deploy with a Local Agent (`deploy-camunda watch`)
+
+When a Helm install gets stuck, the default `helm install --wait --timeout 10m`
+hides every signal until the timeout fires. `deploy-camunda watch` polls the
+cluster on a short cadence and hands each snapshot to a local agent CLI
+(Claude Code or opencode) for live diagnosis.
+
+**Prerequisites:** `claude` or `opencode` must be on `PATH`. The watcher does
+NOT call any API directly — it shells out to whichever CLI is installed and
+uses that CLI's existing auth and model configuration.
+
+```bash
+# Run alongside an active install (separate terminal):
+deploy-camunda watch \
+  --namespace my-test-ns \
+  --release int \
+  --interval 60 \
+  --abort-confidence 0.85 \
+  --corpus-dir ~/eval/snapshots
+```
+
+**What the watcher does each tick:**
+
+1. `kubectl get pods,events,pvcs -n <ns> -o json` + `helm status -o json`.
+2. Pipes the snapshot JSON to the agent CLI in headless mode with the
+   `debug-failing-pods` skill prompt.
+3. Parses the verdict JSON. Acts on `recommended_action`:
+   - `wait` — keep polling silently.
+   - `investigate` — print diagnosis, keep polling.
+   - `abort` — print diagnosis; auto-exit non-zero only if `confidence` is
+     at or above `--abort-confidence` (default 0 disables auto-abort).
+
+**Verdict schema** (the skill must produce exactly this shape):
+
+```json
+{
+  "diagnosis": "<one paragraph>",
+  "causal_chain": ["t+12s FailedMount(secret/...)", "t+30s CrashLoopBackOff"],
+  "confidence": 0.92,
+  "recommended_action": "abort",
+  "evidence": ["pod=keycloak-0", "event=FailedMount"]
+}
+```
+
+**Eval workflow.** When `--corpus-dir` is set, every tick is persisted as a
+JSON file containing the snapshot, raw agent output, and parsed verdict.
+Replay a saved corpus to regression-test prompt or model changes:
+
+```bash
+deploy-camunda watch replay ~/eval/snapshots
+# Prints a per-tick diff between recorded and freshly-replayed verdicts.
+# Exits non-zero (with --strict, default) if any action class regresses.
+```
+
+Build the corpus by running `watch --corpus-dir` on at least 5 deliberately
+broken installs (delete a referenced secret, mistype an image tag, undersize
+a quota, set too-small JVM heap, break a CRD reference) before promoting
+auto-abort to actionable.
+
+---
+
 ## kubectl — Debugging Deployments
 
 ### Check Deployment Health

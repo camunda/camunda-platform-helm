@@ -1,0 +1,313 @@
+package agentwatch
+
+import (
+	"context"
+	"strings"
+	"testing"
+	"time"
+)
+
+func nowSuffix() string { return time.Now().UTC().Format("20060102T150405") }
+
+func TestParseVerdict_StrictJSON(t *testing.T) {
+	raw := []byte(`{
+		"diagnosis": "secret missing",
+		"causal_chain": ["t+12s FailedMount"],
+		"confidence": 0.92,
+		"recommended_action": "abort",
+		"evidence": ["pod=keycloak-0"]
+	}`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.RecommendedAction != ActionAbort {
+		t.Fatalf("expected abort, got %q", v.RecommendedAction)
+	}
+	if v.Confidence != 0.92 {
+		t.Fatalf("expected confidence 0.92, got %v", v.Confidence)
+	}
+	if len(v.CausalChain) != 1 {
+		t.Fatalf("expected 1 causal chain entry, got %d", len(v.CausalChain))
+	}
+}
+
+func TestParseVerdict_ProseWrapped(t *testing.T) {
+	// Some agent CLIs prepend explanatory prose. We should still recover
+	// the embedded JSON.
+	raw := []byte(`Here's the verdict you asked for:
+
+	{
+	  "diagnosis": "image tag missing",
+	  "causal_chain": ["t+0s helm.installed", "t+30s ImagePullBackOff"],
+	  "confidence": 0.88,
+	  "recommended_action": "abort"
+	}
+
+	Hope this helps!`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.RecommendedAction != ActionAbort {
+		t.Fatalf("expected abort, got %q", v.RecommendedAction)
+	}
+}
+
+func TestParseVerdict_ClaudeCodeEnvelope(t *testing.T) {
+	// Claude Code -p --output-format json wraps the assistant text in
+	// {"type":"result","result":"..."}.
+	inner := `{"diagnosis":"OOM","causal_chain":["t+25s OOMKilled"],"confidence":0.9,"recommended_action":"abort"}`
+	raw := []byte(`{"type":"result","result":` + jsonString(inner) + `}`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.Diagnosis != "OOM" {
+		t.Fatalf("expected diagnosis OOM, got %q", v.Diagnosis)
+	}
+}
+
+func TestParseVerdict_RejectsInvalidAction(t *testing.T) {
+	raw := []byte(`{"diagnosis":"x","confidence":0.5,"recommended_action":"panic"}`)
+	if _, err := ParseVerdict(raw); err == nil {
+		t.Fatal("expected error for unknown action")
+	}
+}
+
+func TestParseVerdict_RejectsConfidenceOutOfRange(t *testing.T) {
+	raw := []byte(`{"diagnosis":"x","confidence":1.5,"recommended_action":"wait"}`)
+	if _, err := ParseVerdict(raw); err == nil {
+		t.Fatal("expected error for confidence > 1")
+	}
+}
+
+func TestParseVerdict_RejectsEmptyDiagnosis(t *testing.T) {
+	raw := []byte(`{"diagnosis":"   ","confidence":0.5,"recommended_action":"wait"}`)
+	if _, err := ParseVerdict(raw); err == nil {
+		t.Fatal("expected error for blank diagnosis")
+	}
+}
+
+func TestParseVerdict_NoJSON(t *testing.T) {
+	raw := []byte("the model failed to respond")
+	if _, err := ParseVerdict(raw); err == nil {
+		t.Fatal("expected error when no JSON object is present")
+	}
+}
+
+func TestParseVerdict_TrailingProseWithBraces(t *testing.T) {
+	// Regression for the greedy-regex bug: a literal '}' in trailing prose
+	// used to make the match run to the very last '}' in the input,
+	// producing an unparseable substring on otherwise valid output.
+	raw := []byte(`Here you go:
+	{"diagnosis":"shard OOM","causal_chain":[],"confidence":0.92,"recommended_action":"investigate"}
+	Note: example of bad output below for contrast: { "diagnosis": ""`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.RecommendedAction != ActionInvestigate {
+		t.Fatalf("expected investigate, got %q", v.RecommendedAction)
+	}
+}
+
+func TestParseVerdict_RecoversAfterUnterminatedOpener(t *testing.T) {
+	// Regression for the brace-walker continuation bug: an unmatched '{'
+	// before the real verdict used to make the walker give up entirely.
+	raw := []byte(`Here's the JSON I'll return: { (oops, malformed
+	{"diagnosis":"image not found","causal_chain":[],"confidence":0.95,"recommended_action":"abort"}`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.RecommendedAction != ActionAbort {
+		t.Fatalf("expected abort, got %q", v.RecommendedAction)
+	}
+}
+
+func TestRedactForCorpus_StripsSensitiveEnvValues(t *testing.T) {
+	in := []byte(`{
+	  "pods": {"items": [{"spec": {"containers": [{
+	    "name": "runner",
+	    "env": [
+	      {"name": "DB_PASSWORD", "value": "hunter2"},
+	      {"name": "HARBOR_TOKEN", "value": "abc.def.ghi"},
+	      {"name": "PUBLIC_URL", "value": "https://camunda.example"},
+	      {"name": "OIDC_CLIENT_SECRET", "valueFrom": {"secretKeyRef": {"name": "x", "key": "y"}}}
+	    ]
+	  }]}}]}
+	}`)
+	out := RedactForCorpus(in)
+	s := string(out)
+	if strings.Contains(s, "hunter2") {
+		t.Fatal("DB_PASSWORD plaintext leaked into corpus")
+	}
+	if strings.Contains(s, "abc.def.ghi") {
+		t.Fatal("HARBOR_TOKEN plaintext leaked into corpus")
+	}
+	if !strings.Contains(s, "https://camunda.example") {
+		t.Fatal("non-sensitive PUBLIC_URL was incorrectly redacted")
+	}
+	if !strings.Contains(s, "DB_PASSWORD") {
+		t.Fatal("env name was redacted; should remain visible")
+	}
+	// valueFrom references don't carry plaintext, so we leave them alone
+	if !strings.Contains(s, "secretKeyRef") {
+		t.Fatal("valueFrom reference was unexpectedly stripped")
+	}
+}
+
+func TestRedactForCorpus_StripsBearerTokensFromLogs(t *testing.T) {
+	in := []byte(`{"events":{"items":[{"message":"GET /x: Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NSJ9.signature"}]}}`)
+	out := string(RedactForCorpus(in))
+	if strings.Contains(out, "eyJhbGciOiJIUzI1NiJ9") {
+		t.Fatal("JWT-shaped token leaked into corpus")
+	}
+}
+
+func TestParseVerdict_BracesInsideStringFields(t *testing.T) {
+	raw := []byte(`prefix {"diagnosis":"got } here in the message","causal_chain":[],"confidence":0.5,"recommended_action":"wait"} trailing`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.Diagnosis != "got } here in the message" {
+		t.Fatalf("string-literal handling broken; diagnosis=%q", v.Diagnosis)
+	}
+}
+
+func TestClassify(t *testing.T) {
+	cases := []struct {
+		name            string
+		action          Action
+		confidence      float64
+		abortConfidence float64
+		want            Decision
+	}{
+		{"wait", ActionWait, 0.99, 0.85, DecisionContinue},
+		{"investigate", ActionInvestigate, 0.99, 0.85, DecisionSurface},
+		{"abort high confidence", ActionAbort, 0.9, 0.85, DecisionAbort},
+		{"abort low confidence", ActionAbort, 0.6, 0.85, DecisionSurface},
+		{"abort threshold disabled", ActionAbort, 0.99, 0, DecisionSurface},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v := Verdict{RecommendedAction: tc.action, Confidence: tc.confidence, Diagnosis: "x"}
+			if got := classify(v, tc.abortConfidence); got != tc.want {
+				t.Fatalf("classify(%+v, %v) = %v, want %v", v, tc.abortConfidence, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSupportedCLIs_StableOrder(t *testing.T) {
+	got := SupportedCLIs()
+	if len(got) < 2 || got[0] != "claude" || got[1] != "opencode" {
+		t.Fatalf("expected [claude opencode ...], got %v", got)
+	}
+	// Ensure callers can't mutate the package's internal slice.
+	got[0] = "tampered"
+	if SupportedCLIs()[0] != "claude" {
+		t.Fatal("SupportedCLIs returns shared slice; callers can mutate package state")
+	}
+}
+
+func TestBuildArgs_Claude(t *testing.T) {
+	args := buildArgs(AgentCLI{Name: "claude", Path: "/usr/bin/claude"}, "be helpful")
+	if !contains(args, "-p") || !contains(args, "be helpful") || !contains(args, "json") {
+		t.Fatalf("unexpected claude args: %v", args)
+	}
+}
+
+func TestBuildArgs_Opencode(t *testing.T) {
+	args := buildArgs(AgentCLI{Name: "opencode", Path: "/usr/bin/opencode"}, "be helpful")
+	if !contains(args, "run") || !contains(args, "be helpful") {
+		t.Fatalf("unexpected opencode args: %v", args)
+	}
+}
+
+func contains(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func TestWatch_SnapshotFailureRespectsMaxTicks(t *testing.T) {
+	// Regression: snapshot-fail path used to skip tick++, so MaxTicks
+	// could not bound the loop when kubectl was permanently broken.
+	// We simulate "always-broken kubectl" by pointing GatherSnapshot at a
+	// nonexistent namespace with no kubeconfig; it returns quickly with
+	// an error. With MaxTicks=2 and a sub-second interval the loop must
+	// exit within a small wall-clock budget.
+	opts := Options{
+		CLI: AgentCLI{Name: "claude", Path: "/nonexistent-but-required-by-validation"},
+		Snapshot: SnapshotOptions{
+			Namespace:      "definitely-does-not-exist-" + nowSuffix(),
+			SkipHelmStatus: true,
+			KubeContext:    "definitely-does-not-exist-context",
+		},
+		Interval: 10 * time.Millisecond,
+		MaxTicks: 2,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	decision, verdict, err := Watch(ctx, opts)
+	if err != nil {
+		t.Fatalf("expected nil error after MaxTicks exit, got %v", err)
+	}
+	if decision != DecisionContinue {
+		t.Fatalf("expected DecisionContinue after MaxTicks exit, got %v", decision)
+	}
+	if verdict != nil {
+		t.Fatalf("expected nil verdict (no successful tick), got %+v", verdict)
+	}
+}
+
+func TestReplayReport_FormatLabelsRegressions(t *testing.T) {
+	wait := Verdict{Diagnosis: "x", Confidence: 0.9, RecommendedAction: ActionWait}
+	abort := Verdict{Diagnosis: "x", Confidence: 0.9, RecommendedAction: ActionAbort}
+	report := ReplayReport{
+		CorpusDir: "/tmp/c",
+		Results: []ReplayResult{
+			{File: "/tmp/c/ok.json", Recorded: &wait, Replayed: &wait, ActionChanged: false},
+			{File: "/tmp/c/bad.json", Recorded: &abort, Replayed: &wait, ActionChanged: true, ConfidenceDelta: 0.0},
+		},
+		Regressions: 1,
+	}
+	out := report.Format()
+	if !strings.Contains(out, "REGRESS") {
+		t.Fatalf("expected REGRESS marker in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Regressions: 1") {
+		t.Fatalf("expected Regressions: 1 in output, got:\n%s", out)
+	}
+}
+
+// jsonString is a tiny helper to embed an arbitrary string as a JSON string
+// literal in test fixtures.
+func jsonString(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '"':
+			b.WriteString(`\"`)
+		case '\\':
+			b.WriteString(`\\`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
+}
