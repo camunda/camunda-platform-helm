@@ -247,7 +247,7 @@ func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 
 	var filtered []Entry
 	for _, e := range entries {
-		if opts.Tier > 0 && e.Tier != opts.Tier {
+		if opts.Tier > 0 && e.Tier != 0 && e.Tier != opts.Tier {
 			continue
 		}
 		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {
