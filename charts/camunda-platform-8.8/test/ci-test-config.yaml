@@ -23,6 +23,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: eske
+          tier: 1
           exclude: []
           infra-type:
             gke: distroci
@@ -59,6 +60,7 @@ integration:
           enabled: true
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
+          tier: 2
           auth: oidc
           flow: install,upgrade-minor
           skip-e2e: true  # OIDC auth incompatible with Keycloak-dependent smoke tests
@@ -135,6 +137,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: esarm
+          tier: 2
           exclude: []
           platforms: [gke]
           infra-type:
@@ -156,6 +159,7 @@ integration:
         - name: opensearch-external
           enabled: true
           shortname: osex
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
@@ -186,6 +190,7 @@ integration:
           enabled: true
           exclude: []
           shortname: docstr
+          tier: 2
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch

@@ -386,6 +386,53 @@ func TestFilter(t *testing.T) {
 			t.Errorf("Filter(shortname=dynamic-xyz, exact=true, no scenario): got %d entries, want 0", len(got))
 		}
 	})
+
+	// --- Tier filter tests ---
+	tieredEntries := []Entry{
+		{Version: "8.9", Scenario: "elasticsearch", Shortname: "eske", Flow: "install", Tier: 1, Enabled: true},
+		{Version: "8.9", Scenario: "opensearch-external", Shortname: "osex", Flow: "install", Tier: 1, Enabled: true},
+		{Version: "8.9", Scenario: "keycloak-mt", Shortname: "kemt", Flow: "install", Tier: 2, Enabled: true},
+		{Version: "8.9", Scenario: "keycloak-rba", Shortname: "kerba", Flow: "install", Tier: 2, Enabled: true},
+		{Version: "8.9", Scenario: "no-tier-set", Shortname: "notier", Flow: "install", Tier: 0, Enabled: true},
+	}
+
+	t.Run("tier filter returns only matching tier", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{Tier: 1})
+		if len(got) != 3 {
+			t.Errorf("Filter(tier=1): got %d entries, want 3 (2 tier-1 + 1 untiered)", len(got))
+		}
+		for _, e := range got {
+			if e.Tier != 1 && e.Tier != 0 {
+				t.Errorf("Filter(tier=1): unexpected tier %d for %s", e.Tier, e.Shortname)
+			}
+		}
+	})
+
+	t.Run("tier filter 2 returns tier-2 and untiered", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{Tier: 2})
+		if len(got) != 3 {
+			t.Errorf("Filter(tier=2): got %d entries, want 3 (2 tier-2 + 1 untiered)", len(got))
+		}
+		for _, e := range got {
+			if e.Tier != 2 && e.Tier != 0 {
+				t.Errorf("Filter(tier=2): unexpected tier %d for %s", e.Tier, e.Shortname)
+			}
+		}
+	})
+
+	t.Run("no tier filter returns all entries", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{})
+		if len(got) != len(tieredEntries) {
+			t.Errorf("Filter(no tier): got %d entries, want %d", len(got), len(tieredEntries))
+		}
+	})
+
+	t.Run("tier filter combined with scenario filter", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{Tier: 1, ScenarioFilter: "elasticsearch"})
+		if len(got) != 1 || got[0].Shortname != "eske" {
+			t.Errorf("Filter(tier=1, scenario=elasticsearch): got %d entries, want 1 eske", len(got))
+		}
+	})
 }
 
 // --- GroupByVersion / VersionOrder tests ---

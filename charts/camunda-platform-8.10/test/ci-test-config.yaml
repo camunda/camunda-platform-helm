@@ -43,6 +43,7 @@ integration:
           flow: install
           auth: keycloak
           shortname: eske
+          tier: 1
           exclude: []
           infra-type:
             gke: distroci
@@ -63,6 +64,7 @@ integration:
         - name: opensearch-external
           enabled: true
           shortname: osex
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
@@ -165,6 +167,7 @@ integration:
           enabled: true
           exclude: []
           shortname: keorg
+          tier: 2
           auth: keycloak
           flow: install
           infra-type:
@@ -188,6 +191,7 @@ integration:
           enabled: true
           exclude: []
           shortname: gatkc
+          tier: 2
           auth: keycloak
           flow: install
           infra-type:
@@ -201,6 +205,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: esarm
+          tier: 2
           exclude: []
           skip-e2e: true  # The smoke tests in 8.10 don't support the external keycloak
           infra-type:
@@ -214,6 +219,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: nosec
+          tier: 2
           exclude: []
           flow: install
           skip-e2e: true  # No Elasticsearch means no secondary storage for E2E tests
@@ -226,6 +232,7 @@ integration:
           enabled: true
           exclude: []
           shortname: docstr
+          tier: 2
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
@@ -254,6 +261,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: rdbms
+          tier: 2
           flow: install
           exclude: []
           infra-type:
@@ -265,6 +273,7 @@ integration:
           enabled: true
           auth: keycloak
           shortname: huble
+          tier: 2
           exclude: []
           flow: install
           identity: keycloak

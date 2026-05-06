@@ -23,6 +23,7 @@ type Entry struct {
 	InfraType string   `json:"infraType,omitempty"`
 	Exclude   []string `json:"exclude,omitempty"`
 	Enabled   bool     `json:"enabled"`
+	Tier      int      `json:"tier,omitempty"`
 
 	// Selection + Composition fields (explicit layer overrides from ci-test-config.yaml).
 	Identity    string   `json:"identity,omitempty"`
@@ -66,6 +67,8 @@ type FilterOptions struct {
 	FlowFilter string
 	// Platform limits output to entries targeting this platform.
 	Platform string
+	// Tier limits output to entries with this specific tier (1 or 2). Zero means no filter.
+	Tier int
 }
 
 // Generate builds the full test matrix from CI config files.
@@ -173,6 +176,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						InfraType:    resolveInfraType(scenario.InfraType, platform),
 						Exclude:      scenario.Exclude,
 						Enabled:      scenario.Enabled,
+						Tier:         scenario.Tier,
 						Identity:     scenario.Identity,
 						Persistence:  scenario.Persistence,
 						Features:     scenario.Features,
@@ -200,7 +204,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 // in ci-test-config) while keeping shortname as a precise disambiguator when
 // multiple entries share a scenario name.
 func Filter(entries []Entry, opts FilterOptions) []Entry {
-	if opts.ScenarioFilter == "" && opts.ShortnameFilter == "" && opts.FlowFilter == "" && opts.Platform == "" {
+	if opts.ScenarioFilter == "" && opts.ShortnameFilter == "" && opts.FlowFilter == "" && opts.Platform == "" && opts.Tier == 0 {
 		return entries
 	}
 
@@ -243,6 +247,9 @@ func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 
 	var filtered []Entry
 	for _, e := range entries {
+		if opts.Tier > 0 && e.Tier != 0 && e.Tier != opts.Tier {
+			continue
+		}
 		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {
 			continue
 		}

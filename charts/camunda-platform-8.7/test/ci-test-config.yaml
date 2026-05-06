@@ -24,6 +24,7 @@ integration:
         - name: elasticsearch
           enabled: true
           shortname: eske
+          tier: 1
           exclude: []
           auth: keycloak
           identity: keycloak
@@ -37,6 +38,7 @@ integration:
         - name: keycloak-mt
           enabled: true
           shortname: kemt
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
@@ -50,6 +52,7 @@ integration:
         - name: keycloak-rba
           enabled: true
           shortname: kerba
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
@@ -62,6 +65,7 @@ integration:
         - name: oidc
           enabled: true
           shortname: esoi
+          tier: 2
           exclude: []
           auth: oidc
           persistence: elasticsearch
@@ -75,6 +79,7 @@ integration:
         - name: keycloak-original
           enabled: true
           shortname: keyc
+          tier: 2
           exclude: []
           auth: keycloak
           flow: install,upgrade-patch
@@ -88,6 +93,7 @@ integration:
         - name: opensearch-external
           enabled: true
           shortname: osex
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak

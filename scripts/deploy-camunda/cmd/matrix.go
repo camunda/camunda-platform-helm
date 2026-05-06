@@ -45,6 +45,7 @@ func newMatrixListCommand() *cobra.Command {
 		outputFormat    string
 		platform        string
 		repoRoot        string
+		tier            int
 	)
 
 	cmd := &cobra.Command{
@@ -101,6 +102,7 @@ This command does not require cluster access.`,
 				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
+				Tier:            tier,
 			})
 
 			output, err := matrix.Print(entries, outputFormat)
@@ -122,6 +124,7 @@ This command does not require cluster access.`,
 	f.StringVar(&outputFormat, "format", "table", "Output format: table, json")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
+	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
@@ -184,6 +187,7 @@ func newMatrixRunCommand() *cobra.Command {
 		extraHelmSets            []string
 		namespaceOverride        string
 		shortnameExact           bool
+		tier                     int
 	)
 
 	cmd := &cobra.Command{
@@ -374,6 +378,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
+				Tier:            tier,
 			})
 
 			if len(entries) == 0 {
@@ -584,6 +589,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
 	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
 	f.StringVar(&namespaceOverride, "namespace-override", "", "Override the computed namespace for every entry. Use only with filters that narrow the run to a single entry (typically called from per-scenario CI workflows that pre-create the namespace).")
+	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

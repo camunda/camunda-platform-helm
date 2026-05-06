@@ -18,6 +18,8 @@ on:
       - "!charts/camunda-platform-8*/*.md"
       - "!charts/camunda-platform-8*/*.MD"
       - "!charts/camunda-platform-8*/*.txt"
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
     inputs:
       manual-trigger:
@@ -131,6 +133,7 @@ jobs:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
           manual-scenario: ${{ github.event.inputs.scenario || 'none' }}
           manual-flow: ${{ github.event.inputs.flows || 'none' }}
+          tier: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
   unit-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}

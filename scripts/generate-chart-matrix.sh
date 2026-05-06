@@ -6,6 +6,7 @@ MANUAL_SCENARIO="none"
 MANUAL_FLOW="none"
 ACTIVE_VERSIONS=""
 ALL_MODIFIED_FILES="${ALL_MODIFIED_FILES}"
+TIER_FILTER=""
 
 # Resolve repository root based on this script's location so paths work from anywhere
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,6 +33,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --all-modified-files)
       ALL_MODIFIED_FILES="$2"
+      shift 2
+      ;;
+    --tier)
+      TIER_FILTER="$2"
       shift 2
       ;;
     *)
@@ -129,6 +134,13 @@ write_matrix_entry() {
       enabled=$(echo "$prScenario" | yq e '.enabled' -)
       if [ "$enabled" = "false" ]; then
         continue
+      fi
+      # Filter by tier when --tier is specified (0 or empty = no filter)
+      if [ -n "$TIER_FILTER" ] && [ "$TIER_FILTER" != "0" ]; then
+        scenario_tier=$(echo "$prScenario" | yq e -r '.tier // 0' -)
+        if [ "$scenario_tier" != "0" ] && [ "$scenario_tier" != "$TIER_FILTER" ]; then
+          continue
+        fi
       fi
       if [[ "${MANUAL_SCENARIO}" != "none" && "${MANUAL_SCENARIO}" != "all" ]]; then
         if [[ "${MANUAL_SCENARIO}" != "$(echo "$prScenario" | yq e '.name' -)" ]]; then
