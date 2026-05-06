@@ -465,6 +465,16 @@ integration:
           features: [multitenancy]
           qa: true
           platforms: [gke]
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          flow: modular-upgrade-minor
+          shortname: qaelmtupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
         - name: qa-license-upg
           enabled: false
           flow: install
@@ -478,6 +488,16 @@ integration:
         - name: qa-document-store-upg
           enabled: false
           flow: install
+          shortname: qadocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke, eks]
+        - name: qa-document-store-upg
+          enabled: false
+          flow: modular-upgrade-minor
           shortname: qadocupg
           auth: keycloak
           identity: keycloak
