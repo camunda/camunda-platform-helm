@@ -1312,15 +1312,17 @@ func sliceEqual(a, b []string) bool {
 	return true
 }
 
-// TestRunReturnsErrorOnFailedEntries verifies that Run() returns a non-nil error
-// when matrix entries fail, even without StopOnFailure. This ensures CI steps
-// get a non-zero exit code when deployments fail.
-func TestRunReturnsErrorOnFailedEntries(t *testing.T) {
+// TestSynthesizeRunError verifies the extracted synthesizeRunError helper that
+// Run() uses to convert failed results and context cancellations into non-nil
+// errors. This ensures CI steps get a non-zero exit code when deployments fail.
+func TestSynthesizeRunError(t *testing.T) {
 	tests := []struct {
-		name      string
-		results   []RunResult
-		wantErr   bool
-		wantCount int // expected fail count in error message
+		name         string
+		results      []RunResult
+		totalEntries int
+		ctxCancelled bool
+		wantErr      bool
+		wantContains string // substring expected in error message
 	}{
 		{
 			name: "all successful",
@@ -1328,7 +1330,8 @@ func TestRunReturnsErrorOnFailedEntries(t *testing.T) {
 				{Namespace: "ns-1", Error: nil},
 				{Namespace: "ns-2", Error: nil},
 			},
-			wantErr: false,
+			totalEntries: 2,
+			wantErr:      false,
 		},
 		{
 			name: "one failure",
@@ -1336,8 +1339,9 @@ func TestRunReturnsErrorOnFailedEntries(t *testing.T) {
 				{Namespace: "ns-1", Error: nil},
 				{Namespace: "ns-2", Error: errors.New("helm timeout")},
 			},
-			wantErr:   true,
-			wantCount: 1,
+			totalEntries: 2,
+			wantErr:      true,
+			wantContains: "1 of 2 matrix entries failed",
 		},
 		{
 			name: "all failures",
@@ -1345,35 +1349,50 @@ func TestRunReturnsErrorOnFailedEntries(t *testing.T) {
 				{Namespace: "ns-1", Error: errors.New("deploy failed")},
 				{Namespace: "ns-2", Error: errors.New("helm timeout")},
 			},
-			wantErr:   true,
-			wantCount: 2,
+			totalEntries: 2,
+			wantErr:      true,
+			wantContains: "2 of 2 matrix entries failed",
+		},
+		{
+			name:         "context cancelled before any entry dispatched",
+			results:      nil,
+			totalEntries: 3,
+			ctxCancelled: true,
+			wantErr:      true,
+			wantContains: "run cancelled: 3 of 3 entries never started",
+		},
+		{
+			name: "context cancelled with partial results",
+			results: []RunResult{
+				{Namespace: "ns-1", Error: nil},
+			},
+			totalEntries: 3,
+			ctxCancelled: true,
+			wantErr:      true,
+			wantContains: "run cancelled: 2 of 3 entries never started",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Simulate the post-run error synthesis logic from Run().
-			var retErr error
-			var failCount int
-			for _, r := range tt.results {
-				if r.Error != nil {
-					failCount++
-				}
-			}
-			if failCount > 0 {
-				retErr = fmt.Errorf("%d of %d matrix entries failed", failCount, len(tt.results))
+			ctx := context.Background()
+			if tt.ctxCancelled {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel() // cancel immediately
 			}
 
-			if tt.wantErr && retErr == nil {
+			err := synthesizeRunError(ctx, tt.results, tt.totalEntries)
+
+			if tt.wantErr && err == nil {
 				t.Errorf("expected error but got nil")
 			}
-			if !tt.wantErr && retErr != nil {
-				t.Errorf("unexpected error: %v", retErr)
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
 			}
-			if tt.wantErr && retErr != nil {
-				expected := fmt.Sprintf("%d of %d matrix entries failed", tt.wantCount, len(tt.results))
-				if retErr.Error() != expected {
-					t.Errorf("error = %q, want %q", retErr.Error(), expected)
+			if tt.wantErr && err != nil {
+				if !strings.Contains(err.Error(), tt.wantContains) {
+					t.Errorf("error = %q, want substring %q", err.Error(), tt.wantContains)
 				}
 			}
 		})

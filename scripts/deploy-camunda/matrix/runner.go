@@ -260,20 +260,39 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 
 	// If no early-termination error was returned (StopOnFailure) but entries
 	// still failed, synthesize a summary error so callers (and CI steps) get a
-	// non-zero exit code.
+	// non-zero exit code. Also catch the edge case where the context was
+	// cancelled before any entry was dispatched (runParallel returns nil, nil).
 	if retErr == nil {
-		var failCount int
-		for _, r := range results {
-			if r.Error != nil {
-				failCount++
-			}
-		}
-		if failCount > 0 {
-			retErr = fmt.Errorf("%d of %d matrix entries failed", failCount, len(results))
-		}
+		retErr = synthesizeRunError(ctx, results, len(entries))
 	}
 
 	return results, retErr
+}
+
+// synthesizeRunError checks completed results for failures and returns a
+// summary error when any entries failed. It also detects context cancellation
+// that prevented entries from being dispatched (e.g., parent ctx already done
+// when runParallel starts). This is an unexported helper so tests can exercise
+// the exact production logic.
+func synthesizeRunError(ctx context.Context, results []RunResult, totalEntries int) error {
+	// If the context was cancelled and fewer results were produced than entries
+	// expected, report the cancellation — this catches the edge case where
+	// runParallel breaks out of its dispatch loop before any entry starts.
+	if ctx.Err() != nil && len(results) < totalEntries {
+		return fmt.Errorf("run cancelled: %d of %d entries never started: %w",
+			totalEntries-len(results), totalEntries, ctx.Err())
+	}
+
+	var failCount int
+	for _, r := range results {
+		if r.Error != nil {
+			failCount++
+		}
+	}
+	if failCount > 0 {
+		return fmt.Errorf("%d of %d matrix entries failed", failCount, len(results))
+	}
+	return nil
 }
 
 // dryRunEntry holds resolved details for one matrix entry in dry-run mode.
