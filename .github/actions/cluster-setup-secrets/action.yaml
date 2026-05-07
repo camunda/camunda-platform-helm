@@ -10,9 +10,6 @@ inputs:
   namespace:
     description: "Target namespace for test secrets"
     required: true
-  namespace-prefix:
-    description: "Namespace prefix (used only for EKS)"
-    required: false
 runs:
   using: "composite"
   steps:
@@ -24,7 +21,6 @@ runs:
         DISTRO_PLATFORM="${{ inputs.distro-platform }}"
         TEST_NAMESPACE="${{ inputs.namespace }}"
         CHART_PATH="${{ inputs.chart-path }}"
-        NAMESPACE_PREFIX="${{ inputs.namespace-prefix }}"
 
         # Function to apply external secrets with retry logic
         # This handles the case where the external-secrets webhook is not yet ready
@@ -80,18 +76,12 @@ runs:
           done
 
         else
-          echo "🔧 Running in EKS mode"
-          # Copy TLS certificate from certs namespace (EKS uses a pre-provisioned secret, not an ExternalSecret)
-          if kubectl get secret aws-camunda-cloud-tls -n "$TEST_NAMESPACE" &>/dev/null; then
-            echo "✅ Secret aws-camunda-cloud-tls already exists in $TEST_NAMESPACE, skipping copy"
-          else
-            kubectl get secret -n "${NAMESPACE_PREFIX}-certs" aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
-            sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
-            kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
-          fi
+          echo "🔧 Running in EKS mode — using vault-backed ExternalSecrets"
 
-          # EKS uses vault-backed ExternalSecrets (ClusterSecretStore: vault-backend)
-          echo "🔧 Applying vault-backed external secrets for EKS"
+          # Apply EKS TLS certificate ExternalSecret (creates aws-camunda-cloud-tls secret from Vault)
+          apply_external_secret_with_retry \
+            ".github/config/external-secret/external-secret-certificates-vault.yaml" \
+            "$TEST_NAMESPACE"
 
           # Apply infra secrets (creates infra-credentials secret)
           apply_external_secret_with_retry \

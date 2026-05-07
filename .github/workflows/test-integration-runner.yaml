@@ -436,7 +436,6 @@ jobs:
           distro-platform: ${{ inputs.distro-platform }}
           chart-path: ${{ env.CHART_PATH }}
           namespace: ${{ env.TEST_NAMESPACE }}
-          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Install - Configure Helm with Entra Values
         if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
@@ -760,7 +759,6 @@ jobs:
           distro-platform: ${{ inputs.distro-platform }}
           chart-path: ${{ env.CHART_PATH }}
           namespace: ${{ env.TEST_NAMESPACE }}
-          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Apply Vault mapped Secret
         if: inputs.vault-secret-mapping != ''
