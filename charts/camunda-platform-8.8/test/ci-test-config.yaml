@@ -359,6 +359,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          features: [migrator]
           qa: true
           platforms: [gke]
         - name: qa-elasticsearch-document-upg
