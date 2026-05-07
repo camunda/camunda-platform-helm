@@ -37,6 +37,11 @@ data:
         {{- end }}
         issuer-url: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        {{- if .Values.identity.auth.tokenValidation }}
+        token-validation:
+          audience: {{ .Values.identity.auth.tokenValidation.audience | default "camunda-identity" | quote }}
+          clock-skew: {{ .Values.identity.auth.tokenValidation.clockSkew | default "PT30S" | quote }}
+        {{- end }}
 
       {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
       initial-claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
