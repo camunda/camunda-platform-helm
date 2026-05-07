@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
@@ -1766,15 +1767,15 @@ func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
 	// step1Flags := *flags
 	// step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
 	step1Flags := *baseFlags
-	step1Flags.Chart = "camunda/camunda-platform" // DefaultHelmChartRef
-	step1Flags.ChartVersion = "12.5.0"            // Previous version
-	step1Flags.ChartPath = ""                     // Use repo chart, not local path
-	step1Flags.SkipDependencyUpdate = true        // Repo charts don't need dep update
-	step1Flags.ChartRootOverlays = nil            // No overlays for Step 1
+	step1Flags.Chart = versionmatrix.DefaultHelmChartRef
+	step1Flags.ChartVersion = "12.5.0"     // Previous version
+	step1Flags.ChartPath = ""              // Use repo chart, not local path
+	step1Flags.SkipDependencyUpdate = true // Repo charts don't need dep update
+	step1Flags.ChartRootOverlays = nil     // No overlays for Step 1
 
 	// Step 1 should use the Helm repo ref, not the OCI override.
-	if step1Flags.Chart != "camunda/camunda-platform" {
-		t.Errorf("Step 1 Chart = %q, want %q (should not use ChartRef)", step1Flags.Chart, "camunda/camunda-platform")
+	if step1Flags.Chart != versionmatrix.DefaultHelmChartRef {
+		t.Errorf("Step 1 Chart = %q, want %q (should not use ChartRef)", step1Flags.Chart, versionmatrix.DefaultHelmChartRef)
 	}
 	if step1Flags.ChartVersion != "12.5.0" {
 		t.Errorf("Step 1 ChartVersion = %q, want %q", step1Flags.ChartVersion, "12.5.0")

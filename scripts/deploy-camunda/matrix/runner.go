@@ -2176,7 +2176,11 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 
 	if err := deploy.Execute(ctx, &step2Flags); err != nil {
 		if opts.ChartRef != "" {
-			return fmt.Errorf("step 2: upgrade to %s@%s failed: %w", opts.ChartRef, opts.ChartRefVersion, err)
+			target := opts.ChartRef
+			if opts.ChartRefVersion != "" {
+				target += "@" + opts.ChartRefVersion
+			}
+			return fmt.Errorf("step 2: upgrade to %s failed: %w", target, err)
 		}
 		return fmt.Errorf("step 2: upgrade to local chart failed: %w", err)
 	}
