@@ -258,6 +258,21 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 		results, retErr = runSequential(ctx, entries, opts)
 	}
 
+	// If no early-termination error was returned (StopOnFailure) but entries
+	// still failed, synthesize a summary error so callers (and CI steps) get a
+	// non-zero exit code.
+	if retErr == nil {
+		var failCount int
+		for _, r := range results {
+			if r.Error != nil {
+				failCount++
+			}
+		}
+		if failCount > 0 {
+			retErr = fmt.Errorf("%d of %d matrix entries failed", failCount, len(results))
+		}
+	}
+
 	return results, retErr
 }
 
