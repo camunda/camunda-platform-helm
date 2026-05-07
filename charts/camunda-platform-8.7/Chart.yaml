@@ -72,5 +72,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Remove integration tests"
+    - kind: added
+      description: "Add elasticsearch-self-signed-upgrade scenario for 8.7->8.8 TLS upgrade testing"
+    - kind: fixed
+      description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
