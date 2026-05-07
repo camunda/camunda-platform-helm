@@ -188,6 +188,8 @@ func newMatrixRunCommand() *cobra.Command {
 		namespaceOverride        string
 		shortnameExact           bool
 		tier                     int
+		chartRef                 string
+		chartRefVersion          string
 	)
 
 	cmd := &cobra.Command{
@@ -199,6 +201,9 @@ Each entry gets its own namespace (<prefix>-<version>-<shortname>).
 Use --cleanup to automatically delete each entry's namespace after its deployment and tests complete.
 
 This command calls deploy.Execute() for each matrix entry.`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validateChartRefFlags(chartRef, chartRefVersion)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create a signal-aware context so that Ctrl+C (SIGINT) and
 			// SIGTERM cancel the context, which propagates through
@@ -497,6 +502,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 				ExtraHelmArgs:         extraHelmArgs,
 				ExtraHelmSets:         extraHelmSets,
 				NamespaceOverride:     namespaceOverride,
+				ChartRef:              chartRef,
+				ChartRefVersion:       chartRefVersion,
 				OnEntryStart: func(entry matrix.Entry, namespace string) {
 					if statusDisplay != nil {
 						statusDisplay.OnEntryStart(entry, namespace)
@@ -589,6 +596,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
 	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
 	f.StringVar(&namespaceOverride, "namespace-override", "", "Override the computed namespace for every entry. Use only with filters that narrow the run to a single entry (typically called from per-scenario CI workflows that pre-create the namespace).")
+	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
+	f.StringVar(&chartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
 	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
 
 	registerMatrixShortnameCompletion(cmd)
@@ -708,4 +717,37 @@ func resolveRepoRoot(flagValue string) string {
 	}
 
 	return ""
+}
+
+// validateChartRefFlags rejects inconsistent --chart-ref / --chart-version
+// combinations before any matrix entries run, so misconfiguration surfaces as
+// a clear CLI error rather than a confusing helm failure.
+//
+// Rules:
+//   - --chart-version requires --chart-ref (it has no meaning otherwise).
+//   - --chart-ref must be either an OCI reference (oci://...) or a path to a
+//     packaged chart (*.tgz). Bare directory paths are rejected because
+//     deploy-camunda already supports local-directory installs via the normal
+//     (non-overridden) chart path.
+//   - When --chart-ref is an OCI reference, --chart-version is required —
+//     otherwise helm would resolve to an arbitrary tag.
+func validateChartRefFlags(chartRef, chartRefVersion string) error {
+	if chartRef == "" {
+		if chartRefVersion != "" {
+			return fmt.Errorf("--chart-version requires --chart-ref")
+		}
+		return nil
+	}
+
+	isOCI := strings.HasPrefix(chartRef, "oci://")
+	isTGZ := strings.HasSuffix(chartRef, ".tgz")
+	if !isOCI && !isTGZ {
+		return fmt.Errorf("--chart-ref must be an OCI reference (oci://...) or a packaged chart (.tgz), got %q", chartRef)
+	}
+
+	if isOCI && chartRefVersion == "" {
+		return fmt.Errorf("--chart-version is required when --chart-ref is an OCI reference")
+	}
+
+	return nil
 }

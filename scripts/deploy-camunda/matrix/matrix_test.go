@@ -10,7 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/camunda-deployer/pkg/deployer"
+	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 )
 
@@ -1663,5 +1665,128 @@ func TestExtractBitnamiPGPasswords_MappingConsistency(t *testing.T) {
 			}
 			allPaths[hp] = secretKey
 		}
+	}
+}
+
+// --- ChartRef override tests ---
+
+func TestApplyChartRefOverride(t *testing.T) {
+	// Verify that applyChartRefOverride correctly mutates ChartFlags when
+	// RunOptions.ChartRef is set, and is a no-op when it is empty. This
+	// exercises the same helper that executeEntry calls in production.
+	tests := []struct {
+		name            string
+		chartRef        string
+		chartRefVersion string
+		wantApplied     bool
+		wantChart       string
+		wantVersion     string
+		wantSkipDep     bool
+	}{
+		{
+			name:            "OCI reference",
+			chartRef:        "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			chartRefVersion: "13-rc-latest",
+			wantApplied:     true,
+			wantChart:       "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			wantVersion:     "13-rc-latest",
+			wantSkipDep:     true,
+		},
+		{
+			name:            "local tgz path",
+			chartRef:        "/tmp/oci-chart/camunda-platform-13.4.0-rc.tgz",
+			chartRefVersion: "",
+			wantApplied:     true,
+			wantChart:       "/tmp/oci-chart/camunda-platform-13.4.0-rc.tgz",
+			wantVersion:     "",
+			wantSkipDep:     true,
+		},
+		{
+			name:            "empty chart-ref does not override",
+			chartRef:        "",
+			chartRefVersion: "",
+			wantApplied:     false,
+			wantChart:       "",
+			wantVersion:     "",
+			wantSkipDep:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := RunOptions{
+				ChartRef:        tt.chartRef,
+				ChartRefVersion: tt.chartRefVersion,
+			}
+
+			chart := &config.ChartFlags{
+				ChartPath:            "/path/to/charts/camunda-platform-8.9",
+				SkipDependencyUpdate: false,
+			}
+
+			applied := applyChartRefOverride(chart, opts)
+
+			if applied != tt.wantApplied {
+				t.Errorf("applyChartRefOverride returned %v, want %v", applied, tt.wantApplied)
+			}
+			if chart.Chart != tt.wantChart {
+				t.Errorf("Chart = %q, want %q", chart.Chart, tt.wantChart)
+			}
+			if chart.ChartVersion != tt.wantVersion {
+				t.Errorf("ChartVersion = %q, want %q", chart.ChartVersion, tt.wantVersion)
+			}
+			if chart.SkipDependencyUpdate != tt.wantSkipDep {
+				t.Errorf("SkipDependencyUpdate = %v, want %v", chart.SkipDependencyUpdate, tt.wantSkipDep)
+			}
+			// ChartPath must always be preserved for values resolution.
+			if chart.ChartPath != "/path/to/charts/camunda-platform-8.9" {
+				t.Errorf("ChartPath should be preserved, got %q", chart.ChartPath)
+			}
+		})
+	}
+}
+
+func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
+	// Verify that when ChartRef is set, Step 1 of an upgrade flow still uses
+	// the DefaultHelmChartRef (from versionmatrix), not the ChartRef override.
+	// This is because executeTwoStepUpgrade creates step1Flags independently.
+	opts := RunOptions{
+		ChartRef:        "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+		ChartRefVersion: "13-rc-latest",
+	}
+
+	// Apply the override the same way executeEntry does.
+	baseFlags := &config.ChartFlags{
+		ChartPath: "/path/to/charts/camunda-platform-8.9",
+	}
+	if !applyChartRefOverride(baseFlags, opts) {
+		t.Fatal("applyChartRefOverride returned false for non-empty ChartRef")
+	}
+
+	// Simulate what executeTwoStepUpgrade does for Step 1:
+	// step1Flags := *flags
+	// step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
+	step1Flags := *baseFlags
+	step1Flags.Chart = versionmatrix.DefaultHelmChartRef
+	step1Flags.ChartVersion = "12.5.0"     // Previous version
+	step1Flags.ChartPath = ""              // Use repo chart, not local path
+	step1Flags.SkipDependencyUpdate = true // Repo charts don't need dep update
+	step1Flags.ChartRootOverlays = nil     // No overlays for Step 1
+
+	// Step 1 should use the Helm repo ref, not the OCI override.
+	if step1Flags.Chart != versionmatrix.DefaultHelmChartRef {
+		t.Errorf("Step 1 Chart = %q, want %q (should not use ChartRef)", step1Flags.Chart, versionmatrix.DefaultHelmChartRef)
+	}
+	if step1Flags.ChartVersion != "12.5.0" {
+		t.Errorf("Step 1 ChartVersion = %q, want %q", step1Flags.ChartVersion, "12.5.0")
+	}
+
+	// Step 2 should inherit the ChartRef override from baseFlags.
+	step2Flags := *baseFlags
+	if step2Flags.Chart != opts.ChartRef {
+		t.Errorf("Step 2 Chart = %q, want %q (should inherit ChartRef)", step2Flags.Chart, opts.ChartRef)
+	}
+	if step2Flags.ChartVersion != opts.ChartRefVersion {
+		t.Errorf("Step 2 ChartVersion = %q, want %q", step2Flags.ChartVersion, opts.ChartRefVersion)
 	}
 }

@@ -180,6 +180,37 @@ type RunOptions struct {
 	// invoking matrix run, so the install lands in the same namespace.
 	// Only meaningful when filters narrow the run to a single entry.
 	NamespaceOverride string
+	// ChartRef, when non-empty, overrides the chart source for helm install/upgrade.
+	// This can be an OCI reference (e.g., "oci://registry.camunda.cloud/team-distribution/camunda-platform")
+	// or a path to a local .tgz file. When set, the matrix runner uses this as the
+	// chart argument for `helm upgrade --install` instead of the local chart directory.
+	// The local chart directory (entry.ChartPath) is still used for values file resolution
+	// (scenario layers, chart-root overlays). SkipDependencyUpdate is forced to true.
+	ChartRef string
+	// ChartRefVersion is the chart version to install from ChartRef (e.g., "13-rc-latest").
+	// Only meaningful when ChartRef is set. Passed as --version to helm.
+	ChartRefVersion string
+}
+
+// applyChartRefOverride mutates chart to point at opts.ChartRef (an OCI reference
+// or a local .tgz path) when set, and forces SkipDependencyUpdate so helm does
+// not try to run `dependency update` against an external/packaged chart.
+// ChartPath is left untouched so values-file resolution (scenario directory,
+// chart-root overlays) still uses the local repo. It returns true when the
+// override was applied. Centralizing this logic here lets executeEntry and
+// tests share a single code path.
+func applyChartRefOverride(chart *config.ChartFlags, opts RunOptions) bool {
+	if opts.ChartRef == "" {
+		return false
+	}
+	chart.Chart = opts.ChartRef
+	chart.ChartVersion = opts.ChartRefVersion
+	chart.SkipDependencyUpdate = true
+	logging.Logger.Info().
+		Str("chartRef", opts.ChartRef).
+		Str("chartVersion", opts.ChartRefVersion).
+		Msg("Using external chart reference (OCI/tgz) instead of local chart directory")
+	return true
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -501,20 +532,27 @@ func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOption
 
 			// Upgrade plan — show two-step upgrade details for two-step upgrade flows,
 			// or upgrade-only details for modular-upgrade-minor.
+			step2Target := "local chart"
+			if opts.ChartRef != "" {
+				step2Target = opts.ChartRef
+				if opts.ChartRefVersion != "" {
+					step2Target += "@" + opts.ChartRefVersion
+				}
+			}
 			if e.upgradeOnly && e.upgradeFromVersion != "" {
 				fmt.Fprintf(&b, "      %s %s %s → %s %s\n",
 					dryKey("upgrade:"),
 					dryDim("upgrade-only (no install step), expects"),
 					dryWarn(versionmatrix.DefaultHelmChartRef+"@"+e.upgradeFromVersion),
 					dryDim("already running, upgrading to"),
-					dryWarn("local chart"))
+					dryWarn(step2Target))
 			} else if !e.upgradeOnly && e.upgradeFromVersion != "" {
 				fmt.Fprintf(&b, "      %s %s %s → %s %s\n",
 					dryKey("upgrade:"),
 					dryDim("Step 1: install"),
 					dryWarn(versionmatrix.DefaultHelmChartRef+"@"+e.upgradeFromVersion),
 					dryDim("Step 2: upgrade to"),
-					dryWarn("local chart"))
+					dryWarn(step2Target))
 				// For upgrade-minor, Step 1 uses the previous version's values files.
 				// Show this explicitly so operators know values come from a different chart dir.
 				if e.step1ValuesFrom != "" {
@@ -1762,6 +1800,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	var deployErr error
 	var diag string
 
+	// Override chart source when --chart-ref is set (OCI install path).
+	// See applyChartRefOverride for details.
+	applyChartRefOverride(&flags.Chart, opts)
+
 	// Two-step upgrade flow: install old version first, then upgrade to current.
 	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
 		deployErr = executeTwoStepUpgrade(ctx, entry, flags, opts)
@@ -2094,15 +2136,23 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		}
 	}
 
-	// --- Step 2: Upgrade to current on-disk chart ---
+	// --- Step 2: Upgrade to current on-disk chart (or external chart-ref when set) ---
 	if flags.OnPhase != nil {
 		flags.OnPhase("step-2")
 	}
-	logging.Logger.Info().
+	step2Log := logging.Logger.Info().
 		Str("step", "2/2").
-		Str("action", "upgrade").
-		Str("chartPath", entry.ChartPath).
-		Msg("Step 2: Upgrading to current chart version")
+		Str("action", "upgrade")
+	if opts.ChartRef != "" {
+		step2Log.
+			Str("chartRef", opts.ChartRef).
+			Str("chartVersion", opts.ChartRefVersion).
+			Msg("Step 2: Upgrading to chart from --chart-ref")
+	} else {
+		step2Log.
+			Str("chartPath", entry.ChartPath).
+			Msg("Step 2: Upgrading to current chart version")
+	}
 
 	// Clone flags for Step 2: upgrade from installed state to local chart.
 	step2Flags := *flags
@@ -2125,6 +2175,13 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	}
 
 	if err := deploy.Execute(ctx, &step2Flags); err != nil {
+		if opts.ChartRef != "" {
+			target := opts.ChartRef
+			if opts.ChartRefVersion != "" {
+				target += "@" + opts.ChartRefVersion
+			}
+			return fmt.Errorf("step 2: upgrade to %s failed: %w", target, err)
+		}
 		return fmt.Errorf("step 2: upgrade to local chart failed: %w", err)
 	}
 
