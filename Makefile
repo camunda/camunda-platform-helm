@@ -47,12 +47,21 @@ build.vault-secret-mapper:
 install.vault-secret-mapper:
 	cd scripts/vault-secret-mapper && go mod tidy && go install .
 
+.PHONY: build.setup-debugger
+build.setup-debugger:
+	cd scripts/setup-debugger && go mod tidy && go build .
+
+.PHONY: install.setup-debugger
+install.setup-debugger:
+	cd scripts/setup-debugger && go mod tidy && go install .
+
 .PHONY: build.dx-tooling
 build.dx-tooling:
 	make build.deployer
 	make build.prepare-helm-values
 	make build.deploy-camunda
 	make build.vault-secret-mapper
+	make build.setup-debugger
 
 .PHONY: install.dx-tooling
 install.dx-tooling:
@@ -60,6 +69,7 @@ install.dx-tooling:
 	make install.prepare-helm-values
 	make install.deploy-camunda
 	make install.vault-secret-mapper
+	make install.setup-debugger
 	@if command -v asdf >/dev/null 2>&1; then \
 		echo "asdf detected, reshimming..."; \
 		asdf reshim golang; \

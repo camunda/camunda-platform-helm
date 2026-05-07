@@ -503,73 +503,138 @@ kubectl exec -n $NS <pod> -- curl -s http://localhost:<mgmt-port>/actuator | jq 
 
 ---
 
-## Headless JVM Remote Debugging with `jdb`
+## Runtime Remote Debugging with `jdb` and `setup-debugger`
 
-When a stacktrace in the logs tells you *where* code failed but not *why* — the values of locals, fields, or caller arguments at that line — attach a headless debugger to the running pod. JDWP lets you set a breakpoint and inspect state without rebuilding or redeploying.
+When logs alone can't answer the question, attach a headless debugger to a running pod. JDWP exposes every local, field, and method on a Java thread; the [setup-debugger](scripts/setup-debugger/main.go) Go tool automates the patch + port-forward dance for the four components in an `integration-*` Camunda 8 release.
 
-All Camunda components listed under the configprops section above are JVM apps and work with this.
+The `setup-debugger` workflow also enables Spring Boot's `/actuator/configprops` endpoint and snapshots the response to `configprops-<pod>.json` per component — useful for "is this property *actually* bound?" questions, often without needing JDB at all.
 
-### Step 1 — Enable JDWP on the target
+### When to reach for it
 
-Prefer a **single-replica Deployment** — patching a StatefulSet triggers a rolling restart of every replica.
+Four runtime scenarios where JDB pays off — and trigger phrases the LLM should pattern-match against:
 
-Add the JDWP agent via `JAVA_TOOL_OPTIONS` and expose a container port. `suspend=n` is critical — `suspend=y` hangs the JVM at startup until a debugger attaches.
+- **Configuration not being read.** Logs claim a value was applied, but observed behavior contradicts it. Trigger phrases: *"is X actually being read"*, *"why isn't my config taking effect"*, *"the env var is set but…"*. (Often resolved by `configprops-*.json` alone; reach for JDB if the property isn't even declared as a `@ConfigurationProperties` bean.)
+- **Logs aren't deep enough.** You need values of locals on a specific stack frame, not just what the app chose to log. Trigger phrases: *"print local variables from this stack"*, *"what's the value of X at this point"*, a stacktrace pasted with no other context.
+- **Stuck or long-running process.** The app is alive but it's unclear what it's doing. Trigger phrases: *"the app is hanging"*, *"stuck in a loop"*, *"what's it doing right now"*.
+- **Surprising or undocumented configuration.** You suspect an option is silently shaping behavior. Trigger phrases: *"what config options are even active"*, *"is something else overriding this"*, *"undocumented setting"*. The orchestration `standardFlowEnabled` regression caught via JDB ([branch hackday-jdb-skill](scripts/setup-debugger/main.go)) is the canonical example: an unexpected `KEYCLOAK_CLIENTS_0_TYPE=M2M` env var was overwriting Spring config from a later initializer — invisible in logs.
 
-```bash
-kubectl -n $NS patch deploy integration-optimize --type=json -p='[
-  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"JAVA_TOOL_OPTIONS","value":"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"}},
-  {"op":"add","path":"/spec/template/spec/containers/0/ports/-","value":{"containerPort":5005,"name":"jdwp","protocol":"TCP"}}
-]'
-kubectl -n $NS rollout status deploy/integration-optimize
-```
+**When NOT to use it:** the fix is obvious from logs; the issue reproduces locally without a cluster; the question is about static code (use Read/Grep). JDB is a runtime-state tool only.
 
-For StatefulSets (`zeebe`, `keycloak`, `postgresql`), substitute `statefulset/<name>`.
+### Prerequisites
 
-A subsequent `helm upgrade` reverts these edits. Also note: **JDWP exposes every local and field to anyone on the port — passwords, tokens, connection strings included.** Only port-forward to localhost; never expose via a Service or Ingress. Revert the patch when done.
+- A deployed Camunda 8 release using the `integration-*` workload naming convention. Components and their hardcoded mapping live in [scripts/setup-debugger/main.go](scripts/setup-debugger/main.go) — Identity, Optimize, Connectors as Deployments; Zeebe as a StatefulSet.
+- `kubectl` context and namespace already set (`kubectl config current-context`, `kubectl config view --minify | grep namespace`). The script reads both from the active kubeconfig.
+- `jdb` on PATH (ships with the JDK).
+- `skopeo` on PATH (used to fetch image-revision labels for log output — non-fatal if missing).
+- Build the binary once: `make install.setup-debugger` puts `setup-debugger` on `$GOPATH/bin`.
 
-### Step 2 — Port-forward and attach
-
-```bash
-POD=$(kubectl -n $NS get pod -l app.kubernetes.io/name=optimize -o jsonpath='{.items[0].metadata.name}')
-kubectl -n $NS port-forward $POD 15005:5005 &
-
-# -sourcepath enables jdb's `list` command; `print`/`where`/`locals` work without it
-SRC=/path/to/camunda/<module>/src/main/java
-jdb -sourcepath "$SRC" -attach localhost:15005
-```
-
-### Step 3 — Set a breakpoint and inspect
-
-```
-stop in <fqcn>.<method>     # breakpoint by method (matches any overload)
-stop at <fqcn>:<line>       # breakpoint by line
-where                        # current thread's stack
-locals                       # method arguments + local vars in frame 1
-print <expr>                 # evaluate; use `this.<field>` for instance fields
-dump <expr>                  # print with nested fields expanded
-threads                      # list all threads
-thread <id>                  # switch current thread
-clear <fqcn>.<method>        # remove breakpoint — do this BEFORE `cont` on hot paths
-cont                         # resume
-exit                         # detach; VM keeps running because suspend=n
-```
-
-Method invocation (`print service.someCall()`, `print this.getIndexAlias()`) requires the **current thread** to be suspended at the breakpoint. If jdb reports `IncompatibleThreadStateException` or `Thread not suspended`, the thread already resumed — on hot paths the BP gets re-hit on many threads and "current thread" shifts out from under you. Clear the breakpoint immediately after the first hit to avoid this.
-
-### Driving `jdb` headlessly — use `expect`
-
-Piping commands into `jdb` via `tail -f cmdfile | jdb` or a heredoc **races the VM state**: jdb consumes queued commands from stdin faster than the VM transitions between running and suspended, so `clear` + `cont` execute before your `print` commands and you get `Current thread isn't suspended` / `Thread not suspended` errors on every inspection.
-
-The clean fix is to install `expect` and pattern-match on `Breakpoint hit` / the thread-suspended prompt (`<thread-name>[1]`) before sending each dump command. Without `expect`, fall back to: (a) poll the jdb output file for `Breakpoint hit` before sending any `print`; (b) send prints one at a time with short waits between; (c) send `clear` and `cont` last. Interactive `jdb` works fine and is simpler for one-off debug sessions — reach for scripting only when you need to automate repeated runs.
-
-### Revert when done
+### Run it
 
 ```bash
-# list the env/port array indices first so you remove the right ones
-kubectl -n $NS get deploy integration-optimize -o json \
-  | jq '.spec.template.spec.containers[0] | {env, ports}'
-# then patch with `"op":"remove"` on the specific indices, or just wait for the next helm upgrade
+setup-debugger
 ```
+
+The tool patches each workload to inject `JAVA_TOOL_OPTIONS=-agentlib:jdwp=...:5005` plus the two Spring `MANAGEMENT_ENDPOINT_*` vars that expose `/actuator/configprops`, scales the pod 0→1 to apply the env vars, port-forwards JDWP and the management port, fetches `/actuator/configprops`, and writes `configprops-<pod>.json` to the working directory. Port-forwards stay open until SIGINT.
+
+**JDWP exposes every local and field — passwords, tokens, connection strings included.** Forward only to localhost. Never expose port 5005 via a Service or Ingress.
+
+### Local port mapping
+
+| Component  | Local debug port | Local mgmt port | Mgmt context path |
+|------------|------------------|-----------------|-------------------|
+| Zeebe      | 5006             | 9600            | `/orchestration`  |
+| Connectors | 5007             | 8080            | `/connectors`     |
+| Optimize   | 5008             | 8092            | `/optimize`       |
+| Identity   | 5009             | 8082            | `/identity`       |
+
+All pods listen for JDWP on container port 5005; local ports are unique per component so all four can be debugged simultaneously.
+
+### Driving a JDB session (LLM guidance)
+
+The minimal kickoff prompt that worked in real sessions:
+
+> "I set up a remote debugging port on **\<port\>** that you can use JDB to connect to. Use the runtime to confirm application behavior."
+
+Canonical headless invocation:
+
+```bash
+{
+  echo "stop at <fully.qualified.Class>:<line>"
+  sleep 2
+  echo "resume"
+  sleep 25                      # wait for breakpoint to bind + hit
+  echo "print someVar"
+  sleep 1
+  echo "print someObj.method()"
+  sleep 1
+  echo "where"                  # capture call stack — reveals which caller hit the bp
+  sleep 2
+  echo "clear <fully.qualified.Class>:<line>"  # before `cont` on hot paths
+  echo "resume"
+  echo "quit"
+} | jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=5006
+```
+
+Lessons from prior sessions — every one cost a retry the first time:
+
+- **Breakpoint lines must contain executable bytecode.** A line that holds only a method signature or a closing brace yields `No code at line N`. Use the body of the method, not its declaration.
+- **`sleep` is required between commands.** `jdb`'s stdin is line-buffered; piping commands without delays drops them on the floor before the breakpoint binds. Use `sleep 2` after `stop at`, `sleep 20–30` after `resume`, `sleep 1–2` between `print` calls.
+- **Boxed `Boolean` getters use the `is` form.** `client.isStandardFlowEnabled()` works; `getStandardFlowEnabled()` does not. JDB's expression parser is also limited — chained constructor calls and static field references often fail with `ParseException: Name unknown`.
+- **`where` is the secret weapon for ordering bugs.** When the same breakpoint hits multiple times, the call stack reveals which initializer/caller triggered it — that's how a Spring `@Order(5)` initializer was caught silently overwriting the work of an `@Order(3)` one.
+- **Method invocation requires the current thread to be suspended.** `IncompatibleThreadStateException` / `Thread not suspended` means the thread already resumed. On hot paths, `clear` the breakpoint immediately after the first hit to keep it suspended.
+- **For repeatable automation, use `expect`.** Piping `echo` + `sleep` races the VM state. `expect` pattern-matching on `Breakpoint hit` / the thread-suspended prompt is more robust. For one-off debugging, interactive `jdb` is simpler — reach for scripting only when you need repeated runs.
+
+### Using the `configprops-*.json` artifacts
+
+Each file is a Spring Boot `/actuator/configprops` snapshot for one pod. Useful jq idiom:
+
+```bash
+jq '.contexts.application.beans | to_entries[] | select(.key | test("keycloak"; "i"))' \
+   configprops-integration-identity-*.json
+```
+
+When the question is *"what config did this pod actually receive?"*, this is faster than attaching JDB — provided the answer is in a declared `@ConfigurationProperties` bean.
+
+### Cleanup
+
+`Ctrl-C` only stops the script's port-forwards. The injected env vars **persist on the workload** until reverted; JDWP stays open inside the pod. Always clean up after a session.
+
+**Preferred: scripted revert.**
+
+```bash
+setup-debugger -cleanup                       # remove debug env vars + restart pods
+setup-debugger -cleanup -delete-configprops   # also remove configprops-*.json files
+```
+
+The cleanup path is **idempotent** — components without the debug env vars are skipped (no scale-down, no errors). Only the three vars this tool injects (`JAVA_TOOL_OPTIONS`, `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE`, `MANAGEMENT_ENDPOINT_CONFIGPROPS_SHOW_VALUES`) are removed; any other env vars on the workload are preserved.
+
+**Manual fallback** (workload outside `integration-*` naming, or when the script can't run):
+
+```bash
+NS=<namespace>
+for kind_name in deployment/integration-identity deployment/integration-optimize \
+                 deployment/integration-connectors statefulset/integration-zeebe; do
+  kubectl -n "$NS" get "$kind_name" -o json \
+    | jq '(.spec.template.spec.containers[0].env) |= map(select(.name | IN(
+        "JAVA_TOOL_OPTIONS",
+        "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE",
+        "MANAGEMENT_ENDPOINT_CONFIGPROPS_SHOW_VALUES") | not))' \
+    | kubectl apply -f -
+  kubectl -n "$NS" rollout restart "$kind_name"
+done
+```
+
+**Last resort:** redeploy the helm release. That fully restores the chart's intended container spec.
+
+**Verify clean state:**
+
+```bash
+kubectl -n <namespace> get deployment integration-identity \
+  -o jsonpath='{.spec.template.spec.containers[0].env[*].name}' \
+  | tr ' ' '\n' | grep -E 'JAVA_TOOL_OPTIONS|CONFIGPROPS' || echo "clean"
+```
+
+Repeat for the other three workloads. Each should print `clean`.
 
 ---
 

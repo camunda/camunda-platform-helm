@@ -34,6 +34,7 @@ playwright-report/
 .release-please-release-notes.md
 
 scripts/camunda-deployer/camunda-deployer
+scripts/setup-debugger/setup-debugger
 scripts/prepare-helm-values/prepare-helm-values
 scripts/values-injector/values-injector
 

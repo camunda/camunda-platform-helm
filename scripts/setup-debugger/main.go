@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -26,7 +27,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	"golang.org/x/sync/errgroup"
 )
 
 type Port struct {
@@ -49,6 +49,32 @@ type PortForwardAPodRequest struct {
 	ReadyCh chan struct{}
 }
 
+// debugEnvVarNames is the set of environment variables that this tool injects
+// in patch mode and removes in cleanup mode. Anything outside this set is
+// preserved untouched on the workload.
+var debugEnvVarNames = map[string]struct{}{
+	"JAVA_TOOL_OPTIONS":                           {},
+	"MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE":   {},
+	"MANAGEMENT_ENDPOINT_CONFIGPROPS_SHOW_VALUES": {},
+}
+
+type Component struct {
+	PodDisplayName      string
+	DeploymentName      string
+	StatefulSetName     string
+	ManagementPort      int
+	ContextPath         string
+	SkipJavaToolOptions bool
+	LocalDebugPort      int
+}
+
+var components = []Component{
+	{PodDisplayName: "Identity", DeploymentName: "integration-identity", ManagementPort: 8082, ContextPath: "/identity", LocalDebugPort: 5009},
+	{PodDisplayName: "Optimize", DeploymentName: "integration-optimize", ManagementPort: 8092, ContextPath: "/optimize", LocalDebugPort: 5008},
+	{PodDisplayName: "Connectors", DeploymentName: "integration-connectors", ManagementPort: 8080, ContextPath: "/connectors", LocalDebugPort: 5007},
+	{PodDisplayName: "Zeebe", StatefulSetName: "integration-zeebe", ManagementPort: 9600, ContextPath: "/orchestration", LocalDebugPort: 5006},
+}
+
 func main() {
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
@@ -56,6 +82,8 @@ func main() {
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+	cleanup := flag.Bool("cleanup", false, "remove debug env vars from each workload and force a pod restart")
+	deleteConfigprops := flag.Bool("delete-configprops", false, "(cleanup mode) also delete local configprops-*.json files in the working directory")
 	flag.Parse()
 
 	// use the current context in kubeconfig
@@ -73,71 +101,37 @@ func main() {
 
 	g, _ := errgroup.WithContext(context.Background())
 
-	g.Go(func() error {
-		return FetchConfigPropsMain(FetchConfigPropsRequest{
-			Namespace:           namespace,
-			Config:              config,
-			PodDisplayName:      "Identity",
-			DeploymentName:      "integration-identity",
-			ManagementPort:      8082,
-			ContextPath:         "/identity",
-			SkipJavaToolOptions: false,
-			LocalDebugPort:      5009,
-		})
-	})
-
-	g.Go(func() error {
-		return FetchConfigPropsMain(FetchConfigPropsRequest{
-			Namespace:           namespace,
-			Config:              config,
-			PodDisplayName:      "Optimize",
-			DeploymentName:      "integration-optimize",
-			ManagementPort:      8092,
-			ContextPath:         "/optimize",
-			SkipJavaToolOptions: false,
-			LocalDebugPort:      5008,
-		})
-	})
-
-	g.Go(func() error {
-		return FetchConfigPropsMain(FetchConfigPropsRequest{
-			Namespace:           namespace,
-			Config:              config,
-			PodDisplayName:      "Connectors",
-			DeploymentName:      "integration-connectors",
-			ManagementPort:      8080,
-			ContextPath:         "/connectors",
-			SkipJavaToolOptions: false,
-			LocalDebugPort:      5007,
-		})
-	})
-
-	g.Go(func() error {
-		return FetchConfigPropsMain(FetchConfigPropsRequest{
-			Namespace:           namespace,
-			Config:              config,
-			PodDisplayName:      "Zeebe",
-			StatefulSetName:     "integration-zeebe",
-			ManagementPort:      9600,
-			ContextPath:         "/orchestration",
-			SkipJavaToolOptions: false,
-			LocalDebugPort:      5006,
-		})
-	})
-
-//	modelerFetchReq := FetchConfigPropsRequest{
-//		Namespace: namespace,
-//		Config: config,
-//		PodDisplayName: "Modeler",
-//		DeploymentName: "integration-web-modeler-restapi",
-//		ManagementPort: 8091,
-//		ContextPath: "/modeler",
-//		SkipJavaToolOptions: true,
-//	}
-//	FetchConfigPropsMain(modelerFetchReq)
+	for _, c := range components {
+		c := c
+		if *cleanup {
+			g.Go(func() error {
+				return CleanupMain(namespace, config, c)
+			})
+		} else {
+			g.Go(func() error {
+				return FetchConfigPropsMain(FetchConfigPropsRequest{
+					Namespace:           namespace,
+					Config:              config,
+					PodDisplayName:      c.PodDisplayName,
+					DeploymentName:      c.DeploymentName,
+					StatefulSetName:     c.StatefulSetName,
+					ManagementPort:      c.ManagementPort,
+					ContextPath:         c.ContextPath,
+					SkipJavaToolOptions: c.SkipJavaToolOptions,
+					LocalDebugPort:      c.LocalDebugPort,
+				})
+			})
+		}
+	}
 
 	if err := g.Wait(); err != nil {
 		log.Fatalf("Error: %v", err)
+	}
+
+	if *cleanup && *deleteConfigprops {
+		if err := deleteConfigPropsFiles(); err != nil {
+			log.Printf("warning: failed to delete configprops files: %v", err)
+		}
 	}
 }
 
@@ -196,13 +190,15 @@ func FetchConfigPropsMain(req FetchConfigPropsRequest) error {
 	if err != nil {
 		return fmt.Errorf("[%s] getting pod name: %w", req.PodDisplayName, err)
 	}
+	fmt.Printf(req.PodDisplayName+" pod name: %s\n", podName)
 	revision, err := GetRevision(req.Namespace, req.Config, podName)
 	if err != nil {
-		return fmt.Errorf("[%s] getting revision: %w", req.PodDisplayName, err)
+		// Image-revision lookup is informational; don't abort the debug setup.
+		log.Printf("[%s] revision lookup skipped: %v", req.PodDisplayName, err)
+	} else {
+		fmt.Printf(req.PodDisplayName+" pod revision: %s\n", revision.Labels.Revision)
+		fmt.Printf(req.PodDisplayName+" pod source: %s\n", revision.Labels.Source)
 	}
-	fmt.Printf(req.PodDisplayName+" pod name: %s\n", podName)
-	fmt.Printf(req.PodDisplayName+" pod revision: %s\n", revision.Labels.Revision)
-	fmt.Printf(req.PodDisplayName+" pod source: %s\n", revision.Labels.Source)
 
 	var portFwdErr error
 	go func() {
@@ -243,15 +239,20 @@ func FetchConfigPropsMain(req FetchConfigPropsRequest) error {
 		return fmt.Errorf("[%s] port forwarding failed: %w", req.PodDisplayName, portFwdErr)
 	}
 
+	// Fetch configprops in the background but keep the port-forward alive until
+	// SIGINT — that way jdb can attach to LocalDebugPort after this script
+	// reports "ready". The signal handler above is the sole path that closes
+	// stopCh and releases wg.
 	go func() {
 		if err := WaitUntilPodIsReady(req.Namespace, req.Config, podName); err != nil {
 			log.Printf("[%s] waiting for pod ready: %v", req.PodDisplayName, err)
-		} else if err := FetchConfigProps(podName, req.ManagementPort, req.ContextPath); err != nil {
-			log.Printf("[%s] fetching config props: %v", req.PodDisplayName, err)
+			return
 		}
-		fmt.Println("Bye...")
-		close(stopCh)
-		wg.Done()
+		if err := FetchConfigProps(podName, req.ManagementPort, req.ContextPath); err != nil {
+			log.Printf("[%s] fetching config props: %v", req.PodDisplayName, err)
+			return
+		}
+		fmt.Printf("[%s] ready — JDWP on localhost:%d, mgmt on localhost:%d\n", req.PodDisplayName, req.LocalDebugPort, req.ManagementPort)
 	}()
 
 	wg.Wait()
@@ -444,13 +445,15 @@ func GetRevision(namespace string, config *rest.Config, podName string) (ImageRe
 	}
 	imageName := result.Spec.Containers[0].Image
 
-	cmd := exec.Command("skopeo", "inspect", "docker://docker.io/"+imageName)
+	// Camunda images are linux/amd64 only; without these overrides skopeo on
+	// macOS/arm64 fails with "no image found in manifest list for architecture".
+	skopeoArgs := []string{"inspect", "--override-os", "linux", "--override-arch", "amd64", "docker://docker.io/" + imageName}
 	var out strings.Builder
-	cmd.Stdout = &out
-	retryMax := 20
+	retryMax := 3
 	err = nil
 	for i := 0; i < retryMax; i++ {
-		cmd = exec.Command("skopeo", "inspect", "docker://docker.io/"+imageName)
+		out.Reset()
+		cmd := exec.Command("skopeo", skopeoArgs...)
 		cmd.Stdout = &out
 		err = cmd.Run()
 		if err == nil {
@@ -554,4 +557,146 @@ func homeDir() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
+}
+
+// CleanupMain reverts a single component back to a debugger-free state. It
+// removes the debug env vars (JAVA_TOOL_OPTIONS + the two configprops vars)
+// and restarts the pod by scaling to 0 and back. It is idempotent — if no
+// debug env vars are present, it logs a no-op and returns nil without
+// disturbing the workload.
+func CleanupMain(namespace string, config *rest.Config, c Component) error {
+	if c.DeploymentName != "" {
+		changed, err := RevertDeployment(namespace, config, c.DeploymentName)
+		if err != nil {
+			return fmt.Errorf("[%s] reverting deployment: %w", c.PodDisplayName, err)
+		}
+		if !changed {
+			fmt.Printf("[%s] no debug env vars present — skipping\n", c.PodDisplayName)
+			return nil
+		}
+		fmt.Printf("[%s] removed debug env vars and restarted pod\n", c.PodDisplayName)
+		return nil
+	}
+	if c.StatefulSetName != "" {
+		changed, err := RevertStatefulSet(namespace, config, c.StatefulSetName)
+		if err != nil {
+			return fmt.Errorf("[%s] reverting statefulset: %w", c.PodDisplayName, err)
+		}
+		if !changed {
+			fmt.Printf("[%s] no debug env vars present — skipping\n", c.PodDisplayName)
+			return nil
+		}
+		fmt.Printf("[%s] removed debug env vars and restarted pod\n", c.PodDisplayName)
+		return nil
+	}
+	return fmt.Errorf("[%s] component has neither DeploymentName nor StatefulSetName", c.PodDisplayName)
+}
+
+// removeDebugEnvVars returns env with all entries whose name is in
+// debugEnvVarNames removed. The bool return is true when at least one entry
+// was removed.
+func removeDebugEnvVars(env []v1.EnvVar) ([]v1.EnvVar, bool) {
+	filtered := env[:0:0]
+	removed := false
+	for _, e := range env {
+		if _, isDebug := debugEnvVarNames[e.Name]; isDebug {
+			removed = true
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	return filtered, removed
+}
+
+func RevertDeployment(namespace string, config *rest.Config, name string) (bool, error) {
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return false, fmt.Errorf("creating clientset: %w", err)
+	}
+	client := clientset.AppsV1().Deployments(namespace)
+
+	deployment, err := client.Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("get deployment %s: %w", name, err)
+	}
+
+	filtered, changed := removeDebugEnvVars(deployment.Spec.Template.Spec.Containers[0].Env)
+	if !changed {
+		return false, nil
+	}
+	deployment.Spec.Template.Spec.Containers[0].Env = filtered
+
+	originalReplicas := deployment.Spec.Replicas
+	zero := int32(0)
+	deployment.Spec.Replicas = &zero
+	if _, err := client.Update(context.TODO(), deployment, metav1.UpdateOptions{}); err != nil {
+		return false, fmt.Errorf("scaling down deployment %s: %w", name, err)
+	}
+
+	time.Sleep(3 * time.Second)
+
+	deployment, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("get deployment %s after scale-down: %w", name, err)
+	}
+	deployment.Spec.Replicas = originalReplicas
+	if _, err := client.Update(context.TODO(), deployment, metav1.UpdateOptions{}); err != nil {
+		return false, fmt.Errorf("scaling up deployment %s: %w", name, err)
+	}
+	time.Sleep(15 * time.Second)
+	return true, nil
+}
+
+func RevertStatefulSet(namespace string, config *rest.Config, name string) (bool, error) {
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return false, fmt.Errorf("creating clientset: %w", err)
+	}
+	client := clientset.AppsV1().StatefulSets(namespace)
+
+	sts, err := client.Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("get statefulset %s: %w", name, err)
+	}
+
+	filtered, changed := removeDebugEnvVars(sts.Spec.Template.Spec.Containers[0].Env)
+	if !changed {
+		return false, nil
+	}
+	sts.Spec.Template.Spec.Containers[0].Env = filtered
+
+	originalReplicas := sts.Spec.Replicas
+	zero := int32(0)
+	sts.Spec.Replicas = &zero
+	if _, err := client.Update(context.TODO(), sts, metav1.UpdateOptions{}); err != nil {
+		return false, fmt.Errorf("scaling down statefulset %s: %w", name, err)
+	}
+
+	time.Sleep(3 * time.Second)
+
+	sts, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("get statefulset %s after scale-down: %w", name, err)
+	}
+	sts.Spec.Replicas = originalReplicas
+	if _, err := client.Update(context.TODO(), sts, metav1.UpdateOptions{}); err != nil {
+		return false, fmt.Errorf("scaling up statefulset %s: %w", name, err)
+	}
+	time.Sleep(60 * time.Second)
+	return true, nil
+}
+
+func deleteConfigPropsFiles() error {
+	matches, err := filepath.Glob("configprops-*.json")
+	if err != nil {
+		return err
+	}
+	for _, m := range matches {
+		if err := os.Remove(m); err != nil {
+			log.Printf("warning: removing %s: %v", m, err)
+			continue
+		}
+		fmt.Printf("removed %s\n", m)
+	}
+	return nil
 }
