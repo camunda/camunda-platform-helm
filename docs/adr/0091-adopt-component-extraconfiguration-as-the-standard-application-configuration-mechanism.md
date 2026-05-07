@@ -97,7 +97,34 @@ The practical test:
 
 The following rules apply from this decision forward:
 
-- No new Tier 1 keys shall be added to the Helm chart. New application features that require Tier 1 configuration must use `<component>.extraConfiguration` exclusively. New features that require Tier 2 configuration (connectivity, infrastructure, cross-component coordination) may introduce new `values.yaml` keys subject to the Tier 2 classification defined above. This rule applies to all active chart versions from the date this ADR is accepted.
+### Constraints (Quick Reference)
+
+**Scope: all active chart versions (8.7, 8.8, 8.9, 8.10, ...) from the date this ADR is accepted.**
+
+```mermaid
+graph TD
+    Start([New values.yaml key proposed]) --> T{Tier 1 or Tier 2?}
+    T -- "Tier 1 (app behavior:<br/>feature flags, toggles,<br/>log levels)" --> Block([BLOCKED: use extraConfiguration])
+    T -- "Tier 2 (infra, connectivity,<br/>cross-component coordination)" --> Allow([Allowed: add to values.yaml])
+    T -- "Unsure" --> Test{Does it control what<br/>the app DOES vs how/where<br/>it runs and connects?}
+    Test -- "What it does" --> Block
+    Test -- "How/where it runs" --> Allow
+```
+
+**Blocked** (Tier 1 — must use `<component>.extraConfiguration` instead):
+- Feature flags and toggles (e.g. `rba.enabled`, `multiTenancy.enabled`)
+- Application log levels
+- Application-level feature configuration
+- Any key that maps to a Spring Boot property, env var controlling app logic, or application config file entry
+
+**Allowed** (Tier 2 — may add to `values.yaml`):
+- Kubernetes infrastructure: resources, affinity, serviceAccount, volumes, strategy
+- Connectivity: external endpoints, credentials, TLS certificates
+- Cross-component coordination: shared auth config, service discovery wiring
+
+---
+
+- **No new Tier 1 keys shall be added to the Helm chart.** New application features that require Tier 1 configuration must use `<component>.extraConfiguration` exclusively. New features that require Tier 2 configuration (connectivity, infrastructure, cross-component coordination) may introduce new `values.yaml` keys subject to the Tier 2 classification defined above. **This rule applies to all active chart versions from the date this ADR is accepted.**
 - All existing application-specific keys in values.yaml are deprecated as of Camunda 8.10, with documented migration hints mapping each deprecated key to the equivalent extraConfiguration pattern.
 - Removal is targeted for Camunda 8.11. The keys in scope for removal are all Tier 1 values.yaml entries — those that configure application behavior rather than Tier 2 infrastructure, connectivity, or cross-component coordination concerns. Sequencing and any version-specific exceptions are tracked in product-hub#3562.
 - `<component>.configuration` (full application config file override) remains available as an advanced escape hatch for operators who intentionally want to take full control of the application configuration file. It is not the recommended path and is not part of the standard mechanism.
