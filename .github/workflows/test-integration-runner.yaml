@@ -494,33 +494,13 @@ jobs:
             fi
           fi
 
-      - name: Helm - Install (OCI)
+      - name: Helm - OCI Registry Login
         if: inputs.helmChartVersion != ''
-        env:
-          HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
         run: |
-          set -euo pipefail
-          # OCI install path: pull a published chart from Harbor and stash a marker
-          # for the matrix-run step. The matrix-run install path below skips itself
-          # when this OCI marker is present.
-          echo "Using OCI chart version: ${HELM_CHART_VERSION}"
           helm registry login registry.camunda.cloud \
             --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
             --password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
-
-          cd "${CI_TASKS_BASE_DIR}/chart-full-setup"
-          rm -f ./*.tgz
-          helm pull "oci://registry.camunda.cloud/team-distribution/camunda-platform" \
-            --version "${HELM_CHART_VERSION}" \
-            --destination .
-
-          echo "TEST_CHART_VERSION=${HELM_CHART_VERSION}" >> "$GITHUB_ENV"
-          # TODO(deploy-camunda): wire OCI chart deploy through `deploy-camunda matrix run`
-          # once it learns to install from a local .tgz. Until then, fall back to
-          # `helm install` here. This branch is currently unused by all active CI callers
-          # (every caller passes helmChartVersion: "").
-          echo "::error::OCI install path is not yet supported by deploy-camunda matrix run; this CI flow is currently inert."
-          exit 1
+          echo "TEST_CHART_VERSION=${{ inputs.helmChartVersion }}" >> "$GITHUB_ENV"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         # For upgrade flows, the upgrade job runs the full two-step orchestration
@@ -528,7 +508,7 @@ jobs:
         # The install job only deploys for plain `install` flow; for upgrade-patch /
         # upgrade-minor it stops after pre-install setup so the upgrade job can take
         # over a clean (but pre-secret-configured) namespace.
-        if: inputs.helmChartVersion == '' && inputs.flow == 'install'
+        if: inputs.flow == 'install'
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
@@ -550,6 +530,7 @@ jobs:
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
+          HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -579,6 +560,14 @@ jobs:
             done
           fi
 
+          # OCI chart override: when helmChartVersion is set, deploy from the published
+          # OCI artifact instead of the local git chart directory.
+          CHART_REF_ARGS=()
+          if [[ -n "${HELM_CHART_VERSION:-}" ]]; then
+            CHART_REF_ARGS+=(--chart-ref "oci://registry.camunda.cloud/team-distribution/camunda-platform")
+            CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
+          fi
+
           cd ./scripts/deploy-camunda
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -593,6 +582,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
             --log-level info
 
@@ -777,6 +767,13 @@ jobs:
         run: |
           kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
 
+      - name: Helm - OCI Registry Login (Upgrade)
+        if: inputs.helmChartVersion != ''
+        run: |
+          helm registry login registry.camunda.cloud \
+            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+            --password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -796,6 +793,7 @@ jobs:
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
+          HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -820,6 +818,15 @@ jobs:
             done
           fi
 
+          # OCI chart override: when helmChartVersion is set, upgrade to the published
+          # OCI artifact instead of the local git chart directory. Step 1 (installing
+          # the previous version) still uses the Helm repo — only Step 2 uses the OCI ref.
+          CHART_REF_ARGS=()
+          if [[ -n "${HELM_CHART_VERSION:-}" ]]; then
+            CHART_REF_ARGS+=(--chart-ref "oci://registry.camunda.cloud/team-distribution/camunda-platform")
+            CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
+          fi
+
           cd ./scripts/deploy-camunda
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -834,6 +841,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
             --log-level info
 
