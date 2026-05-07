@@ -1669,14 +1669,15 @@ func TestExtractBitnamiPGPasswords_MappingConsistency(t *testing.T) {
 
 // --- ChartRef override tests ---
 
-func TestChartRefOverride_AppliedToFlags(t *testing.T) {
-	// Verify that when ChartRef is set in RunOptions, the chart-ref override
-	// logic correctly sets Chart, ChartVersion, and forces SkipDependencyUpdate.
-	// This simulates the logic in executeEntry() without calling deploy.Execute().
+func TestApplyChartRefOverride(t *testing.T) {
+	// Verify that applyChartRefOverride correctly mutates ChartFlags when
+	// RunOptions.ChartRef is set, and is a no-op when it is empty. This
+	// exercises the same helper that executeEntry calls in production.
 	tests := []struct {
 		name            string
 		chartRef        string
 		chartRefVersion string
+		wantApplied     bool
 		wantChart       string
 		wantVersion     string
 		wantSkipDep     bool
@@ -1685,6 +1686,7 @@ func TestChartRefOverride_AppliedToFlags(t *testing.T) {
 			name:            "OCI reference",
 			chartRef:        "oci://registry.camunda.cloud/team-distribution/camunda-platform",
 			chartRefVersion: "13-rc-latest",
+			wantApplied:     true,
 			wantChart:       "oci://registry.camunda.cloud/team-distribution/camunda-platform",
 			wantVersion:     "13-rc-latest",
 			wantSkipDep:     true,
@@ -1693,6 +1695,7 @@ func TestChartRefOverride_AppliedToFlags(t *testing.T) {
 			name:            "local tgz path",
 			chartRef:        "/tmp/oci-chart/camunda-platform-13.4.0-rc.tgz",
 			chartRefVersion: "",
+			wantApplied:     true,
 			wantChart:       "/tmp/oci-chart/camunda-platform-13.4.0-rc.tgz",
 			wantVersion:     "",
 			wantSkipDep:     true,
@@ -1701,6 +1704,7 @@ func TestChartRefOverride_AppliedToFlags(t *testing.T) {
 			name:            "empty chart-ref does not override",
 			chartRef:        "",
 			chartRefVersion: "",
+			wantApplied:     false,
 			wantChart:       "",
 			wantVersion:     "",
 			wantSkipDep:     false,
@@ -1714,31 +1718,28 @@ func TestChartRefOverride_AppliedToFlags(t *testing.T) {
 				ChartRefVersion: tt.chartRefVersion,
 			}
 
-			// Simulate the flags struct built in executeEntry().
-			flags := &config.ChartFlags{
+			chart := &config.ChartFlags{
 				ChartPath:            "/path/to/charts/camunda-platform-8.9",
 				SkipDependencyUpdate: false,
 			}
 
-			// Apply the chart-ref override logic (mirrors executeEntry).
-			if opts.ChartRef != "" {
-				flags.Chart = opts.ChartRef
-				flags.ChartVersion = opts.ChartRefVersion
-				flags.SkipDependencyUpdate = true
-			}
+			applied := applyChartRefOverride(chart, opts)
 
-			if flags.Chart != tt.wantChart {
-				t.Errorf("Chart = %q, want %q", flags.Chart, tt.wantChart)
+			if applied != tt.wantApplied {
+				t.Errorf("applyChartRefOverride returned %v, want %v", applied, tt.wantApplied)
 			}
-			if flags.ChartVersion != tt.wantVersion {
-				t.Errorf("ChartVersion = %q, want %q", flags.ChartVersion, tt.wantVersion)
+			if chart.Chart != tt.wantChart {
+				t.Errorf("Chart = %q, want %q", chart.Chart, tt.wantChart)
 			}
-			if flags.SkipDependencyUpdate != tt.wantSkipDep {
-				t.Errorf("SkipDependencyUpdate = %v, want %v", flags.SkipDependencyUpdate, tt.wantSkipDep)
+			if chart.ChartVersion != tt.wantVersion {
+				t.Errorf("ChartVersion = %q, want %q", chart.ChartVersion, tt.wantVersion)
+			}
+			if chart.SkipDependencyUpdate != tt.wantSkipDep {
+				t.Errorf("SkipDependencyUpdate = %v, want %v", chart.SkipDependencyUpdate, tt.wantSkipDep)
 			}
 			// ChartPath must always be preserved for values resolution.
-			if flags.ChartPath != "/path/to/charts/camunda-platform-8.9" {
-				t.Errorf("ChartPath should be preserved, got %q", flags.ChartPath)
+			if chart.ChartPath != "/path/to/charts/camunda-platform-8.9" {
+				t.Errorf("ChartPath should be preserved, got %q", chart.ChartPath)
 			}
 		})
 	}
@@ -1753,12 +1754,12 @@ func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
 		ChartRefVersion: "13-rc-latest",
 	}
 
-	// Simulate: base flags have the chart-ref override applied (from executeEntry).
+	// Apply the override the same way executeEntry does.
 	baseFlags := &config.ChartFlags{
-		ChartPath:            "/path/to/charts/camunda-platform-8.9",
-		Chart:                opts.ChartRef,
-		ChartVersion:         opts.ChartRefVersion,
-		SkipDependencyUpdate: true,
+		ChartPath: "/path/to/charts/camunda-platform-8.9",
+	}
+	if !applyChartRefOverride(baseFlags, opts) {
+		t.Fatal("applyChartRefOverride returned false for non-empty ChartRef")
 	}
 
 	// Simulate what executeTwoStepUpgrade does for Step 1:

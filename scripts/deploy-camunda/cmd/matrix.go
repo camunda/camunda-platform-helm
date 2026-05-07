@@ -201,6 +201,9 @@ Each entry gets its own namespace (<prefix>-<version>-<shortname>).
 Use --cleanup to automatically delete each entry's namespace after its deployment and tests complete.
 
 This command calls deploy.Execute() for each matrix entry.`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validateChartRefFlags(chartRef, chartRefVersion)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create a signal-aware context so that Ctrl+C (SIGINT) and
 			// SIGTERM cancel the context, which propagates through
@@ -714,4 +717,37 @@ func resolveRepoRoot(flagValue string) string {
 	}
 
 	return ""
+}
+
+// validateChartRefFlags rejects inconsistent --chart-ref / --chart-version
+// combinations before any matrix entries run, so misconfiguration surfaces as
+// a clear CLI error rather than a confusing helm failure.
+//
+// Rules:
+//   - --chart-version requires --chart-ref (it has no meaning otherwise).
+//   - --chart-ref must be either an OCI reference (oci://...) or a path to a
+//     packaged chart (*.tgz). Bare directory paths are rejected because
+//     deploy-camunda already supports local-directory installs via the normal
+//     (non-overridden) chart path.
+//   - When --chart-ref is an OCI reference, --chart-version is required —
+//     otherwise helm would resolve to an arbitrary tag.
+func validateChartRefFlags(chartRef, chartRefVersion string) error {
+	if chartRef == "" {
+		if chartRefVersion != "" {
+			return fmt.Errorf("--chart-version requires --chart-ref")
+		}
+		return nil
+	}
+
+	isOCI := strings.HasPrefix(chartRef, "oci://")
+	isTGZ := strings.HasSuffix(chartRef, ".tgz")
+	if !isOCI && !isTGZ {
+		return fmt.Errorf("--chart-ref must be an OCI reference (oci://...) or a packaged chart (.tgz), got %q", chartRef)
+	}
+
+	if isOCI && chartRefVersion == "" {
+		return fmt.Errorf("--chart-version is required when --chart-ref is an OCI reference")
+	}
+
+	return nil
 }
