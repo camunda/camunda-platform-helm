@@ -84,6 +84,102 @@ jobs:
           #Exclude prefixes from `KEEP_PREFIXES`array
           EXCLUSIONS=$(printf -- ",-%s*" "${KEEP_PREFIXES[@]}" | cut -c2-)
           curl -L -X DELETE ${OPENSEARCH_HOST}/*,${EXCLUSIONS} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
+      - name: cleanup OpenSearch templates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OPENSEARCH_HOST="${INFRA_OPENSEARCH_ENDPOINT}"
+          AUTH_HEADER="Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
+          CURL_OPTS=(-L --silent --show-error --connect-timeout 10 --max-time 120 --retry 2 --retry-delay 5 --retry-connrefused)
+
+          ALL_NS=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+          HEX_PREFIXES=($(echo "$ALL_NS" | grep -oP '[a-f0-9]{6}(?=(-upgp|-upgm)?$)' || true))
+          NUM_PREFIXES=($(echo "$ALL_NS" | grep -oP '\d+$' || true))
+          KEEP_PREFIXES=($(printf '%s\n' "${HEX_PREFIXES[@]}" "${NUM_PREFIXES[@]}" | sort -u))
+
+          is_kept_prefix() {
+            local name="$1"
+            for pfx in "${KEEP_PREFIXES[@]}"; do
+              if [[ "$name" == "${pfx}-"* ]]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          total_v2=0 total_comp=0 total_legacy=0
+
+          v2_templates=$(curl "${CURL_OPTS[@]}" -H "$AUTH_HEADER" "${OPENSEARCH_HOST}/_index_template" \
+            | jq -r '.index_templates[]?.name // empty | select(startswith(".") | not)') || true
+          if [[ -n "$v2_templates" ]]; then
+            orphan_prefixes=()
+            while IFS= read -r tpl; do
+              [[ -z "$tpl" ]] && continue
+              if ! is_kept_prefix "$tpl"; then
+                pfx="${tpl%%-*}"
+                orphan_prefixes+=("$pfx")
+              fi
+            done <<< "$v2_templates"
+            unique_orphans=($(printf '%s\n' "${orphan_prefixes[@]}" | sort -u))
+            for pfx in "${unique_orphans[@]}"; do
+              http_code=$(curl "${CURL_OPTS[@]}" -H "$AUTH_HEADER" -o /dev/null -w "%{http_code}" -X DELETE "${OPENSEARCH_HOST}/_index_template/${pfx}-*") || true
+              if [[ "$http_code" =~ ^2 ]]; then
+                echo "Deleted V2 index templates for prefix ${pfx}"
+                ((total_v2++)) || true
+              else
+                echo "Warning: Failed to delete V2 index templates for prefix ${pfx} (HTTP ${http_code})"
+              fi
+            done
+          fi
+
+          comp_templates=$(curl "${CURL_OPTS[@]}" -H "$AUTH_HEADER" "${OPENSEARCH_HOST}/_component_template" \
+            | jq -r '.component_templates[]?.name // empty | select(startswith(".") | not)') || true
+          if [[ -n "$comp_templates" ]]; then
+            orphan_prefixes=()
+            while IFS= read -r tpl; do
+              [[ -z "$tpl" ]] && continue
+              if ! is_kept_prefix "$tpl"; then
+                pfx="${tpl%%-*}"
+                orphan_prefixes+=("$pfx")
+              fi
+            done <<< "$comp_templates"
+            unique_orphans=($(printf '%s\n' "${orphan_prefixes[@]}" | sort -u))
+            for pfx in "${unique_orphans[@]}"; do
+              http_code=$(curl "${CURL_OPTS[@]}" -H "$AUTH_HEADER" -o /dev/null -w "%{http_code}" -X DELETE "${OPENSEARCH_HOST}/_component_template/${pfx}-*") || true
+              if [[ "$http_code" =~ ^2 ]]; then
+                echo "Deleted component templates for prefix ${pfx}"
+                ((total_comp++)) || true
+              else
+                echo "Warning: Failed to delete component templates for prefix ${pfx} (HTTP ${http_code})"
+              fi
+            done
+          fi
+
+          legacy_templates=$(curl "${CURL_OPTS[@]}" -H "$AUTH_HEADER" "${OPENSEARCH_HOST}/_template" \
+            | jq -r 'keys[] | select(startswith(".") | not)') || true
+          if [[ -n "$legacy_templates" ]]; then
+            orphan_prefixes=()
+            while IFS= read -r tpl; do
+              [[ -z "$tpl" ]] && continue
+              if ! is_kept_prefix "$tpl"; then
+                pfx="${tpl%%-*}"
+                orphan_prefixes+=("$pfx")
+              fi
+            done <<< "$legacy_templates"
+            unique_orphans=($(printf '%s\n' "${orphan_prefixes[@]}" | sort -u))
+            for pfx in "${unique_orphans[@]}"; do
+              http_code=$(curl "${CURL_OPTS[@]}" -H "$AUTH_HEADER" -o /dev/null -w "%{http_code}" -X DELETE "${OPENSEARCH_HOST}/_template/${pfx}-*") || true
+              if [[ "$http_code" =~ ^2 ]]; then
+                echo "Deleted legacy templates for prefix ${pfx}"
+                ((total_legacy++)) || true
+              else
+                echo "Warning: Failed to delete legacy templates for prefix ${pfx} (HTTP ${http_code})"
+              fi
+            done
+          fi
+
+          echo "OS template cleanup complete: v2_prefixes=${total_v2} component_prefixes=${total_comp} legacy_prefixes=${total_legacy}"
       - name: update ISM policy
         shell: bash
         run: |
