@@ -246,8 +246,14 @@ connectors:
 orchestration:
   security:
     initialization:
+      mappingRules:
+        - mappingRuleID: demo-admin-mapping-rule
+          claimName: preferred_username
+          claimValue: demo
       defaultRoles:
         admin:
+          mappingRules:
+            - demo-admin-mapping-rule
           users:
             - demo
           clients:
