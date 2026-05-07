@@ -180,6 +180,16 @@ type RunOptions struct {
 	// invoking matrix run, so the install lands in the same namespace.
 	// Only meaningful when filters narrow the run to a single entry.
 	NamespaceOverride string
+	// ChartRef, when non-empty, overrides the chart source for helm install/upgrade.
+	// This can be an OCI reference (e.g., "oci://registry.camunda.cloud/team-distribution/camunda-platform")
+	// or a path to a local .tgz file. When set, the matrix runner uses this as the
+	// chart argument for `helm upgrade --install` instead of the local chart directory.
+	// The local chart directory (entry.ChartPath) is still used for values file resolution
+	// (scenario layers, chart-root overlays). SkipDependencyUpdate is forced to true.
+	ChartRef string
+	// ChartRefVersion is the chart version to install from ChartRef (e.g., "13-rc-latest").
+	// Only meaningful when ChartRef is set. Passed as --version to helm.
+	ChartRefVersion string
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -1761,6 +1771,20 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// All code paths converge into a single result so cleanup runs exactly once.
 	var deployErr error
 	var diag string
+
+	// Override chart source when --chart-ref is set (OCI install path).
+	// This makes deploy.Execute() use the external chart reference (e.g., oci://registry.camunda.cloud/...)
+	// instead of the local chart directory. ChartPath is preserved for values file resolution
+	// (scenario directory, chart-root overlays) but not used as the helm install target.
+	if opts.ChartRef != "" {
+		flags.Chart.Chart = opts.ChartRef
+		flags.Chart.ChartVersion = opts.ChartRefVersion
+		flags.Chart.SkipDependencyUpdate = true
+		logging.Logger.Info().
+			Str("chartRef", opts.ChartRef).
+			Str("chartVersion", opts.ChartRefVersion).
+			Msg("Using external chart reference (OCI/tgz) instead of local chart directory")
+	}
 
 	// Two-step upgrade flow: install old version first, then upgrade to current.
 	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
