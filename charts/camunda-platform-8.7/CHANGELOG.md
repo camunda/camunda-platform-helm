@@ -1,5 +1,20 @@
 # Changelog
 
+## [12.9.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.8.6...camunda-platform-8.7-12.9.0) (2026-05-07)
+
+
+### Features
+
+* **8.7:** add global.rba.enabled to consolidate RBA configuration ([#5999](https://github.com/camunda/camunda-platform-helm/issues/5999)) ([e73ed1c](https://github.com/camunda/camunda-platform-helm/commit/e73ed1c91f8ac832753080ba9e3f200b8a2f60ed))
+* add elasticsearch-self-signed-upgrade scenario for 8.7-&gt;8.8 TLS upgrade testing ([#5974](https://github.com/camunda/camunda-platform-helm/issues/5974)) ([77145ba](https://github.com/camunda/camunda-platform-helm/commit/77145ba9550f65fc57044e4cef6e09e2cef5d1b9))
+
+
+### Bug Fixes
+
+* **ci:** extend nightly matrix coverage for missing platform/flow combinations ([#6064](https://github.com/camunda/camunda-platform-helm/issues/6064)) ([05e1f6d](https://github.com/camunda/camunda-platform-helm/commit/05e1f6d2fe50c9409970cfbcb35faaefe83c7656))
+* **images:** use keycloak-ee/keycloak for 8.7 enterprise values ([#5969](https://github.com/camunda/camunda-platform-helm/issues/5969)) ([8dd5baa](https://github.com/camunda/camunda-platform-helm/commit/8dd5baad9aab86231118ad60505a4011d6e84bdf))
+* resolve SM nightly upgrade scenario failures for groups 2-4 ([#5984](https://github.com/camunda/camunda-platform-helm/issues/5984)) ([1b1e8e4](https://github.com/camunda/camunda-platform-helm/commit/1b1e8e44f49c5c247239c5a3e2d2bbf98c2273e3))
+
 ## [12.8.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.8.5...camunda-platform-8.7-12.8.6) (2026-04-22)
 
 
