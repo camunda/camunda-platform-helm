@@ -18,25 +18,27 @@ global:
       protocol: $OPENSEARCH_PROTOCOL
       host: "$OPENSEARCH_HOST"
       port: $OPENSEARCH_PORT
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    prefix: $ORCHESTRATION_INDEX_PREFIX
 
 orchestration:
   data:
     secondaryStorage:
       type: opensearch
   index:
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    prefix: $ORCHESTRATION_INDEX_PREFIX
   env:
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      value: $ORCHESTRATION_INDEX_PREFIX
+    # Use $OPERATE_INDEX_PREFIX so 8.9 upgrade reads from the same index.
+    # 8.8 previously used $ORCHESTRATION_INDEX_PREFIX-operate-$FLOW, which
+    # diverges from 8.9's $OPERATE_INDEX_PREFIX on every upgrade run.
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
-      value: "$ORCHESTRATION_INDEX_PREFIX-operate-$FLOW"
+      value: "$OPERATE_INDEX_PREFIX"
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
-      value: "$ORCHESTRATION_INDEX_PREFIX-operate-$FLOW"
-    # Security mapping rules — must be present in the 8.8 install step so the
-    # Zeebe raft log contains them before the 8.9 upgrade runs its own initialization.
-    # Without these, 8.9 detects "already initialized" and skips creating mapping
-    # rules, causing Access Denied on /orchestration/operate after the upgrade.
+      value: "$OPERATE_INDEX_PREFIX"
+    # Security mapping rules — written into the Zeebe raft log during the 8.8
+    # install step so that 8.9 upgrade does not skip initialization on an
+    # already-populated raft log, which would leave users with Access Denied.
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
@@ -66,15 +68,15 @@ optimize:
   enabled: true
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      value: $ORCHESTRATION_INDEX_PREFIX
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+      value: $OPTIMIZE_INDEX_PREFIX
   migration:
     env:
       - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-        value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+        value: $ORCHESTRATION_INDEX_PREFIX
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-        value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+        value: $OPTIMIZE_INDEX_PREFIX
 
 elasticsearch:
   enabled: false
