@@ -1808,6 +1808,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// Two-step upgrade flows register their pre-install hook against step1Flags
 	// inside executeTwoStepUpgrade, so skip here.
 	if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) && !versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
+		flags.PreInstallHooks = nil
 		if err := registerDeclarativePreInstallHook(flags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 			return RunResult{Entry: entry, Namespace: namespace, Error: err}
 		}
@@ -1817,6 +1818,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// Fires after helm upgrade/install completes. For two-step upgrades the
 	// hook is registered against step2Flags inside executeTwoStepUpgrade.
 	if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
+		flags.PostDeployHooks = nil
 		if err := registerDeclarativePostDeployHook(flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 			return RunResult{Entry: entry, Namespace: namespace, Error: err}
 		}
@@ -2094,6 +2096,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// Hook is registered against step1Flags so it fires before the Step 1 helm install.
 	// The app version being installed in Step 1 scopes script/fixture lookup
 	// (previous version for upgrade-minor, current for upgrade-patch).
+	step1Flags.PreInstallHooks = nil
 	if err := registerDeclarativePreInstallHook(&step1Flags, entry.PreInstall, opts.RepoRoot, step1AppVersion, entry.Scenario); err != nil {
 		return err
 	}

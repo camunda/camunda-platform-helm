@@ -203,13 +203,21 @@ func registerDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *Lifecyc
 // hook configured under integration.flows.<flow>.pre-upgrade in the target
 // app version's ci-test-config.yaml, between Step 1 and Step 2 of a two-step
 // upgrade flow. Returns (handled=true) when the declarative path executed (or
-// errored), so the caller can skip the legacy filename-derived discovery.
+// errored). A missing ci-test-config.yaml is tolerated (returns handled=false)
+// because some chart versions legitimately have none, but a parse error is
+// surfaced rather than silently skipped.
 func runDeclarativePreUpgradeHook(ctx context.Context, repoRoot, appVersion, flow string, flags *config.RuntimeFlags) (bool, error) {
 	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion)
+	cfgPath := filepath.Join(chartDir, "test", "ci-test-config.yaml")
+	if _, err := os.Stat(cfgPath); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return true, fmt.Errorf("flow %q v%s: stat ci-test-config.yaml: %w", flow, appVersion, err)
+	}
 	cfg, err := LoadCITestConfig(chartDir)
 	if err != nil {
-		// Missing or unparseable config — fall back to legacy discovery.
-		return false, nil
+		return true, fmt.Errorf("flow %q v%s: load ci-test-config.yaml: %w", flow, appVersion, err)
 	}
 	if cfg.Integration.Flows == nil {
 		return false, nil

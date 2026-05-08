@@ -112,8 +112,8 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string)
 		if hook == nil {
 			return
 		}
-		if hook.Description == "" {
-			t.Errorf("%s: %s: description: empty (required)", version, label)
+		if strings.TrimSpace(hook.Description) == "" {
+			t.Errorf("%s: %s: description: empty or whitespace-only (required)", version, label)
 		}
 		hasFixtures := len(hook.Fixtures) > 0
 		hasScript := hook.Script != ""
