@@ -354,6 +354,7 @@ jobs:
       - name: CI Setup - Start GitHub deployment
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         id: deployment
+        continue-on-error: true # Deployment status is cosmetic; don't fail the job if the API 404s (e.g. merge queue refs).
         with:
           step: start
           token: ${{ steps.setup.outputs.cluster-auth-token }}
@@ -610,6 +611,7 @@ jobs:
 
       - name: CI Setup - Update GitHub deployment status
         if: inputs.flow == 'install'
+        continue-on-error: true # Deployment status is cosmetic; don't fail the job if the API 404s (e.g. merge queue refs).
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
           step: finish
