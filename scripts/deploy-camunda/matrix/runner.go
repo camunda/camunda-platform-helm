@@ -1902,12 +1902,22 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		}
 
 		// Phase 2: write the K8s secret in a PreInstallHook so it lands after
-		// namespace creation/reset.
+		// namespace creation/reset. The secret carries auth0-info-* keys
+		// (issuer URL, audience, per-component client_ids) so the test job
+		// (separate GH Actions job that doesn't inherit per-entry env vars)
+		// can resolve them via a single kubectl-get-secret.
+		issuerForSecret := strings.TrimSuffix(opts.Domain, "/") + "/"
+		audienceForSecret := audience
+		provForSecret := prov
+		secretNameForHook := opts.SecretName
 		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
 			logging.Logger.Info().
 				Str("namespace", namespace).
 				Msg("Auth0 Phase 2 — creating client-secret-for-components K8s secret (PreInstallHook)")
-			return auth0.CreateK8sSecret(hookCtx, kubeCtx, namespace, opts.SecretName, prov, nil)
+			return auth0.CreateK8sSecretWithInfo(
+				hookCtx, kubeCtx, namespace, secretNameForHook,
+				provForSecret, nil, issuerForSecret, audienceForSecret,
+			)
 		})
 	}
 

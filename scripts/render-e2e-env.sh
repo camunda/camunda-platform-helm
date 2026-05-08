@@ -208,6 +208,28 @@ resolve_identity_passwords() {
   mask_secret "$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
 }
 
+# _auth0_get_secret_key reads a single key from an Opaque secret and base64
+# decodes it. Returns the empty string if the key is absent (so callers can
+# distinguish "not set" from "set to an empty value" via the env-var override
+# downstream). Doesn't `exit 1` on missing key — auth0-info-* keys are written
+# best-effort and individual ones may legitimately be absent.
+_auth0_get_secret_key() {
+  local kubectl_cmd="$1"
+  local namespace="$2"
+  local secret_name="$3"
+  local key="$4"
+  local b64
+  # The . inside the jsonpath needs to be escaped because it's part of the key
+  # name, not a path separator. kubectl uses {.data['key-with.dots']} syntax;
+  # for our keys (no dots) we can use the simpler form.
+  b64=$($kubectl_cmd -n "$namespace" get secret "$secret_name" \
+    -o "jsonpath={.data['${key}']}" 2>/dev/null || true)
+  if [[ -z "$b64" ]]; then
+    return 0
+  fi
+  printf "%s" "$b64" | base64 -d 2>/dev/null || true
+}
+
 render_env_file() {
   local env_file="$1"
   local test_suite_path="$2"
@@ -219,6 +241,7 @@ render_env_file() {
   local is_mt="$8"
   local run_smoke_tests="$9"
   local kube_context="${10:-}"
+  local is_auth0="${11:-false}"
   local kubectl_cmd="kubectl"
 
   if [[ -n "$kube_context" ]]; then
@@ -230,6 +253,71 @@ render_env_file() {
   # Generate base .env from template
   export TEST_INGRESS_HOST="$hostname"
   envsubst < "$test_suite_path"/.env.template > "$env_file"
+
+  # Auth0 scenario short-circuit. The auth0-smoke Playwright project doesn't
+  # use the Keycloak admin password, the test users, or the Keycloak/Spring
+  # token URL — it only needs the Auth0 issuer + per-component client_ids,
+  # which the matrix runner publishes into the client-secret-for-components
+  # K8s secret under auth0-info-* keys. Skipping resolve_keycloak_setup_password
+  # / resolve_identity_passwords here is important: with Keycloak disabled in
+  # the auth0 scenario, those calls `exit 1` and abort the whole render.
+  if [[ "$is_auth0" == "true" ]]; then
+    log "DEBUG: Auth0 scenario detected — resolving auth0-info-* keys from client-secret-for-components"
+
+    local auth0_secret="${AUTH0_SECRET_NAME:-client-secret-for-components}"
+    if ! $kubectl_cmd -n "$namespace" get secret "$auth0_secret" > /dev/null 2>&1; then
+      echo "Error: secret '$auth0_secret' not found in namespace '$namespace' — auth0 ensure-clients must run before the test job" >&2
+      exit 13
+    fi
+
+    # Read auth0-info-* keys from the secret. Each key holds a non-secret value
+    # (issuer URL, audience, client_id) — but they live in the secret because
+    # auth0 ensure-clients already manages it.
+    local issuer audience identity_id orchestration_id optimize_id connectors_id webmodeler_id console_id
+    issuer=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-issuer-url")
+    audience=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-audience")
+    identity_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-identity-client-id")
+    orchestration_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-orchestration-client-id")
+    optimize_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-optimize-client-id")
+    connectors_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-connectors-client-id")
+    webmodeler_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-web-modeler-client-id")
+    console_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-console-client-id")
+
+    # Allow env vars (set upstream by the matrix runner during install) to
+    # override the secret-derived values. This lets local invocations work
+    # without round-tripping through the cluster.
+    issuer="${AUTH0_ISSUER_URL:-$issuer}"
+    audience="${AUTH0_AUDIENCE:-$audience}"
+    identity_id="${AUTH0_IDENTITY_CLIENT_ID:-$identity_id}"
+    orchestration_id="${AUTH0_ORCHESTRATION_CLIENT_ID:-$orchestration_id}"
+    optimize_id="${AUTH0_OPTIMIZE_CLIENT_ID:-$optimize_id}"
+    connectors_id="${AUTH0_CONNECTORS_CLIENT_ID:-$connectors_id}"
+    webmodeler_id="${AUTH0_WEB_MODELER_CLIENT_ID:-$webmodeler_id}"
+    console_id="${AUTH0_CONSOLE_CLIENT_ID:-$console_id}"
+
+    {
+      echo "PLAYWRIGHT_BASE_URL=https://$hostname"
+      echo "CI=${is_ci}"
+      echo "CLUSTER_NAME=integration"
+      echo "IS_AUTH0=true"
+      echo "IS_SMOKE=true"
+      [[ -n "$issuer" ]] && echo "AUTH0_ISSUER_URL=$issuer"
+      [[ -n "$audience" ]] && echo "AUTH0_AUDIENCE=$audience"
+      [[ -n "$identity_id" ]] && echo "AUTH0_IDENTITY_CLIENT_ID=$identity_id"
+      [[ -n "$orchestration_id" ]] && echo "AUTH0_ORCHESTRATION_CLIENT_ID=$orchestration_id"
+      [[ -n "$optimize_id" ]] && echo "AUTH0_OPTIMIZE_CLIENT_ID=$optimize_id"
+      [[ -n "$connectors_id" ]] && echo "AUTH0_CONNECTORS_CLIENT_ID=$connectors_id"
+      [[ -n "$webmodeler_id" ]] && echo "AUTH0_WEB_MODELER_CLIENT_ID=$webmodeler_id"
+      [[ -n "$console_id" ]] && echo "AUTH0_CONSOLE_CLIENT_ID=$console_id"
+      [[ -n "${AUTH0_INITIAL_ADMIN_EMAIL:-}" ]] && echo "AUTH0_INITIAL_ADMIN_EMAIL=${AUTH0_INITIAL_ADMIN_EMAIL}"
+    } >> "$env_file"
+    log "DEBUG: Auth0 env file setup complete (Keycloak resolution skipped)"
+    if [[ "$VERBOSE" == "true" ]]; then
+      log "DEBUG: Contents of .env file:"
+      cat "$env_file"
+    fi
+    return 0
+  fi
 
   # Resolve credentials from cluster
   KEYCLOAK_SETUP_PASSWORD="$(resolve_keycloak_setup_password "$namespace" "$kube_context")" || exit 1
@@ -317,6 +405,7 @@ Options:
   --opensearch                                Set IS_OPENSEARCH to true
   --rba                                       Set IS_RBA to true
   --mt                                        Set IS_MT to true
+  --auth0                                     Skip Keycloak resolution; forward AUTH0_* vars (Auth0 OIDC scenario)
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -376,6 +465,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   IS_OPENSEARCH=false
   IS_RBA=false
   IS_MT=false
+  IS_AUTH0=false
 
   check_env_required_cmds
 
@@ -418,6 +508,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         IS_MT=true
         shift
         ;;
+      --auth0)
+        IS_AUTH0=true
+        shift
+        ;;
       -v | --verbose)
         VERBOSE=true
         shift
@@ -447,8 +541,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   [[ "$IS_OPENSEARCH" == "true" ]] && log "IS_OPENSEARCH is set to true"
   [[ "$IS_RBA" == "true" ]] && log "IS_RBA is set to true"
   [[ "$IS_MT" == "true" ]] && log "IS_MT is set to true"
+  [[ "$IS_AUTH0" == "true" ]] && log "IS_AUTH0 is set to true (Auth0 OIDC scenario)"
 
-  render_env_file "$OUTPUT_PATH" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
+  render_env_file "$OUTPUT_PATH" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"
 
   log "DEBUG: Env file rendered to $OUTPUT_PATH"
 fi

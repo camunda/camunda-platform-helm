@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"scripts/camunda-core/pkg/kube"
@@ -306,7 +307,11 @@ func EnsureClients(ctx context.Context, opts Options) (*Provisioned, error) {
 	}
 
 	if !opts.SkipK8sSecret {
-		if err := CreateK8sSecret(ctx, opts.KubeContext, opts.Namespace, opts.SecretName, prov, opts.PostgresPasswords); err != nil {
+		issuerURL := strings.TrimSuffix(opts.Domain, "/") + "/"
+		if err := CreateK8sSecretWithInfo(
+			ctx, opts.KubeContext, opts.Namespace, opts.SecretName,
+			prov, opts.PostgresPasswords, issuerURL, opts.Audience,
+		); err != nil {
 			return prov, fmt.Errorf("auth0: %w", err)
 		}
 		logging.Logger.Info().
@@ -373,12 +378,31 @@ func CleanupClients(ctx context.Context, opts Options) {
 // client_secrets, web-modeler pusher secrets, and any extra postgres
 // passwords. Public clients are excluded (SPAs have no usable secret).
 //
+// In addition to the secret values themselves, the secret also carries the
+// public OIDC parameters (issuer URL, audience, all 6 client_ids) under
+// "auth0-info-*" keys. These are NOT secrets — they're written here so the
+// test job (a separate GitHub Actions job that doesn't inherit the install
+// job's per-entry env vars) can resolve them via a single kubectl call.
+//
 // Pusher keys (webmodeler-pusher-app-key, webmodeler-pusher-app-secret) are
 // generated here so the scenario doesn't need a separate provisioning step
 // for them. The webModeler chart's auto-generation path is gated on
 // .Values.webModeler.enabled which is false in 8.10 (consolidated into
 // camundaHub), so the chart can't auto-gen — we have to.
 func CreateK8sSecret(ctx context.Context, kubeContext, namespace, secretName string, prov *Provisioned, postgresPasswords map[string]string) error {
+	return CreateK8sSecretWithInfo(ctx, kubeContext, namespace, secretName, prov, postgresPasswords, "", "")
+}
+
+// CreateK8sSecretWithInfo is CreateK8sSecret with the auth0-info-* keys
+// (issuer + audience) populated. issuerURL and audience may be empty —
+// they're omitted from the secret if so.
+func CreateK8sSecretWithInfo(
+	ctx context.Context,
+	kubeContext, namespace, secretName string,
+	prov *Provisioned,
+	postgresPasswords map[string]string,
+	issuerURL, audience string,
+) error {
 	if secretName == "" {
 		secretName = DefaultSecretName
 	}
@@ -407,10 +431,39 @@ func CreateK8sSecret(ctx context.Context, kubeContext, namespace, secretName str
 		data[k] = v
 	}
 
+	// Public OIDC parameters needed by the test job to assert against.
+	for _, c := range prov.All() {
+		data["auth0-info-"+envifyComponent(c.Component)+"-client-id"] = c.ClientID
+	}
+	if issuerURL != "" {
+		data["auth0-info-issuer-url"] = issuerURL
+	}
+	if audience != "" {
+		data["auth0-info-audience"] = audience
+	}
+
 	if err := k8sClient.EnsureOpaqueSecret(ctx, namespace, secretName, data); err != nil {
 		return fmt.Errorf("apply secret %s/%s: %w", namespace, secretName, err)
 	}
 	return nil
+}
+
+// envifyComponent matches the runner's env var naming scheme:
+// "Web Modeler" → "web-modeler", "connectors" → "connectors". Lowercased so
+// the secret keys conform to RFC 1123 label requirements.
+func envifyComponent(component string) string {
+	s := ""
+	for _, r := range component {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			s += string(r + 32)
+		case r == ' ':
+			s += "-"
+		default:
+			s += string(r)
+		}
+	}
+	return s
 }
 
 // randomHex returns 2*n hex characters of cryptographically secure randomness.

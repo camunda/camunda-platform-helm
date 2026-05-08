@@ -151,10 +151,10 @@ integration:
           shortname: esa0
           auth: oidc
           flow: install
-          # Same rationale as the entra oidc entry — Keycloak-shaped venom
-          # smoke tests don't apply to a fresh Auth0 tenant.
-          skip-e2e: true
-          skip-it: true
+          # Auth0 has its own Playwright project (auth0-smoke) wired in
+          # scripts/run-e2e-tests.sh + scripts/base_playwright_script.sh +
+          # .github/actions/playwright-e2e-tests/action.yaml; the upstream
+          # Keycloak-coupled smoke tests are NOT run for this scenario.
           infra-type:
             gke: distroci
             eks: preemptible
