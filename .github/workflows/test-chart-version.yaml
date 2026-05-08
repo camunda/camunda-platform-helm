@@ -232,6 +232,8 @@ jobs:
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
     # validated by AlwaysGreen before publishing. Only golden file updates are needed.
+    # Also skip on empty matrix; without this gate the matrix produces zero jobs and
+    # report-cla-status.needs.integration-tests resolves as a failed dependency on merge_group.
     if: >-
       ${{
         needs.init.outputs.camunda-versions != '[]' &&

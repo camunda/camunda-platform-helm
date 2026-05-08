@@ -269,7 +269,9 @@ else
   BUILD_ALL_TRIGGERS=(
     '\.github/(workflows|actions);;.github/workflows or .github/actions'
     '\.github/config;;\.github/config/release-please;;.github/config (excluding release-please)'
-    'scripts/deploy-camunda/;;scripts/deploy-camunda/'
+    # Anchor required: tj-actions/changed-files with dir_names:true emits the
+    # bare token "scripts" so unanchored "scripts/" misses top-level helper changes.
+    '(^|[[:space:]])scripts(/|$|[[:space:]]);;scripts/ (any helper script)'
   )
 
   build_all_triggered=false
