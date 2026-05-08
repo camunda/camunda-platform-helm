@@ -303,23 +303,42 @@ Scenarios are defined in `charts/<version>/test/ci-test-config.yaml`. Each entry
 The `features` array maps to `values/features/<name>.yaml`. The `migrator` feature enables identity and data migration jobs during upgrades — use it for any `upgrade-minor` scenario. Note: the automatic `needsMigrator()` function in `scenarios.go` only activates when `ChartVersion` starts with "13", but the matrix runner does not set `ChartVersion`, so always use `features: [migrator]` explicitly.
 
 ### Pre-Install Hooks (Scenario-Specific)
-When a scenario needs prerequisites in the namespace before `helm install` (e.g., TLS secrets), use a pre-install script:
+When a scenario needs prerequisites in the namespace before `helm install` (e.g., a CloudNativePG cluster, TLS secrets), declare them on the scenario in `ci-test-config.yaml`:
 
-1. Create `charts/<version>/test/integration/scenarios/pre-setup-scripts/pre-install-<scenario-name>.sh`.
-2. The script receives `NAMESPACE`, `RELEASE`, and `KUBE_CONTEXT` as environment variables.
-3. Discovery is automatic: `versionmatrix.HasPreInstallScript(repoRoot, appVersion, scenario)` checks for the file.
-4. The runner calls it after namespace creation but before `helm install`, in both single-step and two-step upgrade flows.
-
-For reusable logic (e.g., cert generation), create a separate script and have the pre-install wrapper `exec` into it:
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec bash "$SCRIPT_DIR/create-elasticsearch-tls-secrets.sh"
+```yaml
+- name: rdbms
+  enabled: true
+  identity: keycloak
+  persistence: rdbms
+  pre-install:
+    fixtures:
+      - postgresql-cluster.yaml
+    description: |
+      Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+      namespace; required before helm install.
 ```
 
-### Pre-Upgrade Scripts
-For cleanup needed between Step 1 (old version) and Step 2 (new version) of an upgrade flow, use `pre-upgrade-minor.sh` in the target version's `pre-setup-scripts/`. Common needs for 8.7→8.8:
-- Delete identity deployment (port naming conflict: 8.7 uses `containerPort: 8080`, 8.8 uses `8084`, both named `http` — Kubernetes strategic merge patch keeps both, causing a duplicate name error).
-- Delete stale 8.7 ingresses that route to non-existent services.
-- Delete PostgreSQL statefulsets (Bitnami version changes).
+There are two modes — pick exactly one per hook:
+
+- `fixtures: [...]` — names YAML manifests under `charts/<version>/test/integration/scenarios/common/resources/`. The matrix runner applies them via Go server-side apply (`kube.Client.ApplyManifest`, `Force: true`, idempotent), substituting `$NAMESPACE`, `$RELEASE_NAME`, plus the env-var passthrough listed in `lifecycleVarPassthrough` (`RDBMS_POSTGRESQL_USERNAME`, `RDBMS_POSTGRESQL_PASSWORD`, `GITHUB_WORKFLOW_JOB_ID`, `POSTGRESQL_JDBC_URL`). Prefer this mode for trivial kubectl-apply cases.
+- `script: <filename>` — names a shell script under `charts/<version>/test/integration/scenarios/pre-setup-scripts/`. The matrix runner runs it via `bash -x` with `TEST_NAMESPACE`, `KUBE_CONTEXT`, and the same env-var passthrough. Use only when the work cannot be expressed as a manifest (cert generation, JKS keystores, conditional kubectl ops). Example: `pre-install-elasticsearch-self-signed.sh` runs openssl + keytool, packages JKS, and creates three Secrets.
+
+`description` is required and must explain the effect — reviewers must understand from a `ci-test-config.yaml` diff alone what a fixture does.
+
+`TestLifecycleFixtures` (matrix package) walks every chart version's config and asserts: every script reference resolves on disk, every fixture reference resolves under `common/resources/`, every description is non-empty, exactly one of fixtures/script is set per hook, and every script in `pre-setup-scripts/` is referenced (orphan check). Files in `preSetupScriptAllowlist` (`pre-install-upgrade.sh` sed-marker, `create-elasticsearch-tls-secrets.sh` helper) are exempt.
+
+### Pre-Upgrade Hooks (Flow-Specific)
+For cleanup between Step 1 (old version) and Step 2 (new version) of an upgrade flow, declare on the target version's `integration.flows.<flow>.pre-upgrade` block in `ci-test-config.yaml`:
+
+```yaml
+integration:
+  flows:
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the patch upgrade (PSQL 15→14 rollback).
+```
+
+Same `fixtures` / `script` / `description` shape as scenario-level `pre-install:`. The hook runs after Step 1 completes and before Step 2's `helm upgrade`, scoped to the *target* version (the version being upgraded to).
