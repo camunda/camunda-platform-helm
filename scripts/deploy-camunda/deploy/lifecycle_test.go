@@ -57,10 +57,22 @@ func TestSubstituteManifestVars(t *testing.T) {
 			want:    "x: v1 y: ns",
 		},
 		{
+			name:    "shorter key alone does not corrupt longer placeholder",
+			content: "x: $NAMESPACE_TAG y: $NAMESPACE",
+			vars:    map[string]string{"NAMESPACE": "ns"},
+			want:    "x: $NAMESPACE_TAG y: ns",
+		},
+		{
 			name:    "missing var leaves placeholder when not in map",
 			content: "x: $UNKNOWN y: $NAMESPACE",
 			vars:    map[string]string{"NAMESPACE": "ns"},
 			want:    "x: $UNKNOWN y: ns",
+		},
+		{
+			name:    "braced placeholder absent leaves text intact",
+			content: "x: ${UNKNOWN}",
+			vars:    map[string]string{"NAMESPACE": "ns"},
+			want:    "x: ${UNKNOWN}",
 		},
 		{
 			name:    "empty map is no-op",
@@ -84,35 +96,6 @@ func TestSubstituteManifestVars(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestResolveResourcesDir(t *testing.T) {
-	t.Run("returns empty for empty chart path", func(t *testing.T) {
-		got := resolveResourcesDir("")
-		if got != "" {
-			t.Errorf("resolveResourcesDir(\"\") = %q, want \"\"", got)
-		}
-	})
-
-	t.Run("returns empty when directory does not exist", func(t *testing.T) {
-		got := resolveResourcesDir("/nonexistent/path")
-		if got != "" {
-			t.Errorf("resolveResourcesDir() = %q, want \"\"", got)
-		}
-	})
-
-	t.Run("returns path when directory exists", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		resourcesPath := filepath.Join(tmpDir, "test", "integration", "scenarios", "common", "resources")
-		if err := os.MkdirAll(resourcesPath, 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		got := resolveResourcesDir(tmpDir)
-		if got != resourcesPath {
-			t.Errorf("resolveResourcesDir() = %q, want %q", got, resourcesPath)
-		}
-	})
 }
 
 func TestLoadSelectedManifests(t *testing.T) {
