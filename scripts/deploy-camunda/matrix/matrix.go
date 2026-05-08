@@ -51,6 +51,12 @@ type Entry struct {
 	// PostDeploy declares a fixture or script to run after helm install
 	// completes successfully. Carried from CIScenario.PostDeploy.
 	PostDeploy *LifecycleHook `json:"postDeploy,omitempty"`
+
+	// PreUpgrade is the flow-scoped pre-upgrade hook (between Step 1 and
+	// Step 2 of a two-step upgrade flow) resolved at matrix-generation time
+	// from cfg.Integration.Flows[Flow].PreUpgrade. Carried on the Entry so the
+	// runner does not re-load ci-test-config.yaml at execution time.
+	PreUpgrade *LifecycleHook `json:"preUpgrade,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -173,6 +179,10 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 			}
 
 			for _, flow := range permittedFlows {
+				var preUpgrade *LifecycleHook
+				if fh, ok := cfg.Integration.Flows[flow]; ok && fh != nil {
+					preUpgrade = fh.PreUpgrade
+				}
 				for _, platform := range platforms {
 					entries = append(entries, Entry{
 						Version:      version,
@@ -198,6 +208,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						Dependencies: scenario.Dependencies,
 						PreInstall:   scenario.PreInstall,
 						PostDeploy:   scenario.PostDeploy,
+						PreUpgrade:   preUpgrade,
 					})
 				}
 			}

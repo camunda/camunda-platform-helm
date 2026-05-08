@@ -467,24 +467,18 @@ func resolveUpgradeFromVersionQuiet(repoRoot string, entry Entry, overrideVersio
 	return version
 }
 
-// resolvePreUpgradeScriptQuiet returns the pre-upgrade script path if one is
-// declared for the entry's flow in ci-test-config.yaml. Used by the dry-run
-// summary; returns empty string for non-upgrade flows, fixture-mode hooks,
-// missing scripts, or when the config cannot be loaded (best-effort).
+// resolvePreUpgradeScriptQuiet returns the pre-upgrade script path declared
+// on the entry's PreUpgrade hook (if any). Used by the dry-run summary;
+// returns empty string for non-upgrade flows, fixture-mode hooks, or absent
+// scripts.
 func resolvePreUpgradeScriptQuiet(repoRoot string, entry Entry) string {
 	if !versionmatrix.IsUpgradeFlow(entry.Flow) {
 		return ""
 	}
-	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+entry.Version)
-	cfg, err := LoadCITestConfig(chartDir)
-	if err != nil || cfg.Integration.Flows == nil {
+	if entry.PreUpgrade == nil || entry.PreUpgrade.Script == "" {
 		return ""
 	}
-	flowHooks := cfg.Integration.Flows[entry.Flow]
-	if flowHooks == nil || flowHooks.PreUpgrade == nil || flowHooks.PreUpgrade.Script == "" {
-		return ""
-	}
-	return versionmatrix.PreSetupScriptPath(repoRoot, entry.Version, flowHooks.PreUpgrade.Script)
+	return versionmatrix.PreSetupScriptPath(repoRoot, entry.Version, entry.PreUpgrade.Script)
 }
 
 // resolveStep1ValuesFromQuiet returns the previous app version whose values files are used
@@ -2112,8 +2106,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 
 	// --- Pre-upgrade lifecycle hook ---
 	// Runs the declarative pre-upgrade hook (integration.flows.<flow>.pre-upgrade)
-	// from the target version's ci-test-config.yaml between Step 1 and Step 2.
-	if _, err := runDeclarativePreUpgradeHook(ctx, opts.RepoRoot, entry.Version, entry.Flow, flags); err != nil {
+	// resolved at matrix-generation time onto entry.PreUpgrade. Scoped to the
+	// target version (entry.Version is the version being upgraded to).
+	if err := runDeclarativePreUpgradeHook(ctx, flags, entry.PreUpgrade, opts.RepoRoot, entry.Version, entry.Flow); err != nil {
 		return err
 	}
 
@@ -2210,7 +2205,7 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		Msg("Upgrade-only flow: upgrading existing deployment (no install step)")
 
 	// --- Pre-upgrade lifecycle hook ---
-	if _, err := runDeclarativePreUpgradeHook(ctx, opts.RepoRoot, entry.Version, entry.Flow, flags); err != nil {
+	if err := runDeclarativePreUpgradeHook(ctx, flags, entry.PreUpgrade, opts.RepoRoot, entry.Version, entry.Flow); err != nil {
 		return err
 	}
 

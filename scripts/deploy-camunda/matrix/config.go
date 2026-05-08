@@ -85,6 +85,26 @@ type LifecycleHook struct {
 	Description string `yaml:"description"`
 }
 
+// Validate enforces the cross-field invariants documented on LifecycleHook:
+// non-empty description, exactly one of fixtures or script. ctx is prepended
+// to error messages so callers see e.g. `scenario "rdbms": pre-install: ...`.
+// A nil receiver is a no-op so callers can pass optional fields directly.
+func (h *LifecycleHook) Validate(ctx string) error {
+	if h == nil {
+		return nil
+	}
+	if strings.TrimSpace(h.Description) == "" {
+		return fmt.Errorf("%s: description: empty or whitespace-only (required)", ctx)
+	}
+	hasFixtures := len(h.Fixtures) > 0
+	hasScript := h.Script != ""
+	if hasFixtures == hasScript {
+		return fmt.Errorf("%s: must specify exactly one of fixtures or script (fixtures=%v script=%q)",
+			ctx, h.Fixtures, h.Script)
+	}
+	return nil
+}
+
 // FlowHooks groups lifecycle hooks attached to a flow rather than a scenario.
 type FlowHooks struct {
 	// PreUpgrade runs between Step 1 and Step 2 of a two-step upgrade flow.
