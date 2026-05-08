@@ -1798,21 +1798,21 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Str("osPoolIndex", flags.OSPoolIndex).
 		Msg("Deploying matrix entry")
 
-	// --- Pre-install lifecycle hook (single-step flows) ---
-	// Two-step upgrade flows register their pre-install hook against step1Flags
-	// inside executeTwoStepUpgrade, so skip here.
-	if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) && !versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
-		flags.PreInstallHooks = nil
+	// --- Lifecycle hook registration (single-step flows) ---
+	// Two-step upgrade flows register pre-install against step1Flags and
+	// post-deploy against step2Flags inside executeTwoStepUpgrade.
+	// Upgrade-only flows skip pre-install entirely (no install step). We
+	// append to flags.{PreInstall,PostDeploy}Hooks rather than overwriting
+	// because earlier code (e.g. the OIDC venom-secret PreInstallHook
+	// registered at line 1738) may have populated those slots already.
+	isTwoStepUpgrade := versionmatrix.IsTwoStepUpgradeFlow(entry.Flow)
+	isUpgradeOnly := versionmatrix.IsUpgradeOnlyFlow(entry.Flow)
+	if !isTwoStepUpgrade && !isUpgradeOnly {
 		if err := registerDeclarativePreInstallHook(flags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 			return RunResult{Entry: entry, Namespace: namespace, Error: err}
 		}
 	}
-
-	// --- Post-deploy lifecycle hook ---
-	// Fires after helm upgrade/install completes. For two-step upgrades the
-	// hook is registered against step2Flags inside executeTwoStepUpgrade.
-	if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
-		flags.PostDeployHooks = nil
+	if !isTwoStepUpgrade {
 		if err := registerDeclarativePostDeployHook(flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 			return RunResult{Entry: entry, Namespace: namespace, Error: err}
 		}
@@ -2090,7 +2090,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// Hook is registered against step1Flags so it fires before the Step 1 helm install.
 	// The app version being installed in Step 1 scopes script/fixture lookup
 	// (previous version for upgrade-minor, current for upgrade-patch).
-	step1Flags.PreInstallHooks = nil
+	// Append (do not nil-then-append): upstream hooks like the OIDC venom-secret
+	// hook were registered against flags before the *flags shallow copy and must
+	// fire in Step 1 too (helm install needs the secret already in the namespace).
 	if err := registerDeclarativePreInstallHook(&step1Flags, entry.PreInstall, opts.RepoRoot, step1AppVersion, entry.Scenario); err != nil {
 		return err
 	}
@@ -2161,7 +2163,6 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 
 	// --- Post-deploy lifecycle hook (Step 2 of two-step upgrade) ---
 	// Registered against step2Flags so it fires after the upgrade succeeds.
-	step2Flags.PostDeployHooks = nil
 	if err := registerDeclarativePostDeployHook(&step2Flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 		return err
 	}
