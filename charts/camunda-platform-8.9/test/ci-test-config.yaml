@@ -415,6 +415,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          features: [migrator]
           qa: true
           platforms: [gke]
         - name: qa-elasticsearch-document-upg
@@ -443,6 +444,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch
+          features: [migrator]
           qa: true
           platforms: [gke]
         - name: qa-elasticsearch-rba-upg
@@ -472,7 +474,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [multitenancy]
+          features: [multitenancy, migrator]
           qa: true
           platforms: [gke]
         - name: qa-license-upg
@@ -502,7 +504,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [documentstore]
+          features: [documentstore, migrator]
           qa: true
           platforms: [gke, eks]
         # kcor is referenced by .github/workflows/test-backward-compat.yaml's

@@ -331,6 +331,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          features: [migrator]
           qa: true
           platforms: [gke]
         - name: qa-elasticsearch
@@ -367,6 +368,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch
+          features: [migrator]
           qa: true
           platforms: [gke]
         - name: qa-elasticsearch-mt
@@ -396,7 +398,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [multitenancy]
+          features: [multitenancy, migrator]
           qa: true
           platforms: [gke]
         - name: qa-elasticsearch-rba
@@ -436,7 +438,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [documentstore]
+          features: [documentstore, migrator]
           qa: true
           platforms: [gke, eks]
         - name: qa-license
