@@ -143,8 +143,9 @@ integration:
           # Auth0 OIDC scenario. The matrix runner provisions per-component
           # first-party clients via the Management API at runtime
           # (auth0.IsAuth0Identity in scripts/deploy-camunda/matrix/runner.go).
-          # Playwright runs the auth0-smoke project (test/e2e/auth0-tests/)
-          # rather than the Keycloak-coupled smoke-tests project — see
+          # Playwright runs the auth0-smoke project (sourced from
+          # @camunda/e2e-test-suite/dist/tests/auth0) rather than the
+          # Keycloak-coupled smoke-tests project — see
           # scripts/base_playwright_script.sh. Tenant prerequisites are
           # documented at the top of values/identity/auth0.yaml.
           enabled: true
