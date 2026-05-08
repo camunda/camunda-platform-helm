@@ -1826,10 +1826,23 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// so it survives namespace recreation by deploy.Execute().
 	var auth0Opts *auth0.Options
 	if auth0.IsAuth0Identity(entry.Identity) {
+		// Per-entry ingress host. flags.ResolveIngressHostname() is empty in CI
+		// because test-integration-runner.yaml passes the host via
+		// `--extra-helm-set global.host=...` + the CAMUNDA_HOSTNAME /
+		// TEST_INGRESS_HOST env vars rather than --ingress-hostname. Auth0
+		// clients need the host at creation time (it's baked into redirect
+		// URIs), so fall back to those env vars if the flag is empty.
+		ingressHost := flags.ResolveIngressHostname()
+		if ingressHost == "" {
+			ingressHost = os.Getenv("CAMUNDA_HOSTNAME")
+		}
+		if ingressHost == "" {
+			ingressHost = os.Getenv("TEST_INGRESS_HOST")
+		}
 		opts := auth0.Options{
 			Namespace:     namespace,
 			KubeContext:   kubeCtx,
-			IngressHost:   flags.ResolveIngressHostname(),
+			IngressHost:   ingressHost,
 			SkipK8sSecret: true, // Phase 2 deferred to PreInstallHook.
 		}
 
