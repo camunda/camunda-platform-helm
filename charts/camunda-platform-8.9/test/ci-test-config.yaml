@@ -443,6 +443,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch
+          features: [migrator]
           qa: true
           platforms: [gke]
         - name: qa-elasticsearch-rba-upg
