@@ -1871,6 +1871,29 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 				}
 			}
 		}
+		// Fall back to process env (vault-action's exportEnv: true puts the
+		// AUTH0_* secrets here in CI). Without this, opts.Domain stays "" and
+		// the AUTH0_ISSUER_URL set into flags.ExtraEnv below ends up as
+		// just "/" — Spring's OIDC client then can't resolve the .well-known
+		// discovery and Zeebe CrashLoopBackOffs with
+		// "Unable to connect to the Identity Provider endpoint '/'".
+		// auth0.resolveOpts already does this fallback, but it operates on the
+		// EnsureClients-internal Options copy, not this one.
+		if opts.Domain == "" {
+			opts.Domain = os.Getenv("AUTH0_DOMAIN")
+		}
+		if opts.Audience == "" {
+			opts.Audience = os.Getenv("AUTH0_AUDIENCE")
+		}
+		if opts.MgmtToken == "" {
+			opts.MgmtToken = os.Getenv("AUTH0_MGMT_TOKEN")
+		}
+		if opts.MgmtClientID == "" {
+			opts.MgmtClientID = os.Getenv("AUTH0_MGMT_CLIENT_ID")
+		}
+		if opts.MgmtClientSecret == "" {
+			opts.MgmtClientSecret = os.Getenv("AUTH0_MGMT_CLIENT_SECRET")
+		}
 
 		logging.Logger.Info().
 			Str("namespace", namespace).
