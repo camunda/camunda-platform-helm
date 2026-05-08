@@ -98,6 +98,12 @@ func main() {
 		configOverrides)
 
 	namespace, _, err := kubeConfig.Namespace()
+	if err != nil {
+		log.Fatalf("Failed to resolve namespace from kubeconfig: %v", err)
+	}
+	if namespace == "" {
+		log.Fatalf("Resolved namespace is empty; refusing to operate cluster-wide. Set a namespace in your kubeconfig context.")
+	}
 
 	g, _ := errgroup.WithContext(context.Background())
 
@@ -262,7 +268,8 @@ func FetchConfigPropsMain(req FetchConfigPropsRequest) error {
 func PortForwardAPod(req PortForwardAPodRequest) error {
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward",
 		req.Pod.Namespace, req.Pod.Name)
-	hostIP := strings.TrimLeft(req.RestConfig.Host, "htps:/")
+	hostIP := strings.TrimPrefix(req.RestConfig.Host, "https://")
+	hostIP = strings.TrimPrefix(hostIP, "http://")
 
 	transport, upgrader, err := spdy.RoundTripperFor(req.RestConfig)
 	if err != nil {
@@ -537,8 +544,9 @@ func FetchConfigProps(podName string, managementPort int, contextPath string) er
 	}
 	defer resp.Body.Close()
 	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-	// write to configprops.json file
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("decoding configprops response: %w", err)
+	}
 	file, err := os.Create("configprops-" + podName + ".json")
 	if err != nil {
 		return fmt.Errorf("creating output file: %w", err)

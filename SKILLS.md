@@ -523,7 +523,7 @@ Four runtime scenarios where JDB pays off — and trigger phrases the LLM should
 ### Prerequisites
 
 - A deployed Camunda 8 release using the `integration-*` workload naming convention. Components and their hardcoded mapping live in [scripts/setup-debugger/main.go](scripts/setup-debugger/main.go) — Identity, Optimize, Connectors as Deployments; Zeebe as a StatefulSet.
-- `kubectl` context and namespace already set (`kubectl config current-context`, `kubectl config view --minify | grep namespace`). The script reads both from the active kubeconfig.
+- `kubectl` context and namespace already set. Verify with `kubectl config current-context` and `kubectl config view --minify -o jsonpath='{..namespace}'`. The script reads both from the active kubeconfig and aborts if the resolved namespace is empty.
 - `jdb` on PATH (ships with the JDK).
 - `skopeo` on PATH (used to fetch image-revision labels for log output — non-fatal if missing).
 - Build the binary once: `make install.setup-debugger` puts `setup-debugger` on `$GOPATH/bin`.
@@ -536,7 +536,13 @@ setup-debugger
 
 The tool patches each workload to inject `JAVA_TOOL_OPTIONS=-agentlib:jdwp=...:5005` plus the two Spring `MANAGEMENT_ENDPOINT_*` vars that expose `/actuator/configprops`, scales the pod 0→1 to apply the env vars, port-forwards JDWP and the management port, fetches `/actuator/configprops`, and writes `configprops-<pod>.json` to the working directory. Port-forwards stay open until SIGINT.
 
-**JDWP exposes every local and field — passwords, tokens, connection strings included.** Forward only to localhost. Never expose port 5005 via a Service or Ingress.
+> **Security: JDWP is unauthenticated remote code execution.** It exposes every local, field, and method — passwords, tokens, connection strings included — and lets any client invoke arbitrary methods on the JVM.
+>
+> The agent is started with `address=*:5005`, so it binds **all interfaces inside the pod**, not loopback. That means:
+> - Any pod in the same namespace (and any namespace lacking a NetworkPolicy) can reach `5005/tcp` and own the JVM.
+> - Anyone with `kubectl exec` or `port-forward` rights to a Camunda pod can reach it from outside the cluster.
+>
+> Only run this against dev/integration clusters you trust. Never run it against production or against any cluster where the namespace lacks a deny-by-default NetworkPolicy. Never expose port 5005 via a Service, Ingress, or LoadBalancer. Always run `setup-debugger -cleanup` when you are done — see the Cleanup section below; leaving JDWP listening is a persistent RCE foothold.
 
 ### Local port mapping
 
@@ -597,7 +603,7 @@ When the question is *"what config did this pod actually receive?"*, this is fas
 
 ### Cleanup
 
-`Ctrl-C` only stops the script's port-forwards. The injected env vars **persist on the workload** until reverted; JDWP stays open inside the pod. Always clean up after a session.
+**Cleanup is a security obligation, not housekeeping.** `Ctrl-C` only stops the script's port-forwards. The injected env vars **persist on the workload** until reverted, so JDWP stays open inside every patched pod and remains reachable from any pod in the namespace until you act. Forgetting to clean up turns the debug session into a long-lived, unauthenticated RCE foothold on the cluster. Run the revert before you walk away.
 
 **Preferred: scripted revert.**
 
