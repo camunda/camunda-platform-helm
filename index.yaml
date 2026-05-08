@@ -1193,6 +1193,108 @@ entries:
     version: 14.0.0-alpha1
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "Add elasticsearch-self-signed-upgrade scenario for 8.7->8.8 TLS upgrade testing"
+        - kind: added
+          description: "Add companion chart deployment support to deploy-camunda"
+        - kind: fixed
+          description: "Add missing properties and annotations to values.schema.json"
+        - kind: fixed
+          description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
+        - kind: fixed
+          description: "Set service account on orchestration migration jobs"
+        - kind: fixed
+          description: "Migration-data-job volume mount to /tmp"
+        - kind: fixed
+          description: "Support extraVolumeMounts and extraVolumes for migration jobs"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/component-image-versions: |
+        camunda: 8.8.24
+        managementIdentity: 8.8.12
+        optimize: 8.8.24
+        webModeler: 8.8.14
+        connectors: 8.8.11
+        console: 8.8.133
+      camunda.io/helmCLIVersion: 3.20.2
+      camunda.io/imageOverrides: |+
+        connectors: 8.8.11
+        console: 8.8.133
+        optimize: 8.8.24
+        orchestration: 8.8.24
+        modeler: 8.8.14
+        identity: 8.8.12
+
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2026-05-08T11:12:47.798021995Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: f628e009e18d04bd09979ef87714ab40731ad9ae6b7c3b2fcaf640f93e813295
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.8.0/camunda-platform-13.8.0.tgz
+    version: 13.8.0
+  - annotations:
+      artifacthub.io/changes: |
         - kind: changed
           description: "Remove integration tests"
       artifacthub.io/containsSecurityUpdates: "false"
@@ -27539,4 +27641,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-05-08T07:40:16.713783212Z"
+generated: "2026-05-08T11:12:47.798794249Z"
