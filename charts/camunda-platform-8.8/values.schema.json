@@ -1133,7 +1133,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.11"
+                            "default": "8.8.12"
                         },
                         "digest": {
                             "type": "string",
@@ -2811,7 +2811,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.13"
+                            "default": "8.8.14"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4595,7 +4595,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.10"
+                            "default": "8.8.11"
                         },
                         "digest": {
                             "type": "string",
@@ -5338,7 +5338,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.23"
+                            "default": "8.8.24"
                         },
                         "digest": {
                             "type": "string",
@@ -6566,7 +6566,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.8"
+                            "default": "8.8.24"
                         },
                         "digest": {
                             "type": "string",
