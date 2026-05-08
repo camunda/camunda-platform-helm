@@ -64,6 +64,10 @@ func TestIsOIDCEntry(t *testing.T) {
 		{"keycloak", "", false},
 		{"", "keycloak", false},
 		{"", "", false},
+		// auth0 entries reuse auth=="oidc" as the legacy "external OIDC"
+		// signal but must not trigger Entra provisioning.
+		{"oidc", "auth0", false},
+		{"", "auth0", false},
 	}
 	for _, tc := range tests {
 		name := fmt.Sprintf("auth=%q identity=%q", tc.auth, tc.identity)

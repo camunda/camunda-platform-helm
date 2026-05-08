@@ -15,6 +15,8 @@ package auth0
 import (
 	"bytes"
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -368,8 +370,14 @@ func CleanupClients(ctx context.Context, opts Options) {
 }
 
 // CreateK8sSecret creates or updates the K8s secret holding Auth0 private
-// client_secrets and any extra postgres passwords. Public clients are
-// excluded (SPAs have no usable secret).
+// client_secrets, web-modeler pusher secrets, and any extra postgres
+// passwords. Public clients are excluded (SPAs have no usable secret).
+//
+// Pusher keys (webmodeler-pusher-app-key, webmodeler-pusher-app-secret) are
+// generated here so the scenario doesn't need a separate provisioning step
+// for them. The webModeler chart's auto-generation path is gated on
+// .Values.webModeler.enabled which is false in 8.10 (consolidated into
+// camundaHub), so the chart can't auto-gen — we have to.
 func CreateK8sSecret(ctx context.Context, kubeContext, namespace, secretName string, prov *Provisioned, postgresPasswords map[string]string) error {
 	if secretName == "" {
 		secretName = DefaultSecretName
@@ -379,7 +387,19 @@ func CreateK8sSecret(ctx context.Context, kubeContext, namespace, secretName str
 		return fmt.Errorf("create K8s client: %w", err)
 	}
 
-	data := map[string]string{}
+	pusherKey, err := randomHex(16)
+	if err != nil {
+		return fmt.Errorf("generate pusher app key: %w", err)
+	}
+	pusherSecret, err := randomHex(32)
+	if err != nil {
+		return fmt.Errorf("generate pusher app secret: %w", err)
+	}
+
+	data := map[string]string{
+		"webmodeler-pusher-app-key":    pusherKey,
+		"webmodeler-pusher-app-secret": pusherSecret,
+	}
 	for _, c := range prov.Private {
 		data["auth0-"+c.Component] = c.ClientSecret
 	}
@@ -391,6 +411,15 @@ func CreateK8sSecret(ctx context.Context, kubeContext, namespace, secretName str
 		return fmt.Errorf("apply secret %s/%s: %w", namespace, secretName, err)
 	}
 	return nil
+}
+
+// randomHex returns 2*n hex characters of cryptographically secure randomness.
+func randomHex(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := cryptorand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // ---- Internals ----
@@ -607,6 +636,13 @@ func createClient(ctx context.Context, client *http.Client, token string, opts *
 		"app_type":                   appType,
 		"grant_types":                grantTypes,
 		"token_endpoint_auth_method": tokenAuthMethod,
+		// Force RS256. Auth0's Management API otherwise defaults new clients
+		// to HS256, which signs ID tokens with the client_secret — Spring's
+		// JWT decoder validates against the JWKS endpoint (RS256 public keys
+		// only), so HS256 tokens fail with "Another algorithm expected, or no
+		// matching key(s) found" at /sso-callback. The Auth0 dashboard
+		// defaults to RS256, but the API does not.
+		"jwt_configuration": map[string]any{"alg": "RS256"},
 	}
 	if cb := redirectURIs(component, opts.IngressHost); kind != kindM2M && len(cb) > 0 {
 		payload["callbacks"] = cb

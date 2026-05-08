@@ -1,11 +1,33 @@
 # Auth0 OIDC configuration for 8.10
 # Layer 2: Auth method - External OIDC provider (Auth0)
 #
-# Client IDs are populated by `deploy-camunda auth0 ensure-clients`, which
-# emits AUTH0_<COMPONENT>_CLIENT_ID env vars (and *_CLIENT_SECRET for
-# confidential clients). For values that go into the K8s secret (private
-# client_secrets), the chart references the existingSecret created by the
-# same command.
+# Per-component clientIds and the OIDC client_secrets are provisioned at runtime
+# by 'deploy-camunda auth0 ensure-clients'. That command:
+#   1. Creates 6 first-party Auth0 clients named "<namespace>-<component>" via
+#      the Management API (4 confidential: identity, orchestration, optimize,
+#      connectors; 2 SPA: Web Modeler, Console).
+#   2. Grants each confidential client access to AUTH0_AUDIENCE.
+#   3. Writes a K8s secret "client-secret-for-components" with keys
+#      auth0-{identity,orchestration,optimize,connectors}.
+# The matrix runner injects AUTH0_<COMPONENT>_CLIENT_ID env vars per-entry, so
+# the same scenario file works for parallel CI runs against distinct clients.
+#
+# Tenant prerequisites (one-time setup, NOT done by ensure-clients):
+#   - An API ("resource server") whose Identifier matches AUTH0_AUDIENCE
+#     (default: distribution-team-oidc) must exist in the tenant.
+#   - A Post-Login Action that adds the user's email to both ID and access
+#     tokens under "https://camunda.com/claims/email" must be in the
+#     post-login flow. Suggested code:
+#       exports.onExecutePostLogin = async (event, api) => {
+#         const ns = 'https://camunda.com/claims/';
+#         if (event.user.email) {
+#           api.idToken.setCustomClaim(ns + 'email', event.user.email);
+#           api.accessToken.setCustomClaim(ns + 'email', event.user.email);
+#         }
+#       };
+#     Without this Action, Identity bootstrap and orchestration usernameClaim
+#     resolution will both fail (the standard `email` claim is NOT in Auth0
+#     access tokens by default).
 
 global:
   elasticsearch:
@@ -17,7 +39,6 @@ global:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
@@ -60,7 +81,6 @@ global:
       connectors:
         clientId: $AUTH0_CONNECTORS_CLIENT_ID
         audience: $AUTH0_AUDIENCE
-        clientApiAudience: $AUTH0_AUDIENCE
         secret:
           existingSecret: client-secret-for-components
           existingSecretKey: auth0-connectors
@@ -75,10 +95,14 @@ global:
         audience: $AUTH0_AUDIENCE
         redirectUrl: "https://{{ .Values.global.host }}/"
 
+# identityPostgresql + webModelerPostgresql password secrets are pre-provisioned
+# in CI via the integration-test-credentials ExternalSecret (vault-backed). The
+# auth0 client_secrets land in client-secret-for-components instead, written by
+# ensure-clients. Two secrets, two distinct concerns.
 identityPostgresql:
   enabled: true
   auth:
-    existingSecret: "client-secret-for-components"
+    existingSecret: "integration-test-credentials"
     secretKeys:
       adminPasswordKey: identity-postgresql-admin-password
       userPasswordKey: identity-postgresql-user-password
@@ -92,11 +116,38 @@ connectors:
       method: oidc
       oidc:
         clientId: $AUTH0_CONNECTORS_CLIENT_ID
-        audience: $AUTH0_AUDIENCE
-        clientApiAudience: $AUTH0_AUDIENCE
         secret:
           existingSecret: client-secret-for-components
           existingSecretKey: auth0-connectors
+
+# Pusher key/secret refs are overridden onto client-secret-for-components.
+# Reasoning:
+#   - base.yaml defaults pusher.{client.,}secret.existingSecret to
+#     "integration-test-credentials" (CI's vault-backed shared secret), but
+#     the auth0 flow already manages a per-namespace secret —
+#     client-secret-for-components — and ensure-clients writes the
+#     webmodeler-pusher-app-{key,secret} keys into it (they have to exist
+#     somewhere; the chart's auto-gen path in secret-shared.yaml is gated on
+#     .Values.webModeler.enabled, which is false in 8.10's camundaHub
+#     consolidation, so the chart can't auto-gen for us).
+#   - This keeps the auth0 scenario self-contained: every key it depends on
+#     either lives in integration-test-credentials (postgres passwords, CI
+#     vault-managed) or in client-secret-for-components (auth0 client_secrets
+#     + pusher, runtime-managed by ensure-clients).
+camundaHub:
+  webModeler:
+    security:
+      authentication:
+        method: oidc
+    restapi:
+      pusher:
+        secret:
+          existingSecret: client-secret-for-components
+          existingSecretKey: webmodeler-pusher-app-secret
+        client:
+          secret:
+            existingSecret: client-secret-for-components
+            existingSecretKey: webmodeler-pusher-app-key
 
 orchestration:
   security:
@@ -108,11 +159,18 @@ orchestration:
         audience: $AUTH0_AUDIENCE
         # Auth0 puts the calling client_id under the standard "azp" claim on
         # both user-flow and M2M tokens — no Auth0 Action needed for client_id.
-        # For email, deploy a post-login Action that sets
-        # https://camunda.com/claims/email = event.user.email.
-        usernameClaim: https://camunda.com/claims/email
+        # For email, see the Action snippet at the top of this file.
         clientIdClaim: azp
+        usernameClaim: https://camunda.com/claims/email
         preferUsernameClaim: true
+        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
+        secret:
+          existingSecret: client-secret-for-components
+          existingSecretKey: auth0-orchestration
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
     authorizations:
       enabled: true
     initialization:

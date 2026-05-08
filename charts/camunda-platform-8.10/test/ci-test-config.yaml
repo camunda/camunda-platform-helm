@@ -139,6 +139,28 @@ integration:
           identity: oidc
           persistence: elasticsearch
           platforms: [gke]
+        - name: auth0
+          # Auth0 OIDC: matrix runner provisions per-component first-party
+          # clients via the Management API at runtime (see auth0.IsAuth0Identity
+          # in scripts/deploy-camunda/matrix/runner.go). Tenant prerequisites
+          # (custom API audience + post-login Action emitting
+          # https://camunda.com/claims/email) are documented in
+          # values/identity/auth0.yaml.
+          enabled: true
+          exclude: [identity,console,orchestration-grpc]
+          shortname: esa0
+          auth: oidc
+          flow: install
+          # Same rationale as the entra oidc entry — Keycloak-shaped venom
+          # smoke tests don't apply to a fresh Auth0 tenant.
+          skip-e2e: true
+          skip-it: true
+          infra-type:
+            gke: distroci
+            eks: preemptible
+          identity: auth0
+          persistence: elasticsearch
+          platforms: [gke]
         - name: keycloak-mt
           enabled: false
           exclude: []
