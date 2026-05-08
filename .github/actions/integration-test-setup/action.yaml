@@ -168,6 +168,11 @@ runs:
           secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
           secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
           secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+          secret/data/products/distribution/ci AUTH0_DOMAIN;
+          secret/data/products/distribution/ci AUTH0_AUDIENCE;
+          secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_ID;
+          secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_SECRET;
+          secret/data/products/distribution/ci AUTH0_INITIAL_ADMIN_EMAIL;
           secret/data/products/distribution/ci RDBMS_POSTGRESQL_USERNAME;
           secret/data/products/distribution/ci RDBMS_POSTGRESQL_PASSWORD;
           secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
