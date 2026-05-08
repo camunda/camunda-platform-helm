@@ -467,16 +467,24 @@ func resolveUpgradeFromVersionQuiet(repoRoot string, entry Entry, overrideVersio
 	return version
 }
 
-// resolvePreUpgradeScriptQuiet returns the pre-upgrade script path if one exists on disk.
-// Returns empty string for non-upgrade flows or when no script is found (dry-run is best-effort).
+// resolvePreUpgradeScriptQuiet returns the pre-upgrade script path if one is
+// declared for the entry's flow in ci-test-config.yaml. Used by the dry-run
+// summary; returns empty string for non-upgrade flows, fixture-mode hooks,
+// missing scripts, or when the config cannot be loaded (best-effort).
 func resolvePreUpgradeScriptQuiet(repoRoot string, entry Entry) string {
 	if !versionmatrix.IsUpgradeFlow(entry.Flow) {
 		return ""
 	}
-	if versionmatrix.HasPreUpgradeScript(repoRoot, entry.Version, entry.Flow) {
-		return versionmatrix.PreUpgradeScriptPath(repoRoot, entry.Version, entry.Flow)
+	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+entry.Version)
+	cfg, err := LoadCITestConfig(chartDir)
+	if err != nil || cfg.Integration.Flows == nil {
+		return ""
 	}
-	return ""
+	flowHooks := cfg.Integration.Flows[entry.Flow]
+	if flowHooks == nil || flowHooks.PreUpgrade == nil || flowHooks.PreUpgrade.Script == "" {
+		return ""
+	}
+	return versionmatrix.PreSetupScriptPath(repoRoot, entry.Version, flowHooks.PreUpgrade.Script)
 }
 
 // resolveStep1ValuesFromQuiet returns the previous app version whose values files are used
@@ -1796,36 +1804,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Str("osPoolIndex", flags.OSPoolIndex).
 		Msg("Deploying matrix entry")
 
-	// --- Pre-install lifecycle script (single-step flows) ---
-	// Register a scenario-specific pre-install hook for non-upgrade flows.
-	// Upgrade flows handle this inside executeTwoStepUpgrade with version-aware logic.
+	// --- Pre-install lifecycle hook (single-step flows) ---
+	// Two-step upgrade flows register their pre-install hook against step1Flags
+	// inside executeTwoStepUpgrade, so skip here.
 	if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) && !versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
-		if versionmatrix.HasPreInstallScript(opts.RepoRoot, entry.Version, entry.Scenario) {
-			scriptPath := versionmatrix.PreInstallScriptPath(opts.RepoRoot, entry.Version, entry.Scenario)
-			scenario := entry.Scenario
-			appVersion := entry.Version
-			flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
-				logging.Logger.Info().
-					Str("script", scriptPath).
-					Str("namespace", namespace).
-					Str("scenario", scenario).
-					Str("appVersion", appVersion).
-					Msg("Running scenario-specific pre-install script (PreInstallHook)")
-
-				scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
-				if flags.Test.KubeContext != "" {
-					scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
-				}
-
-				if err := executil.RunCommand(hookCtx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
-					return fmt.Errorf("pre-install script %s failed: %w", scriptPath, err)
-				}
-
-				logging.Logger.Info().
-					Str("script", scriptPath).
-					Msg("Pre-install script completed successfully")
-				return nil
-			})
+		if err := registerDeclarativePreInstallHook(flags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, Error: err}
 		}
 	}
 
@@ -2097,36 +2081,12 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 			Msg("Step 1: using previous app version's values files (matching CI behavior)")
 	}
 
-	// --- Pre-install lifecycle script ---
-	// Run a scenario-specific pre-install script (if it exists) before Step 1's helm install.
-	// These scripts create K8s resources (e.g., TLS secrets) that must exist in the namespace
-	// before the Helm release is installed. The script comes from the app version being installed
-	// in Step 1 (previous version for upgrade-minor, current for upgrade-patch).
-	if versionmatrix.HasPreInstallScript(opts.RepoRoot, step1AppVersion, entry.Scenario) {
-		scriptPath := versionmatrix.PreInstallScriptPath(opts.RepoRoot, step1AppVersion, entry.Scenario)
-		step1Flags.PreInstallHooks = append(step1Flags.PreInstallHooks, func(hookCtx context.Context) error {
-			namespace := flags.EffectiveNamespace()
-			logging.Logger.Info().
-				Str("script", scriptPath).
-				Str("namespace", namespace).
-				Str("scenario", entry.Scenario).
-				Str("appVersion", step1AppVersion).
-				Msg("Running scenario-specific pre-install script (PreInstallHook)")
-
-			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
-			if flags.Test.KubeContext != "" {
-				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
-			}
-
-			if err := executil.RunCommand(hookCtx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
-				return fmt.Errorf("pre-install script %s failed: %w", scriptPath, err)
-			}
-
-			logging.Logger.Info().
-				Str("script", scriptPath).
-				Msg("Pre-install script completed successfully")
-			return nil
-		})
+	// --- Pre-install lifecycle hook (Step 1 of two-step upgrade) ---
+	// Hook is registered against step1Flags so it fires before the Step 1 helm install.
+	// The app version being installed in Step 1 scopes script/fixture lookup
+	// (previous version for upgrade-minor, current for upgrade-patch).
+	if err := registerDeclarativePreInstallHook(&step1Flags, entry.PreInstall, opts.RepoRoot, step1AppVersion, entry.Scenario); err != nil {
+		return err
 	}
 
 	if err := deploy.Execute(ctx, &step1Flags); err != nil {
@@ -2138,36 +2098,11 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		Str("version", fromVersion).
 		Msg("Step 1 complete: previous version installed successfully")
 
-	// --- Pre-upgrade lifecycle script ---
-	// Run the pre-upgrade script (if it exists) between Step 1 and Step 2.
-	// These scripts perform version-specific cleanup (e.g., deleting StatefulSets/PVCs)
-	// that must happen after the old version is installed but before the upgrade.
-	if scriptPath := versionmatrix.PreUpgradeScriptPath(opts.RepoRoot, entry.Version, entry.Flow); scriptPath != "" {
-		if versionmatrix.HasPreUpgradeScript(opts.RepoRoot, entry.Version, entry.Flow) {
-			namespace := flags.EffectiveNamespace()
-			logging.Logger.Info().
-				Str("script", scriptPath).
-				Str("namespace", namespace).
-				Str("flow", entry.Flow).
-				Msg("Running pre-upgrade script")
-
-			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
-			if flags.Test.KubeContext != "" {
-				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
-			}
-
-			if err := executil.RunCommand(ctx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
-				return fmt.Errorf("pre-upgrade script %s failed: %w", scriptPath, err)
-			}
-
-			logging.Logger.Info().
-				Str("script", scriptPath).
-				Msg("Pre-upgrade script completed successfully")
-		} else {
-			logging.Logger.Debug().
-				Str("script", scriptPath).
-				Msg("Pre-upgrade script not found on disk, skipping")
-		}
+	// --- Pre-upgrade lifecycle hook ---
+	// Runs the declarative pre-upgrade hook (integration.flows.<flow>.pre-upgrade)
+	// from the target version's ci-test-config.yaml between Step 1 and Step 2.
+	if _, err := runDeclarativePreUpgradeHook(ctx, opts.RepoRoot, entry.Version, entry.Flow, flags); err != nil {
+		return err
 	}
 
 	// --- Step 2: Upgrade to current on-disk chart (or external chart-ref when set) ---
@@ -2255,33 +2190,9 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		Str("chartPath", entry.ChartPath).
 		Msg("Upgrade-only flow: upgrading existing deployment (no install step)")
 
-	// --- Pre-upgrade lifecycle script ---
-	if scriptPath := versionmatrix.PreUpgradeScriptPath(opts.RepoRoot, entry.Version, entry.Flow); scriptPath != "" {
-		if versionmatrix.HasPreUpgradeScript(opts.RepoRoot, entry.Version, entry.Flow) {
-			namespace := flags.EffectiveNamespace()
-			logging.Logger.Info().
-				Str("script", scriptPath).
-				Str("namespace", namespace).
-				Str("flow", entry.Flow).
-				Msg("Running pre-upgrade script")
-
-			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
-			if flags.Test.KubeContext != "" {
-				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
-			}
-
-			if err := executil.RunCommand(ctx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
-				return fmt.Errorf("pre-upgrade script %s failed: %w", scriptPath, err)
-			}
-
-			logging.Logger.Info().
-				Str("script", scriptPath).
-				Msg("Pre-upgrade script completed successfully")
-		} else {
-			logging.Logger.Debug().
-				Str("script", scriptPath).
-				Msg("Pre-upgrade script not found on disk, skipping")
-		}
+	// --- Pre-upgrade lifecycle hook ---
+	if _, err := runDeclarativePreUpgradeHook(ctx, opts.RepoRoot, entry.Version, entry.Flow, flags); err != nil {
+		return err
 	}
 
 	// --- Upgrade to current on-disk chart ---

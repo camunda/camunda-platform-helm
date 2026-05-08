@@ -42,6 +42,11 @@ type Entry struct {
 
 	// Dependencies specifies companion charts to deploy before the main Camunda chart.
 	Dependencies []ChartDependency `json:"dependencies,omitempty"`
+
+	// PreInstall declares a fixture or script to run before helm install.
+	// Carried from CIScenario.PreInstall so the runner can dispatch declaratively
+	// without re-loading ci-test-config.yaml.
+	PreInstall *LifecycleHook `json:"preInstall,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -187,6 +192,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						SkipE2E:      scenario.SkipE2E,
 						SkipIT:       scenario.SkipIT,
 						Dependencies: scenario.Dependencies,
+						PreInstall:   scenario.PreInstall,
 					})
 				}
 			}

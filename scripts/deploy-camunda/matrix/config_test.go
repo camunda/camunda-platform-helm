@@ -130,6 +130,35 @@ integration:
 	}
 }
 
+func TestGenerate_PropagatesPreInstall(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	var rdbms *Entry
+	for i := range entries {
+		if entries[i].Scenario == "rdbms" && entries[i].Version == "8.10" {
+			rdbms = &entries[i]
+			break
+		}
+	}
+	if rdbms == nil {
+		t.Fatal("rdbms 8.10 entry not found")
+	}
+	if rdbms.PreInstall == nil {
+		t.Fatal("rdbms 8.10: PreInstall: nil")
+	}
+	if len(rdbms.PreInstall.Fixtures) != 1 || rdbms.PreInstall.Fixtures[0] != "postgresql-cluster.yaml" {
+		t.Errorf("rdbms 8.10 fixtures: got %v", rdbms.PreInstall.Fixtures)
+	}
+	if rdbms.PreInstall.Description == "" {
+		t.Error("rdbms 8.10: description: empty")
+	}
+}
+
 func TestLifecycleHook_NoNewFields_BackwardsCompatible(t *testing.T) {
 	// Existing scenario entries with no pre-install: field must parse fine
 	// and produce nil PreInstall.
