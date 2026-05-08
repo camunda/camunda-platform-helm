@@ -1950,7 +1950,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			logging.Logger.Info().
 				Str("namespace", namespace).
 				Msg("Auth0 Phase 2 — creating client-secret-for-components K8s secret (PreInstallHook)")
-			return auth0.CreateK8sSecretWithInfo(
+			return auth0.CreateK8sSecret(
 				hookCtx, kubeCtx, namespace, secretNameForHook,
 				provForSecret, nil, issuerForSecret, audienceForSecret,
 			)

@@ -308,7 +308,7 @@ func EnsureClients(ctx context.Context, opts Options) (*Provisioned, error) {
 
 	if !opts.SkipK8sSecret {
 		issuerURL := strings.TrimSuffix(opts.Domain, "/") + "/"
-		if err := CreateK8sSecretWithInfo(
+		if err := CreateK8sSecret(
 			ctx, opts.KubeContext, opts.Namespace, opts.SecretName,
 			prov, opts.PostgresPasswords, issuerURL, opts.Audience,
 		); err != nil {
@@ -374,29 +374,23 @@ func CleanupClients(ctx context.Context, opts Options) {
 	}
 }
 
-// CreateK8sSecret creates or updates the K8s secret holding Auth0 private
-// client_secrets, web-modeler pusher secrets, and any extra postgres
-// passwords. Public clients are excluded (SPAs have no usable secret).
+// CreateK8sSecret creates or updates the K8s secret holding the values the
+// rest of the Auth0 scenario depends on:
 //
-// In addition to the secret values themselves, the secret also carries the
-// public OIDC parameters (issuer URL, audience, all 6 client_ids) under
-// "auth0-info-*" keys. These are NOT secrets — they're written here so the
-// test job (a separate GitHub Actions job that doesn't inherit the install
-// job's per-entry env vars) can resolve them via a single kubectl call.
+//   - auth0-<component>: the OIDC client_secret per confidential component
+//     (identity, orchestration, optimize, connectors). SPA clients are
+//     excluded — they have no usable secret.
+//   - webmodeler-pusher-app-{key,secret}: pusher credentials. The chart's
+//     auto-gen path is gated on .Values.webModeler.enabled which is false in
+//     8.10 (consolidated into camundaHub), so we have to provide them.
+//   - auth0-info-*: public OIDC parameters (issuer URL, audience, all 6
+//     client_ids). NOT secrets — written here so the test job (a separate
+//     GitHub Actions job that doesn't inherit the install job's per-entry
+//     env vars) can resolve them via a single kubectl call.
 //
-// Pusher keys (webmodeler-pusher-app-key, webmodeler-pusher-app-secret) are
-// generated here so the scenario doesn't need a separate provisioning step
-// for them. The webModeler chart's auto-generation path is gated on
-// .Values.webModeler.enabled which is false in 8.10 (consolidated into
-// camundaHub), so the chart can't auto-gen — we have to.
-func CreateK8sSecret(ctx context.Context, kubeContext, namespace, secretName string, prov *Provisioned, postgresPasswords map[string]string) error {
-	return CreateK8sSecretWithInfo(ctx, kubeContext, namespace, secretName, prov, postgresPasswords, "", "")
-}
-
-// CreateK8sSecretWithInfo is CreateK8sSecret with the auth0-info-* keys
-// (issuer + audience) populated. issuerURL and audience may be empty —
-// they're omitted from the secret if so.
-func CreateK8sSecretWithInfo(
+// issuerURL and audience may be empty; the corresponding keys are then
+// omitted from the secret rather than written empty.
+func CreateK8sSecret(
 	ctx context.Context,
 	kubeContext, namespace, secretName string,
 	prov *Provisioned,
@@ -431,9 +425,8 @@ func CreateK8sSecretWithInfo(
 		data[k] = v
 	}
 
-	// Public OIDC parameters needed by the test job to assert against.
 	for _, c := range prov.All() {
-		data["auth0-info-"+envifyComponent(c.Component)+"-client-id"] = c.ClientID
+		data["auth0-info-"+componentSlug(c.Component)+"-client-id"] = c.ClientID
 	}
 	if issuerURL != "" {
 		data["auth0-info-issuer-url"] = issuerURL
@@ -448,22 +441,10 @@ func CreateK8sSecretWithInfo(
 	return nil
 }
 
-// envifyComponent matches the runner's env var naming scheme:
-// "Web Modeler" → "web-modeler", "connectors" → "connectors". Lowercased so
-// the secret keys conform to RFC 1123 label requirements.
-func envifyComponent(component string) string {
-	s := ""
-	for _, r := range component {
-		switch {
-		case r >= 'A' && r <= 'Z':
-			s += string(r + 32)
-		case r == ' ':
-			s += "-"
-		default:
-			s += string(r)
-		}
-	}
-	return s
+// componentSlug returns an RFC 1123-compatible secret-key slug for a
+// component name. "Web Modeler" → "web-modeler", "connectors" → "connectors".
+func componentSlug(component string) string {
+	return strings.ReplaceAll(strings.ToLower(component), " ", "-")
 }
 
 // randomHex returns 2*n hex characters of cryptographically secure randomness.

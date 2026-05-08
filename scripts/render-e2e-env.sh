@@ -254,13 +254,12 @@ render_env_file() {
   export TEST_INGRESS_HOST="$hostname"
   envsubst < "$test_suite_path"/.env.template > "$env_file"
 
-  # Auth0 scenario short-circuit. The auth0-smoke Playwright project doesn't
-  # use the Keycloak admin password, the test users, or the Keycloak/Spring
-  # token URL — it only needs the Auth0 issuer + per-component client_ids,
-  # which the matrix runner publishes into the client-secret-for-components
-  # K8s secret under auth0-info-* keys. Skipping resolve_keycloak_setup_password
-  # / resolve_identity_passwords here is important: with Keycloak disabled in
-  # the auth0 scenario, those calls `exit 1` and abort the whole render.
+  # Auth0 scenario short-circuit. The auth0-smoke Playwright project only
+  # needs the Auth0 issuer + per-component client_ids; the matrix runner
+  # publishes those into client-secret-for-components under auth0-info-*
+  # keys at install time. Skip resolve_keycloak_setup_password /
+  # resolve_identity_passwords because they `exit 1` when no Keycloak is
+  # deployed.
   if [[ "$is_auth0" == "true" ]]; then
     log "DEBUG: Auth0 scenario detected — resolving auth0-info-* keys from client-secret-for-components"
 
@@ -270,30 +269,21 @@ render_env_file() {
       exit 13
     fi
 
-    # Read auth0-info-* keys from the secret. Each key holds a non-secret value
-    # (issuer URL, audience, client_id) — but they live in the secret because
-    # auth0 ensure-clients already manages it.
-    local issuer audience identity_id orchestration_id optimize_id connectors_id webmodeler_id console_id
-    issuer=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-issuer-url")
-    audience=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-audience")
-    identity_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-identity-client-id")
-    orchestration_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-orchestration-client-id")
-    optimize_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-optimize-client-id")
-    connectors_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-connectors-client-id")
-    webmodeler_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-web-modeler-client-id")
-    console_id=$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "auth0-info-console-client-id")
-
-    # Allow env vars (set upstream by the matrix runner during install) to
-    # override the secret-derived values. This lets local invocations work
-    # without round-tripping through the cluster.
-    issuer="${AUTH0_ISSUER_URL:-$issuer}"
-    audience="${AUTH0_AUDIENCE:-$audience}"
-    identity_id="${AUTH0_IDENTITY_CLIENT_ID:-$identity_id}"
-    orchestration_id="${AUTH0_ORCHESTRATION_CLIENT_ID:-$orchestration_id}"
-    optimize_id="${AUTH0_OPTIMIZE_CLIENT_ID:-$optimize_id}"
-    connectors_id="${AUTH0_CONNECTORS_CLIENT_ID:-$connectors_id}"
-    webmodeler_id="${AUTH0_WEB_MODELER_CLIENT_ID:-$webmodeler_id}"
-    console_id="${AUTH0_CONSOLE_CLIENT_ID:-$console_id}"
+    # Each row maps a kubernetes secret key onto an env var name.
+    # Process-env values (set by the matrix runner during install) win when
+    # both are present, so local invocations work without round-tripping
+    # through the cluster.
+    #                          secret-key                         env-var
+    local mappings=(
+      "auth0-info-issuer-url                      AUTH0_ISSUER_URL"
+      "auth0-info-audience                        AUTH0_AUDIENCE"
+      "auth0-info-identity-client-id              AUTH0_IDENTITY_CLIENT_ID"
+      "auth0-info-orchestration-client-id         AUTH0_ORCHESTRATION_CLIENT_ID"
+      "auth0-info-optimize-client-id              AUTH0_OPTIMIZE_CLIENT_ID"
+      "auth0-info-connectors-client-id            AUTH0_CONNECTORS_CLIENT_ID"
+      "auth0-info-web-modeler-client-id           AUTH0_WEB_MODELER_CLIENT_ID"
+      "auth0-info-console-client-id               AUTH0_CONSOLE_CLIENT_ID"
+    )
 
     {
       echo "PLAYWRIGHT_BASE_URL=https://$hostname"
@@ -301,14 +291,12 @@ render_env_file() {
       echo "CLUSTER_NAME=integration"
       echo "IS_AUTH0=true"
       echo "IS_SMOKE=true"
-      [[ -n "$issuer" ]] && echo "AUTH0_ISSUER_URL=$issuer"
-      [[ -n "$audience" ]] && echo "AUTH0_AUDIENCE=$audience"
-      [[ -n "$identity_id" ]] && echo "AUTH0_IDENTITY_CLIENT_ID=$identity_id"
-      [[ -n "$orchestration_id" ]] && echo "AUTH0_ORCHESTRATION_CLIENT_ID=$orchestration_id"
-      [[ -n "$optimize_id" ]] && echo "AUTH0_OPTIMIZE_CLIENT_ID=$optimize_id"
-      [[ -n "$connectors_id" ]] && echo "AUTH0_CONNECTORS_CLIENT_ID=$connectors_id"
-      [[ -n "$webmodeler_id" ]] && echo "AUTH0_WEB_MODELER_CLIENT_ID=$webmodeler_id"
-      [[ -n "$console_id" ]] && echo "AUTH0_CONSOLE_CLIENT_ID=$console_id"
+      local row key envvar resolved
+      for row in "${mappings[@]}"; do
+        read -r key envvar <<< "$row"
+        resolved="${!envvar:-$(_auth0_get_secret_key "$kubectl_cmd" "$namespace" "$auth0_secret" "$key")}"
+        [[ -n "$resolved" ]] && echo "${envvar}=${resolved}"
+      done
       [[ -n "${AUTH0_INITIAL_ADMIN_EMAIL:-}" ]] && echo "AUTH0_INITIAL_ADMIN_EMAIL=${AUTH0_INITIAL_ADMIN_EMAIL}"
     } >> "$env_file"
     log "DEBUG: Auth0 env file setup complete (Keycloak resolution skipped)"
