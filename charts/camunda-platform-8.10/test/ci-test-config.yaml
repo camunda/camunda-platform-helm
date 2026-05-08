@@ -358,7 +358,7 @@ integration:
         - name: qa-opensearch-upg
           enabled: false
           flow: install
-          shortname: qaosupg
+          shortname: qaosupg2
           auth: keycloak
           identity: keycloak
           persistence: opensearch
