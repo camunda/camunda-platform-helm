@@ -540,7 +540,6 @@ func TestPreUpgradeScriptPath(t *testing.T) {
 		t.Errorf("PreUpgradeScriptPath() = %q, want %q", got, want)
 	}
 
-	// Non-upgrade flow returns empty.
 	if got := PreUpgradeScriptPath("/repo", "8.9", "install"); got != "" {
 		t.Errorf("PreUpgradeScriptPath(install) = %q, want empty", got)
 	}
@@ -552,18 +551,55 @@ func TestHasPreUpgradeScript(t *testing.T) {
 		t.Skip("cannot find repo root")
 	}
 
-	// 8.9 has a pre-upgrade-patch.sh with real content.
 	if !HasPreUpgradeScript(repoRoot, "8.9", "upgrade-patch") {
 		t.Error("expected HasPreUpgradeScript(8.9, upgrade-patch) = true")
 	}
 
-	// Non-upgrade flow should always return false.
 	if HasPreUpgradeScript(repoRoot, "8.9", "install") {
 		t.Error("expected HasPreUpgradeScript(8.9, install) = false")
 	}
 
-	// Non-existent version should return false.
 	if HasPreUpgradeScript(repoRoot, "99.99", "upgrade-patch") {
 		t.Error("expected HasPreUpgradeScript(99.99, upgrade-patch) = false")
+	}
+}
+
+func TestPreSetupScriptPath(t *testing.T) {
+	got := PreSetupScriptPath("/repo", "8.10", "pre-install-rdbms.sh")
+	want := filepath.Join("/repo", "charts", "camunda-platform-8.10",
+		"test", "integration", "scenarios", "pre-setup-scripts", "pre-install-rdbms.sh")
+	if got != want {
+		t.Errorf("PreSetupScriptPath() = %q, want %q", got, want)
+	}
+
+	if got := PreSetupScriptPath("/repo", "8.10", ""); got != "" {
+		t.Errorf("PreSetupScriptPath(empty filename) = %q, want empty", got)
+	}
+}
+
+func TestHasPreSetupScript(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+	if repoRoot == "" {
+		t.Skip("cannot find repo root")
+	}
+
+	// 8.10 has pre-install-rdbms.sh.
+	if !HasPreSetupScript(repoRoot, "8.10", "pre-install-rdbms.sh") {
+		t.Error("expected HasPreSetupScript(8.10, pre-install-rdbms.sh) = true")
+	}
+
+	// Empty filename should return false.
+	if HasPreSetupScript(repoRoot, "8.10", "") {
+		t.Error("expected HasPreSetupScript(8.10, empty) = false")
+	}
+
+	// Non-existent file should return false.
+	if HasPreSetupScript(repoRoot, "8.10", "pre-install-bogus.sh") {
+		t.Error("expected HasPreSetupScript(8.10, pre-install-bogus.sh) = false")
+	}
+
+	// Non-existent version should return false.
+	if HasPreSetupScript(repoRoot, "99.99", "pre-install-rdbms.sh") {
+		t.Error("expected HasPreSetupScript(99.99, pre-install-rdbms.sh) = false")
 	}
 }

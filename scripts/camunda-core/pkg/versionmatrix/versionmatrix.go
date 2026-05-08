@@ -29,6 +29,10 @@ const (
 //	"modular-upgrade-minor"   → "pre-upgrade-minor.sh"
 //
 // Returns empty string for non-upgrade flows.
+//
+// Deprecated: prefer the declarative LifecycleHook block in ci-test-config.yaml
+// resolved via PreSetupScriptPath / HasPreSetupScript. This function is kept
+// during the migration window and will be removed in a follow-up commit.
 func PreUpgradeScriptName(flow string) string {
 	switch flow {
 	case "upgrade-patch":
@@ -41,11 +45,7 @@ func PreUpgradeScriptName(flow string) string {
 }
 
 // PreUpgradeScriptPath returns the absolute path to the pre-upgrade script for a given
-// app version and flow. The path follows the convention:
-//
-//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/pre-upgrade-<suffix>.sh
-//
-// Returns empty string if the flow doesn't have a pre-upgrade script.
+// app version and flow. Deprecated: see PreUpgradeScriptName.
 func PreUpgradeScriptPath(repoRoot, appVersion, flow string) string {
 	name := PreUpgradeScriptName(flow)
 	if name == "" {
@@ -56,7 +56,7 @@ func PreUpgradeScriptPath(repoRoot, appVersion, flow string) string {
 }
 
 // HasPreUpgradeScript returns true if a pre-upgrade script exists on disk for the
-// given app version and flow.
+// given app version and flow. Deprecated: see PreUpgradeScriptName.
 func HasPreUpgradeScript(repoRoot, appVersion, flow string) bool {
 	p := PreUpgradeScriptPath(repoRoot, appVersion, flow)
 	if p == "" {
@@ -67,11 +67,8 @@ func HasPreUpgradeScript(repoRoot, appVersion, flow string) bool {
 }
 
 // PreInstallScriptName returns the pre-install script filename for a given
-// scenario. The naming convention is:
-//
-//	"elasticsearch-self-signed-upgrade" → "pre-install-elasticsearch-self-signed-upgrade.sh"
-//
-// Returns empty string if scenario is empty.
+// scenario. Deprecated: prefer the declarative LifecycleHook block in
+// ci-test-config.yaml resolved via PreSetupScriptPath / HasPreSetupScript.
 func PreInstallScriptName(scenario string) string {
 	if scenario == "" {
 		return ""
@@ -80,11 +77,7 @@ func PreInstallScriptName(scenario string) string {
 }
 
 // PreInstallScriptPath returns the absolute path to the scenario-specific
-// pre-install script for a given app version. The path follows the convention:
-//
-//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/pre-install-<scenario>.sh
-//
-// Returns empty string if scenario is empty.
+// pre-install script for a given app version. Deprecated: see PreInstallScriptName.
 func PreInstallScriptPath(repoRoot, appVersion, scenario string) string {
 	name := PreInstallScriptName(scenario)
 	if name == "" {
@@ -95,9 +88,35 @@ func PreInstallScriptPath(repoRoot, appVersion, scenario string) string {
 }
 
 // HasPreInstallScript returns true if a scenario-specific pre-install script
-// exists on disk for the given app version.
+// exists on disk for the given app version. Deprecated: see PreInstallScriptName.
 func HasPreInstallScript(repoRoot, appVersion, scenario string) bool {
 	p := PreInstallScriptPath(repoRoot, appVersion, scenario)
+	if p == "" {
+		return false
+	}
+	info, err := os.Stat(p)
+	return err == nil && !info.IsDir()
+}
+
+// PreSetupScriptPath returns the absolute path to a pre-setup script for the
+// given app version and explicit filename. Used for declarative lifecycle hooks
+// referenced by ci-test-config.yaml.
+//
+//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/<filename>
+//
+// Returns empty string if filename is empty.
+func PreSetupScriptPath(repoRoot, appVersion, filename string) string {
+	if filename == "" {
+		return ""
+	}
+	return filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion,
+		"test", "integration", "scenarios", PreSetupScriptsDir, filename)
+}
+
+// HasPreSetupScript returns true if a pre-setup script with the given filename
+// exists on disk for the given app version.
+func HasPreSetupScript(repoRoot, appVersion, filename string) bool {
+	p := PreSetupScriptPath(repoRoot, appVersion, filename)
 	if p == "" {
 		return false
 	}
