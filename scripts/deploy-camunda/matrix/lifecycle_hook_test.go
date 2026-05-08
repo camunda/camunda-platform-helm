@@ -15,6 +15,8 @@
 package matrix
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -53,13 +55,14 @@ var commonResourcesAllowlist = map[string]bool{
 // TestLifecycleFixtures asserts the integrity of the declarative lifecycle
 // fixture system across every chart version:
 //
+//   - LifecycleHook.Validate passes (description non-empty, exactly one mode);
 //   - every LifecycleHook.Script value resolves to an existing file;
 //   - every LifecycleHook.Fixtures[i] resolves to an existing file in
 //     common/resources/;
-//   - every LifecycleHook.Description is non-empty;
-//   - exactly one of Script / Fixtures is set per hook;
 //   - every script in pre-setup-scripts/ (modulo the allowlist) is referenced
-//     by ≥1 hook — no orphan scripts.
+//     by ≥1 hook — no orphan scripts;
+//   - integration.flows.* keys reference flows that some scenario actually uses;
+//   - allowlist entries point to files that exist in at least one chart version.
 func TestLifecycleFixtures(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	chartsDir := filepath.Join(repoRoot, "charts")
@@ -81,19 +84,44 @@ func TestLifecycleFixtures(t *testing.T) {
 	}
 	sort.Strings(versions)
 
+	// Allowlist usage tracking — entries unused across every version are dead
+	// references and must be removed.
+	usedScriptAllowlist := make(map[string]bool)
+	usedFixtureAllowlist := make(map[string]bool)
+
 	for _, v := range versions {
 		v := v
 		t.Run(v, func(t *testing.T) {
-			validateLifecycleFixturesForVersion(t, repoRoot, v)
+			validateLifecycleFixturesForVersion(t, repoRoot, v, usedScriptAllowlist, usedFixtureAllowlist)
 		})
+	}
+
+	for name := range preSetupScriptAllowlist {
+		if !usedScriptAllowlist[name] {
+			t.Errorf("preSetupScriptAllowlist entry %q matches no file in any version — remove it", name)
+		}
+	}
+	for name := range commonResourcesAllowlist {
+		if !usedFixtureAllowlist[name] {
+			t.Errorf("commonResourcesAllowlist entry %q matches no file in any version — remove it", name)
+		}
 	}
 }
 
-func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string) {
+func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
+	usedScriptAllowlist, usedFixtureAllowlist map[string]bool) {
 	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+version)
-	cfgPath := filepath.Join(chartDir, "test", "ci-test-config.yaml")
+	// Some chart dirs (end-of-life, alpha channel) ship without a test/ tree
+	// at all — those are not testable here. Skip the version entirely.
+	testDir := filepath.Join(chartDir, "test")
+	if _, err := os.Stat(testDir); errors.Is(err, fs.ErrNotExist) {
+		t.Skipf("no test/ tree for %s", version)
+		return
+	}
+	cfgPath := filepath.Join(testDir, "ci-test-config.yaml")
 	if _, err := os.Stat(cfgPath); err != nil {
-		t.Skipf("no ci-test-config.yaml for %s", version)
+		// test/ exists but config is missing — a regression, not a skip.
+		t.Errorf("ci-test-config.yaml missing for %s at %s: %v", version, cfgPath, err)
 		return
 	}
 	cfg, err := LoadCITestConfig(chartDir)
@@ -104,7 +132,6 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string)
 	scriptsDir := filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts")
 	resourcesDir := filepath.Join(chartDir, "test", "integration", "scenarios", "common", "resources")
 
-	// Collect referenced scripts + fixtures.
 	referencedScripts := make(map[string]bool)
 	referencedFixtures := make(map[string]bool)
 
@@ -112,17 +139,11 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string)
 		if hook == nil {
 			return
 		}
-		if strings.TrimSpace(hook.Description) == "" {
-			t.Errorf("%s: %s: description: empty or whitespace-only (required)", version, label)
-		}
-		hasFixtures := len(hook.Fixtures) > 0
-		hasScript := hook.Script != ""
-		if hasFixtures == hasScript {
-			t.Errorf("%s: %s: must set exactly one of fixtures or script (fixtures=%v script=%q)",
-				version, label, hook.Fixtures, hook.Script)
+		if err := hook.Validate(version + ": " + label); err != nil {
+			t.Error(err)
 			return
 		}
-		if hasScript {
+		if hook.Script != "" {
 			referencedScripts[hook.Script] = true
 			scriptPath := filepath.Join(scriptsDir, hook.Script)
 			if info, err := os.Stat(scriptPath); err != nil || info.IsDir() {
@@ -138,15 +159,37 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string)
 		}
 	}
 
+	// Source of truth for valid flow names: permitted-flows.yaml defaults
+	// plus any per-scenario `flow:` value in this version's config.
+	knownFlows := map[string]bool{}
+	if pf, err := LoadPermittedFlows(repoRoot); err != nil {
+		t.Fatalf("LoadPermittedFlows: %v", err)
+	} else {
+		for _, f := range pf.Defaults.Flows {
+			knownFlows[f] = true
+		}
+	}
+	addScenarioFlows := func(scn CIScenario) {
+		for _, f := range strings.Split(scn.Flow, ",") {
+			if f = strings.TrimSpace(f); f != "" {
+				knownFlows[f] = true
+			}
+		}
+	}
 	for _, scn := range cfg.Integration.Case.PR.Scenarios {
 		collect("scenario "+scn.Name+" (PR pre-install)", scn.PreInstall)
 		collect("scenario "+scn.Name+" (PR post-deploy)", scn.PostDeploy)
+		addScenarioFlows(scn)
 	}
 	for _, scn := range cfg.Integration.Case.Nightly.Scenarios {
 		collect("scenario "+scn.Name+" (Nightly pre-install)", scn.PreInstall)
 		collect("scenario "+scn.Name+" (Nightly post-deploy)", scn.PostDeploy)
+		addScenarioFlows(scn)
 	}
 	for flowName, hooks := range cfg.Integration.Flows {
+		if !knownFlows[flowName] {
+			t.Errorf("%s: integration.flows.%s: not a known flow (not in permitted-flows.yaml defaults and no scenario uses it) — typo or dead key", version, flowName)
+		}
 		if hooks == nil {
 			continue
 		}
@@ -154,42 +197,49 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string)
 	}
 
 	// Orphan check: every script in pre-setup-scripts/ (minus allowlist)
-	// must be referenced by at least one declarative hook.
-	if scriptsEntries, err := os.ReadDir(scriptsDir); err == nil {
-		for _, sEntry := range scriptsEntries {
-			if sEntry.IsDir() {
-				continue
-			}
-			name := sEntry.Name()
-			if !strings.HasSuffix(name, ".sh") {
-				continue
-			}
-			if preSetupScriptAllowlist[name] {
-				continue
-			}
-			if !referencedScripts[name] {
-				t.Errorf("%s: orphan script %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
-			}
+	// must be referenced by at least one declarative hook. Allowlist matches
+	// here count as "used" for the cross-version dead-entry check.
+	scriptsEntries, err := os.ReadDir(scriptsDir)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("%s: read pre-setup-scripts/: %v", version, err)
+	}
+	for _, sEntry := range scriptsEntries {
+		if sEntry.IsDir() {
+			continue
+		}
+		name := sEntry.Name()
+		if !strings.HasSuffix(name, ".sh") {
+			continue
+		}
+		if preSetupScriptAllowlist[name] {
+			usedScriptAllowlist[name] = true
+			continue
+		}
+		if !referencedScripts[name] {
+			t.Errorf("%s: orphan script %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
 		}
 	}
 
 	// Orphan check: every YAML in common/resources/ must be referenced by at
 	// least one declarative hook (fixtures: list).
-	if resEntries, err := os.ReadDir(resourcesDir); err == nil {
-		for _, rEntry := range resEntries {
-			if rEntry.IsDir() {
-				continue
-			}
-			name := rEntry.Name()
-			if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
-				continue
-			}
-			if commonResourcesAllowlist[name] {
-				continue
-			}
-			if !referencedFixtures[name] {
-				t.Errorf("%s: orphan fixture %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
-			}
+	resEntries, err := os.ReadDir(resourcesDir)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("%s: read common/resources/: %v", version, err)
+	}
+	for _, rEntry := range resEntries {
+		if rEntry.IsDir() {
+			continue
+		}
+		name := rEntry.Name()
+		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
+			continue
+		}
+		if commonResourcesAllowlist[name] {
+			usedFixtureAllowlist[name] = true
+			continue
+		}
+		if !referencedFixtures[name] {
+			t.Errorf("%s: orphan fixture %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
 		}
 	}
 }
