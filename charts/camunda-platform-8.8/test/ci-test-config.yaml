@@ -234,6 +234,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-opensearch
           enabled: false
@@ -243,6 +244,7 @@ integration:
           identity: keycloak
           persistence: opensearch
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-rba
           enabled: false
@@ -253,6 +255,7 @@ integration:
           persistence: elasticsearch
           features: [rba]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-mt
           enabled: false
@@ -263,6 +266,7 @@ integration:
           persistence: elasticsearch
           features: [multitenancy]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-license
           enabled: false
@@ -273,6 +277,7 @@ integration:
           persistence: elasticsearch
           features: [license]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-entra
           enabled: false
@@ -282,6 +287,7 @@ integration:
           identity: oidc
           persistence: elasticsearch
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-document-store
           enabled: false
@@ -292,6 +298,7 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           qa: true
+          image-tags: true
           platforms: [gke, eks]
         - name: qa-elasticsearch-tasklist-v1
           enabled: false
@@ -302,6 +309,7 @@ integration:
           persistence: elasticsearch
           features: [tasklist-v1]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-opensearch-tasklist-v1
           enabled: false
@@ -312,6 +320,7 @@ integration:
           persistence: opensearch
           features: [tasklist-v1]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-rba-tasklist-v1
           enabled: false
@@ -322,6 +331,7 @@ integration:
           persistence: elasticsearch
           features: [rba, tasklist-v1]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-mt-tasklist-v1
           enabled: false
@@ -332,6 +342,7 @@ integration:
           persistence: elasticsearch
           features: [multitenancy, tasklist-v1]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-license-tasklist-v1
           enabled: false
@@ -342,6 +353,7 @@ integration:
           persistence: elasticsearch
           features: [license, tasklist-v1]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-upg
           enabled: false
@@ -351,6 +363,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-upg
           enabled: false
@@ -361,6 +374,7 @@ integration:
           persistence: elasticsearch
           features: [migrator]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-document-upg
           enabled: false
@@ -371,6 +385,7 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-opensearch-upg
           enabled: false
@@ -380,6 +395,7 @@ integration:
           identity: keycloak
           persistence: opensearch
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-rba-upg
           enabled: false
@@ -390,6 +406,7 @@ integration:
           persistence: elasticsearch
           features: [rba]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-mt-upg
           enabled: false
@@ -400,6 +417,7 @@ integration:
           persistence: elasticsearch
           features: [multitenancy]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-license-upg
           enabled: false
@@ -410,6 +428,7 @@ integration:
           persistence: elasticsearch
           features: [license]
           qa: true
+          image-tags: true
           platforms: [gke]
     nightly:
       scenario:

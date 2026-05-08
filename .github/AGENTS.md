@@ -182,6 +182,8 @@ These live in `test/integration/scenarios/chart-full-setup/values/` per chart ve
 
 **Note on array merging:** The `deploy-camunda` CLI uses a deep merge strategy (`scripts/deploy-camunda/deploy/merge.go`) that intelligently merges arrays with `name`-keyed elements (like `env` arrays). Entries with matching `name` keys get their values overridden, and new entries are appended. This means feature layers do NOT need to re-include env vars from base.yaml — the merge logic handles it. This is different from raw Helm behavior (which replaces arrays entirely).
 
+**Image-tag activation:** The image-tags layer (`base-image-tags.yaml`) is enabled by setting `image-tags: true` in `ci-test-config.yaml`. All `qa-*` scenarios have this set because they always receive SNAPSHOT versions from nightly CI. When active, neither `values-digest.yaml` nor `values-latest.yaml` is applied — image versions come entirely from `base-image-tags.yaml` with placeholder substitution from the `.env` file (loaded by `buildScenarioEnv()`). In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file and passes it via `--env-file`. See `docs/integration-test-scenario-resolution.md` for the full data flow.
+
 For detailed documentation on how scenario resolution works, see `docs/integration-test-scenario-resolution.md`.
 
 ## CI Test Matrix

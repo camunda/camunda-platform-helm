@@ -144,4 +144,14 @@ kubectl delete namespace test-eske --wait=true
 - **`deploy-camunda: command not found` / `No version is set for command`** — the `asdf` shim didn't activate Go. Build directly: `make build.deploy-camunda`, then invoke via `./scripts/deploy-camunda/deploy-camunda`.
 - **Playwright can't find a browser** — run `npx playwright install chromium`, or point at a system binary with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser`.
 - **Tests pass locally but failed in CI** — compare chart image tags. CI uses `values-latest.yaml` / `values-digest.yaml`; local defaults may lag. Run with `--qa` to match CI image selection.
+- **Nightly uses SNAPSHOT images, not released digests** — Nightly workflows pass `VALUES_CONFIG` with `_IMAGE_TAG` keys to deploy SNAPSHOT builds. The CI workflow converts this JSON to a `.env` file. To reproduce locally, create the `.env` file and pass it via `--env-file`:
+  ```bash
+  cat > /tmp/snapshot-tags.env <<'EOF'
+  E2E_TESTS_ORCHESTRATION_IMAGE_TAG=8.8-SNAPSHOT
+  E2E_TESTS_CONNECTORS_IMAGE_TAG=8.8-SNAPSHOT
+  EOF
+  deploy-camunda matrix run --repo-root . --versions 8.8 --shortname-filter qaos \
+    --env-file /tmp/snapshot-tags.env
+  ```
+  Without this, you deploy pinned release versions from `values-digest.yaml`, which may not reproduce the failure. See the nightly workflow YAML for the exact JSON.
 - **Reproducing confirms the failure is upstream** (test suite / product bug, not your PR) — capture the `deploy-camunda` invocation and the failing test name in the PR thread so the next reviewer doesn't redo the work.

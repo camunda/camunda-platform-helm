@@ -115,6 +115,64 @@ Later files override earlier ones (standard Helm `-f` precedence).
 
 ---
 
+## Image Version Strategy (digest / latest / image-tags)
+
+Three mutually exclusive strategies control which image versions are deployed.
+Only one is active per deployment:
+
+| Strategy | Overlay file | When active | Use case |
+|----------|-------------|-------------|----------|
+| **digest** (default) | `values-digest.yaml` | Neither image-tags nor latest is active | PR CI — pinned release digests for reproducibility |
+| **latest** | `values-latest.yaml` | `--use-latest` flag on `matrix run` | Testing against latest floating tags |
+| **image-tags** | `values/base-image-tags.yaml` | `ImageTags == true` (see below) | Nightly CI — SNAPSHOT builds via env var substitution |
+
+### How `ImageTags` is activated
+
+`ImageTags` is enabled per-scenario by setting `image-tags: true` in
+`ci-test-config.yaml`. All `qa-*` scenarios have this set because they always
+receive SNAPSHOT versions from nightly CI workflows. When active, `ResolveFiles()`
+includes `base-image-tags.yaml` and excludes `values-digest.yaml`.
+
+### Placeholder substitution in `base-image-tags.yaml`
+
+The image-tags layer contains environment variable placeholders:
+
+```yaml
+orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+connectors:
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+# ... etc
+```
+
+These are resolved by `values.Process()` during deployment. The substitution
+uses the `EnvOverrides` map built by `buildScenarioEnv()`:
+
+1. **`.env` file** — loaded via `--env-file` flag. In CI, the workflow converts
+   the `VALUES_CONFIG` JSON to a `.env` file using `jq`, then passes it via
+   `--env-file`. This provides the SNAPSHOT image tag values.
+2. **Process environment** — baseline snapshot of `os.Environ()`.
+3. **Scenario overrides** — index prefixes, realm names, keycloak config, etc.
+
+### CI data flow
+
+```
+Nightly workflow (e2e repo)
+  └─ passes: values-config: {"E2E_TESTS_ORCHESTRATION_IMAGE_TAG":"8.8-SNAPSHOT",...}
+     └─ test-integration-runner.yaml
+        └─ sets: VALUES_CONFIG env var from input
+        └─ bash: jq converts VALUES_CONFIG JSON → /tmp/values-config.env
+        └─ runs: deploy-camunda matrix run --env-file /tmp/values-config.env ...
+           └─ image-tags: true in ci-test-config.yaml → includes base-image-tags.yaml
+           └─ buildScenarioEnv() loads .env file → envMap has E2E_TESTS_*_IMAGE_TAG
+           └─ values.Process(EnvOverrides=envMap)
+              └─ Substitutes $E2E_TESTS_ORCHESTRATION_IMAGE_TAG → "8.8-SNAPSHOT"
+```
+
+---
+
 ## Scenario Name Parsing (MapScenarioToConfig)
 
 When no explicit `identity`/`persistence`/`features` fields are set, the

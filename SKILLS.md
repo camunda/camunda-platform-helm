@@ -135,6 +135,35 @@ deploy-camunda matrix run \
 
 The namespace convention is: `<prefix>-<version>-<shortname>-<flow>` (e.g., `distribution-89-eske-upgm-gke`).
 
+**Deploying with SNAPSHOT image tags** (nightly CI pattern):
+
+```bash
+# Create a .env file with the SNAPSHOT image tags
+cat > /tmp/snapshot-tags.env <<'EOF'
+E2E_TESTS_ORCHESTRATION_IMAGE_TAG=8.8-SNAPSHOT
+E2E_TESTS_CONNECTORS_IMAGE_TAG=8.8-SNAPSHOT
+E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT
+E2E_TESTS_IDENTITY_IMAGE_TAG=8.8-SNAPSHOT
+E2E_TESTS_CONSOLE_IMAGE_TAG=8.8-SNAPSHOT
+E2E_TESTS_WEBMODELER_IMAGE_TAG=8.8
+E2E_TESTS_SEARCH_ENGINE=opensearch
+EOF
+
+# Deploy a QA OpenSearch scenario with SNAPSHOT image tags
+deploy-camunda matrix run \
+  --repo-root . \
+  --versions 8.8 \
+  --shortname-filter qaos \
+  --platform gke \
+  --env-file /tmp/snapshot-tags.env
+```
+
+The `qa-*` scenarios have `image-tags: true` in `ci-test-config.yaml`, which
+includes `base-image-tags.yaml` (with `$E2E_TESTS_*_IMAGE_TAG` placeholders)
+and excludes `values-digest.yaml`. The `--env-file` provides the actual values
+for substitution via `buildScenarioEnv()`. In CI, the workflow converts the
+`VALUES_CONFIG` JSON to a `.env` file using `jq` before calling `deploy-camunda`.
+
 ### Render Without Deploying
 
 Debug values merging without touching the cluster:
