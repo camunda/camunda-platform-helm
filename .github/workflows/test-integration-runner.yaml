@@ -567,6 +567,15 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
+          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
+          # The .env file is loaded by buildScenarioEnv() and provides values for
+          # $E2E_TESTS_*_IMAGE_TAG placeholders in base-image-tags.yaml.
+          ENV_FILE_ARGS=()
+          if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
+            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
+            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+          fi
+
           cd ./scripts/deploy-camunda
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -581,6 +590,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
             --log-level info
@@ -825,6 +835,13 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
+          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
+          ENV_FILE_ARGS=()
+          if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
+            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
+            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+          fi
+
           cd ./scripts/deploy-camunda
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -839,6 +856,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
             --log-level info

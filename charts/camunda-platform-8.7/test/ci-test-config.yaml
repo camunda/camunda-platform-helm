@@ -127,6 +127,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           qa: true
+          image-tags: true
           platforms: [gke, eks]
         - name: qa-elasticsearch-rba
           enabled: false
@@ -137,6 +138,7 @@ integration:
           persistence: elasticsearch
           features: [rba]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-elasticsearch-mt
           enabled: false
@@ -147,6 +149,7 @@ integration:
           persistence: elasticsearch
           features: [multitenancy]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-license
           enabled: false
@@ -157,6 +160,7 @@ integration:
           persistence: elasticsearch
           features: [license]
           qa: true
+          image-tags: true
           platforms: [gke]
         - name: qa-opensearch
           enabled: false
@@ -166,6 +170,7 @@ integration:
           identity: keycloak
           persistence: opensearch
           qa: true
+          image-tags: true
           platforms: [gke]
     nightly:
       scenario:
