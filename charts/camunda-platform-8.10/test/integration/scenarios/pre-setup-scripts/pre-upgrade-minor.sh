@@ -16,3 +16,4 @@ fi
 # They are recreated by Helm with the new spec while keeping PVC data.
 kubectl ${CONTEXT_FLAG} delete sts -n "${TEST_NAMESPACE}" -l app.kubernetes.io/name=postgresql --ignore-not-found
 kubectl ${CONTEXT_FLAG} delete sts -n "${TEST_NAMESPACE}" -l app.kubernetes.io/name=postgresql-web-modeler --ignore-not-found
+kubectl ${CONTEXT_FLAG} delete sts -n "${TEST_NAMESPACE}" -l app.kubernetes.io/name=elasticsearch --ignore-not-found
