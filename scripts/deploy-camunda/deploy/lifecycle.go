@@ -75,39 +75,6 @@ func resolveResourcesDir(chartPath string) string {
 	return ""
 }
 
-// loadAndSubstituteManifests reads all YAML files from the resources directory
-// and substitutes the supplied variables into each.
-func loadAndSubstituteManifests(resourcesDir string, vars map[string]string) ([]manifest, error) {
-	entries, err := os.ReadDir(resourcesDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read resources directory %s: %w", resourcesDir, err)
-	}
-
-	var manifests []manifest
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
-			continue
-		}
-
-		filePath := filepath.Join(resourcesDir, name)
-		raw, err := os.ReadFile(filePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read manifest file %s: %w", filePath, err)
-		}
-
-		manifests = append(manifests, manifest{
-			filename: name,
-			data:     []byte(substituteManifestVars(string(raw), vars)),
-		})
-	}
-
-	return manifests, nil
-}
-
 // loadSelectedManifests reads the named YAML files (in order) from the resources
 // directory and substitutes the supplied variables into each. Returns an error
 // if any named file is missing.
