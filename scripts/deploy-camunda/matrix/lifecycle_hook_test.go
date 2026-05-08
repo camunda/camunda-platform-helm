@@ -38,6 +38,18 @@ var preSetupScriptAllowlist = map[string]bool{
 	"create-elasticsearch-tls-secrets.sh": true,
 }
 
+// commonResourcesAllowlist names files inside common/resources/ that are
+// permitted to exist without being referenced by any LifecycleHook. These are
+// fixtures kept for scenarios that are currently disabled but staged for
+// activation; deleting them would force a separate PR to re-add them when the
+// scenario is enabled.
+//
+//	postgres-createdb-job.yaml — fixture for the disabled rdbms-external
+//	                             scenario in 8.9/8.10. Pending its own enable PR.
+var commonResourcesAllowlist = map[string]bool{
+	"postgres-createdb-job.yaml": true,
+}
+
 // TestLifecycleFixtures asserts the integrity of the declarative lifecycle
 // fixture system across every chart version:
 //
@@ -127,10 +139,12 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string)
 	}
 
 	for _, scn := range cfg.Integration.Case.PR.Scenarios {
-		collect("scenario "+scn.Name+" (PR)", scn.PreInstall)
+		collect("scenario "+scn.Name+" (PR pre-install)", scn.PreInstall)
+		collect("scenario "+scn.Name+" (PR post-deploy)", scn.PostDeploy)
 	}
 	for _, scn := range cfg.Integration.Case.Nightly.Scenarios {
-		collect("scenario "+scn.Name+" (Nightly)", scn.PreInstall)
+		collect("scenario "+scn.Name+" (Nightly pre-install)", scn.PreInstall)
+		collect("scenario "+scn.Name+" (Nightly post-deploy)", scn.PostDeploy)
 	}
 	for flowName, hooks := range cfg.Integration.Flows {
 		if hooks == nil {
@@ -155,6 +169,26 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string)
 			}
 			if !referencedScripts[name] {
 				t.Errorf("%s: orphan script %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
+			}
+		}
+	}
+
+	// Orphan check: every YAML in common/resources/ must be referenced by at
+	// least one declarative hook (fixtures: list).
+	if resEntries, err := os.ReadDir(resourcesDir); err == nil {
+		for _, rEntry := range resEntries {
+			if rEntry.IsDir() {
+				continue
+			}
+			name := rEntry.Name()
+			if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
+				continue
+			}
+			if commonResourcesAllowlist[name] {
+				continue
+			}
+			if !referencedFixtures[name] {
+				t.Errorf("%s: orphan fixture %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
 			}
 		}
 	}

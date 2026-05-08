@@ -203,6 +203,13 @@ type RuntimeFlags struct {
 	// may not yet exist or may be recreated by DeleteNamespaceFirst.
 	PreInstallHooks []func(ctx context.Context) error
 
+	// PostDeployHooks are functions called by the deployer after helm
+	// upgrade/install completes successfully but before the deployment result
+	// is returned. Used to apply scenario-specific resources whose CRDs are
+	// only installed by the chart itself (e.g., the Gateway API
+	// ProxySettingsPolicy for gateway-keycloak).
+	PostDeployHooks []func(ctx context.Context) error
+
 	// ExtraEnv holds per-entry environment variables that are merged into the
 	// isolated env map by buildScenarioEnv before values.Process() runs.
 	// This avoids process-global os.Setenv races when multiple OIDC entries

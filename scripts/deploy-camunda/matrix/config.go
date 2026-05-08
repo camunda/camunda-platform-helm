@@ -133,6 +133,12 @@ type CIScenario struct {
 	// this scenario. Replaces the legacy filename-derived discovery
 	// (pre-install-<scenario>.sh) with an explicit, reviewable reference.
 	PreInstall *LifecycleHook `yaml:"pre-install,omitempty"`
+
+	// PostDeploy declares a fixture or script to run after helm install
+	// completes successfully. Used for resources whose CRDs are only
+	// installed by the chart itself (e.g., the Gateway API
+	// ProxySettingsPolicy applied for gateway-keycloak).
+	PostDeploy *LifecycleHook `yaml:"post-deploy,omitempty"`
 }
 
 // ChartDependency represents a companion chart that must be deployed

@@ -367,15 +367,19 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Dur("deployDuration", deployDuration).
 		Msg("✅ [executeDeployment] helm deployment completed successfully")
 
-	// Apply post-deploy resources (e.g., Gateway API ProxySettingsPolicy)
-	if err := applyPostDeployResources(ctx, scenarioCtx, flags.Chart.ChartPath, flags.Test.KubeContext); err != nil {
-		logging.Logger.Error().
-			Err(err).
-			Str("scenario", scenarioCtx.ScenarioName).
-			Str("namespace", scenarioCtx.Namespace).
-			Msg("❌ [executeDeployment] failed to apply post-deploy resources")
-		result.Error = fmt.Errorf("post-deploy resources failed: %w", err)
-		return result
+	// Apply post-deploy hooks (e.g., the Gateway API ProxySettingsPolicy
+	// applied for gateway-keycloak via a declarative post-deploy: block in
+	// ci-test-config.yaml). Registered by the matrix runner before deploy.
+	for _, hook := range flags.PostDeployHooks {
+		if err := hook(ctx); err != nil {
+			logging.Logger.Error().
+				Err(err).
+				Str("scenario", scenarioCtx.ScenarioName).
+				Str("namespace", scenarioCtx.Namespace).
+				Msg("❌ [executeDeployment] post-deploy hook failed")
+			result.Error = fmt.Errorf("post-deploy hook failed: %w", err)
+			return result
+		}
 	}
 
 	// Capture credentials from the secrets map prepared in prepareScenarioValues.

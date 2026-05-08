@@ -202,6 +202,14 @@ integration:
             gke: distroci
             eks: preemptible
           platforms: [gke]
+          post-deploy:
+            fixtures:
+              - gateway-proxy-settings.yaml
+            description: |
+              Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
+              sizes so the Camunda Gateway can carry Keycloak auth headers
+              without 502s. Runs after helm install because the Gateway API
+              CRD is only registered by the chart itself.
         - name: elasticsearch-arm
           enabled: true
           auth: keycloak
@@ -250,6 +258,15 @@ integration:
           identity: keycloak
           persistence: rdbms-external
           platforms: [gke]
+        # rdbms: persistence layer points Camunda at an external PostgreSQL
+        # cluster (postgresql-cluster-rw.<namespace>.svc.cluster.local). The
+        # CloudNativePG `Cluster` + auth Secret are NOT part of the chart —
+        # they're a CI-only fixture that must exist before helm install or
+        # Camunda pods crash-loop connecting. Provisioned via the
+        # `pre-install: fixtures: [postgresql-cluster.yaml]` declaration below;
+        # the matrix runner applies it via Go server-side apply immediately
+        # before `helm install` (replaces the legacy Taskfile `setup.pre`
+        # rdbms branch).
         - name: rdbms
           enabled: true
           auth: keycloak

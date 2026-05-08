@@ -47,6 +47,10 @@ type Entry struct {
 	// Carried from CIScenario.PreInstall so the runner can dispatch declaratively
 	// without re-loading ci-test-config.yaml.
 	PreInstall *LifecycleHook `json:"preInstall,omitempty"`
+
+	// PostDeploy declares a fixture or script to run after helm install
+	// completes successfully. Carried from CIScenario.PostDeploy.
+	PostDeploy *LifecycleHook `json:"postDeploy,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -193,6 +197,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						SkipIT:       scenario.SkipIT,
 						Dependencies: scenario.Dependencies,
 						PreInstall:   scenario.PreInstall,
+						PostDeploy:   scenario.PostDeploy,
 					})
 				}
 			}

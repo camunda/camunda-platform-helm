@@ -1813,6 +1813,15 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		}
 	}
 
+	// --- Post-deploy lifecycle hook ---
+	// Fires after helm upgrade/install completes. For two-step upgrades the
+	// hook is registered against step2Flags inside executeTwoStepUpgrade.
+	if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
+		if err := registerDeclarativePostDeployHook(flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, Error: err}
+		}
+	}
+
 	// Execute the deployment (deploy + tests run inside deploy.Execute).
 	// All code paths converge into a single result so cleanup runs exactly once.
 	var deployErr error
@@ -2150,6 +2159,13 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		}
 	} else {
 		step2Flags.Deployment.ExtraHelmArgs = flags.Deployment.ExtraHelmArgs
+	}
+
+	// --- Post-deploy lifecycle hook (Step 2 of two-step upgrade) ---
+	// Registered against step2Flags so it fires after the upgrade succeeds.
+	step2Flags.PostDeployHooks = nil
+	if err := registerDeclarativePostDeployHook(&step2Flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+		return err
 	}
 
 	if err := deploy.Execute(ctx, &step2Flags); err != nil {

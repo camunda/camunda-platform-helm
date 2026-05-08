@@ -120,6 +120,85 @@ func registerDeclarativePreInstallHook(flags *config.RuntimeFlags, hook *Lifecyc
 	return nil
 }
 
+// registerDeclarativePostDeployHook validates the declarative post-deploy
+// LifecycleHook and appends an appropriate PostDeployHook to the supplied
+// deploy flags. The hook fires after helm upgrade/install completes
+// successfully.
+func registerDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
+	if hook == nil {
+		return nil
+	}
+
+	hasFixtures := len(hook.Fixtures) > 0
+	hasScript := hook.Script != ""
+	if hasFixtures == hasScript {
+		return fmt.Errorf("scenario %q: post-deploy must specify exactly one of fixtures or script", scenario)
+	}
+
+	chartPath := filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion)
+
+	switch {
+	case hasFixtures:
+		fixtures := append([]string(nil), hook.Fixtures...)
+		scn := scenario
+		ver := appVersion
+		flags.PostDeployHooks = append(flags.PostDeployHooks, func(hookCtx context.Context) error {
+			namespace := flags.EffectiveNamespace()
+			release := flags.Deployment.Release
+			scenarioCtx := &deploy.ScenarioContext{
+				ScenarioName: scn,
+				Namespace:    namespace,
+				Release:      release,
+			}
+			vars := lifecycleVars(namespace, release)
+			logging.Logger.Info().
+				Str("scenario", scn).
+				Str("appVersion", ver).
+				Strs("fixtures", fixtures).
+				Str("namespace", namespace).
+				Msg("Applying lifecycle fixtures (PostDeployHook, declarative)")
+			return deploy.ApplyLifecycleManifests(hookCtx, scenarioCtx, chartPath, flags.Test.KubeContext, fixtures, vars)
+		})
+	case hasScript:
+		scriptName := hook.Script
+		scriptPath := versionmatrix.PreSetupScriptPath(repoRoot, appVersion, scriptName)
+		if !versionmatrix.HasPreSetupScript(repoRoot, appVersion, scriptName) {
+			return fmt.Errorf("scenario %q: post-deploy script %q not found at %s",
+				scenario, scriptName, scriptPath)
+		}
+		scn := scenario
+		ver := appVersion
+		flags.PostDeployHooks = append(flags.PostDeployHooks, func(hookCtx context.Context) error {
+			namespace := flags.EffectiveNamespace()
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Str("scenario", scn).
+				Str("appVersion", ver).
+				Str("namespace", namespace).
+				Msg("Running scenario-specific post-deploy script (PostDeployHook, declarative)")
+
+			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
+			if flags.Test.KubeContext != "" {
+				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
+			}
+			for _, k := range lifecycleVarPassthrough {
+				if v := os.Getenv(k); v != "" {
+					scriptEnv = append(scriptEnv, k+"="+v)
+				}
+			}
+
+			if err := executil.RunCommand(hookCtx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
+				return fmt.Errorf("post-deploy script %s failed: %w", scriptPath, err)
+			}
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Msg("Post-deploy script completed successfully")
+			return nil
+		})
+	}
+	return nil
+}
+
 // runDeclarativePreUpgradeHook executes the declarative pre-upgrade lifecycle
 // hook configured under integration.flows.<flow>.pre-upgrade in the target
 // app version's ci-test-config.yaml, between Step 1 and Step 2 of a two-step

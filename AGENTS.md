@@ -327,6 +327,19 @@ There are two modes — pick exactly one per hook:
 
 `TestLifecycleFixtures` (matrix package) walks every chart version's config and asserts: every script reference resolves on disk, every fixture reference resolves under `common/resources/`, every description is non-empty, exactly one of fixtures/script is set per hook, and every script in `pre-setup-scripts/` is referenced (orphan check). Files in `preSetupScriptAllowlist` (`pre-install-upgrade.sh` sed-marker, `create-elasticsearch-tls-secrets.sh` helper) are exempt.
 
+### Post-Deploy Hooks (Scenario-Specific)
+For resources whose CRDs are only registered by the chart itself (e.g., the Gateway API `ProxySettingsPolicy` on `gateway-keycloak`), declare a `post-deploy:` block alongside `pre-install:`. Same `fixtures` / `script` / `description` shape; runs after `helm upgrade/install` returns successfully and before the deploy result is reported. Example:
+
+```yaml
+- name: gateway-keycloak
+  post-deploy:
+    fixtures: [gateway-proxy-settings.yaml]
+    description: |
+      Applies the NGINX ProxySettingsPolicy that bumps gateway buffer sizes.
+      Runs after helm install because the Gateway API CRD is only registered
+      by the chart itself.
+```
+
 ### Pre-Upgrade Hooks (Flow-Specific)
 For cleanup between Step 1 (old version) and Step 2 (new version) of an upgrade flow, declare on the target version's `integration.flows.<flow>.pre-upgrade` block in `ci-test-config.yaml`:
 

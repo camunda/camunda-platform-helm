@@ -297,18 +297,3 @@ func TestLoadSelectedManifests(t *testing.T) {
 	})
 }
 
-func TestScenariosRequiringPostDeploy(t *testing.T) {
-	t.Run("gateway-keycloak requires post-deploy", func(t *testing.T) {
-		if !scenariosRequiringPostDeploy["gateway-keycloak"] {
-			t.Error("gateway-keycloak should require post-deploy resources")
-		}
-	})
-
-	t.Run("other scenarios do not require post-deploy", func(t *testing.T) {
-		for _, scenario := range []string{"keycloak", "elasticsearch", "opensearch", "oidc"} {
-			if scenariosRequiringPostDeploy[scenario] {
-				t.Errorf("scenario %q should NOT require post-deploy resources", scenario)
-			}
-		}
-	})
-}
