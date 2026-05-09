@@ -44,14 +44,9 @@ func main() {
 		persistence  = flag.String("persistence", "", "Persistence selection")
 		workflowURL  = flag.String("workflow-url", "", "GitHub Actions run URL")
 		podLogTrim   = flag.Int("pod-log-trim", defaultPodLogTrim, "Max bytes of tail per pod log")
+		dryRun       = flag.Bool("dry-run", false, "Print the assembled prompt and exit without calling the API")
 	)
 	flag.Parse()
-
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		fmt.Fprintln(os.Stderr, "ANTHROPIC_API_KEY is not set; skipping diagnosis (exit 0)")
-		return
-	}
 
 	d, err := LoadDiagnostics(*diagDir)
 	if err != nil {
@@ -71,6 +66,20 @@ func main() {
 		WorkflowURL:  *workflowURL,
 	}
 	user := BuildUserMessage(ctx, d)
+
+	if *dryRun {
+		fmt.Println("=== SYSTEM ===")
+		fmt.Println(systemPrompt)
+		fmt.Println("\n=== USER ===")
+		fmt.Println(user)
+		return
+	}
+
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		fmt.Fprintln(os.Stderr, "ANTHROPIC_API_KEY is not set; skipping diagnosis (exit 0)")
+		return
+	}
 
 	model := os.Getenv("ANTHROPIC_MODEL")
 	client := NewAnthropicClient(apiKey, model)
