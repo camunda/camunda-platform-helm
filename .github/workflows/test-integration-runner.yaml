@@ -645,7 +645,12 @@ jobs:
       # Matrix coordinates are encoded in the artifact name so the downstream
       # workflow can reconstruct scenario/flow/platform without extra metadata.
       - name: Upload diagnostics artifact
-        if: failure()
+        # Always run: deploy-camunda only writes `diagnostics/` on failure
+        # (see scripts/deploy-camunda/matrix/runner.go:collectDiagnostics), so
+        # `if-no-files-found: ignore` makes this a fast no-op on success.
+        # `if: failure()` would miss cases where the install step succeeded
+        # but a sibling job (e.g. Playwright e2e) detected a real problem.
+        if: always() && !cancelled()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ci-diagnostics--${{ inputs.camunda-helm-dir }}--${{ inputs.scenario }}--${{ inputs.flow }}--${{ inputs.distro-platform }}--${{ inputs.shortname }}--install
@@ -893,7 +898,12 @@ jobs:
         uses: ./.github/actions/failed-pods-info
 
       - name: Upload diagnostics artifact
-        if: failure()
+        # Always run: deploy-camunda only writes `diagnostics/` on failure
+        # (see scripts/deploy-camunda/matrix/runner.go:collectDiagnostics), so
+        # `if-no-files-found: ignore` makes this a fast no-op on success.
+        # `if: failure()` would miss cases where the install step succeeded
+        # but a sibling job (e.g. Playwright e2e) detected a real problem.
+        if: always() && !cancelled()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ci-diagnostics--${{ inputs.camunda-helm-dir }}--${{ inputs.scenario }}--${{ inputs.flow }}--${{ inputs.distro-platform }}--${{ inputs.shortname }}--upgrade
