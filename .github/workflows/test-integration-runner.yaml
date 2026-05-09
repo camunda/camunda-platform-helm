@@ -1394,6 +1394,13 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
+            secret/data/products/distribution/ci AUTH0_DOMAIN;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_ID;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
           exportEnv: true
 
       - name: CI Setup - Authenticate to cluster
