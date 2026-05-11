@@ -106,7 +106,7 @@ func TestCheck(t *testing.T) {
 			Description: FormatDescription("hash_b", oldTS),
 		},
 		{
-			State:       "pending",
+			State:       "error",
 			Context:     "ci-cache/8.9/kemt/install",
 			Description: "invalidated",
 		},

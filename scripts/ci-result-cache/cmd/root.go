@@ -1,8 +1,14 @@
 package cmd
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 )
+
+// ErrNotCached is returned by the check command when a scenario is not cached.
+// main.go uses this to distinguish "not cached" (exit 1) from real errors.
+var ErrNotCached = errors.New("not cached")
 
 var rootCmd = &cobra.Command{
 	Use:   "ci-result-cache",
@@ -18,6 +24,8 @@ Commands:
   check            Check if a scenario result is cached and valid
   invalidate       Invalidate cached results for a scenario or version
   annotate-matrix  Annotate a CI matrix JSON with cached/uncached flags`,
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 // Execute runs the root command.

@@ -4,6 +4,7 @@ package main
 // See cmd/ for the available subcommands.
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -12,7 +13,11 @@ import (
 
 func main() {
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		// ErrNotCached means the check command already printed its
+		// "NOT CACHED" message — no additional output needed.
+		if !errors.Is(err, cmd.ErrNotCached) {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 		os.Exit(1)
 	}
 }

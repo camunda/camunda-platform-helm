@@ -128,17 +128,19 @@ func (c *GitHubClient) GetStatuses(sha string) ([]commitStatus, error) {
 		if err != nil {
 			return nil, fmt.Errorf("fetching statuses: %w", err)
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
 			return nil, fmt.Errorf("GitHub API returned %d: %s", resp.StatusCode, string(body))
 		}
 
 		var statuses []commitStatus
 		if err := json.NewDecoder(resp.Body).Decode(&statuses); err != nil {
+			resp.Body.Close()
 			return nil, fmt.Errorf("decoding response: %w", err)
 		}
+		resp.Body.Close()
 
 		if len(statuses) == 0 {
 			break

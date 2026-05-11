@@ -12,8 +12,11 @@ import (
 var invalidateCmd = &cobra.Command{
 	Use:   "invalidate",
 	Short: "Invalidate cached results for a scenario or version",
-	Long: `Invalidate overwrites cached commit statuses with a "pending" state,
+	Long: `Invalidate overwrites cached commit statuses with an "error" state,
 causing future cache checks to treat them as misses.
+
+The "error" state is used (not "pending") because GitHub treats "pending"
+statuses as in-progress checks that block PR merge.
 
 Granularity:
   --version + --shortname + --flow  →  invalidate one scenario
@@ -63,13 +66,13 @@ func runInvalidate(cmd *cobra.Command, args []string) error {
 	// Deduplicate by context — GitHub returns all status entries (append-only)
 	// in reverse chronological order, so the same context may appear multiple
 	// times. We only need to invalidate each unique context once (the new
-	// "pending" status becomes the latest). We also skip contexts whose most
-	// recent entry is already "pending" (already invalidated).
+	// "error" status becomes the latest). We also skip contexts whose most
+	// recent entry is already invalidated (state != "success").
 	seen := make(map[string]bool)
 	invalidated := 0
 	for _, s := range statuses {
 		if seen[s.Context] {
-			continue // already processed this context (either invalidated or already pending)
+			continue // already processed this context
 		}
 
 		// Mark as seen on first encounter regardless of state.
@@ -77,8 +80,8 @@ func runInvalidate(cmd *cobra.Command, args []string) error {
 		// entry for each context is the most recent.
 		seen[s.Context] = true
 
-		if s.State == "pending" {
-			continue // most recent status is already invalidated
+		if s.State != "success" {
+			continue // most recent status is already invalidated or not cached
 		}
 
 		// For exact match (all three specified), match exactly.
@@ -94,7 +97,7 @@ func runInvalidate(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		if err := client.SetStatus(invalidateSHA, "pending", s.Context, "invalidated", ""); err != nil {
+		if err := client.SetStatus(invalidateSHA, "error", s.Context, "invalidated", ""); err != nil {
 			return fmt.Errorf("invalidating %s: %w", s.Context, err)
 		}
 		invalidated++

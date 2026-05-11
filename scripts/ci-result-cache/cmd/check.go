@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"scripts/ci-result-cache/pkg/cache"
@@ -74,6 +73,5 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("NOT CACHED: %s (hash: %s)\n", context, contentHash[:12])
-	os.Exit(1)
-	return nil // unreachable but satisfies compiler
+	return ErrNotCached
 }
