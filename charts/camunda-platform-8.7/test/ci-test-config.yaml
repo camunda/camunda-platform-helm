@@ -140,6 +140,7 @@ integration:
           enabled: true
           flow: install
           shortname: keyco
+          tier: 1
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
