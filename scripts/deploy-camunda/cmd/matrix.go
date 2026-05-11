@@ -540,6 +540,28 @@ This command calls deploy.Execute() for each matrix entry.`,
 				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart), logDir))
 			}
 
+			// Surface per-entry failures via exit code even when stop-on-failure is
+			// disabled. Without this, a failed `helm upgrade --install` is logged
+			// as "Matrix entry failed" but the CLI still exits 0, which causes
+			// downstream CI steps (e.g. Playwright e2e) to run against a broken
+			// cluster and produce misleading test failures (HTTP 502 across the
+			// board) instead of clearly attributing the failure to the deploy.
+			if err == nil {
+				failed := 0
+				for _, r := range results {
+					if r.Error != nil {
+						failed++
+					}
+				}
+				if failed > 0 {
+					noun := "entry"
+					if failed != 1 {
+						noun = "entries"
+					}
+					err = fmt.Errorf("%d matrix %s failed", failed, noun)
+				}
+			}
+
 			return err
 		},
 	}
