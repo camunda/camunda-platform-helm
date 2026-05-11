@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">Standardize &lt;component&gt;.extraConfiguration as the Application Configuration Mechanism | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6079/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6079/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6079/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Standardize &lt;component&gt;.extraConfiguration as the Application Configuration Mechanism | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6079/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6079/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6079/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6079/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6079/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6079/assets/js/runtime~main.4c3eadcf.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6079/assets/js/main.5a1eb0e1.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6079/assets/js/runtime~main.33e771fe.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6079/assets/js/main.0966f5ca.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -24,7 +24,7 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
 <ul>
 <li class=""><strong>Separation of concerns</strong>: Helm charts should configure Kubernetes infrastructure — pods, services, networking, storage — not application behavior. Application-level configuration has no Kubernetes-specific concern and should not require chart changes.</li>
-<li class=""><strong>Portability</strong>: Tier 1 application configuration knowledge must transfer across all deployment methods (Helm, ECS, Docker, Jar). A Spring Boot property expressed via <code>extraConfiguration</code> in Helm maps directly to an env var in ECS or a system property in a Jar deployment with no translation required. Helm-specific abstraction keys do not transfer and create a siloed knowledge requirement. Tier 2 infrastructure and connectivity config is inherently platform-specific — each deployment method has its own native mechanism (Helm chart wiring, ALB/ACM for TLS in ECS, sidecar proxies in bare-metal) and no portable abstraction is attempted.</li>
+<li class=""><strong>Portability</strong>: Tier 1 application configuration knowledge must transfer across all deployment methods (Helm, ECS, Docker, Jar). The property identifiers are portable across deployment methods; each method has its own injection syntax (mounted file, env var, system property) but no Helm-specific key vocabulary is needed. Helm-specific abstraction keys do not transfer and create a siloed knowledge requirement. Tier 2 infrastructure and connectivity config is inherently platform-specific — each deployment method has its own native mechanism (Helm chart wiring, ALB/ACM for TLS in ECS, sidecar proxies in bare-metal) and no portable abstraction is attempted.</li>
 <li class=""><strong>Application team autonomy</strong>: Application teams must be able to introduce and document new configuration without requiring Helm chart changes in the common case.</li>
 <li class=""><strong>Complexity reduction</strong>: Accumulated abstraction layers increase upgrade risk and chart surface area. Removing them reduces the gap between chart values and Kubernetes primitives.</li>
 <li class=""><strong>Established path</strong>: <code>&lt;component&gt;.extraConfiguration</code> is already the documented recommended path as of 8.9, making this decision a formalization rather than a new direction.</li>
@@ -41,7 +41,7 @@
 Keys that control <em>what the application does</em>: feature flags, toggles, and
 application-level settings that map to application config files or env vars
 controlling application logic. These must use <code>&lt;component&gt;.extraConfiguration</code>.
-Examples: <code>rba.enabled</code>, <code>multiTenancy.enabled</code>, log levels.</p>
+Examples: <code>orchestration.security.authorizations.enabled</code>, <code>global.multitenancy.enabled</code>, <code>orchestration.logLevel</code>.</p>
 <p><strong>Tier 2 — Infrastructure and connectivity</strong> (not governed by this ADR)
 Keys that control <em>how or where the application runs and connects</em>. Three
 sub-categories:</p>
@@ -86,9 +86,10 @@ no chart-level consistency guarantee.</p>
 and secret mounts; ECS terminates TLS at the load balancer via ACM; bare-metal
 deployments use sidecar proxies or JVM truststore files. There is no portable
 abstraction for Tier 2 across deployment methods, and the chart does not attempt
-one. The portability driver in this ADR applies exclusively to Tier 1 — Spring
-Boot properties expressed via <code>extraConfiguration</code> map directly to env vars in
-ECS or system properties in a Jar deployment with no translation required.</p>
+one. The portability driver in this ADR applies exclusively to Tier 1 — the Spring
+Boot property identifiers are portable across deployment methods; each method has
+its own injection syntax (mounted file, env var in ECS, system property in a Jar
+deployment) but no Helm-specific key vocabulary is needed.</p>
 <p>The classification of identity and connectivity configuration as Tier 2 should be
 revisited going towards 8.11. The Identity component is expected to evolve significantly
 — if cross-component identity wiring is simplified or moves closer to standard
@@ -105,7 +106,7 @@ boundary once the post-8.11 identity architecture is stable.</p>
 <!-- -->
 <p><strong>Blocked</strong> (Tier 1 — must use <code>&lt;component&gt;.extraConfiguration</code> instead):</p>
 <ul>
-<li class="">Feature flags and toggles (e.g. <code>rba.enabled</code>, <code>multiTenancy.enabled</code>)</li>
+<li class="">Feature flags and toggles (e.g. <code>orchestration.security.authorizations.enabled</code>, <code>global.multitenancy.enabled</code>)</li>
 <li class="">Application log levels</li>
 <li class="">Application-level feature configuration</li>
 <li class="">Any key that maps to a Spring Boot property, env var controlling app logic, or application config file entry</li>
@@ -126,7 +127,7 @@ boundary once the post-8.11 identity architecture is stable.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
 <ul>
 <li class="">Helm chart values focus on what they are best placed to manage: Kubernetes infrastructure (pods, services, networking, storage), connectivity to external systems, and cross-component coordination — not application behavior.</li>
-<li class="">Tier 1 application configuration is consistent and portable across all deployment methods (Helm, ECS, Docker, Jar) — a Spring Boot property known to an operator transfers directly without deployment-method-specific translation.</li>
+<li class="">Tier 1 application configuration is consistent and portable across all deployment methods (Helm, ECS, Docker, Jar) — the property identifiers are portable; each method has its own injection syntax (mounted file, env var, system property) but no Helm-specific key vocabulary is needed.</li>
 <li class="">Application teams own their configuration surface and can introduce new settings without touching the Helm chart.</li>
 <li class="">Operators see fewer, clearer Helm values with an unambiguous pattern for application configuration.</li>
 <li class="">Upgrades reduce the risk that chart evolution silently overrides operator configuration, since operator-provided extraConfiguration entries are layered last.</li>
