@@ -1,5 +1,21 @@
 # Changelog
 
+## [14.2.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.1.0...camunda-platform-8.9-14.2.0) (2026-05-11)
+
+
+### Features
+
+* **8.9:** support password field for jks ([#5993](https://github.com/camunda/camunda-platform-helm/issues/5993)) ([cb29bcf](https://github.com/camunda/camunda-platform-helm/commit/cb29bcfd2750fa8659519c693a1e49d33a415060))
+
+
+### Bug Fixes
+
+* **ci:** add modular-upgrade-minor entries for MT and DocumentStore upgrades ([#6069](https://github.com/camunda/camunda-platform-helm/issues/6069)) ([e32f205](https://github.com/camunda/camunda-platform-helm/commit/e32f205c1f349916ff38420e1f18bdbf07aae2af))
+* **ci:** add qaosupg modular-upgrade-minor entries for 8.9 and 8.10 ([#6066](https://github.com/camunda/camunda-platform-helm/issues/6066)) ([55407b1](https://github.com/camunda/camunda-platform-helm/commit/55407b11f37e9f1f0b55154a6ffa849da1e50108))
+* **ci:** apply SNAPSHOT image tags to 8.8 OpenSearch QA scenarios ([#6097](https://github.com/camunda/camunda-platform-helm/issues/6097)) ([65ad7a4](https://github.com/camunda/camunda-platform-helm/commit/65ad7a4dc14d65b1be6d54ee0250c2967a78bc5b))
+* **ci:** bump Keycloak PostgreSQL CPU for reliable startup on EKS ([#6070](https://github.com/camunda/camunda-platform-helm/issues/6070)) ([58d71d6](https://github.com/camunda/camunda-platform-helm/commit/58d71d63deaa33cb6c10894d76aacfa91bde6d2b))
+* **ci:** extend nightly matrix coverage for missing platform/flow combinations ([#6064](https://github.com/camunda/camunda-platform-helm/issues/6064)) ([05e1f6d](https://github.com/camunda/camunda-platform-helm/commit/05e1f6d2fe50c9409970cfbcb35faaefe83c7656))
+
 ## [14.1.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.0.1...camunda-platform-8.9-14.1.0) (2026-05-04)
 
 
