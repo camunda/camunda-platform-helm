@@ -15,7 +15,7 @@ As additional deployment methods (ECS, Docker, Jar) have become first-class targ
 ## Decision Drivers
 
 - **Separation of concerns**: Helm charts should configure Kubernetes infrastructure — pods, services, networking, storage — not application behavior. Application-level configuration has no Kubernetes-specific concern and should not require chart changes.
-- **Portability**: Tier 1 application configuration knowledge must transfer across all deployment methods (Helm, ECS, Docker, Jar). A Spring Boot property expressed via `extraConfiguration` in Helm maps directly to an env var in ECS or a system property in a Jar deployment with no translation required. Helm-specific abstraction keys do not transfer and create a siloed knowledge requirement. Tier 2 infrastructure and connectivity config is inherently platform-specific — each deployment method has its own native mechanism (Helm chart wiring, ALB/ACM for TLS in ECS, sidecar proxies in bare-metal) and no portable abstraction is attempted.
+- **Portability**: Tier 1 application configuration knowledge must transfer across all deployment methods (Helm, ECS, Docker, Jar). The property identifiers are portable across deployment methods; each method has its own injection syntax (mounted file, env var, system property) but no Helm-specific key vocabulary is needed. Helm-specific abstraction keys do not transfer and create a siloed knowledge requirement. Tier 2 infrastructure and connectivity config is inherently platform-specific — each deployment method has its own native mechanism (Helm chart wiring, ALB/ACM for TLS in ECS, sidecar proxies in bare-metal) and no portable abstraction is attempted.
 - **Application team autonomy**: Application teams must be able to introduce and document new configuration without requiring Helm chart changes in the common case.
 - **Complexity reduction**: Accumulated abstraction layers increase upgrade risk and chart surface area. Removing them reduces the gap between chart values and Kubernetes primitives.
 - **Established path**: `<component>.extraConfiguration` is already the documented recommended path as of 8.9, making this decision a formalization rather than a new direction.
@@ -34,7 +34,7 @@ Not all `values.yaml` keys are equal. This ADR governs only **Tier 1** keys.
 Keys that control *what the application does*: feature flags, toggles, and
 application-level settings that map to application config files or env vars
 controlling application logic. These must use `<component>.extraConfiguration`.
-Examples: `rba.enabled`, `multiTenancy.enabled`, log levels.
+Examples: `orchestration.security.authorizations.enabled`, `global.multitenancy.enabled`, `orchestration.logLevel`.
 
 **Tier 2 — Infrastructure and connectivity** (not governed by this ADR)
 Keys that control *how or where the application runs and connects*. Three
@@ -77,9 +77,10 @@ Note: Tier 2 is inherently platform-specific. Helm manages TLS via init containe
 and secret mounts; ECS terminates TLS at the load balancer via ACM; bare-metal
 deployments use sidecar proxies or JVM truststore files. There is no portable
 abstraction for Tier 2 across deployment methods, and the chart does not attempt
-one. The portability driver in this ADR applies exclusively to Tier 1 — Spring
-Boot properties expressed via `extraConfiguration` map directly to env vars in
-ECS or system properties in a Jar deployment with no translation required.
+one. The portability driver in this ADR applies exclusively to Tier 1 — the Spring
+Boot property identifiers are portable across deployment methods; each method has
+its own injection syntax (mounted file, env var in ECS, system property in a Jar
+deployment) but no Helm-specific key vocabulary is needed.
 
 The classification of identity and connectivity configuration as Tier 2 should be
 revisited going towards 8.11. The Identity component is expected to evolve significantly
@@ -112,7 +113,7 @@ graph TD
 ```
 
 **Blocked** (Tier 1 — must use `<component>.extraConfiguration` instead):
-- Feature flags and toggles (e.g. `rba.enabled`, `multiTenancy.enabled`)
+- Feature flags and toggles (e.g. `orchestration.security.authorizations.enabled`, `global.multitenancy.enabled`)
 - Application log levels
 - Application-level feature configuration
 - Any key that maps to a Spring Boot property, env var controlling app logic, or application config file entry
@@ -132,7 +133,7 @@ graph TD
 ### Positive Consequences
 
 - Helm chart values focus on what they are best placed to manage: Kubernetes infrastructure (pods, services, networking, storage), connectivity to external systems, and cross-component coordination — not application behavior.
-- Tier 1 application configuration is consistent and portable across all deployment methods (Helm, ECS, Docker, Jar) — a Spring Boot property known to an operator transfers directly without deployment-method-specific translation.
+- Tier 1 application configuration is consistent and portable across all deployment methods (Helm, ECS, Docker, Jar) — the property identifiers are portable; each method has its own injection syntax (mounted file, env var, system property) but no Helm-specific key vocabulary is needed.
 - Application teams own their configuration surface and can introduce new settings without touching the Helm chart.
 - Operators see fewer, clearer Helm values with an unambiguous pattern for application configuration.
 - Upgrades reduce the risk that chart evolution silently overrides operator configuration, since operator-provided extraConfiguration entries are layered last.
