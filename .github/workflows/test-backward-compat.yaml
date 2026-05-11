@@ -35,6 +35,7 @@ permissions:
   id-token: write
   deployments: write
   packages: read
+  statuses: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
