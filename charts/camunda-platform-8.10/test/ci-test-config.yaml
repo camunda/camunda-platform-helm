@@ -334,6 +334,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          features: [migrator]
           qa: true
           image-tags: true
           platforms: [gke]
@@ -374,6 +375,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch
+          features: [migrator]
           qa: true
           image-tags: true
           platforms: [gke]
@@ -406,7 +408,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [multitenancy]
+          features: [multitenancy, migrator]
           qa: true
           image-tags: true
           platforms: [gke]
@@ -450,7 +452,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [documentstore]
+          features: [documentstore, migrator]
           qa: true
           image-tags: true
           platforms: [gke, eks]
