@@ -229,26 +229,18 @@ jobs:
   # Report license/cla commit status on merge queue commits.
   # The CLA bot only reports on pull_request events; the merge queue creates
   # ephemeral commits that never receive the status. This job bridges that gap
-  # and ensures the queue only merges AFTER all tests complete.
+  # by immediately reporting success — the CLA was already verified on the PR.
   report-cla-status:
     name: "Report CLA status"
-    if: ${{ always() && github.event_name == 'merge_group' }}
-    needs: [unit-testing, validation, kind-testing, integration-tests]
+    if: ${{ github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     steps:
       - name: Report license/cla status
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
-            STATE="failure"
-            DESC="Tests failed — CLA status mirrors test result."
-          else
-            STATE="success"
-            DESC="Contributor License Agreement is signed."
-          fi
           gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-            -f state="$STATE" \
+            -f state="success" \
             -f context="license/cla" \
-            -f description="$DESC" \
+            -f description="Contributor License Agreement is signed." \
             -f target_url="https://cla-assistant.io/${{ github.repository }}"
