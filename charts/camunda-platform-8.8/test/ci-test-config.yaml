@@ -148,9 +148,10 @@ integration:
           features: [arm]
           persistence: elasticsearch-external
         - name: opensearch
-          enabled: true
+          enabled: false  # Disabled: Bitnami OpenSearch subchart is unstable in CI; tracked in #6121
           exclude: []
           shortname: oske
+          tier: 2
           auth: keycloak
           identity: keycloak
           persistence: opensearch
@@ -160,7 +161,7 @@ integration:
             gke: distroci
           platforms: [gke]
         - name: opensearch-external
-          enabled: true
+          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
           shortname: osex
           tier: 2
           exclude: []
@@ -172,8 +173,9 @@ integration:
             gke: distroci
           platforms: [gke]
         - name: opensearch-embedded
-          enabled: false
+          enabled: true
           shortname: osem
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
