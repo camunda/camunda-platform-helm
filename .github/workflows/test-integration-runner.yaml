@@ -144,6 +144,16 @@ on:
         required: false
         default: false
         type: boolean
+      pr-head-sha:
+        description: "PR HEAD commit SHA for recording cache results"
+        required: false
+        default: ""
+        type: string
+      camunda-version:
+        description: "Camunda version (e.g., 8.9) for cache result recording"
+        required: false
+        default: ""
+        type: string
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -245,6 +255,7 @@ permissions:
   id-token: write
   deployments: write
   packages: read
+  statuses: write
 
 # No concurrency block here — this is the innermost layer containing the cleanup job.
 # cancel-in-progress at this level kills ALL jobs including cleanup, causing orphaned
@@ -1182,6 +1193,55 @@ jobs:
           name: e2e-html-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.shortname }}
           path: playwright-report
           retention-days: 14
+
+  # Record a successful scenario result as a commit status on the PR HEAD commit.
+  # This enables progressive CI result caching: future merge queue attempts can
+  # skip scenarios that already passed for the same content hash.
+  record-result:
+    name: Record cache result - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
+    needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports]
+    # Only record when:
+    # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios)
+    # 2. PR HEAD SHA is available (set by the init job for merge_group and pull_request events)
+    # 3. Camunda version is set (needed for content hash computation)
+    if: >-
+      ${{
+        !cancelled() &&
+        !contains(needs.*.result, 'failure') &&
+        inputs.pr-head-sha != '' &&
+        inputs.camunda-version != ''
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Setup Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        with:
+          go-version-file: scripts/ci-result-cache/go.mod
+          cache: true
+          cache-dependency-path: scripts/ci-result-cache/go.sum
+
+      - name: Record passing result
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          cd scripts/ci-result-cache && go build -o /tmp/ci-result-cache .
+          /tmp/ci-result-cache record \
+            --sha "${{ inputs.pr-head-sha }}" \
+            --version "${{ inputs.camunda-version }}" \
+            --shortname "${{ inputs.shortname }}" \
+            --flow "${{ inputs.flow }}" \
+            --repo-root "${{ github.workspace }}" \
+            --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}

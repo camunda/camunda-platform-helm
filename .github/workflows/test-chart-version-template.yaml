@@ -127,6 +127,16 @@ on:
         required: false
         default: ""
         type: string
+      cached:
+        description: "Whether this scenario has a valid cached result (skip full deploy+test)"
+        required: false
+        default: false
+        type: boolean
+      pr-head-sha:
+        description: "PR HEAD commit SHA for recording cache results"
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -135,10 +145,26 @@ concurrency:
 permissions:
   contents: read
   packages: read
+  statuses: write
 
 jobs:
+  # Fast-path job for scenarios with valid cached results.
+  # Completes in seconds instead of deploying to GKE (~15 min).
+  cached-pass:
+    name: Cached pass - ${{ inputs.flows }}
+    if: ${{ inputs.cached }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache hit
+        run: |
+          echo "## Cache Hit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Scenario **${{ inputs.shortname }}** (${{ inputs.flows }}) for version **${{ inputs.camunda-version }}** has a valid cached result." >> $GITHUB_STEP_SUMMARY
+          echo "Skipping full GKE deploy+test cycle." >> $GITHUB_STEP_SUMMARY
+
   parse-platforms:
     name: Parse platforms - ${{ inputs.flows }}
+    if: ${{ !inputs.cached }}
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.make-json-array.outputs.platforms }}
@@ -158,6 +184,7 @@ jobs:
       id-token: write
       deployments: write
       packages: read
+      statuses: write
     secrets: inherit
     strategy:
       matrix:
@@ -194,6 +221,8 @@ jobs:
       skip-e2e: ${{ inputs.skip-e2e }}
       skip-it: ${{ inputs.skip-it }}
       helm-version: ${{ inputs.helm-version }}
+      pr-head-sha: ${{ inputs.pr-head-sha }}
+      camunda-version: ${{ inputs.camunda-version }}
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
