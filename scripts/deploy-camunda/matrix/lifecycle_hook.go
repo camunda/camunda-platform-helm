@@ -11,6 +11,7 @@ import (
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
+	"scripts/prepare-helm-values/pkg/env"
 )
 
 // lifecycleVarPassthrough lists environment variable names that lifecycle
@@ -25,19 +26,76 @@ var lifecycleVarPassthrough = []string{
 	"POSTGRESQL_JDBC_URL",
 }
 
+// resolveLifecycleEnv builds the env map used to resolve lifecycle hook
+// variables. Sources are layered, last-write-wins, with empty values treated
+// as unset (so a layer that doesn't define a key never shadows a lower one):
+//
+//  1. process environment (os.Getenv) — CI path (vault-secrets exportEnv).
+//  2. flags.EnvFile — local-dev path (creds in .env, not exported to process).
+//  3. flags.ExtraEnv — per-entry overrides (e.g., per-scenario credentials).
+//
+// envFile read errors are logged and ignored so a missing/unreadable file
+// degrades to "no overlay" rather than failing every lifecycle hook.
+func resolveLifecycleEnv(flags *config.RuntimeFlags) map[string]string {
+	out := make(map[string]string, len(lifecycleVarPassthrough))
+	for _, k := range lifecycleVarPassthrough {
+		if v := os.Getenv(k); v != "" {
+			out[k] = v
+		}
+	}
+	if flags != nil && flags.EnvFile != "" {
+		fileMap, err := env.ReadFile(flags.EnvFile)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Str("envFile", flags.EnvFile).
+				Msg("lifecycle: could not read env file for passthrough vars; falling back to process env only")
+		} else {
+			for _, k := range lifecycleVarPassthrough {
+				if v := fileMap[k]; v != "" {
+					out[k] = v
+				}
+			}
+		}
+	}
+	if flags != nil {
+		for _, k := range lifecycleVarPassthrough {
+			if v := flags.ExtraEnv[k]; v != "" {
+				out[k] = v
+			}
+		}
+	}
+	return out
+}
+
 // lifecycleVars builds the variable substitution map used when rendering
-// lifecycle manifests for the given namespace and release.
-func lifecycleVars(namespace, release string) map[string]string {
+// lifecycle manifests for the given namespace and release. Passthrough
+// values come from resolveLifecycleEnv (process env + envFile + ExtraEnv).
+func lifecycleVars(flags *config.RuntimeFlags, namespace, release string) map[string]string {
 	vars := map[string]string{
 		"NAMESPACE":    namespace,
 		"RELEASE_NAME": release,
 	}
-	for _, k := range lifecycleVarPassthrough {
-		if v := os.Getenv(k); v != "" {
-			vars[k] = v
-		}
+	for k, v := range resolveLifecycleEnv(flags) {
+		vars[k] = v
 	}
 	return vars
+}
+
+// lifecycleScriptEnv builds the environment slice passed to a lifecycle
+// script invocation. Scripts get TEST_NAMESPACE (legacy), plus NAMESPACE and
+// RELEASE_NAME so they share naming with fixture-mode placeholders.
+func lifecycleScriptEnv(flags *config.RuntimeFlags, namespace string) []string {
+	out := []string{
+		"TEST_NAMESPACE=" + namespace,
+		"NAMESPACE=" + namespace,
+		"RELEASE_NAME=" + flags.Deployment.Release,
+	}
+	if flags.Test.KubeContext != "" {
+		out = append(out, "KUBE_CONTEXT="+flags.Test.KubeContext)
+	}
+	for k, v := range resolveLifecycleEnv(flags) {
+		out = append(out, k+"="+v)
+	}
+	return out
 }
 
 // hookKind is a lifecycle phase label used in log messages and error wrapping.
@@ -66,7 +124,7 @@ func buildHookFunc(flags *config.RuntimeFlags, hook *LifecycleHook, kind hookKin
 				Namespace:    namespace,
 				Release:      release,
 			}
-			vars := lifecycleVars(namespace, release)
+			vars := lifecycleVars(flags, namespace, release)
 			logging.Logger.Info().
 				Str("scenario", scenario).
 				Str("appVersion", appVersion).
@@ -79,7 +137,7 @@ func buildHookFunc(flags *config.RuntimeFlags, hook *LifecycleHook, kind hookKin
 
 	scriptName := hook.Script
 	scriptPath := versionmatrix.PreSetupScriptPath(repoRoot, appVersion, scriptName)
-	if !versionmatrix.HasPreSetupScript(repoRoot, appVersion, scriptName) {
+	if info, err := os.Stat(scriptPath); err != nil || info.IsDir() {
 		return nil, fmt.Errorf("scenario %q: %s script %q not found at %s", scenario, kind, scriptName, scriptPath)
 	}
 	return func(hookCtx context.Context) error {
@@ -91,15 +149,7 @@ func buildHookFunc(flags *config.RuntimeFlags, hook *LifecycleHook, kind hookKin
 			Str("namespace", namespace).
 			Msgf("Running scenario-specific %s script (declarative)", kind)
 
-		scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
-		if flags.Test.KubeContext != "" {
-			scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
-		}
-		for _, k := range lifecycleVarPassthrough {
-			if v := os.Getenv(k); v != "" {
-				scriptEnv = append(scriptEnv, k+"="+v)
-			}
-		}
+		scriptEnv := lifecycleScriptEnv(flags, namespace)
 
 		if err := executil.RunCommand(hookCtx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
 			return fmt.Errorf("%s script %s failed: %w", kind, scriptPath, err)

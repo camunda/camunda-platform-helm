@@ -27,11 +27,9 @@ const (
 //
 //	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/<filename>
 //
-// Returns empty string if filename is empty.
+// Callers must pass a non-empty filename; LifecycleHook.Validate enforces this
+// upstream of every call site.
 func PreSetupScriptPath(repoRoot, appVersion, filename string) string {
-	if filename == "" {
-		return ""
-	}
 	return filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion,
 		"test", "integration", "scenarios", PreSetupScriptsDir, filename)
 }
@@ -39,11 +37,7 @@ func PreSetupScriptPath(repoRoot, appVersion, filename string) string {
 // HasPreSetupScript returns true if a pre-setup script with the given filename
 // exists on disk for the given app version.
 func HasPreSetupScript(repoRoot, appVersion, filename string) bool {
-	p := PreSetupScriptPath(repoRoot, appVersion, filename)
-	if p == "" {
-		return false
-	}
-	info, err := os.Stat(p)
+	info, err := os.Stat(PreSetupScriptPath(repoRoot, appVersion, filename))
 	return err == nil && !info.IsDir()
 }
 

@@ -86,9 +86,12 @@ type LifecycleHook struct {
 }
 
 // Validate enforces the cross-field invariants documented on LifecycleHook:
-// non-empty description, exactly one of fixtures or script. ctx is prepended
-// to error messages so callers see e.g. `scenario "rdbms": pre-install: ...`.
-// A nil receiver is a no-op so callers can pass optional fields directly.
+// non-empty description, exactly one of fixtures or script, and each
+// referenced filename is plain (no path separators or "..") so filepath.Join
+// downstream cannot escape pre-setup-scripts/ or common/resources/.
+// ctx is prepended to error messages so callers see e.g.
+// `scenario "rdbms": pre-install: ...`. A nil receiver is a no-op so callers
+// can pass optional fields directly.
 func (h *LifecycleHook) Validate(ctx string) error {
 	if h == nil {
 		return nil
@@ -102,7 +105,28 @@ func (h *LifecycleHook) Validate(ctx string) error {
 		return fmt.Errorf("%s: must specify exactly one of fixtures or script (fixtures=%v script=%q)",
 			ctx, h.Fixtures, h.Script)
 	}
+	if hasScript && !isPlainFilename(h.Script) {
+		return fmt.Errorf("%s: script %q must be a plain filename (no path separators or \"..\")", ctx, h.Script)
+	}
+	for _, f := range h.Fixtures {
+		if !isPlainFilename(f) {
+			return fmt.Errorf("%s: fixture %q must be a plain filename (no path separators or \"..\")", ctx, f)
+		}
+	}
 	return nil
+}
+
+// isPlainFilename returns true if name has no path separators and is not "."
+// or "..". Used by LifecycleHook.Validate to reject inputs that would let
+// filepath.Join downstream escape the configured directory.
+func isPlainFilename(name string) bool {
+	if name == "" || name == "." || name == ".." {
+		return false
+	}
+	if strings.ContainsAny(name, `/\`) {
+		return false
+	}
+	return filepath.Base(name) == name
 }
 
 // FlowHooks groups lifecycle hooks attached to a flow rather than a scenario.

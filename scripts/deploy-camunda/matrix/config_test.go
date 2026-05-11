@@ -15,6 +15,7 @@
 package matrix
 
 import (
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -156,6 +157,84 @@ func TestGenerate_PropagatesPreInstall(t *testing.T) {
 	}
 	if rdbms.PreInstall.Description == "" {
 		t.Error("rdbms 8.10: description: empty")
+	}
+}
+
+func TestLifecycleHook_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		hook    *LifecycleHook
+		wantErr string
+	}{
+		{
+			name: "ok fixtures",
+			hook: &LifecycleHook{Fixtures: []string{"a.yaml"}, Description: "x"},
+		},
+		{
+			name: "ok script",
+			hook: &LifecycleHook{Script: "pre-install.sh", Description: "x"},
+		},
+		{
+			name:    "empty description",
+			hook:    &LifecycleHook{Script: "pre-install.sh", Description: "  "},
+			wantErr: "description",
+		},
+		{
+			name:    "both modes",
+			hook:    &LifecycleHook{Script: "x.sh", Fixtures: []string{"y.yaml"}, Description: "x"},
+			wantErr: "exactly one",
+		},
+		{
+			name:    "neither mode",
+			hook:    &LifecycleHook{Description: "x"},
+			wantErr: "exactly one",
+		},
+		{
+			name:    "script with relative parent",
+			hook:    &LifecycleHook{Script: "../foo.sh", Description: "x"},
+			wantErr: "plain filename",
+		},
+		{
+			name:    "script with slash",
+			hook:    &LifecycleHook{Script: "sub/foo.sh", Description: "x"},
+			wantErr: "plain filename",
+		},
+		{
+			name:    "script literal dot-dot",
+			hook:    &LifecycleHook{Script: "..", Description: "x"},
+			wantErr: "plain filename",
+		},
+		{
+			name:    "fixture with relative parent",
+			hook:    &LifecycleHook{Fixtures: []string{"a.yaml", "../b.yaml"}, Description: "x"},
+			wantErr: "plain filename",
+		},
+		{
+			name:    "fixture with backslash",
+			hook:    &LifecycleHook{Fixtures: []string{`a\b.yaml`}, Description: "x"},
+			wantErr: "plain filename",
+		},
+		{
+			name: "nil receiver is no-op",
+			hook: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.hook.Validate("ctx")
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("expected error containing %q, got nil", tt.wantErr)
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("error %q does not contain %q", err.Error(), tt.wantErr)
+			}
+		})
 	}
 }
 

@@ -469,13 +469,16 @@ func resolveUpgradeFromVersionQuiet(repoRoot string, entry Entry, overrideVersio
 
 // resolvePreUpgradeScriptQuiet returns the pre-upgrade script path declared
 // on the entry's PreUpgrade hook (if any). Used by the dry-run summary;
-// returns empty string for non-upgrade flows, fixture-mode hooks, or absent
-// scripts.
+// returns empty string for non-upgrade flows, fixture-mode hooks, or scripts
+// that do not exist on disk for the entry's version.
 func resolvePreUpgradeScriptQuiet(repoRoot string, entry Entry) string {
 	if !versionmatrix.IsUpgradeFlow(entry.Flow) {
 		return ""
 	}
 	if entry.PreUpgrade == nil || entry.PreUpgrade.Script == "" {
+		return ""
+	}
+	if !versionmatrix.HasPreSetupScript(repoRoot, entry.Version, entry.PreUpgrade.Script) {
 		return ""
 	}
 	return versionmatrix.PreSetupScriptPath(repoRoot, entry.Version, entry.PreUpgrade.Script)
@@ -2051,7 +2054,12 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	}
 
 	// Clone flags for Step 1: deploy from repo instead of local chart path.
+	// Detach hook slices: a plain `*flags` copy shares the backing arrays with
+	// the parent, so a subsequent append (when cap > len) would mutate flags
+	// and leak Step 1-only hooks into Step 2's later shallow copy.
 	step1Flags := *flags
+	step1Flags.PreInstallHooks = append([]func(context.Context) error(nil), flags.PreInstallHooks...)
+	step1Flags.PostDeployHooks = append([]func(context.Context) error(nil), flags.PostDeployHooks...)
 	step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
 	step1Flags.Chart.ChartVersion = fromVersion
 	step1Flags.Chart.ChartPath = "" // Use repo chart, not local path.
@@ -2133,7 +2141,11 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	}
 
 	// Clone flags for Step 2: upgrade from installed state to local chart.
+	// Detach hook slices for the same reason as Step 1 — keep declarative
+	// post-deploy registrations isolated to this step.
 	step2Flags := *flags
+	step2Flags.PreInstallHooks = append([]func(context.Context) error(nil), flags.PreInstallHooks...)
+	step2Flags.PostDeployHooks = append([]func(context.Context) error(nil), flags.PostDeployHooks...)
 	step2Flags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	step2Flags.Deployment.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
 	step2Flags.Deployment.Flow = "install"             // Must match Step 1's Flow so $FLOW in index prefixes resolves identically.

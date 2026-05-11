@@ -518,10 +518,6 @@ func TestPreSetupScriptPath(t *testing.T) {
 	if got != want {
 		t.Errorf("PreSetupScriptPath() = %q, want %q", got, want)
 	}
-
-	if got := PreSetupScriptPath("/repo", "8.10", ""); got != "" {
-		t.Errorf("PreSetupScriptPath(empty filename) = %q, want empty", got)
-	}
 }
 
 func TestHasPreSetupScript(t *testing.T) {
