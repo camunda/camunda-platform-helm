@@ -38,7 +38,7 @@ identity:
 optimize:
   caches:
     cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
+      minFetchIntervalSeconds: 30
 
 connectors:
   env:
