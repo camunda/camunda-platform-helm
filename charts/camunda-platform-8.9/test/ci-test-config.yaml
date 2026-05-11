@@ -52,17 +52,19 @@ integration:
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
         - name: opensearch
-          enabled: false
+          enabled: false  # Disabled: Bitnami OpenSearch subchart is unstable in CI; tracked in #6121
           auth: keycloak
           shortname: oske
+          tier: 2
           exclude: []
           identity: keycloak
+          persistence: opensearch
+          flow: install
           infra-type:
             gke: distroci
-            eks: preemptible
           platforms: [gke]
         - name: opensearch-external
-          enabled: true
+          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
           shortname: osex
           tier: 2
           exclude: []
@@ -74,8 +76,9 @@ integration:
             gke: distroci
           platforms: [gke]
         - name: opensearch-embedded
-          enabled: false
+          enabled: true
           shortname: osem
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
