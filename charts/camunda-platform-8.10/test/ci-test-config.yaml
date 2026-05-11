@@ -360,7 +360,7 @@ integration:
         - name: qa-opensearch-upg
           enabled: false
           flow: install
-          shortname: qaosupg
+          shortname: qaosupg2
           auth: keycloak
           identity: keycloak
           persistence: opensearch
@@ -374,6 +374,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch
+          features: [migrator]
           qa: true
           image-tags: true
           platforms: [gke]
