@@ -546,21 +546,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 			// downstream CI steps (e.g. Playwright e2e) to run against a broken
 			// cluster and produce misleading test failures (HTTP 502 across the
 			// board) instead of clearly attributing the failure to the deploy.
-			if err == nil {
-				failed := 0
-				for _, r := range results {
-					if r.Error != nil {
-						failed++
-					}
-				}
-				if failed > 0 {
-					noun := "entry"
-					if failed != 1 {
-						noun = "entries"
-					}
-					err = fmt.Errorf("%d matrix %s failed", failed, noun)
-				}
-			}
+			err = aggregateRunError(err, results)
 
 			return err
 		},
@@ -772,4 +758,28 @@ func validateChartRefFlags(chartRef, chartRefVersion string) error {
 	}
 
 	return nil
+}
+
+// aggregateRunError converts per-entry failures from matrix.Run into a
+// returned CLI error so the process exits non-zero. If runErr is already
+// non-nil (e.g. from --stop-on-failure), it is returned unchanged to
+// preserve the original error semantics. Factored out for unit testing.
+func aggregateRunError(runErr error, results []matrix.RunResult) error {
+	if runErr != nil {
+		return runErr
+	}
+	failed := 0
+	for _, r := range results {
+		if r.Error != nil {
+			failed++
+		}
+	}
+	if failed == 0 {
+		return nil
+	}
+	noun := "entry"
+	if failed != 1 {
+		noun = "entries"
+	}
+	return fmt.Errorf("%d matrix %s failed", failed, noun)
 }

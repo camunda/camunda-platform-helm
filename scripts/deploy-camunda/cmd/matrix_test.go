@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"errors"
 	"strings"
 	"testing"
+
+	"scripts/deploy-camunda/matrix"
 )
 
 func TestValidateChartRefFlags(t *testing.T) {
@@ -66,6 +69,74 @@ func TestValidateChartRefFlags(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), tt.wantErr) {
 				t.Fatalf("expected error containing %q, got %q", tt.wantErr, err.Error())
+			}
+		})
+	}
+}
+
+func TestAggregateRunError(t *testing.T) {
+	preExisting := errors.New("stopping on failure: helm failed")
+	entryErr := errors.New("helm upgrade --install failed: exit status 1")
+
+	tests := []struct {
+		name    string
+		runErr  error
+		results []matrix.RunResult
+		wantErr string // substring; empty = expect nil
+	}{
+		{
+			name:    "no results no error",
+			results: nil,
+			wantErr: "",
+		},
+		{
+			name: "all entries succeeded",
+			results: []matrix.RunResult{
+				{Entry: matrix.Entry{Version: "8.9"}, Namespace: "ns-a"},
+				{Entry: matrix.Entry{Version: "8.9"}, Namespace: "ns-b"},
+			},
+			wantErr: "",
+		},
+		{
+			name: "single entry failed",
+			results: []matrix.RunResult{
+				{Entry: matrix.Entry{Version: "8.9"}, Namespace: "ns-a", Error: entryErr},
+			},
+			wantErr: "1 matrix entry failed",
+		},
+		{
+			name: "multiple entries failed",
+			results: []matrix.RunResult{
+				{Entry: matrix.Entry{Version: "8.8"}, Namespace: "ns-a", Error: entryErr},
+				{Entry: matrix.Entry{Version: "8.9"}, Namespace: "ns-b", Error: entryErr},
+				{Entry: matrix.Entry{Version: "8.9"}, Namespace: "ns-c"},
+			},
+			wantErr: "2 matrix entries failed",
+		},
+		{
+			name:   "preserves pre-existing run error",
+			runErr: preExisting,
+			results: []matrix.RunResult{
+				{Entry: matrix.Entry{Version: "8.9"}, Namespace: "ns-a", Error: entryErr},
+			},
+			wantErr: "stopping on failure: helm failed",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := aggregateRunError(tc.runErr, tc.results)
+			if tc.wantErr == "" {
+				if got != nil {
+					t.Fatalf("expected nil error, got %v", got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatalf("expected error containing %q, got nil", tc.wantErr)
+			}
+			if !strings.Contains(got.Error(), tc.wantErr) {
+				t.Fatalf("expected error containing %q, got %q", tc.wantErr, got.Error())
 			}
 		})
 	}
