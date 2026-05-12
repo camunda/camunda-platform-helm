@@ -2143,19 +2143,28 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	step2Flags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	step2Flags.Deployment.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
 	step2Flags.Deployment.Flow = "install"             // Must match Step 1's Flow so $FLOW in index prefixes resolves identically.
-	step2Flags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
 	step2Flags.Deployment.ExtraHelmSets = mergeHelmSets(
 		flags.Deployment.ExtraHelmSets,
 		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
 	)
 
-	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
-	// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`
-	// when the Secret lookup returns nil (due to --force deleting/recreating resources).
-	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-		for k, v := range pgPasswords {
-			step2Flags.Deployment.ExtraHelmSets[k] = v
+	// Use --force only for upgrade-minor where structural chart changes (port renames,
+	// new components, immutable field changes) can cause strategic merge conflicts.
+	// For upgrade-patch (same app version), a normal rolling update is sufficient,
+	// avoids destructive simultaneous pod recreation, and matches real user behavior.
+	if entry.Flow == "upgrade-minor" {
+		step2Flags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
+
+		// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
+		// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`
+		// when the Secret lookup returns nil (due to --force deleting/recreating resources).
+		if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
+			for k, v := range pgPasswords {
+				step2Flags.Deployment.ExtraHelmSets[k] = v
+			}
 		}
+	} else {
+		step2Flags.Deployment.ExtraHelmArgs = flags.Deployment.ExtraHelmArgs
 	}
 
 	if err := deploy.Execute(ctx, &step2Flags); err != nil {
