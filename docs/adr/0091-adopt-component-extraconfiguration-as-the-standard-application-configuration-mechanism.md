@@ -1,6 +1,6 @@
 # Standardize `<component>.extraConfiguration` as the Application Configuration Mechanism
 
-- Status: proposed
+- Status: approved
 - Date: 2026-05-06
 - Decision-makers: Distribution team
 
