@@ -185,6 +185,7 @@ These live in `test/integration/scenarios/chart-full-setup/values/` per chart ve
 **Image-tag activation:** The image-tags layer (`base-image-tags.yaml`) is enabled by setting `image-tags: true` in `ci-test-config.yaml`. All `qa-*` scenarios have this set because they always receive SNAPSHOT versions from nightly CI. When active, neither `values-digest.yaml` nor `values-latest.yaml` is applied — image versions come entirely from `base-image-tags.yaml` with placeholder substitution from the `.env` file (loaded by `buildScenarioEnv()`). In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file and passes it via `--env-file`. See `docs/integration-test-scenario-resolution.md` for the full data flow.
 
 For detailed documentation on how scenario resolution works, see `docs/integration-test-scenario-resolution.md`.
+For the full testing architecture — test layers, CI execution flows (install / upgrade-minor / modular-upgrade-minor), and the cross-job index prefix design — see `docs/testing-architecture.md`.
 
 ## CI Test Matrix
 
