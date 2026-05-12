@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.0.0-alpha0
+version: 15.0.0-alpha1
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -63,7 +63,7 @@ maintainers:
     email: jesse.simpson@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.19.4"
+  camunda.io/helmCLIVersion: "3.20.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -74,4 +74,56 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Initial 8.10 alpha chart"
+      description: "Add tpl rendering for global identity auth URL values"
+    - kind: added
+      description: "Add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10"
+    - kind: added
+      description: "Add springImport flag to extraConfiguration entries"
+    - kind: added
+      description: "Add MCP feature scenario for 8.10 integration tests"
+    - kind: added
+      description: "Update Admin webapp URL"
+    - kind: added
+      description: "Consolidate webModeler and console into camundaHub for 8.10"
+    - kind: added
+      description: "Add companion chart deployment support to deploy-camunda"
+    - kind: changed
+      description: "Migrate web-modeler pusher secret to existingSecretsMustBeSet"
+    - kind: changed
+      description: "Drop global.image.tag option"
+    - kind: changed
+      description: "Remove integration tests"
+    - kind: fixed
+      description: "Add tpl support for global.identity.auth.issuer"
+    - kind: fixed
+      description: "Restore backward compatibility for 3rd party e2e callers and fix 8.9 documentstore corruption"
+    - kind: fixed
+      description: "Use dedicated liveness endpoint for orchestration app"
+    - kind: fixed
+      description: "Add env vars to web-modeler restapi deployment for Spring Boot 4.0.4 compatibility"
+    - kind: fixed
+      description: "Optimize prefix defaults to empty so global.elasticsearch.prefix is respected"
+    - kind: fixed
+      description: "Reference bitnami subcharts internally rather than relying on external repositories"
+    - kind: fixed
+      description: "Fix links in helpers 8.9+ to upgrade docs"
+    - kind: fixed
+      description: "Set basic.allow-unauthenticated-api-access on unprotectedApi"
+    - kind: fixed
+      description: "Skip initial-contact-points generation for multi-region deployments in 8.9 and 8.10"
+    - kind: fixed
+      description: "Consolidated-auth should be disabled"
+    - kind: fixed
+      description: "Remove importer from 8.9 and 8.10"
+    - kind: fixed
+      description: "Add aws-enabled property to secondary-storage config"
+    - kind: fixed
+      description: "Use internal cluster url for connectors in console release info"
+    - kind: fixed
+      description: "Keep persistence enabled in web modeler postgresql"
+    - kind: fixed
+      description: "Add missing properties and annotations to values.schema.json"
+    - kind: fixed
+      description: "Update 8.10 chart image tags from stale alpha to stable 8.9 releases"
+    - kind: fixed
+      description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
