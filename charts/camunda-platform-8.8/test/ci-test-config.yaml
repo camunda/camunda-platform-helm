@@ -201,6 +201,21 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           platforms: [eks]
+        - name: keycloak-ldap
+          enabled: false
+          shortname: keldp
+          auth: keycloak
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch
+          features: [ldap]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+          dependencies:
+            - chart: test/integration/companion-charts/openldap
+              release-name: openldap
+              values-file: test/integration/companion-values/openldap.yaml
 
         # ===========================================================================
         # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml

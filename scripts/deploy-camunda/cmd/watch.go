@@ -34,6 +34,7 @@ func newWatchCommand() *cobra.Command {
 		corpusDir       string
 		maxTicks        int
 		logLevel        string
+		cliName         string
 	)
 
 	cmd := &cobra.Command{
@@ -66,7 +67,7 @@ Typical use:
 				return fmt.Errorf("--namespace is required")
 			}
 
-			cli, err := agentwatch.DetectCLI()
+			cli, err := agentwatch.ResolveCLI(cliName)
 			if err != nil {
 				return err
 			}
@@ -152,6 +153,7 @@ Typical use:
 		"Directory to persist snapshot+verdict pairs for the eval corpus (empty disables persistence)")
 	cmd.Flags().IntVar(&maxTicks, "max-ticks", 0, "Maximum number of poll ticks before exiting (0 = unbounded)")
 	cmd.Flags().StringVarP(&logLevel, "log-level", "l", "info", "Log level")
+	cmd.Flags().StringVar(&cliName, "cli", "", "Agent CLI to use: opencode or claude (auto-detected if empty)")
 
 	cmd.AddCommand(newWatchReplayCommand())
 
@@ -166,8 +168,9 @@ Typical use:
 // confidence threshold.
 func newWatchReplayCommand() *cobra.Command {
 	var (
-		strict   bool
-		logLevel string
+		strict      bool
+		logLevel    string
+		replayCLI   string
 	)
 	cmd := &cobra.Command{
 		Use:   "replay <corpus-dir>",
@@ -180,7 +183,7 @@ func newWatchReplayCommand() *cobra.Command {
 			}); err != nil {
 				return err
 			}
-			cli, err := agentwatch.DetectCLI()
+			cli, err := agentwatch.ResolveCLI(replayCLI)
 			if err != nil {
 				return err
 			}
@@ -203,5 +206,6 @@ func newWatchReplayCommand() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&strict, "strict", true, "Exit non-zero if any verdict action class regresses")
 	cmd.Flags().StringVarP(&logLevel, "log-level", "l", "warn", "Log level (replay is noisy at info)")
+	cmd.Flags().StringVar(&replayCLI, "cli", "", "Agent CLI to use: opencode or claude (auto-detected if empty)")
 	return cmd
 }

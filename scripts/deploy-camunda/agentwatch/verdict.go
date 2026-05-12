@@ -1,6 +1,8 @@
 package agentwatch
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -152,14 +154,81 @@ func unwrapEnvelope(raw []byte) ([]byte, bool) {
 		return []byte(claude.Result), true
 	}
 
-	// Shape 2: opencode run --format json returns
-	//   {"output":"<assistant text>"} or similar.
-	var opencode struct {
+	// Shape 2: opencode run --format json returns a single JSON envelope
+	//   {"output":"<assistant text>"}.
+	var opencodeSingle struct {
 		Output string `json:"output"`
 	}
-	if err := json.Unmarshal(raw, &opencode); err == nil && opencode.Output != "" {
-		return []byte(opencode.Output), true
+	if err := json.Unmarshal(raw, &opencodeSingle); err == nil && opencodeSingle.Output != "" {
+		return []byte(opencodeSingle.Output), true
+	}
+
+	// Shape 3: opencode run --format json (current versions) emits NDJSON —
+	// newline-delimited JSON events. The assistant text lives in events with
+	// type "text", inside part.text. Concatenate all text parts to form the
+	// full response, then strip markdown code fences.
+	if text, ok := unwrapOpencodeNDJSON(raw); ok {
+		return []byte(text), true
 	}
 
 	return nil, false
+}
+
+// unwrapOpencodeNDJSON parses a stream of newline-delimited JSON events from
+// opencode's --format json output and extracts the concatenated assistant text.
+// Events have the shape: {"type":"text","part":{"text":"..."},...}
+func unwrapOpencodeNDJSON(raw []byte) (string, bool) {
+	scanner := bufio.NewScanner(bytes.NewReader(raw))
+	scanner.Buffer(make([]byte, 0, 256*1024), 1024*1024) // allow large lines
+
+	var textParts []string
+	foundText := false
+
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+
+		var event struct {
+			Type string `json:"type"`
+			Part struct {
+				Text string `json:"text"`
+			} `json:"part"`
+		}
+		if err := json.Unmarshal(line, &event); err != nil {
+			continue
+		}
+		if event.Type == "text" && event.Part.Text != "" {
+			textParts = append(textParts, event.Part.Text)
+			foundText = true
+		}
+	}
+
+	if !foundText {
+		return "", false
+	}
+
+	text := strings.Join(textParts, "")
+	// Strip markdown code fences (```json ... ```) that the agent often wraps around JSON.
+	text = stripCodeFences(text)
+	return text, true
+}
+
+// stripCodeFences removes markdown code fences from text, handling both
+// ```json\n...\n``` and ```\n...\n``` patterns.
+func stripCodeFences(s string) string {
+	s = strings.TrimSpace(s)
+	// Try to strip opening fence
+	if strings.HasPrefix(s, "```") {
+		// Find end of opening fence line
+		if idx := strings.Index(s, "\n"); idx != -1 {
+			s = s[idx+1:]
+		}
+	}
+	// Strip closing fence
+	if strings.HasSuffix(s, "```") {
+		s = s[:len(s)-3]
+	}
+	return strings.TrimSpace(s)
 }

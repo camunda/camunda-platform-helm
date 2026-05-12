@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-seed-ldif
+  labels:
+    app.kubernetes.io/name: openldap
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  # All seed data in one file to avoid Kubernetes ConfigMap symlink issues
+  # with osixia/openldap's bootstrap script processing hidden directories.
+  seed.ldif: |
+    # Organizational Units
+    dn: ou=Users,{{ .Values.baseDN }}
+    objectClass: organizationalUnit
+    ou: Users
+
+    dn: ou=AppGroups,{{ .Values.baseDN }}
+    objectClass: organizationalUnit
+    ou: AppGroups
+
+    dn: ou=InfraGroups,{{ .Values.baseDN }}
+    objectClass: organizationalUnit
+    ou: InfraGroups
+
+    # Test users
+    dn: cn=testuser,ou=Users,{{ .Values.baseDN }}
+    objectClass: inetOrgPerson
+    objectClass: organizationalPerson
+    objectClass: person
+    cn: testuser
+    sn: User
+    givenName: Test
+    uid: testuser
+    mail: testuser@test.local
+    userPassword: testpassword
+
+    dn: cn=testuser2,ou=Users,{{ .Values.baseDN }}
+    objectClass: inetOrgPerson
+    objectClass: organizationalPerson
+    objectClass: person
+    cn: testuser2
+    sn: User2
+    givenName: Test2
+    uid: testuser2
+    mail: testuser2@test.local
+    userPassword: testpassword
+
+    # Application groups (ou=AppGroups) — Mapper A scope
+    dn: cn=app-admin,ou=AppGroups,{{ .Values.baseDN }}
+    objectClass: groupOfNames
+    cn: app-admin
+    member: cn=testuser,ou=Users,{{ .Values.baseDN }}
+
+    dn: cn=app-viewer,ou=AppGroups,{{ .Values.baseDN }}
+    objectClass: groupOfNames
+    cn: app-viewer
+    member: cn=testuser,ou=Users,{{ .Values.baseDN }}
+    member: cn=testuser2,ou=Users,{{ .Values.baseDN }}
+
+    # Infrastructure groups (ou=InfraGroups) — Mapper B scope
+    dn: cn=infra-admin,ou=InfraGroups,{{ .Values.baseDN }}
+    objectClass: groupOfNames
+    cn: infra-admin
+    member: cn=testuser,ou=Users,{{ .Values.baseDN }}
+
+    dn: cn=infra-viewer,ou=InfraGroups,{{ .Values.baseDN }}
+    objectClass: groupOfNames
+    cn: infra-viewer
+    member: cn=testuser,ou=Users,{{ .Values.baseDN }}
+    member: cn=testuser2,ou=Users,{{ .Values.baseDN }}

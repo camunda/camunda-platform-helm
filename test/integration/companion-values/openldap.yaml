@@ -1,0 +1,28 @@
+# CI values for the OpenLDAP companion chart.
+# Minimal single-replica deployment with memberOf overlay enabled.
+# Used to reproduce Keycloak multi-group-mapper regression (SUPPORT-32686).
+#
+# Deployed as a separate Helm release by deploy-camunda before the main
+# Camunda chart. Referenced from ci-test-config.yaml dependencies.
+
+image:
+  repository: osixia/openldap
+  tag: "1.5.0"
+  pullPolicy: IfNotPresent
+
+adminPassword: "adminpassword"
+configPassword: "configpassword"
+baseDN: "dc=test,dc=local"
+organisation: "Test"
+domain: "test.local"
+
+service:
+  port: 389
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"

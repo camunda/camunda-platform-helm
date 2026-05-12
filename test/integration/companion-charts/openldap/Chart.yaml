@@ -1,0 +1,6 @@
+apiVersion: v2
+name: openldap
+description: Minimal OpenLDAP for CI integration testing (memberOf overlay enabled)
+type: application
+version: 0.1.0
+appVersion: "2.6"
