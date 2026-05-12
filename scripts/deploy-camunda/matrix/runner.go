@@ -289,7 +289,41 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 		results, retErr = runSequential(ctx, entries, opts)
 	}
 
+	// If no early-termination error was returned (StopOnFailure) but entries
+	// still failed, synthesize a summary error so callers (and CI steps) get a
+	// non-zero exit code. Also catch the edge case where the context was
+	// cancelled before any entry was dispatched (runParallel returns nil, nil).
+	if retErr == nil {
+		retErr = synthesizeRunError(ctx, results, len(entries))
+	}
+
 	return results, retErr
+}
+
+// synthesizeRunError checks completed results for failures and returns a
+// summary error when any entries failed. It also detects context cancellation
+// that prevented entries from being dispatched (e.g., parent ctx already done
+// when runParallel starts). This is an unexported helper so tests can exercise
+// the exact production logic.
+func synthesizeRunError(ctx context.Context, results []RunResult, totalEntries int) error {
+	// If the context was cancelled and fewer results were produced than entries
+	// expected, report the cancellation — this catches the edge case where
+	// runParallel breaks out of its dispatch loop before any entry starts.
+	if ctx.Err() != nil && len(results) < totalEntries {
+		return fmt.Errorf("run cancelled: %d of %d entries never started: %w",
+			totalEntries-len(results), totalEntries, ctx.Err())
+	}
+
+	var failCount int
+	for _, r := range results {
+		if r.Error != nil {
+			failCount++
+		}
+	}
+	if failCount > 0 {
+		return fmt.Errorf("%d of %d matrix entries failed", failCount, len(results))
+	}
+	return nil
 }
 
 // dryRunEntry holds resolved details for one matrix entry in dry-run mode.
@@ -2159,19 +2193,28 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	step2Flags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	step2Flags.Deployment.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
 	step2Flags.Deployment.Flow = "install"             // Must match Step 1's Flow so $FLOW in index prefixes resolves identically.
-	step2Flags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
 	step2Flags.Deployment.ExtraHelmSets = mergeHelmSets(
 		flags.Deployment.ExtraHelmSets,
 		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
 	)
 
-	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
-	// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`
-	// when the Secret lookup returns nil (due to --force deleting/recreating resources).
-	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-		for k, v := range pgPasswords {
-			step2Flags.Deployment.ExtraHelmSets[k] = v
+	// Use --force only for upgrade-minor where structural chart changes (port renames,
+	// new components, immutable field changes) can cause strategic merge conflicts.
+	// For upgrade-patch (same app version), a normal rolling update is sufficient,
+	// avoids destructive simultaneous pod recreation, and matches real user behavior.
+	if entry.Flow == "upgrade-minor" {
+		step2Flags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
+
+		// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
+		// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`
+		// when the Secret lookup returns nil (due to --force deleting/recreating resources).
+		if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
+			for k, v := range pgPasswords {
+				step2Flags.Deployment.ExtraHelmSets[k] = v
+			}
 		}
+	} else {
+		step2Flags.Deployment.ExtraHelmArgs = flags.Deployment.ExtraHelmArgs
 	}
 
 	if err := deploy.Execute(ctx, &step2Flags); err != nil {
