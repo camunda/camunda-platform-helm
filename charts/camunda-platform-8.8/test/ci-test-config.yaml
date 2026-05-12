@@ -31,6 +31,19 @@ integration:
           Deletes the postgresql and postgresql-web-modeler StatefulSets to
           handle immutable spec diffs across the 8.7→8.8 minor upgrade.
           Helm recreates them with the new spec while keeping PVC data.
+    # modular-upgrade-minor uses the same pre-upgrade work as upgrade-minor
+    # (the old PreUpgradeScriptName aliased both to pre-upgrade-minor.sh).
+    # Duplicated here as an explicit map key so the flow-hook lookup in
+    # matrix.Generate resolves it. Currently dormant — all
+    # modular-upgrade-minor scenarios are disabled — but kept correct for
+    # the day one is enabled.
+    modular-upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade-minor.sh
+        description: |
+          Deletes the postgresql and postgresql-web-modeler StatefulSets to
+          handle immutable spec diffs across the 8.7→8.8 minor upgrade.
+          Helm recreates them with the new spec while keeping PVC data.
   case:
     pr:
       scenario:
