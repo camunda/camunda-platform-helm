@@ -1,2 +1,4 @@
 global:
-  license: {}
+  license:
+    existingSecret: integration-test-credentials
+    existingSecretKey: camunda-license
