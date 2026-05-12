@@ -14,6 +14,10 @@ on:
       - '**/go.mod'
       - '**/go.sum'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -126,4 +130,4 @@ jobs:
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore(deps): post upgrade tasks - go mod tidy, update golden files, readme, and schema"
+          message: "chore(ci): post upgrade tasks - go mod tidy, update golden files, readme, and schema"
