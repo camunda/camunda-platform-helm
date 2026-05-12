@@ -1202,12 +1202,15 @@ jobs:
     needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports]
     # Only record when:
     # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios)
+    #    Note: we check both 'failure' AND 'cancelled' to prevent false positives when
+    #    tests are cancelled (e.g., timeout). A cancelled job result is 'cancelled', not 'failure'.
     # 2. PR HEAD SHA is available (set by the init job for merge_group and pull_request events)
     # 3. Camunda version is set (needed for content hash computation)
     if: >-
       ${{
         !cancelled() &&
         !contains(needs.*.result, 'failure') &&
+        !contains(needs.*.result, 'cancelled') &&
         inputs.pr-head-sha != '' &&
         inputs.camunda-version != ''
       }}

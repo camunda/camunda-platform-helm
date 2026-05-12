@@ -46,8 +46,8 @@ type matrixJSON struct {
 	Include []matrixEntry `json:"include"`
 }
 
-// matrixEntry represents one entry in the matrix. We preserve all fields
-// using json.RawMessage and only add/modify the "cached" field.
+// matrixEntry represents one entry in the matrix as a generic map.
+// All original fields are preserved; we only add/modify the "cached" field.
 type matrixEntry map[string]interface{}
 
 func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
