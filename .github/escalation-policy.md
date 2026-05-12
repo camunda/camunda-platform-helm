@@ -1,9 +1,15 @@
 # Escalation Policy — camunda-platform-helm
 
-This document defines when a pull request requires human review beyond the AI
-review performed by [`crev`](https://github.com/camunda/crev). The
-escalation-assessor agent reads this file and computes a composite score to
-determine whether human sign-off is necessary.
+This document defines the risk signals used by the AI review performed by
+[`crev`](https://github.com/camunda/crev). The escalation-assessor agent reads
+this file and computes a composite score to help human reviewers identify where
+closer attention is warranted.
+
+> **Note — Evaluation Phase:** We are currently evaluating the accuracy and
+> reliability of this tooling. **Human review and approval is always required
+> for every pull request**, regardless of the AI assessment outcome. The AI
+> score and labels are advisory only — humans retain full review responsibility
+> and sign-off authority.
 
 ## How It Works
 
@@ -11,10 +17,11 @@ When `crev` reviews a PR, it:
 1. Runs domain specialists (correctness, security, etc.) and a devil's-advocate pass.
 2. Verifies findings through a strict-precision filter.
 3. Invokes the **escalation-assessor** which reads this policy, evaluates 8 orthogonal signals, and computes a weighted score.
-4. Posts a GitHub label (`human-review-required` or `ai-review-sufficient`) and a commit status (`crev/escalation`) on the PR.
+4. Posts a GitHub label (`human-review-required` or `ai-review-sufficient`) and a commit status (`crev/escalation`) on the PR as an advisory signal.
 
-The AI review always runs. The escalation decision determines whether a human
-reviewer must also approve before merge.
+The AI review always runs and provides a risk assessment. The label and score
+are informational — they help human reviewers prioritise attention, but they do
+**not** replace or waive the requirement for human approval before merge.
 
 ## Threshold
 
@@ -22,8 +29,11 @@ reviewer must also approve before merge.
 threshold: 0.5
 ```
 
-Score >= 0.5 triggers mandatory human review. Below that, AI review is
-sufficient for merge approval (subject to CI passing).
+Score >= 0.5 indicates the AI considers the change high-risk and flags it for
+close human attention. Below that threshold, the AI considers the change
+lower-risk — **however, human review and approval is always required**. The
+`ai-review-sufficient` label reflects the AI's assessment only; it does not
+grant merge permission without a human approving the pull request.
 
 ## Hard Escalation Rules (NEVER violations = always escalate)
 
@@ -94,9 +104,13 @@ When the AI review itself shows signs of uncertainty (hedging language, many
 specialist findings dropped by verifier, contradictory assessments), human
 review provides the needed ground truth.
 
-## AI-Only Review Acceptable When
+## Cases Where AI Assessment Indicates Lower Risk
 
-Human review may be skipped (score < threshold) when ALL of the following hold:
+The AI may label a PR `ai-review-sufficient` (score < threshold) when ALL of
+the following hold. **This label does not waive human review** — it is an
+advisory signal that the AI assessed the change as lower-risk, and a human
+reviewer must still read, approve, and take responsibility for the merge
+decision.
 - Change is purely additive (new files, new values fields with documentation)
 - No NEVER rules violated
 - Author has significant history in the changed subsystem
@@ -106,6 +120,8 @@ Human review may be skipped (score < threshold) when ALL of the following hold:
 - Change is scoped to a single chart version OR explicitly describes
   cross-version intent
 - CI passes (helm lint, unit tests, golden file check)
+
+Regardless of these conditions, a human must still review and approve.
 
 ## Chart Design Principle Violations (always escalate at P1+)
 
