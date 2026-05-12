@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.1.0
+version: 14.2.0
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -71,10 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Add companion chart deployment support to deploy-camunda"
-    - kind: fixed
-      description: "Add missing properties and annotations to values.schema.json"
-    - kind: fixed
-      description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
+  artifacthub.io/changes: ""
