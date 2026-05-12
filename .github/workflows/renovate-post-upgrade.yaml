@@ -112,10 +112,18 @@ jobs:
           else
             make helm.readme-update
           fi
+      - name: Update Schema
+        run: |
+          if [ -n "${CHANGED_CHARTS}" ]; then
+            chartPath="${CHANGED_CHARTS}" \
+              make helm.schema-update
+          else
+            make helm.schema-update
+          fi
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore(deps): post upgrade tasks - go mod tidy and update golden files"
+          message: "chore(deps): post upgrade tasks - go mod tidy, update golden files, readme, and schema"
