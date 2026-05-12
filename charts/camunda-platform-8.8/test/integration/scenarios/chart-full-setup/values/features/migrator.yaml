@@ -1,10 +1,17 @@
 orchestration:
   upgrade:
-    # Nightly tests run SNAPSHOT builds. The SchemaManager.checkVersionCompatibility()
-    # call explicitly rejects SNAPSHOT-to-SNAPSHOT upgrades unless this flag is set.
-    # Without it, migration-importer crashes with IncompatibleVersionException on
-    # every nightly upgrade run.
+    # Nightly tests run SNAPSHOT builds. Zeebe's partition engine rejects
+    # SNAPSHOT-to-SNAPSHOT upgrades unless this flag is set (sets
+    # camunda.system.upgrade.enable-version-check: false in application.yaml).
     allowPreReleaseImages: true
+  env:
+    # Disables the SearchEngineSchemaInitializer's own SNAPSHOT version check,
+    # which is separate from the Zeebe engine check above. Without this, the
+    # searchEngineSchemaInitializer bean crashes at startup even when
+    # enable-version-check is false. Already set by oidc.yaml for OIDC scenarios;
+    # added here so Keycloak upgrade scenarios are also covered.
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
   importer:
     enabled: true
   migration:
