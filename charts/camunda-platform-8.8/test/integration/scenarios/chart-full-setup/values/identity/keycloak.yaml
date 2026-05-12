@@ -244,6 +244,39 @@ connectors:
           existingSecretKey: "identity-connectors-client-token"
 
 orchestration:
+  env:
+    # Security mapping rules — written into the Zeebe raft log on first boot of
+    # the 8.8 cluster so the orchestration layer can authenticate Keycloak users.
+    # Placed in the identity layer (keycloak.yaml) rather than the persistence
+    # layer so they don't clobber the Entra/OIDC mapping rules in oidc.yaml
+    # (persistence is applied after identity in the layered-values merge).
+    # Uses hardcoded Keycloak claim names/values: preferred_username for users,
+    # client_id for service accounts ($VENOM_CLIENT_ID/$CONNECTORS_CLIENT_ID are
+    # only substituted for OIDC/Entra scenarios, not Keycloak).
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+      value: "venom"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
+      value: "connectors"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"
   security:
     initialization:
       defaultRoles:
