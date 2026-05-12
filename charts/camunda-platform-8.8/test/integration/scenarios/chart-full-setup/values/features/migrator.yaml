@@ -1,4 +1,10 @@
 orchestration:
+  upgrade:
+    # Nightly tests run SNAPSHOT builds. The SchemaManager.checkVersionCompatibility()
+    # call explicitly rejects SNAPSHOT-to-SNAPSHOT upgrades unless this flag is set.
+    # Without it, migration-importer crashes with IncompatibleVersionException on
+    # every nightly upgrade run.
+    allowPreReleaseImages: true
   importer:
     enabled: true
   migration:
