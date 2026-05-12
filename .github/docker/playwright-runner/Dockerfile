@@ -347,7 +347,11 @@ RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
 # deterministic.
 # ==============================================================================
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
-    | tar -xzf - -C /usr/local
+    | tar -C /usr/local -xzf - \
+    && rm -rf /usr/local/go/doc /usr/local/go/test /usr/local/go/api \
+    && find /usr/local/go -name "*.md" -delete 2>/dev/null || true \
+    && rm -rf /usr/local/go/src/runtime/race 2>/dev/null || true \
+    && rm -f /usr/local/go/lib/time/zoneinfo.zip 2>/dev/null || true
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/go
 ENV GOCACHE=/go-cache/build
