@@ -108,8 +108,19 @@ Every pull request (PR) related to Helm chart changes must adhere to the followi
 - **Unit tests:** Changes should include or update corresponding unit tests where applicable.
 - **Documentation updates:** User or technical documentation must reflect configuration or behavior changes.
 - **Passing CI:** All CI checks must pass successfully before merge.
-- **Code review:** At least one formal review must be completed and approved.
+- **Code review:** At least one formal review must be completed and approved (see automated review below).
 - **Atomic changes:** Aim for small, focused PRs that address a single issue or configuration change to simplify review and reduce merge complexity.
+
+### Automated AI review and escalation
+
+PRs are automatically reviewed by [`crev`](https://github.com/camunda/crev), an AI code-review tool with domain-specific knowledge of the Camunda Helm charts. After review, `crev` posts:
+
+- A **commit status** (`crev/escalation`) indicating whether human review is required.
+- A **label** (`human-review-required` or `ai-review-sufficient`) based on the escalation score.
+
+The escalation decision is governed by the [escalation policy](/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. Routine additive changes by familiar authors may be approved with AI review alone.
+
+Contributors should treat the `human-review-required` label as a signal that the Distro team must approve before merge.
 
 ### Helm version
 
