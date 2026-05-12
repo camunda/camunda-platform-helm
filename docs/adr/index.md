@@ -92,3 +92,4 @@
 | 88 | [Remove shared Argo-managed Elasticsearch and Keycloak infrastructure from CI](0088-remove-shared-argo-managed-elasticsearch-and-keycloak.md) |
 | 89 | [Integrate Azure Blob Storage as a document handling backend in the Helm chart](0089-integrate-azure-blob-storage-as-a-document-handling-backend.md) |
 | 90 | [Adopt Docusaurus as the dedicated documentation platform for Helm chart project knowledge](0090-adopt-docusaurus-as-the-dedicated-documentation-platform.md) |
+| 91 | [Standardize `<component>.extraConfiguration` as the Application Configuration Mechanism](0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md) |
