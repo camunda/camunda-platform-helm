@@ -2,6 +2,149 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Add tpl rendering for global identity auth URL values"
+        - kind: added
+          description: "Add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10"
+        - kind: added
+          description: "Add springImport flag to extraConfiguration entries"
+        - kind: added
+          description: "Add MCP feature scenario for 8.10 integration tests"
+        - kind: added
+          description: "Update Admin webapp URL"
+        - kind: added
+          description: "Consolidate webModeler and console into camundaHub for 8.10"
+        - kind: added
+          description: "Add companion chart deployment support to deploy-camunda"
+        - kind: changed
+          description: "Migrate web-modeler pusher secret to existingSecretsMustBeSet"
+        - kind: changed
+          description: "Drop global.image.tag option"
+        - kind: changed
+          description: "Remove integration tests"
+        - kind: fixed
+          description: "Add tpl support for global.identity.auth.issuer"
+        - kind: fixed
+          description: "Restore backward compatibility for 3rd party e2e callers and fix 8.9 documentstore corruption"
+        - kind: fixed
+          description: "Use dedicated liveness endpoint for orchestration app"
+        - kind: fixed
+          description: "Add env vars to web-modeler restapi deployment for Spring Boot 4.0.4 compatibility"
+        - kind: fixed
+          description: "Optimize prefix defaults to empty so global.elasticsearch.prefix is respected"
+        - kind: fixed
+          description: "Reference bitnami subcharts internally rather than relying on external repositories"
+        - kind: fixed
+          description: "Fix links in helpers 8.9+ to upgrade docs"
+        - kind: fixed
+          description: "Set basic.allow-unauthenticated-api-access on unprotectedApi"
+        - kind: fixed
+          description: "Skip initial-contact-points generation for multi-region deployments in 8.9 and 8.10"
+        - kind: fixed
+          description: "Consolidated-auth should be disabled"
+        - kind: fixed
+          description: "Remove importer from 8.9 and 8.10"
+        - kind: fixed
+          description: "Add aws-enabled property to secondary-storage config"
+        - kind: fixed
+          description: "Use internal cluster url for connectors in console release info"
+        - kind: fixed
+          description: "Keep persistence enabled in web modeler postgresql"
+        - kind: fixed
+          description: "Add missing properties and annotations to values.schema.json"
+        - kind: fixed
+          description: "Update 8.10 chart image tags from stale alpha to stable 8.9 releases"
+        - kind: fixed
+          description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/component-image-versions: |
+        camunda: 8.10.0-alpha1
+        managementIdentity: 8.10.0-alpha1
+        optimize: 8.10.0-alpha1
+        webModeler: 8.10.0-alpha1
+        connectors: 8.10.0-alpha1
+        console: 8.10.0-alpha1
+      camunda.io/helmCLIVersion: 3.20.2
+      camunda.io/imageOverrides: |+
+        connectors: 8.10.0-alpha1
+        console: 8.10.0-alpha1
+        optimize: 8.10.0-alpha1
+        orchestration: 8.10.0-alpha1
+        modeler: 8.10.0-alpha1
+        identity: 8.10.0-alpha1
+
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-05-12T16:01:57.920144631Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-16
+      version: 16.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 7de5f5e90d0cd20a5c958647b5b1596971d46765dc3d1bc9435f21c72b5106b3
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.0.0-alpha1/camunda-platform-15.0.0-alpha1.tgz
+    version: 15.0.0-alpha1
+  - annotations:
       artifacthub.io/changes: ""
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
@@ -27729,4 +27872,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-05-12T15:00:19.327631601Z"
+generated: "2026-05-12T16:01:57.921051814Z"
