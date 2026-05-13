@@ -198,6 +198,8 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # ------------------------------------------------------------------------------
 ARG ZBCTL_VERSION=v8.6.0
 ARG PLAYWRIGHT_VERSION=1.58.0
+# Keep in sync with .tool-versions (golang).
+ARG GO_VERSION=1.26.2
 
 # Environment configuration
 ENV DEBIAN_FRONTEND=noninteractive
@@ -328,6 +330,37 @@ RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
     && rm -rf /root/.npm /tmp/*
 
 # ==============================================================================
+# Layer 4b: Go toolchain
+# ==============================================================================
+# Required so the playwright-runner can execute the Go-based CLIs that live
+# in this repo (scripts/deploy-camunda, scripts/camunda-core, ...). The goal
+# is a single-job CI flow where helm install/upgrade + playwright e2e tests
+# run in the same container — see camunda/camunda-platform-helm#5786.
+#
+# We install the official upstream tarball rather than Debian's `golang`
+# package so the toolchain matches .tool-versions exactly (Debian Bookworm
+# ships an older Go).
+#
+# Module/build caches are routed to /go-cache so they can be shared via a
+# mounted volume if needed; GOTOOLCHAIN=local prevents Go from silently
+# downloading a newer toolchain at runtime, keeping image behaviour
+# deterministic.
+# ==============================================================================
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
+    | tar -C /usr/local -xzf - \
+    && rm -rf /usr/local/go/doc /usr/local/go/test /usr/local/go/api \
+    && find /usr/local/go -name "*.md" -delete 2>/dev/null || true \
+    && rm -rf /usr/local/go/src/runtime/race 2>/dev/null || true \
+    && rm -f /usr/local/go/lib/time/zoneinfo.zip 2>/dev/null || true
+ENV GOROOT=/usr/local/go
+ENV GOPATH=/go
+ENV GOCACHE=/go-cache/build
+ENV GOMODCACHE=/go-cache/mod
+ENV GOTOOLCHAIN=local
+ENV PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+RUN mkdir -p "${GOPATH}/bin" "${GOCACHE}" "${GOMODCACHE}"
+
+# ==============================================================================
 # Layer 5: Configuration
 # ==============================================================================
 # Allow git operations in any directory (fixes "dubious ownership" error)
@@ -362,6 +395,7 @@ RUN echo "=== Verifying tool installations ===" \
     && gke-gcloud-auth-plugin --version \
     && aws-iam-authenticator version \
     && (zbctl version 2>/dev/null || true) \
+    && go version \
     && echo "=== Checking browser installation ===" \
     && ls -la /ms-playwright/ \
     && echo "=== All tools verified successfully ==="
