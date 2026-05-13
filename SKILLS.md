@@ -697,15 +697,15 @@ See [docs/reproducing-ci-e2e-failures.md](docs/reproducing-ci-e2e-failures.md) f
 
 ## PR Ready-for-Review Validation
 
-PR CI runs **tier-1 only** (~5 deploys, the `eske` baseline). The full matrix (~33 deploys) runs in the **merge queue** and rejects any PR whose diff exercises a non-baseline variant (OpenSearch, RDBMS, auth, document store, hub-legacy, ARM Elasticsearch, no-security) and fails. Run the minimum correct scenario set locally before marking the PR Ready-for-Review.
+PR CI runs **tier-1 only** (~5 deploys, the `eske` baseline). The full matrix (~33 deploys) runs in the **merge queue** and rejects any PR whose diff exercises a non-baseline variant (OpenSearch, RDBMS, auth, document store, hub-legacy, ARM Elasticsearch, no-secondary-storage) and fails. Run the minimum correct scenario set locally before marking the PR Ready-for-Review.
 
 ### Prerequisites
 
 - `deploy-camunda` — `make install.dx-tooling`
 - `helm`, `kubectl` — `asdf install` (see `.tool-versions`)
 - `gh` — PR and workflow-run inspection
-- `crev` — Camunda-internal review gate; see internal documentation for installation
-- `actionlint` — `brew install actionlint`
+- `crev` — automated PR reviewer at [github.com/camunda/crev](https://github.com/camunda/crev); see [docs/contribution-and-collaboration.md](docs/contribution-and-collaboration.md) and [.github/escalation-policy.md](.github/escalation-policy.md) for the project workflow
+- `actionlint` — `brew install actionlint` (macOS) or `go install github.com/rhysd/actionlint/cmd/actionlint@latest`
 
 ### Identify the Surface
 
@@ -733,7 +733,7 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 | 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms` |
 | 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble` |
 
-`osex` and `oske` are defined but currently disabled (Bitnami OpenSearch unstable in CI; #6121).
+`osex` (external AWS OpenSearch, #6119) and `oske` (Bitnami OpenSearch subchart, #6121) are defined but currently disabled.
 
 **Variant decoder:**
 
@@ -742,9 +742,9 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 | `osem` | OpenSearch embedded (OS analog to `eske`) |
 | `esoi` | Elasticsearch OIDC |
 | `rdbms` | RDBMS persistence |
-| `ke*` | Keycloak variants: `kemt` mt, `kerba` RBAC, `keorg` orgs, `keyc` plain |
+| `ke*` | Keycloak variants: `kemt` `keycloak-mt`, `kerba` `keycloak-rba`, `keorg` `keycloak-original`, `keyc` `keycloak` (plain) |
 | `gatkc` | gateway + Keycloak auth path |
-| `nosec` | no-security path |
+| `nosec` | `noSecondaryStorage` (no Elasticsearch; `persistence: no-elasticsearch`, still uses Keycloak auth) |
 | `esarm` | ARM Elasticsearch |
 | `docstr` | document store feature |
 | `huble` | hub-legacy feature |
@@ -769,7 +769,7 @@ Default: tier-1 on every affected version. Add tier-2 entries only when the diff
 
 CI uses `deploy-camunda matrix run` (Taskfile orchestration removed in PR #6016).
 
-**Rebuild after every pull.** `deploy-camunda` tracks chart-side changes; a stale binary silently rejects new flags with `unknown flag`. The binary exposes no `--version` subcommand, so rebuild unconditionally rather than attempting to compare versions.
+**Rebuild after every pull.** `deploy-camunda` tracks chart-side changes; a stale binary silently rejects new flags with `unknown flag`. The binary exposes no way to print its own build version (the existing `--version` / `-v` flag selects a *chart* version, not the binary version), so rebuild unconditionally rather than attempting to compare versions.
 
 ```bash
 make install.dx-tooling
@@ -794,7 +794,7 @@ deploy-camunda matrix run \
 #### Flow Semantics
 
 - **`modular-upgrade-minor` is single-step** and assumes a prior install in the namespace (matches CI staging).
-- **`upgrade-minor` is two-step.** Step 1 installs the previous version's chart and values: `--versions 8.9 --flow-filter upgrade-minor` installs `camunda/camunda-platform@<latest-8.8>` from `charts/camunda-platform-8.8/...`. Step 2 upgrades to the local chart.
+- **`upgrade-minor` is two-step.** Step 1 installs the *remote* previous chart `camunda/camunda-platform` from the public Helm repo (`https://helm.camunda.io`) at the previous version (e.g., `<latest-8.8>` for `--versions 8.9 --flow-filter upgrade-minor`), pinned via `versionmatrix.DefaultHelmChartRef`. The *values* are still resolved from the previous version's local layers under `charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup/`. Step 2 then `helm upgrade --force`s to the local chart.
 
 ### RFR Checklist
 
@@ -803,25 +803,23 @@ deploy-camunda matrix run \
 - [ ] Each diff-implied tier-2 scenario passes.
 - [ ] `make go.update-golden-only chartPath=...` executed if templates changed, and updated goldens committed.
 - [ ] `make precommit.chores` clean.
-- [ ] `crev` gate passes (see below).
+- [ ] Optional: `crev` dry-run produces no findings (see below).
 
-Do not push, commit, or transition the PR without explicit author confirmation.
+### Optional Pre-RFR Self-Check (`crev`)
 
-### Universal RFR Gate (`crev`)
+`crev` ([github.com/camunda/crev](https://github.com/camunda/crev)) runs automatically on every PR per [docs/contribution-and-collaboration.md](docs/contribution-and-collaboration.md) and [.github/escalation-policy.md](.github/escalation-policy.md). After review it posts a `crev/escalation` commit status plus a `human-review-required` or `ai-review-sufficient` label.
 
-Every PR must pass `crev` before being promoted from draft to Ready-for-Review, including non-chart PRs.
+Running `crev` locally before flipping draft → Ready-for-Review is optional, not required, and can surface findings before reviewers see them:
 
 ```bash
 crev <pr-url> --single --dry-run
 ```
 
-`crev` defaults to dry-run and does not post comments. A typical run takes 1-5 minutes. Output terminates in a JSON object (`schema: "crev/v1"`, `findings: [...]`, `summary: "..."`). `findings.length == 0` indicates success — proceed with `gh pr ready <num>`. If findings are present, address them before promoting the PR.
+`crev` defaults to dry-run and does not post comments. A typical run takes 1-5 minutes. Output terminates in a JSON object (`schema: "crev/v1"`, `findings: [...]`, `summary: "..."`). `findings.length == 0` is the green signal.
 
 - Multi-PR sibling discovery is enabled by default; use `--single` for unrelated PRs.
 - The cache key includes head SHAs and reviewer configuration, so pushing new commits invalidates the cache automatically.
-- Matrix scenarios prove chart correctness; `crev` provides the secondary review pass and is the sole automated gate for non-chart PRs.
-
-If `crev` is not on PATH, consult internal documentation for installation.
+- Matrix scenarios prove chart correctness; `crev` is the domain-aware review pass and the primary automated signal for non-chart PRs.
 
 ### Anti-Patterns
 
