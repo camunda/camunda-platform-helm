@@ -181,16 +181,19 @@ func FetchConfigPropsMain(req FetchConfigPropsRequest) error {
 		ErrOut: os.Stderr,
 	}
 
-	// managing termination signal from the terminal. As you can see the stopCh
-	// gets closed to gracefully handle its termination.
+	// once ensures close(stopCh)+wg.Done() fire exactly once regardless of
+	// which path (signal or port-forward error) triggers shutdown first.
+	var once sync.Once
+	shutdown := func() { once.Do(func() { close(stopCh); wg.Done() }) }
+
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs
 		fmt.Println("Bye...")
-		close(stopCh)
-		wg.Done()
+		shutdown()
 	}()
+	defer signal.Stop(sigs)
 
 	podName, err := GetPodName(req.Namespace, req.Config, req.DeploymentName, req.StatefulSetName)
 	if err != nil {
@@ -233,8 +236,7 @@ func FetchConfigPropsMain(req FetchConfigPropsRequest) error {
 			ReadyCh: readyCh,
 		})
 		if portFwdErr != nil {
-			close(stopCh)
-			wg.Done()
+			shutdown()
 		}
 	}()
 
@@ -246,9 +248,8 @@ func FetchConfigPropsMain(req FetchConfigPropsRequest) error {
 	}
 
 	// Fetch configprops in the background but keep the port-forward alive until
-	// SIGINT — that way jdb can attach to LocalDebugPort after this script
-	// reports "ready". The signal handler above is the sole path that closes
-	// stopCh and releases wg.
+	// shutdown() is called (SIGINT or port-forward error) — that way jdb can
+	// attach to LocalDebugPort after this script reports "ready".
 	go func() {
 		if err := WaitUntilPodIsReady(req.Namespace, req.Config, podName); err != nil {
 			log.Printf("[%s] waiting for pod ready: %v", req.PodDisplayName, err)
