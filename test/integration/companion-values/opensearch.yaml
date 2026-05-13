@@ -69,6 +69,7 @@ extraObjects:
         helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
     spec:
       backoffLimit: 6
+      activeDeadlineSeconds: 120
       template:
         spec:
           restartPolicy: OnFailure
@@ -80,8 +81,15 @@ extraObjects:
                 - -c
                 - |
                   set -eu
+                  max=30
+                  n=0
                   until curl -fsS "http://opensearch-master:9200/_cluster/health" >/dev/null 2>&1; do
-                    echo "waiting for opensearch..."
+                    n=$((n + 1))
+                    if [ "$n" -ge "$max" ]; then
+                      echo "opensearch-master not reachable after $max attempts" >&2
+                      exit 1
+                    fi
+                    echo "waiting for opensearch... ($n/$max)"
                     sleep 2
                   done
                   curl -fsS -X PUT "http://opensearch-master:9200/_index_template/camunda-ci-auto-expand-replicas" \
