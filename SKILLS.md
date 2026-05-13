@@ -1,6 +1,6 @@
 # Operational Skills
 
-Instructions for using the primary operational tools in this repository: the `deploy-camunda` CLI and `kubectl`. Use these to deploy, debug, and test Camunda on Kubernetes.
+Instructions for the primary operational tools and workflows in this repository: the `deploy-camunda` CLI, `kubectl`, debugging recipes, and the PR Ready-for-Review / review workflows.
 
 Throughout this document, `$NS` refers to a Kubernetes namespace and `$RELEASE` refers to a Helm release name.
 
@@ -692,6 +692,143 @@ wait
 ## Reproducing a CI Test Failure Locally
 
 See [docs/reproducing-ci-e2e-failures.md](docs/reproducing-ci-e2e-failures.md) for the step-by-step guide to pulling logs, downloading artifacts, decoding CI scenario shortnames, and spinning up an identical local environment.
+
+---
+
+## PR Ready-for-Review Validation
+
+PR CI runs **tier-1 only** (~5 deploys, the `eske` baseline). The full matrix (~33 deploys) runs in the **merge queue** and rejects any PR whose diff exercises a non-baseline variant (OpenSearch, RDBMS, auth, document store, hub-legacy, ARM Elasticsearch, no-secondary-storage) and fails. Run the minimum correct scenario set locally before marking the PR Ready-for-Review.
+
+### Prerequisites
+
+- `deploy-camunda` — `make install.dx-tooling`
+- `helm`, `kubectl` — `asdf install` (see `.tool-versions`)
+- `gh` — PR and workflow-run inspection
+- `crev` — automated PR reviewer at [github.com/camunda/crev](https://github.com/camunda/crev); see [docs/contribution-and-collaboration.md](docs/contribution-and-collaboration.md) and [.github/escalation-policy.md](.github/escalation-policy.md) for the project workflow
+- `actionlint` — `brew install actionlint` (macOS) or `go install github.com/rhysd/actionlint/cmd/actionlint@latest`
+
+### Identify the Surface
+
+1. **Chart versions touched** — which `charts/camunda-platform-<v>/`.
+2. **Variant axes touched** — `persistence` (ES/OS/RDBMS), `auth` (keycloak/basic/none/orgs/multitenancy), `feature` (docstr, huble, migrator), `infra` (arm, platform).
+3. **Whether `eske` covers it** — `eske` = elasticsearch + keycloak on GKE. If yes, tier-1 alone is enough.
+
+### Tier Reference
+
+Authoritative source: `charts/camunda-platform-<v>/test/ci-test-config.yaml` (`tier:`, `enabled:`). The table below is a snapshot — re-derive with:
+
+```bash
+awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
+  charts/camunda-platform-<v>/test/ci-test-config.yaml | grep "true tier 2"
+```
+
+**Tier 1:** `eske` on every version. 8.9 covers both `install` and `upgrade-minor`.
+
+**Enabled tier-2 (merge-queue set):**
+
+| Version | Shortnames |
+|---|---|
+| 8.7  | `kemt`, `kerba`, `esoi`, `keyc`, `osem` |
+| 8.8  | `esoi`, `esarm`, `osem`, `docstr` |
+| 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms` |
+| 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble` |
+
+`osex` (external AWS OpenSearch, #6119) and `oske` (Bitnami OpenSearch subchart, #6121) are defined but currently disabled.
+
+**Variant decoder:**
+
+| Shortname | Meaning |
+|---|---|
+| `osem` | OpenSearch embedded (OS analog to `eske`) |
+| `esoi` | Elasticsearch OIDC |
+| `rdbms` | RDBMS persistence |
+| `ke*` | Keycloak variants: `kemt` `keycloak-mt`, `kerba` `keycloak-rba`, `keorg` `keycloak-original`, `keyc` `keycloak` (plain) |
+| `gatkc` | gateway + Keycloak auth path |
+| `nosec` | `noSecondaryStorage` (no Elasticsearch; `persistence: no-elasticsearch`, still uses Keycloak auth) |
+| `esarm` | ARM Elasticsearch |
+| `docstr` | document store feature |
+| `huble` | hub-legacy feature |
+
+### Select Scenarios
+
+Default: tier-1 on every affected version. Add tier-2 entries only when the diff exercises that variant.
+
+| Diff | Scenarios |
+|---|---|
+| `templates/orchestration/operate/` on 8.10 | `eske` 8.10 |
+| OpenSearch values rework on 8.9 + 8.10 | `eske` + `osem` per version |
+| RDBMS migrator change on 8.10 | `eske` + `rdbms` 8.10 |
+| Keycloak helper change 8.9–8.10 | `eske` + each version's `ke*` set |
+| Document store feature 8.8+ | `eske` + `docstr` per version |
+| Hub change on 8.10 | `eske` + `huble` |
+| `_helpers.tpl` change | tier-1 all versions + `nosec`, `docstr` |
+
+**Skip the matrix** for `.github/workflows/*` (run `actionlint`), `scripts/` Go tooling (`make go.test`), Dockerfile-only (`hadolint`, `docker build --target`), compose-only (`docker compose config`), docs-only.
+
+### Run via deploy-camunda
+
+CI uses `deploy-camunda matrix run` (Taskfile orchestration removed in PR #6016).
+
+**Rebuild after every pull.** `deploy-camunda` tracks chart-side changes; a stale binary silently rejects new flags with `unknown flag`. The binary exposes no way to print its own build version (the existing `--version` / `-v` flag selects a *chart* version, not the binary version), so rebuild unconditionally rather than attempting to compare versions.
+
+```bash
+make install.dx-tooling
+asdf reshim golang   # if using asdf
+```
+
+```bash
+# PR-CI baseline
+deploy-camunda matrix list --tier 1 --versions 8.10
+
+# Full merge-queue set
+deploy-camunda matrix list --versions 8.10
+
+# Run one scenario
+deploy-camunda matrix run \
+  --versions 8.10 --shortname-filter eske \
+  --flow-filter install --platform gke
+
+# CI-parity overrides: --extra-helm-arg, --extra-helm-set, --namespace-override
+```
+
+#### Flow Semantics
+
+- **`modular-upgrade-minor` is single-step** and assumes a prior install in the namespace (matches CI staging).
+- **`upgrade-minor` is two-step.** Step 1 installs the *remote* previous chart `camunda/camunda-platform` from the public Helm repo (`https://helm.camunda.io`) at the previous version (e.g., `<latest-8.8>` for `--versions 8.9 --flow-filter upgrade-minor`), pinned via `versionmatrix.DefaultHelmChartRef`. The *values* are still resolved from the previous version's local layers under `charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup/`. Step 2 then `helm upgrade --force`s to the local chart.
+
+### RFR Checklist
+
+- [ ] Affected chart versions enumerated.
+- [ ] Tier-1 (`eske`) passes on each affected version.
+- [ ] Each diff-implied tier-2 scenario passes.
+- [ ] `make go.update-golden-only chartPath=...` executed if templates changed, and updated goldens committed.
+- [ ] `make precommit.chores` clean.
+- [ ] Optional: `crev` dry-run produces no findings (see below).
+
+### Optional Pre-RFR Self-Check (`crev`)
+
+`crev` ([github.com/camunda/crev](https://github.com/camunda/crev)) runs automatically on every PR per [docs/contribution-and-collaboration.md](docs/contribution-and-collaboration.md) and [.github/escalation-policy.md](.github/escalation-policy.md). After review it posts a `crev/escalation` commit status plus a `human-review-required` or `ai-review-sufficient` label.
+
+Running `crev` locally before flipping draft → Ready-for-Review is optional, not required, and can surface findings before reviewers see them:
+
+```bash
+crev <pr-url> --single --dry-run
+```
+
+`crev` defaults to dry-run and does not post comments. A typical run takes 1-5 minutes. Output terminates in a JSON object (`schema: "crev/v1"`, `findings: [...]`, `summary: "..."`). `findings.length == 0` is the green signal.
+
+- Multi-PR sibling discovery is enabled by default; use `--single` for unrelated PRs.
+- The cache key includes head SHAs and reviewer configuration, so pushing new commits invalidates the cache automatically.
+- Matrix scenarios prove chart correctness; `crev` is the domain-aware review pass and the primary automated signal for non-chart PRs.
+
+### Anti-Patterns
+
+- Treating PR CI green as sufficient when the diff exercises a non-baseline variant; the merge queue will reject the PR.
+- Hand-editing golden files instead of running `make go.update-golden-only`.
+- Adding speculative tier-2 entries not exercised by the diff (consumes local capacity without coverage gain).
+- Reading the tier list above without re-checking `ci-test-config.yaml`; the YAML is authoritative.
+- Using the merge queue as a discovery mechanism for predictable variant breakage.
+- Running the matrix on PRs that change no rendering output (workflow, Dockerfile, compose, docs, Go-tooling).
 
 ---
 
