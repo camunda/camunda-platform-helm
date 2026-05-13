@@ -21,10 +21,8 @@ config:
       security:
         disabled: true
 
-# OpenSearch 2.12+ requires OPENSEARCH_INITIAL_ADMIN_PASSWORD even when security
-# is disabled, because install_demo_configuration.sh still runs by default.
-# DISABLE_INSTALL_DEMO_CONFIG skips the installer entirely, which is consistent
-# with our intent. The password is provided as a fallback for older 2.x images.
+# OpenSearch 2.12+ runs install_demo_configuration.sh by default even when security
+# is disabled. DISABLE_INSTALL_DEMO_CONFIG skips the installer entirely.
 extraEnvs:
   - name: DISABLE_INSTALL_DEMO_CONFIG
     value: "true"
