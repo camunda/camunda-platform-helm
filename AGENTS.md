@@ -212,6 +212,7 @@ helm template integration charts/camunda-platform-8.X \
 - Commit/PR titles: Conventional Commits.
 - Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `perf`, `deps`.
 - Use present tense; keep subject under 120 characters.
+- **NEVER create merge commits.** Always use `git rebase` to incorporate upstream changes. If a branch needs to be updated from `main`, use `git rebase origin/main`, not `git merge`. Force-push with `--force-with-lease` after rebasing.
 
 ## Additional Agent Context
 - `CLAUDE.md` — thin redirect for Claude Code (redirects to this file, AGENTS.md)
