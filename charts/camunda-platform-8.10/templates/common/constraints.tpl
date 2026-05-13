@@ -21,13 +21,12 @@ Fail with a message if Multi-Tenancy is enabled and its requirements are not met
 Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/multi-tenancy/
 */}}
 {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
-  {{- $identityDatabaseEnabled := (or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled) }}
+  {{- $identityDatabaseEnabled := .Values.identity.externalDatabase.enabled }}
   {{- if has false (list $identityAuthEnabled $identityDatabaseEnabled) }}
-    {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
+    {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "The Multi-Tenancy feature \"identity.multitenancy\" requires Identity enabled and configured with database."
         "Ensure that \"identity.enabled: true\" and \"global.identity.auth.enabled: true\""
-        "and Identity database is configured built-in PostgreSQL chart via \"identityPostgresql\""
-        "or configure an external database via \"identity.externalDatabase\"."
+        "and configure an external database via \"identity.externalDatabase\"."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
@@ -44,12 +43,11 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}
-  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled .Values.elasticsearch.enabled }}
-    {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
+  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+    {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "When \"global.noSecondaryStorage\" is enabled, both Elasticsearch and OpenSearch must be disabled."
-        "Please ensure that \"global.elasticsearch.enabled: false\", \"global.opensearch.enabled: false\", and \"elasticsearch.enabled: false\""
+        "Please ensure that \"global.elasticsearch.enabled: false\" and \"global.opensearch.enabled: false\""
         "are set when using \"global.noSecondaryStorage: true\"."
-        "Secondary storage components cannot be enabled when noSecondaryStorage is true."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
@@ -93,17 +91,6 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{- if not (has .Values.global.compatibility.openshift.adaptSecurityContext (list "force" "disabled")) }}
   {{- $errorMessage := "[camunda][error] Invalid value for adaptSecurityContext. The value must be either 'force' or 'disabled'." -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-{{- end }}
-
-{{/*
-Fail with a message if Identity is disabled and identityKeycloak is enabled.
-*/}}
-{{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
-  {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Identity is disabled but identityKeycloak is enabled."
-      "Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
-  -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
 {{/*
@@ -161,39 +148,10 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
 
   {{/* External Keycloak auth secret must be explicitly configured when using external Keycloak */}}
   {{ if and (.Values.identity.enabled)
-            (not .Values.identityKeycloak.enabled)
             (.Values.global.identity.keycloak.auth.adminUser)
             (not .Values.global.identity.keycloak.auth.secret.existingSecret) }}
     {{- $existingSecretsNotConfigured = append
         $existingSecretsNotConfigured "global.identity.keycloak.auth.secret.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.identityKeycloak.enabled)
-            (not .Values.identityKeycloak.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "identityKeycloak.auth.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.identityKeycloak.postgresql.enabled)
-            (not .Values.identityKeycloak.postgresql.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "identityKeycloak.postgresql.auth.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.webModelerPostgresql.enabled)
-            (not .Values.webModelerPostgresql.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "webModelerPostgresql.auth.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.identityPostgresql.enabled)
-            (not .Values.identityPostgresql.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret"
     }}
   {{- end }}
 
@@ -273,31 +231,6 @@ The following values inside your values.yaml need to be set but were not:
         (printf "SECURITY: inlineSecret is set in: [%s]." (join ", " $inlineSecretSections))
         "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
         "For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{/* Bitnami subchart deprecation warnings */}}
-  {{- $bitnamiSubchartsEnabled := list -}}
-  {{- if .Values.identityPostgresql.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityPostgresql" -}}
-  {{- end -}}
-  {{- if .Values.identityKeycloak.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityKeycloak" -}}
-  {{- end -}}
-  {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "webModelerPostgresql" -}}
-  {{- end -}}
-  {{- if .Values.elasticsearch.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "elasticsearch" -}}
-  {{- end -}}
-  {{- if $bitnamiSubchartsEnabled }}
-    {{- $warningMessage := printf "%s %s %s %s %s"
-        "[camunda][warning]"
-        "DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10:"
-        (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
-        "Please migrate to externally managed services before upgrading to 8.10."
-        "For more details: https://docs.camunda.io/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -844,3 +777,29 @@ Web Modeler
 ) }}
 
 {{- end }}
+
+{{/*
+*******************************************************************************
+Bundled Bitnami subcharts (removed in 8.10)
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "identityKeycloak")
+  "oldName" "identityKeycloak"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "identityPostgresql")
+  "oldName" "identityPostgresql"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "webModelerPostgresql")
+  "oldName" "webModelerPostgresql"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "elasticsearch")
+  "oldName" "elasticsearch"
+) }}

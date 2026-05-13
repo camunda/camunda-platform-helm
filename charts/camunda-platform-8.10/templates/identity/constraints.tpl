@@ -18,40 +18,16 @@ Show a deprecation messages for using ".global.identity.keycloak.fullname".
 
 
 {{/*
-Show an error message if both internal and external databases are enabled at the same time.
-*/}}
-
-{{- if and .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
-    {{- $errorMessage := printf "[identity][error] %s %s"
-        "The values \"identityPostgresql.enabled\" and \"identity.externalDatabase.enabled\""
-        "are mutually exclusive and cannot be enabled together. Only use one of either."
-    -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-
-{{/*
 Validate Keycloak configuration when external Keycloak URL or auth is configured.
 */}}
 {{- $keycloakFailMessageRaw := `
-[identity] To configure Keycloak, you have 3 options:
-
-  - Case 1: If you want to deploy Keycloak chart as it is, then set the following:
-    - keycloak.enabled: true
-
-  - Case 2: If you want to customize the Keycloak chart URL, then set the following:
-    - keycloak.enabled: true
-    - global.identity.keycloak.url.protocol
-    - global.identity.keycloak.url.host
-    - global.identity.keycloak.url.port
-
-  - Case 3: If you want to use already existing Keycloak, then set the following:
-    - keycloak.enabled: false
-    - global.identity.keycloak.url.protocol
-    - global.identity.keycloak.url.host
-    - global.identity.keycloak.url.port
-    - global.identity.keycloak.auth.adminUser
-    - global.identity.keycloak.auth.secret.existingSecret
-    - global.identity.keycloak.auth.secret.existingSecretKey
+[identity] To configure external Keycloak, set the following:
+  - global.identity.keycloak.url.protocol
+  - global.identity.keycloak.url.host
+  - global.identity.keycloak.url.port
+  - global.identity.keycloak.auth.adminUser
+  - global.identity.keycloak.auth.secret.existingSecret
+  - global.identity.keycloak.auth.secret.existingSecretKey
 
 For more details, please check Camunda Helm chart documentation.
 ` -}}

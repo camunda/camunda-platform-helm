@@ -61,36 +61,14 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/identity", configmapApplication.Server.Servlet.ContextPath)
 			},
 		}, {
-			Name: "TestConfigMapBuiltinDatabaseEnabled",
-			Values: map[string]string{
-				"identity.enabled":              "true",
-				"identity.multitenancy.enabled": "true",
-				"identityPostgresql.enabled":    "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var configmapApplication IdentityConfigYAML
-				helm.UnmarshalK8SYaml(t, output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// then
-				s.NotEmpty(configmap.Data)
-
-				s.Require().Equal("true", configmapApplication.Identity.Flags.MultiTenancy)
-				s.Require().Equal("jdbc:postgresql://camunda-platform-test-identity-postgresql:5432/identity", configmapApplication.Spring.DataSource.Url)
-				s.Require().Equal("identity", configmapApplication.Spring.DataSource.Username)
-			},
-		}, {
 			Name: "TestConfigMapGlobalMultitenancySetsIdentityFlag",
 			Values: map[string]string{
-				"global.multitenancy.enabled":  "true",
-				"identityPostgresql.enabled":   "true",
-				"identity.enabled":             "true",
-				"global.identity.auth.enabled": "true",
+				"global.multitenancy.enabled":        "true",
+				"identity.externalDatabase.enabled":  "true",
+				"identity.externalDatabase.host":     "my-database-host",
+				"identity.externalDatabase.username": "my-database-username",
+				"identity.enabled":                   "true",
+				"global.identity.auth.enabled":       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -113,7 +91,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                   "true",
 				"global.identity.auth.enabled":       "true",
 				"identity.multitenancy.enabled":      "true",
-				"identityPostgresql.enabled":         "false",
 				"identity.externalDatabase.enabled":  "true",
 				"identity.externalDatabase.host":     "my-database-host",
 				"identity.externalDatabase.port":     "2345",
@@ -140,7 +117,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapAuthIssuerBackendUrlWhenExplicitlyDefined",
 			Values: map[string]string{
-				"identityKeycloak.enabled":              "false",
 				"identity.enabled":                      "true",
 				"global.identity.auth.enabled":          "false",
 				"global.identity.auth.issuerBackendUrl": "https://example.com/",
@@ -163,7 +139,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapAuthIssuerBackendUrlIsTemplated",
 			Values: map[string]string{
-				"identityKeycloak.enabled":              "false",
 				"identity.enabled":                      "true",
 				"global.identity.auth.enabled":          "false",
 				"global.identity.auth.type":             "generic",
@@ -213,7 +188,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestConfigMapAuthIssuerBackendUrlNoDoubleSlashWhenContextPathIsRoot",
 			Values: map[string]string{
 				"identity.enabled":                      "true",
-				"identityKeycloak.enabled":              "false",
 				"global.identity.keycloak.url.protocol": "https",
 				"global.identity.keycloak.url.host":     "keycloak.example.com",
 				"global.identity.keycloak.url.port":     "443",
@@ -238,7 +212,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestConfigMapAuthIssuerBackendUrlWithTemplatedKeycloakHost",
 			Values: map[string]string{
 				"identity.enabled":                      "true",
-				"identityKeycloak.enabled":              "false",
 				"global.identity.keycloak.url.protocol": "https",
 				"global.identity.keycloak.url.host":     "keycloak.{{ .Release.Namespace }}.svc.cluster.local",
 				"global.identity.keycloak.url.port":     "443",
@@ -263,26 +236,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedBackendURL, configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		}, {
-			Name:                 "TestKeycloakAdminUserDefault",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"identity.enabled":             "true",
-				"global.identity.auth.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				helm.UnmarshalK8SYaml(t, output, &configmap)
-
-				applicationYaml := configmap.Data["application.yaml"]
-				// Default admin user should fall through to identityKeycloak.auth.adminUser = "admin"
-				s.Require().Contains(applicationYaml, "user: \"admin\"")
-			},
-		}, {
 			Name:                 "TestKeycloakAdminUserCustom",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"identity.enabled":                                       "true",
-				"identityKeycloak.enabled":                               "false",
 				"global.identity.auth.enabled":                           "true",
 				"global.identity.keycloak.url.protocol":                  "https",
 				"global.identity.keycloak.url.host":                      "keycloak.example.com",

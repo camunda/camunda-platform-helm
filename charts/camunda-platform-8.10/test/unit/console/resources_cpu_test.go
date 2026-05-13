@@ -57,7 +57,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		SetValues: map[string]string{
 			"console.enabled":                   "true",
 			"identity.enabled":                  "true",
-			"elasticsearch.enabled":             "true",
 			"global.elasticsearch.enabled":      "true",
 			"camundaHub.console.resources.requests.cpu":    "200m",
 			"camundaHub.console.resources.limits.cpu":      "1.5",
@@ -97,7 +96,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 		SetValues: map[string]string{
 			"console.enabled":                   "true",
 			"identity.enabled":                  "true",
-			"elasticsearch.enabled":             "true",
 			"global.elasticsearch.enabled":      "true",
 			"camundaHub.console.resources.requests.cpu":    "600m",
 			"camundaHub.console.resources.limits.cpu":      "2000m",

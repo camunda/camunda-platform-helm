@@ -51,7 +51,6 @@ func TestGoldenDefaultsTemplateIdentity(t *testing.T) {
 			SetValues: map[string]string{
 				"global.identity.auth.enabled": "true",
 				"identity.enabled":             "true",
-				"identityKeycloak.enabled":     "true",
 			},
 		})
 	}

@@ -40,18 +40,10 @@ spec:
             ) | nindent 12 }}
             - name: JAVA_OPTIONS
               value: {{ (or .Values.camundaHub.webModeler.restapi.javaOpts .Values.webModeler.restapi.javaOpts) | default "-XX:MaxRAMPercentage=80.0" | quote }}
-            {{- if not .Values.webModelerPostgresql.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "SPRING_DATASOURCE_PASSWORD"
                 "config" (or .Values.camundaHub.webModeler.restapi.externalDatabase .Values.webModeler.restapi.externalDatabase)
             ) | nindent 12 }}
-            {{- else }}
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.webModelerPostgresql.auth.existingSecret }}
-                  key: {{ .Values.webModelerPostgresql.auth.secretKeys.userPasswordKey }}
-            {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_MAIL_PASSWORD"
                 "config" (or .Values.camundaHub.webModeler.restapi.mail .Values.webModeler.restapi.mail)

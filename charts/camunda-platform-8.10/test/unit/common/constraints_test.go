@@ -107,7 +107,6 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 			Values: map[string]string{
 				"orchestration.enabled":        "true",
 				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
 				"global.opensearch.enabled":    "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -119,7 +118,6 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 			Values: map[string]string{
 				"orchestration.enabled":        "false",
 				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
 				"global.opensearch.enabled":    "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -131,7 +129,6 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 			Values: map[string]string{
 				"orchestration.enabled":        "true",
 				"global.elasticsearch.enabled": "true",
-				"elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
@@ -142,7 +139,6 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 			Values: map[string]string{
 				"orchestration.enabled":        "true",
 				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
 				"global.opensearch.enabled":    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -155,7 +151,6 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 				"orchestration.enabled":                    "true",
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 				"global.elasticsearch.enabled":             "false",
-				"elasticsearch.enabled":                    "false",
 				"global.opensearch.enabled":                "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -266,32 +261,8 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 			},
 		},
 		{
-			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithMultipleSubcharts",
-			Values: map[string]string{
-				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
-				"identityPostgresql.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithAllSubcharts",
-			Values: map[string]string{
-				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
-				"identityPostgresql.enabled":   "true",
-				"identityKeycloak.enabled":     "true",
-				"identity.enabled":             "true",
-				"webModelerPostgresql.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
 			Name: "TestRenderSucceedsWithAllBitnamiSubchartsDisabled",
 			Values: map[string]string{
-				"elasticsearch.enabled":                    "false",
 				"global.elasticsearch.enabled":             "false",
 				"orchestration.data.secondaryStorage.type": "rdbms",
 			},

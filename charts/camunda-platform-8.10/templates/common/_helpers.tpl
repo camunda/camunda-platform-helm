@@ -319,13 +319,10 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 {{- end -}}
 
 {{/*
-Get the external url for keycloak
+Get the external url for keycloak when fronted by the chart's combined Ingress.
 */}}
 {{- define "camundaPlatform.keycloakExternalURL" -}}
-  {{ if .Values.identityKeycloak.ingress.enabled -}}
-    {{- $proto := ternary "https" "http" .Values.identityKeycloak.ingress.tls -}}
-    {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
-  {{ else if .Values.identityKeycloak.enabled -}}
+  {{- if .Values.global.identity.keycloak.internal -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
@@ -748,7 +745,6 @@ Release templates.
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
     id: keycloak
-    version: {{ .Values.identityKeycloak.image.tag }}
     url: {{ include "camundaPlatform.keycloakExternalURL" . }}
   - name: Identity
     id: identity

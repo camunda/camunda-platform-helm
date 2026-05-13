@@ -344,7 +344,7 @@ data:
         active: {{ eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" | ternary "keycloak" "oidc" }}
       {{- end }}
 
-      {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+      {{- if .Values.identity.externalDatabase.enabled }}
       datasource:
         url: {{ printf "jdbc:postgresql://%s:%s/%s" (include "identity.postgresql.host" .) (include "identity.postgresql.port" .) (include "identity.postgresql.database" .) | quote }}
         username: {{ include "identity.postgresql.username" . | quote }}

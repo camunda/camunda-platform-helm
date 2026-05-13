@@ -60,7 +60,6 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"global.elasticsearch.enabled":        "true",
-				"elasticsearch.enabled":               "true",
 				"webModeler.enabled":                  "true",
 				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 				// persistence.enabled defaults to false
@@ -89,7 +88,6 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Values: map[string]string{
 				"identity.enabled":                      "true",
 				"global.elasticsearch.enabled":          "true",
-				"elasticsearch.enabled":                 "true",
 				"webModeler.enabled":                    "true",
 				"camundaHub.webModeler.restapi.mail.fromAddress":   "example@example.com",
 				"camundaHub.webModeler.persistence.enabled":        "true",
@@ -121,7 +119,6 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Values: map[string]string{
 				"identity.enabled":                     "true",
 				"global.elasticsearch.enabled":         "true",
-				"elasticsearch.enabled":                "true",
 				"webModeler.enabled":                   "true",
 				"camundaHub.webModeler.restapi.mail.fromAddress":  "example@example.com",
 				"camundaHub.webModeler.persistence.enabled":       "true",
@@ -151,7 +148,6 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"global.elasticsearch.enabled":        "true",
-				"elasticsearch.enabled":               "true",
 				"webModeler.enabled":                  "false",
 				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 				"camundaHub.webModeler.persistence.enabled":      "true",

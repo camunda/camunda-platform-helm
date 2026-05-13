@@ -128,15 +128,10 @@ app.kubernetes.io/component: {{ .componentName }}
 {{- end -}}
 
 {{/*
-[web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
+[web-modeler] Get the database JDBC url for the external PostgreSQL.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-  {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- printf "jdbc:postgresql://%s:5432/%s"
-        (include "webModeler.postgresql.fullname" .)
-        (.Values.webModelerPostgresql.auth.database)
-      -}}
-  {{- else if (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
+  {{- if (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
     {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
   {{- else if (or .Values.camundaHub.webModeler.restapi.externalDatabase.host .Values.webModeler.restapi.externalDatabase.host) -}}
     {{- printf "jdbc:postgresql://%s:%s/%s"
@@ -148,14 +143,10 @@ app.kubernetes.io/component: {{ .componentName }}
 {{- end -}}
 
 {{/*
-[web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
+[web-modeler] Get the database user.
 */}}
 {{- define "webModeler.restapi.databaseUser" -}}
-  {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- .Values.webModelerPostgresql.auth.username -}}
-  {{- else -}}
-    {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.username .Values.webModeler.restapi.externalDatabase.username) -}}
-  {{- end -}}
+  {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.username .Values.webModeler.restapi.externalDatabase.username) -}}
 {{- end -}}
 
 {{/*
@@ -169,13 +160,6 @@ app.kubernetes.io/component: {{ .componentName }}
     {{- end }}
   {{- end }}
   {{- $authEnabled -}}
-{{- end -}}
-
-{{/*
-[web-modeler] Get the full name of the Kubernetes objects from the postgresql dependency chart
-*/}}
-{{- define "webModeler.postgresql.fullname" -}}
-  {{- include "common.names.dependency.fullname" (dict "chartName" "webModelerPostgresql" "chartValues" .Values.webModelerPostgresql "context" $) -}}
 {{- end -}}
 
 {{/*

@@ -26,7 +26,7 @@ type configmapRestAPITemplateTest struct {
 
 var requiredValues = map[string]string{
 	"webModeler.enabled":                                               "true",
-	"camundaHub.webModeler.restapi.mail.fromAddress":                              "example@example.com",
+	"webModeler.restapi.mail.fromAddress":                              "example@example.com",
 	"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
 	"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
 }
@@ -52,7 +52,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
 		"global.elasticsearch.enabled":                      "true",
-		"elasticsearch.enabled":                             "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -82,7 +81,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
 		"global.elasticsearch.enabled":                      "true",
-		"elasticsearch.enabled":                             "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -112,7 +110,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId
 		"global.identity.auth.enabled":             "true",
 		"global.identity.auth.webModeler.clientId": "custom-clientId",
 		"global.elasticsearch.enabled":             "true",
-		"elasticsearch.enabled":                    "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -141,7 +138,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUse
 		"identity.enabled":                                         "true",
 		"global.identity.auth.enabled":                             "true",
 		"global.elasticsearch.enabled":                             "true",
-		"elasticsearch.enabled":                                    "true",
 		"orchestration.security.authentication.oidc.usernameClaim": "example-claim",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -172,7 +168,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 		"identity.enabled":             "true",
 		"identity.fullnameOverride":    "custom-identity-fullname",
 		"global.elasticsearch.enabled": "true",
-		"elasticsearch.enabled":        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -202,7 +197,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 		"identity.enabled":             "true",
 		"identity.nameOverride":        "custom-identity",
 		"global.elasticsearch.enabled": "true",
-		"elasticsearch.enabled":        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -238,7 +232,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 		"global.identity.auth.tokenUrl":                       "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
 		"global.identity.auth.jwksUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
 		"global.elasticsearch.enabled":                        "true",
-		"elasticsearch.enabled":                               "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -270,7 +263,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "80",
 		"global.elasticsearch.enabled":          "true",
-		"elasticsearch.enabled":                 "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -302,7 +294,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "8888",
 		"global.elasticsearch.enabled":          "true",
-		"elasticsearch.enabled":                 "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -329,9 +320,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	// given
 	values := map[string]string{
 		"identity.enabled":                 "true",
-		"camundaHub.webModeler.restapi.mail.smtpUser": "modeler-user",
+		"webModeler.restapi.mail.smtpUser": "modeler-user",
 		"global.elasticsearch.enabled":     "true",
-		"elasticsearch.enabled":            "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -358,11 +348,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	// given
 	values := map[string]string{
 		"identity.enabled":                             "true",
-		"webModelerPostgresql.enabled":                 "false",
-		"camundaHub.webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"camundaHub.webModeler.restapi.externalDatabase.username": "modeler-user",
+		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username": "modeler-user",
 		"global.elasticsearch.enabled":                 "true",
-		"elasticsearch.enabled":                        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -390,12 +378,10 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	// given
 	values := map[string]string{
 		"identity.enabled":                                        "true",
-		"webModelerPostgresql.enabled":                            "false",
-		"camundaHub.webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"camundaHub.webModeler.restapi.externalDatabase.username":            "modeler-user-new",
-		"camundaHub.webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
+		"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username":            "modeler-user-new",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
 		"global.elasticsearch.enabled":                            "true",
-		"elasticsearch.enabled":                                   "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -451,20 +437,18 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 		s.Run(tc.name, func() {
 			values := map[string]string{
 				"identity.enabled":                              "true",
-				"webModelerPostgresql.enabled":                  "false",
 				"global.zeebeClusterName":                       "test-zeebe",
 				"global.identity.auth.enabled":                  tc.authEnabled,
 				"global.ingress.enabled":                        "true",
 				"global.ingress.tls.enabled":                    "true",
 				"global.host":                                   "example.com",
-				"camundaHub.webModeler.security.authentication.method":     tc.authMethod,
+				"webModeler.security.authentication.method":     tc.authMethod,
 				"orchestration.image.tag":                       "8.8.x-alpha1",
 				"orchestration.contextPath":                     "/orchestration",
 				"orchestration.service.grpcPort":                "26600",
 				"orchestration.service.httpPort":                "8090",
 				"orchestration.security.authorizations.enabled": "false",
 				"global.elasticsearch.enabled":                  "true",
-				"elasticsearch.enabled":                         "true",
 			}
 			maps.Insert(values, maps.All(requiredValues))
 			options := &helm.Options{
@@ -501,31 +485,29 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	// given
 	values := map[string]string{
 		"identity.enabled":                              "true",
-		"camundaHub.webModeler.restapi.clusters[0].id":             "test-cluster-1",
-		"camundaHub.webModeler.restapi.clusters[0].name":           "test cluster 1",
-		"camundaHub.webModeler.restapi.clusters[0].version":        "8.6.0",
-		"camundaHub.webModeler.restapi.clusters[0].authentication": "NONE",
-		"camundaHub.webModeler.restapi.clusters[0].url.zeebe.grpc": "grpc://orchestration.test-1:26500",
-		"camundaHub.webModeler.restapi.clusters[0].url.zeebe.rest": "http://orchestration.test-1:8080",
-		"camundaHub.webModeler.restapi.clusters[0].url.operate":    "http://operate.test-1:8080",
-		"camundaHub.webModeler.restapi.clusters[0].url.tasklist":   "http://tasklist.test-1:8080",
-		"camundaHub.webModeler.restapi.clusters[1].id":             "test-cluster-2",
-		"camundaHub.webModeler.restapi.clusters[1].name":           "test cluster 2",
-		"camundaHub.webModeler.restapi.clusters[1].version":        "8.8.0-alpha1",
-		"camundaHub.webModeler.restapi.clusters[1].authentication": "BEARER_TOKEN",
-		"camundaHub.webModeler.restapi.clusters[1].url.grpc":       "grpc://orchestration.test-2:26500",
-		"camundaHub.webModeler.restapi.clusters[1].url.rest":       "http://orchestration.test-2:8080",
-		"camundaHub.webModeler.restapi.clusters[1].url.web-app":    "http://localhost:8088",
-		"camundaHub.webModeler.restapi.clusters[2].id":             "test-cluster-3",
-		"camundaHub.webModeler.restapi.clusters[2].name":           "test cluster 3",
-		"camundaHub.webModeler.restapi.clusters[2].version":        "8.8.0-alpha1",
-		"camundaHub.webModeler.restapi.clusters[2].authentication": "BASIC",
-		"camundaHub.webModeler.restapi.clusters[2].url.grpc":       "grpc://orchestration.test-3:26500",
-		"camundaHub.webModeler.restapi.clusters[2].url.rest":       "http://orchestration.test-3:8080",
-		"camundaHub.webModeler.restapi.clusters[2].url.web-app":    "http://localhost:8088",
-		"webModelerPostgresql.enabled":                  "false",
+		"webModeler.restapi.clusters[0].id":             "test-cluster-1",
+		"webModeler.restapi.clusters[0].name":           "test cluster 1",
+		"webModeler.restapi.clusters[0].version":        "8.6.0",
+		"webModeler.restapi.clusters[0].authentication": "NONE",
+		"webModeler.restapi.clusters[0].url.zeebe.grpc": "grpc://orchestration.test-1:26500",
+		"webModeler.restapi.clusters[0].url.zeebe.rest": "http://orchestration.test-1:8080",
+		"webModeler.restapi.clusters[0].url.operate":    "http://operate.test-1:8080",
+		"webModeler.restapi.clusters[0].url.tasklist":   "http://tasklist.test-1:8080",
+		"webModeler.restapi.clusters[1].id":             "test-cluster-2",
+		"webModeler.restapi.clusters[1].name":           "test cluster 2",
+		"webModeler.restapi.clusters[1].version":        "8.8.0-alpha1",
+		"webModeler.restapi.clusters[1].authentication": "BEARER_TOKEN",
+		"webModeler.restapi.clusters[1].url.grpc":       "grpc://orchestration.test-2:26500",
+		"webModeler.restapi.clusters[1].url.rest":       "http://orchestration.test-2:8080",
+		"webModeler.restapi.clusters[1].url.web-app":    "http://localhost:8088",
+		"webModeler.restapi.clusters[2].id":             "test-cluster-3",
+		"webModeler.restapi.clusters[2].name":           "test cluster 3",
+		"webModeler.restapi.clusters[2].version":        "8.8.0-alpha1",
+		"webModeler.restapi.clusters[2].authentication": "BASIC",
+		"webModeler.restapi.clusters[2].url.grpc":       "grpc://orchestration.test-3:26500",
+		"webModeler.restapi.clusters[2].url.rest":       "http://orchestration.test-3:8080",
+		"webModeler.restapi.clusters[2].url.web-app":    "http://localhost:8088",
 		"global.elasticsearch.enabled":                  "true",
-		"elasticsearch.enabled":                         "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -572,10 +554,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 	// given
 	values := map[string]string{
 		"identity.enabled":             "true",
-		"webModelerPostgresql.enabled": "false",
 		"orchestration.enabled":        "false",
 		"global.elasticsearch.enabled": "true",
-		"elasticsearch.enabled":        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -605,7 +585,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 		"global.identity.auth.enabled": "true",
 		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
 		"global.elasticsearch.enabled": "true",
-		"elasticsearch.enabled":        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -635,7 +614,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 		"global.identity.auth.enabled":          "true",
 		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
 		"global.elasticsearch.enabled":          "true",
-		"elasticsearch.enabled":                 "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -669,7 +647,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 		"global.identity.keycloak.contextPath":  "/",
 		"global.identity.keycloak.realm":        "test",
 		"global.elasticsearch.enabled":          "true",
-		"elasticsearch.enabled":                 "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -696,12 +673,10 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPort
 	// given
 	values := map[string]string{
 		"identity.enabled":                             "true",
-		"webModelerPostgresql.enabled":                 "false",
-		"camundaHub.webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
-		"camundaHub.webModeler.restapi.externalDatabase.port":     "65432",
-		"camundaHub.webModeler.restapi.externalDatabase.database": "custom-modeler-db",
+		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
+		"webModeler.restapi.externalDatabase.port":     "65432",
+		"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
 		"global.elasticsearch.enabled":                 "true",
-		"elasticsearch.enabled":                        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -730,7 +705,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAnd
 		"identity.enabled":                            "true",
 		"global.identity.auth.enabled":                "true",
 		"global.elasticsearch.enabled":                "true",
-		"elasticsearch.enabled":                       "true",
 		"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -761,8 +735,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath(
 		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"global.elasticsearch.enabled": "true",
-		"elasticsearch.enabled":        "true",
-		"camundaHub.webModeler.contextPath":       "/modeler",
+		"webModeler.contextPath":       "/modeler",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -792,8 +765,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 		"identity.enabled":                 "true",
 		"global.identity.auth.enabled":     "true",
 		"global.elasticsearch.enabled":     "true",
-		"elasticsearch.enabled":            "true",
-		"camundaHub.webModeler.websockets.publicPort": "8082",
+		"webModeler.websockets.publicPort": "8082",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -822,8 +794,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"global.elasticsearch.enabled": "true",
-		"elasticsearch.enabled":        "true",
-		"camundaHub.webModeler.contextPath":       "/modeler",
+		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
 		"global.host":                  "c8.example.com",
 		"global.ingress.tls.enabled":   "false",
@@ -858,8 +829,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"global.elasticsearch.enabled": "true",
-		"elasticsearch.enabled":        "true",
-		"camundaHub.webModeler.contextPath":       "/modeler",
+		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
 		"global.host":                  "c8.example.com",
 		"global.ingress.tls.enabled":   "true",
@@ -913,8 +883,8 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.contextPath":              "/modeler",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.contextPath":              "/modeler",
 				"global.ingress.enabled":              "true",
 				"global.host":                         "literal.example.com",
 				"global.ingress.tls.enabled":          "true",
@@ -945,11 +915,10 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 			Values: map[string]string{
 				"identity.enabled":                                 "true",
 				"webModeler.enabled":                               "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":              "example@example.com",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].file":    "custom-spring.yaml",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].content": "some: config",
+				"webModeler.restapi.mail.fromAddress":              "example@example.com",
+				"webModeler.restapi.extraConfiguration[0].file":    "custom-spring.yaml",
+				"webModeler.restapi.extraConfiguration[0].content": "some: config",
 				"global.elasticsearch.enabled":                     "true",
-				"elasticsearch.enabled":                            "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -969,12 +938,11 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 			Values: map[string]string{
 				"identity.enabled":                                      "true",
 				"webModeler.enabled":                                    "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                   "example@example.com",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].file":         "log4j2-spring.xml",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].springImport": "false",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].content":      "<Configuration/>",
+				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
+				"webModeler.restapi.extraConfiguration[0].file":         "log4j2-spring.xml",
+				"webModeler.restapi.extraConfiguration[0].springImport": "false",
+				"webModeler.restapi.extraConfiguration[0].content":      "<Configuration/>",
 				"global.elasticsearch.enabled":                          "true",
-				"elasticsearch.enabled":                                 "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -997,14 +965,13 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 			Values: map[string]string{
 				"identity.enabled":                                      "true",
 				"webModeler.enabled":                                    "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                   "example@example.com",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].file":         "custom-spring.yaml",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].content":      "some: config",
-				"camundaHub.webModeler.restapi.extraConfiguration[1].file":         "log4j2-spring.xml",
-				"camundaHub.webModeler.restapi.extraConfiguration[1].springImport": "false",
-				"camundaHub.webModeler.restapi.extraConfiguration[1].content":      "<Configuration/>",
+				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
+				"webModeler.restapi.extraConfiguration[0].file":         "custom-spring.yaml",
+				"webModeler.restapi.extraConfiguration[0].content":      "some: config",
+				"webModeler.restapi.extraConfiguration[1].file":         "log4j2-spring.xml",
+				"webModeler.restapi.extraConfiguration[1].springImport": "false",
+				"webModeler.restapi.extraConfiguration[1].content":      "<Configuration/>",
 				"global.elasticsearch.enabled":                          "true",
-				"elasticsearch.enabled":                                 "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap

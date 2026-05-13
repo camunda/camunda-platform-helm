@@ -53,61 +53,36 @@ Keycloak helpers
 */}}
 
 {{/*
-[identity] Keycloak default URL.
-*/}}
-{{- define "identity.keycloak.hostDefault" -}}
-    {{- if .Values.identityKeycloak.enabled -}}
-        {{- template "common.names.fullname" .Subcharts.identityKeycloak -}}
-    {{- end -}}
-{{- end -}}
-
-{{/*
-[identity] Get Keycloak URL protocol based on global value or Keycloak subchart.
+[identity] Get Keycloak URL protocol from global value.
 */}}
 {{- define "identity.keycloak.protocol" -}}
-    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.protocol -}}
-        {{- .Values.global.identity.keycloak.url.protocol -}}
-    {{- else -}}
-            {{- ternary "https" "http" (.Values.identityKeycloak.tls.enabled) -}}
-    {{- end -}}
+    {{- (.Values.global.identity.keycloak.url).protocol | default "" -}}
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak URL service name based on global value or Keycloak subchart.
-This is mainly used to access the external Keycloak service in the global Ingress.
+[identity] Get Keycloak URL service name when the chart proxies an external Keycloak via an in-cluster ExternalName service.
 */}}
 {{- define "identity.keycloak.service" -}}
     {{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
         {{- printf "%s-keycloak-custom" .Release.Name | trunc 63 -}}
-    {{- else -}}
-        {{- include "identity.keycloak.hostDefault" . -}}
     {{- end -}}
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak URL host based on global value or Keycloak subchart.
+[identity] Get Keycloak URL host from global value.
 */}}
 {{- define "identity.keycloak.host" -}}
-    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.host -}}
-        {{- tpl .Values.global.identity.keycloak.url.host . -}}
-    {{- else -}}
-        {{- include "identity.keycloak.hostDefault" . -}}
+    {{- with (.Values.global.identity.keycloak.url).host -}}
+        {{- tpl . $ -}}
     {{- end -}}
 {{- end -}}
 
 
 {{/*
-[identity] Get Keycloak URL port based on global value or Keycloak subchart.
+[identity] Get Keycloak URL port from global value.
 */}}
 {{- define "identity.keycloak.port" -}}
-    {{- if and .Values.global.identity.keycloak.url .Values.global.identity.keycloak.url.port -}}
-        {{- .Values.global.identity.keycloak.url.port -}}
-    {{- else -}}
-        {{- if .Values.identityKeycloak.enabled -}}
-            {{- $keycloakProtocol := (include "identity.keycloak.protocol" .) -}}
-            {{- get .Values.identityKeycloak.service.ports $keycloakProtocol -}}
-        {{- end -}}
-    {{- end -}}
+    {{- (.Values.global.identity.keycloak.url).port | default "" -}}
 {{- end -}}
 
 {{/*
@@ -133,7 +108,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
 [identity] Get multitenancy setting
 */}}
 {{- define "identity.multitenancyEnabled" -}}
-    {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+    {{- if .Values.identity.externalDatabase.enabled }}
         {{- if .Values.identity.multitenancy.enabled -}}
             {{ .Values.identity.multitenancy.enabled }}
         {{- else if .Values.global.multitenancy.enabled -}}
@@ -161,53 +136,37 @@ This is mainly used to access the external Keycloak service in the global Ingres
 
 {{/*
 [identity] Get Keycloak auth admin user.
-Checks the individual key rather than map truthiness to avoid the bug where
-setting any key in the auth map causes all helpers to switch source.
 */}}
 {{- define "identity.keycloak.authAdminUser" -}}
-    {{- if .Values.global.identity.keycloak.auth.adminUser -}}
-        {{- .Values.global.identity.keycloak.auth.adminUser -}}
-    {{- else -}}
-        {{- .Values.identityKeycloak.auth.adminUser -}}
-    {{- end -}}
+    {{- .Values.global.identity.keycloak.auth.adminUser | default "" -}}
 {{- end -}}
 
 {{/*
-[identity] PostgreSQL helpers.
+[identity] External PostgreSQL helpers.
 */}}
 
-{{- define "identity.postgresql.id" -}}
-    {{- (printf "%s-%s" .Release.Name .Values.identityPostgresql.nameOverride) | trunc 63 | trimSuffix "-" }}
-{{- end -}}
-
 {{- define "identity.postgresql.secretName" -}}
-    {{- $defaultExistingSecret := (include "identity.postgresql.id" .) -}}
-    {{- $autExistingSecret := (.Values.identityPostgresql.auth.existingSecret | default $defaultExistingSecret) -}}
-    {{- $externalDatabaseExistingSecret := (.Values.identity.externalDatabase.secret.existingSecret | default $defaultExistingSecret) -}}
-    {{- .Values.identity.externalDatabase.enabled | ternary $externalDatabaseExistingSecret $autExistingSecret }}
+    {{- .Values.identity.externalDatabase.secret.existingSecret | default "" -}}
 {{- end -}}
 
 {{- define "identity.postgresql.secretKey" -}}
-    {{- $defaultSecretKey := "password" -}}
-    {{- $authExistingSecretKey := (.Values.identityPostgresql.auth.secretKeys.userPasswordKey | default $defaultSecretKey) -}}
-    {{- $externalDatabaseSecretKey := (.Values.identity.externalDatabase.secret.existingSecretKey | default $defaultSecretKey) -}}
-    {{- .Values.identity.externalDatabase.enabled | ternary $externalDatabaseSecretKey $authExistingSecretKey }}
+    {{- .Values.identity.externalDatabase.secret.existingSecretKey | default "password" -}}
 {{- end -}}
 
 {{- define "identity.postgresql.host" -}}
-    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.host (include "identity.postgresql.id" .) }}
+    {{- .Values.identity.externalDatabase.host | default "" -}}
 {{- end -}}
 
 {{- define "identity.postgresql.port" -}}
-    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.port "5432" }}
+    {{- .Values.identity.externalDatabase.port | default "5432" -}}
 {{- end -}}
 
 {{- define "identity.postgresql.username" -}}
-    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.username .Values.identityPostgresql.auth.username }}
+    {{- .Values.identity.externalDatabase.username | default "" -}}
 {{- end -}}
 
 {{- define "identity.postgresql.database" -}}
-    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.database .Values.identityPostgresql.auth.database }}
+    {{- .Values.identity.externalDatabase.database | default "" -}}
 {{- end -}}
 
 {{/*

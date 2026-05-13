@@ -59,21 +59,6 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name: "TestKeycloakHTTPRouteRendered",
-			Values: map[string]string{
-				"global.gateway.enabled":   "true",
-				"global.host":              "camunda.example.com",
-				"identityKeycloak.enabled": "true",
-				"identity.enabled":         "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.Contains(t, output, "kind: HTTPRoute")
-				require.Contains(t, output, "name: camunda-platform-test-keycloak")
-				require.Contains(t, output, "\"camunda.example.com\"")
-			},
-		},
-		{
 			Name: "TestIdentityHTTPRouteRendered",
 			Values: map[string]string{
 				"global.gateway.enabled": "true",
@@ -93,7 +78,6 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":   "true",
 				"global.host":              "camunda.example.com",
-				"identityKeycloak.enabled": "false",
 				"identity.enabled":         "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -109,7 +93,6 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 				"global.gateway.enabled":   "true",
 				"global.host":              "camunda.example.com",
 				"identity.enabled":         "false",
-				"identityKeycloak.enabled": "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "name: identity")

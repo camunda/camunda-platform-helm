@@ -45,8 +45,7 @@ func TestGoldenDefaultsTemplateConsole(t *testing.T) {
 			SetValues: map[string]string{
 				"console.enabled":                "true",
 				"identity.enabled":               "true",
-				"identityKeycloak.enabled":       "true",
-				"camundaHub.console.serviceAccount.enabled": "true",
+				"console.serviceAccount.enabled": "true",
 			},
 			IgnoredLines: []string{
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.

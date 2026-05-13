@@ -20,7 +20,7 @@
                             "properties": {
                                 "url": {
                                     "type": "object",
-                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
+                                    "description": "configures the URL to reach an external Keycloak. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
                                     "default": {},
                                     "properties": {
                                         "protocol": {
@@ -997,68 +997,6 @@
                                 "name"
                             ],
                             "additionalProperties": false
-                        }
-                    }
-                }
-            }
-        },
-        "elasticsearch": {
-            "properties": {
-                "global": {
-                    "properties": {
-                        "imagePullSecrets": {
-                            "type": "array",
-                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
-                            "default": [],
-                            "items": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "name"
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "identityKeycloak": {
-            "properties": {
-                "image": {
-                    "properties": {
-                        "pullSecrets": {
-                            "type": "array",
-                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
-                            "default": [],
-                            "items": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "name"
-                                        ]
-                                    }
-                                ]
-                            }
                         }
                     }
                 }

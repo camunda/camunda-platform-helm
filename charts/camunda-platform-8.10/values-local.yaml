@@ -18,9 +18,6 @@ global:
 identity:
   enabled: false
 
-identityKeycloak:
-  enabled: false
-
 #
 # Orchestration Cluster.
 #
@@ -38,10 +35,3 @@ orchestration:
 
 optimize:
   enabled: false
-
-elasticsearch:
-  enabled: true
-  master:
-    replicaCount: 1
-    persistence:
-      size: 10Gi

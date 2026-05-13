@@ -64,7 +64,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.annotations.foo":              "bar",
 				"global.elasticsearch.enabled":        "true",
-				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -81,7 +80,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"camundaHub.webModeler.restapi.mail.fromAddress":                    "example@example.com",
 				"camundaHub.webModeler." + s.component + ".service.annotations.foo": "bar",
 				"global.elasticsearch.enabled":                           "true",
-				"elasticsearch.enabled":                                  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service

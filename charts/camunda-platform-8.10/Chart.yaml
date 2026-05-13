@@ -26,28 +26,6 @@ keywords:
   - workflow
   - workflow-engine
 dependencies:
-  # Identity Dependencies.
-  - name: keycloak
-    alias: identityKeycloak
-    repository: "file://../keycloak-24"
-    version: 24.x.x
-    condition: "identityKeycloak.enabled"
-  - name: postgresql
-    alias: identityPostgresql
-    repository: "file://../identity-postgresql-16"
-    version: 16.x.x
-    condition: "identityPostgresql.enabled"
-  # WebModeler Dependencies.
-  - name: web-modeler-postgresql
-    alias: webModelerPostgresql
-    repository: "file://../web-modeler-postgresql-15"
-    version: 15.x.x
-    condition: "webModelerPostgresql.enabled"
-  # Shared Dependencies.
-  - name: elasticsearch
-    repository: "file://../elasticsearch-21"
-    version: 21.6.3
-    condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
     repository: "file://../common-2"

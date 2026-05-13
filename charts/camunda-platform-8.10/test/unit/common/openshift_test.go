@@ -404,7 +404,6 @@ func (s *OpenShiftCombinedFeaturesTest) TestAllOpenShiftFeaturesEnabled() {
 				"global.ingress.tls.enabled":                          "true",
 				"global.ingress.tls.secretName":                       "-",
 				"global.host":                                         "camunda.example.com",
-				"elasticsearch.enabled":                               "true",
 			},
 			Template: "templates/common/ingress-http.yaml",
 			Verifier: func(t *testing.T, output string, err error) {

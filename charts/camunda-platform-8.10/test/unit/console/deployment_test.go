@@ -223,7 +223,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					SetValues: map[string]string{
 						"identity.enabled":             "true",
 						"console.enabled":              "true",
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -261,7 +260,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					SetValues: map[string]string{
 						"console.enabled":              "true",
 						"identity.enabled":             "true",
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -302,7 +300,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					SetValues: map[string]string{
 						"console.enabled":              "true",
 						"identity.enabled":             "true",
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

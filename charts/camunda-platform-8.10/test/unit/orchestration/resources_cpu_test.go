@@ -56,7 +56,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"orchestration.enabled":                   "true",
-			"elasticsearch.enabled":                   "true",
 			"global.elasticsearch.enabled":            "true",
 			"orchestration.resources.requests.cpu":    "500m",
 			"orchestration.resources.limits.cpu":      "1.5",
@@ -96,7 +95,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"orchestration.enabled":                   "true",
-			"elasticsearch.enabled":                   "true",
 			"global.elasticsearch.enabled":            "true",
 			"orchestration.resources.requests.cpu":    "1000m",
 			"orchestration.resources.limits.cpu":      "2000m",
