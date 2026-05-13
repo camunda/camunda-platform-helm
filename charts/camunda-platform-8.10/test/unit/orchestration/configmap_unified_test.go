@@ -106,6 +106,26 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldInheritAuthMethodFromGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method":         "oidc",
+				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
+			},
+		},
+		{
+			Name: "TestApplicationYamlComponentMethodShouldOverrideGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method":        "basic",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method": "oidc",
+			},
+		},
+		{
 			Name: "TestApplicationYamlNoWebAppProfilesWhenNoSecondaryStorageEnabled",
 			Values: map[string]string{
 				"global.noSecondaryStorage":                    "true",
@@ -137,9 +157,9 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() 
 		{
 			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaSecondaryStorage",
 			Values: map[string]string{
-				"global.opensearch.enabled":                                         "true",
-				"global.opensearch.url.host":                                        "opensearch.example.com",
-				"orchestration.data.secondaryStorage.opensearch.aws.enabled":         "true",
+				"global.opensearch.enabled":                                  "true",
+				"global.opensearch.url.host":                                 "opensearch.example.com",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
@@ -175,8 +195,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearchAWS
 		{
 			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledViaSecondaryStorage",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                            "true",
-				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled":            "true",
+				"global.elasticsearch.enabled":                                  "true",
+				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled": "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.elasticsearch.aws-enabled": "true",
