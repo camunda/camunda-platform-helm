@@ -55,6 +55,16 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 				"global.identity.auth.enabled":                                     "true",
 				"identity.enabled":                                                 "true",
 				"global.elasticsearch.enabled":                                     "true",
+				"global.identity.keycloak.url.protocol":                            "https",
+				"global.identity.keycloak.url.host":                                "keycloak.example.com",
+				"global.identity.keycloak.url.port":                                "8443",
+				"global.identity.keycloak.auth.adminUser":                          "admin",
+				"global.identity.keycloak.auth.secret.existingSecret":              "kc-secret",
+				"global.identity.keycloak.auth.secret.existingSecretKey":           "password",
+				"webModeler.restapi.externalDatabase.url":                          "jdbc:postgresql://postgres.example.com:5432/web-modeler",
+				"webModeler.restapi.externalDatabase.username":                     "modeler",
+				"webModeler.restapi.externalDatabase.secret.existingSecret":        "wm-db-secret",
+				"webModeler.restapi.externalDatabase.secret.existingSecretKey":     "password",
 			},
 			IgnoredLines: []string{
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.

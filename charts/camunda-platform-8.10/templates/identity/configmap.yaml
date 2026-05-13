@@ -201,9 +201,11 @@ data:
       {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
       realm: {{ .Values.identity.realm.id | quote }}
       {{- end }}
+      {{- if .Values.global.identity.keycloak.auth.adminUser }}
       setup:
-        user: {{ include "identity.keycloak.authAdminUser" . | quote }}
+        user: {{ .Values.global.identity.keycloak.auth.adminUser | quote }}
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      {{- end }}
       init:
         {{- if eq (include "connectors.authMethod" .) "oidc" }}
         connectors:

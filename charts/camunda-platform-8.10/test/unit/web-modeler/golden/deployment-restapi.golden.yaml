@@ -55,7 +55,11 @@ spec:
             
             - name: JAVA_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
-            
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wm-db-secret
+                  key: password
             
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:

@@ -56,7 +56,11 @@ spec:
               type: RuntimeDefault
           env:
             
-            
+            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kc-secret
+                  key: password
             
           envFrom:
             - configMapRef:
