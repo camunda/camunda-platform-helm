@@ -1,4 +1,4 @@
-# CI values for the embedded OpenSearch 3 companion chart.
+# CI values for the embedded OpenSearch companion chart (compatible with 2.x and 3.x).
 # Security disabled, single node, minimal resources for CI/dev environments.
 #
 # Deployed as a separate Helm release by deploy-camunda before the main
