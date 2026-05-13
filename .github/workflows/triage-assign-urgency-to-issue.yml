@@ -142,6 +142,7 @@ jobs:
             repository(owner:\$owner,name:\$repo){
               issue(number:\$issueNumber){
                 id
+                state
                 issueType { name }
                 labels(first:100){ nodes { name } }
                 projectItems(first:100){
@@ -194,6 +195,15 @@ jobs:
 
           ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
           PROJECT_DATA='${{ steps.fetch_data.outputs.project_data }}'
+
+          # Skip closed issues: re-labeling a closed issue must not re-run urgency
+          # calculation or overwrite its project Status field.
+          ISSUE_STATE=$(echo "$ISSUE_DATA" | jq -r '.state // empty')
+          if [[ "$ISSUE_STATE" == "CLOSED" ]]; then
+            echo "⏭️ Issue #${ISSUE_NUMBER} is closed; skipping urgency assignment"
+            echo "in_target_project=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # Extract project information
           TARGET_PROJECT_NODE_ID=$(echo "$PROJECT_DATA" | jq -r '.id // empty')

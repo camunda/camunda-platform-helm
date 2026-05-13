@@ -185,9 +185,17 @@ jobs:
             ISSUE_TITLE=$(echo "$ISSUE_DATA" | jq -r '.title')
             ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body // ""')
             ISSUE_LABELS=$(echo "$ISSUE_DATA" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
+            ISSUE_STATE=$(echo "$ISSUE_DATA" | jq -r '.state')
 
             echo "📄 Title: $ISSUE_TITLE"
             echo "🏷️  Labels: ${ISSUE_LABELS:-none}"
+
+            # Skip closed issues: re-labeling a closed issue must not re-run triage
+            # or overwrite the project Status field (e.g. ✅ Done → 📋 Backlog).
+            if [[ "$ISSUE_STATE" == "closed" ]]; then
+              echo "⏭️  Skipping: issue is closed"
+              continue
+            fi
 
             # Check if already triaged or marked for manual review
             if echo "$ISSUE_LABELS" | grep -qi "TRIAGE:COMPLETED"; then
