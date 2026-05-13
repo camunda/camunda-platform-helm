@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type MigrationIdentityJobTest struct {
@@ -232,6 +233,66 @@ func (s *MigrationIdentityJobTest) TestServiceAccount() {
 				var job batchv1.Job
 				helm.UnmarshalK8SYaml(s.T(), output, &job)
 				s.Require().Equal("custom-sa", job.Spec.Template.Spec.ServiceAccountName)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *MigrationIdentityJobTest) TestResources() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDefaultResources",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":             "true",
+				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+				container := containers[0]
+
+				// given defaults of 500m CPU / 500Mi memory
+				s.Require().True(container.Resources.Requests.Cpu().Equal(resource.MustParse("500m")),
+					"default CPU request should be 500m, got %s", container.Resources.Requests.Cpu().String())
+				s.Require().True(container.Resources.Requests.Memory().Equal(resource.MustParse("500Mi")),
+					"default memory request should be 500Mi, got %s", container.Resources.Requests.Memory().String())
+				s.Require().True(container.Resources.Limits.Cpu().Equal(resource.MustParse("500m")),
+					"default CPU limit should be 500m, got %s", container.Resources.Limits.Cpu().String())
+				s.Require().True(container.Resources.Limits.Memory().Equal(resource.MustParse("500Mi")),
+					"default memory limit should be 500Mi, got %s", container.Resources.Limits.Memory().String())
+			},
+		},
+		{
+			Name: "TestCustomResources",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":                        "true",
+				"orchestration.migration.identity.secret.inlineSecret":            "very-secret-thus-plaintext",
+				"orchestration.migration.identity.resources.requests.cpu":    "200m",
+				"orchestration.migration.identity.resources.requests.memory": "256Mi",
+				"orchestration.migration.identity.resources.limits.cpu":      "1000m",
+				"orchestration.migration.identity.resources.limits.memory":   "1Gi",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+				container := containers[0]
+
+				s.Require().True(container.Resources.Requests.Cpu().Equal(resource.MustParse("200m")),
+					"CPU request should be 200m, got %s", container.Resources.Requests.Cpu().String())
+				s.Require().True(container.Resources.Requests.Memory().Equal(resource.MustParse("256Mi")),
+					"memory request should be 256Mi, got %s", container.Resources.Requests.Memory().String())
+				s.Require().True(container.Resources.Limits.Cpu().Equal(resource.MustParse("1000m")),
+					"CPU limit should be 1000m, got %s", container.Resources.Limits.Cpu().String())
+				s.Require().True(container.Resources.Limits.Memory().Equal(resource.MustParse("1Gi")),
+					"memory limit should be 1Gi, got %s", container.Resources.Limits.Memory().String())
 			},
 		},
 	}
