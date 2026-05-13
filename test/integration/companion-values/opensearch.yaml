@@ -1,4 +1,4 @@
-# CI values for the embedded OpenSearch 3 companion chart.
+# CI values for the embedded OpenSearch companion chart (compatible with 2.x and 3.x).
 # Security disabled, single node, minimal resources for CI/dev environments.
 #
 # Deployed as a separate Helm release by deploy-camunda before the main
@@ -20,6 +20,12 @@ config:
     plugins:
       security:
         disabled: true
+
+# OpenSearch 2.12+ runs install_demo_configuration.sh by default even when security
+# is disabled. DISABLE_INSTALL_DEMO_CONFIG skips the installer entirely.
+extraEnvs:
+  - name: DISABLE_INSTALL_DEMO_CONFIG
+    value: "true"
 
 securityConfig:
   enabled: false
