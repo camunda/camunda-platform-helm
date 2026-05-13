@@ -40,3 +40,52 @@ resources:
   limits:
     cpu: "1"
     memory: "2Gi"
+
+# Single-node OS clusters cannot allocate index replicas. Camunda components
+# create indices with an explicit number_of_replicas=1 in the create request,
+# which leaves every replica unassigned, drives the cluster to yellow, and
+# causes intermittent "all shards failed" 503s on _search calls (Zeebe
+# exporter background jobs, Optimize fetchers, orchestration
+# cluster-variables endpoint).
+#
+# Explicit settings in a create-index request override matching template
+# settings, so a template that only sets number_of_replicas=0 has no effect.
+# auto_expand_replicas is not sent by Camunda, so it merges in cleanly — and
+# per OpenSearch precedence, auto_expand_replicas overrides any explicit
+# number_of_replicas. On a 1-node cluster auto_expand_replicas: 0-1 settles
+# at 0; on a 2-node cluster it scales to 1.
+#
+# Deploy-camunda installs companion charts with helm install --wait, which
+# blocks until post-install hooks complete, so the template is registered
+# before the main Camunda chart starts creating indices.
+extraObjects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: opensearch-zero-replicas-template
+      annotations:
+        helm.sh/hook: post-install,post-upgrade
+        helm.sh/hook-weight: "5"
+        helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    spec:
+      backoffLimit: 6
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: register-template
+              image: curlimages/curl:8.10.1
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  until curl -fsS "http://opensearch-master:9200/_cluster/health" >/dev/null 2>&1; do
+                    echo "waiting for opensearch..."
+                    sleep 2
+                  done
+                  curl -fsS -X PUT "http://opensearch-master:9200/_index_template/camunda-ci-auto-expand-replicas" \
+                    -H 'Content-Type: application/json' \
+                    -d '{"index_patterns":["op-*","orch-*","tasklist-*","opt-*","camunda-*",".camunda*","zeebe-*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
+                  echo
+                  echo "template registered"
