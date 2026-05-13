@@ -28,8 +28,6 @@ config:
 extraEnvs:
   - name: DISABLE_INSTALL_DEMO_CONFIG
     value: "true"
-  - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
-    value: "D1str0C1!test"
 
 securityConfig:
   enabled: false
