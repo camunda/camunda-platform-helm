@@ -319,12 +319,16 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 {{- end -}}
 
 {{/*
-Get the external url for keycloak when fronted by the chart's combined Ingress.
+Get the externally-reachable Keycloak URL for display in Console and NOTES.txt.
+When the chart proxies Keycloak through its combined Ingress (internal: true), use
+the chart host + contextPath. Otherwise return the configured external Keycloak URL.
 */}}
 {{- define "camundaPlatform.keycloakExternalURL" -}}
   {{- if .Values.global.identity.keycloak.internal -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+  {{- else if (.Values.global.identity.keycloak.url).host -}}
+    {{- include "identity.keycloak.url" . -}}
   {{- end -}}
 {{- end -}}
 
