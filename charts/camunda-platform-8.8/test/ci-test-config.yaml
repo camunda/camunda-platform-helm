@@ -221,6 +221,16 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+        # kcor is referenced by .github/workflows/test-backward-compat.yaml's
+        # compat-camunda-docker job (camunda/docker-build-helm-integration.yml).
+        - name: keycloak-original
+          enabled: false
+          flow: install
+          shortname: kcor
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
         # `es` is the test-integration-template default shortname; used by the
         # compat-camunda-simple job (camunda/camunda-helm-integration.yml).
         - name: elasticsearch
