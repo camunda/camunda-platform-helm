@@ -24,6 +24,44 @@ make install.dx-tooling
 cd scripts/deploy-camunda && go build -o deploy-camunda . && mv deploy-camunda $GOPATH/bin/
 ```
 
+### Pre-Flight Checklist
+
+Before deploying, verify these requirements. Skipping any of these is the most common source
+of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
+
+1. **Docker credentials** — the matrix runner creates K8s pull secrets from env vars. Without them,
+   pods will fail with `ImagePullBackOff` after deployment appears to succeed.
+   ```bash
+   # Harbor (required for all deployments)
+   echo $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD   # should be: ci-distribution
+   echo $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD   # should be non-empty
+
+   # Docker Hub (only if using --ensure-docker-hub)
+   echo $TEST_DOCKER_USERNAME
+   echo $TEST_DOCKER_PASSWORD
+   ```
+
+2. **kubectl context** — confirm you're targeting the right cluster.
+   ```bash
+   kubectl config current-context
+   # Expected for GKE: gke_camunda-distribution_europe-west1-b_distro-ci
+   ```
+
+3. **Helm dependencies** — must be up to date for the target chart version.
+   ```bash
+   make helm.dependency-update chartPath=charts/camunda-platform-8.10
+   ```
+
+4. **Ingress hostname** — for matrix deploys this is computed automatically. For single deploys,
+   you must provide it via `CAMUNDA_HOSTNAME` env var or `--ingress-hostname` flag.
+   ```bash
+   # Matrix deploy: namespace becomes the hostname prefix automatically
+   # e.g., matrix-810-keyco-inst-gke.ci.distro.ultrawombat.com
+
+   # Single deploy: set explicitly
+   export CAMUNDA_HOSTNAME=my-test-ns.ci.distro.ultrawombat.com
+   ```
+
 ### Deploy a Single Scenario
 
 ```bash
@@ -193,6 +231,41 @@ When a Helm install gets stuck, the default `helm install --wait --timeout 10m`
 hides every signal until the timeout fires. `deploy-camunda watch` polls the
 cluster on a short cadence and hands each snapshot to a local agent CLI
 (Claude Code or opencode) for live diagnosis.
+
+**ALWAYS run `deploy-camunda watch` in a second terminal alongside any deployment.** It
+detects CrashLoopBackOff, ImagePullBackOff, and other failures in real time, instead
+of waiting for the full helm timeout to expire.
+
+**Quick start:**
+
+```bash
+# Terminal 1: deploy via matrix run
+deploy-camunda matrix run --repo-root . --versions 8.10 \
+  --shortname-filter keyco --platform gke --delete-namespace --timeout 10 --yes
+
+# Terminal 2: watch (start immediately, it waits for pods to appear)
+deploy-camunda watch \
+  --namespace matrix-810-keyco-inst-gke \
+  --release integration \
+  --interval 30
+```
+
+For single (non-matrix) deploys:
+
+```bash
+# Terminal 1: deploy
+deploy-camunda --chart-path ./charts/camunda-platform-8.10 \
+  --namespace my-test --release integration --scenario chart-full-setup
+
+# Terminal 2: watch
+deploy-camunda watch --namespace my-test --release integration --interval 30
+```
+
+The watcher prints a diagnosis on each tick. Common verdicts:
+- **wait** — pods are starting normally, keep polling.
+- **investigate** — something looks off (slow startup, pending PVCs), diagnosis printed.
+- **abort** — unrecoverable failure detected (wrong image, missing secret). Use
+  `--abort-confidence 0.85` to auto-exit when the agent is confident.
 
 **Prerequisites:** `claude` or `opencode` must be on `PATH`. The watcher does
 NOT call any API directly — it shells out to whichever CLI is installed and
@@ -647,4 +720,86 @@ See [docs/reproducing-ci-e2e-failures.md](docs/reproducing-ci-e2e-failures.md) f
 ```
 1. ls charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/
 2. deploy-camunda matrix list --repo-root . --versions 8.9
+```
+
+---
+
+## End-to-End Fix Verification Workflow
+
+Complete workflow for deploying a scenario, generating credentials, and running E2E tests
+to verify a fix. This is the standard procedure for validating changes before creating a PR.
+
+### 1. Pre-flight
+
+```bash
+# Confirm docker credentials (ask user if not set)
+echo $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD
+echo $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
+
+# Confirm kubectl context
+kubectl config current-context
+
+# Update chart dependencies
+make helm.dependency-update chartPath=charts/camunda-platform-8.10
+```
+
+### 2. Deploy the scenario
+
+Use `deploy-camunda matrix run` to deploy the exact CI scenario. Run `deploy-camunda watch`
+in a second terminal to get real-time pod health diagnosis instead of manually polling
+with `kubectl get pods`.
+
+```bash
+# Terminal 1: deploy
+deploy-camunda matrix run \
+  --repo-root . \
+  --versions 8.10 \
+  --shortname-filter keyco \
+  --platform gke \
+  --delete-namespace \
+  --timeout 10 \
+  --yes
+
+# Terminal 2: watch (start immediately)
+deploy-camunda watch \
+  --namespace matrix-810-keyco-inst-gke \
+  --release integration \
+  --interval 30
+```
+
+The namespace naming convention is `matrix-<version>-<shortname>-<flow>-<platform>`.
+Use `deploy-camunda matrix list --repo-root . --versions 8.10` to find the exact
+namespace for a given shortname.
+
+### 3. Generate credentials
+
+```bash
+HELM_REPO=$(pwd)
+bash "$HELM_REPO/scripts/render-e2e-env.sh" \
+  --absolute-chart-path "$HELM_REPO/charts/camunda-platform-8.10" \
+  --namespace matrix-810-keyco-inst-gke \
+  --output /path/to/e2e-repo/.env \
+  --not-ci --run-smoke-tests --verbose
+```
+
+Or use `deploy-camunda --output-test-env` to generate credentials as part of the deploy step.
+
+### 4. Run tests (reproduce then verify)
+
+```bash
+E2E_REPO=/path/to/c8-cross-component-e2e-tests
+
+# First: reproduce failure on main
+cd $E2E_REPO && git checkout main
+npx playwright test --project=chromium tests/SM-8.10/smoke-tests.spec.ts --trace on
+
+# Then: verify fix on your branch
+git checkout fix/your-branch-name
+npx playwright test --project=chromium tests/SM-8.10/smoke-tests.spec.ts --trace on
+```
+
+### 5. Clean up
+
+```bash
+kubectl delete namespace matrix-810-keyco-inst-gke
 ```

@@ -229,6 +229,53 @@ helm template integration charts/camunda-platform-8.X \
 5. Update golden files only for intentional rendering changes.
 6. Record discoveries and remaining work in `STATE.md`.
 
+## Deploying to GKE for Verification
+
+When verifying a fix requires a live cluster, follow this workflow. See `SKILLS.md` for
+full command reference and troubleshooting.
+
+### Pre-flight checklist
+
+Before deploying, confirm these requirements — they are the most common source of deployment failures:
+
+1. **Docker credentials are set** — ask the user to confirm. The matrix runner creates K8s pull secrets
+   from these env vars. Without them, pods fail with `ImagePullBackOff`.
+   - `TEST_DOCKER_USERNAME_CAMUNDA_CLOUD` / `TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD` (Harbor)
+   - `TEST_DOCKER_USERNAME` / `TEST_DOCKER_PASSWORD` (Docker Hub, if `--ensure-docker-hub` is used)
+2. **kubectl context is correct** — `kubectl config current-context` should return the target cluster
+   (e.g., `gke_camunda-distribution_europe-west1-b_distro-ci`).
+3. **Helm dependencies are up to date** — `make helm.dependency-update chartPath=charts/camunda-platform-<version>`.
+4. **Ingress hostname** — for non-matrix deploys, set `CAMUNDA_HOSTNAME` or use `--ingress-hostname`.
+   The matrix runner computes this automatically from the namespace prefix and base domain.
+
+### Use `deploy-camunda watch` for live diagnosis
+
+ALWAYS run `deploy-camunda watch` in parallel with any deployment. It polls pod and event state
+on a short cadence and surfaces diagnoses in real time — far better than manually running
+`kubectl get pods` in a loop.
+
+```bash
+# Terminal 1: deploy
+deploy-camunda matrix run --repo-root . --versions 8.10 --shortname-filter keyco \
+  --platform gke --delete-namespace --timeout 10 --yes
+
+# Terminal 2: watch (start immediately after deploy begins)
+deploy-camunda watch --namespace matrix-810-keyco-inst-gke --release integration --interval 30
+```
+
+The watcher exits automatically when all pods reach Running/Ready. If a pod enters
+CrashLoopBackOff or ImagePullBackOff, the watcher diagnoses the root cause and prints it
+immediately — no need to manually inspect events or logs.
+
+### End-to-end verification workflow
+
+1. Deploy the scenario (see above).
+2. Wait for all pods to be Running (`deploy-camunda watch` handles this).
+3. Generate `.env` credentials: `render-e2e-env.sh` or `deploy-camunda --output-test-env`.
+4. Run smoke tests against the cluster (see SKILLS.md "Running E2E Tests").
+5. If verifying a fix: run tests on `main` first (reproduce), then on the fix branch (confirm fix).
+6. Clean up: `kubectl delete namespace <ns>` when done.
+
 ## Adding New Persistence Layers and Scenarios
 
 ### New Persistence Layer
