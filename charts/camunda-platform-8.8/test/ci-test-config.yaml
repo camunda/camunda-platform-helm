@@ -193,19 +193,25 @@ integration:
           features: [arm]
           persistence: elasticsearch-external
         - name: opensearch
-          enabled: false  # Disabled: Bitnami OpenSearch subchart is unstable in CI; tracked in #6121
+          enabled: true
           exclude: []
           shortname: oske
           tier: 2
           auth: keycloak
           identity: keycloak
-          persistence: opensearch
-          qa: false
+          persistence: opensearch-embedded
           flow: install
+          helmVersion: 3.20.2
           infra-type:
             gke: distroci
           platforms: [gke]
-          helmVersion: 3.20.2
+          dependencies:
+            - chart: opensearch/opensearch
+              version: "2.31.0"
+              release-name: opensearch
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+              values-file: test/integration/companion-values/opensearch.yaml
         - name: opensearch-external
           enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
           shortname: osex
@@ -219,25 +225,6 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
-        - name: opensearch-embedded
-          enabled: true
-          shortname: osem
-          tier: 2
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          persistence: opensearch-embedded
-          flow: install
-          infra-type:
-            gke: distroci
-          platforms: [gke]
-          dependencies:
-            - chart: opensearch/opensearch
-              version: "2.31.0"
-              release-name: opensearch
-              repo-name: opensearch
-              repo-url: https://opensearch-project.github.io/helm-charts/
-              values-file: test/integration/companion-values/opensearch.yaml
         - name: documentstore
           enabled: true
           exclude: []
