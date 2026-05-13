@@ -279,49 +279,17 @@ global:
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #
-  # Camunda supports three authentication modes. The mode you choose
-  # determines which parameters below are required.
+  # Camunda supports two authentication modes against an externally-managed
+  # Keycloak (the bundled Keycloak subchart was removed in 8.10; see migration
+  # guide: https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/).
+  # The mode you choose determines which parameters below are required.
   #
   # -----------------------------------------------------------------------
-  # Mode A: Internal Keycloak (Bitnami subchart)
-  # -----------------------------------------------------------------------
-  # The Bitnami Keycloak subchart is deployed alongside Camunda.
-  # OIDC endpoints are auto-derived from the internal Keycloak service.
-  #
-  # Required:
-  #   identityKeycloak.enabled: true
-  #   global.identity.auth.enabled: true
-  #   global.security.authentication.method: "oidc"
-  #   identity.enabled: true
-  #   global.identity.auth.type: "KEYCLOAK"  (default)
-  #
-  # Optional:
-  #   global.identity.auth.publicIssuerUrl  - override public Keycloak URL
-  #     (default works with port-forward; override when using ingress)
-  #   global.identity.keycloak.contextPath  - "/auth" (Keycloak v16) or "/" (v19+)
-  #
-  # No explicit OIDC endpoint URLs are needed; they are auto-derived.
-  #
-  # Minimal snippet:
-  #   identityKeycloak:
-  #     enabled: true
-  #   global:
-  #     security:
-  #       authentication:
-  #         method: oidc
-  #     identity:
-  #       auth:
-  #         enabled: true
-  #   identity:
-  #     enabled: true
-  #
-  # -----------------------------------------------------------------------
-  # Mode B: External Keycloak
+  # Mode A: External Keycloak
   # -----------------------------------------------------------------------
   # Use an existing Keycloak instance running outside this Helm release.
   #
   # Required:
-  #   identityKeycloak.enabled: false
   #   global.identity.keycloak.url.protocol / host / port
   #   global.identity.keycloak.auth.adminUser / existingSecret
   #   global.identity.auth.enabled: true
@@ -346,8 +314,6 @@ global:
   #   global.identity.keycloak.contextPath     - "/auth" (Keycloak v16) or "/" (v19+)
   #
   # Minimal snippet:
-  #   identityKeycloak:
-  #     enabled: false
   #   global:
   #     security:
   #       authentication:
@@ -370,15 +336,14 @@ global:
   #     enabled: true
   #
   # -----------------------------------------------------------------------
-  # Mode C: External OIDC Provider (Microsoft Entra ID, Generic)
+  # Mode B: External OIDC Provider (Microsoft Entra ID, Generic)
   # -----------------------------------------------------------------------
   # Use a non-Keycloak OIDC provider. All OIDC endpoints must be
   # explicitly configured.
   #
   # Required:
-  #   identityKeycloak.enabled: false
-  #   A database for Identity: identityPostgresql.enabled: true
-  #     (or identity.externalDatabase; Identity needs its own DB without Keycloak)
+  #   A database for Identity via identity.externalDatabase (Identity needs its
+  #     own DB when no Keycloak provides one)
   #   global.identity.auth.enabled: true
   #   global.security.authentication.method: "oidc"
   #   identity.enabled: true
@@ -388,10 +353,14 @@ global:
   #   Per-component clientId, audience, and secret in global.identity.auth.<component>
   #
   # Minimal snippet (Microsoft Entra example):
-  #   identityKeycloak:
-  #     enabled: false
-  #   identityPostgresql:
-  #     enabled: true
+  #   identity:
+  #     externalDatabase:
+  #       enabled: true
+  #       host: "postgres.example.com"
+  #       username: "identity"
+  #       secret:
+  #         existingSecret: "identity-db-secret"
+  #         existingSecretKey: "password"
   #   global:
   #     security:
   #       authentication:
@@ -426,11 +395,11 @@ global:
     keycloak:
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
-      # Applies to: External Keycloak. Not used in Internal Keycloak or External OIDC.
+      # Applies to: External Keycloak. Not used in External OIDC.
       internal: false
-      ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart. The "host" field supports templating (e.g., {{ .Release.Namespace }}).
+      ## @param global.identity.keycloak.url configures the URL to reach an external Keycloak. The "host" field supports templating (e.g., {{ .Release.Namespace }}).
       # Applies to: External Keycloak - required.
-      # In Internal Keycloak, auto-derived from the Keycloak subchart. In External OIDC, not used.
+      # In External OIDC, not used.
       url:
         {}
         # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
@@ -445,14 +414,13 @@ global:
         #   port: "8443"
       #  defines the endpoint of Keycloak which varies between Keycloak versions.
       ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
-      # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
+      # Applies to: External Keycloak. Not used in External OIDC.
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
-      # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
+      # Applies to: External Keycloak. Not used in External OIDC.
       realm: "/realms/camunda-platform"
-      ## @extra global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
-      # Applies to: External Keycloak - provides admin credentials for the external Keycloak instance.
-      # Not needed in Internal Keycloak (handled by the identityKeycloak subchart) or External OIDC (no Keycloak).
+      ## @extra global.identity.keycloak.auth admin credentials for an external Keycloak instance.
+      # Applies to: External Keycloak. Not needed in External OIDC (no Keycloak).
       auth:
         ## @param global.identity.keycloak.auth.adminUser defines the admin user to access existing Keycloak.
         adminUser: ""
@@ -466,42 +434,41 @@ global:
           existingSecretKey: ""
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
-    # Internal Keycloak: OIDC values are auto-derived from the Keycloak subchart; no explicit URLs needed.
-    # External Keycloak: OIDC values are auto-derived but docs recommend setting them explicitly for split-horizon DNS.
+    # External Keycloak: OIDC values are auto-derived from global.identity.keycloak.url; docs recommend setting them explicitly for split-horizon DNS.
     # External OIDC: all OIDC endpoint URLs must be explicitly provided.
     auth:
       ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
-      # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
+      # Required for all authentication modes (External Keycloak, External OIDC).
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer;
-      #   generic OIDC docs use publicIssuerUrl). Internal Keycloak and External Keycloak: leave empty.
+      #   generic OIDC docs use publicIssuerUrl). External Keycloak: leave empty.
       issuer: ""
       ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
+      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted and internal/external Keycloak URLs are identical.
       issuerBackendUrl: ""
       ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (browser-facing URL);
+      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (browser-facing URL);
       #   auto-derived if omitted.
       authUrl: ""
       ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
+      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted.
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
+      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted.
       jwksUrl: ""
       ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.
-      # Internal Keycloak and External Keycloak: "KEYCLOAK" (default). OIDC endpoints are derived automatically from global.identity.keycloak settings.
+      # External Keycloak: "KEYCLOAK" (default). OIDC endpoints are derived automatically from global.identity.keycloak settings.
       # External OIDC: "MICROSOFT" or "GENERIC". OIDC endpoints (issuer or publicIssuerUrl, tokenUrl, jwksUrl, authUrl) must be explicitly set.
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
       # Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
       ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
-      # Internal Keycloak and External Keycloak: primary issuer URL when issuer is not set; default works with port-forward,
+      # External Keycloak: primary issuer URL when issuer is not set; default works with port-forward,
       #   override when using ingress. External Keycloak docs recommend setting this explicitly.
       # External OIDC: required when issuer is not set (generic OIDC pattern); not consulted if issuer is set.
       publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
@@ -526,7 +493,7 @@ global:
       #####################
 
       ## @extra global.identity.auth.identity configuration to configure Management Identity authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, clientId and audience have working defaults; secret is auto-generated.
+      # In External Keycloak, clientId and audience have working defaults; secret is auto-generated.
       # In External OIDC, clientId, audience, and secret must be configured to match the external OIDC provider.
       identity:
         ## @param global.identity.auth.identity.clientId defines the client id, which is used by Management Identity in authentication flows.
@@ -554,7 +521,7 @@ global:
       #####################
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External Keycloak, defaults work out-of-the-box with Keycloak.
       # In External OIDC, clientId and audience must match the external OIDC provider configuration.
       console:
         ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
@@ -573,7 +540,7 @@ global:
       #####################
 
       ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External Keycloak, defaults work out-of-the-box with Keycloak.
       # In External OIDC, clientId and audience must match the external OIDC provider configuration.
       webModeler:
         ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
@@ -604,7 +571,7 @@ global:
       # Optimize
       #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External Keycloak, defaults work out-of-the-box with Keycloak.
       # In External OIDC, clientId, audience, and secret must match the external OIDC provider configuration.
       optimize:
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
@@ -749,12 +716,11 @@ global:
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: Management Identity is always required by WebModeler. By default, if no OIDC provider is specified, Keycloak is used by identity.
-  #       If you don't need WebModeler, make sure to disable Management Identity authentication, keycloak, and the WebModeler application by setting:
+  # Note: Management Identity is always required by WebModeler. If you don't need WebModeler, disable
+  # Management Identity authentication and the WebModeler application by setting:
   #         global.identity.auth.enabled=false
   #         webModeler.enabled=false
-  #         identityKeycloak.enabled=false
-  # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
+  # Required for all authentication modes (External Keycloak, External OIDC).
   enabled: false
 
   ## @param identity.fullnameOverride can be used to override the full name of the Management Identity resources
