@@ -622,8 +622,8 @@
                                 },
                                 "publicIssuerUrl": {
                                     "type": "string",
-                                    "description": "Can be overwritten if ingress is in use and an external IP is available.",
-                                    "default": "http://localhost:18080/auth/realms/camunda-platform"
+                                    "description": "defines the publicly-reachable token issuer URL.",
+                                    "default": ""
                                 },
                                 "admin": {
                                     "type": "object",

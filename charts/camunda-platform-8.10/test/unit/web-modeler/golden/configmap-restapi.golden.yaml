@@ -19,7 +19,7 @@ data:
     camunda:
       identity:
         base-url: "http://camunda-platform-test-identity:80"
-        issuer: "http://localhost:18080/auth/realms/camunda-platform"
+        issuer: ""
         issuerBackendUrl: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
         type: "KEYCLOAK"
 
@@ -83,7 +83,7 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
+              issuer-uri: ""
               jwk-set-uri: "https://keycloak.example.com:8443/auth/realms/camunda-platform/protocol/openid-connect/certs"
 
       servlet:

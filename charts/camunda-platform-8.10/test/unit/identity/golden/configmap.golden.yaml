@@ -27,7 +27,7 @@ data:
         multi-tenancy: "false"
 
       authProvider:
-        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
+        issuer-url: ""
         backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
       component-presets:
         console:

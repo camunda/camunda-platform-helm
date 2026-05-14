@@ -280,8 +280,8 @@ global:
   # Identity / Authentication Modes
   #
   # Camunda supports two authentication modes against an externally-managed
-  # Keycloak (the bundled Keycloak subchart was removed in 8.10; see migration
-  # guide: https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/).
+  # Keycloak. The bundled Keycloak subchart was removed in 8.10. See the
+  # migration guide: https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
   # The mode you choose determines which parameters below are required.
   #
   # -----------------------------------------------------------------------
@@ -428,44 +428,37 @@ global:
           existingSecretKey: ""
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
-    # External Keycloak: OIDC values are auto-derived from global.identity.keycloak.url; docs recommend setting them explicitly for split-horizon DNS.
+    # External Keycloak: OIDC values are auto-derived from global.identity.keycloak.url. Docs recommend setting them explicitly for split-horizon DNS.
     # External OIDC: all OIDC endpoint URLs must be explicitly provided.
     auth:
       ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
       # Required for all authentication modes (External Keycloak, External OIDC).
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
-      # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer;
+      # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer,
       #   generic OIDC docs use publicIssuerUrl). External Keycloak: leave empty.
       issuer: ""
       ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
-      #   auto-derived if omitted and internal/external Keycloak URLs are identical.
+      # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted and internal/external Keycloak URLs are identical.
       issuerBackendUrl: ""
       ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (browser-facing URL);
-      #   auto-derived if omitted.
+      # External OIDC: required. External Keycloak: recommended (browser-facing URL), auto-derived if omitted.
       authUrl: ""
       ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
-      #   auto-derived if omitted.
+      # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted.
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. External Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
-      #   auto-derived if omitted.
+      # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted.
       jwksUrl: ""
       ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.
       # External Keycloak: "KEYCLOAK" (default). OIDC endpoints are derived automatically from global.identity.keycloak settings.
       # External OIDC: "MICROSOFT" or "GENERIC". OIDC endpoints (issuer or publicIssuerUrl, tokenUrl, jwksUrl, authUrl) must be explicitly set.
       type: "KEYCLOAK"
 
-      #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
-      # Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
-      ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
-      # External Keycloak: primary issuer URL when issuer is not set; default works with port-forward,
-      #   override when using ingress. External Keycloak docs recommend setting this explicitly.
-      # External OIDC: required when issuer is not set (generic OIDC pattern); not consulted if issuer is set.
-      publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+      ## @param global.identity.auth.publicIssuerUrl defines the publicly-reachable token issuer URL.
+      # External Keycloak: browser-facing issuer URL used when issuer is not set. Recommended to set explicitly.
+      # External OIDC: required when issuer is not set (generic OIDC pattern). Not consulted if issuer is set.
+      publicIssuerUrl: ""
 
       ## @extra global.identity.auth.admin configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
       admin:
@@ -487,7 +480,7 @@ global:
       #####################
 
       ## @extra global.identity.auth.identity configuration to configure Management Identity authentication specifics on global level, which can be accessed by other components
-      # In External Keycloak, clientId and audience have working defaults; secret is auto-generated.
+      # In External Keycloak, clientId and audience have working defaults and the secret is auto-generated.
       # In External OIDC, clientId, audience, and secret must be configured to match the external OIDC provider.
       identity:
         ## @param global.identity.auth.identity.clientId defines the client id, which is used by Management Identity in authentication flows.
