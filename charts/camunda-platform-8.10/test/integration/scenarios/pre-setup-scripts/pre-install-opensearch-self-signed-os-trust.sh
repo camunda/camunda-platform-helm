@@ -19,13 +19,13 @@
 # backend with a self-signed CA — i.e., the JKS path is removed, only
 # global.tls.caBundle is configured.
 #
-# Two responsibilities, in order:
-#   1. Generate self-signed TLS material and create K8s secrets in the
-#      target namespace. Reuses create-opensearch-tls-secrets.sh.
-#   2. Install the OpenSearch companion chart with TLS enabled, consuming
-#      the cert secrets from step 1.
+# Generates self-signed TLS material and creates K8s secrets in the target
+# namespace. Reuses create-opensearch-tls-secrets.sh.
 #
-# CI equivalent of the matrix runner's `dependencies:` block.
+# The OpenSearch companion chart is installed separately by the matrix
+# runner via the `dependencies:` block in ci-test-config.yaml — it runs
+# AFTER this pre-install hook, so the TLS secrets are guaranteed to exist
+# when OpenSearch starts.
 #
 # Required env vars:
 #   TEST_NAMESPACE  - target Kubernetes namespace
@@ -34,26 +34,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../../.." && pwd)"
 
-NAMESPACE="${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
-HELM_CTX_FLAG=()
-if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  HELM_CTX_FLAG=(--kube-context "$KUBE_CONTEXT")
-fi
-
-# 1. Generate certs + create K8s secrets (same as opensearch-self-signed).
+# Generate certs + create K8s secrets (same as opensearch-self-signed).
 bash "${SCRIPT_DIR}/create-opensearch-tls-secrets.sh"
 
-# 2. Deploy the companion OpenSearch chart.
-echo "[pre-install-opensearch-self-signed-os-trust] Installing OpenSearch companion chart..."
-helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update >/dev/null
-helm repo update opensearch >/dev/null
-helm upgrade --install opensearch opensearch/opensearch \
-  --version 3.6.0 \
-  --namespace "$NAMESPACE" \
-  "${HELM_CTX_FLAG[@]}" \
-  -f "${REPO_ROOT}/test/integration/companion-values/opensearch-tls.yaml" \
-  --wait --timeout 10m
-
-echo "[pre-install-opensearch-self-signed-os-trust] OpenSearch companion chart installed."
+echo "[pre-install-opensearch-self-signed-os-trust] TLS secrets created."
