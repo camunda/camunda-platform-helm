@@ -16,7 +16,9 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -217,6 +219,41 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+
+// helmMajorVersion returns the major version of the helm binary on PATH.
+func helmMajorVersion() int {
+	out, err := exec.Command("helm", "version", "--template={{.Version}}").Output()
+	if err != nil {
+		return 0
+	}
+	vStr := strings.TrimPrefix(strings.TrimSpace(string(out)), "v")
+	parts := strings.SplitN(vStr, ".", 2)
+	if len(parts) == 0 {
+		return 0
+	}
+	major, _ := strconv.Atoi(parts[0])
+	return major
+}
+
+func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			// .Capabilities.HelmVersion.Version is set by the running Helm binary, so this test
+			// branches on the detected major version to cover both paths without a fake binary.
+			Name:   "TestHelmVersionGuard",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				if helmMajorVersion() >= 4 {
+					s.Require().Nil(err)
+				} else {
+					s.Require().ErrorContains(err, "requires Helm CLI v4")
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
 
 func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
