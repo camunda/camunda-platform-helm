@@ -104,8 +104,10 @@ type Options struct {
 	// Prompt is the system-style instruction passed on every tick. If empty,
 	// DefaultPrompt is used.
 	Prompt string
-	// Interval between poll ticks. Defaults to DefaultInterval when zero
-	// and is clamped from below to MinInterval.
+	// Interval between poll ticks. Defaults to DefaultInterval when zero.
+	// CLI callers should clamp values below MinInterval to avoid agent-API
+	// fire-hosing; the package itself does not clamp, to keep unit tests
+	// fast.
 	Interval time.Duration
 	// AbortConfidence is the confidence threshold at or above which an
 	// "abort" verdict triggers DecisionAbort. Below this threshold, abort
