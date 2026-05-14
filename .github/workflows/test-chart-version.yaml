@@ -225,6 +225,7 @@ jobs:
       test-upgrade: ${{ matrix.upgrade == 'true' }}
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
       skip-it: ${{ matrix.skipIT == 'true' }}
+      helm-version: ${{ matrix.helmVersion }}
 
   # Report license/cla commit status on merge queue commits.
   # The CLA bot only reports on pull_request events; the merge queue creates
@@ -244,3 +245,4 @@ jobs:
             -f context="license/cla" \
             -f description="Contributor License Agreement is signed." \
             -f target_url="https://cla-assistant.io/${{ github.repository }}"
+

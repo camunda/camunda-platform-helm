@@ -540,7 +540,16 @@ This command calls deploy.Execute() for each matrix entry.`,
 				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart), logDir))
 			}
 
-			return err
+			if err != nil {
+				return err
+			}
+			// Without --stop-on-failure, matrix.Run swallows per-entry errors so the
+			// process can drain remaining entries. Re-surface them here so the CLI
+			// (and any CI job invoking it) exits non-zero when any entry failed.
+			if failed := countFailedResults(results); failed > 0 {
+				return fmt.Errorf("matrix run: %d entr%s failed", failed, pluralEntry(failed))
+			}
+			return nil
 		},
 	}
 
@@ -750,4 +759,28 @@ func validateChartRefFlags(chartRef, chartRefVersion string) error {
 	}
 
 	return nil
+}
+
+// countFailedResults returns the number of entries that finished with an error.
+// Entries cancelled by --stop-on-failure are excluded so the count reflects
+// real deployment failures rather than skipped work.
+func countFailedResults(results []matrix.RunResult) int {
+	failed := 0
+	for _, r := range results {
+		if r.Error == nil {
+			continue
+		}
+		if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
+			continue
+		}
+		failed++
+	}
+	return failed
+}
+
+func pluralEntry(n int) string {
+	if n == 1 {
+		return "y"
+	}
+	return "ies"
 }

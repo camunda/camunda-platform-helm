@@ -1870,7 +1870,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 //
 //	Step 1: Install the previously released chart version from the Helm repository.
 //	Step 2: Upgrade to the current on-disk chart (the branch version) with
-//	        upgrade-specific flags (--force, allowPreReleaseImages).
+//	        upgrade-specific flags (allowPreReleaseImages).
 //
 // Values file resolution for Step 1 depends on the flow:
 //   - upgrade-patch: uses the CURRENT chart's values files (same app version, older release).
@@ -1885,11 +1885,11 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 // bitnamiPGPasswordMapping maps Kubernetes Secret keys (from the "integration-test-credentials"
 // secret) to Helm value paths that satisfy Bitnami PostgreSQL's password validation during upgrades.
 //
-// During `helm upgrade --force`, Bitnami's common.secrets.passwords.manage function does a `lookup`
-// of the existing Secret. When --force causes resource deletion/recreation, the lookup can return nil,
-// triggering a fail() if no explicit password is provided via `providedValues`. By extracting
-// passwords from the cluster secret and passing them as --set overrides, we satisfy the
-// `honorProvidedValues` check and bypass the lookup/fail path entirely.
+// Bitnami's common.secrets.passwords.manage function does a `lookup` of the existing Secret. If the
+// lookup returns nil during a render (transient mid-upgrade state), it triggers a fail() unless an
+// explicit password is provided via `providedValues`. By extracting passwords from the cluster
+// secret and passing them as --set overrides, we satisfy the `honorProvidedValues` check and bypass
+// the lookup/fail path entirely.
 var bitnamiPGPasswordMapping = map[string][]string{
 	"identity-keycloak-postgresql-user-password":  {"identityKeycloak.postgresql.auth.password", "identityPostgresql.auth.password"},
 	"identity-keycloak-postgresql-admin-password": {"identityKeycloak.postgresql.auth.postgresPassword", "identityPostgresql.auth.postgresPassword"},
@@ -1936,8 +1936,8 @@ func parseHelmSetPairs(pairs []string) map[string]string {
 
 // extractBitnamiPGPasswords reads the "integration-test-credentials" Kubernetes Secret from the
 // given namespace and returns a map of Helm --set key=value pairs that provide Bitnami PostgreSQL
-// passwords explicitly. This prevents the PASSWORDS ERROR that occurs during `helm upgrade --force`
-// when Bitnami's template lookup returns nil for a temporarily-absent Secret.
+// passwords explicitly. This prevents the PASSWORDS ERROR that occurs when Bitnami's template
+// lookup returns nil for a temporarily-absent Secret during an upgrade render.
 //
 // The function is intentionally lenient: if the secret doesn't exist, or individual keys are missing,
 // it logs warnings and returns whatever it could extract. Callers should merge the result into
@@ -2154,23 +2154,13 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
 	)
 
-	// Use --force only for upgrade-minor where structural chart changes (port renames,
-	// new components, immutable field changes) can cause strategic merge conflicts.
-	// For upgrade-patch (same app version), a normal rolling update is sufficient,
-	// avoids destructive simultaneous pod recreation, and matches real user behavior.
-	if entry.Flow == "upgrade-minor" {
-		step2Flags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
-
-		// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
-		// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`
-		// when the Secret lookup returns nil (due to --force deleting/recreating resources).
-		if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-			for k, v := range pgPasswords {
-				step2Flags.Deployment.ExtraHelmSets[k] = v
-			}
+	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
+	// Defensive: prevents the PASSWORDS ERROR that Bitnami's secrets.yaml can trigger when the
+	// Secret lookup returns nil during upgrades (e.g. when a Secret is being patched mid-render).
+	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
+		for k, v := range pgPasswords {
+			step2Flags.Deployment.ExtraHelmSets[k] = v
 		}
-	} else {
-		step2Flags.Deployment.ExtraHelmArgs = flags.Deployment.ExtraHelmArgs
 	}
 
 	// --- Post-deploy lifecycle hook (Step 2 of two-step upgrade) ---
@@ -2178,6 +2168,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	if err := registerDeclarativePostDeployHook(&step2Flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 		return err
 	}
+	step2Flags.Deployment.ExtraHelmArgs = flags.Deployment.ExtraHelmArgs
 
 	if err := deploy.Execute(ctx, &step2Flags); err != nil {
 		if opts.ChartRef != "" {
@@ -2231,15 +2222,14 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 	upgradeFlags := *flags
 	upgradeFlags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	upgradeFlags.Deployment.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
-	upgradeFlags.Deployment.ExtraHelmArgs = append([]string{"--force"}, flags.Deployment.ExtraHelmArgs...)
 	upgradeFlags.Deployment.ExtraHelmSets = mergeHelmSets(
 		flags.Deployment.ExtraHelmSets,
 		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
 	)
 
 	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
-	// This prevents the PASSWORDS ERROR that Bitnami's secrets.yaml triggers during `helm upgrade --force`
-	// when the Secret lookup returns nil (due to --force deleting/recreating resources).
+	// Defensive: prevents the PASSWORDS ERROR that Bitnami's secrets.yaml can trigger when the
+	// Secret lookup returns nil during upgrades (e.g. when a Secret is being patched mid-render).
 	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
 		for k, v := range pgPasswords {
 			upgradeFlags.Deployment.ExtraHelmSets[k] = v

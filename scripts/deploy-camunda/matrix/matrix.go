@@ -57,6 +57,9 @@ type Entry struct {
 	// from cfg.Integration.Flows[Flow].PreUpgrade. Carried on the Entry so the
 	// runner does not re-load ci-test-config.yaml at execution time.
 	PreUpgrade *LifecycleHook `json:"preUpgrade,omitempty"`
+	// HelmVersion, when non-empty, tells the integration workflow to install
+	// this Helm version via azure/setup-helm (overriding the pre-baked binary).
+	HelmVersion string `json:"helmVersion,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -209,6 +212,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						PreInstall:   scenario.PreInstall,
 						PostDeploy:   scenario.PostDeploy,
 						PreUpgrade:   preUpgrade,
+						HelmVersion: scenario.HelmVersion,
 					})
 				}
 			}
