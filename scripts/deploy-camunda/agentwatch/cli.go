@@ -16,7 +16,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 )
+
+// claudeSessionIDPattern matches the UUID format Claude Code emits for
+// session identifiers. We validate before using session_id in filesystem
+// operations: filepath.Join calls filepath.Clean, so a crafted value
+// containing "../" would otherwise escape ~/.claude/projects/.
+var claudeSessionIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 // AgentCLI describes a discovered local agent CLI.
 type AgentCLI struct {
@@ -130,6 +137,9 @@ func cleanupClaudeSession(raw []byte) {
 		SessionID string `json:"session_id"`
 	}
 	if err := json.Unmarshal(raw, &env); err != nil || env.SessionID == "" {
+		return
+	}
+	if !claudeSessionIDPattern.MatchString(env.SessionID) {
 		return
 	}
 	home, err := os.UserHomeDir()

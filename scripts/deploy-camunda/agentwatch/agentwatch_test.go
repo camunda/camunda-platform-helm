@@ -489,6 +489,32 @@ func TestCleanupClaudeSession_NoSessionIDIsSilent(t *testing.T) {
 	cleanupClaudeSession([]byte(`not even json`))
 }
 
+func TestCleanupClaudeSession_RejectsPathTraversalPayload(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	// Lay down a file outside ~/.claude/projects that a traversal payload
+	// would target: <home>/victim.jsonl. The cleanup must leave it alone.
+	victim := filepath.Join(home, "victim.jsonl")
+	if err := os.WriteFile(victim, []byte("untouched"), 0o644); err != nil {
+		t.Fatalf("write victim: %v", err)
+	}
+
+	for _, payload := range []string{
+		`{"session_id":"../../victim"}`,
+		`{"session_id":"../victim"}`,
+		`{"session_id":"/etc/passwd"}`,
+		`{"session_id":"deadbeef"}`,
+		`{"session_id":"not-a-uuid-at-all"}`,
+		`{"session_id":"DEADBEEF-1234-5678-9ABC-FEDCBA987654"}`, // uppercase → reject
+	} {
+		cleanupClaudeSession([]byte(payload))
+	}
+
+	if _, err := os.Stat(victim); err != nil {
+		t.Fatalf("traversal payload deleted out-of-tree file: %v", err)
+	}
+}
+
 // jsonString is a tiny helper to embed an arbitrary string as a JSON string
 // literal in test fixtures.
 func jsonString(s string) string {
