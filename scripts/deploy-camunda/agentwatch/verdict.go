@@ -205,6 +205,9 @@ func unwrapOpencodeNDJSON(raw []byte) (string, bool) {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return "", false
+	}
 	if !foundText {
 		return "", false
 	}
