@@ -267,16 +267,19 @@ else
   # Use empty string for exclude_pattern if no exclusion is needed
   # Note: We use ';;' as delimiter to avoid conflicts with '|' in regex patterns
   BUILD_ALL_TRIGGERS=(
-    '\.github/(workflows|actions);;.github/workflows or .github/actions'
+    '\.github/(workflows|actions);;;;.github/workflows or .github/actions'
     '\.github/config;;\.github/config/release-please;;.github/config (excluding release-please)'
     # Anchor required: tj-actions/changed-files with dir_names:true emits the
     # bare token "scripts" so unanchored "scripts/" misses top-level helper changes.
-    '(^|[[:space:]])scripts(/|$|[[:space:]]);;scripts/ (any helper script)'
+    '(^|[[:space:]])scripts(/|$|[[:space:]]);;;;scripts/ (any helper script)'
   )
 
   build_all_triggered=false
   for trigger in "${BUILD_ALL_TRIGGERS[@]}"; do
-    IFS=';;' read -r pattern exclude_pattern description <<< "$trigger"
+    pattern="${trigger%%;;*}"
+    rest="${trigger#*;;}"
+    exclude_pattern="${rest%%;;*}"
+    description="${rest#*;;}"
     if echo "${ALL_MODIFIED_FILES}" | grep -qE "$pattern"; then
       # Check exclusion pattern if specified
       if [ -n "$exclude_pattern" ] && echo "${ALL_MODIFIED_FILES}" | grep -qE "$exclude_pattern"; then
