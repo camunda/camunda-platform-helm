@@ -21,87 +21,23 @@ const (
 	PreSetupScriptsDir = "pre-setup-scripts"
 )
 
-// PreUpgradeScriptName returns the pre-upgrade script filename for a given flow.
-// Maps flow to script name:
+// PreSetupScriptPath returns the absolute path to a pre-setup script for the
+// given app version and explicit filename. Used for declarative lifecycle hooks
+// referenced by ci-test-config.yaml.
 //
-//	"upgrade-patch"           → "pre-upgrade-patch.sh"
-//	"upgrade-minor"           → "pre-upgrade-minor.sh"
-//	"modular-upgrade-minor"   → "pre-upgrade-minor.sh"
+//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/<filename>
 //
-// Returns empty string for non-upgrade flows.
-func PreUpgradeScriptName(flow string) string {
-	switch flow {
-	case "upgrade-patch":
-		return "pre-upgrade-patch.sh"
-	case "upgrade-minor", "modular-upgrade-minor":
-		return "pre-upgrade-minor.sh"
-	default:
-		return ""
-	}
-}
-
-// PreUpgradeScriptPath returns the absolute path to the pre-upgrade script for a given
-// app version and flow. The path follows the convention:
-//
-//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/pre-upgrade-<suffix>.sh
-//
-// Returns empty string if the flow doesn't have a pre-upgrade script.
-func PreUpgradeScriptPath(repoRoot, appVersion, flow string) string {
-	name := PreUpgradeScriptName(flow)
-	if name == "" {
-		return ""
-	}
+// Callers must pass a non-empty filename; LifecycleHook.Validate enforces this
+// upstream of every call site.
+func PreSetupScriptPath(repoRoot, appVersion, filename string) string {
 	return filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion,
-		"test", "integration", "scenarios", PreSetupScriptsDir, name)
+		"test", "integration", "scenarios", PreSetupScriptsDir, filename)
 }
 
-// HasPreUpgradeScript returns true if a pre-upgrade script exists on disk for the
-// given app version and flow.
-func HasPreUpgradeScript(repoRoot, appVersion, flow string) bool {
-	p := PreUpgradeScriptPath(repoRoot, appVersion, flow)
-	if p == "" {
-		return false
-	}
-	info, err := os.Stat(p)
-	return err == nil && !info.IsDir()
-}
-
-// PreInstallScriptName returns the pre-install script filename for a given
-// scenario. The naming convention is:
-//
-//	"elasticsearch-self-signed-upgrade" → "pre-install-elasticsearch-self-signed-upgrade.sh"
-//
-// Returns empty string if scenario is empty.
-func PreInstallScriptName(scenario string) string {
-	if scenario == "" {
-		return ""
-	}
-	return "pre-install-" + scenario + ".sh"
-}
-
-// PreInstallScriptPath returns the absolute path to the scenario-specific
-// pre-install script for a given app version. The path follows the convention:
-//
-//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/pre-install-<scenario>.sh
-//
-// Returns empty string if scenario is empty.
-func PreInstallScriptPath(repoRoot, appVersion, scenario string) string {
-	name := PreInstallScriptName(scenario)
-	if name == "" {
-		return ""
-	}
-	return filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion,
-		"test", "integration", "scenarios", PreSetupScriptsDir, name)
-}
-
-// HasPreInstallScript returns true if a scenario-specific pre-install script
+// HasPreSetupScript returns true if a pre-setup script with the given filename
 // exists on disk for the given app version.
-func HasPreInstallScript(repoRoot, appVersion, scenario string) bool {
-	p := PreInstallScriptPath(repoRoot, appVersion, scenario)
-	if p == "" {
-		return false
-	}
-	info, err := os.Stat(p)
+func HasPreSetupScript(repoRoot, appVersion, filename string) bool {
+	info, err := os.Stat(PreSetupScriptPath(repoRoot, appVersion, filename))
 	return err == nil && !info.IsDir()
 }
 

@@ -16,6 +16,34 @@ integration:
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../..
+  flows:
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the 8.7→8.8 patch upgrade. PostgreSQL 15→14
+          rollback requires fresh statefulset spec.
+    upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade-minor.sh
+        description: |
+          Deletes the postgresql and postgresql-web-modeler StatefulSets to
+          handle immutable spec diffs across the 8.7→8.8 minor upgrade.
+          Helm recreates them with the new spec while keeping PVC data.
+    # modular-upgrade-minor uses the same pre-upgrade work as upgrade-minor
+    # (the old PreUpgradeScriptName aliased both to pre-upgrade-minor.sh).
+    # Duplicated here as an explicit map key so the flow-hook lookup in
+    # matrix.Generate resolves it. Currently dormant — all
+    # modular-upgrade-minor scenarios are disabled — but kept correct for
+    # the day one is enabled.
+    modular-upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade-minor.sh
+        description: |
+          Deletes the postgresql and postgresql-web-modeler StatefulSets to
+          handle immutable spec diffs across the 8.7→8.8 minor upgrade.
+          Helm recreates them with the new spec while keeping PVC data.
   case:
     pr:
       scenario:
@@ -109,6 +137,14 @@ integration:
           identity: keycloak
           persistence: elasticsearch-self-signed
           platforms: [gke]
+          pre-install:
+            script: pre-install-elasticsearch-self-signed-upgrade.sh
+            description: |
+              Generates a self-signed CA plus node certificate via openssl,
+              packages them into JKS keystore + truststore via keytool, and
+              creates the elasticsearch-tls-certs, elasticsearch-tls-passwords,
+              and elasticsearch-jks Secrets consumed by the Elasticsearch
+              StatefulSet's TLS config.
         - name: keycloak-original
           enabled: false
           exclude: []

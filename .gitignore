@@ -47,3 +47,5 @@ deployment-logs/
 STATE.md
 
 **/.omc
+
+.claude/

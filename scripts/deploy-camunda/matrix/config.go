@@ -58,7 +58,81 @@ type CITestConfig struct {
 				Scenarios []CIScenario `yaml:"scenario"`
 			} `yaml:"nightly"`
 		} `yaml:"case"`
+		// Flows declares lifecycle hooks scoped to a flow rather than a scenario,
+		// e.g. pre-upgrade scripts shared by all scenarios using a given flow.
+		// Keys are flow strings such as "upgrade-patch", "upgrade-minor".
+		Flows map[string]*FlowHooks `yaml:"flows,omitempty"`
 	} `yaml:"integration"`
+}
+
+// LifecycleHook declares a fixture or shell script that runs at a defined
+// point in a scenario or flow lifecycle. Exactly one of Fixtures or Script
+// must be set; Description is required so reviewers can understand the
+// effect from a ci-test-config.yaml diff alone.
+type LifecycleHook struct {
+	// Fixtures lists manifest filenames under
+	// charts/<version>/test/integration/scenarios/common/resources/ that are
+	// applied via Go server-side apply. Use for trivial kubectl-apply cases.
+	Fixtures []string `yaml:"fixtures,omitempty"`
+
+	// Script names a shell script under
+	// charts/<version>/test/integration/scenarios/pre-setup-scripts/ executed
+	// via bash. Use only when fixtures cannot express the logic
+	// (cert generation, JKS keystores, conditional kubectl ops).
+	Script string `yaml:"script,omitempty"`
+
+	// Description is human-readable and required.
+	Description string `yaml:"description"`
+}
+
+// Validate enforces the cross-field invariants documented on LifecycleHook:
+// non-empty description, exactly one of fixtures or script, and each
+// referenced filename is plain (no path separators or "..") so filepath.Join
+// downstream cannot escape pre-setup-scripts/ or common/resources/.
+// ctx is prepended to error messages so callers see e.g.
+// `scenario "rdbms": pre-install: ...`. A nil receiver is a no-op so callers
+// can pass optional fields directly.
+func (h *LifecycleHook) Validate(ctx string) error {
+	if h == nil {
+		return nil
+	}
+	if strings.TrimSpace(h.Description) == "" {
+		return fmt.Errorf("%s: description: empty or whitespace-only (required)", ctx)
+	}
+	hasFixtures := len(h.Fixtures) > 0
+	hasScript := h.Script != ""
+	if hasFixtures == hasScript {
+		return fmt.Errorf("%s: must specify exactly one of fixtures or script (fixtures=%v script=%q)",
+			ctx, h.Fixtures, h.Script)
+	}
+	if hasScript && !isPlainFilename(h.Script) {
+		return fmt.Errorf("%s: script %q must be a plain filename (no path separators or \"..\")", ctx, h.Script)
+	}
+	for _, f := range h.Fixtures {
+		if !isPlainFilename(f) {
+			return fmt.Errorf("%s: fixture %q must be a plain filename (no path separators or \"..\")", ctx, f)
+		}
+	}
+	return nil
+}
+
+// isPlainFilename returns true if name has no path separators and is not "."
+// or "..". Used by LifecycleHook.Validate to reject inputs that would let
+// filepath.Join downstream escape the configured directory.
+func isPlainFilename(name string) bool {
+	if name == "" || name == "." || name == ".." {
+		return false
+	}
+	if strings.ContainsAny(name, `/\`) {
+		return false
+	}
+	return filepath.Base(name) == name
+}
+
+// FlowHooks groups lifecycle hooks attached to a flow rather than a scenario.
+type FlowHooks struct {
+	// PreUpgrade runs between Step 1 and Step 2 of a two-step upgrade flow.
+	PreUpgrade *LifecycleHook `yaml:"pre-upgrade,omitempty"`
 }
 
 // CIScenario represents a single scenario entry in ci-test-config.yaml.
@@ -98,6 +172,17 @@ type CIScenario struct {
 	// Dependencies specifies companion charts to deploy before the main Camunda chart.
 	// Each dependency is deployed as a separate Helm release in the same namespace.
 	Dependencies []ChartDependency `yaml:"dependencies,omitempty"`
+
+	// PreInstall declares a fixture or script to run before helm install for
+	// this scenario. Replaces the legacy filename-derived discovery
+	// (pre-install-<scenario>.sh) with an explicit, reviewable reference.
+	PreInstall *LifecycleHook `yaml:"pre-install,omitempty"`
+
+	// PostDeploy declares a fixture or script to run after helm install
+	// completes successfully. Used for resources whose CRDs are only
+	// installed by the chart itself (e.g., the Gateway API
+	// ProxySettingsPolicy applied for gateway-keycloak).
+	PostDeploy *LifecycleHook `yaml:"post-deploy,omitempty"`
 }
 
 // ChartDependency represents a companion chart that must be deployed

@@ -511,59 +511,38 @@ func findRepoRoot(t *testing.T) string {
 	}
 }
 
-func TestPreUpgradeScriptName(t *testing.T) {
-	tests := []struct {
-		flow string
-		want string
-	}{
-		{"upgrade-patch", "pre-upgrade-patch.sh"},
-		{"upgrade-minor", "pre-upgrade-minor.sh"},
-		{"modular-upgrade-minor", "pre-upgrade-minor.sh"},
-		{"install", ""},
-		{"", ""},
-	}
-	for _, tt := range tests {
-		t.Run(tt.flow, func(t *testing.T) {
-			got := PreUpgradeScriptName(tt.flow)
-			if got != tt.want {
-				t.Errorf("PreUpgradeScriptName(%q) = %q, want %q", tt.flow, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestPreUpgradeScriptPath(t *testing.T) {
-	got := PreUpgradeScriptPath("/repo", "8.9", "upgrade-patch")
-	want := filepath.Join("/repo", "charts", "camunda-platform-8.9",
-		"test", "integration", "scenarios", "pre-setup-scripts", "pre-upgrade-patch.sh")
+func TestPreSetupScriptPath(t *testing.T) {
+	got := PreSetupScriptPath("/repo", "8.10", "pre-install-elasticsearch-self-signed.sh")
+	want := filepath.Join("/repo", "charts", "camunda-platform-8.10",
+		"test", "integration", "scenarios", "pre-setup-scripts", "pre-install-elasticsearch-self-signed.sh")
 	if got != want {
-		t.Errorf("PreUpgradeScriptPath() = %q, want %q", got, want)
-	}
-
-	// Non-upgrade flow returns empty.
-	if got := PreUpgradeScriptPath("/repo", "8.9", "install"); got != "" {
-		t.Errorf("PreUpgradeScriptPath(install) = %q, want empty", got)
+		t.Errorf("PreSetupScriptPath() = %q, want %q", got, want)
 	}
 }
 
-func TestHasPreUpgradeScript(t *testing.T) {
+func TestHasPreSetupScript(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	if repoRoot == "" {
 		t.Skip("cannot find repo root")
 	}
 
-	// 8.9 has a pre-upgrade-patch.sh with real content.
-	if !HasPreUpgradeScript(repoRoot, "8.9", "upgrade-patch") {
-		t.Error("expected HasPreUpgradeScript(8.9, upgrade-patch) = true")
+	// 8.10 has pre-install-elasticsearch-self-signed.sh.
+	if !HasPreSetupScript(repoRoot, "8.10", "pre-install-elasticsearch-self-signed.sh") {
+		t.Error("expected HasPreSetupScript(8.10, pre-install-elasticsearch-self-signed.sh) = true")
 	}
 
-	// Non-upgrade flow should always return false.
-	if HasPreUpgradeScript(repoRoot, "8.9", "install") {
-		t.Error("expected HasPreUpgradeScript(8.9, install) = false")
+	// Empty filename should return false.
+	if HasPreSetupScript(repoRoot, "8.10", "") {
+		t.Error("expected HasPreSetupScript(8.10, empty) = false")
+	}
+
+	// Non-existent file should return false.
+	if HasPreSetupScript(repoRoot, "8.10", "pre-install-bogus.sh") {
+		t.Error("expected HasPreSetupScript(8.10, pre-install-bogus.sh) = false")
 	}
 
 	// Non-existent version should return false.
-	if HasPreUpgradeScript(repoRoot, "99.99", "upgrade-patch") {
-		t.Error("expected HasPreUpgradeScript(99.99, upgrade-patch) = false")
+	if HasPreSetupScript(repoRoot, "99.99", "pre-install-elasticsearch-self-signed.sh") {
+		t.Error("expected HasPreSetupScript(99.99, pre-install-elasticsearch-self-signed.sh) = false")
 	}
 }
