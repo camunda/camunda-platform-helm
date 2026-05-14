@@ -29,6 +29,9 @@ var requiredValues = map[string]string{
 	"webModeler.restapi.mail.fromAddress":                              "example@example.com",
 	"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
 	"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
+	"global.identity.keycloak.auth.adminUser":                          "admin",
+	"global.identity.keycloak.auth.secret.existingSecret":              "kc-secret",
+	"global.identity.keycloak.auth.secret.existingSecretKey":           "password",
 }
 
 func TestRestAPIConfigmapTemplate(t *testing.T) {
