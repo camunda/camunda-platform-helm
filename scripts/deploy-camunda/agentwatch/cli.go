@@ -51,6 +51,16 @@ func ResolveCLI(name string) (AgentCLI, error) {
 	if name == "" {
 		return DetectCLI()
 	}
+	supported := false
+	for _, s := range supportedCLIs {
+		if name == s {
+			supported = true
+			break
+		}
+	}
+	if !supported {
+		return AgentCLI{}, fmt.Errorf("unsupported agent CLI %q; supported: %v", name, supportedCLIs)
+	}
 	path, err := exec.LookPath(name)
 	if err != nil {
 		return AgentCLI{}, fmt.Errorf("agent CLI %q not found on PATH: %w", name, err)
