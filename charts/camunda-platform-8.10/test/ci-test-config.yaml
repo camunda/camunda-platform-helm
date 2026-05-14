@@ -115,6 +115,13 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+          pre-install:
+            script: pre-install-opensearch-self-signed.sh
+            description: |
+              Generates a self-signed CA plus node certificate via openssl
+              and creates the opensearch-tls-certs, opensearch-tls-ca, and
+              opensearch-jks Secrets consumed by the OpenSearch companion
+              chart's TLS config.
           dependencies:
             - chart: opensearch/opensearch
               version: "3.6.0"
