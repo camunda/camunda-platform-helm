@@ -33,7 +33,7 @@ For more details, please check Camunda Helm chart documentation.
 ` -}}
 {{- $keycloakFailMessage := printf "\n%s" $keycloakFailMessageRaw | trimSuffix "\n" -}}
 
-{{- if .Values.global.identity.keycloak.url -}}
+{{- if or .Values.global.identity.keycloak.url.protocol .Values.global.identity.keycloak.url.host .Values.global.identity.keycloak.url.port -}}
     {{- $_ := required $keycloakFailMessage .Values.global.identity.keycloak.url.protocol -}}
     {{- $_ := required $keycloakFailMessage .Values.global.identity.keycloak.url.host -}}
     {{- $_ := required $keycloakFailMessage .Values.global.identity.keycloak.url.port -}}

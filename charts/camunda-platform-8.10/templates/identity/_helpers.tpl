@@ -86,10 +86,10 @@ Keycloak helpers
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak contextPath based on global value.
+[identity] Get Keycloak contextPath from global value.
 */}}
 {{- define "identity.keycloak.contextPath" -}}
-    {{ .Values.global.identity.keycloak.contextPath | default "/auth/" }}
+    {{- .Values.global.identity.keycloak.contextPath -}}
 {{- end -}}
 
 

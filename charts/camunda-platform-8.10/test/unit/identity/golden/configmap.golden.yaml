@@ -114,7 +114,7 @@ data:
                 - audience: "web-modeler-api"
                   definition: admin:*
     keycloak:
-      url: "https://keycloak.example.com:8443/auth"
+      url: "https://keycloak.example.com:8443/auth/"
       setup:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}

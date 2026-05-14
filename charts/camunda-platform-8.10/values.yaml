@@ -397,25 +397,19 @@ global:
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       # Applies to: External Keycloak. Not used in External OIDC.
       internal: false
-      ## @param global.identity.keycloak.url configures the URL to reach an external Keycloak. The "host" field supports templating (e.g., {{ .Release.Namespace }}).
+      ## @extra global.identity.keycloak.url configures the URL to reach an external Keycloak.
       # Applies to: External Keycloak - required.
       # In External OIDC, not used.
       url:
-        {}
-        # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
-        # url:
-        #   protocol: "https"
-        #   host: "keycloak.prod.svc.cluster.local"
-        #   port: "8443"
-        # Example with templating to use the release namespace:
-        # url:
-        #   protocol: "https"
-        #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
-        #   port: "8443"
-      #  defines the endpoint of Keycloak which varies between Keycloak versions.
-      ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
+        ## @param global.identity.keycloak.url.protocol defines the protocol for Keycloak URL (e.g., https).
+        protocol: ""
+        ## @param global.identity.keycloak.url.host defines the Keycloak host. Supports templating (e.g., {{ .Release.Namespace }}).
+        host: ""
+        ## @param global.identity.keycloak.url.port defines the Keycloak port.
+        port: ""
+      ## @param global.identity.keycloak.contextPath defines the Keycloak base path. In Keycloak v16.x.x it's hard-coded as '/auth/', but in v19.x.x it's configurable (commonly '/').
       # Applies to: External Keycloak. Not used in External OIDC.
-      contextPath: "/auth"
+      contextPath: "/auth/"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
       # Applies to: External Keycloak. Not used in External OIDC.
       realm: "/realms/camunda-platform"

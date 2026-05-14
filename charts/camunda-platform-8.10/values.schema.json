@@ -517,8 +517,6 @@
                                 },
                                 "url": {
                                     "type": "object",
-                                    "description": "configures the URL to reach an external Keycloak. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
-                                    "default": {},
                                     "properties": {
                                         "protocol": {
                                             "type": "string",
@@ -538,12 +536,14 @@
                                             "description": "defines the port for Keycloak (e.g., 443).",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "description": "configures the URL to reach an external Keycloak. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": {}
                                 },
                                 "contextPath": {
                                     "type": "string",
-                                    "description": "In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.",
-                                    "default": "/auth"
+                                    "description": "defines the Keycloak base path. In Keycloak v16.x.x it's hard-coded as '/auth/', but in v19.x.x it's configurable (commonly '/').",
+                                    "default": "/auth/"
                                 },
                                 "realm": {
                                     "type": "string",
