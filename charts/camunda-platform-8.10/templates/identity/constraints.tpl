@@ -40,18 +40,6 @@ For more details, please check Camunda Helm chart documentation.
 {{- end -}}
 
 {{- $hasSecret := and .Values.global.identity.keycloak.auth.secret (or .Values.global.identity.keycloak.auth.secret.existingSecret .Values.global.identity.keycloak.auth.secret.inlineSecret) -}}
-
-{{/*
-When Keycloak auth is active (auth enabled, KEYCLOAK type, URL host configured),
-the admin user and secret are required so that Identity can perform realm setup.
-*/}}
-{{- if and .Values.global.identity.auth.enabled (eq .Values.global.identity.auth.type "KEYCLOAK") .Values.global.identity.keycloak.url.host -}}
-    {{- $_ := required $keycloakFailMessage .Values.global.identity.keycloak.auth.adminUser -}}
-    {{- if not $hasSecret -}}
-        {{- fail $keycloakFailMessage -}}
-    {{- end -}}
-{{- end -}}
-
 {{- if or .Values.global.identity.keycloak.auth.adminUser $hasSecret -}}
     {{- $_ := required $keycloakFailMessage .Values.global.identity.keycloak.auth.adminUser -}}
     {{- if not $hasSecret -}}
