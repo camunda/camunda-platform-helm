@@ -633,15 +633,15 @@ func TestLoadChartVersions(t *testing.T) {
 		t.Fatal("LoadChartVersions: no active versions")
 	}
 
-	// 8.9 should be alpha
+	// 8.10 should be alpha
 	found := false
 	for _, v := range cv.CamundaVersions.Alpha {
-		if v == "8.9" {
+		if v == "8.10" {
 			found = true
 		}
 	}
 	if !found {
-		t.Error("LoadChartVersions: 8.9 not found in alpha")
+		t.Error("LoadChartVersions: 8.10 not found in alpha")
 	}
 }
 
