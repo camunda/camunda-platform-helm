@@ -2222,6 +2222,7 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 	upgradeFlags := *flags
 	upgradeFlags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	upgradeFlags.Deployment.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
+	upgradeFlags.Deployment.Flow = "install"             // Must match the prior install's Flow so $FLOW in index prefixes resolves identically.
 	upgradeFlags.Deployment.ExtraHelmSets = mergeHelmSets(
 		flags.Deployment.ExtraHelmSets,
 		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
