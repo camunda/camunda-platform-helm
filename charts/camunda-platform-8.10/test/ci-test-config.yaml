@@ -280,6 +280,12 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+          pre-install:
+            script: pre-install-rdbms-self-signed.sh
+            description: |
+              Generates a self-signed CA plus server certificate via openssl
+              and creates the rdbms-tls-server and rdbms-tls-ca Secrets
+              consumed by the Bitnami PostgreSQL companion chart's TLS config.
           dependencies:
             - chart: bitnami/postgresql
               version: "18.6.2"
