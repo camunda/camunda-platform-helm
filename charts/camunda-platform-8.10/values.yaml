@@ -77,9 +77,6 @@ global:
   ## Security configuration
   ## @extra global.security
   security:
-    ## @skip global.security.allowInsecureImages
-    allowInsecureImages: true
-
     ## @extra global.security.authentication
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
