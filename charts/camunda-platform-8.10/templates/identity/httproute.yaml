@@ -21,7 +21,7 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ include "camundaPlatform.fullname" . }}
+  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
     {{- if .Values.global.gateway.namespace }}
     namespace: {{ .Values.global.gateway.namespace }}
     {{- end }}
@@ -61,7 +61,7 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ include "camundaPlatform.fullname" . }}
+  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
     {{- if .Values.global.gateway.namespace }}
     namespace: {{ .Values.global.gateway.namespace }}
     {{- end }}
