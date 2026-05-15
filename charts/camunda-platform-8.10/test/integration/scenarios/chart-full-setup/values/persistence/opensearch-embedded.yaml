@@ -74,5 +74,3 @@ optimize:
       value: $ORCHESTRATION_INDEX_PREFIX
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX
-elasticsearch:
-  enabled: false

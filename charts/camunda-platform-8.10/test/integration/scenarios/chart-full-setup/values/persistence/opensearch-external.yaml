@@ -56,6 +56,3 @@ optimize:
               prefix: $OPTIMIZE_INDEX_PREFIX-$FLOW
         zeebe:
           name: zeebe-$ORCHESTRATION_INDEX_PREFIX-$FLOW
-
-elasticsearch:
-  enabled: false

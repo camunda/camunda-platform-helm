@@ -9,32 +9,6 @@ identity:
     key: workload
     operator: Equal
     value: standard
-identityKeycloak:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
-  postgresql:
-    primary:
-      nodeSelector:
-        workload: standard
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: standard
-identityPostgresql:
-  primary:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
 
 # Camunda Hub.
 camundaHub:
@@ -96,15 +70,6 @@ optimize:
     operator: Equal
     value: standard
 
-webModelerPostgresql:
-  primary:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
 
 # Zeebe.
 orchestration:
@@ -124,13 +89,3 @@ zeebeGateway:
     operator: Equal
     value: standard
 
-# Elasticsearch.
-elasticsearch:
-  master:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard

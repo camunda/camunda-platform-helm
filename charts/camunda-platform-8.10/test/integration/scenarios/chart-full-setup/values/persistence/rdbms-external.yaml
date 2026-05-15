@@ -24,6 +24,3 @@ orchestration:
   extraVolumes:
     - name: jdbcdrivers
       emptyDir: {}
-
-elasticsearch:
-  enabled: true

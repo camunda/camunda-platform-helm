@@ -232,32 +232,6 @@ webModeler:
       - name: index-docker-io
       - name: registry-camunda-cloud
 
-webModelerPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
-    secretKeys:
-      adminPasswordKey: "webmodeler-postgresql-admin-password"
-      userPasswordKey: "webmodeler-postgresql-user-password"
-  primary:
-    # Right-sized for CI: CPU P99 61m (from 500m), memory P99 92Mi (from 256Mi).
-    resources:
-      requests:
-        cpu: 80m
-        memory: 125Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    # PostgreSQL configuration optimized for fast startup in integration tests.
-    # WARNING: These settings trade durability for speed — NOT suitable for production.
-    extendedConfiguration: |
-      shared_buffers = 64MB
-      work_mem = 8MB
-      max_connections = 50
-      fsync = off
-      full_page_writes = off
-      synchronous_commit = off
-
 orchestration:
   data:
     secondaryStorage:
@@ -297,18 +271,6 @@ orchestration:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
-
-# Right-sized for CI: CPU P99 621m (from 1000m default), memory P99 1572Mi INCREASE (from 2Gi default).
-elasticsearch:
-  master:
-    resources:
-      requests:
-        cpu: 800m
-        memory: 2100Mi
-      limits:
-        cpu: 2000m
-        memory: 2560Mi
-
 
 prometheusServiceMonitor:
   enabled: true

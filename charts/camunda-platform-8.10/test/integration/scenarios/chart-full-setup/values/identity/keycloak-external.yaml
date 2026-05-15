@@ -71,17 +71,6 @@ identity:
     enabled: true
     id: $KEYCLOAK_REALM
 
-identityKeycloak:
-  enabled: false
-
-identityPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
-    secretKeys:
-      adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
-      userPasswordKey: identity-keycloak-postgresql-user-password
-
 connectors:
   security:
     authentication:
@@ -120,6 +109,3 @@ prometheusServiceMonitor:
   enabled: true
   labels:
     release: kube-prometheus-stack
-
-elasticsearch:
-  enabled: false
