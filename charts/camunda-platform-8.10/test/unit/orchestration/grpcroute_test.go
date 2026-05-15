@@ -244,6 +244,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
+				require.Contains(t, output, "name: camunda-platform-test")
 				require.Contains(t, output, "namespace: shared-infra")
 			},
 		},
