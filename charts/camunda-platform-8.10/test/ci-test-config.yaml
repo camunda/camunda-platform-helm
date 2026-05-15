@@ -57,8 +57,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak
-          persistence: elasticsearch
+          identity: keycloak-external
+          persistence: elasticsearch-external
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
         - name: enterprise-values
           enabled: true
@@ -79,7 +79,7 @@ integration:
           shortname: oske
           tier: 2
           exclude: []
-          identity: keycloak
+          identity: keycloak-external
           persistence: opensearch-embedded
           flow: install
           infra-type:
@@ -231,8 +231,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak
-          persistence: elasticsearch
+          identity: keycloak-external
+          persistence: elasticsearch-external
           platforms: [gke]
         - name: elasticsearch-self-signed
           enabled: false
@@ -263,8 +263,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak
-          persistence: elasticsearch
+          identity: keycloak-external
+          persistence: elasticsearch-external
           features: [gateway]
           platforms: [gke]
           post-deploy:
@@ -298,7 +298,7 @@ integration:
           flow: install
           skip-e2e: true  # No Elasticsearch means no secondary storage for E2E tests
           skip-it: true   # Integration tests require Elasticsearch
-          identity: keycloak
+          identity: keycloak-external
           persistence: no-elasticsearch
           features: [no-secondary-storage]
           platforms: [gke]
@@ -310,8 +310,8 @@ integration:
           shortname: docstr
           tier: 2
           auth: keycloak
-          identity: keycloak
-          persistence: elasticsearch
+          identity: keycloak-external
+          persistence: elasticsearch-external
           features: [documentstore]
           platforms: [eks]
           infra-type:
@@ -370,7 +370,7 @@ integration:
           exclude: []
           infra-type:
             gke: distroci
-          identity: keycloak
+          identity: keycloak-external
           persistence: rdbms
           platforms: [gke]
           pre-install:
@@ -390,8 +390,8 @@ integration:
           tier: 2
           exclude: []
           flow: install
-          identity: keycloak
-          persistence: elasticsearch
+          identity: keycloak-external
+          persistence: elasticsearch-external
           features: [hub-legacy]
           platforms: [gke]
           infra-type:
@@ -440,8 +440,8 @@ integration:
           shortname: keyco
           tier: 1
           auth: keycloak
-          identity: keycloak
-          persistence: elasticsearch
+          identity: keycloak-external
+          persistence: elasticsearch-external
           platforms: [gke]
           infra-type:
             gke: distroci
