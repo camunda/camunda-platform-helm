@@ -292,7 +292,7 @@ deployments:
     namespace: camunda-test
     release: integration
     scenario: keycloak
-    
+
   qa-full:
     chartPath: ./charts/camunda-platform-8.6
     namespace: qa-integration
@@ -359,7 +359,7 @@ Contact the Platform team for access to shared infrastructure and required crede
 To run integration tests independently, you need:
 
 1. **Kubernetes cluster**: Any Kubernetes cluster (minikube, kind, cloud provider)
-2. **Helm 3.x**: Same version as specified in `.tool-versions`
+2. **Helm 4.x**: Same version as specified in `.tool-versions`
 3. **kubectl**: Configured to access your cluster
 4. **Docker registry secrets**: For pulling Camunda images (if using enterprise features)
 

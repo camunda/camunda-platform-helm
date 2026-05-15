@@ -1,5 +1,11 @@
 # Camunda 8 Helm Chart
 
+> [!IMPORTANT]
+> Camunda 8.10 (chart 15.x) requires the **Helm v4** CLI. Helm v3 is not supported.
+> Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3.
+> No release-state migration is needed when switching the local CLI from v3 to v4
+> against an existing release — `helm` is client-side only and cluster state is unaffected.
+
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
 
 - [Architecture](#architecture)
@@ -40,7 +46,7 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/next/self-m
 
 ## Requirements
 
-- [Helm](https://helm.sh/) >= 3.9.x
+- [Helm](https://helm.sh/) >= 4.0.x
 - Kubernetes >= 1.20+
 - Minimum cluster requirements include the following to run this chart with default settings.
   - All of these settings are configurable.
@@ -227,9 +233,9 @@ identityKeycloak:
 
 Camunda provides a custom theme for the login page used in all apps. The theme is copied from the Identity image.
 
-The theme is added to Keycloak by default, however, since Helm v3 (the latest checked 3.10.x) doesn't merge lists
-with custom values files, then you will need to add this to your own values file if you override any of
-`extraVolumes`, `initContainers`, or `extraVolumeMounts`.
+The theme is added to Keycloak by default. Helm replaces YAML lists wholesale rather than merging them
+across values files, so if you override any of `extraVolumes`, `initContainers`, or `extraVolumeMounts`
+in your own values file you must re-include the entries below alongside your additions.
 
 ```yaml
 identity:
