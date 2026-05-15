@@ -228,7 +228,7 @@ on:
         default: false
         type: boolean
       helm-version:
-        description: "Helm version to install via azure/setup-helm. Empty means use the pre-baked Helm from the CI runner image."
+        description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
         required: false
         default: ""
         type: string
@@ -348,9 +348,17 @@ jobs:
 
       - name: CI Setup - Override Helm version
         if: steps.helm-resolve.outputs.needs-install == 'true'
-        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
-        with:
-          version: ${{ steps.helm-resolve.outputs.version }}
+        env:
+          HELM_VERSION: ${{ steps.helm-resolve.outputs.version }}
+        run: |
+          tarball="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSL "https://get.helm.sh/${tarball}" -o "/tmp/${tarball}"
+          curl -fsSL "https://get.helm.sh/${tarball}.sha256sum" -o "/tmp/${tarball}.sha256sum"
+          (cd /tmp && sha256sum --check "${tarball}.sha256sum")
+          tar -xzf "/tmp/${tarball}" -C /tmp
+          mv /tmp/linux-amd64/helm /usr/local/bin/helm
+          rm -rf "/tmp/${tarball}" "/tmp/${tarball}.sha256sum" /tmp/linux-amd64
+          helm version --short
 
       - name: CI Setup - Shared integration test setup
         id: setup
@@ -746,9 +754,17 @@ jobs:
 
       - name: CI Setup - Override Helm version
         if: steps.helm-resolve.outputs.needs-install == 'true'
-        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
-        with:
-          version: ${{ steps.helm-resolve.outputs.version }}
+        env:
+          HELM_VERSION: ${{ steps.helm-resolve.outputs.version }}
+        run: |
+          tarball="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSL "https://get.helm.sh/${tarball}" -o "/tmp/${tarball}"
+          curl -fsSL "https://get.helm.sh/${tarball}.sha256sum" -o "/tmp/${tarball}.sha256sum"
+          (cd /tmp && sha256sum --check "${tarball}.sha256sum")
+          tar -xzf "/tmp/${tarball}" -C /tmp
+          mv /tmp/linux-amd64/helm /usr/local/bin/helm
+          rm -rf "/tmp/${tarball}" "/tmp/${tarball}.sha256sum" /tmp/linux-amd64
+          helm version --short
 
       - name: CI Setup - Shared integration test setup
         id: setup
