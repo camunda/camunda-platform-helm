@@ -269,6 +269,19 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+        # AlwaysGreen scenario — referenced by camunda/camunda's
+        # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
+        # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
+        - name: alwaysgreen
+          enabled: false
+          flow: install
+          shortname: agrn
+          auth: keycloak
+          infra-type:
+            gke: alwaysgreen
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
         # kcor is referenced by .github/workflows/test-backward-compat.yaml's
         # compat-camunda-docker job (camunda/docker-build-helm-integration.yml).
         - name: keycloak-original
