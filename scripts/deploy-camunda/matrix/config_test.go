@@ -152,7 +152,9 @@ func TestGenerate_PropagatesPreInstall(t *testing.T) {
 	if rdbms.PreInstall == nil {
 		t.Fatal("rdbms 8.10: PreInstall: nil")
 	}
-	if len(rdbms.PreInstall.Fixtures) != 1 || rdbms.PreInstall.Fixtures[0] != "postgresql-cluster.yaml" {
+	if len(rdbms.PreInstall.Fixtures) != 2 ||
+		rdbms.PreInstall.Fixtures[0] != "postgresql-cluster.yaml" ||
+		rdbms.PreInstall.Fixtures[1] != "postgres-createdb-identity-webmodeler-job.yaml" {
 		t.Errorf("rdbms 8.10 fixtures: got %v", rdbms.PreInstall.Fixtures)
 	}
 	if rdbms.PreInstall.Description == "" {

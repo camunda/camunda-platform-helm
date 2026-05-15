@@ -60,6 +60,14 @@ integration:
           identity: keycloak-external
           persistence: elasticsearch-external
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         - name: enterprise-values
           enabled: true
           shortname: entv
@@ -85,6 +93,14 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
             - chart: opensearch/opensearch
               version: "3.6.0"
@@ -234,6 +250,14 @@ integration:
           identity: keycloak-external
           persistence: elasticsearch-external
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         - name: elasticsearch-self-signed
           enabled: false
           exclude: []
@@ -267,6 +291,14 @@ integration:
           persistence: elasticsearch-external
           features: [gateway]
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
           post-deploy:
             fixtures:
               - gateway-proxy-settings.yaml
@@ -289,6 +321,14 @@ integration:
           persistence: elasticsearch-external
           features: [arm]
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         - name: noSecondaryStorage
           enabled: true
           auth: keycloak
@@ -304,6 +344,14 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         - name: documentstore
           enabled: true
           exclude: []
@@ -316,6 +364,14 @@ integration:
           platforms: [eks]
           infra-type:
             eks: preemptible
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         - name: rdbms-self-signed
           enabled: true
           shortname: rdbss
@@ -376,13 +432,13 @@ integration:
           pre-install:
             fixtures:
               - postgresql-cluster.yaml
+              - postgres-createdb-identity-webmodeler-job.yaml
             description: |
               Provisions a CloudNativePG `Cluster` plus auth Secret in the
-              scenario namespace. The CloudNativePG operator reconciles the
-              Cluster into a running PostgreSQL instance reachable as
-              postgresql-cluster-rw.<namespace>.svc.cluster.local — required
-              before helm install or the Camunda OrchestrationCluster pods
-              crash-loop trying to reach RDBMS.
+              scenario namespace (RDBMS secondary storage backend) and creates
+              identity + webmodeler databases in the shared
+              distribution-postgresql cluster (Identity + WebModeler need
+              external databases when no bundled PostgreSQL is deployed).
         - name: hub-legacy
           enabled: true
           auth: keycloak
@@ -396,6 +452,14 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         - name: shadow-e2e
           enabled: true
           shortname: shde2
@@ -445,6 +509,14 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
         # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
