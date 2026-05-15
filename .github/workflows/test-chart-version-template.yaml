@@ -123,7 +123,7 @@ on:
         default: false
         type: boolean
       helm-version:
-        description: "Helm version to install via azure/setup-helm. Empty means use the pre-baked Helm from the CI runner image."
+        description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
         required: false
         default: ""
         type: string
