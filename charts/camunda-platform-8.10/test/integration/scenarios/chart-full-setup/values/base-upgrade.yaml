@@ -8,3 +8,15 @@ orchestration:
   env:
     - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
       value: "false"
+  security:
+    # The 8.9 -> 8.10 minor upgrade leaves the orchestration authorization DB
+    # empty because `orchestration.security.initialization.*` only seeds on
+    # first install (empty DB), not on minor upgrades. With authorizations
+    # enabled by default, every migrated user (demo, lisa, bart) is blocked
+    # at the Operate component gate with "You don't have access to this
+    # component", which breaks the migration-path E2E suite.
+    # Keep authorizations off in the upgrade leg so the QA matrix continues
+    # to validate user-facing flows under the previous gating model. Remove
+    # this once the product seeds authorizations during minor upgrades.
+    authorizations:
+      enabled: false
