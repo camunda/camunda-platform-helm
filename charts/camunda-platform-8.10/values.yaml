@@ -115,29 +115,31 @@ global:
     pullSecrets: []
   ## @param global.host can be used to define the hostname of the gateway or ingress resource.
   host: ""
-  ## Gateway configuration to configure the gateway resource
+  ## Gateway configuration to configure the Kubernetes Gateway API resources
   ## @extra global.gateway
   gateway:
-    ## @param global.gateway.createGatewayResource if true, the Gateway resource is created. This is dependent on whether you have a separate network administrator installing your Gateway or if you are installing it as part of the helm chart.
-    createGatewayResource: false
-    ## @param global.gateway.enabled if true, a gateway resource is deployed. Only useful if a gateway controller is available, like Ingress-NGINX or Gateway API.
+    ## @param global.gateway.enabled if true, enables the Kubernetes Gateway API integration. Requires Gateway API CRDs and a Gateway controller (for example, NGINX Gateway Fabric) to be installed in the cluster.
     enabled: false
-    ## @param global.gateway.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
+    ## @param global.gateway.createGatewayResource if true, the chart creates the Gateway CustomResource in the release namespace. Set to false when a Gateway already exists (either in the same namespace or in a shared namespace referenced via global.gateway.namespace).
+    createGatewayResource: false
+    ## @param global.gateway.external if true, no Gateway API resources are created by this chart (no Gateway, HTTPRoutes, GRPCRoute, or ReferenceGrant). Use this when you manage all networking resources yourself.
     external: false
-    ## @param global.gateway.className Gateway.className defines the class or configuration of gateway which should be used by the controller
+    ## @param global.gateway.className name of the GatewayClass resource that tells the cluster which Gateway controller manages this Gateway.
     className: nginx
-    ## @param global.gateway.labels [object] can be used to define labels which will be applied to the global HTTP gateway resource
+    ## @param global.gateway.labels [object] labels added to the Gateway and all Route resources.
     labels: {}
-    ## @param global.gateway.annotations [object] defines the gateway related annotations, consumed mostly by the gateway controller
+    ## @param global.gateway.annotations [object] annotations added to the Gateway and all Route resources.
     annotations: {}
-    ## @extra global.gateway.tls configuration for tls on the gateway resource https://kubernetes.io/docs/concepts/services-networking/gateway/#tls
+    ## @extra global.gateway.tls TLS configuration for the Gateway listener. See https://kubernetes.io/docs/concepts/services-networking/gateway/#tls
     tls:
-      ## @param global.gateway.tls.enabled if true, then tls is configured on the gateway resource. If enabled the Ingress.host need to be defined.
+      ## @param global.gateway.tls.enabled if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on all Routes. Requires global.gateway.tls.secretName to be set.
       enabled: false
-      ## @param global.gateway.tls.secretName defines the secret name which contains the TLS private key and certificate
+      ## @param global.gateway.tls.secretName name of the Kubernetes Secret containing the TLS certificate and private key.
       secretName: camunda-platform
-    ## @param global.gateway.controllerNamespace defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.
+    ## @param global.gateway.controllerNamespace answers "where do Routes that point AT my Services come from?". When an external controller or operator creates Routes in its own namespace that route traffic to Camunda services, set this to that namespace. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.
     controllerNamespace: ""
+    ## @param global.gateway.namespace answers "where is the Gateway my Routes point TO?". When the Gateway lives in a different namespace than the Camunda components (for example, a shared Gateway in an infrastructure namespace), set this to that namespace. The chart adds namespace: <value> to the parentRefs of every Route so Kubernetes can locate the cross-namespace Gateway. When unset, Kubernetes assumes the Gateway is in the same namespace as the Route. Also set global.gateway.createGatewayResource=false when the Gateway is managed outside this chart.
+    namespace: ""
   ## Ingress configuration to configure the ingress resource
   ## @extra global.ingress
   ingress:

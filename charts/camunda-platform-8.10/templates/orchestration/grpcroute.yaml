@@ -22,6 +22,9 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
+    {{- if .Values.global.gateway.namespace }}
+    namespace: {{ .Values.global.gateway.namespace }}
+    {{- end }}
     sectionName: {{ if .Values.global.gateway.tls.enabled }}grpcs{{ else }}grpc{{ end }}
   hostnames:
   - {{ tpl .Values.orchestration.gateway.grpc.host $ }}

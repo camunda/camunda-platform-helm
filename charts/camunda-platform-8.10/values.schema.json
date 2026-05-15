@@ -178,6 +178,11 @@
                             "type": "string",
                             "description": "defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.",
                             "default": ""
+                        },
+                        "namespace": {
+                            "type": "string",
+                            "description": "defines the namespace where the Gateway resource lives. Only set this when the Gateway is deployed in a different namespace than the Camunda components.",
+                            "default": ""
                         }
                     }
                 },
