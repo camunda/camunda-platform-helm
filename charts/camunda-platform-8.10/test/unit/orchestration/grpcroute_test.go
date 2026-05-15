@@ -280,6 +280,22 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestGRPCRouteWithGatewayName",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.gateway.name":                "shared-gateway",
+				"global.gateway.namespace":           "shared-infra",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: shared-gateway")
+			},
+		},
+		{
 			Name: "TestGRPCRouteNotRenderedWhenExternalEvenWithNamespace",
 			Values: map[string]string{
 				"global.gateway.enabled":             "true",

@@ -120,6 +120,8 @@ global:
   gateway:
     ## @param global.gateway.enabled if true, enables the Kubernetes Gateway API integration. Requires Gateway API CRDs and a Gateway controller (for example, NGINX Gateway Fabric) to be installed in the cluster.
     enabled: false
+    ## @param global.gateway.name name of the Gateway resource that Routes attach to. Defaults to the Helm release fullname when unset, which is correct for Scenario A (chart-managed Gateway in the same namespace). Set this when referencing a pre-existing Gateway whose name differs from the release name, for example a shared Gateway in another namespace (Scenario B).
+    name: ""
     ## @param global.gateway.createGatewayResource if true, the chart creates the Gateway CustomResource in the release namespace. Set to false when a Gateway already exists (either in the same namespace or in a shared namespace referenced via global.gateway.namespace).
     createGatewayResource: false
     ## @param global.gateway.external if true, no Gateway API resources are created by this chart (no Gateway, HTTPRoutes, GRPCRoute, or ReferenceGrant). Use this when you manage all networking resources yourself.

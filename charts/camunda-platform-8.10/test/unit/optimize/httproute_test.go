@@ -168,6 +168,20 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestHTTPRouteWithGatewayName",
+			Values: map[string]string{
+				"global.gateway.enabled":   "true",
+				"global.gateway.name":      "shared-gateway",
+				"global.gateway.namespace": "shared-infra",
+				"global.host":              "camunda.example.com",
+				"optimize.enabled":         "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: shared-gateway")
+			},
+		},
+		{
 			Name: "TestHTTPRouteNotRenderedWhenExternalEvenWithNamespace",
 			Values: map[string]string{
 				"global.gateway.enabled":   "true",
