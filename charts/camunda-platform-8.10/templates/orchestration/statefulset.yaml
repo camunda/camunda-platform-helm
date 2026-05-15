@@ -304,15 +304,15 @@ spec:
       {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
+        {{- toYamlPretty . | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.affinity }}
       affinity:
-        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
+        {{- toYamlPretty . | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:
-        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
+        {{- toYamlPretty . | nindent 8 }}
       {{- end }}
   {{- if eq .Values.orchestration.persistenceType "disk" }}
   volumeClaimTemplates:
