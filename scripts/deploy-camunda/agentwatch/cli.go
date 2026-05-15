@@ -25,7 +25,7 @@ type AgentCLI struct {
 
 // supportedCLIs lists the agent CLIs we know how to invoke, in preference
 // order. Detection picks the first one found on PATH.
-var supportedCLIs = []string{"claude", "opencode"}
+var supportedCLIs = []string{"opencode", "claude"}
 
 // ErrNoAgentCLI is returned when neither supported CLI is installed.
 var ErrNoAgentCLI = errors.New(
@@ -42,6 +42,30 @@ func DetectCLI() (AgentCLI, error) {
 		}
 	}
 	return AgentCLI{}, ErrNoAgentCLI
+}
+
+// ResolveCLI returns an AgentCLI for the given name. If name is empty, it
+// falls back to DetectCLI (auto-detection). If a name is provided but the
+// binary cannot be found on PATH, an error is returned.
+func ResolveCLI(name string) (AgentCLI, error) {
+	if name == "" {
+		return DetectCLI()
+	}
+	supported := false
+	for _, s := range supportedCLIs {
+		if name == s {
+			supported = true
+			break
+		}
+	}
+	if !supported {
+		return AgentCLI{}, fmt.Errorf("unsupported agent CLI %q; supported: %v", name, supportedCLIs)
+	}
+	path, err := exec.LookPath(name)
+	if err != nil {
+		return AgentCLI{}, fmt.Errorf("agent CLI %q not found on PATH: %w", name, err)
+	}
+	return AgentCLI{Name: name, Path: path}, nil
 }
 
 // buildArgs returns the command-line args for invoking the given CLI in

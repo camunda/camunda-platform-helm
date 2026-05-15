@@ -75,6 +75,41 @@ func TestParseVerdict_RejectsInvalidAction(t *testing.T) {
 	}
 }
 
+func TestParseVerdict_OpencodeNDJSON(t *testing.T) {
+	// opencode run --format json emits newline-delimited JSON events.
+	// The verdict text is in {"type":"text","part":{"text":"..."}} events.
+	raw := []byte(`{"type":"step_start","timestamp":1778579787017,"sessionID":"ses_abc","part":{"id":"prt_1","messageID":"msg_1","sessionID":"ses_abc","type":"step-start"}}
+{"type":"text","timestamp":1778579787124,"sessionID":"ses_abc","part":{"id":"prt_2","messageID":"msg_1","sessionID":"ses_abc","type":"text","text":"` + "```json\\n{\\\"diagnosis\\\":\\\"pod OOMKilled\\\",\\\"causal_chain\\\":[\\\"memory limit 256Mi\\\"],\\\"confidence\\\":0.88,\\\"recommended_action\\\":\\\"abort\\\"}\\n```" + `","time":{"start":1778579787018,"end":1778579787122}}}
+{"type":"step_finish","timestamp":1778579787192,"sessionID":"ses_abc","part":{"id":"prt_3","reason":"stop","messageID":"msg_1","sessionID":"ses_abc","type":"step-finish"}}`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.Diagnosis != "pod OOMKilled" {
+		t.Fatalf("expected diagnosis 'pod OOMKilled', got %q", v.Diagnosis)
+	}
+	if v.Confidence != 0.88 {
+		t.Fatalf("expected confidence 0.88, got %v", v.Confidence)
+	}
+	if v.RecommendedAction != ActionAbort {
+		t.Fatalf("expected abort, got %q", v.RecommendedAction)
+	}
+}
+
+func TestParseVerdict_OpencodeNDJSONNoFence(t *testing.T) {
+	// opencode sometimes returns the JSON without code fences.
+	raw := []byte(`{"type":"step_start","timestamp":1,"sessionID":"s","part":{"type":"step-start"}}
+{"type":"text","timestamp":2,"sessionID":"s","part":{"type":"text","text":"{\"diagnosis\":\"all healthy\",\"causal_chain\":[],\"confidence\":0.95,\"recommended_action\":\"wait\"}"}}
+{"type":"step_finish","timestamp":3,"sessionID":"s","part":{"type":"step-finish"}}`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.RecommendedAction != ActionWait {
+		t.Fatalf("expected wait, got %q", v.RecommendedAction)
+	}
+}
+
 func TestParseVerdict_RejectsConfidenceOutOfRange(t *testing.T) {
 	raw := []byte(`{"diagnosis":"x","confidence":1.5,"recommended_action":"wait"}`)
 	if _, err := ParseVerdict(raw); err == nil {
@@ -203,12 +238,12 @@ func TestClassify(t *testing.T) {
 
 func TestSupportedCLIs_StableOrder(t *testing.T) {
 	got := SupportedCLIs()
-	if len(got) < 2 || got[0] != "claude" || got[1] != "opencode" {
-		t.Fatalf("expected [claude opencode ...], got %v", got)
+	if len(got) < 2 || got[0] != "opencode" || got[1] != "claude" {
+		t.Fatalf("expected [opencode claude ...], got %v", got)
 	}
 	// Ensure callers can't mutate the package's internal slice.
 	got[0] = "tampered"
-	if SupportedCLIs()[0] != "claude" {
+	if SupportedCLIs()[0] != "opencode" {
 		t.Fatal("SupportedCLIs returns shared slice; callers can mutate package state")
 	}
 }
@@ -224,6 +259,24 @@ func TestBuildArgs_Opencode(t *testing.T) {
 	args := buildArgs(AgentCLI{Name: "opencode", Path: "/usr/bin/opencode"}, "be helpful")
 	if !contains(args, "run") || !contains(args, "be helpful") {
 		t.Fatalf("unexpected opencode args: %v", args)
+	}
+}
+
+func TestResolveCLI_EmptyFallsBackToDetect(t *testing.T) {
+	// When name is empty, ResolveCLI should behave like DetectCLI.
+	cli, err := ResolveCLI("")
+	if err != nil {
+		t.Skipf("no agent CLI on PATH (expected in CI): %v", err)
+	}
+	if cli.Name == "" || cli.Path == "" {
+		t.Fatal("ResolveCLI returned empty CLI for empty name")
+	}
+}
+
+func TestResolveCLI_NonExistentErrors(t *testing.T) {
+	_, err := ResolveCLI("nonexistent-agent-cli-xyz")
+	if err == nil {
+		t.Fatal("expected error for non-existent CLI name")
 	}
 }
 
