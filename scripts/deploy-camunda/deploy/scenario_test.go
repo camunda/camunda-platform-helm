@@ -172,6 +172,89 @@ func TestPinScenarioPrefixes_SharedBetweenClones(t *testing.T) {
 	t.Logf("Step2 orch=%s realm=%s", step2.Index.OrchestrationIndexPrefix, step2.Auth.KeycloakRealm)
 }
 
+func TestNamespaceDerivedSuffix_Deterministic(t *testing.T) {
+	// Same namespace always produces the same suffix.
+	s1 := namespaceDerivedSuffix("matrix-88-qaosupg-inst-gke")
+	s2 := namespaceDerivedSuffix("matrix-88-qaosupg-inst-gke")
+	if s1 != s2 {
+		t.Errorf("same namespace produced different suffixes: %q vs %q", s1, s2)
+	}
+	if len(s1) != 8 {
+		t.Errorf("suffix should be 8 chars, got %d: %q", len(s1), s1)
+	}
+}
+
+func TestNamespaceDerivedSuffix_UniquenessAcrossNamespaces(t *testing.T) {
+	// Different namespaces produce different suffixes.
+	namespaces := []string{
+		"matrix-88-qaosupg-inst-gke",
+		"matrix-89-qaosupg-inst-gke",
+		"matrix-88-qaelupg-inst-gke",
+		"matrix-810-keyco-inst-gke",
+	}
+	seen := make(map[string]string)
+	for _, ns := range namespaces {
+		s := namespaceDerivedSuffix(ns)
+		if prev, ok := seen[s]; ok {
+			t.Errorf("collision: %q and %q both produce suffix %q", prev, ns, s)
+		}
+		seen[s] = ns
+	}
+}
+
+func TestCrossJobPrefixConsistency(t *testing.T) {
+	// Simulate cross-job upgrade: install and upgrade are independent calls
+	// with the same namespace but fresh RuntimeFlags. Both should produce
+	// identical prefixes because the suffix is derived from the namespace.
+	namespace := "matrix-88-qaosupg-inst-gke"
+
+	// Job 1: install
+	installFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch"},
+		},
+	}
+	installCtx, err := generateScenarioContext("qa-opensearch", installFlags)
+	if err != nil {
+		t.Fatalf("install generateScenarioContext: %v", err)
+	}
+
+	// Job 2: upgrade (completely fresh flags, same namespace)
+	upgradeFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch"},
+		},
+	}
+	upgradeCtx, err := generateScenarioContext("qa-opensearch", upgradeFlags)
+	if err != nil {
+		t.Fatalf("upgrade generateScenarioContext: %v", err)
+	}
+
+	// Prefixes must match — this is the core property that fixes cross-job upgrades.
+	if installCtx.OrchestrationIndexPrefix != upgradeCtx.OrchestrationIndexPrefix {
+		t.Errorf("OrchestrationIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.OrchestrationIndexPrefix, upgradeCtx.OrchestrationIndexPrefix)
+	}
+	if installCtx.OperateIndexPrefix != upgradeCtx.OperateIndexPrefix {
+		t.Errorf("OperateIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.OperateIndexPrefix, upgradeCtx.OperateIndexPrefix)
+	}
+	if installCtx.OptimizeIndexPrefix != upgradeCtx.OptimizeIndexPrefix {
+		t.Errorf("OptimizeIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.OptimizeIndexPrefix, upgradeCtx.OptimizeIndexPrefix)
+	}
+	if installCtx.TasklistIndexPrefix != upgradeCtx.TasklistIndexPrefix {
+		t.Errorf("TasklistIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.TasklistIndexPrefix, upgradeCtx.TasklistIndexPrefix)
+	}
+	if installCtx.KeycloakRealm != upgradeCtx.KeycloakRealm {
+		t.Errorf("KeycloakRealm mismatch: install=%q upgrade=%q",
+			installCtx.KeycloakRealm, upgradeCtx.KeycloakRealm)
+	}
+}
+
 func TestNormalizeIdentifierPart(t *testing.T) {
 	tests := []struct {
 		input string
