@@ -1,11 +1,9 @@
 # External Keycloak auth configuration for 8.10
-# Layer 2: Auth method - External Keycloak (for multi-tenancy scenarios)
+# Layer 2: Auth method - External Keycloak
 
 global:
   annotations:
     keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
-  multitenancy:
-    enabled: true
   host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: true
@@ -70,6 +68,25 @@ identity:
   realm:
     enabled: true
     id: $KEYCLOAK_REALM
+  externalDatabase:
+    enabled: true
+    host: postgresql-cluster-rw.distribution-postgresql.svc.cluster.local
+    port: 5432
+    database: $GITHUB_WORKFLOW_JOB_ID-identity
+    username: $RDBMS_POSTGRESQL_USERNAME
+    secret:
+      inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
+
+webModeler:
+  restapi:
+    externalDatabase:
+      enabled: true
+      host: postgresql-cluster-rw.distribution-postgresql.svc.cluster.local
+      port: 5432
+      database: $GITHUB_WORKFLOW_JOB_ID-webmodeler
+      username: $RDBMS_POSTGRESQL_USERNAME
+      secret:
+        inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
 
 connectors:
   security:

@@ -1,0 +1,34 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-create-db-identity-webmodeler
+spec:
+  template:
+    metadata: {}
+    spec:
+      containers:
+      - command:
+        - bash
+        - -c
+        - |
+          set -e
+          psql \
+            --host=postgresql-cluster-rw.distribution-postgresql.svc.cluster.local \
+            --port=5432 \
+            --username=$RDBMS_POSTGRESQL_USERNAME \
+            --dbname=app \
+            -c "CREATE DATABASE \"$GITHUB_WORKFLOW_JOB_ID-identity\";"
+          psql \
+            --host=postgresql-cluster-rw.distribution-postgresql.svc.cluster.local \
+            --port=5432 \
+            --username=$RDBMS_POSTGRESQL_USERNAME \
+            --dbname=app \
+            -c "CREATE DATABASE \"$GITHUB_WORKFLOW_JOB_ID-webmodeler\";"
+        image: postgres:18.3
+        name: psql-create-db-identity-webmodeler
+        env:
+          - name: PGPASSWORD
+            value: $RDBMS_POSTGRESQL_PASSWORD
+        resources: {}
+      restartPolicy: OnFailure
