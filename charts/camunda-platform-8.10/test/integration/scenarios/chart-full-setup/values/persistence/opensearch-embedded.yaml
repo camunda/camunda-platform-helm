@@ -19,10 +19,10 @@ orchestration:
       opensearch:
         url: "http://opensearch-master:9200"
   index:
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    prefix: $ORCHESTRATION_INDEX_PREFIX
   env:
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
-      value: $OPERATE_INDEX_PREFIX-$FLOW
+      value: $OPERATE_INDEX_PREFIX
     # group2
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX
       value: custom-zeebe
@@ -68,18 +68,18 @@ optimize:
         protocol: http
         host: "opensearch-master"
         port: 9200
-      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      prefix: $ORCHESTRATION_INDEX_PREFIX
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      value: $ORCHESTRATION_INDEX_PREFIX
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+      value: $OPTIMIZE_INDEX_PREFIX
   migration:
     env:
       - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-        value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+        value: $ORCHESTRATION_INDEX_PREFIX
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-        value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+        value: $OPTIMIZE_INDEX_PREFIX
 
 elasticsearch:
   enabled: false
