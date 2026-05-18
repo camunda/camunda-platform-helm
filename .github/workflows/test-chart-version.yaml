@@ -233,12 +233,13 @@ jobs:
   ci-gate:
     name: "CI Gate"
     if: always()
-    needs: [unit-testing, validation, kind-testing, integration-tests]
+    needs: [init, unit-testing, validation, kind-testing, integration-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
         run: |
           results=(
+            "${{ needs.init.result }}"
             "${{ needs.unit-testing.result }}"
             "${{ needs.validation.result }}"
             "${{ needs.kind-testing.result }}"
