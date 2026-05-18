@@ -100,7 +100,9 @@ get_chart_images () {
     fi
 
     # Print chart images from version-matrix.json file.
-    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_images[]" | awk '{gsub(/\x1e/, ""); print}')"
+    # sort -u removes exact duplicate strings (e.g. same registry/repo:tag repeated twice).
+    # It does not deduplicate entries that share the same repo but differ by tag.
+    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_images[]" | awk '{gsub(/\x1e/, ""); print}' | sort -u)"
     printf -- "- %s\n" $(echo -e "$version_matrix_images")
 }
 
@@ -166,7 +168,9 @@ get_chart_enterprise_images () {
     fi
 
     # Print chart enterprise images from version-matrix.json file.
-    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_enterprise_images[]" | awk '{gsub(/\x1e/, ""); print}')"
+    # sort -u removes exact duplicate strings (e.g. same registry/repo:tag repeated twice).
+    # It does not deduplicate entries that share the same repo but differ by tag.
+    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_enterprise_images[]" | awk '{gsub(/\x1e/, ""); print}' | sort -u)"
     printf -- "- %s\n" $(echo -e "$version_matrix_images")
 }
 
