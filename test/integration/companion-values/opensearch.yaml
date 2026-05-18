@@ -62,7 +62,7 @@ extraObjects:
   - apiVersion: batch/v1
     kind: Job
     metadata:
-      name: opensearch-zero-replicas-template
+      name: opensearch-auto-expand-replicas
       annotations:
         helm.sh/hook: post-install,post-upgrade
         helm.sh/hook-weight: "5"
@@ -83,7 +83,7 @@ extraObjects:
                   set -eu
                   max=30
                   n=0
-                  until curl -fsS "http://opensearch-master:9200/_cluster/health" >/dev/null 2>&1; do
+                  until curl -fsS --connect-timeout 5 "http://opensearch-master:9200/_cluster/health" >/dev/null 2>&1; do
                     n=$((n + 1))
                     if [ "$n" -ge "$max" ]; then
                       echo "opensearch-master not reachable after $max attempts" >&2
@@ -92,7 +92,7 @@ extraObjects:
                     echo "waiting for opensearch... ($n/$max)"
                     sleep 2
                   done
-                  curl -fsS -X PUT "http://opensearch-master:9200/_index_template/camunda-ci-auto-expand-replicas" \
+                  curl -fsS --connect-timeout 5 -X PUT "http://opensearch-master:9200/_index_template/camunda-ci-auto-expand-replicas" \
                     -H 'Content-Type: application/json' \
                     -d '{"index_patterns":["op-*","orch-*","tasklist-*","opt-*","camunda-*",".camunda*","zeebe-*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
                   echo
