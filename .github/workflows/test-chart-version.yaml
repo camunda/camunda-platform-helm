@@ -227,6 +227,31 @@ jobs:
       skip-it: ${{ matrix.skipIT == 'true' }}
       helm-version: ${{ matrix.helmVersion }}
 
+  # Aggregation gate job that fails if any CI job fails.
+  # Add this job's name ("CI Gate") to the ruleset's required status checks
+  # so the merge queue will not merge PRs with broken CI.
+  ci-gate:
+    name: "CI Gate"
+    if: always()
+    needs: [unit-testing, validation, kind-testing, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        run: |
+          results=(
+            "${{ needs.unit-testing.result }}"
+            "${{ needs.validation.result }}"
+            "${{ needs.kind-testing.result }}"
+            "${{ needs.integration-tests.result }}"
+          )
+          for result in "${results[@]}"; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::Required job reported: $result"
+              exit 1
+            fi
+          done
+          echo "All required jobs passed (or were skipped)."
+
   # Report license/cla commit status on merge queue commits.
   # The CLA bot only reports on pull_request events; the merge queue creates
   # ephemeral commits that never receive the status. This job bridges that gap
