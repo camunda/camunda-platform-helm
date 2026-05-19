@@ -91,20 +91,16 @@ func buildMessage() string {
 	prURL := mustEnv("PR_URL")
 	prNum := "#" + mustEnv("PR_NUMBER")
 	prTitle := mustEnv("PR_TITLE")
-	author := "@" + mustEnv("PR_AUTHOR")
 
 	link := fmt.Sprintf("<%s|%s %s>", prURL, prNum, prTitle)
 
 	switch action {
 	case "opened", "ready_for_review":
-		size := fmt.Sprintf("+%s/-%s", mustEnv("PR_ADDITIONS"), mustEnv("PR_DELETIONS"))
 		reviewers := parseReviewers(os.Getenv("PR_REVIEWERS_JSON"))
-		reviewText := ""
 		if reviewers != "" {
-			reviewText = " · review: " + reviewers
+			return fmt.Sprintf("↗ [%s] %s — review: %s", repo, link, reviewers)
 		}
-		return fmt.Sprintf(":arrow_heading_up: [%s] PR opened · by %s%s · %s — %s",
-			repo, author, reviewText, size, link)
+		return fmt.Sprintf("↗ [%s] %s", repo, link)
 
 	case "closed":
 		merged := os.Getenv("PR_MERGED") == "true"
@@ -115,11 +111,10 @@ func buildMessage() string {
 			if err1 == nil && err2 == nil {
 				duration = formatDuration(createdAt, mergedAt)
 			}
-			return fmt.Sprintf(":tada: [%s] PR merged after %s · by %s — %s",
-				repo, duration, author, link)
+			numLink := fmt.Sprintf("<%s|%s>", prURL, prNum)
+			return fmt.Sprintf("✅ [%s] %s merged after %s", repo, numLink, duration)
 		}
-		return fmt.Sprintf(":x: [%s] PR closed without merge · by %s — %s",
-			repo, author, link)
+		return fmt.Sprintf("❌ [%s] %s", repo, link)
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: unhandled action %q\n", action)
@@ -160,28 +155,10 @@ func sendSlack(webhook, message string) error {
 	return nil
 }
 
-// hasLabel reports whether the JSON label array contains a label with the given name.
-// The array has the shape [{"name":"automerge",...},...]
-func hasLabel(labelsJSON, name string) bool {
-	var labels []struct {
-		Name string `json:"name"`
-	}
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return false
-	}
-	for _, l := range labels {
-		if l.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
-	// Renovate PRs labelled "automerge" are handled automatically and generate no useful signal.
-	// Renovate PRs without "automerge" (e.g. major updates) still need human attention — notify those.
-	if os.Getenv("PR_AUTHOR") == "renovate[bot]" && hasLabel(os.Getenv("PR_LABELS_JSON"), "automerge") {
-		fmt.Println("ℹ️  Skipping Slack notification: automerge Renovate PR.")
+	// Suppress notifications for all bot authors (e.g. renovate[bot], dependabot[bot]).
+	if strings.HasSuffix(os.Getenv("PR_AUTHOR"), "[bot]") {
+		fmt.Println("ℹ️  Skipping Slack notification: bot author.")
 		return
 	}
 

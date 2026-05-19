@@ -13,9 +13,9 @@
 # Can be called from other repos via workflow_call — pass all pr_* inputs explicitly.
 #
 # Message format:
-#   ↗️ [helm] PR opened · by @author · review: @rev1 · +42/-7 — #123 feat: add support for X
-#   🎉 [helm] PR merged after 1d 4h · by @author · merged by @merger — #123 feat: add support for X
-#   ❌ [helm] PR closed without merge · by @author — #123 feat: add support for X
+#   ↗ [helm] #123 feat: add support for X — review: @rev1
+#   ✅ [helm] #123 merged after 1d 4h
+#   ❌ [helm] #123 feat: add support for X
 #
 # Notification logic is implemented in scripts/notify-pr-activity (Go).
 #
