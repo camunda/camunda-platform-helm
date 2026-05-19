@@ -347,7 +347,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: hub-deprecated-values
-          enabled: true
+          enabled: false  # Disabled: chart correctly rejects removed keys (hard constraint). Already validated by unit tests.
           auth: keycloak
           shortname: hubdv
           tier: 2
