@@ -1,0 +1,67 @@
+---
+# Standalone PostgreSQL for hub-external-db scenario.
+# Deploys a minimal PostgreSQL instance that web-modeler restapi can connect to
+# via externalDatabase configuration.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hub-external-postgresql-secret
+  namespace: $NAMESPACE
+stringData:
+  POSTGRES_USER: modeler
+  POSTGRES_PASSWORD: modeler-ci-password
+  POSTGRES_DB: web-modeler
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hub-external-postgresql
+  namespace: $NAMESPACE
+  labels:
+    app: hub-external-postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hub-external-postgresql
+  template:
+    metadata:
+      labels:
+        app: hub-external-postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: hub-external-postgresql-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - modeler
+                - -d
+                - web-modeler
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hub-external-postgresql
+  namespace: $NAMESPACE
+spec:
+  selector:
+    app: hub-external-postgresql
+  ports:
+    - port: 5432
+      targetPort: 5432

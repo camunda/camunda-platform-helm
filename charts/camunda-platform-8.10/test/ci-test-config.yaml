@@ -730,6 +730,24 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
+        - name: hub-external-db
+          enabled: true
+          auth: keycloak
+          shortname: hubdb
+          tier: 2
+          exclude: []
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch
+          features: [hub-external-db]
+          platforms: [gke]
+          pre-install:
+            fixtures:
+              - hub-external-postgresql.yaml
+            description: |
+              Deploys a standalone PostgreSQL pod with credentials for
+              web-modeler restapi to connect to via externalDatabase config.
+        # Used by camunda/connectors FEATURE_BRANCH_HELM_TEST workflow (main/8.10).
         - name: keycloak-original
           enabled: true
           flow: install
