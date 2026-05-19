@@ -65,3 +65,19 @@ spec:
   ports:
     - port: 5432
       targetPort: 5432
+---
+# Compatibility alias: the base.yaml init container waits for
+# "$RELEASE_NAME-postgresql-web-modeler" (i.e., integration-postgresql-web-modeler).
+# This Service resolves that name to the same external PG pod so the init container
+# passes without needing to override initContainers in the feature layer.
+apiVersion: v1
+kind: Service
+metadata:
+  name: $RELEASE_NAME-postgresql-web-modeler
+  namespace: $NAMESPACE
+spec:
+  selector:
+    app: hub-external-postgresql
+  ports:
+    - port: 5432
+      targetPort: 5432
