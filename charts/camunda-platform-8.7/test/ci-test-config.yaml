@@ -147,6 +147,11 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
         # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
@@ -173,6 +178,13 @@ integration:
           infra-type:
             gke: qa-workloads
             eks: preemptible
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours. Prevents session-expiry flakiness
+              in long-running E2E test flows (diagram building, process deployment)
+              when the cluster is under heavy load.
         - name: qa-elasticsearch-rba
           enabled: false
           flow: install
@@ -186,6 +198,11 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
         - name: qa-elasticsearch-mt
           enabled: false
           flow: install
@@ -199,6 +216,11 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
         - name: qa-license
           enabled: false
           flow: install
@@ -212,6 +234,11 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
         - name: qa-opensearch
           enabled: false
           flow: install
@@ -224,6 +251,11 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
           dependencies:
             - chart: opensearch/opensearch
               version: "2.31.0"
