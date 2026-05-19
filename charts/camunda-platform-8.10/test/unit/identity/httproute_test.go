@@ -213,6 +213,21 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestKeycloakHTTPRouteWithGatewayNamespace",
+			Values: map[string]string{
+				"global.gateway.enabled":   "true",
+				"global.gateway.namespace": "shared-infra",
+				"global.host":              "camunda.example.com",
+				"identity.enabled":         "true",
+				"identityKeycloak.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "kind: HTTPRoute")
+				require.Contains(t, output, "namespace: shared-infra")
+			},
+		},
+		{
 			Name: "TestHTTPRouteNotRenderedWhenExternalEvenWithNamespace",
 			Values: map[string]string{
 				"global.gateway.enabled":   "true",

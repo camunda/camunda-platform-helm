@@ -169,7 +169,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on all Routes. Requires global.gateway.tls.secretName to be set.",
+                                    "description": "if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.",
                                     "default": false
                                 },
                                 "secretName": {
