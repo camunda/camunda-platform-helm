@@ -319,9 +319,10 @@ integration:
           features: [hub-legacy]
           platforms: [gke]
         - name: hub-legacy
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: hublu
+          tier: 2
           exclude: []
           flow: upgrade-minor
           identity: keycloak
@@ -332,9 +333,10 @@ integration:
             gke: distroci
             eks: preemptible
         - name: hub-mixed
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: hubmu
+          tier: 2
           exclude: []
           flow: upgrade-minor
           identity: keycloak
