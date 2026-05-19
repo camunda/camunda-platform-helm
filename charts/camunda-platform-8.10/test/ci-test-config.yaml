@@ -255,6 +255,8 @@ integration:
           persistence: no-elasticsearch
           features: [no-secondary-storage]
           platforms: [gke]
+          infra-type:
+            gke: distroci
         - name: documentstore
           enabled: true
           exclude: []
@@ -265,6 +267,8 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           platforms: [eks]
+          infra-type:
+            eks: preemptible
         - name: rdbms-external
           enabled: false
           auth: keycloak
@@ -318,6 +322,8 @@ integration:
           persistence: elasticsearch
           features: [hub-legacy]
           platforms: [gke]
+          infra-type:
+            gke: distroci
         - name: hub-legacy
           enabled: false
           auth: keycloak
@@ -344,15 +350,17 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-        # Used by camunda/connectors FEATURE_BRANCH_HELM_TEST workflow (main/8.10).
         - name: keycloak-original
           enabled: true
           flow: install
           shortname: keyco
+          tier: 1
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+          infra-type:
+            gke: distroci
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
         # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
@@ -376,6 +384,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-upg
           enabled: false
           flow: modular-upgrade-minor
@@ -386,6 +396,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch
           enabled: false
           flow: install
@@ -396,6 +408,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-opensearch
           enabled: false
           flow: install
@@ -406,6 +420,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
           dependencies:
             - chart: opensearch/opensearch
               version: "3.6.0"
@@ -423,6 +439,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
           dependencies:
             - chart: opensearch/opensearch
               version: "3.6.0"
@@ -440,6 +458,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
           dependencies:
             - chart: opensearch/opensearch
               version: "3.6.0"
@@ -458,6 +478,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-mt-upg
           enabled: false
           flow: install
@@ -469,6 +491,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-mt-upg
           enabled: false
           flow: modular-upgrade-minor
@@ -480,6 +504,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-rba
           enabled: false
           flow: install
@@ -491,6 +517,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-document-store
           enabled: false
           flow: install
@@ -502,6 +530,9 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke, eks]
+          infra-type:
+            gke: qa-workloads
+            eks: preemptible
         - name: qa-document-store-upg
           enabled: false
           flow: install
@@ -513,6 +544,9 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke, eks]
+          infra-type:
+            gke: qa-workloads
+            eks: preemptible
         - name: qa-document-store-upg
           enabled: false
           flow: modular-upgrade-minor
@@ -524,6 +558,9 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke, eks]
+          infra-type:
+            gke: qa-workloads
+            eks: preemptible
         - name: qa-license
           enabled: false
           flow: install
@@ -535,6 +572,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
     nightly:
       scenario:
         - name: elasticsearch

@@ -135,6 +135,16 @@ on:
         required: false
         default: false
         type: boolean
+      pr-head-sha:
+        description: "PR HEAD commit SHA for recording cache results"
+        required: false
+        default: ""
+        type: string
+      camunda-version:
+        description: "Camunda version (e.g., 8.9) for cache result recording"
+        required: false
+        default: ""
+        type: string
       shortname:
         required: false
         default: "es"
@@ -219,6 +229,7 @@ permissions:
   id-token: write
   deployments: write
   packages: read
+  statuses: write
 
 # No concurrency block here — cancellation is handled by each caller workflow.
 # Adding cancel-in-progress here would kill the runner's cleanup job. See #5307.
@@ -316,6 +327,7 @@ jobs:
       id-token: write
       deployments: write
       packages: read
+      statuses: write
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -358,6 +370,8 @@ jobs:
       test-upgrade: ${{ inputs.test-upgrade }}
       skip-e2e: ${{ inputs.skip-e2e }}
       skip-it: ${{ inputs.skip-it }}
+      pr-head-sha: ${{ inputs.pr-head-sha }}
+      camunda-version: ${{ inputs.camunda-version }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}

@@ -11,7 +11,6 @@ on:
       - ".github/workflows/test-chart-version-template.yaml"
       - ".github/workflows/test-chart-version.yaml"
       - ".github/config/external-secret/**"
-      - "!.github/workflows/test-backward-compat.yaml"
       - "scripts/**"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
@@ -122,9 +121,10 @@ jobs:
     name: Generate chart matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+      matrix: ${{ steps.annotate-cache.outputs.matrix || steps.generate-chart-versions.outputs.matrix }}
       camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
       workspace: ${{ github.workspace }}
+      pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Generate chart versions
@@ -135,6 +135,54 @@ jobs:
           manual-scenario: ${{ github.event.inputs.scenario || 'none' }}
           manual-flow: ${{ github.event.inputs.flows || 'none' }}
           tier: ${{ github.event_name == 'pull_request' && '1' || '' }}
+
+      # Resolve PR HEAD SHA for cache operations.
+      # - pull_request: directly available from event context
+      # - merge_group: extract PR number from head_ref and query API
+      - name: Resolve PR HEAD SHA
+        id: resolve-pr-sha
+        if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "pr-head-sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            PR_NUM=$(echo "${{ github.event.merge_group.head_ref }}" | grep -oP 'pr-\K\d+')
+            if [[ -n "$PR_NUM" ]]; then
+              SHA=$(gh pr view "$PR_NUM" --json headRefOid -q .headRefOid)
+              echo "pr-head-sha=${SHA}" >> "$GITHUB_OUTPUT"
+              echo "Resolved PR #${PR_NUM} HEAD SHA: ${SHA}"
+            else
+              echo "Warning: could not extract PR number from merge_group head_ref"
+              echo "pr-head-sha=" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      # Annotate matrix with cache status (merge_group only).
+      # Scenarios that already passed for the same content hash are marked cached=true
+      # and will be routed to a fast-path job, skipping the full GKE deploy+test cycle.
+      - name: Setup Go for cache annotation
+        if: github.event_name == 'merge_group' && steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        with:
+          go-version-file: scripts/ci-result-cache/go.mod
+          cache: true
+          cache-dependency-path: scripts/ci-result-cache/go.sum
+
+      - name: Annotate matrix with cache status
+        id: annotate-cache
+        if: github.event_name == 'merge_group' && steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          cd scripts/ci-result-cache && go build -o /tmp/ci-result-cache .
+          ANNOTATED=$(echo '${{ steps.generate-chart-versions.outputs.matrix }}' | \
+            /tmp/ci-result-cache annotate-matrix \
+              --sha "${{ steps.resolve-pr-sha.outputs.pr-head-sha }}" \
+              --repo-root "${{ github.workspace }}")
+          echo "matrix=${ANNOTATED}" >> "$GITHUB_OUTPUT"
 
   unit-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
@@ -226,6 +274,8 @@ jobs:
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
       skip-it: ${{ matrix.skipIT == 'true' }}
       helm-version: ${{ matrix.helmVersion }}
+      cached: ${{ matrix.cached == 'true' }}
+      pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}
 
   # Aggregation gate job that fails if any CI job fails.
   # Add this job's name ("CI Gate") to the ruleset's required status checks

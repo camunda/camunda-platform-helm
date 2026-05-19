@@ -47,6 +47,14 @@ build.vault-secret-mapper:
 install.vault-secret-mapper:
 	cd scripts/vault-secret-mapper && go mod tidy && go install .
 
+.PHONY: build.ci-result-cache
+build.ci-result-cache:
+	cd scripts/ci-result-cache && go mod tidy && go build .
+
+.PHONY: install.ci-result-cache
+install.ci-result-cache:
+	cd scripts/ci-result-cache && go mod tidy && go install .
+
 .PHONY: build.dx-tooling
 build.dx-tooling:
 	make build.deployer
