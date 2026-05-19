@@ -7,6 +7,10 @@ on:
     branches:
       - 'release-please--branches--*'
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   check:
     name: Check PR Conventions
@@ -55,3 +59,30 @@ jobs:
           # merge commit, and it's easy to commit this by mistake. Enable this option
           # to also validate the commit message for one commit PRs.
           validateSingleCommit: true
+      - name: Checkout
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Enforce feat/fix/refactor/docs/revert reserved for user-facing chart changes
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          # feat/fix/refactor/docs/revert titles propagate to RELEASE-NOTES.md
+          # and artifacthub.io/changes via git-cliff (see cliff.toml
+          # commit_parsers). Reject them when the PR touches no user-facing
+          # chart files. Mirrors the path filter in
+          # scripts/generate-release-notes.sh so both layers stay in sync.
+          if printf '%s' "$PR_TITLE" | grep -qE '^(feat|fix|refactor|docs|revert)(\(.+\))?(!)?:'; then
+            user_facing=$(git diff --name-only "origin/${BASE_REF}...HEAD" \
+              | grep '^charts/' \
+              | grep -vE '^charts/[^/]+/(test/|go\.mod$|go\.sum$)' \
+              | wc -l | tr -d ' ')
+            if [ "$user_facing" -eq 0 ]; then
+              echo "::error::PR title uses 'feat:', 'fix:', 'refactor:', 'docs:', or 'revert:' but no user-facing files under charts/<version>/ are changed (test/, go.mod, go.sum excluded). These types propagate to release notes. Use ci:, chore:, test:, or build: instead."
+              exit 1
+            fi
+          fi
