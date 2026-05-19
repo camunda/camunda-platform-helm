@@ -191,7 +191,9 @@ GitHub Actions: playwright_sm_nightly_upgrade_minor_opensearch_8_9.yml
 │                                                                     │
 │  Job 2: upgrade (chart 8.9, shortname=qaosupg)                     │
 │  ────────────────────────────────────────────                       │
-│  executeUpgradeOnly() / flow=modular-upgrade-minor                  │
+│  executeUpgradeOnly()                                               │
+│    upgradeFlags.Deployment.Flow = "install"  ◄── explicit override  │
+│    (must match prior install so $FLOW resolves identically)         │
 │    run pre-upgrade-minor.sh (if exists)                             │
 │    ┌─────────────────────────────────────────────────┐              │
 │    │ readIndexPrefixesFromHelm()                      │              │
@@ -202,8 +204,8 @@ GitHub Actions: playwright_sm_nightly_upgrade_minor_opensearch_8_9.yml
 │    └─────────────────────────────────────────────────┘              │
 │    helm upgrade --install integration                               │
 │    --set orchestration.index.prefix=abc123-install                  │
-│    values file template would say "abc123-modular-upgrade-minor"    │
-│    but --set wins --> same index reused, auth records found         │
+│    $FLOW="install", prefix=abc123-install (same as install job)     │
+│    same index reused, auth records found                            │
 │                                                                     │
 │  Job 3: e2e-tests                                                   │
 │  ────────────────                                                   │
@@ -243,6 +245,62 @@ getAuthorizedComponents()
 ```
 
 After the fix, `executeUpgradeOnly()` reads `abc123-install` from the live Helm release and passes `--set orchestration.index.prefix=abc123-install`, so the 8.9 cluster reads from the same populated index as 8.8.
+
+---
+
+## CI Result Caching (Merge Queue Optimization)
+
+The `ci-result-cache` CLI (`scripts/ci-result-cache/`) reduces merge queue CI time by skipping
+integration scenarios that already passed on the same chart/script content.
+
+### How it works
+
+```
+PR CI (tier-1)           Merge Queue (all tiers)         Re-queue after ejection
+    │                         │                                 │
+    │  record passing          │  annotate-matrix                │  annotate-matrix
+    │  results on PR HEAD      │  checks PR HEAD statuses        │  finds cached results
+    │                          │                                 │
+    ▼                          ▼                                 ▼
+ 1 scenario passes        6-12 scenarios run               cached → fast-path (~10s)
+                          record each pass                 uncached → full run (~15min)
+```
+
+### Content hash scope
+
+The cache key is a SHA-256 of the following inputs:
+
+- `charts/camunda-platform-{version}/`
+- `scripts/deploy-camunda/`
+- Specific workflow files in the integration test path
+
+A change to any in-scope file invalidates the cache for that version. Workflow file or
+`deploy-camunda` changes invalidate **all** versions.
+
+### Cache invalidation
+
+| Mechanism | Scope | Trigger |
+|---|---|---|
+| Content hash | Per-version | Any file change in scope |
+| TTL (24h default) | Per-entry | Time-based expiration |
+| `ci-result-cache invalidate` | Surgical or bulk | Manual CLI command |
+| Empty commit | Full PR | Changes PR HEAD SHA |
+
+### CLI commands
+
+| Command | What it does |
+|---|---|
+| `ci-result-cache record` | Write passing result as commit status on PR HEAD |
+| `ci-result-cache check` | Verify cached result validity (hash match + TTL) |
+| `ci-result-cache invalidate` | Overwrite statuses to `pending` (per-scenario, per-version, or all) |
+| `ci-result-cache annotate-matrix` | Add `cached: true/false` flags to CI matrix JSON |
+
+### Safety properties
+
+- **No false positives:** invalid SHA, missing token, expired TTL, hash mismatch → all return `NOT CACHED`
+- **Version isolation:** modifying 8.9 chart files only invalidates 8.9; 8.8/8.10 unaffected
+- **Cross-version invalidation:** workflow or `deploy-camunda` changes invalidate all versions
+- **Graceful degradation:** `annotate-matrix` falls back to all-uncached on any GitHub API failure (valid JSON, exit 0); `record`/`check`/`invalidate` fail loudly (exit 1)
 
 ---
 
@@ -297,6 +355,10 @@ camunda-platform-helm
 | `scripts/deploy-camunda/deploy/` | Core `deploy.Execute()` and `PinScenarioPrefixes()` |
 | `scripts/camunda-core/pkg/executil/exec.go` | `RunCommandCapture()` used by `readIndexPrefixesFromHelm` |
 | `scripts/camunda-core/pkg/versionmatrix/` | `ResolveUpgradeFromVersion`, `HasPreInstallScript`, `HasPreUpgradeScript` |
+| `scripts/ci-result-cache/` | CLI for caching integration test results via GitHub commit statuses; commands: `record`, `check`, `invalidate`, `annotate-matrix` |
+| `.github/workflows/test-chart-version-template.yaml` | `cached-pass` fast-path job; gates full integration run on `!cached` |
+| `.github/workflows/test-chart-version.yaml` | Resolves PR HEAD SHA; annotates matrix with cache status (merge_group only) |
+| `.github/workflows/test-integration-runner.yaml` | `record-result` job — writes cache entry after tests pass |
 
 ### `c8-cross-component-e2e-tests`
 
@@ -314,5 +376,7 @@ camunda-platform-helm
 |---|---|---|---|
 | PR check | Pull request | `install` | `runEntry` |
 | PR check (upgrade) | Pull request | `upgrade-minor` | `executeTwoStepUpgrade` |
+| Merge queue (cached) | `merge_group` — scenario cached | n/a | `cached-pass` fast-path job (~10s) |
+| Merge queue (full run) | `merge_group` — not cached | `install` / `upgrade-minor` | `runEntry` / `executeTwoStepUpgrade` + `record-result` |
 | Nightly | Scheduled cron | `install` + `modular-upgrade-minor` (separate jobs) | `runEntry` + `executeUpgradeOnly` |
 | Manual | `workflow_dispatch` | any | depends on shortname filter |
