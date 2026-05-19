@@ -145,6 +145,8 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+          infra-type:
+            gke: distroci
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
         # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
@@ -168,6 +170,9 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke, eks]
+          infra-type:
+            gke: qa-workloads
+            eks: preemptible
         - name: qa-elasticsearch-rba
           enabled: false
           flow: install
@@ -179,6 +184,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-mt
           enabled: false
           flow: install
@@ -190,6 +197,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-license
           enabled: false
           flow: install
@@ -201,6 +210,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-opensearch
           enabled: false
           flow: install
@@ -211,6 +222,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
           dependencies:
             - chart: opensearch/opensearch
               version: "2.31.0"

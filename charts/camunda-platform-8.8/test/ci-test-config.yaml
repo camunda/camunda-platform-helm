@@ -249,6 +249,8 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           platforms: [eks]
+          infra-type:
+            eks: preemptible
 
         # ===========================================================================
         # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
@@ -270,6 +272,8 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+          infra-type:
+            gke: distroci
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
         # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
@@ -293,6 +297,8 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+          infra-type:
+            gke: distroci
         # `es` is the test-integration-template default shortname; used by the
         # compat-camunda-simple job (camunda/camunda-helm-integration.yml).
         - name: elasticsearch
@@ -303,6 +309,8 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+          infra-type:
+            gke: distroci
         - name: qa-elasticsearch
           enabled: false
           flow: install
@@ -313,6 +321,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-opensearch
           enabled: false
           flow: install
@@ -323,6 +333,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
           dependencies:
             - chart: opensearch/opensearch
               version: "2.31.0"
@@ -341,6 +353,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-mt
           enabled: false
           flow: install
@@ -352,6 +366,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-license
           enabled: false
           flow: install
@@ -363,6 +379,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-entra
           enabled: false
           flow: install
@@ -373,6 +391,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-document-store
           enabled: false
           flow: install
@@ -384,6 +404,9 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke, eks]
+          infra-type:
+            gke: qa-workloads
+            eks: preemptible
         - name: qa-elasticsearch-tasklist-v1
           enabled: false
           flow: install
@@ -395,6 +418,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-opensearch-tasklist-v1
           enabled: false
           flow: install
@@ -406,6 +431,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
           dependencies:
             - chart: opensearch/opensearch
               version: "2.31.0"
@@ -424,6 +451,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-mt-tasklist-v1
           enabled: false
           flow: install
@@ -435,6 +464,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-license-tasklist-v1
           enabled: false
           flow: install
@@ -446,6 +477,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-upg
           enabled: false
           flow: install
@@ -456,6 +489,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-upg
           enabled: false
           flow: modular-upgrade-minor
@@ -467,6 +502,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-document-upg
           enabled: false
           flow: install
@@ -478,6 +515,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-opensearch-upg
           enabled: false
           flow: install
@@ -488,6 +527,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
           dependencies:
             - chart: opensearch/opensearch
               version: "2.31.0"
@@ -506,6 +547,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-mt-upg
           enabled: false
           flow: install
@@ -517,6 +560,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-license-upg
           enabled: false
           flow: install
@@ -528,6 +573,8 @@ integration:
           qa: true
           image-tags: true
           platforms: [gke]
+          infra-type:
+            gke: qa-workloads
     nightly:
       scenario:
         - name: elasticsearch
