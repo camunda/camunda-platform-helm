@@ -4,6 +4,21 @@
 - Date: 2026-05-06
 - Decision-makers: Distribution team
 
+## Quick Reference
+
+**Proposing a new `values.yaml` key?** Classify it first:
+
+| Tier | What it controls | Rule | Backportable? |
+|------|-----------------|------|---------------|
+| **Tier 1** — app behavior | Feature flags, toggles, log levels, Spring Boot properties, env vars controlling application logic | **BLOCKED** — use `<component>.extraConfiguration` instead | No |
+| **Tier 2** — infra & connectivity | Kubernetes infrastructure (resources, affinity, volumes), connectivity (endpoints, TLS, **Gateway API wiring**: `global.gateway.name`, `global.gateway.namespace`, `global.gateway.tls.*`), cross-component coordination (shared auth config, service discovery) | **Allowed** — add to `values.yaml` | Yes — additive, opt-in, defaults to prior behaviour |
+
+Quick test: *Does this control what the application **does** (Tier 1) or **how/where** it runs and connects (Tier 2)?*
+
+Full classification details, examples, and rationale are in [Configuration Classification](#configuration-classification) below.
+
+---
+
 ## Context and Problem Statement
 
 The Camunda Helm chart historically added abstraction layers over application-level configuration to simplify inconsistent component setups (e.g., log levels, feature flags, resource permission toggles). Over time, this produced a third configuration layer sitting between the application's native config and Kubernetes deployment concerns. Critically, these Helm-level parameters were not a 1:1 mapping to native application properties — they were a simplified abstraction that required its own Helm-specific documentation and did not transfer to other deployment methods such as ECS, Docker, or Jar. Instead of having a single configuration reference for all deployment methods, operators were required to learn a Helm-specific configuration layer on top of the application's own.

@@ -207,26 +207,6 @@ helm template integration charts/camunda-platform-8.X \
 # Should be exactly 1. If >1, there's a duplicate.
 ```
 
-## values.yaml Key Classification (ADR 91)
-
-Before adding a new `values.yaml` key, classify it. Full details in
-`docs/adr/0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md`.
-
-**Tier 1 — Application behavior** (BLOCKED — use `<component>.extraConfiguration` instead):
-- Feature flags, toggles, log levels, Spring Boot properties, env vars controlling application logic.
-- Examples: `global.multitenancy.enabled`, `orchestration.security.authorizations.enabled`.
-- **No new Tier 1 keys may be added to any chart version.**
-
-**Tier 2 — Infrastructure and connectivity** (ALLOWED — add to `values.yaml`):
-- Kubernetes infrastructure: resources, affinity, serviceAccount, volumes, strategy.
-- Connectivity: external endpoints, credentials, TLS certificates, Gateway API wiring
-  (`global.gateway.name`, `global.gateway.namespace`, `global.gateway.tls.*`).
-- Cross-component coordination: shared auth config, service discovery wiring.
-- **Tier 2 keys may be backported to released (non-alpha) chart versions** because they
-  are additive, opt-in, and default to the prior behaviour.
-
-Quick test: *Does this control what the application does (Tier 1) or how/where it runs and connects (Tier 2)?*
-
 ## Commit and Branch Conventions
 - Branches: `issueId-description` (example `123-adding-bpel-support`).
 - Commit/PR titles: Conventional Commits.
@@ -241,6 +221,7 @@ Quick test: *Does this control what the application does (Tier 1) or how/where i
 - `STATE.md` — session continuity (gitignored, read on session start)
 - `helm-values-mcp/` — MCP server exposing chart values schema. Tools: `list_versions`, `list_components`, `search_configs`, `get_config_info`, `generate_values_example`.
 - `scripts/helm_unused_values/` — CLI to find values declared in `values.yaml` but never referenced in templates.
+- `docs/adr/0091-*.md` — **values.yaml key classification (Tier 1 vs Tier 2)**. Read the Quick Reference table at the top before proposing a new key or backport.
 
 ## Recommended Agent Workflow
 1. Select target chart version/component.
