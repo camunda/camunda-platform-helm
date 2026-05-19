@@ -134,7 +134,7 @@ global:
     annotations: {}
     ## @extra global.gateway.tls TLS configuration for the Gateway listener. See https://kubernetes.io/docs/concepts/services-networking/gateway/#tls
     tls:
-      ## @param global.gateway.tls.enabled if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on all Routes. Requires global.gateway.tls.secretName to be set.
+      ## @param global.gateway.tls.enabled if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.
       enabled: false
       ## @param global.gateway.tls.secretName name of the Kubernetes Secret containing the TLS certificate and private key.
       secretName: camunda-platform

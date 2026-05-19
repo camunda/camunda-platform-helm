@@ -396,7 +396,7 @@ Usage:
 Gateway namespace and createGatewayResource are mutually exclusive.
 *******************************************************************************
 */}}
-{{- if and .Values.global.gateway.namespace .Values.global.gateway.createGatewayResource }}
+{{- if and .Values.global.gateway.enabled .Values.global.gateway.namespace .Values.global.gateway.createGatewayResource }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
       "global.gateway.namespace and global.gateway.createGatewayResource=true cannot be set together."
       "When using a shared Gateway in another namespace, set \"global.gateway.createGatewayResource: false\"."
