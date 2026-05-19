@@ -234,6 +234,7 @@ jobs:
     # validated by AlwaysGreen before publishing. Only golden file updates are needed.
     if: >-
       ${{
+        needs.init.outputs.camunda-versions != '[]' &&
         !contains(github.head_ref, 'release-please--branches--') &&
         !(startsWith(github.head_ref, 'renovate/') && (
           contains(github.head_ref, 'camunda-platform-images') ||
