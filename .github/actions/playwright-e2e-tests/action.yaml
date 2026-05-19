@@ -191,7 +191,7 @@ runs:
 
         # Build scenario-specific flags
         EXTRA_FLAGS=""
-        if [[ "${{ inputs.scenario }}" == "opensearch" ]]; then
+        if [[ "${{ inputs.scenario }}" == opensearch* ]]; then
           EXTRA_FLAGS="--opensearch"
         elif [[ "${{ inputs.scenario }}" == "keycloak-rba" ]]; then
           EXTRA_FLAGS="--rba"
