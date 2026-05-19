@@ -5999,6 +5999,98 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Explicit lifecycle fixtures in ci-test-config.yaml"
+        - kind: fixed
+          description: "Test Helm 3 or 4 and use helm v4 for dev"
+        - kind: fixed
+          description: "Normalize trailing whitespace in golden file writer"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/component-image-versions: |
+        zeebe: 8.7.29
+        operate: 8.7.29
+        tasklist: 8.7.29
+        identity: 8.7.19
+        optimize: 8.7.21
+        webModeler: 8.7.21
+        connectors: 8.7.20
+        console: 8.7.104
+      camunda.io/helmCLIVersion: 4.1.4
+      camunda.io/imageOverrides: |+
+        zeebe: 8.7.29
+        zeebe-gateway: 8.7.29
+
+    apiVersion: v2
+    appVersion: 8.7.x
+    created: "2026-05-19T18:59:49.975781157Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 4ba8369095f58f17ce1a5d2d8e6bd83783947f4696c02e50578a9c0b00fa45c6
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.7-12.10.0/camunda-platform-12.10.0.tgz
+    version: 12.10.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Add elasticsearch-self-signed-upgrade scenario for 8.7->8.8 TLS upgrade testing"
         - kind: fixed
           description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
@@ -27872,4 +27964,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-05-12T16:01:57.921051814Z"
+generated: "2026-05-19T18:59:49.976692931Z"
