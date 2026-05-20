@@ -2,6 +2,10 @@ package agentwatch
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -337,6 +341,177 @@ func TestReplayReport_FormatLabelsRegressions(t *testing.T) {
 	}
 	if !strings.Contains(out, "Regressions: 1") {
 		t.Fatalf("expected Regressions: 1 in output, got:\n%s", out)
+	}
+}
+
+func TestSnapshot_AllPodsReady(t *testing.T) {
+	cases := []struct {
+		name string
+		pods string
+		want bool
+	}{
+		{
+			name: "empty pods field",
+			pods: "",
+			want: false,
+		},
+		{
+			name: "no items",
+			pods: `{"items":[]}`,
+			want: false,
+		},
+		{
+			name: "single running ready",
+			pods: `{"items":[{"status":{"phase":"Running","conditions":[{"type":"Ready","status":"True"}]}}]}`,
+			want: true,
+		},
+		{
+			name: "running but not ready",
+			pods: `{"items":[{"status":{"phase":"Running","conditions":[{"type":"Ready","status":"False"}]}}]}`,
+			want: false,
+		},
+		{
+			name: "running with no Ready condition",
+			pods: `{"items":[{"status":{"phase":"Running","conditions":[{"type":"Initialized","status":"True"}]}}]}`,
+			want: false,
+		},
+		{
+			name: "pending pod blocks readiness",
+			pods: `{"items":[
+				{"status":{"phase":"Running","conditions":[{"type":"Ready","status":"True"}]}},
+				{"status":{"phase":"Pending"}}
+			]}`,
+			want: false,
+		},
+		{
+			name: "succeeded job pod counts as ready",
+			pods: `{"items":[
+				{"status":{"phase":"Running","conditions":[{"type":"Ready","status":"True"}]}},
+				{"status":{"phase":"Succeeded"}}
+			]}`,
+			want: true,
+		},
+		{
+			name: "malformed JSON returns false",
+			pods: `not json at all`,
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			snap := Snapshot{Pods: json.RawMessage(tc.pods)}
+			if got := snap.AllPodsReady(); got != tc.want {
+				t.Fatalf("AllPodsReady = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestWatch_MaxDurationStopsLoop(t *testing.T) {
+	// With a sub-second wall-clock cap and no real cluster, snapshot
+	// gathering will fail repeatedly. The MaxDuration timeout must close
+	// the loop and surface context.DeadlineExceeded.
+	opts := Options{
+		CLI: AgentCLI{Name: "claude", Path: "/nonexistent-but-required-by-validation"},
+		Snapshot: SnapshotOptions{
+			Namespace:      "definitely-does-not-exist-" + nowSuffix(),
+			SkipHelmStatus: true,
+			KubeContext:    "definitely-does-not-exist-context",
+		},
+		Interval:    10 * time.Millisecond,
+		MaxTicks:    -1, // disable tick bound to isolate duration check
+		MaxDuration: 200 * time.Millisecond,
+		MaxErrors:   -1, // disable error bound too
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	start := time.Now()
+	_, _, err := Watch(ctx, opts)
+	elapsed := time.Since(start)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got %v", err)
+	}
+	if elapsed > 3*time.Second {
+		t.Fatalf("Watch should have stopped near MaxDuration; elapsed=%s", elapsed)
+	}
+}
+
+func TestWatch_MaxErrorsStopsRetryStorm(t *testing.T) {
+	opts := Options{
+		CLI: AgentCLI{Name: "claude", Path: "/nonexistent-but-required-by-validation"},
+		Snapshot: SnapshotOptions{
+			Namespace:      "definitely-does-not-exist-" + nowSuffix(),
+			SkipHelmStatus: true,
+			KubeContext:    "definitely-does-not-exist-context",
+		},
+		Interval:  10 * time.Millisecond,
+		MaxTicks:  -1,
+		MaxErrors: 2,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, _, err := Watch(ctx, opts)
+	if err == nil || !strings.Contains(err.Error(), "consecutive errors") {
+		t.Fatalf("expected consecutive-errors abort, got %v", err)
+	}
+}
+
+func TestCleanupClaudeSession_RemovesMatchingTranscript(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	projectDir := filepath.Join(home, ".claude", "projects", "-tmp-fake-cwd")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	keep := filepath.Join(projectDir, "00000000-0000-0000-0000-000000000000.jsonl")
+	target := filepath.Join(projectDir, "deadbeef-1234-5678-9abc-fedcba987654.jsonl")
+	if err := os.WriteFile(keep, []byte(`{"keep":true}`), 0o644); err != nil {
+		t.Fatalf("write keep: %v", err)
+	}
+	if err := os.WriteFile(target, []byte(`{"target":true}`), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+
+	envelope := []byte(`{"type":"result","session_id":"deadbeef-1234-5678-9abc-fedcba987654","result":"..."}`)
+	cleanupClaudeSession(envelope)
+
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatalf("target transcript should have been removed; stat err=%v", err)
+	}
+	if _, err := os.Stat(keep); err != nil {
+		t.Fatalf("unrelated transcript should remain; got err=%v", err)
+	}
+}
+
+func TestCleanupClaudeSession_NoSessionIDIsSilent(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	cleanupClaudeSession([]byte(`{"type":"result","result":"no session id"}`))
+	cleanupClaudeSession([]byte(`not even json`))
+}
+
+func TestCleanupClaudeSession_RejectsPathTraversalPayload(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	// Lay down a file outside ~/.claude/projects that a traversal payload
+	// would target: <home>/victim.jsonl. The cleanup must leave it alone.
+	victim := filepath.Join(home, "victim.jsonl")
+	if err := os.WriteFile(victim, []byte("untouched"), 0o644); err != nil {
+		t.Fatalf("write victim: %v", err)
+	}
+
+	for _, payload := range []string{
+		`{"session_id":"../../victim"}`,
+		`{"session_id":"../victim"}`,
+		`{"session_id":"/etc/passwd"}`,
+		`{"session_id":"deadbeef"}`,
+		`{"session_id":"not-a-uuid-at-all"}`,
+		`{"session_id":"DEADBEEF-1234-5678-9ABC-FEDCBA987654"}`, // uppercase → reject
+	} {
+		cleanupClaudeSession([]byte(payload))
+	}
+
+	if _, err := os.Stat(victim); err != nil {
+		t.Fatalf("traversal payload deleted out-of-tree file: %v", err)
 	}
 }
 

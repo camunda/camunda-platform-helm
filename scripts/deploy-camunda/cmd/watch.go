@@ -33,6 +33,8 @@ func newWatchCommand() *cobra.Command {
 		abortConfidence float64
 		corpusDir       string
 		maxTicks        int
+		maxDuration     time.Duration
+		maxErrors       int
 		logLevel        string
 		cliName         string
 	)
@@ -105,6 +107,15 @@ Typical use:
 				}
 			}()
 
+			interval := time.Duration(intervalSeconds) * time.Second
+			if interval > 0 && interval < agentwatch.MinInterval {
+				logging.Logger.Warn().
+					Dur("requested", interval).
+					Dur("floor", agentwatch.MinInterval).
+					Msg("agentwatch: --interval below floor; clamping to MinInterval to avoid agent-API fire-hose")
+				interval = agentwatch.MinInterval
+			}
+
 			opts := agentwatch.Options{
 				CLI: cli,
 				Snapshot: agentwatch.SnapshotOptions{
@@ -112,10 +123,12 @@ Typical use:
 					Release:     release,
 					KubeContext: kubeContext,
 				},
-				Interval:        time.Duration(intervalSeconds) * time.Second,
+				Interval:        interval,
 				AbortConfidence: abortConfidence,
 				CorpusDir:       corpusDir,
 				MaxTicks:        maxTicks,
+				MaxDuration:     maxDuration,
+				MaxErrors:       maxErrors,
 			}
 
 			decision, verdict, err := agentwatch.Watch(ctx, opts)
@@ -151,7 +164,12 @@ Typical use:
 		"Auto-abort when an 'abort' verdict has confidence at or above this value (0 disables auto-abort)")
 	cmd.Flags().StringVar(&corpusDir, "corpus-dir", "",
 		"Directory to persist snapshot+verdict pairs for the eval corpus (empty disables persistence)")
-	cmd.Flags().IntVar(&maxTicks, "max-ticks", 0, "Maximum number of poll ticks before exiting (0 = unbounded)")
+	cmd.Flags().IntVar(&maxTicks, "max-ticks", 0,
+		"Maximum number of poll ticks before exiting (0 = package default, negative = unbounded)")
+	cmd.Flags().DurationVar(&maxDuration, "max-duration", 0,
+		"Wall-clock cap for the entire watch run (0 = package default, e.g. 30m)")
+	cmd.Flags().IntVar(&maxErrors, "max-errors", 0,
+		"Consecutive snapshot/agent/parse errors tolerated before giving up (0 = package default)")
 	cmd.Flags().StringVarP(&logLevel, "log-level", "l", "info", "Log level")
 	cmd.Flags().StringVar(&cliName, "cli", "", "Agent CLI to use: opencode or claude (auto-detected if empty)")
 

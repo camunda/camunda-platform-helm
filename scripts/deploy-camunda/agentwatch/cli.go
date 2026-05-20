@@ -10,10 +10,20 @@ package agentwatch
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 )
+
+// claudeSessionIDPattern matches the UUID format Claude Code emits for
+// session identifiers. We validate before using session_id in filesystem
+// operations: filepath.Join calls filepath.Clean, so a crafted value
+// containing "../" would otherwise escape ~/.claude/projects/.
+var claudeSessionIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 // AgentCLI describes a discovered local agent CLI.
 type AgentCLI struct {
@@ -102,11 +112,47 @@ func Invoke(ctx context.Context, cli AgentCLI, prompt string, snapshot []byte) (
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	if err := cmd.Run(); err != nil {
-		return stdout.Bytes(), fmt.Errorf("%s exited with error: %w; stderr: %s",
-			cli.Name, err, truncate(stderr.String(), 2000))
+	runErr := cmd.Run()
+	out := stdout.Bytes()
+	// Claude Code's -p mode persists a transcript at
+	// ~/.claude/projects/<cwd-hash>/<session_id>.jsonl on every invocation.
+	// Because agentwatch polls every Interval, an hour-long install can
+	// leave hundreds of throwaway sessions cluttering the user's history.
+	// Best-effort delete the file using session_id from the JSON envelope.
+	if cli.Name == "claude" {
+		cleanupClaudeSession(out)
 	}
-	return stdout.Bytes(), nil
+	if runErr != nil {
+		return out, fmt.Errorf("%s exited with error: %w; stderr: %s",
+			cli.Name, runErr, truncate(stderr.String(), 2000))
+	}
+	return out, nil
+}
+
+// cleanupClaudeSession parses the session_id from a Claude Code -p
+// --output-format json envelope and removes the matching transcript file.
+// All failures are silent: this is housekeeping, not correctness.
+func cleanupClaudeSession(raw []byte) {
+	var env struct {
+		SessionID string `json:"session_id"`
+	}
+	if err := json.Unmarshal(raw, &env); err != nil || env.SessionID == "" {
+		return
+	}
+	if !claudeSessionIDPattern.MatchString(env.SessionID) {
+		return
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	matches, err := filepath.Glob(filepath.Join(home, ".claude", "projects", "*", env.SessionID+".jsonl"))
+	if err != nil {
+		return
+	}
+	for _, m := range matches {
+		_ = os.Remove(m)
+	}
 }
 
 // truncate trims s to at most n runes, appending an ellipsis when shortened.

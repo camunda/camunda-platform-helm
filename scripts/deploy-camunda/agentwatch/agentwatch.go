@@ -69,6 +69,32 @@ const (
 	DecisionAbort
 )
 
+// DefaultInterval is the per-tick poll interval used when Options.Interval
+// is zero.
+const DefaultInterval = 60 * time.Second
+
+// MinInterval is the recommended floor enforced by CLI callers on
+// Options.Interval. Each tick is a paid LLM call, so accidental fast
+// intervals (e.g. --interval 1) must not fire-hose the agent API. The
+// package itself does not clamp, to keep unit tests fast.
+const MinInterval = 15 * time.Second
+
+// DefaultMaxTicks bounds the loop when Options.MaxTicks is zero. At
+// DefaultInterval that is one hour of watching; any healthy install
+// finishes well before then.
+const DefaultMaxTicks = 60
+
+// DefaultMaxDuration is the wall-clock cap applied when Options.MaxDuration
+// is zero. Independent from MaxTicks so a stuck snapshot collection that
+// takes longer than expected cannot evade the bound.
+const DefaultMaxDuration = 30 * time.Minute
+
+// DefaultMaxErrors is the consecutive-error cap. After this many
+// snapshot/invoke/parse failures in a row, Watch exits with an error
+// rather than retrying forever — an offline agent CLI should not produce
+// an unbounded retry storm.
+const DefaultMaxErrors = 5
+
 // Options configures a Watch run.
 type Options struct {
 	// CLI is the agent CLI to invoke. Use DetectCLI to populate.
@@ -78,7 +104,10 @@ type Options struct {
 	// Prompt is the system-style instruction passed on every tick. If empty,
 	// DefaultPrompt is used.
 	Prompt string
-	// Interval between poll ticks. Defaults to 60s when zero.
+	// Interval between poll ticks. Defaults to DefaultInterval when zero.
+	// CLI callers should clamp values below MinInterval to avoid agent-API
+	// fire-hosing; the package itself does not clamp, to keep unit tests
+	// fast.
 	Interval time.Duration
 	// AbortConfidence is the confidence threshold at or above which an
 	// "abort" verdict triggers DecisionAbort. Below this threshold, abort
@@ -89,31 +118,55 @@ type Options struct {
 	// snapshot+verdict pairs to for the eval corpus. One file per tick,
 	// named by RFC3339 timestamp.
 	CorpusDir string
-	// MaxTicks bounds the loop for tests; zero means unbounded.
+	// MaxTicks bounds the poll loop. Defaults to DefaultMaxTicks when zero.
+	// Set to a negative value to disable the bound (test-only escape hatch).
 	MaxTicks int
-	// IsInstallComplete is consulted at the start of each tick. Returning
-	// true ends the loop with DecisionContinue. Typically set to a closure
-	// that runs `helm status` and checks for "deployed" status. Optional.
-	IsInstallComplete func(ctx context.Context) (bool, error)
+	// MaxDuration is the wall-clock cap applied to the entire Watch run.
+	// Defaults to DefaultMaxDuration when zero. Set to a negative value to
+	// disable (test-only).
+	MaxDuration time.Duration
+	// MaxErrors is the consecutive-error cap. Defaults to DefaultMaxErrors
+	// when zero. Set to a negative value to disable.
+	MaxErrors int
 }
 
 // Watch polls the cluster on a fixed interval, hands each snapshot to the
 // agent CLI, and returns the final decision and the last verdict it acted
 // on. The function returns when:
-//   - IsInstallComplete reports true (DecisionContinue, nil verdict).
+//   - The snapshot shows every pod Ready (DecisionContinue, last verdict).
 //   - The agent recommends abort with sufficient confidence (DecisionAbort).
-//   - MaxTicks is reached (DecisionContinue, last seen verdict).
+//   - MaxTicks is reached (DecisionContinue, last verdict).
+//   - MaxDuration elapses (DecisionContinue, last verdict, ctx.DeadlineExceeded).
+//   - MaxErrors consecutive failures (DecisionContinue, last verdict, error).
 //   - ctx is cancelled (returns ctx.Err()).
+//
+// Each tick is a paid LLM call; the bounds above are independent kill
+// switches so no single misconfiguration can produce an unbounded run.
 func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 	if opts.CLI.Name == "" {
 		return DecisionContinue, nil, errors.New("agentwatch: Options.CLI is empty (call DetectCLI first)")
 	}
 	if opts.Interval <= 0 {
-		opts.Interval = 60 * time.Second
+		opts.Interval = DefaultInterval
+	}
+	if opts.MaxTicks == 0 {
+		opts.MaxTicks = DefaultMaxTicks
+	}
+	if opts.MaxDuration == 0 {
+		opts.MaxDuration = DefaultMaxDuration
+	}
+	if opts.MaxErrors == 0 {
+		opts.MaxErrors = DefaultMaxErrors
 	}
 	prompt := opts.Prompt
 	if prompt == "" {
 		prompt = DefaultPrompt
+	}
+
+	if opts.MaxDuration > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, opts.MaxDuration)
+		defer cancel()
 	}
 
 	logging.Logger.Info().
@@ -121,11 +174,23 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 		Str("namespace", opts.Snapshot.Namespace).
 		Str("release", opts.Snapshot.Release).
 		Dur("interval", opts.Interval).
+		Int("maxTicks", opts.MaxTicks).
+		Dur("maxDuration", opts.MaxDuration).
+		Int("maxErrors", opts.MaxErrors).
 		Float64("abortConfidence", opts.AbortConfidence).
 		Msg("agentwatch: starting watch loop")
 
 	var lastVerdict *Verdict
 	tick := 0
+	consecutiveErrors := 0
+	recordFailure := func() error {
+		consecutiveErrors++
+		if opts.MaxErrors > 0 && consecutiveErrors >= opts.MaxErrors {
+			return fmt.Errorf("agentwatch: %d consecutive errors, giving up", consecutiveErrors)
+		}
+		return nil
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -133,19 +198,12 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 		default:
 		}
 
-		if opts.IsInstallComplete != nil {
-			done, err := opts.IsInstallComplete(ctx)
-			if err != nil {
-				logging.Logger.Debug().Err(err).Msg("agentwatch: install-complete check errored; continuing")
-			} else if done {
-				logging.Logger.Info().Msg("agentwatch: install reported complete; exiting watch loop")
-				return DecisionContinue, lastVerdict, nil
-			}
-		}
-
 		snapshot, err := GatherSnapshot(ctx, opts.Snapshot)
 		if err != nil {
 			logging.Logger.Warn().Err(err).Msg("agentwatch: snapshot collection failed; will retry")
+			if capErr := recordFailure(); capErr != nil {
+				return DecisionContinue, lastVerdict, capErr
+			}
 			if !sleep(ctx, opts.Interval) {
 				return DecisionContinue, lastVerdict, ctx.Err()
 			}
@@ -154,6 +212,11 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 				return DecisionContinue, lastVerdict, nil
 			}
 			continue
+		}
+
+		if snapshot.AllPodsReady() {
+			logging.Logger.Info().Msg("agentwatch: all pods Ready; exiting watch loop")
+			return DecisionContinue, lastVerdict, nil
 		}
 
 		snapshotBytes, err := snapshot.MarshalIndent()
@@ -165,6 +228,9 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 		if err != nil {
 			logging.Logger.Warn().Err(err).Msg("agentwatch: agent invocation failed; will retry")
 			persistTick(opts.CorpusDir, snapshotBytes, verdictBytes, nil, err)
+			if capErr := recordFailure(); capErr != nil {
+				return DecisionContinue, lastVerdict, capErr
+			}
 			if !sleep(ctx, opts.Interval) {
 				return DecisionContinue, lastVerdict, ctx.Err()
 			}
@@ -182,6 +248,9 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 				Str("rawHead", truncate(string(verdictBytes), 200)).
 				Msg("agentwatch: could not parse verdict; will retry")
 			persistTick(opts.CorpusDir, snapshotBytes, verdictBytes, nil, err)
+			if capErr := recordFailure(); capErr != nil {
+				return DecisionContinue, lastVerdict, capErr
+			}
 			if !sleep(ctx, opts.Interval) {
 				return DecisionContinue, lastVerdict, ctx.Err()
 			}
@@ -192,6 +261,7 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 			continue
 		}
 
+		consecutiveErrors = 0
 		lastVerdict = &verdict
 		persistTick(opts.CorpusDir, snapshotBytes, verdictBytes, &verdict, nil)
 		decision := classify(verdict, opts.AbortConfidence)

@@ -139,3 +139,50 @@ func runCmd(ctx context.Context, name string, args ...string) ([]byte, error) {
 func (s Snapshot) MarshalIndent() ([]byte, error) {
 	return json.MarshalIndent(s, "", "  ")
 }
+
+// AllPodsReady reports whether every pod in the snapshot has reached a
+// terminal-ready state: phase=Running with the Ready condition true, or
+// phase=Succeeded (e.g. one-shot Jobs). Returns false when no pods are
+// present, since an empty namespace means the install has not started.
+func (s Snapshot) AllPodsReady() bool {
+	if len(s.Pods) == 0 {
+		return false
+	}
+	var list struct {
+		Items []struct {
+			Status struct {
+				Phase      string `json:"phase"`
+				Conditions []struct {
+					Type   string `json:"type"`
+					Status string `json:"status"`
+				} `json:"conditions"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(s.Pods, &list); err != nil {
+		return false
+	}
+	if len(list.Items) == 0 {
+		return false
+	}
+	for _, p := range list.Items {
+		switch p.Status.Phase {
+		case "Succeeded":
+			continue
+		case "Running":
+			ready := false
+			for _, c := range p.Status.Conditions {
+				if c.Type == "Ready" && c.Status == "True" {
+					ready = true
+					break
+				}
+			}
+			if !ready {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
