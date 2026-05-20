@@ -112,7 +112,7 @@ For the classification of Tier 1 vs Tier 2 keys and the rationale behind this de
    - Examples: use new format only.
 
 3. **Communicate:**
-   - Notify InfraEx, [#oc-reliability-testing](https://camunda.slack.com/archives/C0807665N8G), QA, infra, and Reliability Team.
+   - Notify InfraEx, QA, infra, and [Reliability Team (#oc-reliability-testing)](https://camunda.slack.com/archives/C0807665N8G).
 
 4. **Remove (next major only):**
    - Follow the [Breaking change checklist](#breaking-change-checklist) (after the justification step).
