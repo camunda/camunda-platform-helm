@@ -3,6 +3,8 @@ id: release-process
 title: Release Process
 ---
 
+This document is for Distro team maintainers. For contribution process, see the [Maintainer Guide](../maintainer-guide.md).
+
 The charts are built, linted, and tested on every push to the main branch. The release process follows a **3-stage pipeline** that ensures the exact artifact tested by QA is what gets publicly released — no rebuilding at release time.
 
 ## Architecture Overview

@@ -13,14 +13,15 @@ For the Camunda Helm chart, _the stable interface is `values.yaml`_: user-provid
 
 ### Classifying changes (examples)
 
-- **Feature:** Add a new optional values.yaml field that does not change existing behavior.
-  - _Example_: add an optional metrics section or a new env-var toggle.
+- **Tier 2 key addition (additive):** Adding a new optional Tier 2 (infra/connectivity) field that is additive, opt-in, and defaults to prior behavior is **not** a breaking change. See [Values YAML Policy](./values-yaml-policy.md) for the Tier 2 definition.
+  - _Example_: add optional `global.gateway.tls.enabled` that defaults to `false`.
+- **Tier 1 key addition:** Adding a new Tier 1 (application behavior) key to `values.yaml` is **not allowed** on any active chart version — regardless of whether it seems additive — because it extends the Helm chart's application-behavior surface in violation of ADR 91. See [Values YAML Policy](./values-yaml-policy.md).
 - **Bug:** A defect that forces users to apply mitigations (overrides/workarounds) to get expected behavior.
   - _Example_: users must set a specific env var or template override to avoid incorrect behavior.
 - **Breaking change:** Remove/rename an existing field, or change its meaning/defaults such that upgrades require user updates.
   - _Example_: deprecate a values.yaml key without backward compatibility.
-- **Unstructured override interaction:** Changes involving unstructured fields (e.g., `<component>.env` or `<component>.extraConfig`) are typically not breaking API changes to the chart, but can cause upgrade issues due to user-specific overrides; treat resulting incompatibilities as bugs (see [Unstructured fields](#unstructured-fields)).
-  - _Example_: a user-set env var workaround in `operate.env` conflicts after an upgrade because the underlying behavior changed.
+- **Unstructured override interaction:** Changes involving unstructured fields (e.g., `<component>.env` or `extraConfiguration`) are typically not breaking API changes to the chart, but can cause upgrade issues due to user-specific overrides; treat resulting incompatibilities as bugs (see [Unstructured fields](#unstructured-fields)).
+  - _Example_: a user-set env var workaround in `extraConfiguration` conflicts after an upgrade because the underlying behavior changed.
 
 ## Breaking Change Policy
 
@@ -52,9 +53,11 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
 #### Approval / alignment
 
 1. Document and align with EM and PM justification of the breaking change (rationale, scope, customer impact, target version).
-2. Mark the change as breaking in the issue and PR (label `breaking-change` + clear description).
-3. Notify and align with affected stakeholder teams (InfraEx, QA, infra, Reliability Team).
-4. Proceed only once EM/PM approved and stakeholder teams explicitly acknowledged.
+2. Mark the change as breaking in the issue and PR (label `breaking-change` + clear description). See [Ticket & Label Policy](./ticket-and-label.md) for the `breaking change` label definition.
+3. Notify and align with primary stakeholders:
+   - **InfraEx** and [**#oc-reliability-testing**](https://camunda.slack.com/archives/C0807665N8G) — closest day-to-day chart users; must explicitly acknowledge before proceeding.
+   - QA and infra.
+4. Proceed only once EM/PM approved and all stakeholder teams explicitly acknowledged.
 
 #### Documentation
 
@@ -67,7 +70,7 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
 #### Merge and final internal communication
 
 - Merge PR(s).
-- Broadcast internally to [#engineering](https://camunda.slack.com/archives/C01H4NG9XDY) and, after alignment with PM, in [#team-tech-gtm](https://camunda.slack.com/archives/C03N6LM5QVD).
+- Broadcast internally to [#engineering](https://camunda.slack.com/archives/C01H4NG9XDY) and [#oc-reliability-testing](https://camunda.slack.com/archives/C0807665N8G), and after alignment with PM, in [#team-tech-gtm](https://camunda.slack.com/archives/C03N6LM5QVD).
 
 ## Deprecation Policy
 
@@ -76,6 +79,12 @@ If a breaking change is not justifiable, follow this policy: deprecate first, re
 _Default rule:_ Within the same major chart version, customers must not be forced to change values immediately. Deprecations may be introduced in minor releases; removals must only happen in the next major chart release (or via an explicitly announced exception; see [Breaking Change Policy](#breaking-change-policy)).
 
 Major chart releases follow Camunda's release cycle.
+
+### Deprecation timeline: Tier 1 keys
+
+As a concrete example of this policy in action: all existing Tier 1 (application behavior) keys in `values.yaml` were deprecated in Camunda 8.10 with documented migration hints, and are targeted for removal in Camunda 8.11. Sequencing and version-specific exceptions are tracked in [product-hub#3562](https://github.com/camunda/product-hub/issues/3562).
+
+For the classification of Tier 1 vs Tier 2 keys and the rationale behind this deprecation, see [Values YAML Policy](./values-yaml-policy.md).
 
 ### Deprecation Checklist
 
@@ -90,7 +99,7 @@ Major chart releases follow Camunda's release cycle.
    - Examples: use new format only.
 
 3. **Communicate:**
-   - Notify relevant channels/teams (InfraEx, QA, infra, Reliability Team).
+   - Notify InfraEx, [#oc-reliability-testing](https://camunda.slack.com/archives/C0807665N8G), QA, infra, and Reliability Team.
 
 4. **Remove (next major only):**
    - Follow the [Breaking change checklist](#breaking-change-checklist) (after the justification step).
@@ -99,8 +108,12 @@ Major chart releases follow Camunda's release cycle.
 
 ### Unstructured fields
 
-A more nuanced discussion arises with unstructured fields, such as `<component>.env`. These allow users to inject arbitrary environment variables into the Camunda platform components (e.g., Operate, Tasklist, or Zeebe). Because these overrides fall outside Helm's awareness or validation scope, they introduce a level of variability that can affect upgrade stability. For example, if a user overrides an environment variable to work around a previous limitation and a subsequent Helm chart update or upstream Camunda release resolves that limitation internally, the existing override may conflict with the new behavior.
+`extraConfiguration` is the correct and primary mechanism for injecting application-level configuration into Camunda components (feature flags, log levels, Spring Boot properties, etc.). Per [ADR 91](../adr/0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md) and the [Values YAML Policy](./values-yaml-policy.md), `<component>.env` is a legacy escape hatch — new application configuration should not use it.
 
-From a versioning and stability standpoint, this scenario does not constitute a breaking change in the Helm chart's API. The core capability — the ability to define environment variable overrides — remains stable. However, the functional outcome in the application layer may differ, and if that behavior deviates from expectations, it should be treated as a bug, not a breaking API change.
+Because `extraConfiguration` entries fall outside Helm's awareness or validation scope, they introduce variability that can affect upgrade stability. For example, if a user overrides an application property via `extraConfiguration` to work around a previous limitation, and a subsequent chart update or upstream Camunda release resolves that limitation internally, the existing override may conflict with the new behavior.
+
+From a versioning and stability standpoint, this scenario does not constitute a breaking change in the Helm chart's API. The core capability — the ability to inject application configuration — remains stable. However, if the functional outcome in the application layer deviates from expectations, it should be treated as a bug, not a breaking API change.
 
 Framing stability in this way helps maintain consistency in the Camunda Helm chart release process, ensuring that users can rely on `values.yaml` as the stable interface while understanding the inherent risks of unstructured overrides and Helm's limitations in validating them.
+
+For the backporting policy as it relates to breaking changes, see [Backporting Policy](./backporting.md).

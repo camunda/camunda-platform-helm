@@ -1,16 +1,14 @@
 ---
-id: ticket-and-label-policy
+id: ticket-and-label
 title: Ticket & Label Policy
 ---
 
-## 1. Ticket Creation Policy
+## 1. Ticket Management
 
-- Every Pull Request (PR) **must** be linked to a ticket.
-  - Preferred: use GitHub keywords in the PR description (e.g. "Closes #123", "Relates to #123").
-  - Exception (automation): for PRs created by automation (e.g. Renovate, `release-please`), the PR itself can serve as the tracking item if it carries the appropriate `automation/*` label.
-- Tickets are managed in one of the following systems:
-  - **Camunda Product Hub**
-  - **Internal Team Board**
+Tickets are managed in one of the following systems:
+
+- **Camunda Product Hub**
+- **Internal Team Board**
 
 ## 2. Scope Definition: Product Hub vs. Internal Team Board
 
@@ -90,7 +88,7 @@ These labels make it easy to triage, route, and track work consistently (what it
 - **`needs-info`:** Needs more information, e.g. a question/discussion (not actionable work yet).
 - **`good first issue`:** Good for new contributors.
 - **`deprecated/8.x`:** Track work that gets deprecated in version `8.x`.
-- **`breaking change`:** Marks a breaking change that needs special attention and communication.
+- **`breaking change`:** Marks a breaking change that needs special attention and communication. See [Breaking Changes Policy](./breaking-changes.md) for the full policy on what qualifies as a breaking change and the required approval process.
 
 ### 3.4. Epic/Task Structure
 
