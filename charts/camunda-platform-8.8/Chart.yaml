@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.20.2"
+  camunda.io/helmCLIVersion: "4.1.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -73,16 +73,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Add elasticsearch-self-signed-upgrade scenario for 8.7->8.8 TLS upgrade testing"
-    - kind: added
-      description: "Add companion chart deployment support to deploy-camunda"
+      description: "Explicit lifecycle fixtures in ci-test-config.yaml"
     - kind: fixed
-      description: "Add missing properties and annotations to values.schema.json"
+      description: "Test Helm 3 or 4 and use helm v4 for dev"
     - kind: fixed
-      description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
-    - kind: fixed
-      description: "Set service account on orchestration migration jobs"
-    - kind: fixed
-      description: "Migration-data-job volume mount to /tmp"
-    - kind: fixed
-      description: "Support extraVolumeMounts and extraVolumes for migration jobs"
+      description: "Normalize trailing whitespace in golden file writer"
