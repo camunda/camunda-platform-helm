@@ -12,8 +12,6 @@ title: Values YAML Policy
 | **Backportable?** | No — blocked on all active chart versions | Yes — allowed on all active chart versions including released lines |
 | **Example keys** | `orchestration.security.authorizations.enabled`, `global.multitenancy.enabled`, `orchestration.logLevel` | `resources`, `affinity`, `serviceAccount`, `global.gateway.name`, `global.gateway.tls.*`, `global.identity.auth.issuer` |
 
-This table is designed to be scannable by both humans and automated tooling (e.g., [`crev`](https://github.com/camunda/crev)).
-
 ## Relationship to ADR 91
 
 This is the living policy document derived from [ADR 0091 — Standardize `<component>.extraConfiguration` as the Application Configuration Mechanism](../adr/0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md). ADR 91 remains the authoritative record of the original decision rationale, considered options, and positive/negative consequences. When this document and the ADR conflict, the ADR takes precedence — open a PR to bring this file up to date.
