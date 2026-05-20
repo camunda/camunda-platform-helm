@@ -158,7 +158,7 @@ camundaHub:
                       - description: "This is the main integration environment for the Camunda Platform."
                         links:
                           - name: "Camunda"
-                            url: "https://camunda.com"
+                            url: "https://www.camunda.com"
                           - name: "Camunda Docs"
                             url: "https://docs.camunda.io"
     env:
