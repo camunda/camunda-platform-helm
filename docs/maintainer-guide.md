@@ -69,9 +69,7 @@ Run `crev` against the PR before marking it ready for review:
 crev https://github.com/camunda/camunda-platform-helm/pull/<pr-number>
 ```
 
-Maintainers use the `crev/escalation` status and label to triage incoming PRs. The escalation decision is governed by the [escalation policy](https://github.com/camunda/camunda-platform-helm/blob/main/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. Routine additive changes by familiar authors may be approved with AI review alone.
-
-Treat the `human-review-required` label as a signal that the Distro team must approve before merge.
+All PRs require human approval from the Distro team before merge. Maintainers use the `crev/escalation` output to inform and prioritise their review — it does not replace it.
 
 :::note
 Keeping `docs/adr/`, this guide, `docs/contribution-and-collaboration.md`, and `CONTRIBUTING.md` accurate directly improves `crev` review quality — it uses this corpus as context when reviewing PRs.
