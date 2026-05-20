@@ -63,14 +63,18 @@ PRs should be reviewed by [`crev`](https://github.com/camunda/crev), an AI code-
 - A **commit status** (`crev/escalation`) indicating whether human review is required.
 - A **label** (`human-review-required` or `ai-review-sufficient`) based on the escalation score.
 
-Maintainers use the `crev/escalation` status and label to triage incoming PRs. Contributors do not need to run `crev` themselves — it runs automatically on every PR.
+Run `crev` against the PR before marking it ready for review:
 
-The escalation decision is governed by the [escalation policy](https://github.com/camunda/camunda-platform-helm/blob/main/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. Routine additive changes by familiar authors may be approved with AI review alone.
+```bash
+crev https://github.com/camunda/camunda-platform-helm/pull/<pr-number>
+```
+
+Maintainers use the `crev/escalation` status and label to triage incoming PRs. The escalation decision is governed by the [escalation policy](https://github.com/camunda/camunda-platform-helm/blob/main/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. Routine additive changes by familiar authors may be approved with AI review alone.
 
 Treat the `human-review-required` label as a signal that the Distro team must approve before merge.
 
 :::note
-Keeping `docs/adr/`, this guide, `docs/contribution-and-collaboration.md`, and `CONTRIBUTING.md` accurate directly improves `crev` review quality. `crev` reads this corpus on every PR.
+Keeping `docs/adr/`, this guide, `docs/contribution-and-collaboration.md`, and `CONTRIBUTING.md` accurate directly improves `crev` review quality — it uses this corpus as context when reviewing PRs.
 :::
 
 ---
