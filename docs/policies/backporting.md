@@ -75,11 +75,3 @@ We reject backports that are likely to surprise users:
 6. Obtain maintainer approval before merge.
 
 For whether a proposed change qualifies as non-breaking, refer to [Breaking Changes Policy](./breaking-changes.md).
-
-## Applying changes across subdirectory versions
-
-This repository stores each chart version in a separate subdirectory (e.g., `charts/camunda-platform-8.9/`, `charts/camunda-platform-8.10/`). When a fix must be applied across multiple versions, AI tooling handles the git operations — ask your Claude CLI or IDE AI integration to apply the change to the target directory, describing the files and lines to touch. This is more reliable than manual patch application when directory structures have diverged between versions.
-
-:::note
-Do not attempt `git format-patch` / `git apply` workflows manually across subdirectory versions — the path mappings are non-trivial and the AI tooling handles them more accurately.
-:::
