@@ -31,7 +31,7 @@ For the Camunda Helm chart, _the stable interface is `values.yaml`_: user-provid
 
 Two narrow exceptions exist where a breaking change is permitted without a deprecation cycle:
 
-- **Alpha charts:** Breaking changes are freely allowed in alpha Helm charts (e.g., `8.9-alpha3 → 8.9-alpha4`). Alpha releases carry no stability guarantee.
+- **Alpha charts:** Breaking changes are allowed between alpha releases (e.g., `8.9-alpha3 → 8.9-alpha4`). However, breaking changes introduced during the alpha cycle must be resolved before the first stable release — the alpha-to-stable boundary (e.g., `8.9-alpha6 → 8.9.0`) must be backward compatible with the previous stable minor (e.g., `8.8.x`).
 - **Critical fix:** A breaking change in any released chart (patch or minor) is allowed only to address a critical security vulnerability or severe malfunction where the standard deprecation cycle would leave users insecure or fundamentally broken. Must follow the **Breaking change checklist**.
 
 All other changes — including architectural improvements, schema simplification, and key removal — must go through the **Deprecation Policy** regardless of release boundary.
@@ -39,7 +39,9 @@ All other changes — including architectural improvements, schema simplificatio
 ```mermaid
 flowchart TD
     Start([Change required]) --> Alpha{Alpha chart?}
-    Alpha -- Yes --> Free([Breaking change allowed freely])
+    Alpha -- Yes --> AlphaBoundary{Alpha-to-stable\nboundary?}
+    AlphaBoundary -- No --> Free([Breaking change allowed\nbetween alpha releases])
+    AlphaBoundary -- Yes --> Compat([Must be backward compatible\nwith previous stable minor])
     Alpha -- No --> Critical{Critical security or\nsevere malfunction?}
     Critical -- Yes --> Checklist([Follow Breaking Change Checklist])
     Critical -- No --> Deprecate([Follow Deprecation Policy\ndeprecate now · remove next major])
