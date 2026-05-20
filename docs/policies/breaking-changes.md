@@ -87,9 +87,7 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
 
 ## Deprecation Policy
 
-If a breaking change is not justifiable, follow this policy: deprecate first, remove in the next major chart release.
-
-_Default rule:_ Within the same major chart version, customers must not be forced to change values immediately. Deprecations may be introduced in minor releases; removals must only happen in the next major chart release (or via an explicitly announced exception; see [Breaking Change Policy](#breaking-change-policy)).
+**Default rule:** Deprecate in one minor release, remove in the next major release. Customers must never be forced to update values without at least one minor release of warning with clear migration guidance.
 
 Major chart releases follow Camunda's release cycle.
 
@@ -115,7 +113,8 @@ For the classification of Tier 1 vs Tier 2 keys and the rationale behind this de
    - Notify InfraEx, QA, infra, and [Reliability Team (#oc-reliability-testing)](https://camunda.slack.com/archives/C0807665N8G).
 
 4. **Remove (next major only):**
-   - Follow the [Breaking change checklist](#breaking-change-checklist) (after the justification step).
+   - Delete the key, its template references, and the deprecation warning.
+   - Follow the approval and documentation steps from the [Breaking change checklist](#breaking-change-checklist).
 
 ## Reference
 
