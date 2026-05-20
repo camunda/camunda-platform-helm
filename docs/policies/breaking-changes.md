@@ -25,20 +25,31 @@ For the Camunda Helm chart, _the stable interface is `values.yaml`_: user-provid
 
 ## Breaking Change Policy
 
-**Default rule:** Breaking changes are **not allowed in released (non-alpha) patch updates** (e.g., app versions releases `8.9.1 → 8.9.2`). Changes to the `values.yaml` schema, configuration structure, or rendering logic must be backward compatible.
+**Default rule:** Breaking changes are prohibited in all released charts. Changes to the `values.yaml` schema, configuration structure, or rendering logic must be backward compatible. When a change cannot be made backward compatible, follow the **Deprecation Policy**.
 
-- _Exception:_ A breaking change in a released patch update is allowed only for a critical fix (major bug or security issue) where not changing would leave users severely broken or insecure.
+### Exceptions
 
-### Allowed cases
+Two narrow exceptions exist where a breaking change is permitted without a deprecation cycle:
 
-- **Alpha charts:** Breaking changes are allowed in alpha Helm charts (e.g., `8.9-alpha3 → 8.9-alpha4`). Alpha releases are for development/testing and do not guarantee stability.
-- **Minor app versions:** Breaking changes are allowed between minor app versions (e.g., `8.8 → 8.9`) only when justifiable, and must follow the **Breaking change checklist**.
+- **Alpha charts:** Breaking changes are freely allowed in alpha Helm charts (e.g., `8.9-alpha3 → 8.9-alpha4`). Alpha releases carry no stability guarantee.
+- **Critical fix:** A breaking change in any released chart (patch or minor) is allowed only to address a critical security vulnerability or severe malfunction where the standard deprecation cycle would leave users insecure or fundamentally broken. Must follow the **Breaking change checklist**.
+
+All other changes — including architectural improvements, schema simplification, and key removal — must go through the **Deprecation Policy** regardless of release boundary.
+
+```mermaid
+flowchart TD
+    Start([Change required]) --> Alpha{Alpha chart?}
+    Alpha -- Yes --> Free([Breaking change allowed freely])
+    Alpha -- No --> Critical{Critical security or\nsevere malfunction?}
+    Critical -- Yes --> Checklist([Follow Breaking Change Checklist])
+    Critical -- No --> Deprecate([Follow Deprecation Policy\ndeprecate now · remove next major])
+```
 
 ## Breaking change checklist
 
 ### Evaluate and justify breaking change
 
-A breaking change between minor app versions is justifiable only if all of the following are true:
+A critical-fix breaking change is justified only if all of the following are true:
 
 1. **No reasonable compatible approach:** A backward-compatible design exists only with disproportionate complexity, risk, or long-term maintenance cost (e.g., supporting two schemas/behaviors would be fragile, delay delivery significantly, or create ongoing upgrade/support burden).
 2. **Necessary outcome:** The change is required to deliver at least one of:
