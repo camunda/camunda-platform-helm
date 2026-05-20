@@ -1,0 +1,44 @@
+# CI values for the Bitnami postgresql companion chart in the
+# rdbms-self-signed scenario. Enables TLS with a self-signed CA + server
+# cert provisioned by pre-install-rdbms-self-signed.sh in the namespace as
+# the secret `rdbms-tls-server`.
+#
+# Deployed as a separate Helm release by deploy-camunda before the main
+# Camunda chart. Referenced from ci-test-config.yaml dependencies.
+#
+# Camunda components connect via:
+#   jdbc:postgresql://postgres-tls-postgresql:5432/orchestration?sslmode=verify-full&sslrootcert=/etc/camunda/tls/ca.crt
+# with the CA mounted from the `rdbms-tls-ca` secret.
+
+auth:
+  username: camunda
+  password: "Camunda-CI-PG-2026!"
+  database: orchestration
+  postgresPassword: "Camunda-CI-PG-Admin-2026!"
+
+tls:
+  enabled: true
+  certificatesSecret: rdbms-tls-server
+  certFilename: tls.crt
+  certKeyFilename: tls.key
+  # Deliberately do NOT set certCAFilename: that flips PG into mTLS mode
+  # (clientcert=verify-full in pg_hba.conf), requiring every client to
+  # present a certificate signed by our CA. We want server TLS only +
+  # password auth — the common production pattern.
+
+primary:
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+# Single-replica is sufficient for the integration test; chart's default
+# architecture is "standalone".
+# Disable volumePermissions: the bitnami/os-shell:12-debian-12-r39 image
+# referenced by older chart versions has been retired from Docker Hub. PG
+# starts cleanly on GKE without the chmod-data init container.
+volumePermissions:
+  enabled: false

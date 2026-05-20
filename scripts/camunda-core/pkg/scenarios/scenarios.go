@@ -68,8 +68,15 @@ func (c *DeploymentConfig) Validate() error {
 		return fmt.Errorf("invalid --identity value %q: must be one of: %s", c.Identity, strings.Join(validIdentities, ", "))
 	}
 
-	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "elasticsearch-external-self-signed", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-external", "rdbms", "rdbms-external", "rdbms-oracle"}
+	// Validate persistence values.
+	// Note: this list is global across chart versions. Some values resolve to
+	// values files that exist only in 8.10+ — `elasticsearch-self-signed`,
+	// `elasticsearch-external-self-signed`, `rdbms-self-signed`. Selecting one
+	// of these against an older chart version passes Validate() but produces
+	// no persistence layer (ResolvePaths skips missing files), so the deploy
+	// proceeds with no TLS wiring. Treated as an 8.10-only scope intentionally;
+	// when 8.10 becomes the only supported series this comment can be removed.
+	validPersistence := []string{"elasticsearch", "elasticsearch-external", "elasticsearch-external-self-signed", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-external", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -310,7 +317,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive QA mode from prefix
 	if strings.HasPrefix(s, "qa-") {
 		config.QA = true
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 	}
 
 	// Handle well-known composite scenarios that can't be derived from name parsing alone.
@@ -320,14 +327,14 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// so it must keep working.
 	if s == "keycloak-original" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 		config.Platform = "gke"
 		return config
 	}
 
 	if s == "elasticsearch" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 		config.Platform = "gke"
 		return config
 	}
@@ -348,6 +355,8 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	switch {
 	case strings.Contains(s, "opensearch"):
 		config.Persistence = "opensearch-external"
+	case strings.Contains(s, "rdbms-self-signed"):
+		config.Persistence = "rdbms-self-signed"
 	case strings.Contains(s, "rdbms-external"):
 		config.Persistence = "rdbms-external"
 	case strings.Contains(s, "rdbms") && strings.Contains(s, "oracle"):
@@ -355,7 +364,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "rdbms"):
 		config.Persistence = "rdbms"
 	default:
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 	}
 
 	// Derive platform (default to gke)
