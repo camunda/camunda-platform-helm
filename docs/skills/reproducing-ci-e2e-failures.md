@@ -1,5 +1,4 @@
 ---
-id: reproducing-ci-e2e-failures
 title: "Skill: Reproducing CI E2E Failures Locally"
 ---
 

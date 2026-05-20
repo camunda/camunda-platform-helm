@@ -1,5 +1,4 @@
 ---
-id: values-yaml-policy
 title: Values YAML Policy
 ---
 
@@ -83,6 +82,6 @@ graph TD
 
 ## Deprecation timeline
 
-All existing Tier 1 (application behavior) keys in `values.yaml` were **deprecated in Camunda 8.10** with documented migration hints mapping each key to the equivalent `extraConfiguration` pattern. **Removal is targeted for Camunda 8.11.** Sequencing and any version-specific exceptions are tracked in [product-hub#3562](https://github.com/camunda/product-hub/issues/3562).
+All existing Tier 1 (application behavior) keys in `values.yaml` were **deprecated in Camunda 8.10** with documented migration hints mapping each key to the equivalent `extraConfiguration` pattern. **Removal is targeted for Camunda 8.11.**
 
 This deprecation follows the standard deprecation process defined in [Breaking Changes Policy — Deprecation Policy](./breaking-changes.md#deprecation-policy).

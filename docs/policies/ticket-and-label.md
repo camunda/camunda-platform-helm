@@ -1,5 +1,4 @@
 ---
-id: ticket-and-label
 title: Ticket & Label Policy
 ---
 

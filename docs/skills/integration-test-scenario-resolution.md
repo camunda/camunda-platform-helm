@@ -1,5 +1,4 @@
 ---
-id: integration-test-scenario-resolution
 title: "Skill: Integration Test Scenario Resolution"
 ---
 

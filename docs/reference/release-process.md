@@ -1,5 +1,4 @@
 ---
-id: release-process
 title: Release Process
 ---
 

@@ -1,5 +1,4 @@
 ---
-id: code-style
 title: Code Style
 ---
 

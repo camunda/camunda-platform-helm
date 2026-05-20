@@ -1,5 +1,4 @@
 ---
-id: breaking-changes
 title: Breaking Changes & Deprecation Policy
 ---
 

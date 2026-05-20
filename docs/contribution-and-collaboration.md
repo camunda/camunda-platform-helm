@@ -65,6 +65,7 @@ flowchart TD
 Every PR related to Helm chart changes must satisfy the following checklist before requesting review:
 
 - [ ] **Linked issue** — the PR references a clearly described GitHub issue.
+- [ ] **`crev` review** — run [`crev`](https://github.com/camunda/crev) against the PR and address or acknowledge all findings before requesting review.
 - [ ] **Configuration key classification** — if the PR adds a `values.yaml` key, confirm it is Tier 2, additive, opt-in, and non-breaking. See [Values YAML Policy](./policies/values-yaml-policy.md).
 - [ ] **Unit tests** — changes include or update corresponding unit tests. See [Testing Guide](./reference/testing.md).
 - [ ] **Documentation updates** — user or technical documentation reflects configuration or behavior changes.
