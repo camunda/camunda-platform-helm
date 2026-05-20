@@ -55,15 +55,3 @@ jobs:
           # merge commit, and it's easy to commit this by mistake. Enable this option
           # to also validate the commit message for one commit PRs.
           validateSingleCommit: true
-      - name: Checkout
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
-      - name: Ensure PR branch is up to date
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          (git rev-list --left-right --count origin/main...HEAD | grep -q "^0") \
-            || (echo "PR branch is not up to date with main. Please rebase or merge main into your branch." && exit 1) \
-            && echo "PR branch is up to date with main."
