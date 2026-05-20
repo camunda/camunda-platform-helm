@@ -4,6 +4,21 @@
 - Date: 2026-05-06
 - Decision-makers: Distribution team
 
+## Quick Reference
+
+**Proposing a new `values.yaml` key?** Classify it first:
+
+| Tier | What it controls | Rule | Backportable? |
+|------|-----------------|------|---------------|
+| **Tier 1** — app behavior | Feature flags, toggles, log levels, Spring Boot properties, env vars controlling application logic | **BLOCKED** — use `<component>.extraConfiguration` instead | No |
+| **Tier 2** — infra & connectivity | Kubernetes infrastructure (resources, affinity, volumes), connectivity (endpoints, TLS, **Gateway API wiring**: `global.gateway.name`, `global.gateway.namespace`, `global.gateway.tls.*`), cross-component coordination (shared auth config, service discovery) | **Allowed** — add to `values.yaml` | Yes — additive, opt-in, defaults to prior behaviour |
+
+Quick test: *Does this control what the application **does** (Tier 1) or **how/where** it runs and connects (Tier 2)?*
+
+Full classification details, examples, and rationale are in [Configuration Classification](#configuration-classification) below.
+
+---
+
 ## Context and Problem Statement
 
 The Camunda Helm chart historically added abstraction layers over application-level configuration to simplify inconsistent component setups (e.g., log levels, feature flags, resource permission toggles). Over time, this produced a third configuration layer sitting between the application's native config and Kubernetes deployment concerns. Critically, these Helm-level parameters were not a 1:1 mapping to native application properties — they were a simplified abstraction that required its own Helm-specific documentation and did not transfer to other deployment methods such as ECS, Docker, or Jar. Instead of having a single configuration reference for all deployment methods, operators were required to learn a Helm-specific configuration layer on top of the application's own.
@@ -120,12 +135,18 @@ graph TD
 
 **Allowed** (Tier 2 — may add to `values.yaml`):
 - Kubernetes infrastructure: resources, affinity, serviceAccount, volumes, strategy
-- Connectivity: external endpoints, credentials, TLS certificates
+- Connectivity: external endpoints, credentials, TLS certificates, **Gateway API
+  wiring** (`global.gateway.name`, `global.gateway.namespace`, `global.gateway.tls.*`)
 - Cross-component coordination: shared auth config, service discovery wiring
+
+> **Backport policy:** Tier 2 keys may be added to any active chart version,
+> including released (non-alpha) lines, because they are additive, opt-in, and
+> default to the prior behaviour. Only Tier 1 additions are blocked on released
+> chart versions.
 
 ---
 
-- **No new Tier 1 keys shall be added to the Helm chart.** New application features that require Tier 1 configuration must use `<component>.extraConfiguration` exclusively. New features that require Tier 2 configuration (connectivity, infrastructure, cross-component coordination) may introduce new `values.yaml` keys subject to the Tier 2 classification defined above. **This rule applies to all active chart versions from the date this ADR is accepted.**
+- **No new Tier 1 keys shall be added to the Helm chart.** New application features that require Tier 1 configuration must use `<component>.extraConfiguration` exclusively. New features that require Tier 2 configuration (connectivity, infrastructure, cross-component coordination) may introduce new `values.yaml` keys subject to the Tier 2 classification defined above. **This rule applies to all active chart versions from the date this ADR is accepted.** Tier 2 additions are also permitted as backports to released (non-alpha) chart lines because they are additive, opt-in, and default to prior behaviour — only Tier 1 additions are blocked on released lines.
 - All existing application-specific keys in values.yaml are deprecated as of Camunda 8.10, with documented migration hints mapping each deprecated key to the equivalent extraConfiguration pattern.
 - Removal is targeted for Camunda 8.11. The keys in scope for removal are all Tier 1 values.yaml entries — those that configure application behavior rather than Tier 2 infrastructure, connectivity, or cross-component coordination concerns. Sequencing and any version-specific exceptions are tracked in product-hub#3562.
 - `<component>.configuration` (full application config file override) remains available as an advanced escape hatch for operators who intentionally want to take full control of the application configuration file. It is not the recommended path and is not part of the standard mechanism.

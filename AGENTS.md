@@ -221,6 +221,7 @@ helm template integration charts/camunda-platform-8.X \
 - `STATE.md` — session continuity (gitignored, read on session start)
 - `helm-values-mcp/` — MCP server exposing chart values schema. Tools: `list_versions`, `list_components`, `search_configs`, `get_config_info`, `generate_values_example`.
 - `scripts/helm_unused_values/` — CLI to find values declared in `values.yaml` but never referenced in templates.
+- `docs/adr/0091-*.md` — **values.yaml key classification (Tier 1 vs Tier 2)**. Read the Quick Reference table at the top before proposing a new key or backport.
 
 ## Recommended Agent Workflow
 1. Select target chart version/component.
