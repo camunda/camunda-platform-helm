@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">Breaking Changes &amp; Deprecation Policy | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6209/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6209/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6209/policies/breaking-changes"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Breaking Changes &amp; Deprecation Policy | Camunda Helm Charts"><meta data-rh="true" name="description" content="Definition of a breaking change"><meta data-rh="true" property="og:description" content="Definition of a breaking change"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6209/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6209/policies/breaking-changes"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6209/policies/breaking-changes" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6209/policies/breaking-changes" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Breaking Changes & Deprecation","item":"https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6209/policies/breaking-changes"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6209/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6209/assets/js/runtime~main.cd743c72.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6209/assets/js/main.3565b2c1.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6209/assets/js/runtime~main.595ea480.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6209/assets/js/main.fd2b6ba3.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -94,8 +94,7 @@
 <li class="">Broadcast internally to <a href="https://camunda.slack.com/archives/C01H4NG9XDY" target="_blank" rel="noopener noreferrer" class="">#engineering</a> and <a href="https://camunda.slack.com/archives/C0807665N8G" target="_blank" rel="noopener noreferrer" class="">#oc-reliability-testing</a>, and after alignment with PM, in <a href="https://camunda.slack.com/archives/C03N6LM5QVD" target="_blank" rel="noopener noreferrer" class="">#team-tech-gtm</a>.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deprecation-policy">Deprecation Policy<a href="#deprecation-policy" class="hash-link" aria-label="Direct link to Deprecation Policy" title="Direct link to Deprecation Policy" translate="no">​</a></h2>
-<p>If a breaking change is not justifiable, follow this policy: deprecate first, remove in the next major chart release.</p>
-<p><em>Default rule:</em> Within the same major chart version, customers must not be forced to change values immediately. Deprecations may be introduced in minor releases; removals must only happen in the next major chart release (or via an explicitly announced exception; see <a href="#breaking-change-policy" class="">Breaking Change Policy</a>).</p>
+<p><strong>Default rule:</strong> Deprecate in one minor release, remove in the next major release. Customers must never be forced to update values without at least one minor release of warning with clear migration guidance.</p>
 <p>Major chart releases follow Camunda&#x27;s release cycle.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="deprecation-timeline-tier-1-keys">Deprecation timeline: Tier 1 keys<a href="#deprecation-timeline-tier-1-keys" class="hash-link" aria-label="Direct link to Deprecation timeline: Tier 1 keys" title="Direct link to Deprecation timeline: Tier 1 keys" translate="no">​</a></h3>
 <p>As a concrete example of this policy in action: all existing Tier 1 (application behavior) keys in <code>values.yaml</code> were deprecated in Camunda 8.10 with documented migration hints, and are targeted for removal in Camunda 8.11. Sequencing and version-specific exceptions are tracked in <a href="https://github.com/camunda/product-hub/issues/3562" target="_blank" rel="noopener noreferrer" class="">product-hub#3562</a>.</p>
@@ -127,7 +126,8 @@
 <li class="">
 <p><strong>Remove (next major only):</strong></p>
 <ul>
-<li class="">Follow the <a href="#breaking-change-checklist" class="">Breaking change checklist</a> (after the justification step).</li>
+<li class="">Delete the key, its template references, and the deprecation warning.</li>
+<li class="">Follow the approval and documentation steps from the <a href="#breaking-change-checklist" class="">Breaking change checklist</a>.</li>
 </ul>
 </li>
 </ol>
