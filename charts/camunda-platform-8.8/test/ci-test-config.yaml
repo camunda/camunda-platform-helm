@@ -407,6 +407,19 @@ integration:
           infra-type:
             gke: qa-workloads
             eks: preemptible
+        - name: qa-document-store-upg
+          enabled: false
+          flow: install
+          shortname: qadocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          image-tags: true
+          platforms: [gke]
+          infra-type:
+            gke: qa-workloads
         - name: qa-elasticsearch-tasklist-v1
           enabled: false
           flow: install
