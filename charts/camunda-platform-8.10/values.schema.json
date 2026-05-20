@@ -6012,7 +6012,7 @@
                 },
                 "hostNetwork": {
                     "type": "boolean",
-                    "description": "if true, the orchestration pods will use the host network namespace. When enabled, dnsPolicy defaults to `ClusterFirstWithHostNet` unless explicitly overridden via `orchestration.dnsPolicy`.",
+                    "description": "if true, the orchestration pods will use the host network namespace. When enabled, dnsPolicy defaults to `ClusterFirstWithHostNet` unless explicitly overridden via `orchestration.dnsPolicy`. https://kubernetes.io/docs/concepts/configuration/overview/#services",
                     "default": false
                 },
                 "extraVolumeClaimTemplates": {
