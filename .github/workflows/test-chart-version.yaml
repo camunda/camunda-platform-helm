@@ -3,20 +3,6 @@ name: "Test - Chart Version"
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/chart-validate-template.yaml"
-      - ".github/workflows/test-unit-template.yaml"
-      - ".github/workflows/test-integration-runner.yaml"
-      - ".github/workflows/test-integration-template.yaml"
-      - ".github/workflows/test-chart-version-template.yaml"
-      - ".github/workflows/test-chart-version.yaml"
-      - ".github/config/external-secret/**"
-      - "scripts/**"
-      - ".tool-versions"
-      - "charts/camunda-platform-8*/**"
-      - "!charts/camunda-platform-8*/*.md"
-      - "!charts/camunda-platform-8*/*.MD"
-      - "!charts/camunda-platform-8*/*.txt"
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
@@ -111,6 +97,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
   id-token: write
   deployments: write
   packages: read
@@ -121,14 +108,49 @@ jobs:
     name: Generate chart matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.annotate-cache.outputs.matrix || steps.generate-chart-versions.outputs.matrix }}
-      camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
+      matrix: ${{ steps.annotate-cache.outputs.matrix || steps.generate-chart-versions.outputs.matrix || steps.empty-matrix.outputs.matrix }}
+      camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions || steps.empty-matrix.outputs.camunda-versions }}
       workspace: ${{ github.workspace }}
       pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      # Detect whether any chart/CI-relevant files changed. On non-PR events
+      # (merge_group, workflow_dispatch) we always consider changes present.
+      - name: Detect relevant file changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            charts:
+              - '.github/workflows/chart-validate-template.yaml'
+              - '.github/workflows/test-unit-template.yaml'
+              - '.github/workflows/test-integration-runner.yaml'
+              - '.github/workflows/test-integration-template.yaml'
+              - '.github/workflows/test-chart-version-template.yaml'
+              - '.github/workflows/test-chart-version.yaml'
+              - '.github/config/external-secret/**'
+              - 'scripts/**'
+              - '.tool-versions'
+              - 'charts/camunda-platform-8*/**'
+              - '!charts/camunda-platform-8*/*.md'
+              - '!charts/camunda-platform-8*/*.MD'
+              - '!charts/camunda-platform-8*/*.txt'
+
+      # Short-circuit: if no relevant files changed, emit empty matrix and skip
+      # all downstream jobs. CI Gate (if: always()) still reports success.
+      - name: Emit empty matrix (no relevant changes)
+        id: empty-matrix
+        if: github.event_name == 'pull_request' && steps.changes.outputs.charts != 'true'
+        run: |
+          echo "No chart/CI files changed — emitting empty matrix."
+          echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+          echo 'camunda-versions=[]' >> "$GITHUB_OUTPUT"
+
       - name: Generate chart versions
         id: generate-chart-versions
+        if: github.event_name != 'pull_request' || steps.changes.outputs.charts == 'true'
         uses: ./.github/actions/generate-chart-matrix
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
