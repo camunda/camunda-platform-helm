@@ -93,11 +93,11 @@ const config = {
             items: [
               {
                 label: 'Release Process',
-                to: '/release-process',
+                to: '/reference/release-process',
               },
               {
                 label: 'GitHub Actions Workflows',
-                to: '/github-actions-workflows',
+                to: '/reference/github-actions-workflows',
               },
               {
                 label: 'Contribution & Collaboration',
