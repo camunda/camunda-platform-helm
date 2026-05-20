@@ -91,12 +91,6 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
 
 Major chart releases follow Camunda's release cycle.
 
-### Deprecation timeline: Tier 1 keys
-
-As a concrete example of this policy in action: all existing Tier 1 (application behavior) keys in `values.yaml` were deprecated in Camunda 8.10 with documented migration hints, and are targeted for removal in Camunda 8.11. Sequencing and version-specific exceptions are tracked in [product-hub#3562](https://github.com/camunda/product-hub/issues/3562).
-
-For the classification of Tier 1 vs Tier 2 keys and the rationale behind this deprecation, see [Values YAML Policy](./values-yaml-policy.md).
-
 ### Deprecation Checklist
 
 1. **Deprecate (keep compatibility):**
