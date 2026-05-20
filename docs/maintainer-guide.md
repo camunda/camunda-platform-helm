@@ -58,7 +58,7 @@ For app team PRs:
 
 ### crev — automated AI review
 
-PRs are automatically reviewed by [`crev`](https://github.com/camunda/crev), an AI code-review tool with domain-specific knowledge of the Camunda Helm charts. After reviewing, `crev` posts:
+PRs should be reviewed by [`crev`](https://github.com/camunda/crev), an AI code-review tool with domain-specific knowledge of the Camunda Helm charts. After reviewing, `crev` posts:
 
 - A **commit status** (`crev/escalation`) indicating whether human review is required.
 - A **label** (`human-review-required` or `ai-review-sufficient`) based on the escalation score.
