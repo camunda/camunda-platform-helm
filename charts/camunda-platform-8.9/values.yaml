@@ -2800,7 +2800,7 @@ orchestration:
             ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS trust store
             existingSecret: ""
             ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey defines the key within the existing Kubernetes Secret for TLS trust store
-            existingSecretKey: ""
+            existingSecretKey: "externaldb.jks"
       ## @extra orchestration.data.secondaryStorage.opensearch configuration for Opensearch as secondary storage
       opensearch:
         ## @extra orchestration.data.secondaryStorage.opensearch.aws AWS configuration for OpenSearch secondary storage
