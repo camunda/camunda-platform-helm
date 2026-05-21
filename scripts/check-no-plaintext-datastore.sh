@@ -158,7 +158,7 @@ for POD in ${PODS}; do
     if echo "${env_value}" | grep -qE "${JDBC_PG_RE}"; then
       split_value=$(echo "${env_value}" | sed 's|&jdbc:postgresql://|\n\&jdbc:postgresql://|g; s|^&||')
       for url in $(echo "${split_value}" | grep -oE "${JDBC_PG_RE}"); do
-        if ! echo "${url}" | grep -qE 'sslmode=verify-(ca|full)'; then
+        if ! echo "${url}" | grep -qE '[?&]sslmode=verify-(ca|full)'; then
           VIOLATIONS+=("INSECURE-JDBC	${pod_name}/${container}	${env_name}=${url}")
         fi
       done
