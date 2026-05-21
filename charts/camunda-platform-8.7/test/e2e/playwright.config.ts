@@ -13,17 +13,23 @@ export default defineConfig({
     {
       name: "full-suite",
       testMatch: ["**/*.spec.{ts,js}"],
+      testIgnore: [/test-setup\.spec\.[jt]s$/],
+      // Exclude tests that require QA-specific config:
+      // - Connector Secrets: Requires Vault-managed secrets
+      // - Custom Tags/Custom Properties: Require Console QA cluster config
+      grep: /^(?!.*(Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
     },
   ],
-  fullyParallel: true,
-  retries: 3,
-  timeout: 15 * 60 * 1000, // no test should take more than 3 minutes (failing fast is important so that we can run our tests on each PR)
-  workers: "100%",
-  //workers: process.env.CI == "true" ? 1 : "50%",
+  // Match the E2E repo's SM-8.7 settings: short timeout so tests that hit
+  // unresponsive services (e.g. web-modeler-restapi) fail fast instead of
+  // hanging until the job timeout.
+  fullyParallel: false,
+  retries: 1,
+  timeout: 3 * 60 * 1000,
+  workers: process.env.CI === "true" ? 37 : "100%",
   use: {
     baseURL: getBaseURL(),
     actionTimeout: 10000,
-    // Also applies to flaky tests
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     trace: "on-first-retry",
