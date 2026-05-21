@@ -59,7 +59,10 @@ export default defineConfig({
       //   tests (under 'Optimize User Flow Tests @tasklistV1' describe) which
       //   require long Optimize warm-up not available on fresh clusters.
       // - Connector Secrets/Custom Tags/Properties: Require QA-specific config.
-      grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
+      // - User Roles User Flow on Orchestration Cluster: Requires
+      //   orchestration.security.authorizations.enabled=true, which is disabled
+      //   on RDBMS persistence scenarios (platform limitation).
+      grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties|User Roles User Flow on Orchestration Cluster)).*$/,
       use: {
         extraHTTPHeaders: {
           "X-Test-Tasklist-Version": "v2",

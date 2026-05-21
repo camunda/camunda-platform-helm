@@ -1054,7 +1054,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.scenario == 'shadow-e2e' }}
+    if: ${{ inputs.test-enabled && (inputs.scenario == 'shadow-e2e' || inputs.scenario == 'rdbms-self-signed') }}
     continue-on-error: true
     timeout-minutes: 30
     permissions:
