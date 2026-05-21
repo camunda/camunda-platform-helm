@@ -37,7 +37,8 @@ Create a fully qualified name for the websockets objects.
 {{- end -}}
 
 {{- define "webModeler.extraLabels" -}}
-    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "web-modeler" "componentValuesKey" "webModeler" "context" $) -}}
+app.kubernetes.io/component: web-modeler
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) .Values.camundaHub.webModeler) "chart" .Chart) | quote }}
 {{- end -}}
 
 {{/*
@@ -118,10 +119,12 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Create the name of the service account to use
 */}}
 {{- define "webModeler.serviceAccountName" -}}
-    {{- include "camundaPlatform.serviceAccountName" (dict
-        "component" "webModeler"
-        "context" $
-    ) -}}
+    {{- $saName := (or .Values.camundaHub.webModeler.serviceAccount.name .Values.webModeler.serviceAccount.name) -}}
+    {{- if (or .Values.camundaHub.webModeler.serviceAccount.enabled .Values.webModeler.serviceAccount.enabled) -}}
+        {{- $saName | default (include "webModeler.fullname" .) -}}
+    {{- else -}}
+        {{- $saName | default "default" -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*

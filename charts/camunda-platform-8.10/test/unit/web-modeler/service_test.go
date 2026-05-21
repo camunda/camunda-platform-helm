@@ -61,7 +61,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.annotations.foo":              "bar",
 				"global.elasticsearch.enabled":        "true",
 				"elasticsearch.enabled":               "true",
@@ -78,8 +78,8 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                       "true",
 				"webModeler.enabled":                                     "true",
-				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
-				"webModeler." + s.component + ".service.annotations.foo": "bar",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                    "example@example.com",
+				"camundaHub.webModeler." + s.component + ".service.annotations.foo": "bar",
 				"global.elasticsearch.enabled":                           "true",
 				"elasticsearch.enabled":                                  "true",
 			},

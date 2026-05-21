@@ -58,8 +58,8 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"webModeler.contextPath":              "/modeler",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.contextPath":              "/modeler",
 				"global.ingress.enabled":              "true",
 				"global.host":                         "c8.example.com",
 				"global.ingress.tls.enabled":          "false",
@@ -77,9 +77,9 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                             "true",
 				"webModeler.enabled":                           "true",
-				"webModeler.restapi.mail.fromAddress":          "example@example.com",
-				"webModeler.websockets.startupProbe.enabled":   "true",
-				"webModeler.websockets.startupProbe.probePath": "/healthz",
+				"camundaHub.webModeler.restapi.mail.fromAddress":          "example@example.com",
+				"camundaHub.webModeler.websockets.startupProbe.enabled":   "true",
+				"camundaHub.webModeler.websockets.startupProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -96,9 +96,9 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                               "true",
 				"webModeler.enabled":                             "true",
-				"webModeler.restapi.mail.fromAddress":            "example@example.com",
-				"webModeler.websockets.readinessProbe.enabled":   "true",
-				"webModeler.websockets.readinessProbe.probePath": "/healthz",
+				"camundaHub.webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"camundaHub.webModeler.websockets.readinessProbe.enabled":   "true",
+				"camundaHub.webModeler.websockets.readinessProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -115,9 +115,9 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                              "true",
 				"webModeler.enabled":                            "true",
-				"webModeler.restapi.mail.fromAddress":           "example@example.com",
-				"webModeler.websockets.livenessProbe.enabled":   "true",
-				"webModeler.websockets.livenessProbe.probePath": "/healthz",
+				"camundaHub.webModeler.restapi.mail.fromAddress":           "example@example.com",
+				"camundaHub.webModeler.websockets.livenessProbe.enabled":   "true",
+				"camundaHub.webModeler.websockets.livenessProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -135,14 +135,14 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                               "true",
 				"webModeler.enabled":                             "true",
-				"webModeler.restapi.mail.fromAddress":            "example@example.com",
-				"webModeler.contextPath":                         "/test",
-				"webModeler.websockets.startupProbe.enabled":     "true",
-				"webModeler.websockets.startupProbe.probePath":   "/start",
-				"webModeler.websockets.readinessProbe.enabled":   "true",
-				"webModeler.websockets.readinessProbe.probePath": "/ready",
-				"webModeler.websockets.livenessProbe.enabled":    "true",
-				"webModeler.websockets.livenessProbe.probePath":  "/live",
+				"camundaHub.webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"camundaHub.webModeler.contextPath":                         "/test",
+				"camundaHub.webModeler.websockets.startupProbe.enabled":     "true",
+				"camundaHub.webModeler.websockets.startupProbe.probePath":   "/start",
+				"camundaHub.webModeler.websockets.readinessProbe.enabled":   "true",
+				"camundaHub.webModeler.websockets.readinessProbe.probePath": "/ready",
+				"camundaHub.webModeler.websockets.livenessProbe.enabled":    "true",
+				"camundaHub.webModeler.websockets.livenessProbe.probePath":  "/live",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -160,10 +160,10 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                         "true",
 				"webModeler.enabled":                                       "true",
-				"webModeler.restapi.mail.fromAddress":                      "example@example.com",
-				"webModeler.websockets.sidecars[0].name":                   "nginx",
-				"webModeler.websockets.sidecars[0].image":                  "nginx:latest",
-				"webModeler.websockets.sidecars[0].ports[0].containerPort": "80",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                      "example@example.com",
+				"camundaHub.webModeler.websockets.sidecars[0].name":                   "nginx",
+				"camundaHub.webModeler.websockets.sidecars[0].image":                  "nginx:latest",
+				"camundaHub.webModeler.websockets.sidecars[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -188,10 +188,10 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                               "true",
 				"webModeler.enabled":                                             "true",
-				"webModeler.restapi.mail.fromAddress":                            "example@example.com",
-				"webModeler.websockets.initContainers[0].name":                   "nginx",
-				"webModeler.websockets.initContainers[0].image":                  "nginx:latest",
-				"webModeler.websockets.initContainers[0].ports[0].containerPort": "80",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                            "example@example.com",
+				"camundaHub.webModeler.websockets.initContainers[0].name":                   "nginx",
+				"camundaHub.webModeler.websockets.initContainers[0].image":                  "nginx:latest",
+				"camundaHub.webModeler.websockets.initContainers[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -216,10 +216,10 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                               "true",
 				"webModeler.enabled":                             "true",
-				"webModeler.restapi.mail.fromAddress":            "example@example.com",
-				"webModeler.websockets.dnsPolicy":                "ClusterFirst",
-				"webModeler.websockets.dnsConfig.nameservers[0]": "8.8.8.8",
-				"webModeler.websockets.dnsConfig.searches[0]":    "example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"camundaHub.webModeler.websockets.dnsPolicy":                "ClusterFirst",
+				"camundaHub.webModeler.websockets.dnsConfig.nameservers[0]": "8.8.8.8",
+				"camundaHub.webModeler.websockets.dnsConfig.searches[0]":    "example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -244,9 +244,9 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                   "true",
 				"webModeler.enabled":                                 "true",
-				"webModeler.restapi.mail.fromAddress":                "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":    "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey": "my-pusher-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecret":    "my-custom-secret",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecretKey": "my-pusher-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -273,8 +273,8 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                              "true",
 				"webModeler.enabled":                            "true",
-				"webModeler.restapi.mail.fromAddress":           "example@example.com",
-				"webModeler.restapi.pusher.secret.inlineSecret": "my-inline-secret-value",
+				"camundaHub.webModeler.restapi.mail.fromAddress":           "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.secret.inlineSecret": "my-inline-secret-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -299,9 +299,9 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                          "true",
 				"webModeler.enabled":                                        "true",
-				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
-				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
-				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -326,8 +326,8 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                     "true",
 				"webModeler.enabled":                                   "true",
-				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
-				"webModeler.restapi.pusher.client.secret.inlineSecret": "my-inline-app-key-value",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.client.secret.inlineSecret": "my-inline-app-key-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
