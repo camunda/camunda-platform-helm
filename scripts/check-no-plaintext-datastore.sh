@@ -123,18 +123,23 @@ if [[ -z "${PODS}" ]]; then
 fi
 
 VIOLATIONS=()
+SKIPPED_PODS=0
 
 for POD in ${PODS}; do
   # Each container's env (.spec.containers[*].env[*]) and initContainer envs.
   # Output one line per env var: <pod>|<container>|<env-name>|<env-value>
-  RAW=$(kubectl "${KCTL_ARGS[@]}" get pod "${POD}" -o json 2>/dev/null \
+  if ! RAW=$(kubectl "${KCTL_ARGS[@]}" get pod "${POD}" -o json 2>/tmp/kubectl_err \
     | jq -r --arg p "${POD}" '
         (.spec.containers // []) + (.spec.initContainers // [])
         | .[] as $c
         | ($c.env // [])[]
         | select(.value != null and .value != "")
         | "\($p)|\($c.name)|\(.name)|\(.value)"
-      ' 2>/dev/null) || true
+      ' 2>/dev/null); then
+    echo "WARNING: failed to inspect pod ${POD} (kubectl/jq error)" >&2
+    SKIPPED_PODS=$((SKIPPED_PODS + 1))
+    continue
+  fi
 
   if [[ -z "${RAW}" ]]; then
     continue
@@ -164,6 +169,11 @@ done
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
+if [[ ${#VIOLATIONS[@]} -eq 0 && ${SKIPPED_PODS} -gt 0 ]]; then
+  echo "[no-plaintext-check] INCONCLUSIVE: no violations found but ${SKIPPED_PODS} pod(s) could not be inspected" >&2
+  exit 2
+fi
+
 if [[ ${#VIOLATIONS[@]} -eq 0 ]]; then
   echo "[no-plaintext-check] PASS: no plaintext datastore URLs found in ${NAMESPACE}"
   exit 0
@@ -171,4 +181,8 @@ fi
 
 echo "[no-plaintext-check] FAIL: ${#VIOLATIONS[@]} plaintext datastore reference(s) in ${NAMESPACE}:" >&2
 printf '%s\n' "${VIOLATIONS[@]}" | column -t -s $'\t' >&2
+if [[ ${SKIPPED_PODS} -gt 0 ]]; then
+  echo "WARNING: additionally ${SKIPPED_PODS} pod(s) could not be inspected" >&2
+  exit 2
+fi
 exit 1
