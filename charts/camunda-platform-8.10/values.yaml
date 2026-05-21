@@ -1430,10 +1430,14 @@ camundaHub:
     ## camundaHub.console.resources configuration
     resources:
       requests:
+        ## @param camundaHub.console.resources.requests.cpu CPU resource value
         cpu: "1000m"
+        ## @param camundaHub.console.resources.requests.memory memory resource value
         memory: 1Gi
       limits:
+        ## @param camundaHub.console.resources.limits.cpu CPU resource value
         cpu: "2000m"
+        ## @param camundaHub.console.resources.limits.memory memory resource value
         memory: 2Gi
 
     ## @param camundaHub.console.env can be used to set extra environment variables
@@ -1449,63 +1453,101 @@ camundaHub:
 
     ## camundaHub.console.startupProbe configuration
     startupProbe:
+      ## @param camundaHub.console.startupProbe.enabled if true, the startupProbe is enabled in the app container
       enabled: false
+      ## @param camundaHub.console.startupProbe.scheme defines the startupProbe scheme used on calling the probePath
       scheme: HTTP
+      ## @param camundaHub.console.startupProbe.probePath defines the startupProbe route used on the app
       probePath: /health/readiness
+      ## @param camundaHub.console.startupProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
       initialDelaySeconds: 30
+      ## @param camundaHub.console.startupProbe.periodSeconds defines how often the probe is executed
       periodSeconds: 30
+      ## @param camundaHub.console.startupProbe.successThreshold defines how many consecutive successes mark the probe as ready
       successThreshold: 1
+      ## @param camundaHub.console.startupProbe.failureThreshold defines when the probe is considered as failed
       failureThreshold: 5
+      ## @param camundaHub.console.startupProbe.timeoutSeconds defines the seconds after the probe times out
       timeoutSeconds: 1
 
     ## camundaHub.console.readinessProbe configuration
     readinessProbe:
+      ## @param camundaHub.console.readinessProbe.enabled if true, the readinessProbe is enabled in the app container
       enabled: true
+      ## @param camundaHub.console.readinessProbe.scheme defines the readinessProbe scheme used on calling the probePath
       scheme: HTTP
+      ## @param camundaHub.console.readinessProbe.probePath defines the readinessProbe route used on the app
       probePath: /health/readiness
+      ## @param camundaHub.console.readinessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
       initialDelaySeconds: 30
+      ## @param camundaHub.console.readinessProbe.periodSeconds defines how often the probe is executed
       periodSeconds: 30
+      ## @param camundaHub.console.readinessProbe.successThreshold defines how many consecutive successes mark the probe as ready
       successThreshold: 1
+      ## @param camundaHub.console.readinessProbe.failureThreshold defines when the probe is considered as failed
       failureThreshold: 5
+      ## @param camundaHub.console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
       timeoutSeconds: 1
 
     ## camundaHub.console.livenessProbe configuration
     livenessProbe:
+      ## @param camundaHub.console.livenessProbe.enabled if true, the livenessProbe is enabled in the app container
       enabled: false
+      ## @param camundaHub.console.livenessProbe.scheme defines the livenessProbe scheme used on calling the probePath
       scheme: HTTP
+      ## @param camundaHub.console.livenessProbe.probePath defines the livenessProbe route used on the app
       probePath: /health/liveness
+      ## @param camundaHub.console.livenessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
       initialDelaySeconds: 30
+      ## @param camundaHub.console.livenessProbe.periodSeconds defines how often the probe is executed
       periodSeconds: 30
+      ## @param camundaHub.console.livenessProbe.successThreshold defines how many consecutive successes mark the probe as ready
       successThreshold: 1
+      ## @param camundaHub.console.livenessProbe.failureThreshold defines when the probe is considered as failed
       failureThreshold: 5
+      ## @param camundaHub.console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
       timeoutSeconds: 1
 
     ## camundaHub.console.metrics configuration
     metrics:
+      ## @param camundaHub.console.metrics.prometheus Prometheus metrics endpoint path
       prometheus: /prometheus
 
     ## camundaHub.console.serviceAccount configuration
     serviceAccount:
+      ## @param camundaHub.console.serviceAccount.enabled if true, enables serviceAccount
       enabled: true
+      ## @param camundaHub.console.serviceAccount.name the name of the service account
       name: ""
+      ## @param camundaHub.console.serviceAccount.annotations custom annotations
       annotations: {}
+      ## @param camundaHub.console.serviceAccount.automountServiceAccountToken automount service account token
       automountServiceAccountToken: false
 
     ## camundaHub.console.podSecurityContext
     podSecurityContext:
+      ## @param camundaHub.console.podSecurityContext.runAsNonRoot run as non-root user
       runAsNonRoot: true
+      ## @param camundaHub.console.podSecurityContext.fsGroup filesystem group ID
       fsGroup: 1001
       seccompProfile:
+        ## @param camundaHub.console.podSecurityContext.seccompProfile.type seccomp profile type
         type: RuntimeDefault
 
     ## camundaHub.console.containerSecurityContext
     containerSecurityContext:
+      ## @param camundaHub.console.containerSecurityContext.allowPrivilegeEscalation allow privilege escalation
       allowPrivilegeEscalation: false
+      ## @param camundaHub.console.containerSecurityContext.privileged run container in privileged mode
       privileged: false
+      ## @param camundaHub.console.containerSecurityContext.readOnlyRootFilesystem mount root filesystem as read only
       readOnlyRootFilesystem: true
+      ## @param camundaHub.console.containerSecurityContext.runAsNonRoot run as non-root user
       runAsNonRoot: true
+      ## @param camundaHub.console.containerSecurityContext.runAsUser run as specific user ID
       runAsUser: 1001
       seccompProfile:
+        ## @param camundaHub.console.containerSecurityContext.seccompProfile.type seccomp profile type
         type: RuntimeDefault
 
     ## @param camundaHub.console.nodeSelector
@@ -1595,8 +1637,11 @@ camundaHub:
         smtpTlsEnabled: true
         ## @extra camundaHub.webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
         secret:
+          ## @param camundaHub.webModeler.restapi.mail.secret.inlineSecret inline secret value
           inlineSecret: ""
+          ## @param camundaHub.webModeler.restapi.mail.secret.existingSecret name of an existing secret
           existingSecret: ""
+          ## @param camundaHub.webModeler.restapi.mail.secret.existingSecretKey key within the existing secret
           existingSecretKey: ""
         ## @param camundaHub.webModeler.restapi.mail.fromAddress defines the email sender address
         fromAddress: ""
@@ -1607,12 +1652,18 @@ camundaHub:
       pusher:
         client:
           secret:
+            ## @param camundaHub.webModeler.restapi.pusher.client.secret.inlineSecret inline secret value
             inlineSecret: ""
+            ## @param camundaHub.webModeler.restapi.pusher.client.secret.existingSecret name of an existing secret
             existingSecret: ""
+            ## @param camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey key within the existing secret
             existingSecretKey: ""
         secret:
+          ## @param camundaHub.webModeler.restapi.pusher.secret.inlineSecret inline secret value
           inlineSecret: ""
+          ## @param camundaHub.webModeler.restapi.pusher.secret.existingSecret name of an existing secret
           existingSecret: ""
+          ## @param camundaHub.webModeler.restapi.pusher.secret.existingSecretKey key within the existing secret
           existingSecretKey: ""
 
       ## @param camundaHub.webModeler.restapi.clusters configure Camunda 8 clusters available in Web Modeler
@@ -1626,7 +1677,9 @@ camundaHub:
       ## @extra camundaHub.webModeler.restapi.logging configuration
       logging:
         level:
+          ## @param camundaHub.webModeler.restapi.logging.level.io.camunda.modeler modeler configuration
           io.camunda.modeler: INFO
+          ## @param camundaHub.webModeler.restapi.logging.level.io.grpc grpc configuration
           io.grpc: INFO
 
       ## @param camundaHub.webModeler.restapi.env extra environment variables
@@ -1645,55 +1698,89 @@ camundaHub:
 
       ## camundaHub.webModeler.restapi.podSecurityContext
       podSecurityContext:
+        ## @param camundaHub.webModeler.restapi.podSecurityContext.runAsNonRoot run as non-root user
         runAsNonRoot: true
+        ## @param camundaHub.webModeler.restapi.podSecurityContext.fsGroup filesystem group ID
         fsGroup: 1001
         seccompProfile:
+          ## @param camundaHub.webModeler.restapi.podSecurityContext.seccompProfile.type seccomp profile type
           type: RuntimeDefault
       ## camundaHub.webModeler.restapi.containerSecurityContext
       containerSecurityContext:
+        ## @param camundaHub.webModeler.restapi.containerSecurityContext.allowPrivilegeEscalation allow privilege escalation
         allowPrivilegeEscalation: false
+        ## @param camundaHub.webModeler.restapi.containerSecurityContext.privileged run container in privileged mode
         privileged: false
+        ## @param camundaHub.webModeler.restapi.containerSecurityContext.readOnlyRootFilesystem mount root filesystem as read only
         readOnlyRootFilesystem: true
+        ## @param camundaHub.webModeler.restapi.containerSecurityContext.runAsNonRoot run as non-root user
         runAsNonRoot: true
+        ## @param camundaHub.webModeler.restapi.containerSecurityContext.runAsUser run as specific user ID
         runAsUser: 1001
         seccompProfile:
+          ## @param camundaHub.webModeler.restapi.containerSecurityContext.seccompProfile.type seccomp profile type
           type: RuntimeDefault
 
       ## camundaHub.webModeler.restapi.startupProbe configuration
       startupProbe:
+        ## @param camundaHub.webModeler.restapi.startupProbe.enabled if true, the startupProbe is enabled in the app container
         enabled: false
+        ## @param camundaHub.webModeler.restapi.startupProbe.scheme defines the startupProbe scheme used on calling the probePath
         scheme: HTTP
+        ## @param camundaHub.webModeler.restapi.startupProbe.probePath defines the startupProbe route used on the app
         probePath: /health/liveness
+        ## @param camundaHub.webModeler.restapi.startupProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
         initialDelaySeconds: 30
+        ## @param camundaHub.webModeler.restapi.startupProbe.periodSeconds defines how often the probe is executed
         periodSeconds: 30
+        ## @param camundaHub.webModeler.restapi.startupProbe.successThreshold defines how many consecutive successes mark the probe as ready
         successThreshold: 1
+        ## @param camundaHub.webModeler.restapi.startupProbe.failureThreshold defines when the probe is considered as failed
         failureThreshold: 5
+        ## @param camundaHub.webModeler.restapi.startupProbe.timeoutSeconds defines the seconds after the probe times out
         timeoutSeconds: 1
 
       ## camundaHub.webModeler.restapi.readinessProbe configuration
       readinessProbe:
+        ## @param camundaHub.webModeler.restapi.readinessProbe.enabled if true, the readinessProbe is enabled in the app container
         enabled: true
+        ## @param camundaHub.webModeler.restapi.readinessProbe.scheme defines the readinessProbe scheme used on calling the probePath
         scheme: HTTP
+        ## @param camundaHub.webModeler.restapi.readinessProbe.probePath defines the readinessProbe route used on the app
         probePath: /health/readiness
+        ## @param camundaHub.webModeler.restapi.readinessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
         initialDelaySeconds: 30
+        ## @param camundaHub.webModeler.restapi.readinessProbe.periodSeconds defines how often the probe is executed
         periodSeconds: 30
+        ## @param camundaHub.webModeler.restapi.readinessProbe.successThreshold defines how many consecutive successes mark the probe as ready
         successThreshold: 1
+        ## @param camundaHub.webModeler.restapi.readinessProbe.failureThreshold defines when the probe is considered as failed
         failureThreshold: 5
+        ## @param camundaHub.webModeler.restapi.readinessProbe.timeoutSeconds defines the seconds after the probe times out
         timeoutSeconds: 1
 
       ## camundaHub.webModeler.restapi.livenessProbe configuration
       livenessProbe:
+        ## @param camundaHub.webModeler.restapi.livenessProbe.enabled if true, the livenessProbe is enabled in the app container
         enabled: false
+        ## @param camundaHub.webModeler.restapi.livenessProbe.scheme defines the livenessProbe scheme used on calling the probePath
         scheme: HTTP
+        ## @param camundaHub.webModeler.restapi.livenessProbe.probePath defines the livenessProbe route used on the app
         probePath: /health/liveness
+        ## @param camundaHub.webModeler.restapi.livenessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
         initialDelaySeconds: 30
+        ## @param camundaHub.webModeler.restapi.livenessProbe.periodSeconds defines how often the probe is executed
         periodSeconds: 30
+        ## @param camundaHub.webModeler.restapi.livenessProbe.successThreshold defines how many consecutive successes mark the probe as ready
         successThreshold: 1
+        ## @param camundaHub.webModeler.restapi.livenessProbe.failureThreshold defines when the probe is considered as failed
         failureThreshold: 5
+        ## @param camundaHub.webModeler.restapi.livenessProbe.timeoutSeconds defines the seconds after the probe times out
         timeoutSeconds: 1
 
       ## Metrics configuration
       metrics:
+        ## @param camundaHub.webModeler.restapi.metrics.prometheus Prometheus metrics endpoint path
         prometheus: /metrics
 
       ## @param camundaHub.webModeler.restapi.nodeSelector
@@ -1706,17 +1793,25 @@ camundaHub:
       ## camundaHub.webModeler.restapi.resources configuration
       resources:
         requests:
+          ## @param camundaHub.webModeler.restapi.resources.requests.cpu CPU resource value
           cpu: 900m
+          ## @param camundaHub.webModeler.restapi.resources.requests.memory memory resource value
           memory: 1280Mi
         limits:
+          ## @param camundaHub.webModeler.restapi.resources.limits.cpu CPU resource value
           cpu: 1800m
+          ## @param camundaHub.webModeler.restapi.resources.limits.memory memory resource value
           memory: 2560Mi
 
       ## camundaHub.webModeler.restapi.service configuration
       service:
+        ## @param camundaHub.webModeler.restapi.service.annotations custom annotations
         annotations: {}
+        ## @param camundaHub.webModeler.restapi.service.type defines the type of the service
         type: ClusterIP
+        ## @param camundaHub.webModeler.restapi.service.port service port number
         port: 80
+        ## @param camundaHub.webModeler.restapi.service.managementPort management port number
         managementPort: 8091
 
       ## @param camundaHub.webModeler.restapi.configuration application.yaml contents
@@ -1771,51 +1866,84 @@ camundaHub:
 
       ## camundaHub.webModeler.websockets.podSecurityContext
       podSecurityContext:
+        ## @param camundaHub.webModeler.websockets.podSecurityContext.runAsNonRoot run as non-root user
         runAsNonRoot: true
+        ## @param camundaHub.webModeler.websockets.podSecurityContext.fsGroup filesystem group ID
         fsGroup: 1001
         seccompProfile:
+          ## @param camundaHub.webModeler.websockets.podSecurityContext.seccompProfile.type seccomp profile type
           type: RuntimeDefault
       ## camundaHub.webModeler.websockets.containerSecurityContext
       containerSecurityContext:
+        ## @param camundaHub.webModeler.websockets.containerSecurityContext.allowPrivilegeEscalation allow privilege escalation
         allowPrivilegeEscalation: false
+        ## @param camundaHub.webModeler.websockets.containerSecurityContext.privileged run container in privileged mode
         privileged: false
+        ## @param camundaHub.webModeler.websockets.containerSecurityContext.readOnlyRootFilesystem mount root filesystem as read only
         readOnlyRootFilesystem: true
+        ## @param camundaHub.webModeler.websockets.containerSecurityContext.runAsNonRoot run as non-root user
         runAsNonRoot: true
+        ## @param camundaHub.webModeler.websockets.containerSecurityContext.runAsUser run as specific user ID
         runAsUser: 1001
         seccompProfile:
+          ## @param camundaHub.webModeler.websockets.containerSecurityContext.seccompProfile.type seccomp profile type
           type: RuntimeDefault
 
       ## camundaHub.webModeler.websockets.startupProbe configuration
       startupProbe:
+        ## @param camundaHub.webModeler.websockets.startupProbe.enabled if true, the startupProbe is enabled in the app container
         enabled: false
+        ## @param camundaHub.webModeler.websockets.startupProbe.scheme defines the startupProbe scheme used on calling the probePath
         scheme: HTTP
+        ## @param camundaHub.webModeler.websockets.startupProbe.probePath defines the startupProbe route used on the app
         probePath: /up
+        ## @param camundaHub.webModeler.websockets.startupProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
         initialDelaySeconds: 10
+        ## @param camundaHub.webModeler.websockets.startupProbe.periodSeconds defines how often the probe is executed
         periodSeconds: 30
+        ## @param camundaHub.webModeler.websockets.startupProbe.successThreshold defines how many consecutive successes mark the probe as ready
         successThreshold: 1
+        ## @param camundaHub.webModeler.websockets.startupProbe.failureThreshold defines when the probe is considered as failed
         failureThreshold: 5
+        ## @param camundaHub.webModeler.websockets.startupProbe.timeoutSeconds defines the seconds after the probe times out
         timeoutSeconds: 1
 
       ## camundaHub.webModeler.websockets.readinessProbe configuration
       readinessProbe:
+        ## @param camundaHub.webModeler.websockets.readinessProbe.enabled if true, the readinessProbe is enabled in the app container
         enabled: true
+        ## @param camundaHub.webModeler.websockets.readinessProbe.scheme defines the readinessProbe scheme used on calling the probePath
         scheme: HTTP
+        ## @param camundaHub.webModeler.websockets.readinessProbe.probePath defines the readinessProbe route used on the app
         probePath: /up
+        ## @param camundaHub.webModeler.websockets.readinessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
         initialDelaySeconds: 10
+        ## @param camundaHub.webModeler.websockets.readinessProbe.periodSeconds defines how often the probe is executed
         periodSeconds: 30
+        ## @param camundaHub.webModeler.websockets.readinessProbe.successThreshold defines how many consecutive successes mark the probe as ready
         successThreshold: 1
+        ## @param camundaHub.webModeler.websockets.readinessProbe.failureThreshold defines when the probe is considered as failed
         failureThreshold: 5
+        ## @param camundaHub.webModeler.websockets.readinessProbe.timeoutSeconds defines the seconds after the probe times out
         timeoutSeconds: 1
 
       ## camundaHub.webModeler.websockets.livenessProbe configuration
       livenessProbe:
+        ## @param camundaHub.webModeler.websockets.livenessProbe.enabled if true, the livenessProbe is enabled in the app container
         enabled: false
+        ## @param camundaHub.webModeler.websockets.livenessProbe.scheme defines the livenessProbe scheme used on calling the probePath
         scheme: HTTP
+        ## @param camundaHub.webModeler.websockets.livenessProbe.probePath defines the livenessProbe route used on the app
         probePath: /up
+        ## @param camundaHub.webModeler.websockets.livenessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
         initialDelaySeconds: 10
+        ## @param camundaHub.webModeler.websockets.livenessProbe.periodSeconds defines how often the probe is executed
         periodSeconds: 30
+        ## @param camundaHub.webModeler.websockets.livenessProbe.successThreshold defines how many consecutive successes mark the probe as ready
         successThreshold: 1
+        ## @param camundaHub.webModeler.websockets.livenessProbe.failureThreshold defines when the probe is considered as failed
         failureThreshold: 5
+        ## @param camundaHub.webModeler.websockets.livenessProbe.timeoutSeconds defines the seconds after the probe times out
         timeoutSeconds: 1
 
       ## @param camundaHub.webModeler.websockets.nodeSelector
@@ -1828,16 +1956,23 @@ camundaHub:
       ## camundaHub.webModeler.websockets.resources configuration
       resources:
         requests:
+          ## @param camundaHub.webModeler.websockets.resources.requests.cpu CPU resource value
           cpu: 100m
+          ## @param camundaHub.webModeler.websockets.resources.requests.memory memory resource value
           memory: 64Mi
         limits:
+          ## @param camundaHub.webModeler.websockets.resources.limits.cpu CPU resource value
           cpu: 200m
+          ## @param camundaHub.webModeler.websockets.resources.limits.memory memory resource value
           memory: 128Mi
 
       ## camundaHub.webModeler.websockets.service configuration
       service:
+        ## @param camundaHub.webModeler.websockets.service.annotations custom annotations
         annotations: {}
+        ## @param camundaHub.webModeler.websockets.service.type defines the type of the service
         type: ClusterIP
+        ## @param camundaHub.webModeler.websockets.service.port service port number
         port: 80
       ## @param camundaHub.webModeler.websockets.configuration application.yaml contents
       configuration: ""
@@ -1850,19 +1985,30 @@ camundaHub:
 
     ## @extra camundaHub.webModeler.serviceAccount configuration
     serviceAccount:
+      ## @param camundaHub.webModeler.serviceAccount.enabled if true, enables serviceAccount
       enabled: true
+      ## @param camundaHub.webModeler.serviceAccount.name the name of the service account
       name: ""
+      ## @param camundaHub.webModeler.serviceAccount.annotations custom annotations
       annotations: {}
+      ## @param camundaHub.webModeler.serviceAccount.automountServiceAccountToken automount service account token
       automountServiceAccountToken: false
 
     ## @extra camundaHub.webModeler.persistence configuration for optional PVC creation
     persistence:
+      ## @param camundaHub.webModeler.persistence.enabled if true, enables persistence
       enabled: false
+      ## @param camundaHub.webModeler.persistence.size PVC size
       size: "5Gi"
+      ## @param camundaHub.webModeler.persistence.accessModes PVC access modes
       accessModes: ["ReadWriteOnce"]
+      ## @param camundaHub.webModeler.persistence.storageClassName PVC storage class name
       storageClassName: ""
+      ## @param camundaHub.webModeler.persistence.existingClaim name of an existing PVC to use
       existingClaim: ""
+      ## @param camundaHub.webModeler.persistence.annotations custom annotations
       annotations: {}
+      ## @param camundaHub.webModeler.persistence.selector PVC selector
       selector: {}
 
 #################################################
@@ -1871,6 +2017,72 @@ camundaHub:
 ## These keys exist for backward compatibility with the enablement helper only.
 ## Value overrides set here are silently ignored — use camundaHub.console.* instead.
 #################################################
+  ## @skip console.affinity (DEPRECATED)
+  ## @skip console.command (DEPRECATED)
+  ## @skip console.configuration (DEPRECATED)
+  ## @skip console.containerSecurityContext (DEPRECATED)
+  ## @skip console.contextPath (DEPRECATED)
+  ## @skip console.dnsConfig (DEPRECATED)
+  ## @skip console.dnsPolicy (DEPRECATED)
+  ## @skip console.env (DEPRECATED)
+  ## @skip console.envFrom (DEPRECATED)
+  ## @skip console.extraConfiguration (DEPRECATED)
+  ## @skip console.extraVolumeMounts (DEPRECATED)
+  ## @skip console.extraVolumes (DEPRECATED)
+  ## @skip console.image.digest (DEPRECATED)
+  ## @skip console.image.pullSecrets (DEPRECATED)
+  ## @skip console.image.registry (DEPRECATED)
+  ## @skip console.image.repository (DEPRECATED)
+  ## @skip console.image.tag (DEPRECATED)
+  ## @skip console.initContainers (DEPRECATED)
+  ## @skip console.keycloak.realm (DEPRECATED)
+  ## @skip console.livenessProbe.enabled (DEPRECATED)
+  ## @skip console.livenessProbe.failureThreshold (DEPRECATED)
+  ## @skip console.livenessProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip console.livenessProbe.periodSeconds (DEPRECATED)
+  ## @skip console.livenessProbe.probePath (DEPRECATED)
+  ## @skip console.livenessProbe.scheme (DEPRECATED)
+  ## @skip console.livenessProbe.successThreshold (DEPRECATED)
+  ## @skip console.livenessProbe.timeoutSeconds (DEPRECATED)
+  ## @skip console.logging (DEPRECATED)
+  ## @skip console.metrics.prometheus (DEPRECATED)
+  ## @skip console.nodeEnv (DEPRECATED)
+  ## @skip console.nodeSelector (DEPRECATED)
+  ## @skip console.podAnnotations (DEPRECATED)
+  ## @skip console.podLabels (DEPRECATED)
+  ## @skip console.podSecurityContext (DEPRECATED)
+  ## @skip console.readinessProbe.enabled (DEPRECATED)
+  ## @skip console.readinessProbe.failureThreshold (DEPRECATED)
+  ## @skip console.readinessProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip console.readinessProbe.periodSeconds (DEPRECATED)
+  ## @skip console.readinessProbe.probePath (DEPRECATED)
+  ## @skip console.readinessProbe.scheme (DEPRECATED)
+  ## @skip console.readinessProbe.successThreshold (DEPRECATED)
+  ## @skip console.readinessProbe.timeoutSeconds (DEPRECATED)
+  ## @skip console.replicas (DEPRECATED)
+  ## @skip console.resources (DEPRECATED)
+  ## @skip console.service.annotations (DEPRECATED)
+  ## @skip console.service.managementPort (DEPRECATED)
+  ## @skip console.service.port (DEPRECATED)
+  ## @skip console.service.serverName (DEPRECATED)
+  ## @skip console.service.type (DEPRECATED)
+  ## @skip console.serviceAccount.annotations (DEPRECATED)
+  ## @skip console.serviceAccount.automountServiceAccountToken (DEPRECATED)
+  ## @skip console.serviceAccount.enabled (DEPRECATED)
+  ## @skip console.serviceAccount.name (DEPRECATED)
+  ## @skip console.sidecars (DEPRECATED)
+  ## @skip console.startupProbe.enabled (DEPRECATED)
+  ## @skip console.startupProbe.failureThreshold (DEPRECATED)
+  ## @skip console.startupProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip console.startupProbe.periodSeconds (DEPRECATED)
+  ## @skip console.startupProbe.probePath (DEPRECATED)
+  ## @skip console.startupProbe.scheme (DEPRECATED)
+  ## @skip console.startupProbe.successThreshold (DEPRECATED)
+  ## @skip console.startupProbe.timeoutSeconds (DEPRECATED)
+  ## @skip console.tls.certKeyFilename (DEPRECATED)
+  ## @skip console.tls.enabled (DEPRECATED)
+  ## @skip console.tls.secret (DEPRECATED)
+  ## @skip console.tolerations (DEPRECATED)
 console:
   ## @param console.enabled (DEPRECATED) Use camundaHub.enabled instead.
   enabled: false
@@ -1959,6 +2171,154 @@ console:
 ## These keys exist for backward compatibility with the enablement helper only.
 ## Value overrides set here are silently ignored — use camundaHub.webModeler.* instead.
 #######################################################################
+  ## @skip webModeler.configuration (DEPRECATED)
+  ## @skip webModeler.contextPath (DEPRECATED)
+  ## @skip webModeler.extraConfiguration (DEPRECATED)
+  ## @skip webModeler.fullnameOverride (DEPRECATED)
+  ## @skip webModeler.image.pullSecrets (DEPRECATED)
+  ## @skip webModeler.image.registry (DEPRECATED)
+  ## @skip webModeler.image.tag (DEPRECATED)
+  ## @skip webModeler.nameOverride (DEPRECATED)
+  ## @skip webModeler.persistence.accessModes (DEPRECATED)
+  ## @skip webModeler.persistence.annotations (DEPRECATED)
+  ## @skip webModeler.persistence.enabled (DEPRECATED)
+  ## @skip webModeler.persistence.existingClaim (DEPRECATED)
+  ## @skip webModeler.persistence.selector (DEPRECATED)
+  ## @skip webModeler.persistence.size (DEPRECATED)
+  ## @skip webModeler.persistence.storageClassName (DEPRECATED)
+  ## @skip webModeler.restapi.affinity (DEPRECATED)
+  ## @skip webModeler.restapi.clusters (DEPRECATED)
+  ## @skip webModeler.restapi.command (DEPRECATED)
+  ## @skip webModeler.restapi.configuration (DEPRECATED)
+  ## @skip webModeler.restapi.containerSecurityContext (DEPRECATED)
+  ## @skip webModeler.restapi.dnsConfig (DEPRECATED)
+  ## @skip webModeler.restapi.dnsPolicy (DEPRECATED)
+  ## @skip webModeler.restapi.env (DEPRECATED)
+  ## @skip webModeler.restapi.envFrom (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.database (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.host (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.port (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.secret.existingSecret (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.secret.existingSecretKey (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.secret.inlineSecret (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.url (DEPRECATED)
+  ## @skip webModeler.restapi.externalDatabase.username (DEPRECATED)
+  ## @skip webModeler.restapi.extraConfiguration (DEPRECATED)
+  ## @skip webModeler.restapi.extraVolumeMounts (DEPRECATED)
+  ## @skip webModeler.restapi.extraVolumes (DEPRECATED)
+  ## @skip webModeler.restapi.image.digest (DEPRECATED)
+  ## @skip webModeler.restapi.image.repository (DEPRECATED)
+  ## @skip webModeler.restapi.initContainers (DEPRECATED)
+  ## @skip webModeler.restapi.javaOpts (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.enabled (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.failureThreshold (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.periodSeconds (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.probePath (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.scheme (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.successThreshold (DEPRECATED)
+  ## @skip webModeler.restapi.livenessProbe.timeoutSeconds (DEPRECATED)
+  ## @skip webModeler.restapi.logging (DEPRECATED)
+  ## @skip webModeler.restapi.mail.fromAddress (DEPRECATED)
+  ## @skip webModeler.restapi.mail.fromName (DEPRECATED)
+  ## @skip webModeler.restapi.mail.secret.existingSecret (DEPRECATED)
+  ## @skip webModeler.restapi.mail.secret.existingSecretKey (DEPRECATED)
+  ## @skip webModeler.restapi.mail.secret.inlineSecret (DEPRECATED)
+  ## @skip webModeler.restapi.mail.smtpHost (DEPRECATED)
+  ## @skip webModeler.restapi.mail.smtpPort (DEPRECATED)
+  ## @skip webModeler.restapi.mail.smtpTlsEnabled (DEPRECATED)
+  ## @skip webModeler.restapi.mail.smtpUser (DEPRECATED)
+  ## @skip webModeler.restapi.metrics.prometheus (DEPRECATED)
+  ## @skip webModeler.restapi.nodeSelector (DEPRECATED)
+  ## @skip webModeler.restapi.podAnnotations (DEPRECATED)
+  ## @skip webModeler.restapi.podLabels (DEPRECATED)
+  ## @skip webModeler.restapi.podSecurityContext (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.client.secret.existingSecret (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.client.secret.existingSecretKey (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.client.secret.inlineSecret (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.secret.existingSecret (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.secret.existingSecretKey (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.secret.inlineSecret (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.enabled (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.failureThreshold (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.periodSeconds (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.probePath (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.scheme (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.successThreshold (DEPRECATED)
+  ## @skip webModeler.restapi.readinessProbe.timeoutSeconds (DEPRECATED)
+  ## @skip webModeler.restapi.replicas (DEPRECATED)
+  ## @skip webModeler.restapi.resources (DEPRECATED)
+  ## @skip webModeler.restapi.service.annotations (DEPRECATED)
+  ## @skip webModeler.restapi.service.managementPort (DEPRECATED)
+  ## @skip webModeler.restapi.service.port (DEPRECATED)
+  ## @skip webModeler.restapi.service.type (DEPRECATED)
+  ## @skip webModeler.restapi.sidecars (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.enabled (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.failureThreshold (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.periodSeconds (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.probePath (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.scheme (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.successThreshold (DEPRECATED)
+  ## @skip webModeler.restapi.startupProbe.timeoutSeconds (DEPRECATED)
+  ## @skip webModeler.restapi.tolerations (DEPRECATED)
+  ## @skip webModeler.restapi.zeebeClientConfigPath (DEPRECATED)
+  ## @skip webModeler.security.authentication.method (DEPRECATED)
+  ## @skip webModeler.serviceAccount.annotations (DEPRECATED)
+  ## @skip webModeler.serviceAccount.automountServiceAccountToken (DEPRECATED)
+  ## @skip webModeler.serviceAccount.enabled (DEPRECATED)
+  ## @skip webModeler.serviceAccount.name (DEPRECATED)
+  ## @skip webModeler.websockets.affinity (DEPRECATED)
+  ## @skip webModeler.websockets.command (DEPRECATED)
+  ## @skip webModeler.websockets.configuration (DEPRECATED)
+  ## @skip webModeler.websockets.containerSecurityContext (DEPRECATED)
+  ## @skip webModeler.websockets.dnsConfig (DEPRECATED)
+  ## @skip webModeler.websockets.dnsPolicy (DEPRECATED)
+  ## @skip webModeler.websockets.env (DEPRECATED)
+  ## @skip webModeler.websockets.envFrom (DEPRECATED)
+  ## @skip webModeler.websockets.extraConfiguration (DEPRECATED)
+  ## @skip webModeler.websockets.extraVolumeMounts (DEPRECATED)
+  ## @skip webModeler.websockets.extraVolumes (DEPRECATED)
+  ## @skip webModeler.websockets.image.digest (DEPRECATED)
+  ## @skip webModeler.websockets.image.repository (DEPRECATED)
+  ## @skip webModeler.websockets.initContainers (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.enabled (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.failureThreshold (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.periodSeconds (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.probePath (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.scheme (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.successThreshold (DEPRECATED)
+  ## @skip webModeler.websockets.livenessProbe.timeoutSeconds (DEPRECATED)
+  ## @skip webModeler.websockets.nodeSelector (DEPRECATED)
+  ## @skip webModeler.websockets.podAnnotations (DEPRECATED)
+  ## @skip webModeler.websockets.podLabels (DEPRECATED)
+  ## @skip webModeler.websockets.podSecurityContext (DEPRECATED)
+  ## @skip webModeler.websockets.publicHost (DEPRECATED)
+  ## @skip webModeler.websockets.publicPort (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.enabled (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.failureThreshold (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.periodSeconds (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.probePath (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.scheme (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.successThreshold (DEPRECATED)
+  ## @skip webModeler.websockets.readinessProbe.timeoutSeconds (DEPRECATED)
+  ## @skip webModeler.websockets.resources (DEPRECATED)
+  ## @skip webModeler.websockets.service.annotations (DEPRECATED)
+  ## @skip webModeler.websockets.service.port (DEPRECATED)
+  ## @skip webModeler.websockets.service.type (DEPRECATED)
+  ## @skip webModeler.websockets.sidecars (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.enabled (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.failureThreshold (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.initialDelaySeconds (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.periodSeconds (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.probePath (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.scheme (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.successThreshold (DEPRECATED)
+  ## @skip webModeler.websockets.startupProbe.timeoutSeconds (DEPRECATED)
+  ## @skip webModeler.websockets.tolerations (DEPRECATED)
 webModeler:
   ## @param webModeler.enabled (DEPRECATED) Use camundaHub.enabled instead.
   enabled: false
