@@ -239,7 +239,7 @@ Layers live in `test/integration/scenarios/chart-full-setup/values/<chart-versio
 | _(default)_ | `keycloak` | `elasticsearch-external` | — |
 
 When adding a new integration test values file, check which chart versions it should apply to
-using the layer availability table in `docs/integration-test-scenario-resolution.md`.
+using the layer availability table in `docs/skills/integration-test-scenario-resolution.md`.
 
 ---
 
@@ -276,7 +276,7 @@ using the layer availability table in `docs/integration-test-scenario-resolution
 
 10. **Breaking the integration test layer system** — when a `base.yaml` change enables a feature
     by default, verify all identity/persistence/feature layer files don't conflict. Consult
-    `docs/integration-test-scenario-resolution.md` to understand which layer files exist per version.
+    `docs/skills/integration-test-scenario-resolution.md` to understand which layer files exist per version.
 
 ---
 
@@ -285,8 +285,10 @@ using the layer availability table in `docs/integration-test-scenario-resolution
 - Helm values best practices: <https://helm.sh/docs/chart_best_practices/values/>
 - helm-docs annotation format: <https://github.com/norwoodj/helm-docs>
 - Chart design principles: `docs/index.md`
+- Values YAML policy (canonical): `docs/policies/values-yaml-policy.md`
+- Breaking changes policy: `docs/policies/breaking-changes.md`
 - Primary values file: `charts/<version>/values.yaml`
 - Schema file: `charts/<version>/values.schema.json`
 - Integration test values: `test/integration/scenarios/chart-full-setup/values/`
-- Integration test layer resolution: `docs/integration-test-scenario-resolution.md`
+- Integration test layer resolution: `docs/skills/integration-test-scenario-resolution.md`
 - Lint: `make helm.lint chartPath=charts/camunda-platform-8.10`
