@@ -1,0 +1,18 @@
+global:
+  host: "$CAMUNDA_HOSTNAME"
+  ingress:
+    enabled: false
+  gateway:
+    enabled: true
+    # Gateway lives in camunda-gateway-shared, created by the pre-install script.
+    # The chart must not create its own Gateway resource.
+    createGatewayResource: false
+    name: shared-camunda-gateway
+    namespace: camunda-gateway-shared
+    className: nginx
+    # HTTP listener only — no TLS cert required in the shared namespace.
+    tls:
+      enabled: false
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"

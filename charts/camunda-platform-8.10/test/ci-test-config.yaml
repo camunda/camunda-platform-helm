@@ -228,6 +228,50 @@ integration:
               sizes so the Camunda Gateway can carry Keycloak auth headers
               without 502s. Runs after helm install because the Gateway API
               CRD is only registered by the chart itself.
+        - name: gateway-cross-namespace
+          enabled: true
+          exclude: []
+          shortname: gatxn
+          tier: 2
+          auth: keycloak
+          flow: install
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features: [gateway-cross-namespace]
+          platforms: [gke]
+          skip-e2e: true  # cross-namespace HTTP gateway; smoke tests require HTTPS ingress
+          pre-install:
+            script: pre-install-gateway-cross-namespace.sh
+            description: |
+              Creates the 'camunda-gateway-shared' namespace and a shared Gateway
+              resource ('shared-camunda-gateway') inside it with an HTTP listener
+              and allowedRoutes.namespaces.from=All. Routes in the test namespace
+              will attach to this cross-namespace Gateway, proving that
+              global.gateway.namespace is propagated into parentRefs correctly.
+        - name: gateway-existing
+          enabled: true
+          exclude: []
+          shortname: gatex
+          tier: 2
+          auth: keycloak
+          flow: install
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features: [gateway-existing]
+          platforms: [gke]
+          skip-e2e: true  # pre-existing gateway scenario; E2E not required here
+          pre-install:
+            fixtures:
+              - gateway-prereq.yaml
+            description: |
+              Creates a Gateway named 'pre-existing-gateway' in the test namespace
+              before helm install. The chart deploys with createGatewayResource=false
+              and attaches Routes to this pre-existing Gateway, proving that the
+              chart works correctly when the Gateway is managed externally.
         - name: elasticsearch-arm
           enabled: true
           auth: keycloak
