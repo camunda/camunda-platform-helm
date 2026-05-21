@@ -31,13 +31,13 @@ As mentioned earlier, we expect unit tests on new contributions. The unit tests 
 
 We write new golden file tests for default values, where we can compare a complete manifest with its properties.
 
-Most of the golden file tests are part of `goldenfiles_test.go` in the corresponding sub-chart testing directory. For an example see `/test/zeebe/goldenfiles_test.go`.
+Most of the golden file tests are part of `goldenfiles_test.go` in the corresponding chart version testing directory. For an example see `charts/camunda-platform-8.10/test/unit/orchestration/goldenfiles_test.go`.
 
 If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename in the sub-chart templates dir.
 
-For example, the Prometheus `templates/service-monitor.yaml` can be enabled by a toggle, so we write a golden file test in `test/servicemonitor_test.go`.
+For example, the Prometheus `templates/service-monitor.yaml` can be enabled by a toggle, so we write a golden file test in `charts/camunda-platform-8.10/test/unit/orchestration/servicemonitor_test.go`.
 
-To generate the golden files, run `go.test-golden-updated` at the repository root. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should be named related to the manifest.
+To generate the golden files, run `make go.update-golden-only chartPath=charts/camunda-platform-8.10` at the repository root. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should be named related to the manifest.
 
 ### Properties tests
 
@@ -45,7 +45,7 @@ For things that are not enabled or set by default, we write a property test. Her
 
 This kind of test should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename in the sub-chart templates dir.
 
-For example, for the Zeebe StatefulSet manifest we have the test `test/zeebe/statefulset_test.go` under the zeebe sub-dir.
+For example, for the Orchestration StatefulSet manifest we have the test `charts/camunda-platform-8.10/test/unit/orchestration/statefulset_test.go`.
 
 It is always helpful to check existing tests to get a better understanding of how to write new tests, so do not hesitate to read and copy from them.
 

@@ -65,7 +65,7 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
 #### Approval / alignment
 
 1. Document and align with EM and PM justification of the breaking change (rationale, scope, customer impact, target version).
-2. Mark the change as breaking in the issue and PR (label `breaking-change` + clear description). See [Ticket & Label Policy](./ticket-and-label.md) for the `breaking change` label definition.
+2. Mark the change as breaking in the issue and PR (label `breaking change` + clear description). See [Ticket & Label Policy](./ticket-and-label.md) for the `breaking change` label definition.
 3. Notify and align with primary stakeholders:
    - **InfraEx** and [**#oc-reliability-testing**](https://camunda.slack.com/archives/C0807665N8G) — closest day-to-day chart users; must explicitly acknowledge before proceeding.
    - QA and infra.
