@@ -272,6 +272,7 @@ integration:
         - name: rdbms-self-signed
           enabled: true
           shortname: rdbss
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
