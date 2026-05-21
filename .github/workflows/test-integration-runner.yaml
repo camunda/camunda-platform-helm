@@ -1039,6 +1039,82 @@ jobs:
           shard-index: ${{ matrix.shardIndex }}
           scenario: ${{ inputs.scenario }}
 
+  # Shadow job: runs the full E2E suite for the dedicated 'shadow-e2e' scenario.
+  # Tier 2 (merge queue only). Non-blocking during observation period.
+  shadow-e2e-full-suite:
+    name: "[shadow] Full e2e - ${{ inputs.shortname }}"
+    needs: [install]
+    runs-on: gcp-core-32-longrunning-big-ssd
+    container:
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
+    if: ${{ inputs.test-enabled && inputs.scenario == 'shadow-e2e' }}
+    continue-on-error: true
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+          exportEnv: true
+
+      - name: Run full E2E suite (shadow)
+        uses: ./.github/actions/playwright-e2e-tests
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
+        with:
+          camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+          camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
+          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          flow: ${{ inputs.flow }}
+          distro-platform: ${{ inputs.distro-platform }}
+          infra-type: ${{ inputs.infra-type }}
+          identifier: ${{ inputs.identifier }}
+          namespace-prefix: ${{ inputs.namespace-prefix }}
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          auth: ${{ inputs.auth }}
+          auth-data: ${{ inputs.auth-data }}
+          exclude: ${{ inputs.exclude }}
+          test-stage: after-install
+          shard-index: "1"
+          scenario: ${{ inputs.scenario }}
+          run-smoke-tests: "false"
+
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
@@ -1248,7 +1324,7 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [merge-e2e-reports]
+    needs: [merge-e2e-reports, shadow-e2e-full-suite]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
