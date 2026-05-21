@@ -36,6 +36,21 @@ integration:
             gke: distroci
             eks: preemptible
           platforms: [gke]  # EKS removed: Playwright ITs fail due to pods not recovering on EKS (newly exposed by ExternalSecrets fix)
+        - name: enterprise-values
+          enabled: true
+          shortname: entv
+          tier: 2
+          auth: keycloak
+          flow: install
+          exclude: []
+          helmVersion: 3.20.2
+          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features: [enterprise]  # symlink: values/features/enterprise.yaml -> values-enterprise.yaml
+          platforms: [gke]
         - name: keycloak-mt
           enabled: true
           shortname: kemt
