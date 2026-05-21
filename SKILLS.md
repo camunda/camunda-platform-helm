@@ -731,7 +731,7 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 | 8.7  | `kemt`, `kerba`, `esoi`, `keyc`, `osem` |
 | 8.8  | `esoi`, `esarm`, `osem`, `docstr` |
 | 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms` |
-| 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble` |
+| 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble`, `entv` |
 
 `osex` (external AWS OpenSearch, #6119) and `oske` (Bitnami OpenSearch subchart, #6121) are defined but currently disabled.
 
@@ -748,7 +748,7 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 | `esarm` | ARM Elasticsearch |
 | `docstr` | document store feature |
 | `huble` | hub-legacy feature |
-| `entv` | enterprise values overlay (`values-enterprise.yaml`; tier-1 on 8.10 initially, tier-2 once validated) |
+| `entv` | enterprise values overlay (`values-enterprise.yaml`) |
 
 ### Select Scenarios
 
