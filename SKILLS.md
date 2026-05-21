@@ -748,6 +748,7 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 | `esarm` | ARM Elasticsearch |
 | `docstr` | document store feature |
 | `huble` | hub-legacy feature |
+| `entv` | enterprise values overlay (`values-enterprise.yaml`; tier-1 on 8.10 initially, tier-2 once validated) |
 
 ### Select Scenarios
 
@@ -762,6 +763,7 @@ Default: tier-1 on every affected version. Add tier-2 entries only when the diff
 | Document store feature 8.8+ | `eske` + `docstr` per version |
 | Hub change on 8.10 | `eske` + `huble` |
 | `_helpers.tpl` change | tier-1 all versions + `nosec`, `docstr` |
+| `values-enterprise.yaml` or enterprise image tags | `entv` on each affected version |
 
 **Skip the matrix** for `.github/workflows/*` (run `actionlint`), `scripts/` Go tooling (`make go.test`), Dockerfile-only (`hadolint`, `docker build --target`), compose-only (`docker compose config`), docs-only.
 

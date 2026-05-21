@@ -60,6 +60,19 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
+        - name: enterprise-values
+          enabled: true
+          shortname: entv
+          tier: 1
+          auth: keycloak
+          flow: install
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features: [enterprise]
+          platforms: [gke]
         - name: opensearch
           enabled: false  # Disabled: Bitnami OpenSearch subchart is unstable in CI; tracked in #6121
           auth: keycloak
