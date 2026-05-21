@@ -58,7 +58,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":      "true",
 				"console.enabled":       "true",
-				"console.podLabels.foo": "bar",
+				"camundaHub.console.podLabels.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -72,8 +72,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":           "true",
 				"console.enabled":            "true",
-				"console.podAnnotations.foo": "bar",
-				"console.podAnnotations.foz": "baz",
+				"camundaHub.console.podAnnotations.foo": "bar",
+				"camundaHub.console.podAnnotations.foz": "baz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -114,9 +114,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":         "true",
 				"console.enabled":          "true",
 				"global.image.registry":    "global.custom.registry.io",
-				"console.image.registry":   "subchart.custom.registry.io",
-				"console.image.repository": "camunda/console-test",
-				"console.image.tag":        "snapshot",
+				"camundaHub.console.image.registry":   "subchart.custom.registry.io",
+				"camundaHub.console.image.repository": "camunda/console-test",
+				"camundaHub.console.image.tag":        "snapshot",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -146,7 +146,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                  "true",
 				"console.enabled":                   "true",
 				"global.image.pullSecrets[0].name":  "SecretName",
-				"console.image.pullSecrets[0].name": "SecretNameSubChart",
+				"camundaHub.console.image.pullSecrets[0].name": "SecretNameSubChart",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -160,7 +160,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":  "true",
 				"console.enabled":   "true",
-				"console.image.tag": "a.b.c",
+				"camundaHub.console.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -177,7 +177,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":  "true",
 				"console.enabled":   "true",
-				"console.image.tag": "a.b.c",
+				"camundaHub.console.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -195,7 +195,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":   "true",
 				"console.enabled":    "true",
-				"console.command[0]": "printenv",
+				"camundaHub.console.command[0]": "printenv",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -213,9 +213,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                              "true",
 				"console.enabled":                               "true",
-				"console.extraVolumes[0].name":                  "extraVolume",
-				"console.extraVolumes[0].configMap.name":        "otherConfigMap",
-				"console.extraVolumes[0].configMap.defaultMode": "744",
+				"camundaHub.console.extraVolumes[0].name":                  "extraVolume",
+				"camundaHub.console.extraVolumes[0].configMap.name":        "otherConfigMap",
+				"camundaHub.console.extraVolumes[0].configMap.defaultMode": "744",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
@@ -252,8 +252,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                       "true",
 				"console.enabled":                        "true",
-				"console.extraVolumeMounts[0].name":      "otherConfigMap",
-				"console.extraVolumeMounts[0].mountPath": "/usr/local/config",
+				"camundaHub.console.extraVolumeMounts[0].name":      "otherConfigMap",
+				"camundaHub.console.extraVolumeMounts[0].mountPath": "/usr/local/config",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -290,11 +290,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                              "true",
 				"console.enabled":                               "true",
-				"console.extraVolumeMounts[0].name":             "otherConfigMap",
-				"console.extraVolumeMounts[0].mountPath":        "/usr/local/config",
-				"console.extraVolumes[0].name":                  "extraVolume",
-				"console.extraVolumes[0].configMap.name":        "otherConfigMap",
-				"console.extraVolumes[0].configMap.defaultMode": "744",
+				"camundaHub.console.extraVolumeMounts[0].name":             "otherConfigMap",
+				"camundaHub.console.extraVolumeMounts[0].mountPath":        "/usr/local/config",
+				"camundaHub.console.extraVolumes[0].name":                  "extraVolume",
+				"camundaHub.console.extraVolumes[0].configMap.name":        "otherConfigMap",
+				"camundaHub.console.extraVolumes[0].configMap.defaultMode": "744",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes, volumemounts array before addition of new volume
@@ -342,7 +342,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":            "true",
 				"console.enabled":             "true",
-				"console.serviceAccount.name": "accName",
+				"camundaHub.console.serviceAccount.name": "accName",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -357,7 +357,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                     "true",
 				"console.enabled":                      "true",
-				"console.podSecurityContext.runAsUser": "1000",
+				"camundaHub.console.podSecurityContext.runAsUser": "1000",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -372,7 +372,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled": "true",
 				"console.enabled":  "true",
-				"console.containerSecurityContext.privileged": "true",
+				"camundaHub.console.containerSecurityContext.privileged": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -388,8 +388,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":              "true",
 				"console.enabled":               "true",
-				"console.nodeSelector.disktype": "ssd",
-				"console.nodeSelector.cputype":  "arm",
+				"camundaHub.console.nodeSelector.disktype": "ssd",
+				"camundaHub.console.nodeSelector.cputype":  "arm",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -423,14 +423,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled": "true",
 				"console.enabled":  "true",
-				"console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
-				"console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
-				"console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
-				"console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
-				"console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
-				"console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
-				"console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
-				"console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+				"camundaHub.console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+				"camundaHub.console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
+				"camundaHub.console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+				"camundaHub.console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+				"camundaHub.console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+				"camundaHub.console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+				"camundaHub.console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+				"camundaHub.console.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -468,10 +468,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                "true",
 				"console.enabled":                 "true",
-				"console.tolerations[0].key":      "key1",
-				"console.tolerations[0].operator": "Equal",
-				"console.tolerations[0].value":    "Value1",
-				"console.tolerations[0].effect":   "NoSchedule",
+				"camundaHub.console.tolerations[0].key":      "key1",
+				"camundaHub.console.tolerations[0].operator": "Equal",
+				"camundaHub.console.tolerations[0].value":    "Value1",
+				"camundaHub.console.tolerations[0].effect":   "NoSchedule",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -512,13 +512,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                         "true",
 				"console.enabled":                          "true",
-				"console.startupProbe.enabled":             "true",
-				"console.startupProbe.probePath":           "/healthz",
-				"console.startupProbe.initialDelaySeconds": "5",
-				"console.startupProbe.periodSeconds":       "10",
-				"console.startupProbe.successThreshold":    "1",
-				"console.startupProbe.failureThreshold":    "5",
-				"console.startupProbe.timeoutSeconds":      "1",
+				"camundaHub.console.startupProbe.enabled":             "true",
+				"camundaHub.console.startupProbe.probePath":           "/healthz",
+				"camundaHub.console.startupProbe.initialDelaySeconds": "5",
+				"camundaHub.console.startupProbe.periodSeconds":       "10",
+				"camundaHub.console.startupProbe.successThreshold":    "1",
+				"camundaHub.console.startupProbe.failureThreshold":    "5",
+				"camundaHub.console.startupProbe.timeoutSeconds":      "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -540,13 +540,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                          "true",
 				"console.enabled":                           "true",
-				"console.livenessProbe.enabled":             "true",
-				"console.livenessProbe.probePath":           "/healthz",
-				"console.livenessProbe.initialDelaySeconds": "5",
-				"console.livenessProbe.periodSeconds":       "10",
-				"console.livenessProbe.successThreshold":    "1",
-				"console.livenessProbe.failureThreshold":    "5",
-				"console.livenessProbe.timeoutSeconds":      "1",
+				"camundaHub.console.livenessProbe.enabled":             "true",
+				"camundaHub.console.livenessProbe.probePath":           "/healthz",
+				"camundaHub.console.livenessProbe.initialDelaySeconds": "5",
+				"camundaHub.console.livenessProbe.periodSeconds":       "10",
+				"camundaHub.console.livenessProbe.successThreshold":    "1",
+				"camundaHub.console.livenessProbe.failureThreshold":    "5",
+				"camundaHub.console.livenessProbe.timeoutSeconds":      "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -567,9 +567,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                           "true",
 				"console.enabled":                            "true",
-				"console.sidecars[0].name":                   "nginx",
-				"console.sidecars[0].image":                  "nginx:latest",
-				"console.sidecars[0].ports[0].containerPort": "80",
+				"camundaHub.console.sidecars[0].name":                   "nginx",
+				"camundaHub.console.sidecars[0].image":                  "nginx:latest",
+				"camundaHub.console.sidecars[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -594,9 +594,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                 "true",
 				"console.enabled":                                  "true",
-				"console.initContainers[0].name":                   "nginx",
-				"console.initContainers[0].image":                  "nginx:latest",
-				"console.initContainers[0].ports[0].containerPort": "80",
+				"camundaHub.console.initContainers[0].name":                   "nginx",
+				"camundaHub.console.initContainers[0].image":                  "nginx:latest",
+				"camundaHub.console.initContainers[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -621,9 +621,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                 "true",
 				"console.enabled":                  "true",
-				"console.dnsPolicy":                "ClusterFirst",
-				"console.dnsConfig.nameservers[0]": "8.8.8.8",
-				"console.dnsConfig.searches[0]":    "example.com",
+				"camundaHub.console.dnsPolicy":                "ClusterFirst",
+				"camundaHub.console.dnsConfig.nameservers[0]": "8.8.8.8",
+				"camundaHub.console.dnsConfig.searches[0]":    "example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

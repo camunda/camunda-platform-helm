@@ -10,11 +10,14 @@
 {{- end -}}
 
 {{- define "console.extraLabels" -}}
-    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "console" "componentValuesKey" "console" "context" $) -}}
+app.kubernetes.io/component: console
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.console) .Values.camundaHub.console) "chart" .Chart) | quote }}
 {{- end -}}
 
 {{- define "console.labels" -}}
-    {{- include "camundaPlatform.componentLabels" (dict "componentName" "console" "componentValuesKey" "console" "context" $) -}}
+    {{- include "camundaPlatform.labels" . }}
+    {{- "\n" }}
+    {{- include "console.extraLabels" . }}
 {{- end -}}
 
 {{- define "console.matchLabels" -}}
@@ -25,20 +28,21 @@
 Create the name of the service account to use
 */}}
 {{- define "console.serviceAccountName" -}}
-    {{- include "camundaPlatform.serviceAccountName" (dict
-        "component" "console"
-        "context" $
-    ) -}}
+    {{- $saName := (or .Values.camundaHub.console.serviceAccount.name .Values.console.serviceAccount.name) -}}
+    {{- if (or .Values.camundaHub.console.serviceAccount.enabled .Values.console.serviceAccount.enabled) -}}
+        {{- $saName | default (include "console.fullname" .) -}}
+    {{- else -}}
+        {{- $saName | default "default" -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*
 Get the image pull secrets.
 */}}
 {{- define "console.imagePullSecrets" -}}
-    {{- include "camundaPlatform.imagePullSecrets" (dict
-        "component" "console"
-        "context" $
-    ) -}}
+    {{- $componentValue := (or .Values.camundaHub.console.image.pullSecrets .Values.console.image.pullSecrets) -}}
+    {{- $globalValue := .Values.global.image.pullSecrets -}}
+    {{- $componentValue | default $globalValue | default list | toYaml -}}
 {{- end }}
 
 {{/*

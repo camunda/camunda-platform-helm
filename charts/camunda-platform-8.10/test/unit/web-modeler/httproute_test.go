@@ -76,7 +76,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 				"global.host":                         "camunda.example.com",
 				"webModeler.enabled":                  "true",
 				"identity.enabled":                    "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -95,7 +95,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 				"global.gateway.tls.enabled":          "true",
 				"webModeler.enabled":                  "true",
 				"identity.enabled":                    "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -109,8 +109,8 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 				"global.host":                         "camunda.example.com",
 				"webModeler.enabled":                  "true",
 				"identity.enabled":                    "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"webModeler.contextPath":              "/modeler",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.contextPath":              "/modeler",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -124,7 +124,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 				"global.host":                            "camunda.example.com",
 				"webModeler.enabled":                     "true",
 				"identity.enabled":                       "true",
-				"webModeler.restapi.mail.fromAddress":    "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":    "example@example.com",
 				"global.annotations.global-key":          "global-value",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},

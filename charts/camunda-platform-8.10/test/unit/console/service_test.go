@@ -70,7 +70,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                "true",
 				"console.enabled":                 "true",
-				"console.service.annotations.foo": "bar",
+				"camundaHub.console.service.annotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
