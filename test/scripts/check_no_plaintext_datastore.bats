@@ -24,41 +24,40 @@ teardown() {
   rm -rf "$TMPDIR_TEST"
 }
 
-# Helper: install a kubectl shim that returns the JSON in $1 for any
-# `kubectl ... get pod <name> -o json` invocation, and returns "<name>" for
-# the `get pods -o jsonpath` invocation.
+# Helper: install a kubectl shim that returns canned pod JSON for
+# `kubectl ... get pod <name> -o json`, and pod names for the
+# `get pods -o jsonpath` invocation.
 install_kubectl_stub() {
   local pods="$1"
   local pod_json_dir="$2"
-  cat > "$TMPDIR_TEST/bin/kubectl" <<EOF
+  cat > "$TMPDIR_TEST/bin/kubectl" <<'STUBEOF'
 #!/usr/bin/env bash
-# Stub kubectl: enough surface area to satisfy check-no-plaintext-datastore.sh
-args=("\$@")
-last="\${args[\${#args[@]}-1]}"
-case " \${args[*]} " in
+args=("$@")
+case " ${args[*]} " in
   *" get pods "*"jsonpath="*)
-    echo "${pods}"
+    echo "PODS_PLACEHOLDER"
     ;;
-  *" get pod "*" -o json"*)
-    # Find the pod name argument (immediately after "get pod").
-    for ((i=0; i < \${#args[@]}; i++)); do
-      if [[ "\${args[\$i]}" == "pod" ]]; then
-        cat "${pod_json_dir}/\${args[\$((i+1))]}.json"
-        exit 0
+  *" get pod "*)
+    for ((i=0; i < ${#args[@]}; i++)); do
+      if [[ "${args[$i]}" == "pod" ]]; then
+        cat "JSON_DIR_PLACEHOLDER/${args[$((i+1))]}.json" 2>/dev/null
+        exit $?
       fi
     done
     echo "stub: no pod name found" >&2; exit 2
     ;;
   *)
-    echo "stub: unsupported invocation: \${args[*]}" >&2; exit 2
+    echo "stub: unsupported invocation: ${args[*]}" >&2; exit 2
     ;;
 esac
-EOF
+STUBEOF
+  sed -i "s|PODS_PLACEHOLDER|${pods}|" "$TMPDIR_TEST/bin/kubectl"
+  sed -i "s|JSON_DIR_PLACEHOLDER|${pod_json_dir}|" "$TMPDIR_TEST/bin/kubectl"
   chmod +x "$TMPDIR_TEST/bin/kubectl"
 }
 
-# Helper: write a single-pod JSON with a list of {name, value} env vars to the
-# named container in the named pod.
+# Helper: write a pod JSON file with env vars for one container.
+# Arguments: <dir> <pod> <container> [env-name env-value]...
 write_pod_json() {
   local dir="$1" pod="$2" container="$3"
   shift 3
@@ -75,9 +74,7 @@ write_pod_json() {
 {
   "metadata": {"name": "$pod"},
   "spec": {
-    "containers": [
-      {"name": "$container", "env": $envs}
-    ],
+    "containers": [{"name": "$container", "env": $envs}],
     "initContainers": []
   }
 }
@@ -102,7 +99,7 @@ EOF
 
   run bash "$SCRIPT" --namespace ci-test
   [ "$status" -eq 1 ]
-  [[ "$output" == *"PLAINTEXT-HTTP"* ]] || [[ "$stderr" == *"PLAINTEXT-HTTP"* ]] || [[ "$output" == *"http://opensearch-master"* ]]
+  [[ "$output" == *"PLAINTEXT-HTTP"* ]]
 }
 
 @test "FAIL: plaintext HTTP to integration-elasticsearch" {
@@ -121,7 +118,7 @@ EOF
 
   run bash "$SCRIPT" --namespace ci-test
   [ "$status" -eq 1 ]
-  [[ "$output" == *"INSECURE-JDBC"* ]] || [[ "$stderr" == *"INSECURE-JDBC"* ]] || [[ "$output" == *"jdbc:postgresql"* ]]
+  [[ "$output" == *"INSECURE-JDBC"* ]]
 }
 
 @test "FAIL: JDBC URL with ssl=true alone (no sslmode=verify-*)" {
@@ -150,7 +147,7 @@ EOF
 @test "ERROR: --namespace with no value exits 2 (not 1 from set -u)" {
   run bash "$SCRIPT" --namespace
   [ "$status" -eq 2 ]
-  [[ "$output" == *"requires a value"* ]] || [[ "$stderr" == *"requires a value"* ]]
+  [[ "$output" == *"requires a value"* ]]
 }
 
 @test "ERROR: --kube-context with no value exits 2 (not 1 from set -u)" {
@@ -183,7 +180,7 @@ EOF
 
   run bash "$SCRIPT" --namespace ci-test
   [ "$status" -eq 1 ]
-  [[ "$output" == *"insecure"* ]] || [[ "$stderr" == *"insecure"* ]]
+  [[ "$output" == *"insecure"* ]]
 }
 
 @test "FAIL: JDBC URL with sslmode=require (disables hostname verification)" {
@@ -193,5 +190,25 @@ EOF
 
   run bash "$SCRIPT" --namespace ci-test
   [ "$status" -eq 1 ]
-  [[ "$output" == *"INSECURE-JDBC"* ]] || [[ "$stderr" == *"INSECURE-JDBC"* ]]
+  [[ "$output" == *"INSECURE-JDBC"* ]]
+}
+
+@test "FAIL: plaintext HTTP in initContainer env var" {
+  # Write pod JSON with a clean main container and a violating initContainer.
+  mkdir -p "$TMPDIR_TEST/pods"
+  cat > "$TMPDIR_TEST/pods/orchestration-0.json" <<EOF
+{
+  "metadata": {"name": "orchestration-0"},
+  "spec": {
+    "containers": [{"name": "orchestration", "env": [{"name": "OS_URL", "value": "https://opensearch-master:9200"}]}],
+    "initContainers": [{"name": "init-tls", "env": [{"name": "OS_URL", "value": "http://opensearch-master:9200"}]}]
+  }
+}
+EOF
+  install_kubectl_stub "orchestration-0" "$TMPDIR_TEST/pods"
+
+  run bash "$SCRIPT" --namespace ci-test
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"PLAINTEXT-HTTP"* ]]
+  [[ "$output" == *"init-tls"* ]]
 }

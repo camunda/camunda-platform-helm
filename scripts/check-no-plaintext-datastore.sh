@@ -51,7 +51,7 @@ Usage: $0 --namespace <ns> [--kube-context <ctx>]
 
 Checks pods in <ns> for plaintext datastore URLs that would indicate a
 TLS-claimed deployment has silently regressed. Service-name patterns checked:
-  opensearch, elasticsearch, postgres-tls (and their integration-* variants)
+  opensearch, elasticsearch, postgres, postgresql (and their integration-* variants)
 
 Exits 0 if clean, 1 if any plaintext URL found, 2 on usage/runtime error.
 EOF
@@ -96,22 +96,60 @@ fi
 # ---------------------------------------------------------------------------
 # Patterns
 # ---------------------------------------------------------------------------
-# HTTP plaintext to known datastore service names. Trailing alternation
-# covers Bitnami service name suffixes (-headless, -coordinating-only, -data,
-# -master, -client) and the URL boundary characters [./:].
-PLAINTEXT_HTTP_RE='http://([a-z0-9-]*-)?(elasticsearch|opensearch|postgres|postgresql|opensearch-master|elasticsearch-master)(-headless|-coordinating-only|-data|-master|-client)?([./:]|$)'
 
-# JDBC PostgreSQL URLs that are missing a TLS directive. Postgres JDBC
-# accepts either ?ssl=true or ?sslmode=require|verify-ca|verify-full. We
-# require verify-ca or verify-full as the only meaningful TLS settings;
-# ssl=true alone and sslmode=require disable hostname verification, which
-# is the regression we want to catch.
-#
-# Stop characters: quote, whitespace, and the URL boundary characters that
-# delimit one URL from the next when multiple are concatenated in a single
-# env var. Adjacent URLs joined by `&jdbc:postgresql://` are split via sed
-# pre-processing in the loop below since POSIX regex lacks lookahead.
+# Datastore hostnames we expect to be TLS-protected. Matches common naming:
+#   opensearch-master, integration-elasticsearch, postgres-headless, etc.
+DATASTORE_NAMES='elasticsearch-master|elasticsearch|opensearch-master|opensearch|postgres|postgresql'
+BITNAMI_SUFFIXES='-headless|-coordinating-only|-data|-master|-client'
+PLAINTEXT_HTTP_RE="http://([a-z0-9-]*-)?(${DATASTORE_NAMES})(${BITNAMI_SUFFIXES})?([./:]|$)"
+
+# Matches any jdbc:postgresql:// URL (stops at whitespace or quote).
 JDBC_PG_RE='jdbc:postgresql://[^" ]*'
+
+# ---------------------------------------------------------------------------
+# Functions
+# ---------------------------------------------------------------------------
+
+# Extract all env vars from a pod as lines of: pod|container|name|value
+# Returns 1 if kubectl/jq fails.
+get_pod_env_vars() {
+  local pod="$1"
+  kubectl "${KCTL_ARGS[@]}" get pod "${pod}" -o json 2>/tmp/kubectl_err \
+    | jq -r --arg pod "${pod}" '
+        .spec.containers[], .spec.initContainers[]
+        | .name as $container
+        | .env[]?
+        | select(.value != null and .value != "")
+        | [$pod, $container, .name, .value] | join("|")
+      '
+}
+
+# Check if a URL is plaintext HTTP to a datastore service.
+is_plaintext_datastore_url() {
+  echo "$1" | grep -qiE "${PLAINTEXT_HTTP_RE}"
+}
+
+# Check if a JDBC URL has proper TLS (sslmode=verify-ca or verify-full).
+jdbc_url_has_tls() {
+  echo "$1" | grep -qE '[?&]sslmode=verify-(ca|full)'
+}
+
+# Split compound JDBC URLs (joined by &jdbc:postgresql://) and check each one.
+# Appends violations to VIOLATIONS array.
+check_jdbc_urls() {
+  local pod_name="$1" container="$2" env_name="$3" env_value="$4"
+
+  # Split on &jdbc:postgresql:// boundary so each URL is checked independently.
+  local split_value
+  split_value=$(echo "${env_value}" | sed 's|&jdbc:postgresql://|\n\&jdbc:postgresql://|g; s|^&||')
+
+  local url
+  for url in $(echo "${split_value}" | grep -oE "${JDBC_PG_RE}"); do
+    if ! jdbc_url_has_tls "${url}"; then
+      VIOLATIONS+=("INSECURE-JDBC	${pod_name}/${container}	${env_name}=${url}")
+    fi
+  done
+}
 
 # ---------------------------------------------------------------------------
 # Inspect
@@ -126,42 +164,21 @@ VIOLATIONS=()
 SKIPPED_PODS=0
 
 for POD in ${PODS}; do
-  # Each container's env (.spec.containers[*].env[*]) and initContainer envs.
-  # Output one line per env var: <pod>|<container>|<env-name>|<env-value>
-  if ! RAW=$(kubectl "${KCTL_ARGS[@]}" get pod "${POD}" -o json 2>/tmp/kubectl_err \
-    | jq -r --arg p "${POD}" '
-        (.spec.containers // []) + (.spec.initContainers // [])
-        | .[] as $c
-        | ($c.env // [])[]
-        | select(.value != null and .value != "")
-        | "\($p)|\($c.name)|\(.name)|\(.value)"
-      ' 2>/dev/null); then
+  if ! RAW=$(get_pod_env_vars "${POD}"); then
     echo "WARNING: failed to inspect pod ${POD} (kubectl/jq error)" >&2
     SKIPPED_PODS=$((SKIPPED_PODS + 1))
     continue
   fi
 
-  if [[ -z "${RAW}" ]]; then
-    continue
-  fi
+  [[ -z "${RAW}" ]] && continue
 
   while IFS='|' read -r pod_name container env_name env_value; do
-    # 1. Plaintext HTTP to datastore service names.
-    if echo "${env_value}" | grep -qiE "${PLAINTEXT_HTTP_RE}"; then
+    if is_plaintext_datastore_url "${env_value}"; then
       VIOLATIONS+=("PLAINTEXT-HTTP	${pod_name}/${container}	${env_name}=${env_value}")
     fi
 
-    # 2. Postgres JDBC URLs without sslmode=verify-* (verify-ca / verify-full).
-    #    Match each occurrence; an env var can contain multiple URLs joined
-    #    by `&jdbc:postgresql://`. Pre-split on that boundary so each URL is
-    #    grep-matched independently (POSIX regex has no lookahead).
     if echo "${env_value}" | grep -qE "${JDBC_PG_RE}"; then
-      split_value=$(echo "${env_value}" | sed 's|&jdbc:postgresql://|\n\&jdbc:postgresql://|g; s|^&||')
-      for url in $(echo "${split_value}" | grep -oE "${JDBC_PG_RE}"); do
-        if ! echo "${url}" | grep -qE '[?&]sslmode=verify-(ca|full)'; then
-          VIOLATIONS+=("INSECURE-JDBC	${pod_name}/${container}	${env_name}=${url}")
-        fi
-      done
+      check_jdbc_urls "${pod_name}" "${container}" "${env_name}" "${env_value}"
     fi
   done <<< "${RAW}"
 done
@@ -180,7 +197,11 @@ if [[ ${#VIOLATIONS[@]} -eq 0 ]]; then
 fi
 
 echo "[no-plaintext-check] FAIL: ${#VIOLATIONS[@]} plaintext datastore reference(s) in ${NAMESPACE}:" >&2
-printf '%s\n' "${VIOLATIONS[@]}" | column -t -s $'\t' >&2
+if command -v column &>/dev/null; then
+  printf '%s\n' "${VIOLATIONS[@]}" | column -t -s $'\t' >&2
+else
+  printf '%s\n' "${VIOLATIONS[@]}" >&2
+fi
 if [[ ${SKIPPED_PODS} -gt 0 ]]; then
   echo "WARNING: additionally ${SKIPPED_PODS} pod(s) could not be inspected" >&2
   exit 2
