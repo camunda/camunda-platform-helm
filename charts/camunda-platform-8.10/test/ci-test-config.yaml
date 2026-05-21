@@ -24,7 +24,7 @@ unit:
 #      identity: keycloak        # Explicit: keycloak, keycloak-external, oidc, basic, hybrid
 #      persistence: elasticsearch # Explicit: elasticsearch, opensearch, rdbms, rdbms-oracle
 #      platform: gke             # Explicit: gke, eks, openshift
-#      features: [multitenancy]  # Explicit: multitenancy, rba, documentstore
+#      features: [multitenancy]  # Explicit: any filename (without .yaml) from test/integration/scenarios/chart-full-setup/values/features/
 #      qa: true                  # Enable QA config
 #      upgrade: false            # Enable upgrade flow config
 #
@@ -71,7 +71,7 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
-          features: [enterprise]
+          features: [enterprise]  # symlink: values/features/enterprise.yaml -> values-enterprise.yaml
           platforms: [gke]
         - name: opensearch
           enabled: false  # Disabled: Bitnami OpenSearch subchart is unstable in CI; tracked in #6121
