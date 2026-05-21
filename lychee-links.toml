@@ -1,0 +1,40 @@
+# Lychee link-checker config — used by .github/workflows/global-links.yaml.
+# Reference: https://lychee.cli.rs/usage/config/
+
+# Network behaviour.
+max_concurrency = 24
+max_retries = 2
+retry_wait_time = 2
+timeout = 20
+
+# Accept these HTTP codes as valid (in addition to 2xx).
+# 401 / 403 / 429 typically mean "the server doesn't like CI traffic" rather
+# than a real broken link; rejecting them produces noise without value.
+accept = ["200..=299", "401", "403", "429"]
+
+# Skip URLs known to be unreliable on CI or that require auth.
+exclude = [
+  # Placeholders.
+  "^https?://example\\.(com|org|net)",
+  # Local-only.
+  "^https?://localhost",
+  "^https?://127\\.0\\.0\\.1",
+  # Auth-gated registries.
+  "^https?://registry\\.camunda\\.cloud",
+  # Camunda signup loop.
+  "^https?://signup\\.camunda\\.com",
+]
+
+exclude_mail = true
+exclude_loopback = true
+
+# Folders not worth scanning (build outputs, vendored content, generated sites).
+exclude_path = [
+  ".git",
+  "node_modules",
+  "helm-docs-site/build",
+  "helm-docs-site/.docusaurus",
+]
+
+# Quieter output for CI logs.
+no_progress = true
