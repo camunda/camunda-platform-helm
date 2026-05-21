@@ -56,6 +56,10 @@ inputs:
     description: The scenario being tested (e.g., opensearch, keycloak-rba, keycloak-mt, multitenancy)
     required: false
     default: "elasticsearch"
+  run-smoke-tests:
+    description: If true, run only the smoke-tests project. If false, run the full-suite project.
+    required: false
+    default: "true"
 runs:
   using: composite
   steps:
@@ -199,7 +203,7 @@ runs:
           EXTRA_FLAGS="--mt"
         fi
 
-        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests --verbose ${EXTRA_FLAGS}
+        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${{ inputs.run-smoke-tests == 'true' && '--run-smoke-tests' || '' }} --verbose ${EXTRA_FLAGS}
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
