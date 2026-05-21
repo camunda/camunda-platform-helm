@@ -53,15 +53,15 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/infrastructure-experience/ci/common MACHINE_PWD;
-            secret/data/products/infrastructure-experience/ci/common MACHINE_USR;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
 
       - name: Login to Camunda registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4
         with:
           registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.MACHINE_USR }}
-          password: ${{ steps.secrets.outputs.MACHINE_PWD }}
+          username: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          password: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
 
       - name: Run validation script
         run: |
