@@ -5545,6 +5545,41 @@
                                     "description": "can be used to mount extra volumes for the migration data job pod",
                                     "default": [],
                                     "items": {}
+                                },
+                                "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                        "requests": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        },
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -5648,6 +5683,41 @@
                                     "description": "can be used to mount extra volumes for the migration identity job pod",
                                     "default": [],
                                     "items": {}
+                                },
+                                "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                        "requests": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        },
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

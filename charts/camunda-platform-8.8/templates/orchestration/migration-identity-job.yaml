@@ -55,13 +55,9 @@ spec:
             {{- end }}
           command:
             - /usr/local/camunda/bin/identity-migration
-          resources:
-            limits:
-              cpu: 500m
-              memory: 500Mi
-            requests:
-              cpu: 500m
-              memory: 500Mi
+          {{- with .Values.orchestration.migration.identity.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
