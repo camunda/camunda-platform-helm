@@ -70,18 +70,60 @@ get_first_version() {
 }
 
 
-@test "non-chart changes produce an empty matrix and succeed" {
-  export GITHUB_OUTPUT="$TMPDIR_TEST/github_output"
-  : > "$GITHUB_OUTPUT"
-
-  # Simulate a PR that only changes tooling/scripts paths, not charts.
+@test "scripts/ change triggers all chart versions" {
+  # Regression for #6108: a top-level scripts/ change is invoked by chart tests
+  # (e.g. apply-ttl-to-elasticsearch-indexes.sh) and must rebuild every version.
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
     --manual-trigger none \
     --active-versions "$AV" \
-    --all-modified-files "scripts/camunda-core"
+    --all-modified-files "scripts/apply-ttl-to-elasticsearch-indexes.sh"
+  assert_success
+  run bash -c 'yq -o=json ".matrix | [.[] | .version] | unique | sort" matrix_versions.txt | jq -c'
+  assert_success
+  expected="$(printf '%s\n' $AV | jq -R . | jq -s -c 'sort')"
+  assert_output "$expected"
+}
+
+@test "bare 'scripts' dir name (dir_names:true output) triggers all chart versions" {
+  # tj-actions/changed-files with dir_names:true collapses scripts/<file> to
+  # the bare token "scripts"; the BUILD_ALL_TRIGGERS regex must catch that too.
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger none \
+    --active-versions "$AV" \
+    --all-modified-files "scripts"
+  assert_success
+  run bash -c 'yq -o=json ".matrix | [.[] | .version] | unique | sort" matrix_versions.txt | jq -c'
+  assert_success
+  expected="$(printf '%s\n' $AV | jq -R . | jq -s -c 'sort')"
+  assert_output "$expected"
+}
+
+@test "unrelated path produces an empty matrix and succeeds" {
+  export GITHUB_OUTPUT="$TMPDIR_TEST/github_output"
+  : > "$GITHUB_OUTPUT"
+
+  # A docs-only path matches no BUILD_ALL_TRIGGER and no chart path.
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger none \
+    --active-versions "$AV" \
+    --all-modified-files "README.md"
   assert_success
 
   # The script should emit an empty JSON matrix for downstream jobs to skip.
+  run bash -c 'grep -E "^matrix=\{\\\"include\\\":\[\]\}$" "$GITHUB_OUTPUT"'
+  assert_success
+}
+
+@test "name containing 'scripts' substring does not trigger all chart versions" {
+  export GITHUB_OUTPUT="$TMPDIR_TEST/github_output"
+  : > "$GITHUB_OUTPUT"
+
+  # Anchored regex must not match e.g. "myscripts" or "descripts/foo".
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger none \
+    --active-versions "$AV" \
+    --all-modified-files "myscripts/foo.sh"
+  assert_success
   run bash -c 'grep -E "^matrix=\{\\\"include\\\":\[\]\}$" "$GITHUB_OUTPUT"'
   assert_success
 }
