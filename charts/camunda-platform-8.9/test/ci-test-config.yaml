@@ -63,7 +63,7 @@ integration:
         - name: enterprise-values
           enabled: true
           shortname: entv
-          tier: 2
+          tier: 1
           auth: keycloak
           flow: install
           exclude: []
