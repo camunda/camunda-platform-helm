@@ -184,24 +184,44 @@ get_helm_cli_version () {
     echo -n "${version}"
 }
 
-# Get the set of supported Helm CLI versions for a chart minor.
-# Source of truth: Chart.yaml annotation `camunda.io/helmCLIVersion`, treated as a
-# comma-separated list (single value for most minors; multi-value only for the
-# transitional 8.9 that supports both Helm v3 and v4).
-# Falls back to `.tool-versions` helm default at the given ref when the annotation
-# is absent (older minors without the annotation).
+# Get the set of supported Helm CLI versions for a chart release.
+# Per-minor source of truth: `.tool-versions` helm pin at the chart's git tag
+# (preserves per-release historical values), with overrides for transitional
+# minors where the tag may pre-date or post-date the Helm v3→v4 migration:
+#   - 8.0–8.8: v3-only minors. If the tag was cut after the Helm v4 bump
+#     (version starts with 4), clamp back to 3.20.2.
+#   - 8.9: transitional minor (supports both v3 and v4). If the tag was cut
+#     before the v4 bump (version starts with 3), use as-is. If after the
+#     bump (version starts with 4), prefix 3.20.2 so the row shows both.
+#   - 8.10+: use as-is.
 # Output: one version per line, semver-sorted, deduped.
 get_helm_cli_versions () {
     chart_ref_name="${1}"
     chart_minor="${2}"
-    chart_yaml_path="charts/camunda-platform-${chart_minor}/Chart.yaml"
 
     versions_csv=""
-    if [[ -f "${chart_yaml_path}" ]]; then
-        versions_csv=$(yq '.annotations["camunda.io/helmCLIVersion"] // ""' "${chart_yaml_path}" 2>/dev/null || true)
-        [[ "${versions_csv}" == "null" ]] && versions_csv=""
-    fi
 
+    case "${chart_minor}" in
+        8.[0-8])
+            tag_version=$(get_helm_cli_version "${chart_ref_name}")
+            if [[ "${tag_version}" == 4* ]]; then
+                versions_csv="3.20.2"
+            else
+                versions_csv="${tag_version}"
+            fi
+            ;;
+        8.9)
+            tag_version=$(get_helm_cli_version "${chart_ref_name}")
+            if [[ "${tag_version}" == 4* ]]; then
+                versions_csv="3.20.2,${tag_version}"
+            else
+                versions_csv="${tag_version}"
+            fi
+            ;;
+    esac
+
+    # Default for everything else (and a safety net if the per-minor source
+    # above produced nothing): `.tool-versions` helm pin at the ref.
     if [[ -z "${versions_csv}" ]]; then
         versions_csv=$(get_helm_cli_version "${chart_ref_name}")
     fi

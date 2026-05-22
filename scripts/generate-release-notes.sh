@@ -27,19 +27,34 @@ main () {
 
     #
     # Set Helm CLI version.
-    # Minors 8.6/8.7/8.8 are Helm v3-only and 8.9 is the v3/v4 transitional minor;
-    # their `camunda.io/helmCLIVersion` annotation is hand-curated in Chart.yaml and
-    # must not be overwritten by the release-notes flow. From 8.10 onward the
-    # annotation tracks the helm pin in `.tool-versions` at release-cut time.
+    # Source is the `.tool-versions` helm pin at release-cut time, with overrides
+    # for transitional minors where the pin may have crossed the v3→v4 migration:
+    #   - 8.0–8.8: v3-only minors. If the pin is v4, clamp to 3.20.2.
+    #   - 8.9: transitional minor (supports both v3 and v4). If the pin is v4,
+    #     prefix 3.20.2 so the annotation lists both.
+    #   - 8.10+: use the pin as-is.
+    tool_versions_helm="$(grep "helm " .tool-versions | cut -d " " -f2)"
     case "${app_version}" in
-        8.7|8.8|8.9)
-            echo "[INFO] Skipping helmCLIVersion overwrite for pinned minor ${app_version}"
+        8.[0-8])
+            if [[ "${tool_versions_helm}" == 4* ]]; then
+                helm_cli_version="3.20.2"
+            else
+                helm_cli_version="${tool_versions_helm}"
+            fi
+            ;;
+        8.9)
+            if [[ "${tool_versions_helm}" == 4* ]]; then
+                helm_cli_version="3.20.2,${tool_versions_helm}"
+            else
+                helm_cli_version="${tool_versions_helm}"
+            fi
             ;;
         *)
-            helm_cli_version="$(grep "helm " .tool-versions | cut -d " " -f2)" \
-                yq -i '.annotations."camunda.io/helmCLIVersion" = env(helm_cli_version)' "${chart_file}"
+            helm_cli_version="${tool_versions_helm}"
             ;;
     esac
+    helm_cli_version="${helm_cli_version}" \
+        yq -i '.annotations."camunda.io/helmCLIVersion" = env(helm_cli_version)' "${chart_file}"
 
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
