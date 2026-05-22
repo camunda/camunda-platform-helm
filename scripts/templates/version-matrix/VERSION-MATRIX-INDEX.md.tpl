@@ -17,10 +17,6 @@ For the best experience, please remember:
 
 - Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.
 
-- Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.
-
-- Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.
-
 - During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/).
 
 {{ range (ds "versions") }}
