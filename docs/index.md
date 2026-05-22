@@ -12,16 +12,34 @@ This site contains internal developer documentation for the [`camunda/camunda-pl
 Looking for end-user installation docs? See the [official Camunda docs](https://docs.camunda.io/docs/self-managed/about-self-managed/).
 :::
 
-## Topics
+## For all contributors
 
 | Page | Description |
-|------|-------------|
-| [Release Process](./release-process) | How to cut a release, manage release candidates, and publish charts |
-| [GitHub Actions Workflows](./github-actions-workflows) | Overview of every CI/CD workflow in `.github/workflows/` |
-| [Contribution & Collaboration](./contribution-and-collaboration) | Branching model, PR conventions, review process |
-| [Code Style](./code-style) | Helm, Go, and YAML style conventions enforced in this repo |
-| [Breaking Changes & Deprecation Policy](./breaking-changes) | How breaking changes and deprecations are communicated |
-| [Ticket & Label Policy](./ticket-and-label-policy) | GitHub issue/label taxonomy and triage process |
+|---|---|
+| [Contribution & Collaboration](./contribution-and-collaboration.md) | How to contribute — process, PR requirements, contribution rules |
+| [Policies](./policies/breaking-changes.md) | Breaking changes, backporting, values.yaml key classification, ticket & label |
+
+## For maintainers & HC owners
+
+| Page | Description |
+|---|---|
+| [Maintainer Guide](./maintainer-guide.md) | ADR process, PR review, crev, escalation policy |
+| [Release Process](./reference/release-process.md) | How to cut a release, manage RCs, publish charts |
+
+## Reference
+
+| Page | Description |
+|---|---|
+| [Code Style](./reference/code-style.md) | Helm, Go, and YAML style conventions |
+| [Testing](./reference/testing.md) | Unit tests, golden files, property tests, license headers |
+| [GitHub Actions Workflows](./reference/github-actions-workflows.md) | Overview of every CI/CD workflow |
+
+## Skills & Runbooks
+
+| Page | Description |
+|---|---|
+| [Reproducing CI E2E Failures](./skills/reproducing-ci-e2e-failures.md) | How to reproduce a failing CI E2E check locally |
+| [Integration Test Scenario Resolution](./skills/integration-test-scenario-resolution.md) | How deploy-camunda resolves Helm values for integration test scenarios |
 
 ## Purpose of the Camunda Helm Chart
 
