@@ -220,6 +220,7 @@ helm template integration charts/camunda-platform-8.X \
 For PRs that touch only non-chart files, use:
 - `chore:` — docs, AGENTS.md, CLAUDE.md, SKILLS.md, README, scripts
 - `ci:` — `.github/` workflows or actions
+- `build:` — Makefile, tooling, dependency, or other build-system changes
 - `test:` — test files only
 
 See [Contribution & Collaboration](docs/contribution-and-collaboration.md) for the full PR checklist.
