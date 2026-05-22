@@ -62,7 +62,9 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "4.1.4"
+  # Comma-separated list of supported Helm CLI versions; first entry is the minimum.
+  # 8.9 is the last chart minor that supports Helm v3 — listed alongside v4.
+  camunda.io/helmCLIVersion: "3.20.2,4.1.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/

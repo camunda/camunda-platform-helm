@@ -1,8 +1,8 @@
 plugins:
-  helmCLIVersion:
+  helmCLIVersions:
     cmd: scripts/generate-version-matrix.sh
     args:
-      - --helm-cli-version
+      - --helm-cli-versions
     timeout: 30s
   chartImagesCamunda:
     cmd: scripts/generate-version-matrix.sh

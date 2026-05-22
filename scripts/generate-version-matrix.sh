@@ -184,6 +184,31 @@ get_helm_cli_version () {
     echo -n "${version}"
 }
 
+# Get the set of supported Helm CLI versions for a chart minor.
+# Source of truth: Chart.yaml annotation `camunda.io/helmCLIVersion`, treated as a
+# comma-separated list (single value for most minors; multi-value only for the
+# transitional 8.9 that supports both Helm v3 and v4).
+# Falls back to `.tool-versions` helm default at the given ref when the annotation
+# is absent (older minors without the annotation).
+# Output: one version per line, semver-sorted, deduped.
+get_helm_cli_versions () {
+    chart_ref_name="${1}"
+    chart_minor="${2}"
+    chart_yaml_path="charts/camunda-platform-${chart_minor}/Chart.yaml"
+
+    versions_csv=""
+    if [[ -f "${chart_yaml_path}" ]]; then
+        versions_csv=$(yq '.annotations["camunda.io/helmCLIVersion"] // ""' "${chart_yaml_path}" 2>/dev/null || true)
+        [[ "${versions_csv}" == "null" ]] && versions_csv=""
+    fi
+
+    if [[ -z "${versions_csv}" ]]; then
+        versions_csv=$(get_helm_cli_version "${chart_ref_name}")
+    fi
+
+    echo "${versions_csv}" | tr ',' '\n' | awk '{$1=$1};1' | sort -V -u | grep -v "^$" || true
+}
+
 # Generate version matrix index for all Camunda versions with corresponding charts.
 generate_version_matrix_index () {
     export ALL_CAMUNDA_VERSIONS="$(get_versions_formatted)" \
@@ -311,13 +336,13 @@ while test -n "${1:-}"; do
         --unreleased)
           generate_version_matrix_unreleased
           ;;
-        --helm-cli-version)
-          test -n "${2:-}" || (
-            echo "[ERROR] Git ref name is needed as an arg for this option";
+        --helm-cli-versions)
+          test -n "${3:-}" || (
+            echo "[ERROR] Git ref name and chart minor are needed as args for this option";
             exit 1
           )
-          get_helm_cli_version "${2}"
-          shift
+          get_helm_cli_versions "${2}" "${3}"
+          shift 2
           ;;
         --chart-images-camunda)
           test -n "${3:-}" || (

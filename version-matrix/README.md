@@ -13,7 +13,13 @@ For the best experience, please remember:
 
   ```helm search repo camunda/camunda-platform --versions```
 
-- Always use the `Helm CLI` version that's used with the Helm chart. It's mentioned in the matrix for all charts or under chart annotation `camunda.io/helmCLIVersion` for newer charts.
+- Always use the supported `Helm CLI` versions for the Helm chart. They are mentioned in the matrix for all charts or under chart annotation `camunda.io/helmCLIVersion` for newer charts.
+
+- Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.
+
+- Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.
+
+- Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.
 
 - During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/).
 
