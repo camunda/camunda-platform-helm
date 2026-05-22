@@ -20,6 +20,7 @@ import (
 
 func TestBuildOverrides86_ZeebeLinksToGateway(t *testing.T) {
 	t.Setenv("ZEEBE_IMAGE_TAG", "8.7.99")
+	t.Setenv("ZEEBE_GATEWAY_IMAGE_TAG", "")
 
 	overrides := buildOverrides86()
 
@@ -49,6 +50,9 @@ func TestBuildOverrides86_ExplicitGatewayOverridesLink(t *testing.T) {
 }
 
 func TestBuildOverrides86_NoZeebeNoGateway(t *testing.T) {
+	t.Setenv("ZEEBE_IMAGE_TAG", "")
+	t.Setenv("ZEEBE_GATEWAY_IMAGE_TAG", "")
+
 	overrides := buildOverrides86()
 
 	if overrides.Zeebe != nil {
