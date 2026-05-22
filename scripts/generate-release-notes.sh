@@ -32,11 +32,17 @@ main () {
 
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
+    # Exclude paths that are .helmignored or otherwise not shipped to end users
+    # (chart-author tests, Go toolchain) so commits touching only those paths
+    # are dropped from the changelog regardless of their conventional type.
     git-cliff ${latest_chart_tag_hash}..            \
         --tag-pattern="camunda-platform-${app_version}"'.*' \
         --config "${cliff_config_file}"             \
         --output "${chart_dir}/RELEASE-NOTES.md"    \
         --include-path "${chart_dir}/**"            \
+        --exclude-path "${chart_dir}/test/**"       \
+        --exclude-path "${chart_dir}/go.mod"        \
+        --exclude-path "${chart_dir}/go.sum"        \
         --tag "${chart_tag}"
 
     cat "${chart_dir}/RELEASE-NOTES.md"
