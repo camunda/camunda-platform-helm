@@ -64,7 +64,7 @@ flowchart TD
 
 ### PR title type selection
 
-PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/). CI enforces an additional constraint: **`feat:`, `fix:`, `refactor:`, `docs:`, and `revert:` are reserved for PRs that change user-facing chart files** (anything under `charts/<version>/` excluding `test/`, `go.mod`, `go.sum`). These types propagate to `RELEASE-NOTES.md` and `artifacthub.io/changes` via `git-cliff`.
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/). CI enforces an additional constraint: **`feat:`, `fix:`, `refactor:`, `docs:`, and `revert:` are reserved for PRs that change user-facing chart files** (anything under `charts/<chart>/` excluding `test/`, `go.mod`, `go.sum`). These types propagate to `RELEASE-NOTES.md` and `artifacthub.io/changes` via `git-cliff`.
 
 | Changed files | Correct type |
 |---|---|
