@@ -62,7 +62,24 @@ flowchart TD
 
 ## Pull Request Requirements
 
-Every PR related to Helm chart changes must satisfy the following checklist before requesting review:
+### PR title type selection
+
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/). CI enforces an additional constraint: **`feat:`, `fix:`, `refactor:`, `docs:`, and `revert:` are reserved for PRs that change user-facing chart files** (anything under `charts/<chart>/` excluding `test/`, `go.mod`, `go.sum`). These types propagate to `RELEASE-NOTES.md` and `artifacthub.io/changes` via `git-cliff`.
+
+| Changed files | Correct type |
+|---|---|
+| Chart templates, values, helpers | `feat:` / `fix:` / `refactor:` |
+| `docs/`, `AGENTS.md`, `CLAUDE.md`, `SKILLS.md`, `README.md`, `scripts/` | `chore:` |
+| `.github/` workflows or actions | `ci:` |
+| Build tooling, dependency metadata, or other non-chart changes CI suggests as `build:` | `build:` |
+| Test files only (`test/`, `go.mod`, `go.sum`) | `test:` |
+| Mixed chart + docs/CI | Use the type matching the chart change |
+
+Using `docs:` for a docs-only PR will fail CI — use `chore:` instead.
+
+### Checklist
+
+Every PR must satisfy the following before requesting review:
 
 - [ ] **`crev` review** — run [`crev`](https://github.com/camunda/crev) against the PR and address or acknowledge all findings before requesting review.
 - [ ] **Configuration key classification** — if the PR adds a `values.yaml` key, confirm it is Tier 2, additive, opt-in, and non-breaking. See [Values YAML Policy](./policies/values-yaml-policy.md).

@@ -214,6 +214,17 @@ helm template integration charts/camunda-platform-8.X \
 - Use present tense; keep subject under 120 characters.
 - **NEVER create merge commits.** Always use `git rebase` to incorporate upstream changes. If a branch needs to be updated from `main`, use `git rebase origin/main`, not `git merge`. Force-push with `--force-with-lease` after rebasing.
 
+### PR title type: CI-enforced constraint
+`feat:`, `fix:`, `refactor:`, `docs:`, and `revert:` are **reserved for PRs that change user-facing chart files** (anything under `charts/<version>/` except `test/`, `go.mod`, `go.sum`). CI rejects these types when no such files are changed — they feed into `RELEASE-NOTES.md` and `artifacthub.io/changes`.
+
+For PRs that touch only non-chart files, use:
+- `chore:` — docs, AGENTS.md, CLAUDE.md, SKILLS.md, README, scripts
+- `ci:` — `.github/` workflows or actions
+- `build:` — Makefile, tooling, dependency, or other build-system changes
+- `test:` — test files only
+
+See [Contribution & Collaboration](docs/contribution-and-collaboration.md) for the full PR checklist.
+
 ## Additional Agent Context
 - `CLAUDE.md` — thin redirect for Claude Code (redirects to this file, AGENTS.md)
 - `.github/AGENTS.md` — CI/CD architecture, repo structure, values files
