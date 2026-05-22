@@ -69,8 +69,9 @@ PR titles must follow [Conventional Commits](https://www.conventionalcommits.org
 | Changed files | Correct type |
 |---|---|
 | Chart templates, values, helpers | `feat:` / `fix:` / `refactor:` |
-| `docs/`, `AGENTS.md`, `CLAUDE.md`, `SKILLS.md`, `README.md` | `chore:` |
+| `docs/`, `AGENTS.md`, `CLAUDE.md`, `SKILLS.md`, `README.md`, `scripts/` | `chore:` |
 | `.github/` workflows or actions | `ci:` |
+| Build tooling, dependency metadata, or other non-chart changes CI suggests as `build:` | `build:` |
 | Test files only (`test/`, `go.mod`, `go.sum`) | `test:` |
 | Mixed chart + docs/CI | Use the type matching the chart change |
 
