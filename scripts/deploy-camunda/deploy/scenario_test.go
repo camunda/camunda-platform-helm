@@ -255,6 +255,50 @@ func TestCrossJobPrefixConsistency(t *testing.T) {
 	}
 }
 
+func TestPrefixKeyOverridesScenarioName(t *testing.T) {
+	// Simulate the cross-version upgrade issue: 8.8 uses scenario name
+	// "qa-opensearch-tasklist-v1" while 8.9 uses "qa-opensearch-upg".
+	// When prefix-key is used to pin both to "qa-opensearch-upg", the
+	// prefixes must match despite different scenario names.
+	namespace := "matrix-88-qaosupg-inst-gke"
+
+	// Job 1: install on 8.8 (scenario="qa-opensearch-tasklist-v1", prefix-key="qa-opensearch-upg")
+	installFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch-tasklist-v1"},
+		},
+	}
+	// PinScenarioPrefixes called with prefix-key value, not scenario name
+	if err := PinScenarioPrefixes("qa-opensearch-upg", installFlags); err != nil {
+		t.Fatalf("PinScenarioPrefixes (install): %v", err)
+	}
+
+	// Job 2: upgrade on 8.9 (scenario="qa-opensearch-upg", prefix-key="qa-opensearch-upg")
+	upgradeFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch-upg"},
+		},
+	}
+	if err := PinScenarioPrefixes("qa-opensearch-upg", upgradeFlags); err != nil {
+		t.Fatalf("PinScenarioPrefixes (upgrade): %v", err)
+	}
+
+	if installFlags.Index.OrchestrationIndexPrefix != upgradeFlags.Index.OrchestrationIndexPrefix {
+		t.Errorf("OrchestrationIndexPrefix mismatch: install=%q upgrade=%q",
+			installFlags.Index.OrchestrationIndexPrefix, upgradeFlags.Index.OrchestrationIndexPrefix)
+	}
+	if installFlags.Index.OptimizeIndexPrefix != upgradeFlags.Index.OptimizeIndexPrefix {
+		t.Errorf("OptimizeIndexPrefix mismatch: install=%q upgrade=%q",
+			installFlags.Index.OptimizeIndexPrefix, upgradeFlags.Index.OptimizeIndexPrefix)
+	}
+	if installFlags.Auth.KeycloakRealm != upgradeFlags.Auth.KeycloakRealm {
+		t.Errorf("KeycloakRealm mismatch: install=%q upgrade=%q",
+			installFlags.Auth.KeycloakRealm, upgradeFlags.Auth.KeycloakRealm)
+	}
+}
+
 func TestNormalizeIdentifierPart(t *testing.T) {
 	tests := []struct {
 		input string
