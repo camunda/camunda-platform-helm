@@ -1418,11 +1418,10 @@ console:
     managementPort: 9100
 
   ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param console.resources.requests.cpu
   ## @param console.resources.requests.memory
-  ## @skip console.resources.limits.cpu
+  ## @param console.resources.limits.cpu
   ## @param console.resources.limits.memory
-  ## @skip console.resources.requests.cpu
-  ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
   resources:
     requests:
       cpu: "1000m"
@@ -2303,11 +2302,10 @@ connectors:
     serverName: http
 
   ## @extra connectors.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip connectors.resources.requests.cpu
+  ## @param connectors.resources.requests.cpu
   ## @param connectors.resources.requests.memory
-  ## @skip connectors.resources.limits.cpu
+  ## @param connectors.resources.limits.cpu
   ## @param connectors.resources.limits.memory
-  ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
   resources:
     requests:
       cpu: "1000m"
