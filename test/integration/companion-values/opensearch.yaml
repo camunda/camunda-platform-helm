@@ -94,6 +94,6 @@ extraObjects:
                   done
                   curl -fsS --connect-timeout 5 -X PUT "http://opensearch-master:9200/_index_template/camunda-ci-auto-expand-replicas" \
                     -H 'Content-Type: application/json' \
-                    -d '{"index_patterns":["op-*","orch-*","tasklist-*","opt-*","camunda-*",".camunda*","zeebe-*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
+                    -d '{"index_patterns":["op-*","orch-*","task-*","tasklist-*","opt-*","camunda-*",".camunda*","zeebe-*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
                   echo
                   echo "template registered"
