@@ -80,6 +80,8 @@ func buildOverrides86() *chartcomponents.ValuesYAML86 {
 		overrides.ZeebeGateway = &chartcomponents.ComponentImage{
 			Image: chartcomponents.ImageTag{Tag: tag},
 		}
+	} else if overrides.Zeebe != nil {
+		overrides.ZeebeGateway = overrides.Zeebe
 	}
 	if tag := os.Getenv("OPERATE_IMAGE_TAG"); tag != "" {
 		overrides.Operate = &chartcomponents.ComponentImage{
