@@ -1852,6 +1852,17 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	var deployErr error
 	var diag string
 
+	// When prefix-key is set, pin index prefixes using the prefix-key instead of
+	// the scenario name. This ensures cross-version consistency: an install on 8.8
+	// (scenario name "qa-opensearch-tasklist-v1") and an upgrade on 8.9
+	// (scenario name "qa-opensearch-upg") produce identical prefixes when both
+	// declare the same prefix-key.
+	if entry.PrefixKey != "" {
+		if err := deploy.PinScenarioPrefixes(entry.PrefixKey, flags); err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("pin scenario prefixes (prefix-key=%s): %w", entry.PrefixKey, err)}
+		}
+	}
+
 	// Override chart source when --chart-ref is set (OCI install path).
 	// See applyChartRefOverride for details.
 	applyChartRefOverride(&flags.Chart, opts)

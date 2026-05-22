@@ -175,6 +175,14 @@ type CIScenario struct {
 	// Each dependency is deployed as a separate Helm release in the same namespace.
 	Dependencies []ChartDependency `yaml:"dependencies,omitempty"`
 
+	// PrefixKey, when set, overrides the scenario name for index prefix
+	// derivation. This ensures that two scenarios with different names but
+	// representing the same logical deployment (e.g., across chart versions)
+	// produce identical index prefixes. Without this, an install on version A
+	// (scenario name X) and an upgrade on version B (scenario name Y) would
+	// generate different prefixes, breaking the upgrade.
+	PrefixKey string `yaml:"prefix-key,omitempty"`
+
 	// PreInstall declares a fixture or script to run before helm install for
 	// this scenario. Replaces the legacy filename-derived discovery
 	// (pre-install-<scenario>.sh) with an explicit, reviewable reference.
