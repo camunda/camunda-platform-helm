@@ -27,8 +27,19 @@ main () {
 
     #
     # Set Helm CLI version.
-    helm_cli_version="$(grep "helm " .tool-versions | cut -d " " -f2)" \
-        yq -i '.annotations."camunda.io/helmCLIVersion" = env(helm_cli_version)' "${chart_file}"
+    # Minors 8.6/8.7/8.8 are Helm v3-only and 8.9 is the v3/v4 transitional minor;
+    # their `camunda.io/helmCLIVersion` annotation is hand-curated in Chart.yaml and
+    # must not be overwritten by the release-notes flow. From 8.10 onward the
+    # annotation tracks the helm pin in `.tool-versions` at release-cut time.
+    case "${app_version}" in
+        8.7|8.8|8.9)
+            echo "[INFO] Skipping helmCLIVersion overwrite for pinned minor ${app_version}"
+            ;;
+        *)
+            helm_cli_version="$(grep "helm " .tool-versions | cut -d " " -f2)" \
+                yq -i '.annotations."camunda.io/helmCLIVersion" = env(helm_cli_version)' "${chart_file}"
+            ;;
+    esac
 
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
@@ -56,7 +67,7 @@ main () {
             tr -d '[:punct:]' | tr -d '[:digit:]'
     }
 
-    # 
+    #
     declare -A kac_map
     kac_map+=(
         ["Features"]=added

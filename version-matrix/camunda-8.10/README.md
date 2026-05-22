@@ -14,7 +14,7 @@ Supported versions:
 - Camunda applications: [8.10](https://github.com/camunda/camunda/releases?q=tag%3A8.10&expanded=true)
 - Camunda version matrix: [8.10](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.10)
 - Helm values: [15.0.0-alpha1](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha1#parameters)
-- Helm CLI: [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4)
+- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
 
