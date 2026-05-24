@@ -36,6 +36,7 @@ playwright-report/
 scripts/camunda-deployer/camunda-deployer
 scripts/prepare-helm-values/prepare-helm-values
 scripts/values-injector/values-injector
+scripts/vault-secret-mapper/vault-secret-mapper
 
 scripts/deploy-camunda/deploy-camunda
 scripts/deploy-camunda/.env

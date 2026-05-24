@@ -172,7 +172,7 @@ func (s *EnterpriseValuesTestSuite) TestComprehensiveEnterpriseImageUsage() {
 	expectedEnterpriseImages := map[string][]string{
 		"elasticsearch": {
 			"registry.camunda.cloud/vendor-ee/elasticsearch",
-			"registry.camunda.cloud/vendor-ee/os-shell", // sysctlImage
+			"registry.camunda.cloud/vendor-ee/os-shell",               // sysctlImage
 			"registry.camunda.cloud/vendor-ee/elasticsearch-exporter", // metrics
 		},
 		"postgresql": {

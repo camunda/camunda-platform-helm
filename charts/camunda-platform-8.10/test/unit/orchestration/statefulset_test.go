@@ -822,7 +822,7 @@ func (s *StatefulSetTest) TestWithJKSSecretReference() {
 			Name: "TLS with JKS secret reference emits password env and flag",
 			Values: map[string]string{
 				"orchestration.enabled":                              "true",
-				"global.opensearch.tls.secret.existingSecret":               "os-tls-secret",
+				"global.opensearch.tls.secret.existingSecret":        "os-tls-secret",
 				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -848,7 +848,7 @@ func (s *StatefulSetTest) TestWithJKSInlineSecret() {
 			Name: "TLS with JKS inline secret emits password env with value and flag",
 			Values: map[string]string{
 				"orchestration.enabled":                         "true",
-				"global.opensearch.tls.secret.existingSecret":          "os-tls-secret",
+				"global.opensearch.tls.secret.existingSecret":   "os-tls-secret",
 				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -870,7 +870,7 @@ func (s *StatefulSetTest) TestWithoutJKSConfig() {
 		{
 			Name: "TLS without JKS omits password flag and env var",
 			Values: map[string]string{
-				"orchestration.enabled":                "true",
+				"orchestration.enabled":                       "true",
 				"global.opensearch.tls.secret.existingSecret": "os-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -891,8 +891,8 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_NoJKS() {
 		{
 			Name: "Component javaOpts preserved with trustStore path only when no JKS",
 			Values: map[string]string{
-				"orchestration.enabled":                "true",
-				"orchestration.javaOpts":               "-Xmx512m -Xms256m",
+				"orchestration.enabled":                       "true",
+				"orchestration.javaOpts":                      "-Xmx512m -Xms256m",
 				"global.opensearch.tls.secret.existingSecret": "os-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -915,7 +915,7 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_WithJKS() {
 			Values: map[string]string{
 				"orchestration.enabled":                              "true",
 				"orchestration.javaOpts":                             "-Xmx1g -Xms512m",
-				"global.opensearch.tls.secret.existingSecret":               "os-tls-secret",
+				"global.opensearch.tls.secret.existingSecret":        "os-tls-secret",
 				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -938,7 +938,7 @@ func (s *StatefulSetTest) TestWithJKSSecretReference_Elasticsearch() {
 			Name: "Elasticsearch TLS with JKS secret reference emits password env and flag",
 			Values: map[string]string{
 				"orchestration.enabled":                                 "true",
-				"global.elasticsearch.tls.secret.existingSecret":               "es-tls-secret",
+				"global.elasticsearch.tls.secret.existingSecret":        "es-tls-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -964,7 +964,7 @@ func (s *StatefulSetTest) TestWithJKSInlineSecret_Elasticsearch() {
 			Name: "Elasticsearch TLS with JKS inline secret emits password env with value and flag",
 			Values: map[string]string{
 				"orchestration.enabled":                            "true",
-				"global.elasticsearch.tls.secret.existingSecret":          "es-tls-secret",
+				"global.elasticsearch.tls.secret.existingSecret":   "es-tls-secret",
 				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -986,7 +986,7 @@ func (s *StatefulSetTest) TestWithoutJKSConfig_Elasticsearch() {
 		{
 			Name: "Elasticsearch TLS without JKS omits password flag and env var",
 			Values: map[string]string{
-				"orchestration.enabled":                   "true",
+				"orchestration.enabled":                          "true",
 				"global.elasticsearch.tls.secret.existingSecret": "es-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1007,8 +1007,8 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_NoJKS_Elasticsearch() {
 		{
 			Name: "Elasticsearch: Component javaOpts preserved with trustStore path only when no JKS",
 			Values: map[string]string{
-				"orchestration.enabled":                   "true",
-				"orchestration.javaOpts":                  "-Xmx512m -Xms256m",
+				"orchestration.enabled":                          "true",
+				"orchestration.javaOpts":                         "-Xmx512m -Xms256m",
 				"global.elasticsearch.tls.secret.existingSecret": "es-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1031,7 +1031,7 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_WithJKS_Elasticsearch() 
 			Values: map[string]string{
 				"orchestration.enabled":                                 "true",
 				"orchestration.javaOpts":                                "-Xmx1g -Xms512m",
-				"global.elasticsearch.tls.secret.existingSecret":               "es-tls-secret",
+				"global.elasticsearch.tls.secret.existingSecret":        "es-tls-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -1099,10 +1099,10 @@ func (s *StatefulSetTest) TestJKSDoesNotFireForSecondaryStorageOnlyTLS() {
 		{
 			Name: "secondaryStorage TLS triggers truststore path injection but NOT password — documented limit",
 			Values: map[string]string{
-				"orchestration.enabled":                                                                  "true",
-				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret":            "ssec-tls",
-				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey":         "externaldb.jks",
-				"global.elasticsearch.tls.jks.secret.inlineSecret":                                       "newpw",
+				"orchestration.enabled": "true",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret":    "ssec-tls",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
+				"global.elasticsearch.tls.jks.secret.inlineSecret":                               "newpw",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

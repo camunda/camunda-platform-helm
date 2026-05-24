@@ -269,10 +269,10 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetPusherHost",
 			Values: map[string]string{
-				"identity.enabled":                                         "true",
-				"webModeler.enabled":                                       "true",
-				"webModeler.restapi.mail.fromAddress":                      "example@example.com",
-				"webModeler.websockets.publicHost":                         "example.com",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.websockets.publicHost":    "example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -290,11 +290,11 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetPusherPort",
 			Values: map[string]string{
-				"identity.enabled":                                         "true",
-				"webModeler.enabled":                                       "true",
-				"webModeler.restapi.mail.fromAddress":                      "example@example.com",
-				"webModeler.websockets.publicHost":                         "example.com",
-				"webModeler.websockets.publicPort":                         "8082",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.websockets.publicHost":    "example.com",
+				"webModeler.websockets.publicPort":    "8082",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap

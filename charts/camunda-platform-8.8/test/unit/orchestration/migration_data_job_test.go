@@ -157,8 +157,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestElasticsearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":             "true",
-				"global.elasticsearch.tls.existingSecret":          "elasticsearch-tls-secret",
+				"orchestration.migration.data.enabled":                  "true",
+				"global.elasticsearch.tls.existingSecret":               "elasticsearch-tls-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -192,8 +192,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestElasticsearchTLSWithJKSInlineEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":         "true",
-				"global.elasticsearch.tls.existingSecret":      "elasticsearch-tls-secret",
+				"orchestration.migration.data.enabled":             "true",
+				"global.elasticsearch.tls.existingSecret":          "elasticsearch-tls-secret",
 				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -223,8 +223,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestOpenSearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":        "true",
-				"global.opensearch.tls.existingSecret":        "opensearch-tls-secret",
+				"orchestration.migration.data.enabled":               "true",
+				"global.opensearch.tls.existingSecret":               "opensearch-tls-secret",
 				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -258,8 +258,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestOpenSearchTLSWithJKSInlineEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":    "true",
-				"global.opensearch.tls.existingSecret":    "opensearch-tls-secret",
+				"orchestration.migration.data.enabled":          "true",
+				"global.opensearch.tls.existingSecret":          "opensearch-tls-secret",
 				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -469,7 +469,7 @@ func (s *MigrationDataJobTest) TestResources() {
 		{
 			Name: "TestCustomResources",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":                    "true",
+				"orchestration.migration.data.enabled":                   "true",
 				"orchestration.migration.data.resources.requests.cpu":    "200m",
 				"orchestration.migration.data.resources.requests.memory": "256Mi",
 				"orchestration.migration.data.resources.limits.cpu":      "1000m",

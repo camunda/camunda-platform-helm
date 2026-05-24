@@ -186,12 +186,12 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 		{
 			Name: "TestPusherSecretConstraintDoesNotListSetSecrets",
 			Values: map[string]string{
-				"identity.enabled":                                       "true",
-				"webModeler.enabled":                                     "true",
-				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":        "my-pusher-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":     "secret-key",
-				"webModeler.restapi.pusher.client.secret.existingSecret": "my-pusher-client-secret",
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":        "secret-key",
+				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
 				"webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
 				"global.testDeprecationFlags.existingSecretsMustBeSet":      "error",
 			},
@@ -205,7 +205,7 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 		{
 			Name: "TestPusherSecretConstraintNotCheckedWhenWebModelerDisabled",
 			Values: map[string]string{
-				"webModeler.enabled":                                   "false",
+				"webModeler.enabled": "false",
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -218,7 +218,6 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
-
 
 // helmMajorVersion returns the major version of the helm binary on PATH.
 func helmMajorVersion() int {
