@@ -171,8 +171,11 @@ func IsAuth0Identity(identity string) bool {
 }
 
 // resolveOpts fills in empty Options fields from environment variables and
-// validates required ones.
-func resolveOpts(opts *Options) error {
+// validates required ones. `requireIngressHost` is true for provisioning paths
+// (EnsureClients bakes IngressHost into redirect URIs) and false for cleanup
+// paths (CleanupClients looks clients up by <namespace>-<component> name and
+// never touches redirect URIs).
+func resolveOpts(opts *Options, requireIngressHost bool) error {
 	if opts.Domain == "" {
 		opts.Domain = os.Getenv("AUTH0_DOMAIN")
 	}
@@ -200,7 +203,7 @@ func resolveOpts(opts *Options) error {
 	if opts.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
-	if opts.IngressHost == "" {
+	if requireIngressHost && opts.IngressHost == "" {
 		return fmt.Errorf("ingress host is required")
 	}
 	return nil
@@ -256,7 +259,7 @@ func redirectURIs(component, ingressHost string) []string {
 //  3. POST /api/v2/client-grants per *private* client to grant the audience.
 //  4. Optionally write the K8s secret with auth0-<component>=<secret> entries.
 func EnsureClients(ctx context.Context, opts Options) (*Provisioned, error) {
-	if err := resolveOpts(&opts); err != nil {
+	if err := resolveOpts(&opts, true); err != nil {
 		return nil, fmt.Errorf("auth0: %w", err)
 	}
 	client := httpClientFor(&opts)
@@ -333,7 +336,7 @@ func EnsureClients(ctx context.Context, opts Options) (*Provisioned, error) {
 // then deletes only the ones we expect for this namespace. This is dramatically
 // kinder on the Auth0 rate limit than the previous per-component lookup loop.
 func CleanupClients(ctx context.Context, opts Options) {
-	if err := resolveOpts(&opts); err != nil {
+	if err := resolveOpts(&opts, false); err != nil {
 		logging.Logger.Warn().Err(err).Msg("auth0 cleanup: invalid options, skipping")
 		return
 	}
@@ -467,9 +470,10 @@ func randomHex(n int) (string, error) {
 // exhausted it returns the last status/body together with a wrapped error.
 func doWithRetry(ctx context.Context, client *http.Client, buildReq func() (*http.Request, error), op string) ([]byte, int, error) {
 	var (
-		body       []byte
-		statusCode int
-		lastErr    error
+		body             []byte
+		statusCode       int
+		lastErr          error
+		retryAfterHeader string
 	)
 	backoff := retryBaseBackoff
 	for attempt := 1; attempt <= retryMaxAttempts; attempt++ {
@@ -478,12 +482,14 @@ func doWithRetry(ctx context.Context, client *http.Client, buildReq func() (*htt
 			return nil, 0, fmt.Errorf("%s: build request: %w", op, err)
 		}
 		resp, err := client.Do(req)
+		retryAfterHeader = ""
 		if err != nil {
 			lastErr = err
 			statusCode = 0
 			body = nil
 		} else {
 			body, _ = io.ReadAll(resp.Body)
+			retryAfterHeader = resp.Header.Get("Retry-After")
 			_ = resp.Body.Close()
 			statusCode = resp.StatusCode
 			lastErr = nil
@@ -507,7 +513,7 @@ func doWithRetry(ctx context.Context, client *http.Client, buildReq func() (*htt
 		// backoff with jitter.
 		wait := backoffWithJitter(backoff)
 		if statusCode == http.StatusTooManyRequests {
-			if ra := retryAfter(body); ra > 0 {
+			if ra := parseRetryAfter(retryAfterHeader, time.Now()); ra > 0 {
 				wait = ra
 			}
 		}
@@ -562,18 +568,29 @@ func backoffWithJitter(base time.Duration) time.Duration {
 	return base + time.Duration(rand.Int63n(int64(base/4)+1))
 }
 
-// retryAfter parses an Auth0 429 body's "Retry-After" hint if present. Auth0
-// usually sets a header but also sometimes echoes the suggested wait in the
-// body — header parsing is handled by net/http indirectly; here we look at
-// the body's textual hint as a best-effort fallback. Returns 0 when nothing
-// usable is found.
-func retryAfter(body []byte) time.Duration {
-	// Auth0 bodies don't reliably include a parseable retry hint; this is a
-	// stub kept for symmetry with the entra package and for future extension
-	// (e.g. parsing the X-RateLimit-Reset header). Returns 0 → caller uses
-	// exponential backoff.
-	_ = body
-	_ = strconv.Atoi // keep import live in case future extension parses
+// parseRetryAfter parses an HTTP Retry-After header value per RFC 7231 §7.1.3.
+// The header may carry either a delay in seconds ("120") or an HTTP-date
+// ("Wed, 21 Oct 2015 07:28:00 GMT"); both forms are accepted. Negative or
+// unparseable values yield 0 so the caller falls back to exponential backoff.
+// `now` is taken as a parameter so unit tests can pin time.
+func parseRetryAfter(header string, now time.Time) time.Duration {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return 0
+	}
+	if secs, err := strconv.Atoi(header); err == nil {
+		if secs <= 0 {
+			return 0
+		}
+		return time.Duration(secs) * time.Second
+	}
+	if t, err := http.ParseTime(header); err == nil {
+		d := t.Sub(now)
+		if d <= 0 {
+			return 0
+		}
+		return d
+	}
 	return 0
 }
 

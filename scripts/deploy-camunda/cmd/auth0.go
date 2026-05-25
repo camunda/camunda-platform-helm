@@ -92,10 +92,16 @@ Environment variables (or set in .env file):
 			// Stable env-var output for CI capture (>> $GITHUB_ENV).
 			// Format: AUTH0_<COMPONENT_UPPER>_CLIENT_ID=<id>, plus *_CLIENT_SECRET
 			// for confidential clients only.
+			//
+			// Each secret is preceded by a `::add-mask::<value>` workflow command so
+			// GitHub Actions redacts it from job logs even if a caller forgets to
+			// redirect stdout exclusively to $GITHUB_ENV. Outside Actions the line
+			// is a harmless plaintext comment-shaped string.
 			for _, c := range prov.All() {
 				prefix := "AUTH0_" + envify(c.Component)
 				fmt.Fprintf(os.Stdout, "%s_CLIENT_ID=%s\n", prefix, c.ClientID)
 				if !c.Public {
+					fmt.Fprintf(os.Stdout, "::add-mask::%s\n", c.ClientSecret)
 					fmt.Fprintf(os.Stdout, "%s_CLIENT_SECRET=%s\n", prefix, c.ClientSecret)
 				}
 			}
@@ -162,12 +168,13 @@ Environment variables (or set in .env file):
 			}
 			loadAuth0EnvFile(envFile)
 
-			// IngressHost is unused on cleanup but resolveOpts requires it; pass
-			// a placeholder. Audience also unused for cleanup.
+			// CleanupClients looks up clients by "<namespace>-<component>" name
+			// and never touches redirect URIs, so IngressHost and Audience are
+			// not needed here (resolveOpts skips the IngressHost check on the
+			// cleanup path).
 			opts := auth0.Options{
-				Namespace:   namespace,
-				Domain:      domain,
-				IngressHost: "cleanup.invalid",
+				Namespace: namespace,
+				Domain:    domain,
 			}
 
 			auth0.CleanupClients(context.Background(), opts)

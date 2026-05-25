@@ -24,9 +24,9 @@ import (
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/camunda-deployer/pkg/deployer"
+	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
-	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/entra"
 	"scripts/prepare-helm-values/pkg/env"
 )
@@ -1839,7 +1839,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		if ingressHost == "" {
 			ingressHost = os.Getenv("TEST_INGRESS_HOST")
 		}
-		opts := auth0.Options{
+		auth0Options := auth0.Options{
 			Namespace:     namespace,
 			KubeContext:   kubeCtx,
 			IngressHost:   ingressHost,
@@ -1855,55 +1855,80 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 				logging.Logger.Warn().Err(err).Str("envFile", envFile).Msg("Could not read env file for Auth0 credentials")
 			} else {
 				if v, ok := envMap["AUTH0_DOMAIN"]; ok && v != "" {
-					opts.Domain = v
+					auth0Options.Domain = v
 				}
 				if v, ok := envMap["AUTH0_AUDIENCE"]; ok && v != "" {
-					opts.Audience = v
+					auth0Options.Audience = v
 				}
 				if v, ok := envMap["AUTH0_MGMT_TOKEN"]; ok && v != "" {
-					opts.MgmtToken = v
+					auth0Options.MgmtToken = v
 				}
 				if v, ok := envMap["AUTH0_MGMT_CLIENT_ID"]; ok && v != "" {
-					opts.MgmtClientID = v
+					auth0Options.MgmtClientID = v
 				}
 				if v, ok := envMap["AUTH0_MGMT_CLIENT_SECRET"]; ok && v != "" {
-					opts.MgmtClientSecret = v
+					auth0Options.MgmtClientSecret = v
 				}
 			}
 		}
 		// Fall back to process env (vault-action's exportEnv: true puts the
-		// AUTH0_* secrets here in CI). Without this, opts.Domain stays "" and
-		// the AUTH0_ISSUER_URL set into flags.ExtraEnv below ends up as
-		// just "/" — Spring's OIDC client then can't resolve the .well-known
-		// discovery and Zeebe CrashLoopBackOffs with
-		// "Unable to connect to the Identity Provider endpoint '/'".
+		// AUTH0_* secrets here in CI). Without this, auth0Options.Domain stays ""
+		// and the AUTH0_ISSUER_URL set into flags.ExtraEnv below ends up empty —
+		// Spring's OIDC client then can't resolve the .well-known discovery and
+		// Zeebe CrashLoopBackOffs with "Unable to connect to the Identity
+		// Provider endpoint '/'".
 		// auth0.resolveOpts already does this fallback, but it operates on the
 		// EnsureClients-internal Options copy, not this one.
-		if opts.Domain == "" {
-			opts.Domain = os.Getenv("AUTH0_DOMAIN")
+		if auth0Options.Domain == "" {
+			auth0Options.Domain = os.Getenv("AUTH0_DOMAIN")
 		}
-		if opts.Audience == "" {
-			opts.Audience = os.Getenv("AUTH0_AUDIENCE")
+		if auth0Options.Audience == "" {
+			auth0Options.Audience = os.Getenv("AUTH0_AUDIENCE")
 		}
-		if opts.MgmtToken == "" {
-			opts.MgmtToken = os.Getenv("AUTH0_MGMT_TOKEN")
+		if auth0Options.MgmtToken == "" {
+			auth0Options.MgmtToken = os.Getenv("AUTH0_MGMT_TOKEN")
 		}
-		if opts.MgmtClientID == "" {
-			opts.MgmtClientID = os.Getenv("AUTH0_MGMT_CLIENT_ID")
+		if auth0Options.MgmtClientID == "" {
+			auth0Options.MgmtClientID = os.Getenv("AUTH0_MGMT_CLIENT_ID")
 		}
-		if opts.MgmtClientSecret == "" {
-			opts.MgmtClientSecret = os.Getenv("AUTH0_MGMT_CLIENT_SECRET")
+		if auth0Options.MgmtClientSecret == "" {
+			auth0Options.MgmtClientSecret = os.Getenv("AUTH0_MGMT_CLIENT_SECRET")
 		}
 
 		logging.Logger.Info().
 			Str("namespace", namespace).
 			Msg("Auth0 entry detected — provisioning per-component clients (Phase 1: API + env vars)")
 
-		prov, err := auth0.EnsureClients(ctx, opts)
+		// Capture credentials for cleanup BEFORE provisioning so a partial
+		// failure inside EnsureClients (e.g. clients 1-3 of 6 created, then
+		// network drops) still leaves cleanupEntry able to delete whatever
+		// was created — preventing orphaned clients in the Auth0 tenant.
+		auth0Opts = &auth0Options
+
+		prov, err := auth0.EnsureClients(ctx, auth0Options)
 		if err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("auth0: provision clients: %w", err)}
+			// Build a result that carries auth0Opts so cleanupEntry tears down
+			// the partial provisioning, then invoke the same cleanup/callback
+			// path the success branch uses at the bottom of executeEntry.
+			result := RunResult{
+				Entry:       entry,
+				Namespace:   namespace,
+				KubeContext: kubeCtx,
+				Error:       fmt.Errorf("auth0: provision clients: %w", err),
+				Duration:    time.Since(start),
+				auth0Opts:   auth0Opts,
+			}
+			if opts.Cleanup {
+				if opts.OnPhaseChange != nil {
+					opts.OnPhaseChange(entry, "cleanup")
+				}
+				cleanupEntry(ctx, result, opts)
+			}
+			if opts.OnEntryComplete != nil {
+				opts.OnEntryComplete(entry, result)
+			}
+			return result
 		}
-		auth0Opts = &opts
 
 		// Inject AUTH0_* env vars per-entry so buildScenarioEnv merges them
 		// into the isolated env map for values.Process(). Avoids os.Setenv
@@ -1911,13 +1936,15 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		if flags.ExtraEnv == nil {
 			flags.ExtraEnv = make(map[string]string)
 		}
-		audience := opts.Audience
+		audience := auth0Options.Audience
 		if audience == "" {
 			audience = auth0.DefaultAudience
 		}
 		flags.ExtraEnv["AUTH0_AUDIENCE"] = audience
-		// Issuer URL has trailing slash on Auth0 (matches what Auth0 puts in iss claim).
-		flags.ExtraEnv["AUTH0_ISSUER_URL"] = strings.TrimSuffix(opts.Domain, "/") + "/"
+		// Issuer URL has NO trailing slash. The values file appends explicit
+		// `/` for the canonical iss-claim form on issuer-only fields and
+		// `/<path>` for derived URLs, avoiding `//` in rendered output.
+		flags.ExtraEnv["AUTH0_ISSUER_URL"] = strings.TrimSuffix(auth0Options.Domain, "/")
 		// Initial admin email defaults to the test user. Override via AUTH0_INITIAL_ADMIN_EMAIL.
 		if v := os.Getenv("AUTH0_INITIAL_ADMIN_EMAIL"); v != "" {
 			flags.ExtraEnv["AUTH0_INITIAL_ADMIN_EMAIL"] = v
@@ -1942,10 +1969,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		// (issuer URL, audience, per-component client_ids) so the test job
 		// (separate GH Actions job that doesn't inherit per-entry env vars)
 		// can resolve them via a single kubectl-get-secret.
-		issuerForSecret := strings.TrimSuffix(opts.Domain, "/") + "/"
+		issuerForSecret := strings.TrimSuffix(auth0Options.Domain, "/") + "/"
 		audienceForSecret := audience
 		provForSecret := prov
-		secretNameForHook := opts.SecretName
+		secretNameForHook := auth0Options.SecretName
 		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
 			logging.Logger.Info().
 				Str("namespace", namespace).

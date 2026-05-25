@@ -49,9 +49,13 @@ global:
     auth:
       enabled: true
       type: "GENERIC"
-      issuer: "$AUTH0_ISSUER_URL"
-      issuerBackendUrl: "$AUTH0_ISSUER_URL"
-      publicIssuerUrl: "$AUTH0_ISSUER_URL"
+      # AUTH0_ISSUER_URL is injected WITHOUT a trailing slash. Issuer-only
+      # fields explicitly append `/` to match Auth0's canonical iss-claim
+      # form ("https://tenant/"); path-bearing URLs append `/<path>` and so
+      # avoid the `//` that earlier double-slashed concatenation produced.
+      issuer: "$AUTH0_ISSUER_URL/"
+      issuerBackendUrl: "$AUTH0_ISSUER_URL/"
+      publicIssuerUrl: "$AUTH0_ISSUER_URL/"
       tokenUrl: "$AUTH0_ISSUER_URL/oauth/token"
       jwksUrl: "$AUTH0_ISSUER_URL/.well-known/jwks.json"
       authUrl: "$AUTH0_ISSUER_URL/authorize"

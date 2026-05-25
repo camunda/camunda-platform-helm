@@ -84,7 +84,7 @@ func TestResolveOpts_RequiresMgmtCreds(t *testing.T) {
 	t.Setenv("AUTH0_MGMT_CLIENT_ID", "")
 	t.Setenv("AUTH0_MGMT_CLIENT_SECRET", "")
 	opts := Options{Namespace: "ns", IngressHost: "host"}
-	err := resolveOpts(&opts)
+	err := resolveOpts(&opts, true)
 	if err == nil {
 		t.Fatal("expected error when no mgmt creds set")
 	}
@@ -96,7 +96,7 @@ func TestResolveOpts_RequiresMgmtCreds(t *testing.T) {
 func TestResolveOpts_DefaultsApplied(t *testing.T) {
 	t.Setenv("AUTH0_MGMT_TOKEN", "x")
 	opts := Options{Namespace: "ns", IngressHost: "host"}
-	if err := resolveOpts(&opts); err != nil {
+	if err := resolveOpts(&opts, true); err != nil {
 		t.Fatalf("unexpected: %v", err)
 	}
 	if opts.Audience != DefaultAudience {
@@ -110,11 +110,54 @@ func TestResolveOpts_DefaultsApplied(t *testing.T) {
 	}
 }
 
+func TestResolveOpts_IngressHostRequiredForEnsureButNotCleanup(t *testing.T) {
+	t.Setenv("AUTH0_MGMT_TOKEN", "x")
+
+	ensureOpts := Options{Namespace: "ns"}
+	if err := resolveOpts(&ensureOpts, true); err == nil {
+		t.Fatal("expected ensure-path resolveOpts to require IngressHost, got nil")
+	} else if !strings.Contains(err.Error(), "ingress host") {
+		t.Errorf("expected error to mention ingress host, got: %v", err)
+	}
+
+	cleanupOpts := Options{Namespace: "ns"}
+	if err := resolveOpts(&cleanupOpts, false); err != nil {
+		t.Fatalf("cleanup-path resolveOpts must not require IngressHost, got: %v", err)
+	}
+}
+
+func TestParseRetryAfter(t *testing.T) {
+	now := time.Date(2026, 5, 25, 12, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name   string
+		header string
+		want   time.Duration
+	}{
+		{"empty", "", 0},
+		{"whitespace", "   ", 0},
+		{"seconds", "30", 30 * time.Second},
+		{"seconds-with-padding", "  90  ", 90 * time.Second},
+		{"zero-seconds", "0", 0},
+		{"negative-seconds", "-5", 0},
+		{"http-date-future", now.Add(45 * time.Second).UTC().Format(http.TimeFormat), 45 * time.Second},
+		{"http-date-past", now.Add(-1 * time.Minute).UTC().Format(http.TimeFormat), 0},
+		{"garbage", "soon", 0},
+	}
+	for _, tc := range cases {
+		got := parseRetryAfter(tc.header, now)
+		// http-date round-trip drops sub-second precision; allow ±1s slack.
+		diff := got - tc.want
+		if diff < -time.Second || diff > time.Second {
+			t.Errorf("%s: parseRetryAfter(%q) = %v, want ~%v", tc.name, tc.header, got, tc.want)
+		}
+	}
+}
+
 func TestRedirectURIs(t *testing.T) {
 	host := "test.example.com"
 	cases := []struct {
-		component string
-		wantCount int
+		component    string
+		wantCount    int
 		wantContains string
 	}{
 		{ComponentIdentity, 1, "/identity/auth/login-callback"},
@@ -151,8 +194,8 @@ func TestEnsureClients_FullFlow(t *testing.T) {
 		grantReceived  []map[string]interface{}
 	)
 	srv := newTestServer(t, map[string]http.HandlerFunc{
-		"POST /oauth/token":          tokenHandler(),
-		"POST /api/v2/clients":       stubCreateClientHandler(t, &createReceived),
+		"POST /oauth/token":    tokenHandler(),
+		"POST /api/v2/clients": stubCreateClientHandler(t, &createReceived),
 		"POST /api/v2/client-grants": func(w http.ResponseWriter, r *http.Request) {
 			var body map[string]interface{}
 			_ = json.NewDecoder(r.Body).Decode(&body)
