@@ -1394,6 +1394,13 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
+            secret/data/products/distribution/ci AUTH0_DOMAIN;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_ID;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
           exportEnv: true
 
       - name: CI Setup - Authenticate to cluster
@@ -1431,6 +1438,23 @@ jobs:
           cd ./scripts/deploy-camunda
           go run . entra cleanup-venom-app \
             --namespace "$TEST_NAMESPACE" \
+            --log-level info
+
+      - name: CI Cleanup - Delete Auth0 OIDC clients
+        # Mirrors the Entra cleanup above. The auth0 scenario provisions
+        # per-component first-party clients in the tenant via
+        # `auth0 ensure-clients`; namespace deletion does not touch the
+        # tenant, so without this step orphans accumulate across PR runs.
+        # AUTH0_DOMAIN / AUTH0_MGMT_CLIENT_ID / AUTH0_MGMT_CLIENT_SECRET
+        # are already exported to $GITHUB_ENV by the integration-test-setup
+        # action's vault mapping.
+        if: always() && inputs.scenario == 'auth0'
+        continue-on-error: true
+        run: |
+          cd ./scripts/deploy-camunda
+          go run . auth0 cleanup-clients \
+            --namespace "$TEST_NAMESPACE" \
+            --domain "$AUTH0_DOMAIN" \
             --log-level info
 
       - name: CI Cleanup

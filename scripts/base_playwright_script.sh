@@ -1006,6 +1006,7 @@ run_playwright_tests() {
   local namespace="${9:-}"  # Optional: namespace for pod health checks
   local kube_context="${10:-}"  # Optional: kubernetes context
   local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
+  local is_auth0="${12:-false}"  # Optional: select auth0-smoke project (Auth0 OIDC scenario)
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
@@ -1029,8 +1030,15 @@ run_playwright_tests() {
     log "Playwright DEBUG enabled: $DEBUG"
   fi
 
+  # Project selection. auth0 takes precedence over smoke-tests because the
+  # auth0 scenario can never run the QA-owned smoke-tests.spec.js (which
+  # depends on a Keycloak admin) — it has its own auth0-smoke project that
+  # speaks Auth0 OIDC instead.
   local project="full-suite"
-  if [[ "$run_smoke_tests" == "true" ]]; then
+  if [[ "$is_auth0" == "true" ]]; then
+    project="auth0-smoke"
+    info "Running Auth0 OIDC smoke tests..."
+  elif [[ "$run_smoke_tests" == "true" ]]; then
     project="smoke-tests"
     info "Running smoke tests..."
   else

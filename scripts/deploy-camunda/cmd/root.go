@@ -76,6 +76,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "watch" || (cmd.Parent() != nil && cmd.Parent().Name() == "watch") {
 					return nil
 				}
+				if cmd.Name() == "auth0" || (cmd.Parent() != nil && cmd.Parent().Name() == "auth0") {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -534,6 +537,7 @@ func Execute() error {
 	rootCmd.AddCommand(newPrepareValuesCommand())
 	rootCmd.AddCommand(newEntraCommand())
 	rootCmd.AddCommand(newWatchCommand())
+	rootCmd.AddCommand(newAuth0Command())
 
 	err := rootCmd.Execute()
 	if err != nil {

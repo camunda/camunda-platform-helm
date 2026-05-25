@@ -29,6 +29,14 @@ if (!fs.existsSync(skipFile)) {
   );
 }
 
+// Auth0 smoke directory in @camunda/e2e-test-suite. Distinct from the SM-8.10
+// suite because the QA-owned smoke-tests.spec.js calls setupKeycloakUser which
+// needs a real Keycloak admin — incompatible with the Auth0 deployment.
+const auth0TestDir = path.resolve(
+  __dirname,
+  "./node_modules/@camunda/e2e-test-suite/dist/tests/auth0",
+);
+
 export default defineConfig({
   testDir,
   projects: [
@@ -65,6 +73,14 @@ export default defineConfig({
           "X-Test-Tasklist-Version": "v2",
         },
       },
+    },
+    {
+      // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
+      // route redirects to the Auth0 issuer with a well-formed authorize URL.
+      // No browser fixtures, no Keycloak admin — just request/response checks.
+      name: "auth0-smoke",
+      testDir: auth0TestDir,
+      testMatch: ["**/*.spec.{ts,js}"],
     },
   ],
   fullyParallel: true,

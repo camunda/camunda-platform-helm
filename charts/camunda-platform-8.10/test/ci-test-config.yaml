@@ -139,6 +139,26 @@ integration:
           identity: oidc
           persistence: elasticsearch
           platforms: [gke]
+        - name: auth0
+          # Auth0 OIDC scenario. The matrix runner provisions per-component
+          # first-party clients via the Management API at runtime
+          # (auth0.IsAuth0Identity in scripts/deploy-camunda/matrix/runner.go).
+          # Playwright runs the auth0-smoke project (sourced from
+          # @camunda/e2e-test-suite/dist/tests/auth0) rather than the
+          # Keycloak-coupled smoke-tests project — see
+          # scripts/base_playwright_script.sh. Tenant prerequisites are
+          # documented at the top of values/identity/auth0.yaml.
+          enabled: true
+          exclude: [identity,console,orchestration-grpc]
+          shortname: esa0
+          auth: oidc
+          flow: install
+          infra-type:
+            gke: distroci
+            eks: preemptible
+          identity: auth0
+          persistence: elasticsearch
+          platforms: [gke]
         - name: keycloak-mt
           enabled: false
           exclude: []

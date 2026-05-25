@@ -824,9 +824,18 @@ func CreateVenomK8sSecret(ctx context.Context, kubeContext, namespace string, ap
 	return nil
 }
 
-// IsOIDCEntry returns true if the matrix entry uses OIDC authentication
+// IsOIDCEntry returns true if the matrix entry uses Entra OIDC authentication
 // (either via the Auth field or the Identity field).
+//
+// auth=="oidc" is the legacy signal for "external OIDC provider"; the only
+// implementation that path covered historically was Entra. Now that Auth0 is a
+// distinct provider with its own provisioning hook (auth0.IsAuth0Identity),
+// identity=="auth0" must short-circuit so a single matrix entry doesn't
+// double-provision (Entra venom app AND Auth0 clients).
 func IsOIDCEntry(auth, identity string) bool {
+	if identity == "auth0" {
+		return false
+	}
 	return auth == "oidc" || identity == "oidc"
 }
 

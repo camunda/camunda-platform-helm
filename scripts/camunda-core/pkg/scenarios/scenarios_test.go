@@ -66,6 +66,20 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPlatform:    "gke",
 		},
 		{
+			name:            "auth0 maps to auth0 identity",
+			scenario:        "auth0",
+			wantIdentity:    "auth0",
+			wantPersistence: "elasticsearch",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "elasticsearch-auth0 maps to auth0 identity",
+			scenario:        "elasticsearch-auth0",
+			wantIdentity:    "auth0",
+			wantPersistence: "elasticsearch",
+			wantPlatform:    "gke",
+		},
+		{
 			name:            "elasticsearch-basic maps to basic identity",
 			scenario:        "elasticsearch-basic",
 			wantIdentity:    "basic",
