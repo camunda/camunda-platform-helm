@@ -1,4 +1,14 @@
-# Integration Test Scenario Resolution
+---
+title: "Skill: Integration Test Scenario Resolution"
+---
+
+**When to use this:** when you need to understand how the Go CLI (`deploy-camunda`) resolves Helm values files for a specific integration test scenario — for example, to debug a CI failure, add a new scenario, or verify that a `ci-test-config.yaml` entry produces the correct `helm install -f` arguments.
+
+**What you need:** familiarity with the CI config (`ci-test-config.yaml`) and the Helm values directory structure under `charts/<version>/test/integration/scenarios/`.
+
+**Outcome:** full traceability from a CI config entry to the final ordered list of `-f` arguments passed to `helm install`, including how identity, persistence, platform, and feature layers are resolved.
+
+---
 
 How the Go CLI (`deploy-camunda`) resolves Helm values files for each integration
 test scenario, from the CI config entry to the final `helm install -f` arguments.

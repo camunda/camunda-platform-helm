@@ -1,4 +1,14 @@
-# Reproducing a CI E2E Test Failure Locally
+---
+title: "Skill: Reproducing CI E2E Failures Locally"
+---
+
+**When to use this:** when a PR check fails (e.g., a Playwright e2e job) and you need to reproduce it locally to iterate without waiting on CI.
+
+**What you need:** GitHub CLI (`gh`), `gcloud`, `kubectl`, `deploy-camunda` (built via `make build.deploy-camunda` or installed via `make install.dx-tooling`).
+
+**Outcome:** a local environment identical to CI — same chart version, same scenario, same image tags — so you can run the failing tests directly and iterate on a fix.
+
+---
 
 When a PR check fails (e.g. `Playwright e2e after upgrade - upgrade-minor on gke - eske`), this guide walks you through pulling the logs and artifacts, decoding the scenario, and spinning up an identical local environment so you can iterate without waiting on CI.
 

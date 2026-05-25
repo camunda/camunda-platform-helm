@@ -2,6 +2,14 @@
 A template to handle constraints.
 */}}
 
+{{/*
+Fail with a message if the Helm CLI version is less than v4.
+Chart 15.x (Camunda 8.10) requires Helm v4 or later.
+*/}}
+{{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) -}}
+{{- fail (printf "[camunda][error] Camunda chart 15.x (8.10) requires Helm CLI v4 or later. Detected Helm CLI version: %s. Please upgrade to Helm v4: https://helm.sh/docs/topics/v4_migration/" .Capabilities.HelmVersion.Version) -}}
+{{- end -}}
+
 {{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 

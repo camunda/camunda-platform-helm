@@ -24,7 +24,7 @@ unit:
 #      identity: keycloak        # Explicit: keycloak, keycloak-external, oidc, basic, hybrid
 #      persistence: elasticsearch # Explicit: elasticsearch, opensearch, rdbms, rdbms-oracle
 #      platform: gke             # Explicit: gke, eks, openshift
-#      features: [multitenancy]  # Explicit: multitenancy, rba, documentstore
+#      features: [multitenancy]  # Explicit: any filename (without .yaml) from test/integration/scenarios/chart-full-setup/values/features/
 #      qa: true                  # Enable QA config
 #      upgrade: false            # Enable upgrade flow config
 #
@@ -60,35 +60,25 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
+        - name: enterprise-values
+          enabled: true
+          shortname: entv
+          tier: 2
+          auth: keycloak
+          flow: install
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features: [enterprise]  # symlink: values/features/enterprise.yaml -> values-enterprise.yaml
+          platforms: [gke]
         - name: opensearch
-          enabled: false  # Disabled: Bitnami OpenSearch subchart is unstable in CI; tracked in #6121
+          enabled: true
           auth: keycloak
           shortname: oske
           tier: 2
           exclude: []
-          identity: keycloak
-          persistence: opensearch
-          infra-type:
-            gke: distroci
-          platforms: [gke]
-        - name: opensearch-external
-          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
-          shortname: osex
-          tier: 2
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          persistence: opensearch-external
-          flow: install
-          infra-type:
-            gke: distroci
-          platforms: [gke]
-        - name: opensearch-embedded
-          enabled: true
-          shortname: osem
-          tier: 2
-          exclude: []
-          auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded
           flow: install
@@ -102,6 +92,18 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
+        - name: opensearch-external
+          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
+          shortname: osex
+          tier: 2
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch-external
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
         - name: upgrade-migration
           # upgrade migrators are only for 8.7 -> 8.8, not for 8.10
           enabled: false
@@ -272,6 +274,7 @@ integration:
         - name: rdbms-self-signed
           enabled: true
           shortname: rdbss
+          tier: 2
           exclude: []
           auth: keycloak
           identity: keycloak
@@ -348,6 +351,18 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
+        - name: shadow-e2e
+          enabled: true
+          shortname: shde2
+          tier: 2
+          auth: keycloak
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+          skip-e2e: true  # Standard smoke tests skipped; full suite runs via c8e2e distributed runner
         - name: hub-legacy
           enabled: false
           auth: keycloak

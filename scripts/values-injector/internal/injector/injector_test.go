@@ -131,6 +131,34 @@ func TestMergeImageTags86_SingleComponent(t *testing.T) {
 	}
 }
 
+func TestMergeImageTags86_ZeebeOverrideAlsoUpdatesGateway(t *testing.T) {
+	overrides := &chartcomponents.ValuesYAML86{
+		Zeebe: &chartcomponents.ComponentImage{
+			Image: chartcomponents.ImageTag{Tag: "8.6.99"},
+		},
+		ZeebeGateway: &chartcomponents.ComponentImage{
+			Image: chartcomponents.ImageTag{Tag: "8.6.99"},
+		},
+	}
+
+	result, err := MergeImageTags86(sampleValues86, overrides)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Both zeebe and zeebeGateway tags should be updated
+	lines := strings.Split(result, "\n")
+	updatedCount := 0
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "tag: 8.6.99" {
+			updatedCount++
+		}
+	}
+	if updatedCount != 2 {
+		t.Errorf("expected both zeebe and zeebeGateway tags to be 8.6.99, found %d occurrences", updatedCount)
+	}
+}
+
 func TestMergeImageTags86_MultipleComponents(t *testing.T) {
 	overrides := &chartcomponents.ValuesYAML86{
 		Console: &chartcomponents.ComponentImage{

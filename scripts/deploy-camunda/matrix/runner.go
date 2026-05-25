@@ -1616,6 +1616,32 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
 	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
 
+	// Honor explicit index prefix overrides from CAMUNDA_*_INDEX_PREFIX env vars.
+	// The matrix command skips the root PersistentPreRunE (which normally applies
+	// config/env merges), so these env vars must be applied here instead.
+	// This allows CI upgrade workflows to pin identical prefixes across separate
+	// install and upgrade jobs that run within the same workflow run.
+	if flags.Index.OperateIndexPrefix == "" {
+		if v := os.Getenv("CAMUNDA_OPERATE_INDEX_PREFIX"); v != "" {
+			flags.Index.OperateIndexPrefix = v
+		}
+	}
+	if flags.Index.OrchestrationIndexPrefix == "" {
+		if v := os.Getenv("CAMUNDA_ORCHESTRATION_INDEX_PREFIX"); v != "" {
+			flags.Index.OrchestrationIndexPrefix = v
+		}
+	}
+	if flags.Index.OptimizeIndexPrefix == "" {
+		if v := os.Getenv("CAMUNDA_OPTIMIZE_INDEX_PREFIX"); v != "" {
+			flags.Index.OptimizeIndexPrefix = v
+		}
+	}
+	if flags.Index.TasklistIndexPrefix == "" {
+		if v := os.Getenv("CAMUNDA_TASKLIST_INDEX_PREFIX"); v != "" {
+			flags.Index.TasklistIndexPrefix = v
+		}
+	}
+
 	// Wire companion chart dependencies from ci-test-config.yaml.
 	// Values file paths are resolved relative to the repo root.
 	// Chart references are resolved to absolute paths when they point to an
@@ -1825,6 +1851,17 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// All code paths converge into a single result so cleanup runs exactly once.
 	var deployErr error
 	var diag string
+
+	// When prefix-key is set, pin index prefixes using the prefix-key instead of
+	// the scenario name. This ensures cross-version consistency: an install on 8.8
+	// (scenario name "qa-opensearch-tasklist-v1") and an upgrade on 8.9
+	// (scenario name "qa-opensearch-upg") produce identical prefixes when both
+	// declare the same prefix-key.
+	if entry.PrefixKey != "" {
+		if err := deploy.PinScenarioPrefixes(entry.PrefixKey, flags); err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("pin scenario prefixes (prefix-key=%s): %w", entry.PrefixKey, err)}
+		}
+	}
 
 	// Override chart source when --chart-ref is set (OCI install path).
 	// See applyChartRefOverride for details.

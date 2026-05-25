@@ -61,35 +61,11 @@ integration:
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
         - name: opensearch
-          enabled: false  # Disabled: Bitnami OpenSearch subchart is unstable in CI; tracked in #6121
+          enabled: true
           auth: keycloak
           shortname: oske
           tier: 2
           exclude: []
-          identity: keycloak
-          persistence: opensearch
-          flow: install
-          infra-type:
-            gke: distroci
-          platforms: [gke]
-        - name: opensearch-external
-          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
-          shortname: osex
-          tier: 2
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          persistence: opensearch-external
-          flow: install
-          infra-type:
-            gke: distroci
-          platforms: [gke]
-        - name: opensearch-embedded
-          enabled: true
-          shortname: osem
-          tier: 2
-          exclude: []
-          auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded
           flow: install
@@ -103,6 +79,18 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
+        - name: opensearch-external
+          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
+          shortname: osex
+          tier: 2
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch-external
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
         - name: elasticsearch-basic
           enabled: false
           shortname: esba
@@ -568,6 +556,7 @@ integration:
           enabled: false
           flow: modular-upgrade-minor
           shortname: qaosupg
+          prefix-key: qa-opensearch-upg
           auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded

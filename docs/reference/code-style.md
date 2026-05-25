@@ -1,7 +1,10 @@
 ---
-id: code-style
 title: Code Style
 ---
+
+:::note
+These conventions are enforced during PR review. See [Pull Request Requirements](../contribution-and-collaboration.md#pull-request-requirements) for the full checklist.
+:::
 
 ## Deciding what to expose in `values.yaml`
 

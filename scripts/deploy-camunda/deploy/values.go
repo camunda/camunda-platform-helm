@@ -340,6 +340,23 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	}
 	envMap["OS_POOL_INDEX"] = osPoolIndex
 
+	// 3.5 Honor CAMUNDA_*_INDEX_PREFIX overrides from the env file (set in step 2 above).
+	// When present, these take precedence over scenario-derived prefixes, allowing a CI
+	// caller to pin a fixed index prefix across separate jobs (e.g., 8.8 install + 8.9
+	// upgrade) by passing the same CAMUNDA_*_INDEX_PREFIX value to both jobs.
+	if v := envMap["CAMUNDA_OPERATE_INDEX_PREFIX"]; v != "" {
+		envMap["OPERATE_INDEX_PREFIX"] = v
+	}
+	if v := envMap["CAMUNDA_ORCHESTRATION_INDEX_PREFIX"]; v != "" {
+		envMap["ORCHESTRATION_INDEX_PREFIX"] = v
+	}
+	if v := envMap["CAMUNDA_OPTIMIZE_INDEX_PREFIX"]; v != "" {
+		envMap["OPTIMIZE_INDEX_PREFIX"] = v
+	}
+	if v := envMap["CAMUNDA_TASKLIST_INDEX_PREFIX"]; v != "" {
+		envMap["TASKLIST_INDEX_PREFIX"] = v
+	}
+
 	// 4. Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
 	for k, v := range flags.ExtraEnv {
 		envMap[k] = v

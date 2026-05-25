@@ -240,7 +240,9 @@ func TestDeploymentTemplate(t *testing.T) {
 
 - Helm chart best practices: <https://helm.sh/docs/chart_best_practices/>
 - Chart design principles (what the chart IS and IS NOT): `docs/index.md`
-- Integration test scenario resolution: `docs/integration-test-scenario-resolution.md`
+- Breaking changes policy (canonical): `docs/policies/breaking-changes.md`
+- Backporting policy: `docs/policies/backporting.md`
+- Integration test scenario resolution: `docs/skills/integration-test-scenario-resolution.md`
 - Conventional Commits: <https://www.conventionalcommits.org/>
 - Kubernetes API conventions: <https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md>
 - Repository AI guidance: `AGENTS.md` and `.github/AGENTS.md`
