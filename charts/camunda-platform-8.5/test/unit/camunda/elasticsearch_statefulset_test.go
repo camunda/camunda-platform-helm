@@ -43,3 +43,4 @@ func TestGoldenElasticsearchDefaults(t *testing.T) {
 		},
 	})
 }
+
