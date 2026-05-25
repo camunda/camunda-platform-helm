@@ -68,19 +68,6 @@ integration:
               distribution-postgresql cluster. Required because Identity
               and WebModeler need their own external databases when no
               bundled PostgreSQL subchart is deployed (8.10+).
-        - name: enterprise-values
-          enabled: true
-          shortname: entv
-          tier: 2
-          auth: keycloak
-          flow: install
-          exclude: []
-          infra-type:
-            gke: distroci
-          identity: keycloak
-          persistence: elasticsearch
-          features: [enterprise]  # symlink: values/features/enterprise.yaml -> values-enterprise.yaml
-          platforms: [gke]
         - name: opensearch
           enabled: true
           auth: keycloak
@@ -378,7 +365,7 @@ integration:
           tier: 2
           exclude: []
           auth: keycloak
-          identity: keycloak
+          identity: keycloak-external
           persistence: rdbms-self-signed
           flow: install
           infra-type:
@@ -390,6 +377,9 @@ integration:
               Generates a self-signed CA plus server certificate via openssl
               and creates the rdbms-tls-server and rdbms-tls-ca Secrets
               consumed by the Bitnami PostgreSQL companion chart's TLS config.
+              Also creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster (Identity + WebModeler need
+              external databases when no bundled PostgreSQL is deployed).
           dependencies:
             - chart: bitnami/postgresql
               version: "18.6.2"
@@ -466,12 +456,20 @@ integration:
           tier: 2
           auth: keycloak
           flow: install
-          identity: keycloak
-          persistence: elasticsearch
+          identity: keycloak-external
+          persistence: elasticsearch-external
           platforms: [gke]
           infra-type:
             gke: distroci
           skip-e2e: true  # Standard smoke tests skipped; full suite runs via c8e2e distributed runner
+          pre-install:
+            fixtures:
+              - postgres-createdb-identity-webmodeler-job.yaml
+            description: |
+              Creates identity + webmodeler databases in the shared
+              distribution-postgresql cluster. Required because Identity
+              and WebModeler need their own external databases when no
+              bundled PostgreSQL subchart is deployed (8.10+).
         - name: hub-legacy
           enabled: false
           auth: keycloak

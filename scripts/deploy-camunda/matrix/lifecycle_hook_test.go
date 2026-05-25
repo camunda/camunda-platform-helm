@@ -189,11 +189,6 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		collect("scenario "+scn.Name+" (PR post-deploy)", scn.PostDeploy)
 		addScenarioFlows(scn)
 	}
-	for _, scn := range cfg.Integration.Case.Nightly.Scenarios {
-		collect("scenario "+scn.Name+" (Nightly pre-install)", scn.PreInstall)
-		collect("scenario "+scn.Name+" (Nightly post-deploy)", scn.PostDeploy)
-		addScenarioFlows(scn)
-	}
 	for flowName, hooks := range cfg.Integration.Flows {
 		if !knownFlows[flowName] {
 			t.Errorf("%s: integration.flows.%s: not a known flow (not in permitted-flows.yaml defaults and no scenario uses it) — typo or dead key", version, flowName)

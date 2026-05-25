@@ -34,3 +34,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "${SCRIPT_DIR}/create-rdbms-tls-secrets.sh"
 
 echo "[pre-install-rdbms-self-signed] TLS secrets created."
+
+# Create identity + webmodeler databases in the shared distribution-postgresql
+# cluster. Identity and WebModeler need external databases when no bundled
+# PostgreSQL is deployed (8.10+).
+RESOURCE_PATH="${SCRIPT_DIR}/../common/resources/postgres-createdb-identity-webmodeler-job.yaml"
+KUBECTL_FLAGS=()
+[[ -n "${KUBE_CONTEXT:-}" ]] && KUBECTL_FLAGS+=(--context="${KUBE_CONTEXT}")
+
+envsubst < "${RESOURCE_PATH}" | kubectl "${KUBECTL_FLAGS[@]}" apply -n "${TEST_NAMESPACE}" -f -
+kubectl "${KUBECTL_FLAGS[@]}" wait --for=condition=complete --timeout=120s \
+  -n "${TEST_NAMESPACE}" job/psql-create-db-identity-webmodeler
+
+echo "[pre-install-rdbms-self-signed] identity + webmodeler DBs created."
