@@ -85,6 +85,23 @@ func parseReviewers(raw string) string {
 	return strings.Join(names, ", ")
 }
 
+// hasLabel returns true if PR_LABELS_JSON contains a label with the given name.
+func hasLabel(name string) bool {
+	raw := os.Getenv("PR_LABELS_JSON")
+	var labels []struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(raw), &labels); err != nil {
+		return false
+	}
+	for _, l := range labels {
+		if l.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func buildMessage() string {
 	action := mustEnv("GH_ACTION")
 	repo := shortRepo(mustEnv("PR_REPO"))
@@ -104,17 +121,18 @@ func buildMessage() string {
 
 	case "closed":
 		merged := os.Getenv("PR_MERGED") == "true"
-		if merged {
-			createdAt, err1 := time.Parse(timeLayout, mustEnv("PR_CREATED_AT"))
-			mergedAt, err2 := time.Parse(timeLayout, mustEnv("PR_MERGED_AT"))
-			duration := "unknown"
-			if err1 == nil && err2 == nil {
-				duration = formatDuration(createdAt, mergedAt)
-			}
-			numLink := fmt.Sprintf("<%s|%s>", prURL, prNum)
-			return fmt.Sprintf("✅ [%s] %s merged after %s", repo, numLink, duration)
+		if !merged {
+			// Closed without merge: no notification.
+			return ""
 		}
-		return fmt.Sprintf("❌ [%s] %s", repo, link)
+		createdAt, err1 := time.Parse(timeLayout, mustEnv("PR_CREATED_AT"))
+		mergedAt, err2 := time.Parse(timeLayout, mustEnv("PR_MERGED_AT"))
+		duration := "unknown"
+		if err1 == nil && err2 == nil {
+			duration = formatDuration(createdAt, mergedAt)
+		}
+		numLink := fmt.Sprintf("<%s|%s>", prURL, prNum)
+		return fmt.Sprintf("✅ [%s] %s merged after %s", repo, numLink, duration)
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: unhandled action %q\n", action)
@@ -156,14 +174,19 @@ func sendSlack(webhook, message string) error {
 }
 
 func main() {
-	// Suppress notifications for all bot authors (e.g. renovate[bot], dependabot[bot]).
-	if strings.HasSuffix(os.Getenv("PR_AUTHOR"), "[bot]") {
-		fmt.Println("ℹ️  Skipping Slack notification: bot author.")
+	// Suppress notifications for bot authors, unless it's a renovate major-version update.
+	if strings.HasSuffix(os.Getenv("PR_AUTHOR"), "[bot]") && !hasLabel("upgrade:major") {
+		fmt.Println("ℹ️  Skipping Slack notification: bot author (non-major update).")
 		return
 	}
 
 	webhook := mustEnv("SLACK_WEBHOOK")
 	message := buildMessage()
+
+	if message == "" {
+		fmt.Println("ℹ️  Skipping Slack notification: no message to send (e.g. closed without merge).")
+		return
+	}
 
 	fmt.Printf("📣 Sending Slack notification: %s\n", message)
 

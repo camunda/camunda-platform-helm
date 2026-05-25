@@ -6,16 +6,15 @@
 # Sends a message to #team-distribution-github (via distro-bot) when:
 #   - A PR is opened or converted from draft to ready for review
 #   - A PR is merged
-#   - A PR is closed without merge
 #
-# Draft PRs are skipped entirely.
+# Draft PRs and closed-without-merge PRs are skipped entirely.
+# Bot-authored PRs are suppressed unless labelled upgrade:major (renovate major bumps).
 #
 # Can be called from other repos via workflow_call — pass all pr_* inputs explicitly.
 #
 # Message format:
 #   ↗ [helm] #123 feat: add support for X — review: @rev1
 #   ✅ [helm] #123 merged after 1d 4h
-#   ❌ [helm] #123 feat: add support for X
 #
 # Notification logic is implemented in scripts/notify-pr-activity (Go).
 #
@@ -108,7 +107,8 @@ on:
 
 jobs:
   notify-slack:
-    # Skip draft PRs; only run for opened, ready_for_review, closed+merged, or closed+unmerged events.
+    # Skip draft PRs; only run for opened, ready_for_review, or closed (merged) events.
+    # Closed-without-merge suppression and bot filtering are handled in the Go script.
     # When called via workflow_call, the caller controls filtering via the pr_draft input.
     if: |
       (github.event_name == 'workflow_call' && inputs.pr_draft != 'true') ||
