@@ -891,11 +891,11 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestBasicAuthExcludesOidcSecrets",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                               "true",
-				"global.identity.auth.enabled":                   "true",
-				"connectors.security.authentication.method":      "basic",
-				"orchestration.security.authentication.method":   "basic",
-				"connectors.enabled":                             "true",
+				"identity.enabled":                             "true",
+				"global.identity.auth.enabled":                 "true",
+				"connectors.security.authentication.method":    "basic",
+				"orchestration.security.authentication.method": "basic",
+				"connectors.enabled":                           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -915,12 +915,12 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGlobalOidcAuthIncludesBothOidcSecrets",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                                 "true",
-				"global.identity.auth.enabled":                                     "true",
-				"global.security.authentication.method":                            "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":      "connectors-oidc-secret",
-				"orchestration.security.authentication.oidc.existingSecret.name":   "orchestration-oidc-secret",
-				"connectors.enabled":                                               "true",
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"connectors.security.authentication.oidc.existingSecret.name":    "connectors-oidc-secret",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+				"connectors.enabled":                                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -956,12 +956,12 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestHybridAuthConnectorsBasicOrchestrationOidc",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                                 "true",
-				"global.identity.auth.enabled":                                     "true",
-				"connectors.security.authentication.method":                        "basic",
-				"orchestration.security.authentication.method":                     "oidc",
-				"orchestration.security.authentication.oidc.existingSecret.name":   "orchestration-oidc-secret",
-				"connectors.enabled":                                               "true",
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"connectors.security.authentication.method":                      "basic",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+				"connectors.enabled":                                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -991,11 +991,11 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestConnectorsDisabledExcludesOidcSecretEnvVar",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                                 "true",
-				"global.identity.auth.enabled":                                     "true",
-				"global.security.authentication.method":                            "oidc",
-				"connectors.enabled":                                               "false",
-				"orchestration.security.authentication.oidc.existingSecret.name":   "orchestration-oidc-secret",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"connectors.enabled":                    "false",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -1025,12 +1025,12 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestOrchestrationDisabledExcludesOidcSecretEnvVar",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                              "true",
-				"global.identity.auth.enabled":                                  "true",
-				"global.security.authentication.method":                         "oidc",
-				"orchestration.enabled":                                         "false",
-				"connectors.enabled":                                            "true",
-				"connectors.security.authentication.oidc.existingSecret.name":   "connectors-oidc-secret",
+				"identity.enabled":                                            "true",
+				"global.identity.auth.enabled":                                "true",
+				"global.security.authentication.method":                       "oidc",
+				"orchestration.enabled":                                       "false",
+				"connectors.enabled":                                          "true",
+				"connectors.security.authentication.oidc.existingSecret.name": "connectors-oidc-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

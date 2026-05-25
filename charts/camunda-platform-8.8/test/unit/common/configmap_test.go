@@ -54,10 +54,10 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestConfigMapIdentityIssuerURL",
 			Values: map[string]string{
-				"global.identity.auth.enabled":                                    "true",
-				"global.identity.auth.issuerBackendUrl":                           "http://keycloak:80/auth/realms/camunda-platform",
-				"identity.enabled":                                                "true",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
+				"global.identity.auth.enabled":                                   "true",
+				"global.identity.auth.issuerBackendUrl":                          "http://keycloak:80/auth/realms/camunda-platform",
+				"identity.enabled":                                               "true",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -70,14 +70,14 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapIdentityIssuerURLWithKeycloakURLSyntax",
 			Values: map[string]string{
-				"global.identity.auth.enabled":                           "true",
-				"global.identity.keycloak.url.protocol":                  "http",
-				"global.identity.keycloak.url.host":                               "keycloak",
-				"global.identity.keycloak.url.port":                               "80",
-				"global.identity.keycloak.contextPath":                            "/auth/realms/",
-				"global.identity.keycloak.realm":                                  "camunda-platform",
-				"identity.enabled":                                                "true",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
+				"global.identity.auth.enabled":                                   "true",
+				"global.identity.keycloak.url.protocol":                          "http",
+				"global.identity.keycloak.url.host":                              "keycloak",
+				"global.identity.keycloak.url.port":                              "80",
+				"global.identity.keycloak.contextPath":                           "/auth/realms/",
+				"global.identity.keycloak.realm":                                 "camunda-platform",
+				"identity.enabled":                                               "true",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

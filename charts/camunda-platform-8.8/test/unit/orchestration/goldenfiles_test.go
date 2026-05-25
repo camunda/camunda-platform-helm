@@ -99,7 +99,7 @@ func TestGoldenDefaultsTemplateOrchestrationMigrationIdentity(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"orchestration.migration.identity.enabled": "true",
+				"orchestration.migration.identity.enabled":             "true",
 				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
 			},
 			IgnoredLines: []string{

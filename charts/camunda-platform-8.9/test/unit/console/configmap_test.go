@@ -75,12 +75,12 @@ func (s *configMapTemplateTest) TestContextPathRootDoesNotCreateDoubleSlashes() 
 		{
 			Name: "ContextPathRootShouldNotCauseDoubleSlashesInURLs",
 			Values: map[string]string{
-				"console.enabled":                       "true",
-				"identity.enabled":                      "true",
-				"orchestration.enabled":                 "true",
-				"global.ingress.enabled":                "true",
-				"global.ingress.host":                   "camunda.example.com",
-				"orchestration.contextPath":             "/",
+				"console.enabled":           "true",
+				"identity.enabled":          "true",
+				"orchestration.enabled":     "true",
+				"global.ingress.enabled":    "true",
+				"global.ingress.host":       "camunda.example.com",
+				"orchestration.contextPath": "/",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -115,12 +115,12 @@ func (s *configMapTemplateTest) TestGlobalIngressHostTemplating() {
 		{
 			Name: "TestReleaseInfoURLsWithLiteralIngressHost",
 			Values: map[string]string{
-				"console.enabled":              "true",
-				"identity.enabled":             "true",
-				"orchestration.enabled":        "true",
-				"global.ingress.enabled":       "true",
-				"global.ingress.host":          "literal.example.com",
-				"global.ingress.tls.enabled":   "true",
+				"console.enabled":            "true",
+				"identity.enabled":           "true",
+				"orchestration.enabled":      "true",
+				"global.ingress.enabled":     "true",
+				"global.ingress.host":        "literal.example.com",
+				"global.ingress.tls.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

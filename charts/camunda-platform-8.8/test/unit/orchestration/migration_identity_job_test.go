@@ -270,8 +270,8 @@ func (s *MigrationIdentityJobTest) TestResources() {
 		{
 			Name: "TestCustomResources",
 			Values: map[string]string{
-				"orchestration.migration.identity.enabled":                        "true",
-				"orchestration.migration.identity.secret.inlineSecret":            "very-secret-thus-plaintext",
+				"orchestration.migration.identity.enabled":                   "true",
+				"orchestration.migration.identity.secret.inlineSecret":       "very-secret-thus-plaintext",
 				"orchestration.migration.identity.resources.requests.cpu":    "200m",
 				"orchestration.migration.identity.resources.requests.memory": "256Mi",
 				"orchestration.migration.identity.resources.limits.cpu":      "1000m",

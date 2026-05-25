@@ -111,7 +111,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"global.security.authentication.method": "oidc",
 			},
 			Expected: map[string]string{
-				"configmapApplication.camunda.security.authentication.method":          "oidc",
+				"configmapApplication.camunda.security.authentication.method":         "oidc",
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
@@ -327,7 +327,7 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenExplicitlyEmpty",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -338,7 +338,7 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldContainGroupsClaimWhenSet",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
 			},
 			Expected: map[string]string{

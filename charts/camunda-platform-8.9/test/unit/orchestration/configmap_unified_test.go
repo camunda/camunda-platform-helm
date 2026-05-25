@@ -176,9 +176,9 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() 
 		{
 			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaSecondaryStorage",
 			Values: map[string]string{
-				"global.opensearch.enabled":                                         "true",
-				"global.opensearch.url.host":                                        "opensearch.example.com",
-				"orchestration.data.secondaryStorage.opensearch.aws.enabled":         "true",
+				"global.opensearch.enabled":                                  "true",
+				"global.opensearch.url.host":                                 "opensearch.example.com",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
@@ -214,8 +214,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearchAWS
 		{
 			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledViaSecondaryStorage",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                            "true",
-				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled":            "true",
+				"global.elasticsearch.enabled":                                  "true",
+				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled": "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.elasticsearch.aws-enabled": "true",

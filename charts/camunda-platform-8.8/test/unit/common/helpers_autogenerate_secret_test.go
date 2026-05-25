@@ -55,7 +55,7 @@ func (s *shouldAutogenerateSecretTest) shouldSecretKeyBeGenerated(config map[str
 	for k, v := range config {
 		baseConfig[k] = v
 	}
-	
+
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 		SetValues:      baseConfig,
@@ -67,18 +67,18 @@ func (s *shouldAutogenerateSecretTest) shouldSecretKeyBeGenerated(config map[str
 		// If template fails to render, the secret is not generated
 		return false
 	}
-	
+
 	// Check if the expected secret key is in the output
-	return strings.Contains(output, expectedSecretKey+":") 
+	return strings.Contains(output, expectedSecretKey+":")
 }
 
 func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithExistingSecretString() {
 	// Test case: component has existingSecret as string pointing to autogen secret
 	config := map[string]string{
 		"identity.firstUser.existingSecret": "camunda-credentials",
-		"global.identity.auth.enabled":    "true",
+		"global.identity.auth.enabled":      "true",
 	}
-	
+
 	// Should generate the identity-firstuser-password key
 	result := s.shouldSecretKeyBeGenerated(config, "identity-firstuser-password")
 	s.Require().True(result, "identity-firstuser-password should be generated when identity.firstUser.existingSecret points to autogen secret")
@@ -88,10 +88,10 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithExistingS
 	// Test case: component has existingSecret as object with name pointing to autogen secret
 	config := map[string]string{
 		"global.identity.auth.optimize.existingSecret.name": "camunda-credentials",
-		"global.identity.auth.enabled": "true",
-		"optimize.enabled": "true",
+		"global.identity.auth.enabled":                      "true",
+		"optimize.enabled":                                  "true",
 	}
-	
+
 	// Should generate the identity-optimize-client-token key
 	result := s.shouldSecretKeyBeGenerated(config, "identity-optimize-client-token")
 	s.Require().True(result, "identity-optimize-client-token should be generated when global.identity.auth.optimize.existingSecret.name points to autogen secret")
@@ -104,7 +104,7 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithNewStyleS
 		"global.identity.auth.enabled":                                  "true",
 		"global.security.authentication.method":                         "oidc",
 	}
-	
+
 	// Should generate the identity-connectors-client-token key (since connectors auth still uses identity)
 	result := s.shouldSecretKeyBeGenerated(config, "identity-connectors-client-token")
 	s.Require().True(result, "identity-connectors-client-token should be generated when using new style secret config")
@@ -113,11 +113,11 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithNewStyleS
 func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithAuthExistingSecret() {
 	// Test case: component has auth.existingSecret pointing to autogen secret (for identityKeycloak.auth)
 	config := map[string]string{
-		"identityKeycloak.auth.existingSecret": "camunda-credentials",
+		"identityKeycloak.auth.existingSecret":    "camunda-credentials",
 		"identityKeycloak.auth.passwordSecretKey": "identity-keycloak-admin-password",
-		"global.identity.auth.enabled": "true",
+		"global.identity.auth.enabled":            "true",
 	}
-	
+
 	// Should generate the identity-keycloak-admin-password key
 	result := s.shouldSecretKeyBeGenerated(config, "identity-keycloak-admin-password")
 	s.Require().True(result, "identity-keycloak-admin-password should be generated when identityKeycloak.auth.existingSecret points to autogen secret")
@@ -126,11 +126,11 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithAuthExist
 func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithPostgreSQLAuth() {
 	// Test case: component has postgresql.auth.existingSecret pointing to autogen secret
 	config := map[string]string{
-		"identityKeycloak.postgresql.auth.existingSecret": "camunda-credentials",
+		"identityKeycloak.postgresql.auth.existingSecret":              "camunda-credentials",
 		"identityKeycloak.postgresql.auth.secretKeys.adminPasswordKey": "identity-keycloak-postgresql-admin-password",
-		"identityKeycloak.postgresql.auth.secretKeys.userPasswordKey": "identity-keycloak-postgresql-user-password",
+		"identityKeycloak.postgresql.auth.secretKeys.userPasswordKey":  "identity-keycloak-postgresql-user-password",
 	}
-	
+
 	// Should generate both PostgreSQL password keys
 	result1 := s.shouldSecretKeyBeGenerated(config, "identity-keycloak-postgresql-admin-password")
 	result2 := s.shouldSecretKeyBeGenerated(config, "identity-keycloak-postgresql-user-password")
@@ -143,7 +143,7 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithDifferent
 	config := map[string]string{
 		"identity.firstUser.existingSecret": "my-custom-secret",
 	}
-	
+
 	// Should NOT generate the identity-firstuser-password key
 	result := s.shouldSecretKeyBeGenerated(config, "identity-firstuser-password")
 	s.Require().False(result, "identity-firstuser-password should NOT be generated when existingSecret points to different secret name")
@@ -155,7 +155,7 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithNoSecretC
 		// No secret configuration for identity.firstUser, so it should autogenerate
 		"global.identity.auth.enabled": "true",
 	}
-	
+
 	// Should generate the identity-firstuser-password key (default behavior)
 	result := s.shouldSecretKeyBeGenerated(config, "identity-firstuser-password")
 	s.Require().True(result, "identity-firstuser-password should be generated when no secret config is present")
@@ -166,7 +166,7 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithPlaintext
 	config := map[string]string{
 		"identity.firstUser.password": "my-plaintext-password",
 	}
-	
+
 	// Should NOT generate the identity-firstuser-password key because plaintext password exists
 	result := s.shouldSecretKeyBeGenerated(config, "identity-firstuser-password")
 	s.Require().False(result, "identity-firstuser-password should NOT be generated when plaintext password is configured")
@@ -175,11 +175,11 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithPlaintext
 func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithCustomSecretName() {
 	// Test case: using custom autogenerated secret name
 	config := map[string]string{
-		"global.secrets.name": "my-custom-autogen-secret",
+		"global.secrets.name":               "my-custom-autogen-secret",
 		"identity.firstUser.existingSecret": "my-custom-autogen-secret",
-		"global.identity.auth.enabled": "true",
+		"global.identity.auth.enabled":      "true",
 	}
-	
+
 	// Should generate the identity-firstuser-password key in the custom-named secret
 	result := s.shouldSecretKeyBeGenerated(config, "identity-firstuser-password")
 	s.Require().True(result, "identity-firstuser-password should be generated when existingSecret matches custom autogen secret name")

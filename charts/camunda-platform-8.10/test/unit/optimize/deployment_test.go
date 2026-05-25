@@ -827,9 +827,9 @@ es:
 		{
 			Name: "TestOptimizeOpenSearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"identity.enabled":                                   "true",
-				"optimize.enabled":                                   "true",
-				"global.opensearch.tls.secret.existingSecret":               "os-tls-secret",
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.opensearch.tls.secret.existingSecret":        "os-tls-secret",
 				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -860,9 +860,9 @@ es:
 		{
 			Name: "TestOptimizeOpenSearchTLSWithJKSInlineEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"optimize.enabled":                              "true",
-				"global.opensearch.tls.secret.existingSecret":          "os-tls-secret",
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.opensearch.tls.secret.existingSecret":   "os-tls-secret",
 				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -889,8 +889,8 @@ es:
 		{
 			Name: "TestOptimizeOpenSearchTLSWithoutJKSDoesNotEmitPassword",
 			Values: map[string]string{
-				"identity.enabled":                     "true",
-				"optimize.enabled":                     "true",
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
 				"global.opensearch.tls.secret.existingSecret": "os-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -916,9 +916,9 @@ es:
 		{
 			Name: "TestOptimizeElasticsearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"identity.enabled":                                      "true",
-				"optimize.enabled":                                      "true",
-				"global.elasticsearch.tls.secret.existingSecret":               "es-tls-secret",
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.elasticsearch.tls.secret.existingSecret":        "es-tls-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -949,8 +949,8 @@ es:
 		{
 			Name: "TestOptimizeElasticsearchTLSWithoutJKSDoesNotEmitPassword",
 			Values: map[string]string{
-				"identity.enabled":                        "true",
-				"optimize.enabled":                        "true",
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
 				"global.elasticsearch.tls.secret.existingSecret": "es-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -976,9 +976,9 @@ es:
 		{
 			Name: "TestOptimizeOpenSearchTLSRespectsJavaOptsWithAndWithoutJKS",
 			Values: map[string]string{
-				"identity.enabled":                     "true",
-				"optimize.enabled":                     "true",
-				"optimize.javaOpts":                    "-Xmx512m -Xms256m",
+				"identity.enabled":                            "true",
+				"optimize.enabled":                            "true",
+				"optimize.javaOpts":                           "-Xmx512m -Xms256m",
 				"global.opensearch.tls.secret.existingSecret": "os-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

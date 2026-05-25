@@ -61,8 +61,8 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 				"elasticsearch.enabled":                                            "true",
 			},
 			IgnoredLines: []string{
-				`\s+.*-secret:\s+.*`,         // secrets are auto-generated and need to be ignored.
-				`\s+checksum/.+?:\s+.*`,      // ignore configmap checksum.
+				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},
 		})
 	}

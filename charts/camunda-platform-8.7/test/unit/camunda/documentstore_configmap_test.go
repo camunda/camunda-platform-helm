@@ -61,9 +61,9 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.aws.bucketPath": "/aws/path",
 			},
 			Expected: map[string]string{
-				"DOCUMENT_DEFAULT_STORE_ID":    "aws",
-				"DOCUMENT_STORE_AWS_CLASS":     "io.camunda.document.store.aws.AwsDocumentStoreProvider",
-				"DOCUMENT_STORE_AWS_BUCKET":    "aws-bucket",
+				"DOCUMENT_DEFAULT_STORE_ID":      "aws",
+				"DOCUMENT_STORE_AWS_CLASS":       "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"DOCUMENT_STORE_AWS_BUCKET":      "aws-bucket",
 				"DOCUMENT_STORE_AWS_BUCKET_PATH": "/aws/path",
 			},
 		},
@@ -91,7 +91,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.inmemory.class":   "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 			},
 			Expected: map[string]string{
-				"DOCUMENT_DEFAULT_STORE_ID": "inmemory",
+				"DOCUMENT_DEFAULT_STORE_ID":     "inmemory",
 				"DOCUMENT_STORE_INMEMORY_CLASS": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 			},
 		},
