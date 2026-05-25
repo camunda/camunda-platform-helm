@@ -85,41 +85,54 @@ func parseReviewers(raw string) string {
 	return strings.Join(names, ", ")
 }
 
+// hasLabel returns true if PR_LABELS_JSON contains a label with the given name.
+func hasLabel(name string) bool {
+	raw := os.Getenv("PR_LABELS_JSON")
+	var labels []struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(raw), &labels); err != nil {
+		return false
+	}
+	for _, l := range labels {
+		if l.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func buildMessage() string {
 	action := mustEnv("GH_ACTION")
 	repo := shortRepo(mustEnv("PR_REPO"))
 	prURL := mustEnv("PR_URL")
 	prNum := "#" + mustEnv("PR_NUMBER")
 	prTitle := mustEnv("PR_TITLE")
-	author := "@" + mustEnv("PR_AUTHOR")
 
 	link := fmt.Sprintf("<%s|%s %s>", prURL, prNum, prTitle)
 
 	switch action {
 	case "opened", "ready_for_review":
-		size := fmt.Sprintf("+%s/-%s", mustEnv("PR_ADDITIONS"), mustEnv("PR_DELETIONS"))
 		reviewers := parseReviewers(os.Getenv("PR_REVIEWERS_JSON"))
-		reviewText := ""
 		if reviewers != "" {
-			reviewText = " · review: " + reviewers
+			return fmt.Sprintf("↗ [%s] %s — review: %s", repo, link, reviewers)
 		}
-		return fmt.Sprintf(":arrow_heading_up: [%s] PR opened · by %s%s · %s — %s",
-			repo, author, reviewText, size, link)
+		return fmt.Sprintf("↗ [%s] %s", repo, link)
 
 	case "closed":
 		merged := os.Getenv("PR_MERGED") == "true"
-		if merged {
-			createdAt, err1 := time.Parse(timeLayout, mustEnv("PR_CREATED_AT"))
-			mergedAt, err2 := time.Parse(timeLayout, mustEnv("PR_MERGED_AT"))
-			duration := "unknown"
-			if err1 == nil && err2 == nil {
-				duration = formatDuration(createdAt, mergedAt)
-			}
-			return fmt.Sprintf(":tada: [%s] PR merged after %s · by %s — %s",
-				repo, duration, author, link)
+		if !merged {
+			// Closed without merge: no notification.
+			return ""
 		}
-		return fmt.Sprintf(":x: [%s] PR closed without merge · by %s — %s",
-			repo, author, link)
+		createdAt, err1 := time.Parse(timeLayout, mustEnv("PR_CREATED_AT"))
+		mergedAt, err2 := time.Parse(timeLayout, mustEnv("PR_MERGED_AT"))
+		duration := "unknown"
+		if err1 == nil && err2 == nil {
+			duration = formatDuration(createdAt, mergedAt)
+		}
+		numLink := fmt.Sprintf("<%s|%s>", prURL, prNum)
+		return fmt.Sprintf("✅ [%s] %s merged after %s", repo, numLink, duration)
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: unhandled action %q\n", action)
@@ -160,33 +173,20 @@ func sendSlack(webhook, message string) error {
 	return nil
 }
 
-// hasLabel reports whether the JSON label array contains a label with the given name.
-// The array has the shape [{"name":"automerge",...},...]
-func hasLabel(labelsJSON, name string) bool {
-	var labels []struct {
-		Name string `json:"name"`
-	}
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return false
-	}
-	for _, l := range labels {
-		if l.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
-	// Renovate PRs labelled "automerge" are handled automatically and generate no useful signal.
-	// Renovate PRs without "automerge" (e.g. major updates) still need human attention — notify those.
-	if os.Getenv("PR_AUTHOR") == "renovate[bot]" && hasLabel(os.Getenv("PR_LABELS_JSON"), "automerge") {
-		fmt.Println("ℹ️  Skipping Slack notification: automerge Renovate PR.")
+	// Suppress notifications for bot authors, unless it's a renovate major-version update.
+	if strings.HasSuffix(os.Getenv("PR_AUTHOR"), "[bot]") && !hasLabel("upgrade:major") {
+		fmt.Println("ℹ️  Skipping Slack notification: bot author (non-major update).")
 		return
 	}
 
 	webhook := mustEnv("SLACK_WEBHOOK")
 	message := buildMessage()
+
+	if message == "" {
+		fmt.Println("ℹ️  Skipping Slack notification: no message to send (e.g. closed without merge).")
+		return
+	}
 
 	fmt.Printf("📣 Sending Slack notification: %s\n", message)
 

@@ -471,23 +471,16 @@ jobs:
             ISSUE_URL="$GITHUB_SERVER_URL/$OWNER/$REPO/issues/$ISSUE_NUMBER"
             SHORT_REPO=$(echo "$REPO" | sed 's/camunda-platform-//')
 
-            # Pick an emoji based on kind
-            KIND_EMOJI=":label:"
-            case "${KIND:-unknown}" in
-              bug)             KIND_EMOJI=":bug:" ;;
-              chore)           KIND_EMOJI=":wrench:" ;;
-              docs)            KIND_EMOJI=":memo:" ;;
-              feature-request) KIND_EMOJI=":bulb:" ;;
-              internal)        KIND_EMOJI=":nut_and_bolt:" ;;
-              refactor)        KIND_EMOJI=":recycle:" ;;
-              research)        KIND_EMOJI=":microscope:" ;;
+            # Severity prefix for high/critical only; low/mid show no label
+            SEVERITY_PREFIX=""
+            case "$SEVERITY" in
+              high)     SEVERITY_PREFIX="⚠️ HIGH — " ;;
+              critical) SEVERITY_PREFIX="🚨 CRITICAL — " ;;
             esac
 
             SLACK_PAYLOAD=$(jq -n \
-              --arg emoji "$KIND_EMOJI" \
               --arg repo "$SHORT_REPO" \
-              --arg kind "${KIND:-unknown}" \
-              --arg severity "${SEVERITY_EMOJI} ${SEVERITY}" \
+              --arg severity_prefix "$SEVERITY_PREFIX" \
               --arg issue_url "$ISSUE_URL" \
               --arg issue_number "#${ISSUE_NUMBER}" \
               --arg title "$ISSUE_TITLE" \
@@ -496,7 +489,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ($emoji + " [" + $repo + "] " + $kind + " · " + $severity + " severity — <" + $issue_url + "|" + $issue_number + " " + $title + ">")
+                    "text": ("🎫 [" + $repo + "] <" + $issue_url + "|" + $issue_number + " " + $severity_prefix + $title + ">")
                   }
                 }]
               }')
