@@ -133,28 +133,28 @@ Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, char
 ### Prerequisites
 
 - The fix is already merged to `main` (via Renovatebot automerge or a manual PR).
-- The dev build workflow (`chart-build-dev.yaml`) has run successfully and produced a new dev package.
 
 ### Steps
 
-1. **Promote a new RC** — Manually trigger `chart-promote-rc.yaml` with the latest dev tag (e.g. `{chart-major}-dev-latest`). This creates a new RC tag (e.g. `{chart-major}-rc-latest`).
+1. **Trigger a dev build** — Manually trigger `chart-build-dev.yaml` if the automatic post-merge build has not yet produced a package, or if you need to pin specific component image versions rather than taking the latest. Individual component version inputs can be overridden in the workflow dispatch form.
 
-2. **Notify QA** — Ping `@qa-automated-release-manager` in `#c8-release-announcements` requesting a Helm Chart release test against the RC tag.
+2. **Promote a new RC** — Manually trigger `chart-promote-rc.yaml` with the dev tag produced in Step 1 (e.g. `{version}-dev-{sha}` or `{chart-major}-dev-latest`). This creates a new RC tag (e.g. `{chart-major}-rc-latest`).
+
+3. **Notify QA** — Ping `@qa-automated-release-manager` in `#c8-release-announcements` requesting a Helm Chart release test against the RC tag.
    - QA inputs: Branch = `main`, Directory = `camunda-platform-{CAMUNDA_VERSION}`.
    - Do not specify individual component versions when testing an OCI tag — use the RC tag directly.
 
-3. **Await QA sign-off** — Wait for QA to confirm all test runs passed.
+4. **Await QA sign-off** — Wait for QA to confirm all test runs passed.
 
-4. **Trigger public release** — Manually trigger `chart-release-public.yaml` with the RC tag. This publishes the corrected chart to GitHub Releases and updates the Helm repo index.
+5. **Trigger public release** — Manually trigger `chart-release-public.yaml` with the RC tag. This publishes the corrected chart to GitHub Releases and updates the Helm repo index.
 
-5. **Make sure the release-please PR is merged** — Should be automated — just confirm the release-please PR was merged with the correct released version.
+6. **Make sure the release-please PR is merged** — Should be automated — just confirm the release-please PR was merged with the correct released version.
 
-6. **Notify support** — Post a message in `#ask-support` using the template below.
+7. **Notify support** — Post a message in `#ask-support` using the template below.
 
 ### Notes
 
 - **Chart versioning:** re-running with no chart changes defaults release-please to a minor version bump.
-- If the fix is not yet in the dev package, manually trigger `chart-build-dev.yaml` (individual component version inputs can be overridden).
 - This process is for Self-Managed only — no SaaS rollout is involved.
 
 ### #ask-support Notification Template
