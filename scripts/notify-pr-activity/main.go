@@ -131,7 +131,7 @@ func buildMessage() string {
 		if err1 == nil && err2 == nil {
 			duration = formatDuration(createdAt, mergedAt)
 		}
-		numLink := fmt.Sprintf("<%s|%s>", prURL, prNum)
+		numLink := fmt.Sprintf("<%s|%s %s>", prURL, prNum, prTitle)
 		return fmt.Sprintf("✅ [%s] %s merged after %s", repo, numLink, duration)
 
 	default:
