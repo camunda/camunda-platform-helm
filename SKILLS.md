@@ -729,7 +729,7 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 | Version | Shortnames |
 |---|---|
 | 8.7  | `kemt`, `kerba`, `esoi`, `keyc`, `osem`, `entv` |
-| 8.8  | `esoi`, `esarm`, `osem`, `docstr` |
+| 8.8  | `esoi`, `esarm`, `osem`, `docstr`, `entv` |
 | 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms` |
 | 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble`, `entv` |
 
