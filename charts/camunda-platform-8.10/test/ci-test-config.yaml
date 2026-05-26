@@ -63,7 +63,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
           pre-install:
             fixtures:
@@ -241,7 +241,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
           pre-install:
             fixtures:
@@ -272,7 +272,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [gateway]
           platforms: [gke]
           pre-install:
@@ -364,7 +364,7 @@ integration:
           tier: 2
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [documentstore]
           platforms: [eks]
           infra-type:
@@ -465,7 +465,7 @@ integration:
           exclude: []
           flow: install
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [hub-legacy]
           platforms: [gke]
           infra-type:
@@ -495,7 +495,7 @@ integration:
           auth: keycloak
           flow: install
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
           infra-type:
             gke: distroci
@@ -551,7 +551,7 @@ integration:
           tier: 1
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
           infra-type:
             gke: distroci
