@@ -46,9 +46,15 @@ integration:
           patch (PSQL 15→14 rollback path) — Helm cannot reconcile in place.
   case:
     pr:
+      # NOTE (5985 follow-up): the shared external Keycloak instance previously
+      # used by these scenarios (identity: keycloak-external) is architecturally
+      # unfit for integration tests (realm creation/deletion bottlenecked, no
+      # tenant isolation). Every keycloak-external scenario below is gated
+      # `enabled: false` until the bundled Keycloak companion chart (parallel
+      # workstream) replaces it.
       scenario:
         - name: elasticsearch
-          enabled: true
+          enabled: false
           flow: install
           auth: keycloak
           shortname: eske
@@ -76,7 +82,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: opensearch
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: oske
           tier: 2
@@ -220,7 +226,7 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-original
-          enabled: true
+          enabled: false
           exclude: []
           shortname: keorg
           tier: 2
@@ -248,7 +254,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: gateway-keycloak
-          enabled: true
+          enabled: false
           exclude: []
           shortname: gatkc
           tier: 2
@@ -285,7 +291,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: elasticsearch-arm
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: esarm
           tier: 2
@@ -314,7 +320,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: noSecondaryStorage
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: nosec
           tier: 2
@@ -337,7 +343,7 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: documentstore
-          enabled: true
+          enabled: false
           exclude: []
           shortname: docstr
           tier: 2
@@ -364,7 +370,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: rdbms-self-signed
-          enabled: true
+          enabled: false
           shortname: rdbss
           tier: 2
           exclude: []
@@ -405,7 +411,7 @@ integration:
         # before `helm install` (replaces the legacy Taskfile `setup.pre`
         # rdbms branch).
         - name: rdbms
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: rdbms
           tier: 2
@@ -426,7 +432,7 @@ integration:
               `webmodeler` (Identity + WebModeler external databases needed
               when no bundled PostgreSQL is deployed).
         - name: hub-legacy
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: huble
           tier: 2
@@ -454,7 +460,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: shadow-e2e
-          enabled: true
+          enabled: false
           shortname: shde2
           tier: 2
           auth: keycloak
@@ -507,7 +513,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: keycloak-original
-          enabled: true
+          enabled: false
           flow: install
           shortname: keyco
           tier: 1
