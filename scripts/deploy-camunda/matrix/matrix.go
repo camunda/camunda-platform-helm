@@ -68,6 +68,10 @@ type GenerateOptions struct {
 	Versions []string
 	// IncludeDisabled includes disabled scenarios in the output.
 	IncludeDisabled bool
+	// CIConfigFile overrides the default ci-test-config.yaml filename. When set,
+	// the named file is loaded from each chart's test/ directory instead.
+	// Use this to run reference/incident scenarios without touching the main config.
+	CIConfigFile string
 }
 
 // FilterOptions controls post-generation filtering.
@@ -129,12 +133,12 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	for _, version := range versions {
 		chartDir := filepath.Join(repoRoot, "charts", fmt.Sprintf("camunda-platform-%s", version))
 
-		cfg, err := LoadCITestConfig(chartDir)
+		cfg, err := LoadCITestConfig(chartDir, opts.CIConfigFile)
 		if err != nil {
 			logging.Logger.Warn().
 				Str("version", version).
 				Err(err).
-				Msg("Skipping version — failed to load ci-test-config.yaml")
+				Msg("Skipping version — failed to load CI test config")
 			continue
 		}
 

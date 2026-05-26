@@ -46,6 +46,7 @@ func newMatrixListCommand() *cobra.Command {
 		platform        string
 		repoRoot        string
 		tier            int
+		ciConfigFile    string
 	)
 
 	cmd := &cobra.Command{
@@ -91,6 +92,7 @@ This command does not require cluster access.`,
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 				Versions:        versions,
 				IncludeDisabled: includeDisabled,
+				CIConfigFile:    ciConfigFile,
 			})
 			if err != nil {
 				return err
@@ -125,6 +127,7 @@ This command does not require cluster access.`,
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
 	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
+	f.StringVar(&ciConfigFile, "ci-config", "", "CI test config filename to load from each chart's test/ directory (default: ci-test-config.yaml)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
@@ -190,6 +193,7 @@ func newMatrixRunCommand() *cobra.Command {
 		tier                     int
 		chartRef                 string
 		chartRefVersion          string
+		ciConfigFile             string
 	)
 
 	cmd := &cobra.Command{
@@ -372,6 +376,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 				Versions:        versions,
 				IncludeDisabled: includeDisabled,
+				CIConfigFile:    ciConfigFile,
 			})
 			if err != nil {
 				return err
@@ -608,6 +613,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
 	f.StringVar(&chartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
 	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
+	f.StringVar(&ciConfigFile, "ci-config", "", "CI test config filename to load from each chart's test/ directory (default: ci-test-config.yaml)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

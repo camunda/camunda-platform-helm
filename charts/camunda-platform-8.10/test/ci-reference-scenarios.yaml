@@ -1,0 +1,100 @@
+# Reference scenarios for camunda-platform-8.10.
+#
+# These scenarios are NOT part of PR or merge-queue CI. They exist as
+# validated, runnable configurations for incident reproduction and
+# feature-specific testing (e.g. Gateway API configurations).
+#
+# Run a single scenario manually:
+#
+#   deploy-camunda matrix run \
+#     --ci-config ci-reference-scenarios.yaml \
+#     --shortname-filter <shortname> \
+#     --repo-root <path/to/repo> \
+#     --kube-context <context>
+#
+# Asset files (values, scripts, fixtures) live alongside the regular CI
+# scenarios in test/integration/scenarios/ — the config file is the only
+# boundary between reference and active CI scenarios.
+
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        # Gateway API: baseline scenario with Keycloak auth.
+        # Exercises the standard Gateway setup with a post-deploy ProxySettingsPolicy
+        # to carry Keycloak auth headers through the NGINX gateway.
+        - name: gateway-keycloak
+          enabled: true
+          exclude: []
+          shortname: gatkc
+          auth: keycloak
+          flow: install
+          infra-type:
+            gke: distroci
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features: [gateway]
+          platforms: [gke]
+          post-deploy:
+            fixtures:
+              - gateway-proxy-settings.yaml
+            description: |
+              Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
+              sizes so the Camunda Gateway can carry Keycloak auth headers
+              without 502s. Runs after helm install because the Gateway API
+              CRD is only registered by the chart itself.
+
+        # Gateway API: cross-namespace parentRef.
+        # Exercises global.gateway.namespace by attaching Routes to a shared
+        # Gateway in a separate namespace pre-created by the pre-install script.
+        - name: gateway-cross-namespace
+          enabled: true
+          exclude: []
+          shortname: gatxn
+          auth: keycloak
+          flow: install
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features: [gateway-cross-namespace]
+          platforms: [gke]
+          skip-e2e: true  # cross-namespace HTTP gateway; smoke tests require HTTPS ingress
+          pre-install:
+            script: pre-install-gateway-cross-namespace.sh
+            description: |
+              Creates the 'camunda-gateway-shared' namespace and a shared Gateway
+              resource ('shared-camunda-gateway') inside it with an HTTP listener
+              and allowedRoutes.namespaces.from=All. Routes in the test namespace
+              will attach to this cross-namespace Gateway, proving that
+              global.gateway.namespace is propagated into parentRefs correctly.
+
+        # Gateway API: externally-managed Gateway (createGatewayResource=false).
+        # Exercises attaching Routes to a pre-existing Gateway fixture rather than
+        # having the chart create the Gateway itself.
+        - name: gateway-existing
+          enabled: true
+          exclude: []
+          shortname: gatex
+          auth: keycloak
+          flow: install
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features: [gateway-existing]
+          platforms: [gke]
+          skip-e2e: true  # pre-existing gateway scenario; E2E not required here
+          pre-install:
+            fixtures:
+              - gateway-prereq.yaml
+            description: |
+              Creates a Gateway named 'pre-existing-gateway' in the test namespace
+              before helm install. The chart deploys with createGatewayResource=false
+              and attaches Routes to this pre-existing Gateway, proving that the
+              chart works correctly when the Gateway is managed externally.

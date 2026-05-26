@@ -129,6 +129,17 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		t.Fatalf("LoadCITestConfig: %v", err)
 	}
 
+	// Also load the reference scenarios config if present — its hooks reference
+	// files in the same pre-setup-scripts/ and common/resources/ directories, so
+	// they must not be reported as orphans.
+	var refCfg *CITestConfig
+	if _, statErr := os.Stat(filepath.Join(testDir, "ci-reference-scenarios.yaml")); statErr == nil {
+		refCfg, err = LoadCITestConfig(chartDir, "ci-reference-scenarios.yaml")
+		if err != nil {
+			t.Fatalf("LoadCITestConfig (ci-reference-scenarios.yaml): %v", err)
+		}
+	}
+
 	scriptsDir := filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts")
 	resourcesDir := filepath.Join(chartDir, "test", "integration", "scenarios", "common", "resources")
 
@@ -194,6 +205,14 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 			continue
 		}
 		collect("flow "+flowName+" (pre-upgrade)", hooks.PreUpgrade)
+	}
+
+	// Collect hooks from reference scenarios so their assets are not flagged as orphans.
+	if refCfg != nil {
+		for _, scn := range refCfg.Integration.Case.PR.Scenarios {
+			collect("reference scenario "+scn.Name+" (pre-install)", scn.PreInstall)
+			collect("reference scenario "+scn.Name+" (post-deploy)", scn.PostDeploy)
+		}
 	}
 
 	// Orphan check: every script in pre-setup-scripts/ (minus allowlist)
