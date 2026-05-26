@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 )
 
@@ -213,6 +214,19 @@ func keycloakVersionSuffix(host string) string {
 	return strings.ReplaceAll(version, "-", "_")
 }
 
+// ComputeExpectedOrchestrationPrefix returns the orchestration index prefix that
+// will be used when deploy.Execute() runs for the given scenario and flags. This
+// allows callers to validate the prefix against external state (e.g., a live Helm
+// release) before executing the deployment.
+func ComputeExpectedOrchestrationPrefix(scenario string, flags *config.RuntimeFlags) string {
+	if flags.Index.OrchestrationIndexPrefix != "" {
+		return flags.Index.OrchestrationIndexPrefix
+	}
+	normalizedScenario := normalizeIdentifierPart(scenario)
+	suffix := namespaceDerivedSuffix(flags.EffectiveNamespace())
+	return fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
+}
+
 // PinScenarioPrefixes derives a deterministic suffix from the namespace and writes
 // index prefixes + Keycloak realm name into flags so that subsequent calls to
 // Execute() (which internally call generateScenarioContext) will reuse the same
@@ -252,6 +266,16 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 			suffix,
 		)
 	}
+
+	logging.Logger.Info().
+		Str("scenario", scenario).
+		Str("namespace", effectiveNs).
+		Str("orchestrationPrefix", flags.Index.OrchestrationIndexPrefix).
+		Str("operatePrefix", flags.Index.OperateIndexPrefix).
+		Str("optimizePrefix", flags.Index.OptimizeIndexPrefix).
+		Str("tasklistPrefix", flags.Index.TasklistIndexPrefix).
+		Str("keycloakRealm", flags.Auth.KeycloakRealm).
+		Msg("Pinned scenario prefixes")
 
 	return nil
 }

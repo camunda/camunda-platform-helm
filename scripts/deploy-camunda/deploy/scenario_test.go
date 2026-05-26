@@ -350,3 +350,66 @@ func TestGenerateCompactRealmName(t *testing.T) {
 		}
 	})
 }
+
+func TestComputeExpectedOrchestrationPrefix_UsesExistingFlag(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-89-eske-upgm",
+		},
+		Index: config.IndexPrefixFlags{
+			OrchestrationIndexPrefix: "already-pinned-prefix",
+		},
+	}
+
+	got := ComputeExpectedOrchestrationPrefix("some-scenario", flags)
+	if got != "already-pinned-prefix" {
+		t.Errorf("expected pinned prefix %q, got %q", "already-pinned-prefix", got)
+	}
+}
+
+func TestComputeExpectedOrchestrationPrefix_ComputesFromScenario(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-89-eske-upgm",
+		},
+	}
+
+	got := ComputeExpectedOrchestrationPrefix("elasticsearch", flags)
+	if got == "" {
+		t.Fatal("expected non-empty prefix, got empty")
+	}
+	if !startsWith(got, "orch-") {
+		t.Errorf("expected prefix to start with 'orch-', got %q", got)
+	}
+}
+
+func TestComputeExpectedOrchestrationPrefix_MatchesPinned(t *testing.T) {
+	// ComputeExpected should produce the same value as PinScenarioPrefixes.
+	namespace := "matrix-89-qaosupg-inst-gke"
+	scenario := "qa-opensearch-upg"
+
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+		},
+	}
+	if err := PinScenarioPrefixes(scenario, flags); err != nil {
+		t.Fatalf("PinScenarioPrefixes: %v", err)
+	}
+
+	freshFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+		},
+	}
+	computed := ComputeExpectedOrchestrationPrefix(scenario, freshFlags)
+
+	if computed != flags.Index.OrchestrationIndexPrefix {
+		t.Errorf("ComputeExpected=%q does not match Pinned=%q",
+			computed, flags.Index.OrchestrationIndexPrefix)
+	}
+}
+
+func startsWith(s, prefix string) bool {
+	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
+}
