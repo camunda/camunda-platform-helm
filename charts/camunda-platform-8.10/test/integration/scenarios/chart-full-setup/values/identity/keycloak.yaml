@@ -1,5 +1,9 @@
 # Keycloak auth configuration for 8.10
-# Layer 2: Auth method - Internal Keycloak
+# Layer 2: Auth method — Companion Keycloak (deployed as a separate Helm release)
+#
+# The companion internal-keycloak-26 chart creates a Service named "keycloak"
+# in the same namespace. This layer tells the Camunda chart where to find it.
+# Also configures Identity + WebModeler external databases (backed by CNPG fixture).
 
 global:
   host: "$CAMUNDA_HOSTNAME"
@@ -14,6 +18,11 @@ global:
       external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
     keycloak:
+      url:
+        protocol: http
+        host: keycloak
+        port: "80"
+      internal: true
       auth:
         adminUser: admin
         secret:
@@ -73,11 +82,30 @@ identity:
         - sh
         - -c
         - |
-          echo "Waiting for Keycloak at {{ .Release.Name }}-keycloak:80/auth/ ..."
-          until wget -q --spider --timeout=2 "http://{{ .Release.Name }}-keycloak:80/auth/"; do
+          echo "Waiting for Keycloak at keycloak:80/auth/ ..."
+          until wget -q --spider --timeout=2 "http://keycloak:80/auth/"; do
             sleep 2
           done
           echo "Keycloak is ready"
+  externalDatabase:
+    enabled: true
+    host: postgresql-cluster-rw
+    port: 5432
+    database: identity
+    username: $RDBMS_POSTGRESQL_USERNAME
+    secret:
+      inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
+
+webModeler:
+  restapi:
+    externalDatabase:
+      enabled: true
+      host: postgresql-cluster-rw
+      port: 5432
+      database: webmodeler
+      username: $RDBMS_POSTGRESQL_USERNAME
+      secret:
+        inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
 
 optimize:
   enabled: true

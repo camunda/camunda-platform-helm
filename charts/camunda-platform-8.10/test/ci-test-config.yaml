@@ -46,15 +46,14 @@ integration:
           patch (PSQL 15→14 rollback path) — Helm cannot reconcile in place.
   case:
     pr:
-      # NOTE (5985 follow-up): the shared external Keycloak instance previously
-      # used by these scenarios (identity: keycloak-external) is architecturally
-      # unfit for integration tests (realm creation/deletion bottlenecked, no
-      # tenant isolation). Every keycloak-external scenario below is gated
-      # `enabled: false` until the bundled Keycloak companion chart (parallel
-      # workstream) replaces it.
+      # NOTE (5985): install-flow scenarios now use identity: keycloak with the
+      # bundled internal-keycloak-26 companion chart (charts/internal-keycloak-26/).
+      # This replaces the shared external Keycloak instance which was
+      # architecturally unfit (realm bottleneck, no tenant isolation).
+      # Upgrade-flow scenarios remain disabled pending PVC-backed PostgreSQL.
       scenario:
         - name: elasticsearch
-          enabled: false
+          enabled: true
           flow: install
           auth: keycloak
           shortname: eske
@@ -63,8 +62,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
-          persistence: elasticsearch
+          identity: keycloak
+          persistence: elasticsearch-external
           platforms: [gke]
           pre-install:
             fixtures:
@@ -75,6 +74,9 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
@@ -82,12 +84,12 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: opensearch
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: oske
           tier: 2
           exclude: []
-          identity: keycloak-external
+          identity: keycloak
           persistence: opensearch-embedded
           flow: install
           infra-type:
@@ -102,6 +104,9 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: opensearch/opensearch
               version: "3.6.0"
               release-name: opensearch
@@ -226,7 +231,7 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-original
-          enabled: false
+          enabled: true
           exclude: []
           shortname: keorg
           tier: 2
@@ -235,8 +240,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
-          persistence: elasticsearch
+          identity: keycloak
+          persistence: elasticsearch-external
           platforms: [gke]
           pre-install:
             fixtures:
@@ -247,6 +252,9 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
@@ -254,7 +262,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: gateway-keycloak
-          enabled: false
+          enabled: true
           exclude: []
           shortname: gatkc
           tier: 2
@@ -263,8 +271,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
-          persistence: elasticsearch
+          identity: keycloak
+          persistence: elasticsearch-external
           features: [gateway]
           platforms: [gke]
           pre-install:
@@ -284,6 +292,9 @@ integration:
               without 502s. Runs after helm install because the Gateway API
               CRD is only registered by the chart itself.
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
@@ -320,7 +331,7 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: noSecondaryStorage
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: nosec
           tier: 2
@@ -328,7 +339,7 @@ integration:
           flow: install
           skip-e2e: true  # No Elasticsearch means no secondary storage for E2E tests
           skip-it: true   # Integration tests require Elasticsearch
-          identity: keycloak-external
+          identity: keycloak
           persistence: no-elasticsearch
           features: [no-secondary-storage]
           platforms: [gke]
@@ -342,14 +353,18 @@ integration:
               namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
         - name: documentstore
-          enabled: false
+          enabled: true
           exclude: []
           shortname: docstr
           tier: 2
           auth: keycloak
-          identity: keycloak-external
-          persistence: elasticsearch
+          identity: keycloak
+          persistence: elasticsearch-external
           features: [documentstore]
           platforms: [eks]
           infra-type:
@@ -363,6 +378,9 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
@@ -370,12 +388,12 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: rdbms-self-signed
-          enabled: false
+          enabled: true
           shortname: rdbss
           tier: 2
           exclude: []
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: rdbms-self-signed
           flow: install
           infra-type:
@@ -390,6 +408,10 @@ integration:
               self-signed CA + server cert by default; the CA is exposed via
               the `postgresql-cluster-ca` secret and consumed by Camunda for
               `sslmode=verify-full` validation.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
         - name: rdbms-external
           enabled: false
           auth: keycloak
@@ -411,7 +433,7 @@ integration:
         # before `helm install` (replaces the legacy Taskfile `setup.pre`
         # rdbms branch).
         - name: rdbms
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: rdbms
           tier: 2
@@ -419,7 +441,7 @@ integration:
           exclude: []
           infra-type:
             gke: distroci
-          identity: keycloak-external
+          identity: keycloak
           persistence: rdbms
           platforms: [gke]
           pre-install:
@@ -431,15 +453,19 @@ integration:
               `app` (RDBMS secondary storage backend) plus `identity` and
               `webmodeler` (Identity + WebModeler external databases needed
               when no bundled PostgreSQL is deployed).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
         - name: hub-legacy
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: huble
           tier: 2
           exclude: []
           flow: install
-          identity: keycloak-external
-          persistence: elasticsearch
+          identity: keycloak
+          persistence: elasticsearch-external
           features: [hub-legacy]
           platforms: [gke]
           infra-type:
@@ -453,6 +479,9 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
@@ -460,13 +489,13 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: shadow-e2e
-          enabled: false
+          enabled: true
           shortname: shde2
           tier: 2
           auth: keycloak
           flow: install
-          identity: keycloak-external
-          persistence: elasticsearch
+          identity: keycloak
+          persistence: elasticsearch-external
           platforms: [gke]
           infra-type:
             gke: distroci
@@ -480,6 +509,9 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
@@ -513,13 +545,13 @@ integration:
             gke: distroci
             eks: preemptible
         - name: keycloak-original
-          enabled: false
+          enabled: true
           flow: install
           shortname: keyco
           tier: 1
           auth: keycloak
-          identity: keycloak-external
-          persistence: elasticsearch
+          identity: keycloak
+          persistence: elasticsearch-external
           platforms: [gke]
           infra-type:
             gke: distroci
@@ -532,6 +564,9 @@ integration:
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
