@@ -14,11 +14,16 @@ protocol: http
 # Single-node disco + disable HTTP TLS + disable X-Pack security so Camunda
 # can talk to the cluster anonymously over plain HTTP (mirrors the OpenSearch
 # companion chart's "security disabled" stance).
+#
+# NOTE: discovery.type: single-node is NOT set here because the
+# elastic/elasticsearch chart injects cluster.initial_master_nodes via an env
+# var in the StatefulSet template, and ES 8.x rejects having both. With
+# replicas=1 the chart bootstraps correctly without the explicit single-node
+# setting.
 esConfig:
   elasticsearch.yml: |
     cluster.name: elasticsearch
     network.host: 0.0.0.0
-    discovery.type: single-node
     xpack.security.enabled: false
     xpack.security.http.ssl.enabled: false
     xpack.security.transport.ssl.enabled: false
