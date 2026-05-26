@@ -77,9 +77,15 @@ extraEnvs:
 # every component prefix via .github/actions/workflow-vars/action.yaml, so
 # real indices look like "8d2802-operate-install-...". Substring matching
 # covers that, the default "<component>-*" naming, and the hardcoded
-# "custom-zeebe" prefix used by 8.10 in persistence/elasticsearch.yaml. None
-# of Elasticsearch's system indices (.security-7, .kibana_*, .tasks) contain
-# those substrings.
+# "custom-zeebe" prefix used by 8.10 in persistence/elasticsearch.yaml.
+#
+# deploy-camunda matrix uses SHORTENED prefixes ("op-", "opt-", "orch-")
+# for index naming. Optimize indices become "opt-elasticsearch-<hash>-dashboard_v8"
+# which does NOT contain the substring "optimize". Prefix globs "op-*", "opt-*",
+# "orch-*" cover this case.
+#
+# None of Elasticsearch's system indices (.security-7, .kibana_*, .tasks)
+# match any of these patterns.
 lifecycle:
   postStart:
     exec:
@@ -99,7 +105,7 @@ lifecycle:
           done
           curl -fsS --connect-timeout 5 -X PUT "http://localhost:9200/_index_template/camunda-ci-auto-expand-replicas" \
             -H 'Content-Type: application/json' \
-            -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
+            -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*","op-*","opt-*","orch-*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
 
 resources:
   requests:

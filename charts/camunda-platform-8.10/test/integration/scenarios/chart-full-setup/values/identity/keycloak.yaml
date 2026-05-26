@@ -20,7 +20,9 @@ global:
     keycloak:
       url:
         protocol: http
-        host: keycloak
+        # FQDN required: the ExternalName service target must be resolvable from
+        # the ingress-nginx namespace (which runs in a different namespace).
+        host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         port: "80"
       internal: true
       auth:
