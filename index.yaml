@@ -1518,6 +1518,96 @@ entries:
     version: 14.0.0-alpha1
   - annotations:
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "Hard-coded resources and limits in migration jobs"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/component-image-versions: |
+        camunda: 8.8.24
+        managementIdentity: 8.8.12
+        optimize: 8.8.24
+        webModeler: 8.8.14
+        connectors: 8.8.13
+        console: 8.8.135
+      camunda.io/helmCLIVersion: 4.1.4
+      camunda.io/imageOverrides: |+
+        connectors: 8.8.13
+        console: 8.8.135
+        optimize: 8.8.24
+        orchestration: 8.8.24
+        modeler: 8.8.14
+        identity: 8.8.12
+
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2026-05-26T14:06:13.079353033Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 0f423200a8a7c64581ca7d3fba005ea1711045c22583684675761f76abd2bc78
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.9.1/camunda-platform-13.9.1.tgz
+    version: 13.9.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Explicit lifecycle fixtures in ci-test-config.yaml"
         - kind: fixed
@@ -28152,4 +28242,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-05-20T17:04:50.194756216Z"
+generated: "2026-05-26T14:06:13.080208261Z"
