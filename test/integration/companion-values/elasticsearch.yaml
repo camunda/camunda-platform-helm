@@ -11,6 +11,12 @@ minimumMasterNodes: 1
 
 protocol: http
 
+# Use ES 8.18.0 — the elastic/elasticsearch Helm chart 8.5.1 defaults to its
+# own app version (8.5.1) but Camunda 8.10 requires ES 8.6+ (specifically for
+# the unassignedPrimaryShards field in HealthResponse). The Bitnami subchart
+# this replaces bundled ES 8.18.0.
+imageTag: "8.18.0"
+
 # Disable automatic TLS certificate generation. When createCert=true (default),
 # the chart injects env vars that force xpack.security.enabled=true and
 # xpack.security.{http,transport}.ssl.enabled=true, overriding any esConfig
