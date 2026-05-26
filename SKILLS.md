@@ -729,13 +729,8 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 | Version | Shortnames |
 |---|---|
 | 8.7  | `kemt`, `kerba`, `esoi`, `keyc`, `osem`, `entv` |
-<<<<<<< HEAD
 | 8.8  | `esoi`, `esarm`, `osem`, `docstr`, `entv` |
-| 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms` |
-=======
-| 8.8  | `esoi`, `esarm`, `osem`, `docstr` |
 | 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `entv` |
->>>>>>> 0c50f88d2 (test(ci): add entv tier-2 integration scenario for enterprise values on 8.9)
 | 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble`, `entv` |
 
 `osex` (external AWS OpenSearch, #6119) and `oske` (Bitnami OpenSearch subchart, #6121) are defined but currently disabled.
