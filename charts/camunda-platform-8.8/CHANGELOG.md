@@ -1,5 +1,20 @@
 # Changelog
 
+## [13.9.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.9.0...camunda-platform-8.8-13.9.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **ci:** remove $FLOW suffix from opensearch-embedded index prefixes in 8.8/8.9/8.10 ([#6179](https://github.com/camunda/camunda-platform-helm/issues/6179)) ([ef9c97c](https://github.com/camunda/camunda-platform-helm/commit/ef9c97c05d51a458f24d00eccd402b8c2adfba7a))
+* hard-coded resources and limits in migration jobs ([#6031](https://github.com/camunda/camunda-platform-helm/issues/6031)) ([f9bd57f](https://github.com/camunda/camunda-platform-helm/commit/f9bd57fae391576c066afa57b78ea8ea8bd06d9d))
+* **test:** drop --force from helm upgrade and remove obsolete sts pre-deletes for issue 4767 ([#6021](https://github.com/camunda/camunda-platform-helm/issues/6021)) ([5853230](https://github.com/camunda/camunda-platform-helm/commit/58532308f8b1b51fba0fe7139c1dd88a24be56cc))
+
+
+### Dependencies
+
+* update hashicorp/vault-action action to v4 ([#6176](https://github.com/camunda/camunda-platform-helm/issues/6176)) ([5c4f611](https://github.com/camunda/camunda-platform-helm/commit/5c4f611acff4d3bcdea89ae8e6e5706078fb06fb))
+* update module github.com/jackc/pgx/v5 to v5.9.2 [security] ([#5843](https://github.com/camunda/camunda-platform-helm/issues/5843)) ([b37bb34](https://github.com/camunda/camunda-platform-helm/commit/b37bb34c7b90ed6187598c92f6a0069801a810dc))
+
 ## [13.9.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.8.0...camunda-platform-8.8-13.9.0) (2026-05-20)
 
 
