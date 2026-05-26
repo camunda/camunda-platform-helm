@@ -730,7 +730,7 @@ awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
 |---|---|
 | 8.7  | `kemt`, `kerba`, `esoi`, `keyc`, `osem`, `entv` |
 | 8.8  | `esoi`, `esarm`, `osem`, `docstr`, `entv` |
-| 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms` |
+| 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `entv` |
 | 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble`, `entv` |
 
 `osex` (external AWS OpenSearch, #6119) and `oske` (Bitnami OpenSearch subchart, #6121) are defined but currently disabled.
