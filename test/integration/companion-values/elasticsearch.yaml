@@ -11,6 +11,20 @@ minimumMasterNodes: 1
 
 protocol: http
 
+# Disable automatic TLS certificate generation. When createCert=true (default),
+# the chart injects env vars that force xpack.security.enabled=true and
+# xpack.security.{http,transport}.ssl.enabled=true, overriding any esConfig
+# settings. Setting createCert=false prevents cert creation, volume mounts, AND
+# the env var injection — letting our esConfig settings take effect.
+createCert: false
+
+# Keep the credentials secret enabled even though security is disabled.
+# The chart's readiness probe script checks [ -z "${ELASTIC_PASSWORD}" ] and
+# exits 1 if unset. The password is injected from this secret but ignored by
+# ES when xpack.security.enabled=false.
+secret:
+  enabled: true
+
 # Single-node disco + disable HTTP TLS + disable X-Pack security so Camunda
 # can talk to the cluster anonymously over plain HTTP (mirrors the OpenSearch
 # companion chart's "security disabled" stance).
@@ -46,9 +60,11 @@ extraEnvs:
 # number_of_replicas. On a 1-node cluster auto_expand_replicas: 0-1 settles
 # at 0; on a 2-node cluster it scales to 1.
 #
-# Deploy-camunda installs companion charts with helm install --wait, which
-# blocks until post-install hooks complete, so the template is registered
-# before the main Camunda chart starts creating indices.
+# We use a postStart lifecycle hook (not extraObjects, which elastic/elasticsearch
+# 8.5.1 doesn't support). Kubernetes delays the container's Running status until
+# postStart completes, so Helm's --wait blocks until the template is registered —
+# guaranteeing the main Camunda chart is not installed until ES is ready and the
+# template exists.
 #
 # Index patterns are intentionally substring globs (e.g. "*operate*") rather
 # than prefix globs ("operate-*"). CI prepends $GITHUB_WORKFLOW_JOB_ID to
@@ -58,45 +74,26 @@ extraEnvs:
 # "custom-zeebe" prefix used by 8.10 in persistence/elasticsearch.yaml. None
 # of Elasticsearch's system indices (.security-7, .kibana_*, .tasks) contain
 # those substrings.
-extraObjects:
-  - apiVersion: batch/v1
-    kind: Job
-    metadata:
-      name: elasticsearch-auto-expand-replicas
-      annotations:
-        helm.sh/hook: post-install,post-upgrade
-        helm.sh/hook-weight: "5"
-        helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    spec:
-      backoffLimit: 6
-      activeDeadlineSeconds: 120
-      template:
-        spec:
-          restartPolicy: OnFailure
-          containers:
-            - name: register-template
-              image: curlimages/curl:8.10.1
-              command:
-                - sh
-                - -c
-                - |
-                  set -eu
-                  max=30
-                  n=0
-                  until curl -fsS --connect-timeout 5 "http://elasticsearch-master:9200/_cluster/health" >/dev/null 2>&1; do
-                    n=$((n + 1))
-                    if [ "$n" -ge "$max" ]; then
-                      echo "elasticsearch-master not reachable after $max attempts" >&2
-                      exit 1
-                    fi
-                    echo "waiting for elasticsearch... ($n/$max)"
-                    sleep 2
-                  done
-                  curl -fsS --connect-timeout 5 -X PUT "http://elasticsearch-master:9200/_index_template/camunda-ci-auto-expand-replicas" \
-                    -H 'Content-Type: application/json' \
-                    -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
-                  echo
-                  echo "template registered"
+lifecycle:
+  postStart:
+    exec:
+      command:
+        - bash
+        - -c
+        - |
+          max=60
+          n=0
+          until curl -fsS --connect-timeout 5 "http://localhost:9200/_cluster/health" >/dev/null 2>&1; do
+            n=$((n + 1))
+            if [ "$n" -ge "$max" ]; then
+              echo "elasticsearch not reachable after $max attempts" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          curl -fsS --connect-timeout 5 -X PUT "http://localhost:9200/_index_template/camunda-ci-auto-expand-replicas" \
+            -H 'Content-Type: application/json' \
+            -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*"],"priority":500,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
 
 resources:
   requests:
