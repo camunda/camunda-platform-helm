@@ -193,6 +193,21 @@ integration:
           identity: auth0
           persistence: elasticsearch
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: keycloak-mt
           enabled: false
           exclude: []
