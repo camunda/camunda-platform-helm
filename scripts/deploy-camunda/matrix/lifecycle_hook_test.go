@@ -32,19 +32,15 @@ import (
 //	pre-install-upgrade.sh         — sed-target marker for values-file
 //	                                 uncommenting (alpha8 backwards-compat),
 //	                                 not invoked by the matrix runner.
-//	create-elasticsearch-tls-secrets.sh — helper sourced by
-//	                                 pre-install-elasticsearch-self-signed*.sh,
-//	                                 never invoked by the runner directly.
-//	create-rdbms-tls-secrets.sh     — helper sourced by
-//	                                 pre-install-rdbms-self-signed.sh,
-//	                                 never invoked by the runner directly.
 //	create-opensearch-tls-secrets.sh — helper sourced by
 //	                                 pre-install-opensearch-self-signed*.sh,
 //	                                 never invoked by the runner directly.
+//	create-elasticsearch-tls-secrets.sh — helper sourced by
+//	                                 pre-install-elasticsearch-self-signed*.sh
+//	                                 (8.7-8.9 only; removed from 8.10.)
 var preSetupScriptAllowlist = map[string]bool{
 	"pre-install-upgrade.sh":              true,
 	"create-elasticsearch-tls-secrets.sh": true,
-	"create-rdbms-tls-secrets.sh":         true,
 	"create-opensearch-tls-secrets.sh":    true,
 }
 
@@ -54,10 +50,14 @@ var preSetupScriptAllowlist = map[string]bool{
 // activation; deleting them would force a separate PR to re-add them when the
 // scenario is enabled.
 //
-//	postgres-createdb-job.yaml — fixture for the disabled rdbms-external
-//	                             scenario in 8.9/8.10. Pending its own enable PR.
+//	postgres-createdb-job.yaml    — fixture for the disabled rdbms-external
+//	                                scenario in 8.9/8.10. Pending its own enable PR.
+//	postgresql-cluster-tls.yaml   — applied by pre-install-rdbms-self-signed.sh
+//	                                (8.10) via envsubst+kubectl, not via the
+//	                                runner's declarative fixtures pipeline.
 var commonResourcesAllowlist = map[string]bool{
-	"postgres-createdb-job.yaml": true,
+	"postgres-createdb-job.yaml":  true,
+	"postgresql-cluster-tls.yaml": true,
 }
 
 // TestLifecycleFixtures asserts the integrity of the declarative lifecycle
