@@ -70,9 +70,9 @@ identity:
     id: $KEYCLOAK_REALM
   externalDatabase:
     enabled: true
-    host: postgresql-cluster-rw.distribution-postgresql.svc.cluster.local
+    host: postgresql-cluster-rw
     port: 5432
-    database: $GITHUB_WORKFLOW_JOB_ID-identity
+    database: identity
     username: $RDBMS_POSTGRESQL_USERNAME
     secret:
       inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
@@ -81,9 +81,9 @@ webModeler:
   restapi:
     externalDatabase:
       enabled: true
-      host: postgresql-cluster-rw.distribution-postgresql.svc.cluster.local
+      host: postgresql-cluster-rw
       port: 5432
-      database: $GITHUB_WORKFLOW_JOB_ID-webmodeler
+      database: webmodeler
       username: $RDBMS_POSTGRESQL_USERNAME
       secret:
         inlineSecret: $RDBMS_POSTGRESQL_PASSWORD

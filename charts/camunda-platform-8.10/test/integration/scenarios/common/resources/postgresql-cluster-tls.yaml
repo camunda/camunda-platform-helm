@@ -17,7 +17,7 @@ spec:
   instances: 1
   bootstrap:
     initdb:
-      database: app
+      database: orchestration
       owner: app
       postInitSQL:
         - CREATE DATABASE identity OWNER app

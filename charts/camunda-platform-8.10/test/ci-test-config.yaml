@@ -62,11 +62,11 @@ integration:
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: opensearch
           enabled: true
@@ -82,11 +82,11 @@ integration:
           platforms: [gke]
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
             - chart: opensearch/opensearch
@@ -239,11 +239,11 @@ integration:
           platforms: [gke]
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: elasticsearch-self-signed
           enabled: false
@@ -280,11 +280,11 @@ integration:
           platforms: [gke]
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
           post-deploy:
             fixtures:
@@ -310,11 +310,11 @@ integration:
           platforms: [gke]
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: noSecondaryStorage
           enabled: true
@@ -333,11 +333,11 @@ integration:
             gke: distroci
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: documentstore
           enabled: true
@@ -353,11 +353,11 @@ integration:
             eks: preemptible
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: rdbms-self-signed
           enabled: true
@@ -374,19 +374,12 @@ integration:
           pre-install:
             script: pre-install-rdbms-self-signed.sh
             description: |
-              Generates a self-signed CA plus server certificate via openssl
-              and creates the rdbms-tls-server and rdbms-tls-ca Secrets
-              consumed by the Bitnami PostgreSQL companion chart's TLS config.
-              Also creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster (Identity + WebModeler need
-              external databases when no bundled PostgreSQL is deployed).
-          dependencies:
-            - chart: bitnami/postgresql
-              version: "18.6.2"
-              release-name: postgres-tls
-              repo-name: bitnami
-              repo-url: https://charts.bitnami.com/bitnami
-              values-file: test/integration/companion-values/postgresql-tls.yaml
+              Provisions a CloudNativePG `Cluster` in the scenario namespace
+              with the `orchestration` database (RDBMS secondary storage),
+              plus `identity` and `webmodeler` databases. CNPG generates a
+              self-signed CA + server cert by default; the CA is exposed via
+              the `postgresql-cluster-ca` secret and consumed by Camunda for
+              `sslmode=verify-full` validation.
         - name: rdbms-external
           enabled: false
           auth: keycloak
@@ -422,13 +415,12 @@ integration:
           pre-install:
             fixtures:
               - postgresql-cluster.yaml
-              - postgres-createdb-identity-webmodeler-job.yaml
             description: |
               Provisions a CloudNativePG `Cluster` plus auth Secret in the
-              scenario namespace (RDBMS secondary storage backend) and creates
-              identity + webmodeler databases in the shared
-              distribution-postgresql cluster (Identity + WebModeler need
-              external databases when no bundled PostgreSQL is deployed).
+              scenario namespace. The cluster bootstraps with three databases:
+              `app` (RDBMS secondary storage backend) plus `identity` and
+              `webmodeler` (Identity + WebModeler external databases needed
+              when no bundled PostgreSQL is deployed).
         - name: hub-legacy
           enabled: true
           auth: keycloak
@@ -444,11 +436,11 @@ integration:
             gke: distroci
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: shadow-e2e
           enabled: true
@@ -464,11 +456,11 @@ integration:
           skip-e2e: true  # Standard smoke tests skipped; full suite runs via c8e2e distributed runner
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         - name: hub-legacy
           enabled: false
@@ -509,11 +501,11 @@ integration:
             gke: distroci
           pre-install:
             fixtures:
-              - postgres-createdb-identity-webmodeler-job.yaml
+              - postgresql-cluster.yaml
             description: |
-              Creates identity + webmodeler databases in the shared
-              distribution-postgresql cluster. Required because Identity
-              and WebModeler need their own external databases when no
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
