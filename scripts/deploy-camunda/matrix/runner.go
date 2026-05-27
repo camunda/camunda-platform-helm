@@ -2407,7 +2407,11 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		installed, err := deploy.ReadInstalledPrefixes(ctx, flags.EffectiveNamespace(), flags.Deployment.Release, flags.Test.KubeContext)
 		if err != nil {
 			logging.Logger.Warn().Err(err).Msg("Failed to read installed prefixes; skipping prefix validation")
-		} else if installed.OrchestrationIndexPrefix != "" && installed.OrchestrationIndexPrefix != expectedPrefix {
+		} else if installed.OrchestrationIndexPrefix == "" {
+			logging.Logger.Warn().
+				Str("expectedPrefix", expectedPrefix).
+				Msg("Prefix validation skipped: installed release has no orchestration prefix set (fresh install or ES-only scenario)")
+		} else if installed.OrchestrationIndexPrefix != expectedPrefix {
 			return fmt.Errorf(
 				"prefix mismatch: installed release has orchestration prefix %q but this upgrade would use %q — "+
 					"check that install and upgrade scenarios share the same prefix-key in ci-test-config.yaml",
