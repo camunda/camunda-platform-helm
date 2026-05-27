@@ -13,6 +13,11 @@ image:
   tag: "26.3.3"
   pullPolicy: IfNotPresent
 
+## @param command Path to the kc.sh binary inside the image.
+## Upstream quay.io image: /opt/keycloak/bin/kc.sh
+## Camunda (Bitnami-based) image: /opt/bitnami/keycloak/bin/kc.sh
+command: /opt/keycloak/bin/kc.sh
+
 ## @param imagePullSecrets Array of image pull secret names.
 imagePullSecrets: []
 

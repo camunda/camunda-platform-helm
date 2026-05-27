@@ -48,7 +48,7 @@ spec:
           image: {{ include "keycloak.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-            - /opt/keycloak/bin/kc.sh
+            - {{ .Values.command }}
           args:
             - start
             - --hostname-strict=false
