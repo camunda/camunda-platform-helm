@@ -1,22 +1,19 @@
 # Elasticsearch backend configuration for 8.10
-# Layer 3: Backend - Elasticsearch (embedded companion chart)
+# Layer 3: Backend - Elasticsearch (companion chart)
 #
 # Connects to the official elastic/elasticsearch chart deployed as a separate
 # Helm release by deploy-camunda before the main Camunda chart. The companion
 # chart values are in test/integration/companion-values/elasticsearch.yaml
 # (security disabled, single node).
 #
-# No custom index prefixes are set. Each scenario deploys its own isolated ES
-# instance so there are no cross-scenario index collisions. Using defaults
-# avoids the CamundaExporter alias-nulling bug (SchemaManager creates indices
-# with "aliases": {} which overrides index template alias definitions).
+# The companion chart creates a service named "elasticsearch-master" (the
+# elastic/elasticsearch chart's default fullnameOverride). We override the
+# global ES host so all components (Optimize, legacy exporter) connect there.
 
 global:
   elasticsearch:
-    enabled: false
-  exporter:
-    zeebe:
-      enabled: true
+    url:
+      host: "elasticsearch-master"
 
 orchestration:
   data:
@@ -53,14 +50,3 @@ orchestration:
       value: "venom-client-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
       value: "connectors-client-mapping-rule"
-
-optimize:
-  enabled: true
-  database:
-    elasticsearch:
-      enabled: true
-      external: true
-      url:
-        protocol: http
-        host: "elasticsearch-master"
-        port: 9200

@@ -1,9 +1,12 @@
 #!/bin/bash
 #
-# Post-deploy hook for gateway-keycloak scenario.
-# Combines:
-#   1. Gateway ProxySettingsPolicy application (was fixtures: gateway-proxy-settings.yaml)
-#   2. Zeebe-record alias creation for Optimize (see post-deploy-zeebe-aliases.sh)
+# Post-deploy hook for gateway-keycloak scenario:
+#   Applies the NGINX ProxySettingsPolicy for large auth headers.
+#   Required because the Gateway API CRD is only registered by the chart itself,
+#   so this resource can only be applied after helm install.
+#
+# Environment:
+#   TEST_NAMESPACE — target K8s namespace (set by lifecycle hook runner)
 #
 
 set -euo pipefail
@@ -11,11 +14,8 @@ set -euo pipefail
 : "${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESOURCES_DIR="${SCRIPT_DIR}/../common/resources"
 
-# --- Part 1: Apply gateway proxy settings ---
-echo "[post-deploy-gateway-keycloak] Applying gateway-proxy-settings.yaml"
-RESOURCES_DIR="$(dirname "${SCRIPT_DIR}")/common/resources"
-kubectl apply -f "${RESOURCES_DIR}/gateway-proxy-settings.yaml" -n "${TEST_NAMESPACE}" --server-side
-
-# --- Part 2: Create zeebe-record aliases (reuse shared script) ---
-source "${SCRIPT_DIR}/post-deploy-zeebe-aliases.sh"
+echo "[post-deploy-gateway-keycloak] Applying gateway-proxy-settings.yaml..."
+kubectl apply -n "${TEST_NAMESPACE}" -f "${RESOURCES_DIR}/gateway-proxy-settings.yaml" --server-side --force-conflicts
+echo "[post-deploy-gateway-keycloak] Done"

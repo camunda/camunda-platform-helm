@@ -73,12 +73,6 @@ integration:
               namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
-          post-deploy:
-            script: post-deploy-zeebe-aliases.sh
-            description: |
-              Creates zeebe-record-* aliases in Elasticsearch that Optimize
-              needs to discover and import Zeebe data. The Zeebe ES exporter
-              in 8.10 no longer creates these aliases automatically.
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -207,12 +201,6 @@ integration:
               namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
-          post-deploy:
-            script: post-deploy-zeebe-aliases.sh
-            description: |
-              Creates zeebe-record-* aliases in Elasticsearch that Optimize
-              needs to discover and import Zeebe data. The Zeebe ES exporter
-              in 8.10 no longer creates these aliases automatically.
           dependencies:
             - chart: elastic/elasticsearch
               version: "8.5.1"
@@ -278,12 +266,6 @@ integration:
               namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
-          post-deploy:
-            script: post-deploy-zeebe-aliases.sh
-            description: |
-              Creates zeebe-record-* aliases in Elasticsearch that Optimize
-              needs to discover and import Zeebe data. The Zeebe ES exporter
-              in 8.10 no longer creates these aliases automatically.
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -320,9 +302,8 @@ integration:
             script: post-deploy-gateway-keycloak.sh
             description: |
               Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
-              sizes so the Camunda Gateway can carry Keycloak auth headers
-              without 502s. Also creates zeebe-record-* aliases in
-              Elasticsearch that Optimize needs to import Zeebe data.
+              sizes. Runs after helm install because the Gateway API CRD is only
+              registered by the chart itself.
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -409,12 +390,6 @@ integration:
               namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
-          post-deploy:
-            script: post-deploy-zeebe-aliases.sh
-            description: |
-              Creates zeebe-record-* aliases in Elasticsearch that Optimize
-              needs to discover and import Zeebe data. The Zeebe ES exporter
-              in 8.10 no longer creates these aliases automatically.
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -516,12 +491,6 @@ integration:
               namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
-          post-deploy:
-            script: post-deploy-zeebe-aliases.sh
-            description: |
-              Creates zeebe-record-* aliases in Elasticsearch that Optimize
-              needs to discover and import Zeebe data. The Zeebe ES exporter
-              in 8.10 no longer creates these aliases automatically.
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -607,12 +576,6 @@ integration:
               namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
               and WebModeler need external databases now that no
               bundled PostgreSQL subchart is deployed (8.10+).
-          post-deploy:
-            script: post-deploy-zeebe-aliases.sh
-            description: |
-              Creates zeebe-record-* aliases in Elasticsearch that Optimize
-              needs to discover and import Zeebe data. The Zeebe ES exporter
-              in 8.10 no longer creates these aliases automatically.
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak

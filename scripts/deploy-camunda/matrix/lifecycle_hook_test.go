@@ -55,9 +55,6 @@ var preSetupScriptAllowlist = map[string]bool{
 //	postgresql-cluster-tls.yaml   — applied by pre-install-rdbms-self-signed.sh
 //	                                (8.10) via envsubst+kubectl, not via the
 //	                                runner's declarative fixtures pipeline.
-//	gateway-proxy-settings.yaml   — applied by post-deploy-gateway-keycloak.sh
-//	                                (8.10) via kubectl apply, not via the
-//	                                runner's declarative fixtures pipeline.
 var commonResourcesAllowlist = map[string]bool{
 	"postgres-createdb-job.yaml":    true,
 	"postgresql-cluster-tls.yaml":   true,
