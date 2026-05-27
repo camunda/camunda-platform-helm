@@ -9,18 +9,19 @@ The charts are built, linted, and tested on every push to the main branch. The r
 ## Architecture Overview
 
 ```
-┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
-│  1. DEV BUILD       │     │  2. RC PROMOTION    │     │  3. PUBLIC RELEASE  │
-│  (Every merge)      │ ──► │  (Manual trigger)   │ ──► │  (Manual trigger)   │
-├─────────────────────┤     ├─────────────────────┤     ├─────────────────────┤
-│ • Build dev package │     │ • Retag dev → RC    │     │ • Pull RC from      │
-│ • Push to Harbor    │     │ • Create release-   │     │   Harbor            │
-│ • Cosign signing    │     │   please PR         │     │ • Publish to GitHub │
-│ • Available for QA  │     │ • QA validation     │     │   Releases          │
-└─────────────────────┘     └─────────────────────┘     └─────────────────────┘
-        ↓                           ↓                           ↓
-   Harbor (internal)          Harbor (retag only)        GitHub Releases
-   {version}-dev-{sha}        {version}-rc               helm.camunda.io
+┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
+│  1. DEV BUILD       │     │  2. RC PROMOTION    │     │  3. QA GATE         │     │  4. PUBLIC RELEASE  │
+│  (Every merge)      │ ──► │  (Manual trigger)   │ ──► │  (External)         │ ──► │  (Manual trigger)   │
+├─────────────────────┤     ├─────────────────────┤     ├─────────────────────┤     ├─────────────────────┤
+│ • Build dev package │     │ • Retag dev → RC    │     │ • QA validates RC   │     │ • Pull RC from      │
+│ • Push to Harbor    │     │ • Create release-   │     │   from Harbor       │     │   Harbor            │
+│ • Cosign signing    │     │   please PR         │     │ • Sign-off required │     │ • Publish to GitHub │
+└─────────────────────┘     └─────────────────────┘     │   before Stage 4    │     │   Releases          │
+        ↓                           ↓                    └─────────────────────┘     │ • Cosign signing    │
+   Harbor (internal)          Harbor (retag only)                  ↓                 └─────────────────────┘
+   {version}-dev-{sha}        {version}-rc               QA approval required                  ↓
+                                                                                       GitHub Releases
+                                                                                       helm.camunda.io
 ```
 
 ## Registries
@@ -140,22 +141,35 @@ Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, char
 
 2. **Promote a new RC** — Manually trigger [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) with the dev tag produced in Step 1 (e.g. `{version}-dev-{sha}` or `{chart-major}-dev-latest`). This creates a new RC tag (e.g. `{chart-major}-rc-latest`).
 
-3. **Notify QA** — Ping `@qa-automated-release-manager` in `#c8-release-announcements` requesting a Helm Chart release test against the RC tag.
+3. **Notify QA** — Ping `@qa-automated-release-manager` in `#c8-release-announcements` using the QA notification template below, requesting validation of the RC.
    - QA inputs: Branch = `main`, Directory = `camunda-platform-{CAMUNDA_VERSION}`.
-   - Do not specify individual component versions when testing an OCI tag — use the RC tag directly.
+   - Do not specify individual component versions — use the RC tag directly.
 
-4. **Await QA sign-off** — Wait for QA to confirm all test runs passed.
+4. **Await QA sign-off** — **Do not trigger the public release until QA confirms all test runs passed.**
 
 5. **Trigger public release** — Manually trigger [`chart-release-public.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml) with the RC tag. This publishes the corrected chart to GitHub Releases and updates the Helm repo index.
 
 6. **Make sure the release-please PR is merged** — Auto-merge is attempted but best-effort; confirm the release-please PR was merged with the correct released version, and merge it manually if needed.
 
-7. **Notify support** — Post a message in `#ask-support` using the template below.
+7. **Notify support** — Post a message in `#ask-support` using the support template below.
 
 ### Notes
 
 - **Chart versioning:** the release version is determined by the workflows — [`chart-build-dev.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-build-dev.yaml) derives the version from a release-please dry-run (falling back to the current `Chart.yaml` version), and [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) forces `--release-as` to the version parsed from the selected dev tag.
 - This process is for Self-Managed only — no SaaS rollout is involved.
+
+### QA Notification Template
+
+Post in `#c8-release-announcements`:
+
+```
+@qa-automated-release-manager can you please trigger a Helm Chart release test against {CHART_MAJOR}-rc-latest?
+
+Branch: main
+Directory: camunda-platform-{CAMUNDA_VERSION}
+
+Do not specify individual component versions — use the RC tag directly.
+```
 
 ### #ask-support Notification Template
 
@@ -179,14 +193,14 @@ graph TD
     Step1[Step 1<br/>Automated<br/>---<br/>Dev packages built on every merge<br/>Renovatebot updates automerge]
     Step2[Step 2<br/>Manual<br/>---<br/>Release manager verifies image versions<br/>and triggers RC Promotion]
     Step3[Step 3<br/>Automated<br/>---<br/>Release-please creates PR<br/>Release chores generate notes + matrix]
-    Step4[Step 4<br/>External<br/>---<br/>QA tests RC package from Harbor]
+    Step4[Step 4<br/>External — QA GATE<br/>---<br/>QA tests RC package from Harbor<br/>Sign-off required before Stage 4]
     Step5[Step 5<br/>Manual<br/>---<br/>Release manager triggers Public Release]
     Step6[Step 6<br/>Manual<br/>---<br/>Release manager merges release-please PR<br/>Public files updated on helm.camunda.io]
 
     Step1 ==> Step2
     Step2 ==> Step3
     Step3 ==> Step4
-    Step4 == QA sign-off ==> Step5
+    Step4 == QA sign-off required ==> Step5
     Step5 ==> Step6
 ```
 
