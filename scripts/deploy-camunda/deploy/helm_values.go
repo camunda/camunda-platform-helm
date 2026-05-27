@@ -76,6 +76,12 @@ func ReadInstalledPrefixes(ctx context.Context, namespace, release, kubeContext 
 		return InstalledPrefixes{}, nil
 	}
 
+	return readPrefixesFromMap(vals), nil
+}
+
+// readPrefixesFromMap extracts index prefix values from a parsed Helm values map.
+// Factored out from ReadInstalledPrefixes for direct unit testing.
+func readPrefixesFromMap(vals map[string]interface{}) InstalledPrefixes {
 	var result InstalledPrefixes
 
 	// orchestration.index.prefix
@@ -92,7 +98,7 @@ func ReadInstalledPrefixes(ctx context.Context, namespace, release, kubeContext 
 		result.TasklistIndexPrefix = tp
 	}
 
-	return result, nil
+	return result
 }
 
 // getNestedString traverses a nested map by successive keys and returns the

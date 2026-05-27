@@ -144,10 +144,7 @@ func TestFindEnvValue(t *testing.T) {
 	}
 }
 
-func TestReadInstalledPrefixes_ParsesRealisticValues(t *testing.T) {
-	// This tests the extraction logic with a realistic Helm values structure.
-	// We can't call GetInstalledValues (it shells out to helm), but we can
-	// test the parsing directly using the same map structure.
+func TestReadPrefixesFromMap_FullValues(t *testing.T) {
 	vals := map[string]interface{}{
 		"orchestration": map[string]interface{}{
 			"index": map[string]interface{}{
@@ -173,14 +170,7 @@ func TestReadInstalledPrefixes_ParsesRealisticValues(t *testing.T) {
 		},
 	}
 
-	// Directly test the parsing logic (same code as ReadInstalledPrefixes minus the helm call).
-	var result InstalledPrefixes
-	result.OrchestrationIndexPrefix = getNestedString(vals, "orchestration", "index", "prefix")
-	result.OptimizeIndexPrefix = getNestedString(vals, "optimize", "database", "opensearch", "prefix")
-	result.OperateIndexPrefix = findEnvValue(vals, []string{"orchestration", "env"}, "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX")
-	if tp := findEnvValue(vals, []string{"orchestration", "env"}, "CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX"); tp != "" {
-		result.TasklistIndexPrefix = tp
-	}
+	result := readPrefixesFromMap(vals)
 
 	if result.OrchestrationIndexPrefix != "orch-qa-opensearch-upg-abc12345" {
 		t.Errorf("OrchestrationIndexPrefix = %q, want %q", result.OrchestrationIndexPrefix, "orch-qa-opensearch-upg-abc12345")
@@ -193,6 +183,49 @@ func TestReadInstalledPrefixes_ParsesRealisticValues(t *testing.T) {
 	}
 	if result.TasklistIndexPrefix != "task-qa-opensearch-upg-abc12345" {
 		t.Errorf("TasklistIndexPrefix = %q, want %q", result.TasklistIndexPrefix, "task-qa-opensearch-upg-abc12345")
+	}
+}
+
+func TestReadPrefixesFromMap_EmptyMap(t *testing.T) {
+	result := readPrefixesFromMap(map[string]interface{}{})
+
+	if result.OrchestrationIndexPrefix != "" {
+		t.Errorf("OrchestrationIndexPrefix should be empty, got %q", result.OrchestrationIndexPrefix)
+	}
+	if result.OptimizeIndexPrefix != "" {
+		t.Errorf("OptimizeIndexPrefix should be empty, got %q", result.OptimizeIndexPrefix)
+	}
+	if result.OperateIndexPrefix != "" {
+		t.Errorf("OperateIndexPrefix should be empty, got %q", result.OperateIndexPrefix)
+	}
+	if result.TasklistIndexPrefix != "" {
+		t.Errorf("TasklistIndexPrefix should be empty, got %q", result.TasklistIndexPrefix)
+	}
+}
+
+func TestReadPrefixesFromMap_PartialValues(t *testing.T) {
+	// ES scenario: only orchestration.index.prefix is set, no env vars for OS prefixes.
+	vals := map[string]interface{}{
+		"orchestration": map[string]interface{}{
+			"index": map[string]interface{}{
+				"prefix": "orch-eske-12345678",
+			},
+		},
+	}
+
+	result := readPrefixesFromMap(vals)
+
+	if result.OrchestrationIndexPrefix != "orch-eske-12345678" {
+		t.Errorf("OrchestrationIndexPrefix = %q, want %q", result.OrchestrationIndexPrefix, "orch-eske-12345678")
+	}
+	if result.OptimizeIndexPrefix != "" {
+		t.Errorf("OptimizeIndexPrefix should be empty for ES scenario, got %q", result.OptimizeIndexPrefix)
+	}
+	if result.OperateIndexPrefix != "" {
+		t.Errorf("OperateIndexPrefix should be empty for ES scenario, got %q", result.OperateIndexPrefix)
+	}
+	if result.TasklistIndexPrefix != "" {
+		t.Errorf("TasklistIndexPrefix should be empty for ES scenario, got %q", result.TasklistIndexPrefix)
 	}
 }
 
