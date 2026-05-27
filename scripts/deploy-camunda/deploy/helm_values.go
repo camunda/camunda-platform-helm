@@ -43,7 +43,10 @@ func GetInstalledValues(ctx context.Context, namespace, release, kubeContext str
 	if err := cmd.Run(); err != nil {
 		stderrStr := strings.TrimSpace(stderr.String())
 		// Release not found is not an error — return nil map.
-		if strings.Contains(stderrStr, "not found") || strings.Contains(stderrStr, "release: not found") {
+		// Match Helm's specific error messages to avoid false positives from
+		// unrelated errors that happen to contain "not found".
+		if strings.Contains(stderrStr, "release: not found") ||
+			strings.Contains(stderrStr, fmt.Sprintf("release %q not found", release)) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("helm get values %s -n %s failed: %w; stderr: %s",
