@@ -355,18 +355,6 @@ func applyEnvOverrides(rc *RootConfig) {
 	if v := get("CAMUNDA_KEYCLOAK_REALM"); v != "" {
 		rc.KeycloakRealm = v
 	}
-	if v := get("CAMUNDA_OPTIMIZE_INDEX_PREFIX"); v != "" {
-		rc.OptimizeIndexPrefix = v
-	}
-	if v := get("CAMUNDA_ORCHESTRATION_INDEX_PREFIX"); v != "" {
-		rc.OrchestrationIndexPrefix = v
-	}
-	if v := get("CAMUNDA_TASKLIST_INDEX_PREFIX"); v != "" {
-		rc.TasklistIndexPrefix = v
-	}
-	if v := get("CAMUNDA_OPERATE_INDEX_PREFIX"); v != "" {
-		rc.OperateIndexPrefix = v
-	}
 	if v := get("CAMUNDA_HOSTNAME"); v != "" {
 		rc.IngressHost = v
 	}

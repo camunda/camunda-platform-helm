@@ -1630,32 +1630,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
 	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
 
-	// Honor explicit index prefix overrides from CAMUNDA_*_INDEX_PREFIX env vars.
-	// The matrix command skips the root PersistentPreRunE (which normally applies
-	// config/env merges), so these env vars must be applied here instead.
-	// This allows CI upgrade workflows to pin identical prefixes across separate
-	// install and upgrade jobs that run within the same workflow run.
-	if flags.Index.OperateIndexPrefix == "" {
-		if v := os.Getenv("CAMUNDA_OPERATE_INDEX_PREFIX"); v != "" {
-			flags.Index.OperateIndexPrefix = v
-		}
-	}
-	if flags.Index.OrchestrationIndexPrefix == "" {
-		if v := os.Getenv("CAMUNDA_ORCHESTRATION_INDEX_PREFIX"); v != "" {
-			flags.Index.OrchestrationIndexPrefix = v
-		}
-	}
-	if flags.Index.OptimizeIndexPrefix == "" {
-		if v := os.Getenv("CAMUNDA_OPTIMIZE_INDEX_PREFIX"); v != "" {
-			flags.Index.OptimizeIndexPrefix = v
-		}
-	}
-	if flags.Index.TasklistIndexPrefix == "" {
-		if v := os.Getenv("CAMUNDA_TASKLIST_INDEX_PREFIX"); v != "" {
-			flags.Index.TasklistIndexPrefix = v
-		}
-	}
-
 	// Wire companion chart dependencies from ci-test-config.yaml.
 	// Values file paths are resolved relative to the repo root.
 	// Chart references are resolved to absolute paths when they point to an
@@ -2422,6 +2396,33 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		Str("namespace", flags.EffectiveNamespace()).
 		Str("chartPath", entry.ChartPath).
 		Msg("Upgrade-only flow: upgrading existing deployment (no install step)")
+
+	// --- Prefix consistency validation ---
+	// Read the orchestration index prefix from the live Helm release and compare
+	// against what this upgrade step will use. A mismatch means the install step
+	// used a different scenario/prefix-key and the upgrade will produce incorrect
+	// index names, causing data loss or auth failures after upgrade.
+	expectedPrefix := deploy.ComputeExpectedOrchestrationPrefix(entry.Scenario, flags)
+	if expectedPrefix != "" {
+		installed, err := deploy.ReadInstalledPrefixes(ctx, flags.EffectiveNamespace(), flags.Deployment.Release, flags.Test.KubeContext)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Msg("Failed to read installed prefixes; skipping prefix validation")
+		} else if installed.OrchestrationIndexPrefix == "" {
+			logging.Logger.Warn().
+				Str("expectedPrefix", expectedPrefix).
+				Msg("Prefix validation skipped: installed release has no orchestration prefix set (fresh install or ES-only scenario)")
+		} else if installed.OrchestrationIndexPrefix != expectedPrefix {
+			return fmt.Errorf(
+				"prefix mismatch: installed release has orchestration prefix %q but this upgrade would use %q — "+
+					"check that install and upgrade scenarios share the same prefix-key in ci-test-config.yaml",
+				installed.OrchestrationIndexPrefix, expectedPrefix)
+		} else {
+			logging.Logger.Info().
+				Str("installedPrefix", installed.OrchestrationIndexPrefix).
+				Str("expectedPrefix", expectedPrefix).
+				Msg("Prefix validation passed: installed and expected orchestration prefixes match")
+		}
+	}
 
 	// --- Pre-upgrade lifecycle hook ---
 	if err := runDeclarativePreUpgradeHook(ctx, flags, entry.PreUpgrade, opts.RepoRoot, entry.Version, entry.Flow); err != nil {

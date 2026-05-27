@@ -492,6 +492,7 @@ integration:
           enabled: false
           flow: install
           shortname: qaosupg
+          prefix-key: qa-opensearch-upg
           auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded
@@ -511,6 +512,7 @@ integration:
           enabled: false
           flow: modular-upgrade-minor
           shortname: qaosupg
+          prefix-key: qa-opensearch-upg
           auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded
