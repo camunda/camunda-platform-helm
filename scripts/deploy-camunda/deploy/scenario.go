@@ -224,6 +224,12 @@ func ComputeExpectedOrchestrationPrefix(scenario string, flags *config.RuntimeFl
 	}
 	normalizedScenario := normalizeIdentifierPart(scenario)
 	suffix := namespaceDerivedSuffix(flags.EffectiveNamespace())
+	return orchestrationPrefix(normalizedScenario, suffix)
+}
+
+// orchestrationPrefix returns the canonical orchestration index prefix for a
+// given normalized scenario name and namespace-derived suffix.
+func orchestrationPrefix(normalizedScenario, suffix string) string {
 	return fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
 }
 
@@ -249,7 +255,7 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 		flags.Index.OptimizeIndexPrefix = fmt.Sprintf("opt-%s-%s", normalizedScenario, suffix)
 	}
 	if flags.Index.OrchestrationIndexPrefix == "" {
-		flags.Index.OrchestrationIndexPrefix = fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
+		flags.Index.OrchestrationIndexPrefix = orchestrationPrefix(normalizedScenario, suffix)
 	}
 	if flags.Index.TasklistIndexPrefix == "" {
 		flags.Index.TasklistIndexPrefix = fmt.Sprintf("task-%s-%s", normalizedScenario, suffix)
