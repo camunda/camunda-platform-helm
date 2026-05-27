@@ -72,5 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "Hard-coded resources and limits in migration jobs"
+    - kind: added
+      description: "Add orchestration.hostNetwork value"
