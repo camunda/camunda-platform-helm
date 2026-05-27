@@ -252,11 +252,16 @@ spec:
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
+      {{- if .Values.orchestration.hostNetwork }}
+      hostNetwork: true
+      {{- end }}
       {{- if .Values.orchestration.dnsConfig }}
       dnsConfig: {{- toYaml .Values.orchestration.dnsConfig | nindent 8 }}
       {{- end }}
       {{- if .Values.orchestration.dnsPolicy }}
       dnsPolicy: {{ .Values.orchestration.dnsPolicy | quote }}
+      {{- else if .Values.orchestration.hostNetwork }}
+      dnsPolicy: "ClusterFirstWithHostNet"
       {{- end }}
       {{- if .Values.orchestration.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
