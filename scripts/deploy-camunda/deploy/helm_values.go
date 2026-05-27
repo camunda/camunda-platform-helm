@@ -137,6 +137,9 @@ func getNestedString(m map[string]interface{}, keys ...string) string {
 // at the given path in the nested map, returning the "value" for the entry
 // whose "name" matches envName. Returns "" if not found.
 func findEnvValue(m map[string]interface{}, path []string, envName string) string {
+	if len(path) == 0 {
+		return ""
+	}
 	// Navigate to the array
 	current := m
 	for _, key := range path[:len(path)-1] {
