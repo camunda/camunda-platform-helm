@@ -273,11 +273,16 @@ spec:
           {{ .Values.zeebe.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "zeebe.serviceAccountName.broker" . }}
+      {{- if .Values.zeebe.hostNetwork }}
+      hostNetwork: true
+      {{- end }}
       {{- if .Values.zeebe.dnsConfig }}
       dnsConfig: {{- toYaml .Values.zeebe.dnsConfig | nindent 8 }}
       {{- end }}
       {{- if .Values.zeebe.dnsPolicy }}
       dnsPolicy: {{ .Values.zeebe.dnsPolicy | quote }}
+      {{- else if .Values.zeebe.hostNetwork }}
+      dnsPolicy: "ClusterFirstWithHostNet"
       {{- end }}
       {{- if .Values.zeebe.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.zeebe.podSecurityContext "context" $) | nindent 8 }}

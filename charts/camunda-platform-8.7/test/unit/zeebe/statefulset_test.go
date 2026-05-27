@@ -1056,6 +1056,63 @@ func (s *statefulSetTest) TestSetDnsPolicyAndDnsConfig() {
 	require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
 
+func (s *statefulSetTest) TestHostNetworkEnabledDefaultsDnsPolicy() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.hostNetwork": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	require.True(s.T(), statefulSet.Spec.Template.Spec.HostNetwork, "hostNetwork should be true")
+	require.Equal(s.T(), corev1.DNSClusterFirstWithHostNet, statefulSet.Spec.Template.Spec.DNSPolicy,
+		"dnsPolicy should default to ClusterFirstWithHostNet when hostNetwork is enabled")
+}
+
+func (s *statefulSetTest) TestHostNetworkDisabledByDefault() {
+	// given
+	options := &helm.Options{
+		SetValues:      map[string]string{},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	require.False(s.T(), statefulSet.Spec.Template.Spec.HostNetwork, "hostNetwork should be false by default")
+}
+
+func (s *statefulSetTest) TestHostNetworkExplicitDnsPolicyWins() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.hostNetwork": "true",
+			"zeebe.dnsPolicy":   "ClusterFirst",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	require.True(s.T(), statefulSet.Spec.Template.Spec.HostNetwork, "hostNetwork should be true")
+	require.Equal(s.T(), corev1.DNSClusterFirst, statefulSet.Spec.Template.Spec.DNSPolicy,
+		"explicit dnsPolicy should override hostNetwork default")
+}
+
 func (s *statefulSetTest) TestContainerSetExtraVolumeClaimTemplates() {
 	// given
 	options := &helm.Options{
