@@ -761,6 +761,42 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
 		}, {
+			Name: "TestHostNetworkEnabledDefaultsDnsPolicy",
+			Values: map[string]string{
+				"orchestration.hostNetwork": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				require.True(s.T(), statefulSet.Spec.Template.Spec.HostNetwork, "hostNetwork should be true")
+				require.Equal(s.T(), corev1.DNSClusterFirstWithHostNet, statefulSet.Spec.Template.Spec.DNSPolicy,
+					"dnsPolicy should default to ClusterFirstWithHostNet when hostNetwork is enabled")
+			},
+		}, {
+			Name:   "TestHostNetworkDisabledByDefault",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				require.False(s.T(), statefulSet.Spec.Template.Spec.HostNetwork, "hostNetwork should be false by default")
+			},
+		}, {
+			Name: "TestHostNetworkExplicitDnsPolicyWins",
+			Values: map[string]string{
+				"orchestration.hostNetwork": "true",
+				"orchestration.dnsPolicy":   "ClusterFirst",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				require.True(s.T(), statefulSet.Spec.Template.Spec.HostNetwork, "hostNetwork should be true")
+				require.Equal(s.T(), corev1.DNSClusterFirst, statefulSet.Spec.Template.Spec.DNSPolicy,
+					"explicit dnsPolicy should override hostNetwork default")
+			},
+		}, {
 			// Test hybrid auth: orchestration uses basic auth, so no OIDC secret needed
 			Name: "TestHybridAuthOrchestrationBasicNoOidcSecret",
 			Values: map[string]string{
@@ -1105,9 +1141,9 @@ func (s *StatefulSetTest) TestJKSDoesNotFireForSecondaryStorageOnlyTLS() {
 		{
 			Name: "secondaryStorage TLS triggers truststore path injection but NOT password — documented limit",
 			Values: map[string]string{
-				"orchestration.enabled": "true",
-				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret":    "ssec-tls",
-				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
+				"orchestration.enabled":                                                                  "true",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret":            "ssec-tls",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey":         "externaldb.jks",
 				// Customer also sets global jks.secret expecting it to apply — it does NOT for secondaryStorage-only TLS.
 				"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
 			},
@@ -1151,10 +1187,10 @@ func (s *StatefulSetTest) TestJKSWithModernTlsSecretPattern() {
 		{
 			Name: "Elasticsearch via tls.secret.existingSecret + jks.secret.inlineSecret",
 			Values: map[string]string{
-				"orchestration.enabled":                             "true",
-				"global.elasticsearch.tls.secret.existingSecret":    "es-tls-modern",
+				"orchestration.enabled":                            "true",
+				"global.elasticsearch.tls.secret.existingSecret":   "es-tls-modern",
 				"global.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
-				"global.elasticsearch.tls.jks.secret.inlineSecret":  "changeit",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
