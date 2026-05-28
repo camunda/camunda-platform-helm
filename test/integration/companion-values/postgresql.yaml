@@ -4,8 +4,8 @@
 fullnameOverride: postgresql
 
 auth:
-  username: app
-  password: "postgresql-ci-password"
+  username: "$RDBMS_POSTGRESQL_USERNAME"
+  password: "$RDBMS_POSTGRESQL_PASSWORD"
   database: identity
 
 databases:
