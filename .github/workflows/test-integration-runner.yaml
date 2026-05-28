@@ -617,15 +617,17 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # When TEST_IMAGE_TAGS=true the caller wants values-latest.yaml (pinned RC
-          # release versions). Pass --use-latest and skip the env-file so that
-          # scenario-level image-tags overrides do not shadow values-latest.yaml.
-          # When TEST_IMAGE_TAGS=false (default) load the VALUES_CONFIG env-file so
-          # $E2E_TESTS_*_IMAGE_TAG placeholders in base-image-tags.yaml are resolved
-          # to the SNAPSHOT builds supplied by the caller.
+          # useVersionsNumbers (surfaced here as TEST_IMAGE_TAGS) controls which
+          # image version source is used for the HC deployment:
+          #   false (default): trust the RC — pass --use-latest so values-latest.yaml
+          #     provides the pinned release versions; skip the env-file so
+          #     scenario-level image-tags: true does not shadow it.
+          #   true: use the explicit version numbers from workflow inputs — load the
+          #     VALUES_CONFIG env-file so $E2E_TESTS_*_IMAGE_TAG placeholders in
+          #     base-image-tags.yaml are resolved to the caller-supplied tags.
           USE_LATEST_ARGS=()
           ENV_FILE_ARGS=()
-          if [[ "${TEST_IMAGE_TAGS}" == "true" ]]; then
+          if [[ "${TEST_IMAGE_TAGS}" != "true" ]]; then
             USE_LATEST_ARGS=(--use-latest)
           elif [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
             echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
@@ -926,12 +928,11 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # When TEST_IMAGE_TAGS=true use values-latest.yaml (pinned RC release
-          # versions) and skip the env-file. When false, load the VALUES_CONFIG
-          # env-file for SNAPSHOT tag substitution in base-image-tags.yaml.
+          # useVersionsNumbers (TEST_IMAGE_TAGS): false (default) → --use-latest
+          # (trust RC values-latest.yaml); true → env-file with caller-supplied tags.
           USE_LATEST_ARGS=()
           ENV_FILE_ARGS=()
-          if [[ "${TEST_IMAGE_TAGS}" == "true" ]]; then
+          if [[ "${TEST_IMAGE_TAGS}" != "true" ]]; then
             USE_LATEST_ARGS=(--use-latest)
           elif [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
             echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
