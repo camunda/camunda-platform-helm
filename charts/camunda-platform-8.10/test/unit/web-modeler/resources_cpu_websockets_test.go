@@ -90,7 +90,7 @@ func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		"CPU limit should be 0.3, got %s", cpuLimit.String())
 }
 
-func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
+func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesCustomValues() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
