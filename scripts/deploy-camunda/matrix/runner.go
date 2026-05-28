@@ -389,7 +389,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry.ImageTags, opts.UseLatest),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -511,6 +511,17 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 // resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
 // This is a dry-run helper — best-effort, silently filters to existing files only.
 // enterprise is composable (changes registry/repo, not tags).
+// effectiveImageTags returns whether SNAPSHOT tag overrides from env vars should
+// be applied for this entry. When UseLatest is true the caller wants
+// values-latest.yaml (pinned RC release versions), so image-tags must be
+// suppressed even if the scenario config sets image-tags: true.
+func effectiveImageTags(entryImageTags bool, useLatest bool) bool {
+	if useLatest {
+		return false
+	}
+	return entryImageTags
+}
+
 // digest, latest, and image-tags are mutually exclusive for image version resolution:
 //   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
 //   - useLatest selects values-latest.yaml instead of values-digest.yaml
@@ -717,7 +728,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry.ImageTags, opts.UseLatest),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -1622,7 +1633,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			Features:    entry.Features,
 			InfraType:   entry.InfraType,
 			QA:          entry.QA || opts.UseQA,
-			ImageTags:   entry.ImageTags,
+			ImageTags:   effectiveImageTags(entry.ImageTags, opts.UseLatest),
 			UpgradeFlow: entry.Upgrade,
 		},
 	}
