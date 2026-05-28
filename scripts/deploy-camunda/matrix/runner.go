@@ -534,7 +534,7 @@ func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, useLatest bool
 	if entry.Enterprise {
 		overlays = append(overlays, "enterprise")
 	}
-	if !entry.ImageTags {
+	if !effectiveImageTags(entry.ImageTags, useLatest) {
 		if useLatest {
 			overlays = append(overlays, "latest")
 		} else {
@@ -1550,7 +1550,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 				if entry.Enterprise {
 					overlays = append(overlays, "enterprise")
 				}
-				if !entry.ImageTags {
+				if !effectiveImageTags(entry.ImageTags, opts.UseLatest) {
 					if opts.UseLatest {
 						overlays = append(overlays, "latest")
 					} else {
