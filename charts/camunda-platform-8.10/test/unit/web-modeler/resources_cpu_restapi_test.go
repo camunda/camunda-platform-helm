@@ -90,7 +90,7 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		"CPU limit should be 1.5, got %s", cpuLimit.String())
 }
 
-func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
+func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesCustomValues() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
