@@ -153,6 +153,23 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 				s.Require().Contains(err.Error(), "could not find template")
 			},
 		},
+		{
+			Name: "TestLegacyPusherSecretSuppressesAutoGeneration",
+			Values: map[string]string{
+				"identity.enabled":                                        "true",
+				"webModeler.enabled":                                      "true",
+				"camundaHub.webModeler.restapi.mail.fromAddress":          "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":         "my-legacy-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":      "pusher-key",
+				"webModeler.restapi.pusher.client.secret.existingSecret":  "my-legacy-client-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// When legacy pusher secrets are configured, the shared secret should NOT be rendered
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "could not find template")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

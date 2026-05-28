@@ -867,13 +867,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `camundaHub.webModeler.restapi.mail.secret.existingSecretKey`                     | key within the existing secret                                     | `""`                          |
 | `camundaHub.webModeler.restapi.mail.fromAddress`                                  | defines the email sender address                                   | `""`                          |
 | `camundaHub.webModeler.restapi.mail.fromName`                                     | defines the email sender name                                      | `Camunda 8`                   |
-| `camundaHub.webModeler.restapi.pusher`                                            | configuration for Pusher integration                               |                               |
-| `camundaHub.webModeler.restapi.pusher.client.secret.inlineSecret`                 | inline secret value                                                | `""`                          |
-| `camundaHub.webModeler.restapi.pusher.client.secret.existingSecret`               | name of an existing secret                                         | `""`                          |
-| `camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey`            | key within the existing secret                                     | `""`                          |
-| `camundaHub.webModeler.restapi.pusher.secret.inlineSecret`                        | inline secret value                                                | `""`                          |
-| `camundaHub.webModeler.restapi.pusher.secret.existingSecret`                      | name of an existing secret                                         | `""`                          |
-| `camundaHub.webModeler.restapi.pusher.secret.existingSecretKey`                   | key within the existing secret                                     | `""`                          |
+| `camundaHub.webModeler.restapi.pusher`                                            | configuration for Pusher integration.                              |                               |
 | `camundaHub.webModeler.restapi.clusters`                                          | configure Camunda 8 clusters available in Web Modeler              | `[]`                          |
 | `camundaHub.webModeler.restapi.podAnnotations`                                    | extra restapi pod annotations                                      | `{}`                          |
 | `camundaHub.webModeler.restapi.podLabels`                                         | extra restapi pod labels                                           | `{}`                          |
