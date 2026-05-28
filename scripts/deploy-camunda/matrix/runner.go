@@ -508,9 +508,6 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 	return prev
 }
 
-// resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
-// This is a dry-run helper — best-effort, silently filters to existing files only.
-// enterprise is composable (changes registry/repo, not tags).
 // effectiveImageTags returns whether SNAPSHOT tag overrides from env vars should
 // be applied for this entry. When UseLatest is true the caller wants
 // values-latest.yaml (pinned RC release versions), so image-tags must be
@@ -522,6 +519,9 @@ func effectiveImageTags(entryImageTags bool, useLatest bool) bool {
 	return entryImageTags
 }
 
+// resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
+// This is a dry-run helper: best-effort, silently filters to existing files only.
+// enterprise is composable (changes registry/repo, not tags).
 // digest, latest, and image-tags are mutually exclusive for image version resolution:
 //   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
 //   - useLatest selects values-latest.yaml instead of values-digest.yaml
