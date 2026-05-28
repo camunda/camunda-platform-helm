@@ -237,6 +237,11 @@ on:
         required: false
         default: false
         type: boolean
+      force-image-overrides:
+        description: '⚠️ DANGER: Bypass OCI artifact immutability guard and allow image version overrides even when helmChartVersion is set. Only use if you know what you are doing.'
+        required: false
+        default: false
+        type: boolean
       helm-version:
         description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
         required: false
@@ -577,6 +582,7 @@ jobs:
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
+          FORCE_IMAGE_OVERRIDES: ${{ inputs.force-image-overrides }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
@@ -617,13 +623,26 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
-          # The .env file is loaded by buildScenarioEnv() and provides values for
-          # $E2E_TESTS_*_IMAGE_TAG placeholders in base-image-tags.yaml.
+          FORCE_IMAGE_OVERRIDE_ARGS=()
+          if [[ "${FORCE_IMAGE_OVERRIDES}" == "true" ]]; then
+            echo "::warning::Bypassing OCI artifact immutability guard; image version overrides may be applied to helmChartVersion=${HELM_CHART_VERSION:-<none>}"
+            FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
+          fi
+
+          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
+          # strip image tag keys so the released chart artifact remains the
+          # source of truth while non-image test config (index prefixes, etc.) stays available.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
+              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
+            else
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
+            fi
+            if [[ -s /tmp/values-config.env ]]; then
+              ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            fi
           fi
 
           cd ./scripts/deploy-camunda
@@ -640,6 +659,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
@@ -883,6 +903,7 @@ jobs:
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
+          FORCE_IMAGE_OVERRIDES: ${{ inputs.force-image-overrides }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
@@ -919,11 +940,25 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
+          FORCE_IMAGE_OVERRIDE_ARGS=()
+          if [[ "${FORCE_IMAGE_OVERRIDES}" == "true" ]]; then
+            echo "::warning::Bypassing OCI artifact immutability guard; image version overrides may be applied to helmChartVersion=${HELM_CHART_VERSION:-<none>}"
+            FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
+          fi
+
+          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
+          # strip image tag keys so the released chart artifact remains the source of truth.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
+              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
+            else
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
+            fi
+            if [[ -s /tmp/values-config.env ]]; then
+              ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            fi
           fi
 
           cd ./scripts/deploy-camunda
@@ -940,6 +975,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"scripts/camunda-core/pkg/versionmatrix"
 	"gopkg.in/yaml.v3"
+	"scripts/camunda-core/pkg/versionmatrix"
 
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/config"
@@ -1131,6 +1131,63 @@ func TestResolveEnvFile(t *testing.T) {
 				t.Errorf("resolveEnvFile(opts, %q) = %q, want %q", tt.version, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestOCIImmutabilityDisablesImageOverrides(t *testing.T) {
+	chartPath := t.TempDir()
+	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
+		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	entry := Entry{Enterprise: true, ImageTags: true}
+	ociOpts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", UseLatest: true}
+	if got := effectiveImageTags(entry, ociOpts); got {
+		t.Fatalf("effectiveImageTags() = true, want false in OCI immutability mode")
+	}
+	if got := resolveChartRootOverlaysQuiet(chartPath, entry, ociOpts); len(got) != 0 {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want no overlays in OCI immutability mode", got)
+	}
+
+	forcedOpts := RunOptions{ChartRef: ociOpts.ChartRef, ForceImageOverrides: true, UseLatest: true}
+	if got := effectiveImageTags(entry, forcedOpts); !got {
+		t.Fatalf("effectiveImageTags() = false, want true when OCI immutability bypass is enabled")
+	}
+	if got := resolveChartRootOverlaysQuiet(chartPath, entry, forcedOpts); strings.Join(got, ",") != "enterprise" {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise] when bypass preserves image-tags", got)
+	}
+}
+
+func TestSanitizeEnvFileForOCIImmutability(t *testing.T) {
+	envFile := filepath.Join(t.TempDir(), "values.env")
+	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nOPERATE_INDEX_PREFIX=test-run\nTASKLIST_INDEX_PREFIX=test-tasklist\n"
+	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got == "" || got == envFile {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want sanitized temp file", got)
+	}
+
+	data, err := os.ReadFile(got)
+	if err != nil {
+		t.Fatalf("read sanitized env file: %v", err)
+	}
+	text := string(data)
+	if strings.Contains(text, "E2E_TESTS_OPTIMIZE_IMAGE_TAG") {
+		t.Fatalf("sanitized env file still contains image tag key: %s", text)
+	}
+	for _, key := range []string{"OPERATE_INDEX_PREFIX", "TASKLIST_INDEX_PREFIX"} {
+		if !strings.Contains(text, key+"=") {
+			t.Fatalf("sanitized env file missing %s: %s", key, text)
+		}
 	}
 }
 
