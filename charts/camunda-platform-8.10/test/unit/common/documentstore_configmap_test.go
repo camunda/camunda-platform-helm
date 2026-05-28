@@ -104,6 +104,50 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"DOCUMENT_STORE_INMEMORY_CLASS": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 			},
 		},
+		{
+			Name: "Document Handling: AWS S3-compatible endpoint (Garage profile)",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                               "aws",
+				"global.documentStore.type.aws.enabled":                            "true",
+				"global.documentStore.type.aws.storeId":                            "AWS",
+				"global.documentStore.type.aws.class":                              "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"global.documentStore.type.aws.bucket":                             "garage-bucket",
+				"global.documentStore.type.aws.endpoint":                           "http://garage.local:3900",
+				"global.documentStore.type.aws.chunkedEncodingEnabled":             "false",
+				"identity.enabled":                                                 "true",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+			},
+			Expected: map[string]string{
+				"DOCUMENT_DEFAULT_STORE_ID":                   "aws",
+				"DOCUMENT_STORE_AWS_CLASS":                    "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"DOCUMENT_STORE_AWS_BUCKET":                   "garage-bucket",
+				"DOCUMENT_STORE_AWS_ENDPOINT":                 "http://garage.local:3900",
+				"DOCUMENT_STORE_AWS_CHUNKED_ENCODING_ENABLED": "false",
+			},
+		},
+		{
+			Name: "Document Handling: AWS with explicit forcePathStyle",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                               "aws",
+				"global.documentStore.type.aws.enabled":                            "true",
+				"global.documentStore.type.aws.storeId":                            "AWS",
+				"global.documentStore.type.aws.class":                              "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"global.documentStore.type.aws.bucket":                             "compat-bucket",
+				"global.documentStore.type.aws.endpoint":                           "http://minio.local:9000",
+				"global.documentStore.type.aws.forcePathStyle":                     "true",
+				"identity.enabled":                                                 "true",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+			},
+			Expected: map[string]string{
+				"DOCUMENT_DEFAULT_STORE_ID":           "aws",
+				"DOCUMENT_STORE_AWS_CLASS":            "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"DOCUMENT_STORE_AWS_BUCKET":           "compat-bucket",
+				"DOCUMENT_STORE_AWS_ENDPOINT":         "http://minio.local:9000",
+				"DOCUMENT_STORE_AWS_FORCE_PATH_STYLE": "true",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
