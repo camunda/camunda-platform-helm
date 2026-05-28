@@ -659,6 +659,12 @@ global:
         bucketPath: ""
         ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket (number in days).
         bucketTtl: 0
+        ## @param global.documentStore.type.aws.endpoint (Optional) Endpoint URL for an S3-compatible object store (e.g. http://garage.local:3900). When unset, the AWS SDK default endpoint is used.
+        endpoint: ""
+        ## @param global.documentStore.type.aws.forcePathStyle [nullable] (Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, path-style is auto-enabled if an endpoint is configured, otherwise the SDK default is used.
+        forcePathStyle:
+        ## @param global.documentStore.type.aws.chunkedEncodingEnabled [nullable] (Optional) Enable AWS chunked transfer encoding. Set to false for S3-compatible backends that do not support it (e.g. Garage). When unset, the SDK default (true) is used.
+        chunkedEncodingEnabled:
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
         ## @extra global.documentStore.type.aws.accessKeyId configuration to provide the AWS access key ID.
