@@ -1905,6 +1905,26 @@ func TestExtractBitnamiPGPasswords_MappingConsistency(t *testing.T) {
 	}
 }
 
+func TestShouldExtractBitnamiPGPasswords(t *testing.T) {
+	tests := []struct {
+		name          string
+		targetVersion string
+		want          bool
+	}{
+		{name: "8.9 still uses Bitnami subcharts", targetVersion: "8.9", want: true},
+		{name: "8.10 removed Bitnami subcharts", targetVersion: "8.10", want: false},
+		{name: "newer versions keep Bitnami removed", targetVersion: "8.11", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldExtractBitnamiPGPasswords(tt.targetVersion); got != tt.want {
+				t.Errorf("shouldExtractBitnamiPGPasswords(%q) = %v, want %v", tt.targetVersion, got, tt.want)
+			}
+		})
+	}
+}
+
 // --- ChartRef override tests ---
 
 func TestApplyChartRefOverride(t *testing.T) {

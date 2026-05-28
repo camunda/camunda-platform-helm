@@ -611,6 +611,21 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-elasticsearch-upg
           enabled: false
           flow: modular-upgrade-minor
@@ -623,6 +638,21 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-elasticsearch
           enabled: false
           flow: install
@@ -635,6 +665,21 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-opensearch
           enabled: false
           flow: install
@@ -647,7 +692,15 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
             - chart: opensearch/opensearch
               version: "3.6.0"
               release-name: opensearch
@@ -667,7 +720,15 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
             - chart: opensearch/opensearch
               version: "3.6.0"
               release-name: opensearch
@@ -687,7 +748,15 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
             - chart: opensearch/opensearch
               version: "3.6.0"
               release-name: opensearch
@@ -707,6 +776,21 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-elasticsearch-mt-upg
           enabled: false
           flow: install
@@ -720,6 +804,21 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-elasticsearch-mt-upg
           enabled: false
           flow: modular-upgrade-minor
@@ -733,6 +832,21 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-elasticsearch-rba
           enabled: false
           flow: install
@@ -746,6 +860,21 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-document-store
           enabled: false
           flow: install
@@ -760,6 +889,21 @@ integration:
           infra-type:
             gke: qa-workloads
             eks: preemptible
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-document-store-upg
           enabled: false
           flow: install,modular-upgrade-minor
@@ -774,6 +918,21 @@ integration:
           infra-type:
             gke: qa-workloads
             eks: preemptible
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-document-store-upg
           enabled: false
           flow: modular-upgrade-minor
@@ -788,6 +947,21 @@ integration:
           infra-type:
             gke: qa-workloads
             eks: preemptible
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-license
           enabled: false
           flow: install

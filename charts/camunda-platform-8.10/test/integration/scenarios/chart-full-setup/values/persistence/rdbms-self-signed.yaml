@@ -59,6 +59,3 @@ orchestration:
       readOnly: true
     - name: jdbcdrivers
       mountPath: /driver-lib
-
-elasticsearch:
-  enabled: true

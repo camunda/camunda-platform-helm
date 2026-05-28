@@ -187,3 +187,32 @@ func TestTwoStepUpgrade_HookSliceDetachment(t *testing.T) {
 		t.Logf("confirmed: without explicit detachment, parent slice is mutated (len=%d)", len(parent2.PreInstallHooks))
 	}
 }
+
+func TestUpgradeOnly_PreInstallHookRegistrationDetachesParent(t *testing.T) {
+	parent := &config.RuntimeFlags{
+		PreInstallHooks: make([]func(context.Context) error, 0, 4),
+	}
+	parent.PreInstallHooks = append(parent.PreInstallHooks, func(context.Context) error { return nil })
+
+	hook := &LifecycleHook{
+		Fixtures:    []string{"postgresql-cluster.yaml"},
+		Description: "Provision PostgreSQL before the upgrade-only helm upgrade.",
+	}
+
+	// Mirror the upgradeFlags setup from executeUpgradeOnly. Upgrade-only flows
+	// reuse an existing namespace, but still need target-version pre-install
+	// fixtures before helm upgrade.
+	upgradeFlags := *parent
+	upgradeFlags.PreInstallHooks = append([]func(context.Context) error(nil), parent.PreInstallHooks...)
+
+	if err := registerDeclarativePreInstallHook(&upgradeFlags, hook, t.TempDir(), "8.10", "qa-elasticsearch-upg"); err != nil {
+		t.Fatalf("registerDeclarativePreInstallHook() error = %v", err)
+	}
+
+	if got, want := len(parent.PreInstallHooks), 1; got != want {
+		t.Errorf("parent.PreInstallHooks: registration leaked into parent, got len %d, want %d", got, want)
+	}
+	if got, want := len(upgradeFlags.PreInstallHooks), 2; got != want {
+		t.Errorf("upgradeFlags.PreInstallHooks: got len %d, want %d", got, want)
+	}
+}
