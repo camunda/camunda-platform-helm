@@ -1648,23 +1648,16 @@ camundaHub:
         ## @param camundaHub.webModeler.restapi.mail.fromName defines the email sender name
         fromName: "Camunda 8"
 
-      ## @extra camundaHub.webModeler.restapi.pusher configuration for Pusher integration
+      ## @extra camundaHub.webModeler.restapi.pusher configuration for Pusher integration.
+      ## Secret leaf keys (inlineSecret, existingSecret, existingSecretKey) are intentionally
+      ## absent from defaults — they are only set by user overrides. This ensures mustMergeOverwrite
+      ## with the legacy path works correctly for backward compatibility.
       pusher:
         client:
-          secret:
-            ## @param camundaHub.webModeler.restapi.pusher.client.secret.inlineSecret inline secret value
-            inlineSecret: ""
-            ## @param camundaHub.webModeler.restapi.pusher.client.secret.existingSecret name of an existing secret
-            existingSecret: ""
-            ## @param camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey key within the existing secret
-            existingSecretKey: ""
-        secret:
-          ## @param camundaHub.webModeler.restapi.pusher.secret.inlineSecret inline secret value
-          inlineSecret: ""
-          ## @param camundaHub.webModeler.restapi.pusher.secret.existingSecret name of an existing secret
-          existingSecret: ""
-          ## @param camundaHub.webModeler.restapi.pusher.secret.existingSecretKey key within the existing secret
-          existingSecretKey: ""
+          ## @skip camundaHub.webModeler.restapi.pusher.client.secret
+          secret: {}
+        ## @skip camundaHub.webModeler.restapi.pusher.secret
+        secret: {}
 
       ## @param camundaHub.webModeler.restapi.clusters configure Camunda 8 clusters available in Web Modeler
       clusters: []
@@ -2233,12 +2226,8 @@ console:
   ## @skip webModeler.restapi.podAnnotations (DEPRECATED)
   ## @skip webModeler.restapi.podLabels (DEPRECATED)
   ## @skip webModeler.restapi.podSecurityContext (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.client.secret.existingSecret (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.client.secret.existingSecretKey (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.client.secret.inlineSecret (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.secret.existingSecret (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.secret.existingSecretKey (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.secret.inlineSecret (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.client.secret (DEPRECATED)
+  ## @skip webModeler.restapi.pusher.secret (DEPRECATED)
   ## @skip webModeler.restapi.readinessProbe.enabled (DEPRECATED)
   ## @skip webModeler.restapi.readinessProbe.failureThreshold (DEPRECATED)
   ## @skip webModeler.restapi.readinessProbe.initialDelaySeconds (DEPRECATED)
@@ -2381,14 +2370,8 @@ webModeler:
       fromName: ""
     pusher:
       client:
-        secret:
-          inlineSecret: ""
-          existingSecret: ""
-          existingSecretKey: ""
-      secret:
-        inlineSecret: ""
-        existingSecret: ""
-        existingSecretKey: ""
+        secret: {}
+      secret: {}
     clusters: []
     podAnnotations: {}
     podLabels: {}
