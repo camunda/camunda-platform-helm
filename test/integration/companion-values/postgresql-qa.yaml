@@ -1,0 +1,29 @@
+# Companion values for internal-postgresql chart (GKE QA variant).
+# Provides Identity and Web Modeler databases without Bitnami or CNPG.
+
+fullnameOverride: postgresql
+
+auth:
+  username: app
+  password: "postgresql-ci-password"
+  database: identity
+
+databases:
+  - identity
+  - webmodeler
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector:
+  workload: qa-workloads
+tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads

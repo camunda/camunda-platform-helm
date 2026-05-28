@@ -3,7 +3,8 @@
 #
 # The companion internal-keycloak-26 chart creates a Service named "keycloak"
 # in the same namespace. This layer tells the Camunda chart where to find it.
-# Also configures Identity + WebModeler external databases (backed by CNPG fixture).
+# Also configures Identity + WebModeler external databases (backed by CNPG by
+# default; QA scenarios override this to use an internal-postgresql companion).
 
 global:
   host: "$CAMUNDA_HOSTNAME"

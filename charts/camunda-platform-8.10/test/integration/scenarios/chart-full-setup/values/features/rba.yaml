@@ -10,8 +10,6 @@ orchestration:
       value: "false"
 
 identity:
-  externalDatabase:
-    enabled: false
   env:
     - name: RESOURCE_PERMISSIONS_ENABLED
       value: 'true'

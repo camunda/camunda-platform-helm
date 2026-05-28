@@ -1,0 +1,21 @@
+# Companion values for internal-postgresql chart.
+# Provides Identity and Web Modeler databases without Bitnami or CNPG.
+
+fullnameOverride: postgresql
+
+auth:
+  username: app
+  password: "postgresql-ci-password"
+  database: identity
+
+databases:
+  - identity
+  - webmodeler
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

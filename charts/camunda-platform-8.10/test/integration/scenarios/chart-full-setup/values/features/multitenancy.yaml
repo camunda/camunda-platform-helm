@@ -23,10 +23,6 @@ orchestration:
           claimName: "tenant"
           claimValue: "tenant-b"
 
-identity:
-  externalDatabase:
-    enabled: false
-
 optimize:
   caches:
     cloudTenantAuthorizations:

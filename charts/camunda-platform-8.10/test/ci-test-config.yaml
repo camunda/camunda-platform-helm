@@ -606,17 +606,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          features: [postgresql-companion]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -633,17 +632,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          features: [postgresql-companion]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -660,17 +658,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          features: [postgresql-companion]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -687,17 +684,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded
+          features: [postgresql-companion]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -715,17 +711,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded
+          features: [postgresql-companion]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -743,17 +738,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch-embedded
+          features: [postgresql-companion]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -770,18 +764,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [multitenancy]
+          features: [postgresql-companion, multitenancy]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -798,18 +790,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [multitenancy]
+          features: [postgresql-companion, multitenancy]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -826,18 +816,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [multitenancy]
+          features: [postgresql-companion, multitenancy]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -854,18 +842,16 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [rba]
+          features: [postgresql-companion, rba]
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -882,19 +868,68 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [documentstore]
+          features: [postgresql-companion, documentstore]
           qa: true
           image-tags: true
-          platforms: [gke, eks]
+          platforms: [gke]
           infra-type:
             gke: qa-workloads
-            eks: preemptible
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+        - name: qa-document-store
+          enabled: false
+          flow: install
+          shortname: qadoc
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [postgresql-companion, documentstore]
+          qa: true
+          image-tags: true
+          platforms: [eks]
+          infra-type:
+            eks: preemptible
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
+        - name: qa-document-store-upg
+          enabled: false
+          flow: install
+          shortname: qadocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [postgresql-companion, documentstore]
+          qa: true
+          image-tags: true
+          platforms: [gke]
+          infra-type:
+            gke: qa-workloads
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -906,24 +941,47 @@ integration:
               values-file: test/integration/companion-values/elasticsearch-qa.yaml
         - name: qa-document-store-upg
           enabled: false
-          flow: install,modular-upgrade-minor
+          flow: install
           shortname: qadocupg
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [documentstore]
+          features: [postgresql-companion, documentstore]
           qa: true
           image-tags: true
-          platforms: [gke, eks]
+          platforms: [eks]
+          infra-type:
+            eks: preemptible
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
+        - name: qa-document-store-upg
+          enabled: false
+          flow: modular-upgrade-minor
+          shortname: qadocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [postgresql-companion, documentstore]
+          qa: true
+          image-tags: true
+          platforms: [gke]
           infra-type:
             gke: qa-workloads
-            eks: preemptible
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak-qa.yaml
@@ -940,28 +998,25 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [documentstore]
+          features: [postgresql-companion, documentstore]
           qa: true
           image-tags: true
-          platforms: [gke, eks]
+          platforms: [eks]
           infra-type:
-            gke: qa-workloads
             eks: preemptible
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG Cluster for Identity and WebModeler databases.
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
-              values-file: test/integration/companion-values/keycloak-qa.yaml
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: "8.5.1"
               release-name: elasticsearch
               repo-name: elastic
               repo-url: https://helm.elastic.co
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: qa-license
           enabled: false
           flow: install
@@ -969,7 +1024,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [license]
+          features: [postgresql-companion, license]
           qa: true
           image-tags: true
           platforms: [gke]
