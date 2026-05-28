@@ -215,7 +215,6 @@
       ],
       matchFileNames: [
         // bump these to whatever the latest alpha is
-        'charts/camunda-platform-8.9/Chart.yaml',
         'charts/camunda-platform-8.10/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
@@ -241,6 +240,10 @@
         'charts/camunda-platform-8.8/values.yaml',
         'charts/camunda-platform-8.8/values-latest.yaml',
         'charts/camunda-platform-8.8/values-enterprise.yaml',
+        'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.9/values.yaml',
+        'charts/camunda-platform-8.9/values-latest.yaml',
+        'charts/camunda-platform-8.9/values-enterprise.yaml',
       ],
       matchUpdateTypes: ['patch', 'pin'],
       schedule: ['at any time'],
@@ -260,10 +263,6 @@
         'regex',
       ],
       matchFileNames: [
-        'charts/camunda-platform-8.9/Chart.yaml',
-        'charts/camunda-platform-8.9/values.yaml',
-        'charts/camunda-platform-8.9/values-latest.yaml',
-        'charts/camunda-platform-8.9/values-enterprise.yaml',
         'charts/camunda-platform-8.10/Chart.yaml',
         'charts/camunda-platform-8.10/values.yaml',
         'charts/camunda-platform-8.10/values-latest.yaml',
@@ -275,14 +274,11 @@
       prCreation: 'immediate',
     },
     {
-      description: 'Parse Camunda 8.9 and 8.10 image tags as semver so alpha updates work',
+      description: 'Parse Camunda 8.10 image tags as semver so alpha updates work',
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
       matchDatasources: ['helmv3', 'helm-values', 'docker', 'regex'],
       matchFileNames: [
-        'charts/camunda-platform-8.9/Chart.yaml',
-        'charts/camunda-platform-8.9/values.yaml',
-        'charts/camunda-platform-8.9/values-latest.yaml',
         'charts/camunda-platform-8.10/Chart.yaml',
         'charts/camunda-platform-8.10/values.yaml',
         'charts/camunda-platform-8.10/values-latest.yaml',
