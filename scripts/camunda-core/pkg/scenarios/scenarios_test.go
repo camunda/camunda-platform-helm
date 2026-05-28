@@ -69,14 +69,14 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "auth0 maps to auth0 identity",
 			scenario:        "auth0",
 			wantIdentity:    "auth0",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "elasticsearch-auth0 maps to auth0 identity",
 			scenario:        "elasticsearch-auth0",
 			wantIdentity:    "auth0",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 		{
@@ -100,6 +100,20 @@ func TestMapScenarioToConfig(t *testing.T) {
 			scenario:        "opensearch",
 			wantIdentity:    "keycloak",
 			wantPersistence: "opensearch-external",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "opensearch-self-signed maps to opensearch-self-signed persistence",
+			scenario:        "opensearch-self-signed",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-self-signed",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "opensearch-embedded maps to opensearch-embedded persistence",
+			scenario:        "opensearch-embedded",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-embedded",
 			wantPlatform:    "gke",
 		},
 		{
