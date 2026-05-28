@@ -137,7 +137,7 @@
     {
       description: 'Disable major updates for Helm dependencies to prevent breaking changes.',
       enabled: false,
-      matchManagers: ['helmv3', 'helm-values', 'custom.regex'],
+      matchManagers: ['helm', 'helm-values', 'custom.regex'],
       matchUpdateTypes: ['major'],
     },
     // Internal scripts do not need to be updated as they are not versioned outside of git
@@ -226,7 +226,7 @@
         '/.*camunda.*/',
       ],
       matchDatasources: [
-        'helmv3',
+        'helm',
         'helm-values',
         'docker',
         'regex',
@@ -257,7 +257,7 @@
         '/.*camunda.*/',
       ],
       matchDatasources: [
-        'helmv3',
+        'helm',
         'helm-values',
         'docker',
         'regex',
@@ -277,7 +277,7 @@
       description: 'Parse Camunda 8.10 image tags as semver so alpha updates work',
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
-      matchDatasources: ['helmv3', 'helm-values', 'docker', 'regex'],
+      matchDatasources: ['helm', 'helm-values', 'docker', 'regex'],
       matchFileNames: [
         'charts/camunda-platform-8.10/Chart.yaml',
         'charts/camunda-platform-8.10/values.yaml',
