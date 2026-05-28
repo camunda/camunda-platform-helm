@@ -21,7 +21,7 @@ secretMounts:
   - name: opensearch-tls-certs
     secretName: opensearch-tls-certs
     path: /usr/share/opensearch/config/certs
-    defaultMode: 0o400
+    defaultMode: 0400
 
 extraEnvs:
   # Skip the demo install_demo_configuration.sh path; we configure security

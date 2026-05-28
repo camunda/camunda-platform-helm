@@ -51,10 +51,11 @@ global:
           existingSecretKey: truststore-password
 
 orchestration:
-  # Java 21 defaults trustStore.type to pkcs12; our truststore is JKS so we
-  # set the type explicitly. The chart helper now appends both
-  # -Djavax.net.ssl.trustStore=... and -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)
-  # automatically (see #5994), so we no longer set the password literal in javaOpts.
+  # Java 21 changed the default keystore type from JKS to PKCS12 (JEP 229).
+  # The chart helper (#5994) emits -Djavax.net.ssl.trustStore and
+  # -Djavax.net.ssl.trustStorePassword automatically, but does NOT yet emit
+  # trustStoreType. Until the helper defaults trustStoreType to jks (tracked
+  # in the TLS epic), we must set it explicitly here.
   javaOpts: >-
     -Djavax.net.ssl.trustStoreType=jks
   data:
@@ -111,6 +112,7 @@ optimize:
         secret:
           existingSecret: opensearch-jks
           existingSecretKey: externaldb.jks
+  # Same trustStoreType override as orchestration (see comment above).
   javaOpts: "-Djavax.net.ssl.trustStoreType=jks"
   extraVolumes:
     - name: opensearch-ca

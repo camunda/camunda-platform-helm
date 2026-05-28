@@ -54,6 +54,9 @@ type CITestConfig struct {
 			PR struct {
 				Scenarios []CIScenario `yaml:"scenario"`
 			} `yaml:"pr"`
+			Nightly struct {
+				Scenarios []CIScenario `yaml:"scenario"`
+			} `yaml:"nightly"`
 		} `yaml:"case"`
 		// Flows declares lifecycle hooks scoped to a flow rather than a scenario,
 		// e.g. pre-upgrade scripts shared by all scenarios using a given flow.
