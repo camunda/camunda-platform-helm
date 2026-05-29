@@ -5,3 +5,6 @@
 # secondary-storage backend, so it is disabled here.
 optimize:
   enabled: false
+
+identity:
+  clients: null
