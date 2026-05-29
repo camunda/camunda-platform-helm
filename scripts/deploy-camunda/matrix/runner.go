@@ -232,6 +232,8 @@ func effectiveImageTags(entry Entry, opts RunOptions) bool {
 
 func resolveChartRootOverlays(entry Entry, opts RunOptions) []string {
 	if ociImmutabilityMode(opts) {
+		// OCI artifacts bake all image versions; skip overlays that would
+		// override them (includes enterprise sub-chart image pins).
 		return nil
 	}
 
@@ -600,7 +602,7 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 
 // resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
 // This is a dry-run helper — best-effort, silently filters to existing files only.
-// enterprise is composable (changes registry/repo, not tags).
+// enterprise adds registry/repo config and sub-chart image pins (Keycloak, PostgreSQL).
 // digest, latest, and image-tags are mutually exclusive for image version resolution:
 //   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
 //   - useLatest selects values-latest.yaml instead of values-digest.yaml
@@ -609,6 +611,11 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, opts RunOptions) []string {
 	if chartPath == "" {
 		return nil
+	}
+	if ociImmutabilityMode(opts) {
+		logging.Logger.Warn().
+			Str("chartRef", opts.ChartRef).
+			Msg("OCI immutability mode: skipping chart-root image overlays (dry-run)")
 	}
 	overlays := resolveChartRootOverlays(entry, opts)
 	// Filter to only overlays whose files exist on disk.
@@ -1578,10 +1585,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	kubeCtx := resolveKubeContext(opts, platform)
 	envFile := resolveEnvFile(opts, entry.Version)
 	envFile, cleanupEnvFile, err := sanitizeEnvFileForOCIImmutability(envFile, opts)
+	defer cleanupEnvFile() // safe: cleanup is always a valid no-op func even on error
 	if err != nil {
 		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
 	}
-	defer cleanupEnvFile()
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
 
 	// Compute the scenario directory. deploy.Execute uses this to resolve

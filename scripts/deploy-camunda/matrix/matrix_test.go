@@ -1193,6 +1193,54 @@ func TestSanitizeEnvFileForOCIImmutability(t *testing.T) {
 
 // --- resolveUseVaultBackedSecrets tests ---
 
+func TestOCIImmutabilityForceOverridesRestoresDigest(t *testing.T) {
+	chartPath := t.TempDir()
+	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
+		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	// ForceImageOverrides: true + ImageTags: false -> digest overlay should be restored
+	entry := Entry{Enterprise: true, ImageTags: false}
+	opts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", ForceImageOverrides: true}
+	got := resolveChartRootOverlaysQuiet(chartPath, entry, opts)
+	expected := "enterprise,digest"
+	if strings.Join(got, ",") != expected {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise, digest] when force-overrides restores non-image-tags path", got)
+	}
+}
+
+func TestSanitizeEnvFileAllImageTags(t *testing.T) {
+	// All keys are IMAGE_TAG -> result should be empty path (no temp file needed)
+	envFile := filepath.Join(t.TempDir(), "values.env")
+	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nE2E_TESTS_OPERATE_IMAGE_TAG=8.8-SNAPSHOT\n"
+	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got != "" {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty path when all keys are image tags", got)
+	}
+}
+
+func TestSanitizeEnvFileNoEnvFile(t *testing.T) {
+	// OCI mode with no env file -> should short-circuit cleanly
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability("", RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got != "" {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty string for no env file", got)
+	}
+}
+
 func TestResolveUseVaultBackedSecrets(t *testing.T) {
 	tests := []struct {
 		name     string
