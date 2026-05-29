@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.10.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.9.1...camunda-platform-8.8-13.10.0) (2026-05-27)
+
+
+### Features
+
+* **8.8:** add orchestration.hostNetwork value ([#6247](https://github.com/camunda/camunda-platform-helm/issues/6247)) ([076856d](https://github.com/camunda/camunda-platform-helm/commit/076856dfc32c286c12d789cd78ee64a25fe719bd))
+
 ## [13.9.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.9.0...camunda-platform-8.8-13.9.1) (2026-05-22)
 
 
