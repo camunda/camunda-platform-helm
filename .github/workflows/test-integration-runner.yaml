@@ -551,9 +551,13 @@ jobs:
       - name: Helm - OCI Registry Login
         if: inputs.helmChartVersion != ''
         run: |
-          printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
-            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
-            --password-stdin
+          for i in 1 2 3; do
+            printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
+              --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+              --password-stdin && break
+            echo "Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
           echo "TEST_CHART_VERSION=${{ inputs.helmChartVersion }}" >> "$GITHUB_ENV"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
@@ -893,9 +897,13 @@ jobs:
       - name: Helm - OCI Registry Login (Upgrade)
         if: inputs.helmChartVersion != ''
         run: |
-          printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
-            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
-            --password-stdin
+          for i in 1 2 3; do
+            printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
+              --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+              --password-stdin && break
+            echo "Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         env:
