@@ -127,11 +127,15 @@ integration:
           pre-install:
             script: pre-install-opensearch-self-signed.sh
             description: |
+              Provisions the Identity/WebModeler PostgreSQL fixture, then
               Generates a self-signed CA plus node certificate via openssl
               and creates the opensearch-tls-certs, opensearch-tls-ca, and
               opensearch-jks Secrets consumed by the OpenSearch companion
               chart's TLS config.
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: opensearch/opensearch
               version: "3.6.0"
               release-name: opensearch
