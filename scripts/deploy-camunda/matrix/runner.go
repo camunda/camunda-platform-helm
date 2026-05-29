@@ -149,6 +149,11 @@ type RunOptions struct {
 	// UseLatest applies values-latest.yaml from each chart root instead of values-digest.yaml.
 	// This overrides the default digest-based image pinning with the latest available tags.
 	UseLatest bool
+	// DisableImageTags disables SNAPSHOT image tag overrides from env vars for all entries,
+	// regardless of per-scenario image-tags config in ci-test-config.yaml.
+	// Runtime override that trumps entry.ImageTags — same pattern as UseQA.
+	// Use when deploying an OCI release artifact whose values.yaml image versions are authoritative.
+	DisableImageTags bool
 	// UseQA forces the base-qa layer to be included for all entries, regardless of each
 	// entry's per-scenario qa setting in ci-test-config.yaml.
 	UseQA bool
@@ -389,7 +394,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry.ImageTags, opts),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -431,7 +436,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				preUpgradeScript:     resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
 				upgradeOnly:          versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
 				step1ValuesFrom:      resolveStep1ValuesFromQuiet(entry),
-				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts.UseLatest),
+				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -508,31 +513,47 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 	return prev
 }
 
-// resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
-// This is a dry-run helper — best-effort, silently filters to existing files only.
-// enterprise is composable (changes registry/repo, not tags).
-// digest, latest, and image-tags are mutually exclusive for image version resolution:
-//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-//   - useLatest selects values-latest.yaml instead of values-digest.yaml
-//   - digest is the CI default when neither image-tags nor useLatest is active
-func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, useLatest bool) []string {
-	if chartPath == "" {
-		return nil
+// effectiveImageTags returns whether SNAPSHOT tag overrides from env vars should be applied.
+// opts.DisableImageTags is a runtime override that trumps the per-scenario flag.
+func effectiveImageTags(entryImageTags bool, opts RunOptions) bool {
+	if opts.DisableImageTags {
+		return false
 	}
+	return entryImageTags
+}
+
+// chartRootOverlays returns the chart-root overlay names for an entry.
+// enterprise is composable with any image source.
+// digest / latest / image-tags are mutually exclusive for image version resolution:
+//   - effectiveImageTags=true  → SNAPSHOT path; caller supplies base-image-tags.yaml via --env-file
+//   - OCI (ChartRef set)       → no overlay; chart's values.yaml is authoritative
+//   - UseLatest                → values-latest.yaml (pinned release tags from local repo)
+//   - default                  → values-digest.yaml (SNAPSHOT pinned by sha256)
+func chartRootOverlays(entry Entry, opts RunOptions) []string {
 	var overlays []string
 	if entry.Enterprise {
 		overlays = append(overlays, "enterprise")
 	}
-	if !entry.ImageTags {
-		if useLatest {
+	if !effectiveImageTags(entry.ImageTags, opts) {
+		if opts.ChartRef != "" {
+			// OCI artifact: the chart ships its own image versions; no overlay needed.
+		} else if opts.UseLatest {
 			overlays = append(overlays, "latest")
 		} else {
 			overlays = append(overlays, "digest")
 		}
 	}
-	// Filter to only overlays whose files exist on disk.
+	return overlays
+}
+
+// resolveChartRootOverlaysQuiet returns chart-root overlays that exist on disk.
+// Dry-run helper: best-effort, silently filters to present files only.
+func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, opts RunOptions) []string {
+	if chartPath == "" {
+		return nil
+	}
 	var existing []string
-	for _, name := range overlays {
+	for _, name := range chartRootOverlays(entry, opts) {
 		path := filepath.Join(chartPath, "values-"+name+".yaml")
 		if _, err := os.Stat(path); err == nil {
 			existing = append(existing, name)
@@ -717,7 +738,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry.ImageTags, opts),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -1528,26 +1549,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			ChartPath:            entry.ChartPath,
 			SkipDependencyUpdate: opts.SkipDependencyUpdate,
 			RepoRoot:             opts.RepoRoot,
-			// Build chart-root overlays.
-			// enterprise is composable (changes registry/repo, not tags).
-			// digest, latest, and image-tags are mutually exclusive for image version resolution:
-			//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-			//   - useLatest selects values-latest.yaml instead of values-digest.yaml
-			//   - digest is the CI default when neither image-tags nor useLatest is active
-			ChartRootOverlays: func() []string {
-				var overlays []string
-				if entry.Enterprise {
-					overlays = append(overlays, "enterprise")
-				}
-				if !entry.ImageTags {
-					if opts.UseLatest {
-						overlays = append(overlays, "latest")
-					} else {
-						overlays = append(overlays, "digest")
-					}
-				}
-				return overlays
-			}(),
+			ChartRootOverlays: chartRootOverlays(entry, opts),
 		},
 		Deployment: config.DeploymentFlags{
 			Namespace:            flagsNamespace,
@@ -1622,7 +1624,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			Features:    entry.Features,
 			InfraType:   entry.InfraType,
 			QA:          entry.QA || opts.UseQA,
-			ImageTags:   entry.ImageTags,
+			ImageTags:   effectiveImageTags(entry.ImageTags, opts),
 			UpgradeFlow: entry.Upgrade,
 		},
 	}

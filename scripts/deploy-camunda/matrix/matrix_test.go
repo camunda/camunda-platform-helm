@@ -1922,3 +1922,120 @@ func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
 		t.Errorf("Step 2 ChartVersion = %q, want %q", step2Flags.ChartVersion, opts.ChartRefVersion)
 	}
 }
+
+// --- effectiveImageTags tests ---
+
+func TestEffectiveImageTags(t *testing.T) {
+	tests := []struct {
+		name           string
+		entryImageTags bool
+		opts           RunOptions
+		want           bool
+	}{
+		{
+			name:           "scenario flag true, no runtime override",
+			entryImageTags: true,
+			opts:           RunOptions{},
+			want:           true,
+		},
+		{
+			name:           "scenario flag true, DisableImageTags overrides to false",
+			entryImageTags: true,
+			opts:           RunOptions{DisableImageTags: true},
+			want:           false,
+		},
+		{
+			name:           "scenario flag false, no override",
+			entryImageTags: false,
+			opts:           RunOptions{},
+			want:           false,
+		},
+		{
+			name:           "scenario flag false, DisableImageTags is a no-op",
+			entryImageTags: false,
+			opts:           RunOptions{DisableImageTags: true},
+			want:           false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := effectiveImageTags(tt.entryImageTags, tt.opts)
+			if got != tt.want {
+				t.Errorf("effectiveImageTags(%v, opts) = %v, want %v", tt.entryImageTags, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- chartRootOverlays tests ---
+
+func TestChartRootOverlays(t *testing.T) {
+	tests := []struct {
+		name  string
+		entry Entry
+		opts  RunOptions
+		want  []string
+	}{
+		{
+			name:  "image-tags true (scenario default): no version overlay; env-file handles SNAPSHOT injection",
+			entry: Entry{ImageTags: true},
+			opts:  RunOptions{},
+			want:  nil,
+		},
+		{
+			name:  "DisableImageTags + local chart: falls back to digest",
+			entry: Entry{ImageTags: true},
+			opts:  RunOptions{DisableImageTags: true},
+			want:  []string{"digest"},
+		},
+		{
+			name:  "DisableImageTags + OCI: no overlay at all",
+			entry: Entry{ImageTags: true},
+			opts:  RunOptions{DisableImageTags: true, ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"},
+			want:  nil,
+		},
+		{
+			name:  "DisableImageTags + UseLatest + local chart: values-latest.yaml",
+			entry: Entry{ImageTags: true},
+			opts:  RunOptions{DisableImageTags: true, UseLatest: true},
+			want:  []string{"latest"},
+		},
+		{
+			name:  "OCI always wins over UseLatest",
+			entry: Entry{ImageTags: true},
+			opts:  RunOptions{DisableImageTags: true, UseLatest: true, ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"},
+			want:  nil,
+		},
+		{
+			name:  "enterprise composes with digest",
+			entry: Entry{Enterprise: true, ImageTags: true},
+			opts:  RunOptions{DisableImageTags: true},
+			want:  []string{"enterprise", "digest"},
+		},
+		{
+			name:  "enterprise + OCI: enterprise overlay kept, no version overlay",
+			entry: Entry{Enterprise: true, ImageTags: true},
+			opts:  RunOptions{DisableImageTags: true, ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"},
+			want:  []string{"enterprise"},
+		},
+		{
+			name:  "enterprise composes with latest",
+			entry: Entry{Enterprise: true, ImageTags: true},
+			opts:  RunOptions{DisableImageTags: true, UseLatest: true},
+			want:  []string{"enterprise", "latest"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := chartRootOverlays(tt.entry, tt.opts)
+			if len(got) != len(tt.want) {
+				t.Fatalf("chartRootOverlays() = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("chartRootOverlays()[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}

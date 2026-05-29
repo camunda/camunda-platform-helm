@@ -180,6 +180,7 @@ func newMatrixRunCommand() *cobra.Command {
 		dockerHubPassword        string
 		ensureDockerHub          bool
 		useLatest                bool
+		disableImageTags         bool
 		useQA                    bool
 		yes                      bool
 		logDir                   string
@@ -498,6 +499,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				DockerHubPassword:     dockerHubPassword,
 				EnsureDockerHub:       ensureDockerHub,
 				UseLatest:             useLatest,
+				DisableImageTags:      disableImageTags,
 				UseQA:                 useQA,
 				ExtraHelmArgs:         extraHelmArgs,
 				ExtraHelmSets:         extraHelmSets,
@@ -599,6 +601,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
 	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
+	f.BoolVar(&disableImageTags, "disable-image-tags", false, "Disable image tag overrides from env vars for all entries, regardless of per-scenario config. Use when deploying an OCI release artifact whose values.yaml image versions are authoritative.")
 	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")

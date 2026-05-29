@@ -617,11 +617,17 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
-          # The .env file is loaded by buildScenarioEnv() and provides values for
-          # $E2E_TESTS_*_IMAGE_TAG placeholders in base-image-tags.yaml.
+          # Image version source selection:
+          #   TEST_IMAGE_TAGS=false → --disable-image-tags; when OCI chart is set the runner
+          #     applies no version overlay (chart's values.yaml is authoritative); for local
+          #     chart deploys the runner falls back to values-digest.yaml.
+          #   TEST_IMAGE_TAGS=true  → load VALUES_CONFIG as .env file so base-image-tags.yaml
+          #     substitution resolves $E2E_TESTS_*_IMAGE_TAG placeholders (SNAPSHOT builds).
+          IMAGE_TAGS_ARGS=()
           ENV_FILE_ARGS=()
-          if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
+          if [[ "${TEST_IMAGE_TAGS:-true}" == "false" ]]; then
+            IMAGE_TAGS_ARGS=(--disable-image-tags)
+          elif [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
             echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
             ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
           fi
@@ -640,6 +646,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${IMAGE_TAGS_ARGS[@]+"${IMAGE_TAGS_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
@@ -919,9 +926,12 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
+          # Image version source selection (same logic as install block above).
+          IMAGE_TAGS_ARGS=()
           ENV_FILE_ARGS=()
-          if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
+          if [[ "${TEST_IMAGE_TAGS:-true}" == "false" ]]; then
+            IMAGE_TAGS_ARGS=(--disable-image-tags)
+          elif [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
             echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
             ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
           fi
@@ -940,6 +950,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${IMAGE_TAGS_ARGS[@]+"${IMAGE_TAGS_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
