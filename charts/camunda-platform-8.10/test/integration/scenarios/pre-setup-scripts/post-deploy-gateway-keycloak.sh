@@ -17,5 +17,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOURCES_DIR="${SCRIPT_DIR}/../common/resources"
 
 echo "[post-deploy-gateway-keycloak] Applying gateway-proxy-settings.yaml..."
-kubectl apply -n "${TEST_NAMESPACE}" -f "${RESOURCES_DIR}/gateway-proxy-settings.yaml" --server-side --force-conflicts
+# The fixture YAML uses $NAMESPACE / $RELEASE_NAME placeholders (same convention
+# as the fixtures: list in ci-test-config.yaml). The lifecycle hook runner sets
+# both env vars; substitute them before applying.
+NAMESPACE="${TEST_NAMESPACE}" RELEASE_NAME="${RELEASE_NAME:-integration}" \
+  envsubst < "${RESOURCES_DIR}/gateway-proxy-settings.yaml" | \
+  kubectl apply -n "${TEST_NAMESPACE}" -f - --server-side --force-conflicts
 echo "[post-deploy-gateway-keycloak] Done"
