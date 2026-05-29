@@ -1188,10 +1188,11 @@ Usage:
 
 {{/*
 caBundleEnv
-Emits the SSL_CERT_FILE env var pointing at the mounted bundle. The
-OpenSSL convention SSL_CERT_FILE is honoured by the OpenSearch client
-(post-8.6.7), modern PostgreSQL JDBC, and many HTTP clients that resolve
-trust through the OS.
+Emits env vars pointing at the mounted CA bundle so both native and
+Node.js TLS stacks can resolve trust:
+  - SSL_CERT_FILE: honoured by the OpenSearch client (post-8.6.7) and many
+    native HTTP/TLS libraries that resolve trust through the OS.
+  - NODE_EXTRA_CA_CERTS: honoured by Node.js (Web Modeler websockets, etc.)
 
 Usage (inside an env: list):
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
@@ -1200,6 +1201,8 @@ Usage (inside an env: list):
 */}}
 {{- define "camundaPlatform.caBundleEnv" -}}
 - name: SSL_CERT_FILE
+  value: /etc/camunda/tls/ca.crt
+- name: NODE_EXTRA_CA_CERTS
   value: /etc/camunda/tls/ca.crt
 {{- end -}}
 

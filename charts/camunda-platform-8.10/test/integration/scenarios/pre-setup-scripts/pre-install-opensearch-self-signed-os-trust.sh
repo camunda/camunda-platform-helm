@@ -14,10 +14,11 @@
 # limitations under the License.
 #
 # Pre-install script for the "opensearch-self-signed-os-trust" persistence
-# layer. Validates that the chart-built combined PKCS12 truststore
-# (caBundle init container) carries trust to a TLS-protected OpenSearch
-# backend with a self-signed CA — i.e., the JKS path is removed, only
-# global.tls.caBundle is configured.
+# layer. Validates that global.tls.caBundle (SSL_CERT_FILE / NODE_EXTRA_CA_CERTS)
+# carries OS-level trust to a TLS-protected OpenSearch backend with a
+# self-signed CA. The legacy JKS truststore path is also configured as a
+# belt-and-braces fallback; the B2 PR (#6040) will remove the JKS dependency
+# once the truststore-init container is in place.
 #
 # Generates self-signed TLS material and creates K8s secrets in the target
 # namespace. Reuses create-opensearch-tls-secrets.sh.

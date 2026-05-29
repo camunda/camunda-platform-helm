@@ -275,11 +275,11 @@ global:
 
   ## @section TLS / certificate trust
   ##
-  ## global.tls.caBundle: an OS-level CA bundle, mounted into every Java
-  ## component and exposed via SSL_CERT_FILE. Use this when a backend client
-  ## (notably the OpenSearch client post-8.6.7, modern PostgreSQL JDBC,
-  ## or any HTTP client that resolves trust through OpenSSL) reads from
-  ## the OS trust store rather than the JVM truststore.
+  ## global.tls.caBundle: an OS-level CA bundle, mounted into every component
+  ## and exposed via SSL_CERT_FILE. Use this when a backend client (notably
+  ## the OpenSearch client post-8.6.7, or any native HTTP/TLS library that
+  ## resolves trust through the OS trust store rather than the JVM truststore)
+  ## needs a custom CA.
   ##
   ## This is independent of and additive to the legacy JKS truststore wired
   ## via component-specific tls.secret.existingSecret options. Both can be
