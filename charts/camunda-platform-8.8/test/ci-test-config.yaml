@@ -61,7 +61,9 @@ integration:
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
         - name: upgrade-migration
-          enabled: true
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
+          enabled: false
           flow: upgrade-minor
           helmVersion: 3.20.2
           auth: keycloak
