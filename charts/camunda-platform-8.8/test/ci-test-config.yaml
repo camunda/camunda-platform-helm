@@ -107,7 +107,9 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
-          enabled: true
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
+          enabled: false
           exclude: []
           shortname: kemt
           tier: 2
@@ -122,7 +124,9 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
-          enabled: true
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
+          enabled: false
           exclude: []
           shortname: kerba
           tier: 2
@@ -157,7 +161,9 @@ integration:
               and elasticsearch-jks Secrets consumed by the Elasticsearch
               StatefulSet's TLS config.
         - name: keycloak-original
-          enabled: true
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
+          enabled: false
           exclude: []
           shortname: keyc
           tier: 2
@@ -265,7 +271,9 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          flow: install,upgrade-minor
+          # upgrade-minor disabled until step 1 applies the previous chart's ExternalSecret.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
+          flow: install
           helmVersion: 3.20.2
           infra-type:
             gke: distroci
