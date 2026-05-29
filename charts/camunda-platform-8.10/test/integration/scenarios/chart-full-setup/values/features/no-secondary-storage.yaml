@@ -8,3 +8,11 @@ optimize:
 
 identity:
   clients: null
+
+# base.yaml sets orchestration.data.secondaryStorage.type=elasticsearch for the
+# normal scenarios; clear it here so the chart helpers fall back to
+# global.noSecondaryStorage and skip the Camunda exporter / web-app profiles.
+orchestration:
+  data:
+    secondaryStorage:
+      type: null
