@@ -382,19 +382,14 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          features: [documentstore]
+          features: [postgresql-companion, documentstore]
           platforms: [eks]
           infra-type:
             eks: preemptible
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak.yaml

@@ -30,6 +30,22 @@ extract_images() {
     sort -u
 }
 
+manifest_exists() {
+  local image="$1"
+
+  for attempt in {1..3}; do
+    if docker manifest inspect "${image}" >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if [[ ${attempt} -lt 3 ]]; then
+      sleep 2
+    fi
+  done
+
+  return 1
+}
+
 validate_chart() {
   local chart_dir="$1"
   local values_file="${REPO_ROOT}/charts/${chart_dir}/values-enterprise.yaml"
@@ -50,7 +66,7 @@ validate_chart() {
   while IFS= read -r image; do
     [[ -z "${image}" ]] && continue
 
-    if docker manifest inspect "${image}" >/dev/null 2>&1; then
+    if manifest_exists "${image}"; then
       echo -e "  ${GREEN}✓${NC} ${image}"
     else
       echo -e "  ${RED}✗${NC} ${image} (not resolvable)"
