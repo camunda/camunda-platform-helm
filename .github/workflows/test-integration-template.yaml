@@ -211,6 +211,11 @@ on:
         required: false
         default: false
         type: boolean
+      use-latest:
+        description: Use values-latest.yaml instead of values-digest.yaml when image tag overrides are disabled
+        required: false
+        default: false
+        type: boolean
       helm-version:
         description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
         required: false
@@ -385,6 +390,7 @@ jobs:
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
       initialClaimValue: ${{ inputs.initialClaimValue }}
       include-image-tags: ${{ inputs.include-image-tags }}
+      use-latest: ${{ inputs.use-latest }}
   print-outputs:
     name: Print outputs
     runs-on: ubuntu-latest

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"scripts/camunda-core/pkg/versionmatrix"
 	"gopkg.in/yaml.v3"
+	"scripts/camunda-core/pkg/versionmatrix"
 
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/config"
@@ -1129,6 +1129,56 @@ func TestResolveEnvFile(t *testing.T) {
 			got := resolveEnvFile(tt.opts, tt.version)
 			if got != tt.want {
 				t.Errorf("resolveEnvFile(opts, %q) = %q, want %q", tt.version, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveChartRootOverlaysQuietImageVersionSelection(t *testing.T) {
+	chartPath := t.TempDir()
+	for _, name := range []string{"values-digest.yaml", "values-latest.yaml", "values-enterprise.yaml"} {
+		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	tests := []struct {
+		name      string
+		entry     Entry
+		useLatest bool
+		want      []string
+	}{
+		{
+			name:      "default uses digest when image tags are disabled",
+			entry:     Entry{},
+			useLatest: false,
+			want:      []string{"digest"},
+		},
+		{
+			name:      "image tags suppress digest and latest overlays",
+			entry:     Entry{ImageTags: true},
+			useLatest: false,
+			want:      nil,
+		},
+		{
+			name:      "use latest overrides scenario image tags",
+			entry:     Entry{ImageTags: true},
+			useLatest: true,
+			want:      []string{"latest"},
+		},
+		{
+			name:      "enterprise composes with latest",
+			entry:     Entry{Enterprise: true, ImageTags: true},
+			useLatest: true,
+			want:      []string{"enterprise", "latest"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveChartRootOverlaysQuiet(chartPath, tt.entry, tt.useLatest)
+			if strings.Join(got, ",") != strings.Join(tt.want, ",") {
+				t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want %v", got, tt.want)
 			}
 		})
 	}
