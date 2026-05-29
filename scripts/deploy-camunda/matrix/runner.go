@@ -191,6 +191,11 @@ type RunOptions struct {
 	// ChartRefVersion is the chart version to install from ChartRef (e.g., "13-rc-latest").
 	// Only meaningful when ChartRef is set. Passed as --version to helm.
 	ChartRefVersion string
+	// ForceImageOverrides bypasses the OCI immutability guard. By default, an
+	// external chart reference is deployed with the image versions baked into
+	// that chart artifact, without chart-root image overlays or image-tag env
+	// substitutions from the local git checkout.
+	ForceImageOverrides bool
 }
 
 // applyChartRefOverride mutates chart to point at opts.ChartRef (an OCI reference
@@ -212,6 +217,93 @@ func applyChartRefOverride(chart *config.ChartFlags, opts RunOptions) bool {
 		Str("chartVersion", opts.ChartRefVersion).
 		Msg("Using external chart reference (OCI/tgz) instead of local chart directory")
 	return true
+}
+
+func ociImmutabilityMode(opts RunOptions) bool {
+	return opts.ChartRef != "" && !opts.ForceImageOverrides
+}
+
+func effectiveImageTags(entry Entry, opts RunOptions) bool {
+	if ociImmutabilityMode(opts) {
+		return false
+	}
+	return entry.ImageTags
+}
+
+func resolveChartRootOverlays(entry Entry, opts RunOptions) []string {
+	if ociImmutabilityMode(opts) {
+		// OCI artifacts bake all image versions; skip overlays that would
+		// override them (includes enterprise sub-chart image pins).
+		return nil
+	}
+
+	var overlays []string
+	if entry.Enterprise {
+		overlays = append(overlays, "enterprise")
+	}
+	if !effectiveImageTags(entry, opts) {
+		if opts.UseLatest {
+			overlays = append(overlays, "latest")
+		} else {
+			overlays = append(overlays, "digest")
+		}
+	}
+	return overlays
+}
+
+func sanitizeEnvFileForOCIImmutability(envFile string, opts RunOptions) (string, func(), error) {
+	cleanup := func() {}
+	if !ociImmutabilityMode(opts) || envFile == "" {
+		return envFile, cleanup, nil
+	}
+
+	values, err := env.ReadFile(envFile)
+	if err != nil {
+		return "", cleanup, fmt.Errorf("read env file for OCI immutability guard: %w", err)
+	}
+
+	filtered := make(map[string]string, len(values))
+	removed := make([]string, 0)
+	for key, value := range values {
+		if strings.HasSuffix(key, "_IMAGE_TAG") {
+			removed = append(removed, key)
+			continue
+		}
+		filtered[key] = value
+	}
+	if len(removed) == 0 {
+		return envFile, cleanup, nil
+	}
+
+	sort.Strings(removed)
+	logging.Logger.Warn().
+		Str("chartRef", opts.ChartRef).
+		Strs("removedKeys", removed).
+		Msg("OCI immutability mode: removing image tag env overrides")
+
+	if len(filtered) == 0 {
+		return "", cleanup, nil
+	}
+
+	file, err := os.CreateTemp("", "deploy-camunda-oci-env-*.env")
+	if err != nil {
+		return "", cleanup, fmt.Errorf("create sanitized env file for OCI immutability guard: %w", err)
+	}
+	defer file.Close()
+
+	keys := make([]string, 0, len(filtered))
+	for key := range filtered {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if _, err := fmt.Fprintf(file, "%s=%s\n", key, strconv.Quote(filtered[key])); err != nil {
+			_ = os.Remove(file.Name())
+			return "", cleanup, fmt.Errorf("write sanitized env file for OCI immutability guard: %w", err)
+		}
+	}
+
+	return file.Name(), func() { _ = os.Remove(file.Name()) }, nil
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -389,7 +481,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry, opts),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -431,7 +523,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				preUpgradeScript:     resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
 				upgradeOnly:          versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
 				step1ValuesFrom:      resolveStep1ValuesFromQuiet(entry),
-				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts.UseLatest),
+				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -510,26 +602,22 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 
 // resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
 // This is a dry-run helper — best-effort, silently filters to existing files only.
-// enterprise is composable (changes registry/repo, not tags).
+// enterprise adds registry/repo config and sub-chart image pins (Keycloak, PostgreSQL).
 // digest, latest, and image-tags are mutually exclusive for image version resolution:
 //   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
 //   - useLatest selects values-latest.yaml instead of values-digest.yaml
+//   - OCI immutability mode selects no chart-root overlays
 //   - digest is the CI default when neither image-tags nor useLatest is active
-func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, useLatest bool) []string {
+func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, opts RunOptions) []string {
 	if chartPath == "" {
 		return nil
 	}
-	var overlays []string
-	if entry.Enterprise {
-		overlays = append(overlays, "enterprise")
+	if ociImmutabilityMode(opts) {
+		logging.Logger.Warn().
+			Str("chartRef", opts.ChartRef).
+			Msg("OCI immutability mode: skipping chart-root image overlays (dry-run)")
 	}
-	if !entry.ImageTags {
-		if useLatest {
-			overlays = append(overlays, "latest")
-		} else {
-			overlays = append(overlays, "digest")
-		}
-	}
+	overlays := resolveChartRootOverlays(entry, opts)
 	// Filter to only overlays whose files exist on disk.
 	var existing []string
 	for _, name := range overlays {
@@ -717,7 +805,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry, opts),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -1496,6 +1584,11 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	platform := resolvePlatform(opts, entry)
 	kubeCtx := resolveKubeContext(opts, platform)
 	envFile := resolveEnvFile(opts, entry.Version)
+	envFile, cleanupEnvFile, err := sanitizeEnvFileForOCIImmutability(envFile, opts)
+	defer cleanupEnvFile() // safe: cleanup is always a valid no-op func even on error
+	if err != nil {
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+	}
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
 
 	// Compute the scenario directory. deploy.Execute uses this to resolve
@@ -1535,18 +1628,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			//   - useLatest selects values-latest.yaml instead of values-digest.yaml
 			//   - digest is the CI default when neither image-tags nor useLatest is active
 			ChartRootOverlays: func() []string {
-				var overlays []string
-				if entry.Enterprise {
-					overlays = append(overlays, "enterprise")
+				if ociImmutabilityMode(opts) {
+					logging.Logger.Warn().
+						Str("chartRef", opts.ChartRef).
+						Msg("OCI immutability mode: skipping chart-root image overlays")
 				}
-				if !entry.ImageTags {
-					if opts.UseLatest {
-						overlays = append(overlays, "latest")
-					} else {
-						overlays = append(overlays, "digest")
-					}
-				}
-				return overlays
+				return resolveChartRootOverlays(entry, opts)
 			}(),
 		},
 		Deployment: config.DeploymentFlags{
@@ -1622,7 +1709,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			Features:    entry.Features,
 			InfraType:   entry.InfraType,
 			QA:          entry.QA || opts.UseQA,
-			ImageTags:   entry.ImageTags,
+			ImageTags:   effectiveImageTags(entry, opts),
 			UpgradeFlow: entry.Upgrade,
 		},
 	}

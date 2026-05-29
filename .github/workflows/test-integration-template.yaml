@@ -211,6 +211,11 @@ on:
         required: false
         default: false
         type: boolean
+      force-image-overrides:
+        description: '⚠️ DANGER: Bypass OCI artifact immutability guard and allow image version overrides even when helmChartVersion is set. Only use if you know what you are doing.'
+        required: false
+        default: false
+        type: boolean
       helm-version:
         description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
         required: false
@@ -385,6 +390,7 @@ jobs:
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
       initialClaimValue: ${{ inputs.initialClaimValue }}
       include-image-tags: ${{ inputs.include-image-tags }}
+      force-image-overrides: ${{ inputs.force-image-overrides }}
   print-outputs:
     name: Print outputs
     runs-on: ubuntu-latest
