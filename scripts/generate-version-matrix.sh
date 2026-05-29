@@ -184,6 +184,51 @@ get_helm_cli_version () {
     echo -n "${version}"
 }
 
+# Get the set of supported Helm CLI versions for a chart release.
+# Per-minor source of truth: `.tool-versions` helm pin at the chart's git tag
+# (preserves per-release historical values), with overrides for transitional
+# minors where the tag may pre-date or post-date the Helm v3→v4 migration:
+#   - 8.0–8.8: v3-only minors. If the tag was cut after the Helm v4 bump
+#     (version starts with 4), clamp back to 3.20.2.
+#   - 8.9: transitional minor (supports both v3 and v4). If the tag was cut
+#     before the v4 bump (version starts with 3), use as-is. If after the
+#     bump (version starts with 4), prefix 3.20.2 so the row shows both.
+#   - 8.10+: use as-is.
+# Output: one version per line, semver-sorted, deduped.
+get_helm_cli_versions () {
+    chart_ref_name="${1}"
+    chart_minor="${2}"
+
+    versions_csv=""
+
+    case "${chart_minor}" in
+        8.[0-8])
+            tag_version=$(get_helm_cli_version "${chart_ref_name}")
+            if [[ "${tag_version}" == 4* ]]; then
+                versions_csv="3.20.2"
+            else
+                versions_csv="${tag_version}"
+            fi
+            ;;
+        8.9)
+            tag_version=$(get_helm_cli_version "${chart_ref_name}")
+            if [[ "${tag_version}" == 4* ]]; then
+                versions_csv="3.20.2,${tag_version}"
+            else
+                versions_csv="${tag_version}"
+            fi
+            ;;
+    esac
+
+    # Default for everything else (and a safety net if the per-minor source
+    # above produced nothing): `.tool-versions` helm pin at the ref.
+    if [[ -z "${versions_csv}" ]]; then
+        versions_csv=$(get_helm_cli_version "${chart_ref_name}")
+    fi
+
+    echo "${versions_csv}" | tr ',' '\n' | awk '{$1=$1};1' | sort -V -u | grep -v "^$" || true
+}
+
 # Generate version matrix index for all Camunda versions with corresponding charts.
 generate_version_matrix_index () {
     export ALL_CAMUNDA_VERSIONS="$(get_versions_formatted)" \
@@ -311,13 +356,13 @@ while test -n "${1:-}"; do
         --unreleased)
           generate_version_matrix_unreleased
           ;;
-        --helm-cli-version)
-          test -n "${2:-}" || (
-            echo "[ERROR] Git ref name is needed as an arg for this option";
+        --helm-cli-versions)
+          test -n "${3:-}" || (
+            echo "[ERROR] Git ref name and chart minor are needed as args for this option";
             exit 1
           )
-          get_helm_cli_version "${2}"
-          shift
+          get_helm_cli_versions "${2}" "${3}"
+          shift 2
           ;;
         --chart-images-camunda)
           test -n "${3:-}" || (
