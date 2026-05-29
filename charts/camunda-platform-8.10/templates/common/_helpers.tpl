@@ -1192,7 +1192,12 @@ Emits env vars pointing at the mounted CA bundle so both native and
 Node.js TLS stacks can resolve trust:
   - SSL_CERT_FILE: honoured by the OpenSearch client (post-8.6.7) and many
     native HTTP/TLS libraries that resolve trust through the OS.
-  - NODE_EXTRA_CA_CERTS: honoured by Node.js (Web Modeler websockets, etc.)
+  - NODE_EXTRA_CA_CERTS: honoured by Node.js (Web Modeler websockets,
+    Console, etc.)
+
+Note: Console gates its own NODE_EXTRA_CA_CERTS behind
+`ne (include "camundaPlatform.hasCaBundle" .) "true"` to avoid
+duplication when this helper is also included.
 
 Usage (inside an env: list):
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}

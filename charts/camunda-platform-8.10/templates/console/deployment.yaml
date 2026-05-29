@@ -51,8 +51,10 @@ spec:
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
             ) | nindent 12 }}
+            {{- if ne (include "camundaPlatform.hasCaBundle" .) "true" }}
             - name: NODE_EXTRA_CA_CERTS
               value: {{ printf "/usr/local/console/certificates/%s" (or .Values.camundaHub.console.tls.certKeyFilename .Values.console.tls.certKeyFilename) | quote }}
+            {{- end }}
             - name: NODE_ENV
               value: {{ (or .Values.camundaHub.console.nodeEnv .Values.console.nodeEnv) | default "prod" | quote }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
