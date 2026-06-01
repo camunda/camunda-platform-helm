@@ -37,7 +37,7 @@ integration:
             eks: preemptible
           platforms: [gke]  # EKS removed: Playwright ITs fail due to pods not recovering on EKS (newly exposed by ExternalSecrets fix)
         - name: enterprise-values
-          enabled: false # Disabled: entv Playwright runner resource flakiness is unrelated to chart changes
+          enabled: true
           shortname: entv
           tier: 2
           auth: keycloak
