@@ -8,10 +8,11 @@ flowchart LR
 
     subgraph PLAN["① Plan your deployment"]
         direction TB
-        pDB["Decide: database technology"]
-        pID["Decide: identity strategy"]
-        pDT["Decide: deployment target"]
+        pDT["Decide: deployment target\n+ Architecture diagrams"]
+        pDB["Decide: database technology\n(depends on target)"]
+        pID["Decide: identity strategy\n(depends on target + database)"]
         pCL["Pre-install checklist"]
+        pDT --> pDB --> pID --> pCL
     end
 
     subgraph BASE["② Build your Baseline"]
