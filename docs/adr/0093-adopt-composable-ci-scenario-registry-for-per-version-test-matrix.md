@@ -33,10 +33,6 @@ Three duplication pressures compound it:
 - **`pr` vs `nightly`** — scheduling a scenario in both tiers requires
   copying the full blob and toggling `enabled`.
 
-Precedent: `.github/config/permitted-flows.yaml` is loaded separately
-by `matrix/config.go` (`LoadPermittedFlows`, `FilterFlows`) and applied
-as a cross-cutting filter. This ADR generalizes that pattern.
-
 ### Applicability by version
 
 Applies to all currently supported chart versions — **8.7, 8.8, 8.9,
@@ -109,24 +105,18 @@ are normative:
    artifacts within this repository; it did not constrain them to the
    chart subtree.
 
-   A version manifest references scenario IDs only, grouped under
-   `pr:` and `nightly:` schedule lists. A scenario references
-   identity, persistence, platforms, infra, e2e, hooks, dependencies,
-   and features by ID, and carries a plural `flows: [<flow-id>, …]`
-   list (one composition × multiple flows). The loader fans out one
-   registry scenario × N flows into N `CIScenario` entries with the
-   same composition and distinct singular `Flow` field, preserving
-   the existing `CITestConfig` struct unchanged. A scenario also owns
-   its own scalars (shortname, prefix key, Helm version override).
-   Numeric `tier` and `enabled` live on the version-manifest
-   reference, not the shared scenario file. Identities reference
-   companion charts via `dependencies/<id>` IDs; inline companion
-   blocks in identity or version files MUST NOT be permitted.
+   Scenario files carry a plural `flows: [<flow-id>, …]`. The loader
+   fans out one registry scenario × N flows into N `CIScenario`
+   entries with distinct singular `Flow`, preserving the existing
+   `CITestConfig` struct unchanged. Numeric `tier` and `enabled` live
+   on the version-manifest reference, not the shared scenario file.
+   Inline companion-chart blocks in identity or version files MUST
+   NOT be permitted; identities reference `dependencies/<id>` by ID.
 
    Version-scoped paths (values-layer files under `chart-full-setup/values/`,
    hook manifests under `common/resources/`, hook scripts under
-   `pre-setup-scripts/`) are named by basename in registry files and
-   resolved by the loader against the version's
+   `pre-setup-scripts/`) are named by basename and resolved by the
+   loader against the version's
    `charts/<X.Y>/test/integration/scenarios/` tree.
 
 2. **Loader.** `scripts/deploy-camunda/matrix/config.go` gains
@@ -192,12 +182,11 @@ are normative:
    uses it to detect direct edits and point at the corresponding
    registry file. Unmigrated versions lack the marker and are skipped.
 
-First-landing PR: 8.10 registry migration. Follow-ups: 8.9, 8.8, 8.7
+Follow-ups (not in the first-landing 8.10 PR): 8.9 / 8.8 / 8.7
 migrations; removal of `LoadCITestConfig` and the legacy files;
-refactor of `scripts/deploy-camunda/matrix/runner.go` into
-concern-scoped packages; migration of scenario-specific behavior
-currently in `.github/workflows/test-integration-runner.yaml` into
-registry data.
+`runner.go` split into concern-scoped packages; migration of
+scenario-specific behavior in `.github/workflows/test-integration-runner.yaml`
+into registry data.
 
 ### Positive Consequences
 
