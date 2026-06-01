@@ -163,6 +163,13 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: oidc
           enabled: false
           exclude: [identity,console,orchestration-grpc]
@@ -176,7 +183,18 @@ integration:
             eks: preemptible
           identity: oidc
           persistence: elasticsearch
+          features: [postgresql-companion]
           platforms: [gke]
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: auth0
           # Auth0 OIDC scenario. The matrix runner provisions per-component
           # first-party clients via the Management API at runtime
@@ -224,6 +242,24 @@ integration:
             gke: distroci
             eks: preemptible
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: keycloak-rba
           enabled: false
           exclude: []
@@ -237,6 +273,24 @@ integration:
           persistence: elasticsearch
           features: [rba]
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: keycloak-original
           enabled: false
           exclude: []
@@ -249,6 +303,24 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: keycloak-original
           enabled: true
           exclude: []
@@ -441,6 +513,24 @@ integration:
           identity: keycloak
           persistence: rdbms-external
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         # rdbms: persistence layer points Camunda at an external PostgreSQL
         # cluster (postgresql-cluster-rw.<namespace>.svc.cluster.local). The
         # CloudNativePG `Cluster` + auth Secret are NOT part of the chart —
@@ -555,6 +645,24 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: hub-mixed
           enabled: false
           auth: keycloak
@@ -568,6 +676,24 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: keycloak-original
           enabled: true
           flow: install
@@ -610,6 +736,24 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: qa-elasticsearch-upg
           enabled: false
           flow: install
@@ -1041,3 +1185,16 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml

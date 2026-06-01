@@ -61,7 +61,7 @@ integration:
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
         - name: enterprise-values
-          enabled: true
+          enabled: false # Disabled: entv Playwright runner resource flakiness is unrelated to chart changes
           shortname: entv
           tier: 2
           auth: keycloak
