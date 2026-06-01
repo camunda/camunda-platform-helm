@@ -49,7 +49,7 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
 			SetValues: map[string]string{
 				"webModeler.enabled":                                               "true",
-				"webModeler.restapi.mail.fromAddress":                              "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                              "example@example.com",
 				"webModelerPostgresql.enabled":                                     "true",
 				"webModelerPostgresql.auth.existingSecret":                         "camunda-platform-test-postgresql-web-modeler",
 				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",

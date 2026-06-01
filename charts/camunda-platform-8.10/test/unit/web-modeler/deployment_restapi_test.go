@@ -58,12 +58,12 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
-				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                          "example@example.com",
 				"webModelerPostgresql.enabled":                                 "false",
-				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
-				"webModeler.restapi.externalDatabase.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
-				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
+				"camundaHub.webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+				"camundaHub.webModeler.restapi.externalDatabase.username":                 "modeler-user",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -87,12 +87,12 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
-				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                          "example@example.com",
 				"webModelerPostgresql.enabled":                                 "false",
-				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
-				"webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
-				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
+				"camundaHub.webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+				"camundaHub.webModeler.restapi.externalDatabase.username":                 "modeler-user",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -116,12 +116,12 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
-				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                          "example@example.com",
 				"webModelerPostgresql.enabled":                                 "false",
-				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
-				"webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
-				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "my-database-password-key",
+				"camundaHub.webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+				"camundaHub.webModeler.restapi.externalDatabase.username":                 "modeler-user",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecretKey": "my-database-password-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -145,12 +145,12 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
-				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                          "example@example.com",
 				"webModelerPostgresql.enabled":                                 "false",
-				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
-				"webModeler.restapi.externalDatabase.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
-				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
+				"camundaHub.webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+				"camundaHub.webModeler.restapi.externalDatabase.username":                 "modeler-user",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
+				"camundaHub.webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -175,7 +175,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                         "true",
 				"webModeler.enabled":                       "true",
-				"webModeler.restapi.mail.fromAddress":      "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":      "example@example.com",
 				"webModelerPostgresql.enabled":             "true",
 				"webModelerPostgresql.auth.existingSecret": "my-secret",
 			},
@@ -201,7 +201,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                     "true",
 				"webModeler.enabled":                                   "true",
-				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                  "example@example.com",
 				"webModelerPostgresql.enabled":                         "true",
 				"webModelerPostgresql.auth.existingSecret":             "my-secret",
 				"webModelerPostgresql.auth.secretKeys.userPasswordKey": "my-database-password-key",
@@ -228,10 +228,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                 "true",
 				"webModeler.enabled":                               "true",
-				"webModeler.restapi.mail.fromAddress":              "example@example.com",
-				"webModeler.restapi.mail.smtpUser":                 "modeler-user",
-				"webModeler.restapi.mail.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
-				"webModeler.restapi.mail.secret.existingSecretKey": "smtp-password",
+				"camundaHub.webModeler.restapi.mail.fromAddress":              "example@example.com",
+				"camundaHub.webModeler.restapi.mail.smtpUser":                 "modeler-user",
+				"camundaHub.webModeler.restapi.mail.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
+				"camundaHub.webModeler.restapi.mail.secret.existingSecretKey": "smtp-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -255,10 +255,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                 "true",
 				"webModeler.enabled":                               "true",
-				"webModeler.restapi.mail.fromAddress":              "example@example.com",
-				"webModeler.restapi.mail.smtpUser":                 "modeler-user",
-				"webModeler.restapi.mail.secret.existingSecret":    "my-secret",
-				"webModeler.restapi.mail.secret.existingSecretKey": "smtp-password",
+				"camundaHub.webModeler.restapi.mail.fromAddress":              "example@example.com",
+				"camundaHub.webModeler.restapi.mail.smtpUser":                 "modeler-user",
+				"camundaHub.webModeler.restapi.mail.secret.existingSecret":    "my-secret",
+				"camundaHub.webModeler.restapi.mail.secret.existingSecretKey": "smtp-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -282,10 +282,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                 "true",
 				"webModeler.enabled":                               "true",
-				"webModeler.restapi.mail.fromAddress":              "example@example.com",
-				"webModeler.restapi.mail.smtpUser":                 "modeler-user",
-				"webModeler.restapi.mail.secret.existingSecret":    "my-secret",
-				"webModeler.restapi.mail.secret.existingSecretKey": "my-smtp-password-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":              "example@example.com",
+				"camundaHub.webModeler.restapi.mail.smtpUser":                 "modeler-user",
+				"camundaHub.webModeler.restapi.mail.secret.existingSecret":    "my-secret",
+				"camundaHub.webModeler.restapi.mail.secret.existingSecretKey": "my-smtp-password-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -309,9 +309,9 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                          "true",
 				"webModeler.enabled":                        "true",
-				"webModeler.restapi.mail.fromAddress":       "example@example.com",
-				"webModeler.restapi.startupProbe.enabled":   "true",
-				"webModeler.restapi.startupProbe.probePath": "/healthz",
+				"camundaHub.webModeler.restapi.mail.fromAddress":       "example@example.com",
+				"camundaHub.webModeler.restapi.startupProbe.enabled":   "true",
+				"camundaHub.webModeler.restapi.startupProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -328,9 +328,9 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
-				"webModeler.restapi.mail.fromAddress":         "example@example.com",
-				"webModeler.restapi.readinessProbe.enabled":   "true",
-				"webModeler.restapi.readinessProbe.probePath": "/healthz",
+				"camundaHub.webModeler.restapi.mail.fromAddress":         "example@example.com",
+				"camundaHub.webModeler.restapi.readinessProbe.enabled":   "true",
+				"camundaHub.webModeler.restapi.readinessProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -347,9 +347,9 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                           "true",
 				"webModeler.enabled":                         "true",
-				"webModeler.restapi.mail.fromAddress":        "example@example.com",
-				"webModeler.restapi.livenessProbe.enabled":   "true",
-				"webModeler.restapi.livenessProbe.probePath": "/healthz",
+				"camundaHub.webModeler.restapi.mail.fromAddress":        "example@example.com",
+				"camundaHub.webModeler.restapi.livenessProbe.enabled":   "true",
+				"camundaHub.webModeler.restapi.livenessProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -366,14 +366,14 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
-				"webModeler.restapi.mail.fromAddress":         "example@example.com",
-				"webModeler.contextPath":                      "/test",
-				"webModeler.restapi.startupProbe.enabled":     "true",
-				"webModeler.restapi.startupProbe.probePath":   "/start",
-				"webModeler.restapi.readinessProbe.enabled":   "true",
-				"webModeler.restapi.readinessProbe.probePath": "/ready",
-				"webModeler.restapi.livenessProbe.enabled":    "true",
-				"webModeler.restapi.livenessProbe.probePath":  "/live",
+				"camundaHub.webModeler.restapi.mail.fromAddress":         "example@example.com",
+				"camundaHub.webModeler.contextPath":                      "/test",
+				"camundaHub.webModeler.restapi.startupProbe.enabled":     "true",
+				"camundaHub.webModeler.restapi.startupProbe.probePath":   "/start",
+				"camundaHub.webModeler.restapi.readinessProbe.enabled":   "true",
+				"camundaHub.webModeler.restapi.readinessProbe.probePath": "/ready",
+				"camundaHub.webModeler.restapi.livenessProbe.enabled":    "true",
+				"camundaHub.webModeler.restapi.livenessProbe.probePath":  "/live",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -391,10 +391,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                      "true",
 				"webModeler.enabled":                                    "true",
-				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
-				"webModeler.restapi.sidecars[0].name":                   "nginx",
-				"webModeler.restapi.sidecars[0].image":                  "nginx:latest",
-				"webModeler.restapi.sidecars[0].ports[0].containerPort": "80",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                   "example@example.com",
+				"camundaHub.webModeler.restapi.sidecars[0].name":                   "nginx",
+				"camundaHub.webModeler.restapi.sidecars[0].image":                  "nginx:latest",
+				"camundaHub.webModeler.restapi.sidecars[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -419,10 +419,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                            "true",
 				"webModeler.enabled":                                          "true",
-				"webModeler.restapi.mail.fromAddress":                         "example@example.com",
-				"webModeler.restapi.initContainers[0].name":                   "nginx",
-				"webModeler.restapi.initContainers[0].image":                  "nginx:latest",
-				"webModeler.restapi.initContainers[0].ports[0].containerPort": "80",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                         "example@example.com",
+				"camundaHub.webModeler.restapi.initContainers[0].name":                   "nginx",
+				"camundaHub.webModeler.restapi.initContainers[0].image":                  "nginx:latest",
+				"camundaHub.webModeler.restapi.initContainers[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -447,10 +447,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
-				"webModeler.restapi.mail.fromAddress":         "example@example.com",
-				"webModeler.restapi.dnsPolicy":                "ClusterFirst",
-				"webModeler.restapi.dnsConfig.nameservers[0]": "8.8.8.8",
-				"webModeler.restapi.dnsConfig.searches[0]":    "example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress":         "example@example.com",
+				"camundaHub.webModeler.restapi.dnsPolicy":                "ClusterFirst",
+				"camundaHub.webModeler.restapi.dnsConfig.nameservers[0]": "8.8.8.8",
+				"camundaHub.webModeler.restapi.dnsConfig.searches[0]":    "example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -475,9 +475,9 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                          "true",
 				"webModeler.enabled":                                        "true",
-				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
-				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
-				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -502,8 +502,8 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                     "true",
 				"webModeler.enabled":                                   "true",
-				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
-				"webModeler.restapi.pusher.client.secret.inlineSecret": "my-inline-app-key-value",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.client.secret.inlineSecret": "my-inline-app-key-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

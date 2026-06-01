@@ -58,11 +58,11 @@ func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 			"identity.enabled":                                "true",
 			"elasticsearch.enabled":                           "true",
 			"global.elasticsearch.enabled":                    "true",
-			"webModeler.restapi.mail.fromAddress":             "test@example.com",
-			"webModeler.websockets.resources.requests.cpu":    "50m",
-			"webModeler.websockets.resources.limits.cpu":      "0.3",
-			"webModeler.websockets.resources.requests.memory": "32Mi",
-			"webModeler.websockets.resources.limits.memory":   "64Mi",
+			"camundaHub.webModeler.restapi.mail.fromAddress":             "test@example.com",
+			"camundaHub.webModeler.websockets.resources.requests.cpu":    "50m",
+			"camundaHub.webModeler.websockets.resources.limits.cpu":      "0.3",
+			"camundaHub.webModeler.websockets.resources.requests.memory": "32Mi",
+			"camundaHub.webModeler.websockets.resources.limits.memory":   "64Mi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -90,7 +90,7 @@ func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		"CPU limit should be 0.3, got %s", cpuLimit.String())
 }
 
-func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
+func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesCustomValues() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -98,11 +98,11 @@ func (s *WebsocketsResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibili
 			"identity.enabled":                                "true",
 			"elasticsearch.enabled":                           "true",
 			"global.elasticsearch.enabled":                    "true",
-			"webModeler.restapi.mail.fromAddress":             "test@example.com",
-			"webModeler.websockets.resources.requests.cpu":    "100m",
-			"webModeler.websockets.resources.limits.cpu":      "200m",
-			"webModeler.websockets.resources.requests.memory": "64Mi",
-			"webModeler.websockets.resources.limits.memory":   "128Mi",
+			"camundaHub.webModeler.restapi.mail.fromAddress":             "test@example.com",
+			"camundaHub.webModeler.websockets.resources.requests.cpu":    "100m",
+			"camundaHub.webModeler.websockets.resources.limits.cpu":      "200m",
+			"camundaHub.webModeler.websockets.resources.requests.memory": "64Mi",
+			"camundaHub.webModeler.websockets.resources.limits.memory":   "128Mi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

@@ -2387,202 +2387,1510 @@
                 }
             }
         },
+        "camundaHub": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.",
+                    "default": false
+                },
+                "console": {
+                    "type": "object",
+                    "properties": {
+                        "configuration": {
+                            "type": "string",
+                            "description": "Configuration passed directly to Console as YAML file.",
+                            "default": ""
+                        },
+                        "extraConfiguration": {
+                            "type": "array",
+                            "description": "if specified, contents will be used for an extra configuration file.",
+                            "default": [],
+                            "items": {}
+                        },
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "registry": {
+                                    "type": "string",
+                                    "description": "can be used to set container image registry.",
+                                    "default": ""
+                                },
+                                "repository": {
+                                    "type": "string",
+                                    "description": "defines which image repository to use",
+                                    "default": "camunda/console"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to set the Docker image tag for the Console image",
+                                    "default": "8.9.25"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest",
+                                    "default": ""
+                                },
+                                "pullSecrets": {
+                                    "type": "array",
+                                    "description": "can be used to configure image pull secrets",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
+                        },
+                        "nodeEnv": {
+                            "type": "string",
+                            "description": "can be used to set the node environment.",
+                            "default": "prod"
+                        },
+                        "sidecars": {
+                            "type": "array",
+                            "description": "can be used to attach extra containers to the console deployment",
+                            "default": [],
+                            "items": {}
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "Number of Console replicas",
+                            "default": 1
+                        },
+                        "tls": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enable TLS traffic for console",
+                                    "default": false
+                                },
+                                "certKeyFilename": {
+                                    "type": "string",
+                                    "description": "defines certificate Key filename",
+                                    "default": ""
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificates",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "keycloak": {
+                            "type": "object",
+                            "properties": {
+                                "realm": {
+                                    "type": "string",
+                                    "description": "Specifies the Keycloak realm used for authentication.",
+                                    "default": "camunda-platform"
+                                }
+                            }
+                        },
+                        "contextPath": {
+                            "type": "string",
+                            "description": "can be used to make Console web application works on a custom sub-path.",
+                            "default": ""
+                        },
+                        "initContainers": {
+                            "type": "array",
+                            "description": "can be used to set up extra init containers for the application Pod",
+                            "default": [],
+                            "items": {}
+                        },
+                        "podAnnotations": {
+                            "type": "object",
+                            "description": "can be used to define extra Console pod annotations.",
+                            "default": {}
+                        },
+                        "podLabels": {
+                            "type": "object",
+                            "description": "can be used to define extra Console pod labels.",
+                            "default": {}
+                        },
+                        "logging": {
+                            "type": "object",
+                            "description": "configuration for the Console logging.",
+                            "default": {}
+                        },
+                        "service": {
+                            "type": "object",
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations",
+                                    "default": {}
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "defines the type of the service",
+                                    "default": "ClusterIP"
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "defines the port number",
+                                    "default": 80
+                                },
+                                "serverName": {
+                                    "type": "string",
+                                    "description": "defines the port name",
+                                    "default": "http"
+                                },
+                                "managementPort": {
+                                    "type": "number",
+                                    "description": "defines the management port",
+                                    "default": 9100
+                                }
+                            }
+                        },
+                        "resources": {
+                            "type": "object",
+                            "properties": {
+                                "requests": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string",
+                                            "description": "CPU resource value",
+                                            "default": "1000m"
+                                        },
+                                        "memory": {
+                                            "type": "string",
+                                            "description": "memory resource value",
+                                            "default": "1Gi"
+                                        }
+                                    }
+                                },
+                                "limits": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string",
+                                            "description": "CPU resource value",
+                                            "default": "2000m"
+                                        },
+                                        "memory": {
+                                            "type": "string",
+                                            "description": "memory resource value",
+                                            "default": "2Gi"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "env": {
+                            "type": "array",
+                            "description": "can be used to set extra environment variables",
+                            "default": [],
+                            "items": {}
+                        },
+                        "envFrom": {
+                            "type": "array",
+                            "description": "list of environment variables to import",
+                            "default": [],
+                            "items": {}
+                        },
+                        "command": {
+                            "type": "array",
+                            "description": "can be used to override the default command",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumes": {
+                            "type": "array",
+                            "description": "can be used to define extra volumes",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumeMounts": {
+                            "type": "array",
+                            "description": "can be used to mount extra volumes",
+                            "default": [],
+                            "items": {}
+                        },
+                        "startupProbe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the startupProbe is enabled in the app container",
+                                    "default": false
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the startupProbe scheme used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the startupProbe route used on the app",
+                                    "default": "/health/readiness"
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "number",
+                                    "description": "defines the number of seconds before the probe is initiated",
+                                    "default": 30
+                                },
+                                "periodSeconds": {
+                                    "type": "number",
+                                    "description": "defines how often the probe is executed",
+                                    "default": 30
+                                },
+                                "successThreshold": {
+                                    "type": "number",
+                                    "description": "defines how many consecutive successes mark the probe as ready",
+                                    "default": 1
+                                },
+                                "failureThreshold": {
+                                    "type": "number",
+                                    "description": "defines when the probe is considered as failed",
+                                    "default": 5
+                                },
+                                "timeoutSeconds": {
+                                    "type": "number",
+                                    "description": "defines the seconds after the probe times out",
+                                    "default": 1
+                                }
+                            }
+                        },
+                        "readinessProbe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the readinessProbe is enabled in the app container",
+                                    "default": true
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the readinessProbe scheme used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the readinessProbe route used on the app",
+                                    "default": "/health/readiness"
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "number",
+                                    "description": "defines the number of seconds before the probe is initiated",
+                                    "default": 30
+                                },
+                                "periodSeconds": {
+                                    "type": "number",
+                                    "description": "defines how often the probe is executed",
+                                    "default": 30
+                                },
+                                "successThreshold": {
+                                    "type": "number",
+                                    "description": "defines how many consecutive successes mark the probe as ready",
+                                    "default": 1
+                                },
+                                "failureThreshold": {
+                                    "type": "number",
+                                    "description": "defines when the probe is considered as failed",
+                                    "default": 5
+                                },
+                                "timeoutSeconds": {
+                                    "type": "number",
+                                    "description": "defines the seconds after the probe times out",
+                                    "default": 1
+                                }
+                            }
+                        },
+                        "livenessProbe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the livenessProbe is enabled in the app container",
+                                    "default": false
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the livenessProbe scheme used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the livenessProbe route used on the app",
+                                    "default": "/health/liveness"
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "number",
+                                    "description": "defines the number of seconds before the probe is initiated",
+                                    "default": 30
+                                },
+                                "periodSeconds": {
+                                    "type": "number",
+                                    "description": "defines how often the probe is executed",
+                                    "default": 30
+                                },
+                                "successThreshold": {
+                                    "type": "number",
+                                    "description": "defines how many consecutive successes mark the probe as ready",
+                                    "default": 1
+                                },
+                                "failureThreshold": {
+                                    "type": "number",
+                                    "description": "defines when the probe is considered as failed",
+                                    "default": 5
+                                },
+                                "timeoutSeconds": {
+                                    "type": "number",
+                                    "description": "defines the seconds after the probe times out",
+                                    "default": 1
+                                }
+                            }
+                        },
+                        "metrics": {
+                            "type": "object",
+                            "properties": {
+                                "prometheus": {
+                                    "type": "string",
+                                    "description": "Prometheus metrics endpoint path",
+                                    "default": "/prometheus"
+                                }
+                            }
+                        },
+                        "serviceAccount": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables serviceAccount",
+                                    "default": true
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "the name of the service account",
+                                    "default": ""
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "custom annotations",
+                                    "default": {}
+                                },
+                                "automountServiceAccountToken": {
+                                    "type": "boolean",
+                                    "description": "automount service account token",
+                                    "default": false
+                                }
+                            }
+                        },
+                        "podSecurityContext": {
+                            "type": "object",
+                            "properties": {
+                                "runAsNonRoot": {
+                                    "type": "boolean",
+                                    "description": "run as non-root user",
+                                    "default": true
+                                },
+                                "fsGroup": {
+                                    "type": "number",
+                                    "description": "filesystem group ID",
+                                    "default": 1001
+                                },
+                                "seccompProfile": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "description": "seccomp profile type",
+                                            "default": "RuntimeDefault"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "type": "object",
+                            "properties": {
+                                "allowPrivilegeEscalation": {
+                                    "type": "boolean",
+                                    "description": "allow privilege escalation",
+                                    "default": false
+                                },
+                                "privileged": {
+                                    "type": "boolean",
+                                    "description": "run container in privileged mode",
+                                    "default": false
+                                },
+                                "readOnlyRootFilesystem": {
+                                    "type": "boolean",
+                                    "description": "mount root filesystem as read only",
+                                    "default": true
+                                },
+                                "runAsNonRoot": {
+                                    "type": "boolean",
+                                    "description": "run as non-root user",
+                                    "default": true
+                                },
+                                "runAsUser": {
+                                    "type": "number",
+                                    "description": "run as specific user ID",
+                                    "default": 1001
+                                },
+                                "seccompProfile": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "description": "seccomp profile type",
+                                            "default": "RuntimeDefault"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "nodeSelector": {
+                            "type": "object",
+                            "description": "",
+                            "default": {}
+                        },
+                        "tolerations": {
+                            "type": "array",
+                            "description": "",
+                            "default": [],
+                            "items": {}
+                        },
+                        "affinity": {
+                            "type": "object",
+                            "description": "",
+                            "default": {}
+                        },
+                        "dnsPolicy": {
+                            "type": "string",
+                            "description": "",
+                            "default": ""
+                        },
+                        "dnsConfig": {
+                            "type": "object",
+                            "description": "",
+                            "default": {}
+                        }
+                    }
+                },
+                "webModeler": {
+                    "type": "object",
+                    "properties": {
+                        "fullnameOverride": {
+                            "type": "string",
+                            "description": "can be used to override the full name of the WebModeler resources",
+                            "default": ""
+                        },
+                        "nameOverride": {
+                            "type": "string",
+                            "description": "can be used to partly override the name of the WebModeler resources",
+                            "default": ""
+                        },
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "registry": {
+                                    "type": "string",
+                                    "description": "can be used to set the Docker registry",
+                                    "default": ""
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to set the Docker image tag",
+                                    "default": "8.10.0-alpha1-rc1"
+                                },
+                                "pullSecrets": {
+                                    "type": "array",
+                                    "description": "can be used to configure image pull secrets",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
+                        },
+                        "contextPath": {
+                            "type": "string",
+                            "description": "can be used to make WebModeler available on a custom sub-path.",
+                            "default": ""
+                        },
+                        "security": {
+                            "type": "object",
+                            "properties": {
+                                "authentication": {
+                                    "type": "object",
+                                    "properties": {
+                                        "method": {
+                                            "type": "string",
+                                            "description": "defines the authentication method. Possible values: `basic`, `oidc`, or `none`.",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "restapi": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "defines which image repository to use for the restapi Docker image",
+                                            "default": "camunda/hub"
+                                        },
+                                        "digest": {
+                                            "type": "string",
+                                            "description": "can be used to set image digest",
+                                            "default": ""
+                                        }
+                                    }
+                                },
+                                "sidecars": {
+                                    "type": "array",
+                                    "description": "can be used to attach extra containers",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "initContainers": {
+                                    "type": "array",
+                                    "description": "can be used to set up extra init containers",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "externalDatabase": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "description": "defines the JDBC url",
+                                            "default": ""
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "Database host",
+                                            "default": ""
+                                        },
+                                        "port": {
+                                            "type": "number",
+                                            "description": "Database port number",
+                                            "default": 5432
+                                        },
+                                        "database": {
+                                            "type": "string",
+                                            "description": "The database name",
+                                            "default": "web-modeler"
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "description": "defines the database user",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "mail": {
+                                    "type": "object",
+                                    "properties": {
+                                        "smtpHost": {
+                                            "type": "string",
+                                            "description": "defines the host name of the SMTP server",
+                                            "default": ""
+                                        },
+                                        "smtpPort": {
+                                            "type": "number",
+                                            "description": "defines the port number of the SMTP server",
+                                            "default": 587
+                                        },
+                                        "smtpUser": {
+                                            "type": "string",
+                                            "description": "can be used to provide a user for the SMTP server",
+                                            "default": ""
+                                        },
+                                        "smtpTlsEnabled": {
+                                            "type": "boolean",
+                                            "description": "if true, enforces TLS encryption",
+                                            "default": true
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "inline secret value",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "name of an existing secret",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "key within the existing secret",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
+                                        "fromAddress": {
+                                            "type": "string",
+                                            "description": "defines the email sender address",
+                                            "default": ""
+                                        },
+                                        "fromName": {
+                                            "type": "string",
+                                            "description": "defines the email sender name",
+                                            "default": "Camunda 8"
+                                        }
+                                    }
+                                },
+                                "clusters": {
+                                    "type": "array",
+                                    "description": "configure Camunda 8 clusters available in Web Modeler",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "podAnnotations": {
+                                    "type": "object",
+                                    "description": "extra restapi pod annotations",
+                                    "default": {}
+                                },
+                                "podLabels": {
+                                    "type": "object",
+                                    "description": "extra restapi pod labels",
+                                    "default": {}
+                                },
+                                "env": {
+                                    "type": "array",
+                                    "description": "extra environment variables",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "envFrom": {
+                                    "type": "array",
+                                    "description": "import from configMapRef and secretRef",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "command": {
+                                    "type": "array",
+                                    "description": "override the default command",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumes": {
+                                    "type": "array",
+                                    "description": "extra volumes",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumeMounts": {
+                                    "type": "array",
+                                    "description": "extra volume mounts",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "replicas": {
+                                    "type": "number",
+                                    "description": "number of restapi replicas",
+                                    "default": 1
+                                },
+                                "podSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "run as non-root user",
+                                            "default": true
+                                        },
+                                        "fsGroup": {
+                                            "type": "number",
+                                            "description": "filesystem group ID",
+                                            "default": 1001
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "seccomp profile type",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "containerSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean",
+                                            "description": "allow privilege escalation",
+                                            "default": false
+                                        },
+                                        "privileged": {
+                                            "type": "boolean",
+                                            "description": "run container in privileged mode",
+                                            "default": false
+                                        },
+                                        "readOnlyRootFilesystem": {
+                                            "type": "boolean",
+                                            "description": "mount root filesystem as read only",
+                                            "default": true
+                                        },
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "run as non-root user",
+                                            "default": true
+                                        },
+                                        "runAsUser": {
+                                            "type": "number",
+                                            "description": "run as specific user ID",
+                                            "default": 1001
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "seccomp profile type",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "startupProbe": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, the startupProbe is enabled in the app container",
+                                            "default": false
+                                        },
+                                        "scheme": {
+                                            "type": "string",
+                                            "description": "defines the startupProbe scheme used on calling the probePath",
+                                            "default": "HTTP"
+                                        },
+                                        "probePath": {
+                                            "type": "string",
+                                            "description": "defines the startupProbe route used on the app",
+                                            "default": "/health/liveness"
+                                        },
+                                        "initialDelaySeconds": {
+                                            "type": "number",
+                                            "description": "defines the number of seconds before the probe is initiated",
+                                            "default": 30
+                                        },
+                                        "periodSeconds": {
+                                            "type": "number",
+                                            "description": "defines how often the probe is executed",
+                                            "default": 30
+                                        },
+                                        "successThreshold": {
+                                            "type": "number",
+                                            "description": "defines how many consecutive successes mark the probe as ready",
+                                            "default": 1
+                                        },
+                                        "failureThreshold": {
+                                            "type": "number",
+                                            "description": "defines when the probe is considered as failed",
+                                            "default": 5
+                                        },
+                                        "timeoutSeconds": {
+                                            "type": "number",
+                                            "description": "defines the seconds after the probe times out",
+                                            "default": 1
+                                        }
+                                    }
+                                },
+                                "readinessProbe": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, the readinessProbe is enabled in the app container",
+                                            "default": true
+                                        },
+                                        "scheme": {
+                                            "type": "string",
+                                            "description": "defines the readinessProbe scheme used on calling the probePath",
+                                            "default": "HTTP"
+                                        },
+                                        "probePath": {
+                                            "type": "string",
+                                            "description": "defines the readinessProbe route used on the app",
+                                            "default": "/health/readiness"
+                                        },
+                                        "initialDelaySeconds": {
+                                            "type": "number",
+                                            "description": "defines the number of seconds before the probe is initiated",
+                                            "default": 30
+                                        },
+                                        "periodSeconds": {
+                                            "type": "number",
+                                            "description": "defines how often the probe is executed",
+                                            "default": 30
+                                        },
+                                        "successThreshold": {
+                                            "type": "number",
+                                            "description": "defines how many consecutive successes mark the probe as ready",
+                                            "default": 1
+                                        },
+                                        "failureThreshold": {
+                                            "type": "number",
+                                            "description": "defines when the probe is considered as failed",
+                                            "default": 5
+                                        },
+                                        "timeoutSeconds": {
+                                            "type": "number",
+                                            "description": "defines the seconds after the probe times out",
+                                            "default": 1
+                                        }
+                                    }
+                                },
+                                "livenessProbe": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, the livenessProbe is enabled in the app container",
+                                            "default": false
+                                        },
+                                        "scheme": {
+                                            "type": "string",
+                                            "description": "defines the livenessProbe scheme used on calling the probePath",
+                                            "default": "HTTP"
+                                        },
+                                        "probePath": {
+                                            "type": "string",
+                                            "description": "defines the livenessProbe route used on the app",
+                                            "default": "/health/liveness"
+                                        },
+                                        "initialDelaySeconds": {
+                                            "type": "number",
+                                            "description": "defines the number of seconds before the probe is initiated",
+                                            "default": 30
+                                        },
+                                        "periodSeconds": {
+                                            "type": "number",
+                                            "description": "defines how often the probe is executed",
+                                            "default": 30
+                                        },
+                                        "successThreshold": {
+                                            "type": "number",
+                                            "description": "defines how many consecutive successes mark the probe as ready",
+                                            "default": 1
+                                        },
+                                        "failureThreshold": {
+                                            "type": "number",
+                                            "description": "defines when the probe is considered as failed",
+                                            "default": 5
+                                        },
+                                        "timeoutSeconds": {
+                                            "type": "number",
+                                            "description": "defines the seconds after the probe times out",
+                                            "default": 1
+                                        }
+                                    }
+                                },
+                                "metrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "prometheus": {
+                                            "type": "string",
+                                            "description": "Prometheus metrics endpoint path",
+                                            "default": "/metrics"
+                                        }
+                                    }
+                                },
+                                "nodeSelector": {
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {}
+                                },
+                                "tolerations": {
+                                    "type": "array",
+                                    "description": "",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "affinity": {
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {}
+                                },
+                                "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                        "requests": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "CPU resource value",
+                                                    "default": "900m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "memory resource value",
+                                                    "default": "1280Mi"
+                                                }
+                                            }
+                                        },
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "CPU resource value",
+                                                    "default": "1800m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "memory resource value",
+                                                    "default": "2560Mi"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "service": {
+                                    "type": "object",
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "description": "custom annotations",
+                                            "default": {}
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "defines the type of the service",
+                                            "default": "ClusterIP"
+                                        },
+                                        "port": {
+                                            "type": "number",
+                                            "description": "service port number",
+                                            "default": 80
+                                        },
+                                        "managementPort": {
+                                            "type": "number",
+                                            "description": "management port number",
+                                            "default": 8091
+                                        }
+                                    }
+                                },
+                                "configuration": {
+                                    "type": "string",
+                                    "description": "application.yaml contents",
+                                    "default": ""
+                                },
+                                "extraConfiguration": {
+                                    "type": "array",
+                                    "description": "extra configuration files",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "dnsPolicy": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": ""
+                                },
+                                "dnsConfig": {
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {}
+                                },
+                                "javaOpts": {
+                                    "type": "string",
+                                    "description": "extra Java options",
+                                    "default": "-XX:MaxRAMPercentage=80.0"
+                                },
+                                "zeebeClientConfigPath": {
+                                    "type": "string",
+                                    "description": "custom path for the Zeebe client config",
+                                    "default": "/tmp/zeebe_client_cache.txt"
+                                }
+                            }
+                        },
+                        "websockets": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "defines image repository",
+                                            "default": "camunda/hub-websockets"
+                                        },
+                                        "digest": {
+                                            "type": "string",
+                                            "description": "can be used to set image digest",
+                                            "default": ""
+                                        }
+                                    }
+                                },
+                                "sidecars": {
+                                    "type": "array",
+                                    "description": "extra containers",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "initContainers": {
+                                    "type": "array",
+                                    "description": "extra init containers",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "publicHost": {
+                                    "type": "string",
+                                    "description": "WebSockets server host for browser access",
+                                    "default": "localhost"
+                                },
+                                "publicPort": {
+                                    "type": "number",
+                                    "description": "WebSockets server port for browser access",
+                                    "default": 8085
+                                },
+                                "podAnnotations": {
+                                    "type": "object",
+                                    "description": "extra websockets pod annotations",
+                                    "default": {}
+                                },
+                                "podLabels": {
+                                    "type": "object",
+                                    "description": "extra websockets pod labels",
+                                    "default": {}
+                                },
+                                "env": {
+                                    "type": "array",
+                                    "description": "extra environment variables",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "envFrom": {
+                                    "type": "array",
+                                    "description": "import from configMapRef and secretRef",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "command": {
+                                    "type": "array",
+                                    "description": "override the default command",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumes": {
+                                    "type": "array",
+                                    "description": "extra volumes",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumeMounts": {
+                                    "type": "array",
+                                    "description": "extra volume mounts",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "podSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "run as non-root user",
+                                            "default": true
+                                        },
+                                        "fsGroup": {
+                                            "type": "number",
+                                            "description": "filesystem group ID",
+                                            "default": 1001
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "seccomp profile type",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "containerSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean",
+                                            "description": "allow privilege escalation",
+                                            "default": false
+                                        },
+                                        "privileged": {
+                                            "type": "boolean",
+                                            "description": "run container in privileged mode",
+                                            "default": false
+                                        },
+                                        "readOnlyRootFilesystem": {
+                                            "type": "boolean",
+                                            "description": "mount root filesystem as read only",
+                                            "default": true
+                                        },
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "run as non-root user",
+                                            "default": true
+                                        },
+                                        "runAsUser": {
+                                            "type": "number",
+                                            "description": "run as specific user ID",
+                                            "default": 1001
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "seccomp profile type",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "startupProbe": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, the startupProbe is enabled in the app container",
+                                            "default": false
+                                        },
+                                        "scheme": {
+                                            "type": "string",
+                                            "description": "defines the startupProbe scheme used on calling the probePath",
+                                            "default": "HTTP"
+                                        },
+                                        "probePath": {
+                                            "type": "string",
+                                            "description": "defines the startupProbe route used on the app",
+                                            "default": "/up"
+                                        },
+                                        "initialDelaySeconds": {
+                                            "type": "number",
+                                            "description": "defines the number of seconds before the probe is initiated",
+                                            "default": 10
+                                        },
+                                        "periodSeconds": {
+                                            "type": "number",
+                                            "description": "defines how often the probe is executed",
+                                            "default": 30
+                                        },
+                                        "successThreshold": {
+                                            "type": "number",
+                                            "description": "defines how many consecutive successes mark the probe as ready",
+                                            "default": 1
+                                        },
+                                        "failureThreshold": {
+                                            "type": "number",
+                                            "description": "defines when the probe is considered as failed",
+                                            "default": 5
+                                        },
+                                        "timeoutSeconds": {
+                                            "type": "number",
+                                            "description": "defines the seconds after the probe times out",
+                                            "default": 1
+                                        }
+                                    }
+                                },
+                                "readinessProbe": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, the readinessProbe is enabled in the app container",
+                                            "default": true
+                                        },
+                                        "scheme": {
+                                            "type": "string",
+                                            "description": "defines the readinessProbe scheme used on calling the probePath",
+                                            "default": "HTTP"
+                                        },
+                                        "probePath": {
+                                            "type": "string",
+                                            "description": "defines the readinessProbe route used on the app",
+                                            "default": "/up"
+                                        },
+                                        "initialDelaySeconds": {
+                                            "type": "number",
+                                            "description": "defines the number of seconds before the probe is initiated",
+                                            "default": 10
+                                        },
+                                        "periodSeconds": {
+                                            "type": "number",
+                                            "description": "defines how often the probe is executed",
+                                            "default": 30
+                                        },
+                                        "successThreshold": {
+                                            "type": "number",
+                                            "description": "defines how many consecutive successes mark the probe as ready",
+                                            "default": 1
+                                        },
+                                        "failureThreshold": {
+                                            "type": "number",
+                                            "description": "defines when the probe is considered as failed",
+                                            "default": 5
+                                        },
+                                        "timeoutSeconds": {
+                                            "type": "number",
+                                            "description": "defines the seconds after the probe times out",
+                                            "default": 1
+                                        }
+                                    }
+                                },
+                                "livenessProbe": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, the livenessProbe is enabled in the app container",
+                                            "default": false
+                                        },
+                                        "scheme": {
+                                            "type": "string",
+                                            "description": "defines the livenessProbe scheme used on calling the probePath",
+                                            "default": "HTTP"
+                                        },
+                                        "probePath": {
+                                            "type": "string",
+                                            "description": "defines the livenessProbe route used on the app",
+                                            "default": "/up"
+                                        },
+                                        "initialDelaySeconds": {
+                                            "type": "number",
+                                            "description": "defines the number of seconds before the probe is initiated",
+                                            "default": 10
+                                        },
+                                        "periodSeconds": {
+                                            "type": "number",
+                                            "description": "defines how often the probe is executed",
+                                            "default": 30
+                                        },
+                                        "successThreshold": {
+                                            "type": "number",
+                                            "description": "defines how many consecutive successes mark the probe as ready",
+                                            "default": 1
+                                        },
+                                        "failureThreshold": {
+                                            "type": "number",
+                                            "description": "defines when the probe is considered as failed",
+                                            "default": 5
+                                        },
+                                        "timeoutSeconds": {
+                                            "type": "number",
+                                            "description": "defines the seconds after the probe times out",
+                                            "default": 1
+                                        }
+                                    }
+                                },
+                                "nodeSelector": {
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {}
+                                },
+                                "tolerations": {
+                                    "type": "array",
+                                    "description": "",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "affinity": {
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {}
+                                },
+                                "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                        "requests": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "CPU resource value",
+                                                    "default": "100m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "memory resource value",
+                                                    "default": "64Mi"
+                                                }
+                                            }
+                                        },
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "CPU resource value",
+                                                    "default": "200m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "memory resource value",
+                                                    "default": "128Mi"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "service": {
+                                    "type": "object",
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "description": "custom annotations",
+                                            "default": {}
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "defines the type of the service",
+                                            "default": "ClusterIP"
+                                        },
+                                        "port": {
+                                            "type": "number",
+                                            "description": "service port number",
+                                            "default": 80
+                                        }
+                                    }
+                                },
+                                "configuration": {
+                                    "type": "string",
+                                    "description": "application.yaml contents",
+                                    "default": ""
+                                },
+                                "extraConfiguration": {
+                                    "type": "object",
+                                    "description": "extra config files",
+                                    "default": {}
+                                },
+                                "dnsPolicy": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": ""
+                                },
+                                "dnsConfig": {
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {}
+                                }
+                            }
+                        },
+                        "serviceAccount": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables serviceAccount",
+                                    "default": true
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "the name of the service account",
+                                    "default": ""
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "custom annotations",
+                                    "default": {}
+                                },
+                                "automountServiceAccountToken": {
+                                    "type": "boolean",
+                                    "description": "automount service account token",
+                                    "default": false
+                                }
+                            }
+                        },
+                        "persistence": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables persistence",
+                                    "default": false
+                                },
+                                "size": {
+                                    "type": "string",
+                                    "description": "PVC size",
+                                    "default": "5Gi"
+                                },
+                                "accessModes": {
+                                    "type": "array",
+                                    "description": "PVC access modes",
+                                    "default": [
+                                        "ReadWriteOnce"
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "storageClassName": {
+                                    "type": "string",
+                                    "description": "PVC storage class name",
+                                    "default": ""
+                                },
+                                "existingClaim": {
+                                    "type": "string",
+                                    "description": "name of an existing PVC to use",
+                                    "default": ""
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "custom annotations",
+                                    "default": {}
+                                },
+                                "selector": {
+                                    "type": "object",
+                                    "description": "PVC selector",
+                                    "default": {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "console": {
             "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, the Console deployment and its related resources are deployed via a helm release",
+                    "description": "(DEPRECATED) Use camundaHub.enabled instead.",
                     "default": false
-                },
-                "configuration": {
-                    "type": "string",
-                    "description": "Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)",
-                    "default": ""
-                },
-                "extraConfiguration": {
-                    "type": "array",
-                    "description": "if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.",
-                    "default": [],
-                    "items": {}
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "registry": {
-                            "type": "string",
-                            "description": "can be used to set container image registry.",
-                            "default": ""
-                        },
-                        "repository": {
-                            "type": "string",
-                            "description": "defines which image repository to use",
-                            "default": "camunda/console"
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.25"
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
-                        },
-                        "pullSecrets": {
-                            "type": "array",
-                            "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
-                            "default": [],
-                            "items": {}
-                        }
-                    }
-                },
-                "nodeEnv": {
-                    "type": "string",
-                    "description": "can be used to set the node environment.",
-                    "default": "prod"
-                },
-                "sidecars": {
-                    "type": "array",
-                    "description": "can be used to attach extra containers to the console deployment",
-                    "default": [],
-                    "items": {}
-                },
-                "replicas": {
-                    "type": "number",
-                    "description": "Number of Console replicas",
-                    "default": 1
-                },
-                "tls": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enable TLS traffic for console",
-                            "default": false
-                        },
-                        "certKeyFilename": {
-                            "type": "string",
-                            "description": "defines certificate Key filename",
-                            "default": ""
-                        },
-                        "secret": {
-                            "type": "object",
-                            "properties": {
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificates",
-                                    "default": ""
-                                }
-                            }
-                        }
-                    }
-                },
-                "keycloak": {
-                    "type": "object",
-                    "properties": {
-                        "realm": {
-                            "type": "string",
-                            "description": "Specifies the Keycloak realm used for authentication.",
-                            "default": "camunda-platform"
-                        }
-                    }
-                },
-                "contextPath": {
-                    "type": "string",
-                    "description": "can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
-                },
-                "initContainers": {
-                    "type": "array",
-                    "description": "can be used to set up extra init containers for the application Pod",
-                    "default": [],
-                    "items": {}
-                },
-                "podAnnotations": {
-                    "type": "object",
-                    "description": "can be used to define extra Console pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
-                },
-                "podLabels": {
-                    "type": "object",
-                    "description": "can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
-                },
-                "logging": {
-                    "type": "object",
-                    "description": "configuration for the Console logging. This template will be directly included in the configuration YAML file",
-                    "default": {}
-                },
-                "service": {
-                    "type": "object",
-                    "properties": {
-                        "annotations": {
-                            "type": "object",
-                            "description": "can be used to define annotations, which will be applied to the Console service",
-                            "default": {}
-                        },
-                        "type": {
-                            "type": "string",
-                            "description": "defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
-                            "default": "ClusterIP"
-                        },
-                        "port": {
-                            "type": "number",
-                            "description": "defines the port number where the web application will be available",
-                            "default": 80
-                        },
-                        "serverName": {
-                            "type": "string",
-                            "description": "defines the port name where the web application will be available",
-                            "default": "http"
-                        },
-                        "managementPort": {
-                            "type": "number",
-                            "description": "defines the management port used to access metrics and app status",
-                            "default": 9100
-                        }
-                    }
-                },
-                "resources": {
-                    "type": "object",
-                    "properties": {
-                        "requests": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1Gi"
-                                }
-                            }
-                        },
-                        "limits": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2Gi"
-                                }
-                            }
-                        }
-                    }
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.",
-                    "default": [],
                     "items": {
                         "type": "object",
                         "properties": {
@@ -2687,301 +3995,6 @@
                         ],
                         "additionalProperties": false
                     }
-                },
-                "envFrom": {
-                    "type": "array",
-                    "description": "list of environment variables to import from configMapRef and secretRef",
-                    "default": [],
-                    "items": {}
-                },
-                "command": {
-                    "type": "array",
-                    "description": "can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/",
-                    "default": [],
-                    "items": {}
-                },
-                "extraVolumes": {
-                    "type": "array",
-                    "description": "can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates",
-                    "default": [],
-                    "items": {}
-                },
-                "extraVolumeMounts": {
-                    "type": "array",
-                    "description": "can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates",
-                    "default": [],
-                    "items": {}
-                },
-                "startupProbe": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, the startup probe is enabled in app container",
-                            "default": false
-                        },
-                        "scheme": {
-                            "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
-                        },
-                        "probePath": {
-                            "type": "string",
-                            "description": "defines the startup probe route used on the app",
-                            "default": "/health/readiness"
-                        },
-                        "initialDelaySeconds": {
-                            "type": "number",
-                            "description": "defines the number of seconds after the container has started before",
-                            "default": 30
-                        },
-                        "periodSeconds": {
-                            "type": "number",
-                            "description": "defines how often the probe is executed",
-                            "default": 30
-                        },
-                        "successThreshold": {
-                            "type": "number",
-                            "description": "defines how often it needs to be true to be marked as ready, after failure",
-                            "default": 1
-                        },
-                        "failureThreshold": {
-                            "type": "number",
-                            "description": "defines when the probe is considered as failed so the Pod will be marked Unready",
-                            "default": 5
-                        },
-                        "timeoutSeconds": {
-                            "type": "number",
-                            "description": "defines the seconds after the probe times out",
-                            "default": 1
-                        }
-                    }
-                },
-                "readinessProbe": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, the readiness probe is enabled in app container",
-                            "default": true
-                        },
-                        "scheme": {
-                            "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
-                        },
-                        "probePath": {
-                            "type": "string",
-                            "description": "defines the readiness probe route used on the app",
-                            "default": "/health/readiness"
-                        },
-                        "initialDelaySeconds": {
-                            "type": "number",
-                            "description": "defines the number of seconds after the container has started before",
-                            "default": 30
-                        },
-                        "periodSeconds": {
-                            "type": "number",
-                            "description": "defines how often the probe is executed",
-                            "default": 30
-                        },
-                        "successThreshold": {
-                            "type": "number",
-                            "description": "defines how often it needs to be true to be marked as ready, after failure",
-                            "default": 1
-                        },
-                        "failureThreshold": {
-                            "type": "number",
-                            "description": "defines when the probe is considered as failed so the Pod will be marked Unready",
-                            "default": 5
-                        },
-                        "timeoutSeconds": {
-                            "type": "number",
-                            "description": "defines the seconds after the probe times out",
-                            "default": 1
-                        }
-                    }
-                },
-                "livenessProbe": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, the liveness probe is enabled in app container",
-                            "default": false
-                        },
-                        "scheme": {
-                            "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
-                        },
-                        "probePath": {
-                            "type": "string",
-                            "description": "defines the liveness probe route used on the app",
-                            "default": "/health/liveness"
-                        },
-                        "initialDelaySeconds": {
-                            "type": "number",
-                            "description": "defines the number of seconds after the container has started before",
-                            "default": 30
-                        },
-                        "periodSeconds": {
-                            "type": "number",
-                            "description": "defines how often the probe is executed",
-                            "default": 30
-                        },
-                        "successThreshold": {
-                            "type": "number",
-                            "description": "defines how often it needs to be true to be considered successful after having failed",
-                            "default": 1
-                        },
-                        "failureThreshold": {
-                            "type": "number",
-                            "description": "defines when the probe is considered as failed so the container will be restarted",
-                            "default": 5
-                        },
-                        "timeoutSeconds": {
-                            "type": "number",
-                            "description": "defines the seconds after the probe times out",
-                            "default": 1
-                        }
-                    }
-                },
-                "metrics": {
-                    "type": "object",
-                    "properties": {
-                        "prometheus": {
-                            "type": "string",
-                            "description": "Prometheus metrics endpoint",
-                            "default": "/prometheus"
-                        }
-                    }
-                },
-                "serviceAccount": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enables the Console service account",
-                            "default": true
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "can be used to set the name of the Console service account",
-                            "default": ""
-                        },
-                        "annotations": {
-                            "type": "object",
-                            "description": "can be used to set the annotations of the service account",
-                            "default": {}
-                        },
-                        "automountServiceAccountToken": {
-                            "type": "boolean",
-                            "description": "can be used to control whether the service account token should be automatically mounted",
-                            "default": false
-                        }
-                    }
-                },
-                "podSecurityContext": {
-                    "type": "object",
-                    "properties": {
-                        "runAsNonRoot": {
-                            "type": "boolean",
-                            "description": "run as non root",
-                            "default": true
-                        },
-                        "fsGroup": {
-                            "type": "number",
-                            "description": "",
-                            "default": 1001
-                        },
-                        "seccompProfile": {
-                            "type": "object",
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "RuntimeDefault"
-                                }
-                            }
-                        }
-                    }
-                },
-                "containerSecurityContext": {
-                    "type": "object",
-                    "properties": {
-                        "allowPrivilegeEscalation": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": false
-                        },
-                        "privileged": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": false
-                        },
-                        "readOnlyRootFilesystem": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": true
-                        },
-                        "runAsNonRoot": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": true
-                        },
-                        "runAsUser": {
-                            "type": "number",
-                            "description": "",
-                            "default": 1001
-                        },
-                        "seccompProfile": {
-                            "type": "object",
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "RuntimeDefault"
-                                }
-                            }
-                        }
-                    }
-                },
-                "nodeSelector": {
-                    "type": "object",
-                    "description": "can be used to define on which nodes the Console pods should run",
-                    "default": {}
-                },
-                "tolerations": {
-                    "type": "array",
-                    "description": "can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/",
-                    "default": [],
-                    "items": {}
-                },
-                "affinity": {
-                    "type": "object",
-                    "description": "can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                    "default": {}
-                },
-                "dnsPolicy": {
-                    "type": "string",
-                    "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy",
-                    "default": ""
-                },
-                "dnsConfig": {
-                    "type": "object",
-                    "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                    "default": {}
-                }
-            }
-        },
-        "camundaHub": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "description": "if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.",
-                    "default": false
                 }
             }
         },
@@ -2990,1057 +4003,8 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, the WebModeler deployment and its related resources are deployed via a helm release",
+                    "description": "(DEPRECATED) Use camundaHub.enabled instead.",
                     "default": false
-                },
-                "fullnameOverride": {
-                    "type": "string",
-                    "description": "can be used to override the full name of the WebModeler resources",
-                    "default": ""
-                },
-                "nameOverride": {
-                    "type": "string",
-                    "description": "can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)",
-                    "default": ""
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "registry": {
-                            "type": "string",
-                            "description": "can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)",
-                            "default": ""
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.10.0-alpha1-rc1"
-                        },
-                        "pullSecrets": {
-                            "type": "array",
-                            "description": "can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
-                            "default": [],
-                            "items": {}
-                        }
-                    }
-                },
-                "contextPath": {
-                    "type": "string",
-                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
-                    "default": ""
-                },
-                "security": {
-                    "type": "object",
-                    "properties": {
-                        "authentication": {
-                            "type": "object",
-                            "properties": {
-                                "method": {
-                                    "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
-                                    "default": ""
-                                }
-                            }
-                        }
-                    }
-                },
-                "restapi": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "defines which image repository to use for the restapi Docker image",
-                                    "default": "camunda/hub"
-                                },
-                                "digest": {
-                                    "type": "string",
-                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                                    "default": ""
-                                }
-                            }
-                        },
-                        "sidecars": {
-                            "type": "array",
-                            "description": "can be used to attach extra containers to the restapi deployment",
-                            "default": [],
-                            "items": {}
-                        },
-                        "initContainers": {
-                            "type": "array",
-                            "description": "can be used to set up extra init containers for the application Pod",
-                            "default": [],
-                            "items": {}
-                        },
-                        "externalDatabase": {
-                            "type": "object",
-                            "properties": {
-                                "url": {
-                                    "type": "string",
-                                    "description": "defines the JDBC url of the database instance.",
-                                    "default": ""
-                                },
-                                "host": {
-                                    "type": "string",
-                                    "description": "Database host (used when url is not provided)",
-                                    "default": ""
-                                },
-                                "port": {
-                                    "type": "number",
-                                    "description": "Database port number (used when url is not provided)",
-                                    "default": 5432
-                                },
-                                "database": {
-                                    "type": "string",
-                                    "description": "The database name (used when url is not provided)",
-                                    "default": "web-modeler"
-                                },
-                                "username": {
-                                    "type": "string",
-                                    "description": "defines the database user",
-                                    "default": ""
-                                },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "inlineSecret": {
-                                            "type": "string",
-                                            "description": "can be used to provide the password as a plain-text value for non-production usage.",
-                                            "default": ""
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the password.",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "defines the key within the existing secret object.",
-                                            "default": ""
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "mail": {
-                            "type": "object",
-                            "properties": {
-                                "smtpHost": {
-                                    "type": "string",
-                                    "description": "defines the host name of the SMTP server to be used by WebModeler",
-                                    "default": ""
-                                },
-                                "smtpPort": {
-                                    "type": "number",
-                                    "description": "defines the port number of the SMTP server",
-                                    "default": 587
-                                },
-                                "smtpUser": {
-                                    "type": "string",
-                                    "description": "can be used to provide a user for the SMTP server",
-                                    "default": ""
-                                },
-                                "smtpTlsEnabled": {
-                                    "type": "boolean",
-                                    "description": "if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
-                                    "default": true
-                                },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "inlineSecret": {
-                                            "type": "string",
-                                            "description": "can be used to provide the SMTP password as a plain-text value for non-production usage.",
-                                            "default": ""
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the SMTP password.",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "defines the key within the existing secret object.",
-                                            "default": ""
-                                        }
-                                    }
-                                },
-                                "fromAddress": {
-                                    "type": "string",
-                                    "description": "defines the email address that will be displayed as the sender of emails sent by WebModeler",
-                                    "default": ""
-                                },
-                                "fromName": {
-                                    "type": "string",
-                                    "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
-                                    "default": "Camunda 8"
-                                }
-                            }
-                        },
-                        "pusher": {
-                            "type": "object",
-                            "properties": {
-                                "client": {
-                                    "type": "object",
-                                    "properties": {
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the Pusher app key as a plain-text value for non-production usage",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the Pusher app key",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object",
-                                                    "default": ""
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "inlineSecret": {
-                                            "type": "string",
-                                            "description": "can be used to provide the Pusher app secret as a plain-text value for non-production usage",
-                                            "default": ""
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the Pusher app secret",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "defines the key within the existing secret object",
-                                            "default": ""
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "clusters": {
-                            "type": "array",
-                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)",
-                            "default": [],
-                            "items": {}
-                        },
-                        "podAnnotations": {
-                            "type": "object",
-                            "description": "can be used to define extra restapi pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
-                        },
-                        "podLabels": {
-                            "type": "object",
-                            "description": "can be used to define extra restapi pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
-                        },
-                        "env": {
-                            "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.",
-                            "default": [],
-                            "items": {}
-                        },
-                        "envFrom": {
-                            "type": "array",
-                            "description": "list of environment variables to import from configMapRef and secretRef",
-                            "default": [],
-                            "items": {}
-                        },
-                        "command": {
-                            "type": "array",
-                            "description": "can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/",
-                            "default": [],
-                            "items": {}
-                        },
-                        "extraVolumes": {
-                            "type": "array",
-                            "description": "can be used to define extra volumes for the restapi pods, useful for TLS and self-signed certificates",
-                            "default": [],
-                            "items": {}
-                        },
-                        "extraVolumeMounts": {
-                            "type": "array",
-                            "description": "can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates",
-                            "default": [],
-                            "items": {}
-                        },
-                        "replicas": {
-                            "type": "number",
-                            "description": "can be used to set the number of replicas for the restapi deployment",
-                            "default": 1
-                        },
-                        "podSecurityContext": {
-                            "type": "object",
-                            "properties": {
-                                "runAsNonRoot": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": true
-                                },
-                                "fsGroup": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 1001
-                                },
-                                "seccompProfile": {
-                                    "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "RuntimeDefault"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "containerSecurityContext": {
-                            "type": "object",
-                            "properties": {
-                                "privileged": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": false
-                                },
-                                "readOnlyRootFilesystem": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": true
-                                },
-                                "allowPrivilegeEscalation": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": false
-                                },
-                                "runAsNonRoot": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": true
-                                },
-                                "runAsUser": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 1001
-                                },
-                                "seccompProfile": {
-                                    "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "RuntimeDefault"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "startupProbe": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, the startup probe will be enabled for the restapi container",
-                                    "default": false
-                                },
-                                "scheme": {
-                                    "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
-                                    "default": "HTTP"
-                                },
-                                "probePath": {
-                                    "type": "string",
-                                    "description": "defines the HTTP endpoint used for the startup probe",
-                                    "default": "/health/liveness"
-                                },
-                                "initialDelaySeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
-                                    "default": 30
-                                },
-                                "periodSeconds": {
-                                    "type": "number",
-                                    "description": "defines how often the probe is executed",
-                                    "default": 30
-                                },
-                                "successThreshold": {
-                                    "type": "number",
-                                    "description": "defines how often the probe needs to succeed to be considered successful after having failed",
-                                    "default": 1
-                                },
-                                "failureThreshold": {
-                                    "type": "number",
-                                    "description": "defines when the probe is considered failed so the container will be restarted",
-                                    "default": 5
-                                },
-                                "timeoutSeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after which the probe times out",
-                                    "default": 1
-                                }
-                            }
-                        },
-                        "readinessProbe": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, the readiness probe will be enabled for the restapi container",
-                                    "default": true
-                                },
-                                "scheme": {
-                                    "type": "string",
-                                    "description": "defines the readiness probe schema used on calling the probePath",
-                                    "default": "HTTP"
-                                },
-                                "probePath": {
-                                    "type": "string",
-                                    "description": "defines the HTTP endpoint used for the readiness probe",
-                                    "default": "/health/readiness"
-                                },
-                                "initialDelaySeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
-                                    "default": 30
-                                },
-                                "periodSeconds": {
-                                    "type": "number",
-                                    "description": "defines how often the probe is executed",
-                                    "default": 30
-                                },
-                                "successThreshold": {
-                                    "type": "number",
-                                    "description": "defines how often the probe needs to succeed to be considered successful after having failed",
-                                    "default": 1
-                                },
-                                "failureThreshold": {
-                                    "type": "number",
-                                    "description": "defines when the probe is considered failed so the Pod will be marked unready",
-                                    "default": 5
-                                },
-                                "timeoutSeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after which the probe times out",
-                                    "default": 1
-                                }
-                            }
-                        },
-                        "livenessProbe": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, the liveness probe will be enabled for the restapi container",
-                                    "default": false
-                                },
-                                "scheme": {
-                                    "type": "string",
-                                    "description": "defines the liveness probe schema used on calling the probePath",
-                                    "default": "HTTP"
-                                },
-                                "probePath": {
-                                    "type": "string",
-                                    "description": "defines the HTTP endpoint used for the liveness probe",
-                                    "default": "/health/liveness"
-                                },
-                                "initialDelaySeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
-                                    "default": 30
-                                },
-                                "periodSeconds": {
-                                    "type": "number",
-                                    "description": "defines how often the probe is executed",
-                                    "default": 30
-                                },
-                                "successThreshold": {
-                                    "type": "number",
-                                    "description": "defines how often the probe needs to succeed to be considered successful after having failed",
-                                    "default": 1
-                                },
-                                "failureThreshold": {
-                                    "type": "number",
-                                    "description": "defines when the probe is considered failed so the container will be restarted",
-                                    "default": 5
-                                },
-                                "timeoutSeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after which the probe times out",
-                                    "default": 1
-                                }
-                            }
-                        },
-                        "metrics": {
-                            "type": "object",
-                            "properties": {
-                                "prometheus": {
-                                    "type": "string",
-                                    "description": "Prometheus metrics endpoint",
-                                    "default": "/metrics"
-                                }
-                            }
-                        },
-                        "nodeSelector": {
-                            "type": "object",
-                            "description": "can be used to select the nodes the restapi pods should run on",
-                            "default": {}
-                        },
-                        "tolerations": {
-                            "type": "array",
-                            "description": "can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/",
-                            "default": [],
-                            "items": {}
-                        },
-                        "affinity": {
-                            "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                            "default": {}
-                        },
-                        "resources": {
-                            "type": "object",
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "properties": {
-                                        "cpu": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "900m"
-                                        },
-                                        "memory": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "1280Mi"
-                                        }
-                                    }
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "properties": {
-                                        "cpu": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "1800m"
-                                        },
-                                        "memory": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "2560Mi"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "service": {
-                            "type": "object",
-                            "properties": {
-                                "annotations": {
-                                    "type": "object",
-                                    "description": "can be used to define annotations which will be applied to the service",
-                                    "default": {}
-                                },
-                                "type": {
-                                    "type": "string",
-                                    "description": "defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
-                                    "default": "ClusterIP"
-                                },
-                                "port": {
-                                    "type": "number",
-                                    "description": "defines the default port of the service",
-                                    "default": 80
-                                },
-                                "managementPort": {
-                                    "type": "number",
-                                    "description": "defines the management port of the service",
-                                    "default": 8091
-                                }
-                            }
-                        },
-                        "configuration": {
-                            "type": "string",
-                            "description": "if specified, contents will be used as the application.yaml",
-                            "default": ""
-                        },
-                        "extraConfiguration": {
-                            "type": "array",
-                            "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                            "default": [],
-                            "items": {}
-                        },
-                        "dnsPolicy": {
-                            "type": "string",
-                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy",
-                            "default": ""
-                        },
-                        "dnsConfig": {
-                            "type": "object",
-                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                            "default": {}
-                        },
-                        "javaOpts": {
-                            "type": "string",
-                            "description": "can be used to set extra Java options for the restapi container",
-                            "default": "-XX:MaxRAMPercentage=80.0"
-                        },
-                        "zeebeClientConfigPath": {
-                            "type": "string",
-                            "description": "can be used to set a custom path for the Zeebe client configuration file",
-                            "default": "/tmp/zeebe_client_cache.txt"
-                        }
-                    }
-                },
-                "websockets": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "defines which image repository to use for the websockets Docker image",
-                                    "default": "camunda/hub-websockets"
-                                },
-                                "digest": {
-                                    "type": "string",
-                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                                    "default": ""
-                                }
-                            }
-                        },
-                        "sidecars": {
-                            "type": "array",
-                            "description": "can be used to attach extra containers to the modeler websockets deployment",
-                            "default": [],
-                            "items": {}
-                        },
-                        "initContainers": {
-                            "type": "array",
-                            "description": "can be used to set up extra init containers for the application Pod",
-                            "default": [],
-                            "items": {}
-                        },
-                        "publicHost": {
-                            "type": "string",
-                            "description": "can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.",
-                            "default": "localhost"
-                        },
-                        "publicPort": {
-                            "type": "number",
-                            "description": "can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.",
-                            "default": 8085
-                        },
-                        "podAnnotations": {
-                            "type": "object",
-                            "description": "can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
-                        },
-                        "podLabels": {
-                            "type": "object",
-                            "description": "can be used to define extra websockets pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
-                        },
-                        "env": {
-                            "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.",
-                            "default": [],
-                            "items": {}
-                        },
-                        "envFrom": {
-                            "type": "array",
-                            "description": "list of environment variables to import from configMapRef and secretRef",
-                            "default": [],
-                            "items": {}
-                        },
-                        "command": {
-                            "type": "array",
-                            "description": "can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/",
-                            "default": [],
-                            "items": {}
-                        },
-                        "extraVolumes": {
-                            "type": "array",
-                            "description": "can be used to define extra volumes for the websockets pod; useful for logging to a file",
-                            "default": [],
-                            "items": {}
-                        },
-                        "extraVolumeMounts": {
-                            "type": "array",
-                            "description": "can be used to mount extra volumes for the websockets pod; useful for logging to a file",
-                            "default": [],
-                            "items": {}
-                        },
-                        "podSecurityContext": {
-                            "type": "object",
-                            "properties": {
-                                "runAsNonRoot": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": true
-                                },
-                                "fsGroup": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 1001
-                                },
-                                "seccompProfile": {
-                                    "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "RuntimeDefault"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "containerSecurityContext": {
-                            "type": "object",
-                            "properties": {
-                                "privileged": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": false
-                                },
-                                "readOnlyRootFilesystem": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": true
-                                },
-                                "allowPrivilegeEscalation": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": false
-                                },
-                                "runAsNonRoot": {
-                                    "type": "boolean",
-                                    "description": "",
-                                    "default": true
-                                },
-                                "runAsUser": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 1001
-                                },
-                                "seccompProfile": {
-                                    "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "RuntimeDefault"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "startupProbe": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, the startup probe will be enabled for the websockets container",
-                                    "default": false
-                                },
-                                "scheme": {
-                                    "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
-                                    "default": "HTTP"
-                                },
-                                "probePath": {
-                                    "type": "string",
-                                    "description": "defines the HTTP endpoint used for the startup probe",
-                                    "default": "/up"
-                                },
-                                "initialDelaySeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
-                                    "default": 10
-                                },
-                                "periodSeconds": {
-                                    "type": "number",
-                                    "description": "defines how often the probe is executed",
-                                    "default": 30
-                                },
-                                "successThreshold": {
-                                    "type": "number",
-                                    "description": "defines how often the probe needs to succeed to be considered successful after having failed",
-                                    "default": 1
-                                },
-                                "failureThreshold": {
-                                    "type": "number",
-                                    "description": "defines when the probe is considered failed so the container will be restarted",
-                                    "default": 5
-                                },
-                                "timeoutSeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after which the probe times out",
-                                    "default": 1
-                                }
-                            }
-                        },
-                        "readinessProbe": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, the readiness probe will be enabled for the websockets container",
-                                    "default": true
-                                },
-                                "scheme": {
-                                    "type": "string",
-                                    "description": "defines the readiness probe schema used on calling the probePath",
-                                    "default": "HTTP"
-                                },
-                                "probePath": {
-                                    "type": "string",
-                                    "description": "defines the HTTP endpoint used for the readiness probe",
-                                    "default": "/up"
-                                },
-                                "initialDelaySeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
-                                    "default": 10
-                                },
-                                "periodSeconds": {
-                                    "type": "number",
-                                    "description": "defines how often the probe is executed",
-                                    "default": 30
-                                },
-                                "successThreshold": {
-                                    "type": "number",
-                                    "description": "defines how often the probe needs to succeed to be considered successful after having failed",
-                                    "default": 1
-                                },
-                                "failureThreshold": {
-                                    "type": "number",
-                                    "description": "defines when the probe is considered failed so the Pod will be marked unready",
-                                    "default": 5
-                                },
-                                "timeoutSeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after which the probe times out",
-                                    "default": 1
-                                }
-                            }
-                        },
-                        "livenessProbe": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, the liveness probe will be enabled for the websockets container",
-                                    "default": false
-                                },
-                                "scheme": {
-                                    "type": "string",
-                                    "description": "defines the liveness probe schema used on calling the probePath",
-                                    "default": "HTTP"
-                                },
-                                "probePath": {
-                                    "type": "string",
-                                    "description": "defines the HTTP endpoint used for the liveness probe",
-                                    "default": "/up"
-                                },
-                                "initialDelaySeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
-                                    "default": 10
-                                },
-                                "periodSeconds": {
-                                    "type": "number",
-                                    "description": "defines how often the probe is executed",
-                                    "default": 30
-                                },
-                                "successThreshold": {
-                                    "type": "number",
-                                    "description": "defines how often the probe needs to succeed to be considered successful after having failed",
-                                    "default": 1
-                                },
-                                "failureThreshold": {
-                                    "type": "number",
-                                    "description": "defines when the probe is considered failed so the container will be restarted",
-                                    "default": 5
-                                },
-                                "timeoutSeconds": {
-                                    "type": "number",
-                                    "description": "defines the number of seconds after which the probe times out",
-                                    "default": 1
-                                }
-                            }
-                        },
-                        "nodeSelector": {
-                            "type": "object",
-                            "description": "can be used to select the nodes the websockets pods should run on",
-                            "default": {}
-                        },
-                        "tolerations": {
-                            "type": "array",
-                            "description": "can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/",
-                            "default": [],
-                            "items": {}
-                        },
-                        "affinity": {
-                            "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                            "default": {}
-                        },
-                        "resources": {
-                            "type": "object",
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "properties": {
-                                        "cpu": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "100m"
-                                        },
-                                        "memory": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "64Mi"
-                                        }
-                                    }
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "properties": {
-                                        "cpu": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "200m"
-                                        },
-                                        "memory": {
-                                            "type": "string",
-                                            "description": "",
-                                            "default": "128Mi"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "service": {
-                            "type": "object",
-                            "properties": {
-                                "annotations": {
-                                    "type": "object",
-                                    "description": "can be used to define annotations which will be applied to the service",
-                                    "default": {}
-                                },
-                                "type": {
-                                    "type": "string",
-                                    "description": "defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
-                                    "default": "ClusterIP"
-                                },
-                                "port": {
-                                    "type": "number",
-                                    "description": "defines the port of the service",
-                                    "default": 80
-                                }
-                            }
-                        },
-                        "configuration": {
-                            "type": "string",
-                            "description": "if specified, contents will be used as the application.yaml",
-                            "default": ""
-                        },
-                        "extraConfiguration": {
-                            "type": "object",
-                            "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                            "default": {}
-                        },
-                        "dnsPolicy": {
-                            "type": "string",
-                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy",
-                            "default": ""
-                        },
-                        "dnsConfig": {
-                            "type": "object",
-                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                            "default": {}
-                        }
-                    }
-                },
-                "serviceAccount": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enables the WebModeler service account",
-                            "default": true
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "can be used to set the name of the WebModeler service account",
-                            "default": ""
-                        },
-                        "annotations": {
-                            "type": "object",
-                            "description": "can be used to set the annotations of the WebModeler service account",
-                            "default": {}
-                        },
-                        "automountServiceAccountToken": {
-                            "type": "boolean",
-                            "description": "can be used to control whether the service account token should be automatically mounted",
-                            "default": false
-                        }
-                    }
-                },
-                "persistence": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
-                            "default": false
-                        },
-                        "size": {
-                            "type": "string",
-                            "description": "can be used to define the size of the persistent volume claim",
-                            "default": "5Gi"
-                        },
-                        "accessModes": {
-                            "type": "array",
-                            "description": "can be used to define the access modes for the persistent volume claim",
-                            "default": [
-                                "ReadWriteOnce"
-                            ],
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "storageClassName": {
-                            "type": "string",
-                            "description": "can be used to define the storage class to use for the persistent volume claim",
-                            "default": ""
-                        },
-                        "existingClaim": {
-                            "type": "string",
-                            "description": "can be used to specify an existing PVC instead of creating a new one",
-                            "default": ""
-                        },
-                        "annotations": {
-                            "type": "object",
-                            "description": "can be used to define annotations to add to the persistent volume claim",
-                            "default": {}
-                        },
-                        "selector": {
-                            "type": "object",
-                            "description": "can be used to define a label selector for the persistent volume claim",
-                            "default": {}
-                        }
-                    }
                 }
             },
             "restapi": {
@@ -4598,11 +4562,6 @@
                         "requests": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1000m"
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4613,11 +4572,6 @@
                         "limits": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2000m"
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -6525,11 +6479,6 @@
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
-                },
-                "hostNetwork": {
-                    "type": "boolean",
-                    "description": "if true, the orchestration pods will use the host network namespace. When enabled, dnsPolicy defaults to `ClusterFirstWithHostNet` unless explicitly overridden via `orchestration.dnsPolicy`. https://kubernetes.io/docs/concepts/configuration/overview/#services",
-                    "default": false
                 },
                 "extraVolumeClaimTemplates": {
                     "type": "array",

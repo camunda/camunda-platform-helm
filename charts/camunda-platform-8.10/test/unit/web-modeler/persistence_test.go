@@ -62,7 +62,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				"global.elasticsearch.enabled":        "true",
 				"elasticsearch.enabled":               "true",
 				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 				// persistence.enabled defaults to false
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -91,10 +91,10 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				"global.elasticsearch.enabled":          "true",
 				"elasticsearch.enabled":                 "true",
 				"webModeler.enabled":                    "true",
-				"webModeler.restapi.mail.fromAddress":   "example@example.com",
-				"webModeler.persistence.enabled":        "true",
-				"webModeler.persistence.size":           "5Gi",
-				"webModeler.persistence.accessModes[0]": "ReadWriteOnce",
+				"camundaHub.webModeler.restapi.mail.fromAddress":   "example@example.com",
+				"camundaHub.webModeler.persistence.enabled":        "true",
+				"camundaHub.webModeler.persistence.size":           "5Gi",
+				"camundaHub.webModeler.persistence.accessModes[0]": "ReadWriteOnce",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -123,9 +123,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				"global.elasticsearch.enabled":         "true",
 				"elasticsearch.enabled":                "true",
 				"webModeler.enabled":                   "true",
-				"webModeler.restapi.mail.fromAddress":  "example@example.com",
-				"webModeler.persistence.enabled":       "true",
-				"webModeler.persistence.existingClaim": "my-existing-pvc",
+				"camundaHub.webModeler.restapi.mail.fromAddress":  "example@example.com",
+				"camundaHub.webModeler.persistence.enabled":       "true",
+				"camundaHub.webModeler.persistence.existingClaim": "my-existing-pvc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -153,9 +153,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				"global.elasticsearch.enabled":        "true",
 				"elasticsearch.enabled":               "true",
 				"webModeler.enabled":                  "false",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"webModeler.persistence.enabled":      "true",
-				"webModeler.persistence.size":         "5Gi",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.persistence.enabled":      "true",
+				"camundaHub.webModeler.persistence.size":         "5Gi",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// When component is disabled, no deployment should be created
@@ -197,10 +197,10 @@ func TestPVCManifestCreated(t *testing.T) {
 		Values: map[string]string{
 			"identity.enabled":                      "true",
 			"webModeler.enabled":                    "true",
-			"webModeler.restapi.mail.fromAddress":   "test@test.com",
-			"webModeler.persistence.enabled":        "true",
-			"webModeler.persistence.size":           "5Gi",
-			"webModeler.persistence.accessModes[0]": "ReadWriteOnce",
+			"camundaHub.webModeler.restapi.mail.fromAddress":   "test@test.com",
+			"camundaHub.webModeler.persistence.enabled":        "true",
+			"camundaHub.webModeler.persistence.size":           "5Gi",
+			"camundaHub.webModeler.persistence.accessModes[0]": "ReadWriteOnce",
 		},
 		Verifier: func(t *testing.T, output string, err error) {
 			var pvc corev1.PersistentVolumeClaim
