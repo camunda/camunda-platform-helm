@@ -647,6 +647,9 @@ Zeebe templates.
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto (tpl .Values.global.host $) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+  {{- else if .Values.global.gateway.enabled -}}
+    {{ $proto := ternary "https" "http" .Values.global.gateway.tls.enabled -}}
+    {{- printf "%s://%s%s" $proto (tpl .Values.global.host $ | required "global.host must be set when global.gateway.enabled is true") (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
     {{- printf "http://localhost:8080" -}}
   {{- end -}}
