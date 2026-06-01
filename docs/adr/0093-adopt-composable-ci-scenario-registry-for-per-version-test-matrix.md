@@ -117,7 +117,7 @@ are normative:
    hook manifests under `common/resources/`, hook scripts under
    `pre-setup-scripts/`) are named by basename and resolved by the
    loader against the version's
-   `charts/<X.Y>/test/integration/scenarios/` tree.
+   `charts/camunda-platform-<X.Y>/test/integration/scenarios/` tree.
 
 2. **Loader.** `scripts/deploy-camunda/matrix/config.go` gains
    `LoadRegistry(repoRoot, version string) (*CITestConfig, error)`,
