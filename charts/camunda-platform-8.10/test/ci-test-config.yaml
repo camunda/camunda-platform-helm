@@ -291,7 +291,7 @@ integration:
           platforms: [gke]
         - name: noSecondaryStorage
           enabled: true
-          auth: keycloak
+          auth: basic
           shortname: nosec
           tier: 2
           exclude: []
@@ -300,7 +300,7 @@ integration:
           skip-it: true   # Integration tests require Elasticsearch
           identity: keycloak
           persistence: no-elasticsearch
-          features: [no-secondary-storage]
+          features: []
           platforms: [gke]
           infra-type:
             gke: distroci

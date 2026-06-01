@@ -103,7 +103,7 @@ camunda:
           processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
           replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
     secondary-storage:
-      autoconfigure-camunda-exporter: {{ .Values.orchestration.exporters.camunda.enabled }}
+      autoconfigure-camunda-exporter: {{ eq (include "orchestration.hasCamundaExporter" .) "true" }}
       type: {{ include "orchestration.secondaryStorage" . | quote -}}
       {{- if .Values.orchestration.history.retention.enabled }}
       retention:
