@@ -250,6 +250,16 @@ render_env_file() {
 
   log "DEBUG: Setting up env file: $env_file"
 
+  # Auto-detect Optimize deployment — if no Optimize pods exist, set IS_OPTIMIZE=false
+  # so E2E tests skip Optimize assertions (e.g. OpenSearch-only scenarios don't deploy Optimize).
+  local is_optimize="true"
+  local optimize_pods
+  optimize_pods=$($kubectl_cmd -n "$namespace" get pods -l "app.kubernetes.io/component=optimize" --no-headers 2>/dev/null | wc -l)
+  if [[ "$optimize_pods" -eq 0 ]]; then
+    is_optimize="false"
+    log "DEBUG: No Optimize pods found in namespace — setting IS_OPTIMIZE=false"
+  fi
+
   # Generate base .env from template
   export TEST_INGRESS_HOST="$hostname"
   envsubst < "$test_suite_path"/.env.template > "$env_file"
@@ -362,6 +372,7 @@ render_env_file() {
     echo "IS_OPENSEARCH=${is_opensearch}"
     echo "IS_RBA=${is_rba}"
     echo "IS_MT=${is_mt}"
+    echo "IS_OPTIMIZE=${is_optimize}"
     echo "IS_SMOKE=${run_smoke_tests}"
   } >> "$env_file"
 

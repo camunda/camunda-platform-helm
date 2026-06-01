@@ -128,6 +128,3 @@ optimize:
   env:
     - name: SSL_CERT_FILE
       value: /etc/camunda/tls/ca.crt
-
-elasticsearch:
-  enabled: false

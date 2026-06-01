@@ -77,9 +77,6 @@ global:
   ## Security configuration
   ## @extra global.security
   security:
-    ## @skip global.security.allowInsecureImages
-    allowInsecureImages: true
-
     ## @extra global.security.authentication
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
@@ -279,49 +276,17 @@ global:
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #
-  # Camunda supports three authentication modes. The mode you choose
-  # determines which parameters below are required.
+  # Camunda supports two authentication modes against an externally-managed
+  # Keycloak. The bundled Keycloak subchart was removed in 8.10. See the
+  # migration guide: https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
+  # The mode you choose determines which parameters below are required.
   #
   # -----------------------------------------------------------------------
-  # Mode A: Internal Keycloak (Bitnami subchart)
-  # -----------------------------------------------------------------------
-  # The Bitnami Keycloak subchart is deployed alongside Camunda.
-  # OIDC endpoints are auto-derived from the internal Keycloak service.
-  #
-  # Required:
-  #   identityKeycloak.enabled: true
-  #   global.identity.auth.enabled: true
-  #   global.security.authentication.method: "oidc"
-  #   identity.enabled: true
-  #   global.identity.auth.type: "KEYCLOAK"  (default)
-  #
-  # Optional:
-  #   global.identity.auth.publicIssuerUrl  - override public Keycloak URL
-  #     (default works with port-forward; override when using ingress)
-  #   global.identity.keycloak.contextPath  - "/auth" (Keycloak v16) or "/" (v19+)
-  #
-  # No explicit OIDC endpoint URLs are needed; they are auto-derived.
-  #
-  # Minimal snippet:
-  #   identityKeycloak:
-  #     enabled: true
-  #   global:
-  #     security:
-  #       authentication:
-  #         method: oidc
-  #     identity:
-  #       auth:
-  #         enabled: true
-  #   identity:
-  #     enabled: true
-  #
-  # -----------------------------------------------------------------------
-  # Mode B: External Keycloak
+  # Mode A: External Keycloak
   # -----------------------------------------------------------------------
   # Use an existing Keycloak instance running outside this Helm release.
   #
   # Required:
-  #   identityKeycloak.enabled: false
   #   global.identity.keycloak.url.protocol / host / port
   #   global.identity.keycloak.auth.adminUser / existingSecret
   #   global.identity.auth.enabled: true
@@ -346,8 +311,6 @@ global:
   #   global.identity.keycloak.contextPath     - "/auth" (Keycloak v16) or "/" (v19+)
   #
   # Minimal snippet:
-  #   identityKeycloak:
-  #     enabled: false
   #   global:
   #     security:
   #       authentication:
@@ -370,15 +333,14 @@ global:
   #     enabled: true
   #
   # -----------------------------------------------------------------------
-  # Mode C: External OIDC Provider (Microsoft Entra ID, Generic)
+  # Mode B: External OIDC Provider (Microsoft Entra ID, Generic)
   # -----------------------------------------------------------------------
   # Use a non-Keycloak OIDC provider. All OIDC endpoints must be
   # explicitly configured.
   #
   # Required:
-  #   identityKeycloak.enabled: false
-  #   A database for Identity: identityPostgresql.enabled: true
-  #     (or identity.externalDatabase; Identity needs its own DB without Keycloak)
+  #   A database for Identity via identity.externalDatabase (Identity needs its
+  #     own DB when no Keycloak provides one)
   #   global.identity.auth.enabled: true
   #   global.security.authentication.method: "oidc"
   #   identity.enabled: true
@@ -388,10 +350,14 @@ global:
   #   Per-component clientId, audience, and secret in global.identity.auth.<component>
   #
   # Minimal snippet (Microsoft Entra example):
-  #   identityKeycloak:
-  #     enabled: false
-  #   identityPostgresql:
-  #     enabled: true
+  #   identity:
+  #     externalDatabase:
+  #       enabled: true
+  #       host: "postgres.example.com"
+  #       username: "identity"
+  #       secret:
+  #         existingSecret: "identity-db-secret"
+  #         existingSecretKey: "password"
   #   global:
   #     security:
   #       authentication:
@@ -426,33 +392,26 @@ global:
     keycloak:
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
-      # Applies to: External Keycloak. Not used in Internal Keycloak or External OIDC.
+      # Applies to: External Keycloak. Not used in External OIDC.
       internal: false
-      ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart. The "host" field supports templating (e.g., {{ .Release.Namespace }}).
+      ## @extra global.identity.keycloak.url configures the URL to reach an external Keycloak.
       # Applies to: External Keycloak - required.
-      # In Internal Keycloak, auto-derived from the Keycloak subchart. In External OIDC, not used.
+      # In External OIDC, not used.
       url:
-        {}
-        # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
-        # url:
-        #   protocol: "https"
-        #   host: "keycloak.prod.svc.cluster.local"
-        #   port: "8443"
-        # Example with templating to use the release namespace:
-        # url:
-        #   protocol: "https"
-        #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
-        #   port: "8443"
-      #  defines the endpoint of Keycloak which varies between Keycloak versions.
-      ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
-      # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
-      contextPath: "/auth"
+        ## @param global.identity.keycloak.url.protocol defines the protocol for Keycloak URL (e.g., https).
+        protocol: ""
+        ## @param global.identity.keycloak.url.host defines the Keycloak host. Supports templating (e.g., {{ .Release.Namespace }}).
+        host: ""
+        ## @param global.identity.keycloak.url.port defines the Keycloak port.
+        port: ""
+      ## @param global.identity.keycloak.contextPath defines the Keycloak base path. In Keycloak v16.x.x it's hard-coded as '/auth/', but in v19.x.x it's configurable (commonly '/').
+      # Applies to: External Keycloak. Not used in External OIDC.
+      contextPath: "/auth/"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
-      # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
+      # Applies to: External Keycloak. Not used in External OIDC.
       realm: "/realms/camunda-platform"
-      ## @extra global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
-      # Applies to: External Keycloak - provides admin credentials for the external Keycloak instance.
-      # Not needed in Internal Keycloak (handled by the identityKeycloak subchart) or External OIDC (no Keycloak).
+      ## @extra global.identity.keycloak.auth admin credentials for an external Keycloak instance.
+      # Applies to: External Keycloak. Not needed in External OIDC (no Keycloak).
       auth:
         ## @param global.identity.keycloak.auth.adminUser defines the admin user to access existing Keycloak.
         adminUser: ""
@@ -466,45 +425,37 @@ global:
           existingSecretKey: ""
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
-    # Internal Keycloak: OIDC values are auto-derived from the Keycloak subchart; no explicit URLs needed.
-    # External Keycloak: OIDC values are auto-derived but docs recommend setting them explicitly for split-horizon DNS.
+    # External Keycloak: OIDC values are auto-derived from global.identity.keycloak.url. Docs recommend setting them explicitly for split-horizon DNS.
     # External OIDC: all OIDC endpoint URLs must be explicitly provided.
     auth:
       ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
-      # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
+      # Required for all authentication modes (External Keycloak, External OIDC).
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
-      # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer;
-      #   generic OIDC docs use publicIssuerUrl). Internal Keycloak and External Keycloak: leave empty.
+      # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer,
+      #   generic OIDC docs use publicIssuerUrl). External Keycloak: leave empty.
       issuer: ""
       ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
-      #   auto-derived if omitted and internal/external Keycloak URLs are identical.
+      # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted and internal/external Keycloak URLs are identical.
       issuerBackendUrl: ""
       ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (browser-facing URL);
-      #   auto-derived if omitted.
+      # External OIDC: required. External Keycloak: recommended (browser-facing URL), auto-derived if omitted.
       authUrl: ""
       ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
-      #   auto-derived if omitted.
+      # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted.
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
-      #   auto-derived if omitted.
+      # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted.
       jwksUrl: ""
       ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.
-      # Internal Keycloak and External Keycloak: "KEYCLOAK" (default). OIDC endpoints are derived automatically from global.identity.keycloak settings.
+      # External Keycloak: "KEYCLOAK" (default). OIDC endpoints are derived automatically from global.identity.keycloak settings.
       # External OIDC: "MICROSOFT" or "GENERIC". OIDC endpoints (issuer or publicIssuerUrl, tokenUrl, jwksUrl, authUrl) must be explicitly set.
       type: "KEYCLOAK"
 
-      #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
-      # Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
-      ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
-      # Internal Keycloak and External Keycloak: primary issuer URL when issuer is not set; default works with port-forward,
-      #   override when using ingress. External Keycloak docs recommend setting this explicitly.
-      # External OIDC: required when issuer is not set (generic OIDC pattern); not consulted if issuer is set.
-      publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
+      ## @param global.identity.auth.publicIssuerUrl defines the publicly-reachable token issuer URL.
+      # External Keycloak: browser-facing issuer URL used when issuer is not set. Recommended to set explicitly.
+      # External OIDC: required when issuer is not set (generic OIDC pattern). Not consulted if issuer is set.
+      publicIssuerUrl: ""
 
       ## @extra global.identity.auth.admin configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
       admin:
@@ -526,7 +477,7 @@ global:
       #####################
 
       ## @extra global.identity.auth.identity configuration to configure Management Identity authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, clientId and audience have working defaults; secret is auto-generated.
+      # In External Keycloak, clientId and audience have working defaults and the secret is auto-generated.
       # In External OIDC, clientId, audience, and secret must be configured to match the external OIDC provider.
       identity:
         ## @param global.identity.auth.identity.clientId defines the client id, which is used by Management Identity in authentication flows.
@@ -554,7 +505,7 @@ global:
       #####################
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External Keycloak, defaults work out-of-the-box with Keycloak.
       # In External OIDC, clientId and audience must match the external OIDC provider configuration.
       console:
         ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
@@ -573,7 +524,7 @@ global:
       #####################
 
       ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External Keycloak, defaults work out-of-the-box with Keycloak.
       # In External OIDC, clientId and audience must match the external OIDC provider configuration.
       webModeler:
         ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
@@ -604,7 +555,7 @@ global:
       # Optimize
       #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
-      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External Keycloak, defaults work out-of-the-box with Keycloak.
       # In External OIDC, clientId, audience, and secret must match the external OIDC provider configuration.
       optimize:
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
@@ -749,12 +700,11 @@ global:
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: Management Identity is always required by WebModeler. By default, if no OIDC provider is specified, Keycloak is used by identity.
-  #       If you don't need WebModeler, make sure to disable Management Identity authentication, keycloak, and the WebModeler application by setting:
+  # Note: Management Identity is always required by WebModeler. If you don't need WebModeler, disable
+  # Management Identity authentication and the WebModeler application by setting:
   #         global.identity.auth.enabled=false
   #         webModeler.enabled=false
-  #         identityKeycloak.enabled=false
-  # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
+  # Required for all authentication modes (External Keycloak, External OIDC).
   enabled: false
 
   ## @param identity.fullnameOverride can be used to override the full name of the Management Identity resources
@@ -1055,281 +1005,231 @@ identity:
     ## @param identity.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
-# Management Identity.
-#####   ####   ####  #####  ####  #####  ######  ####   ####  #
-#    # #    # #        #   #    # #    # #      #      #    # #
-#    # #    #  ####    #   #      #    # #####   ####  #    # #
-#####  #    #      #   #   #  ### #####  #           # #  # # #
-#      #    # #    #   #   #    # #   #  #      #    # #   #  #
-#       ####   ####    #    ####  #    # ######  ####   ### # ######
-## @section Management Identity - PostgreSQL Parameters (DEPRECATED)
-## @extra identityPostgresql (DEPRECATED) configuration for the PostgreSQL dependency chart used by Management Identity. For more details, check [Bitnami package for PostgreSQL](https://artifacthub.io/packages/helm/bitnami/postgresql#parameters) documentation.
-identityPostgresql:
-  ## @param identityPostgresql.enabled (DEPRECATED) Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
-  # Also required for External OIDC, since Identity needs its own database when Keycloak is not deployed.
-  # Alternatively, use identity.externalDatabase to provide a database from outside this chart.
-  # In Internal Keycloak and External Keycloak, Keycloak provides the database for Identity and this is not needed (unless multi-tenancy is enabled).
-  ##
+#################################################
+ #####
+#     #  ####  #    #  ####   ####  #      ######
+#       #    # ##   # #      #    # #      #
+#       #    # # #  #  ####  #    # #      #####
+#       #    # #  # #      # #    # #      #
+#     # #    # #   ## #    # #    # #      #
+ #####   ####  #    #  ####   ####  ###### ######
+#################################################
+
+## @section Console Parameters
+## @extra console configuration for the Console.
+console:
+  ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
   enabled: false
-  ## @extra identityPostgresql.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
-  global:
-    ## Compatibility adaptations for Kubernetes platforms
-    ##
-    compatibility:
-      ## Compatibility adaptations for Openshift
-      ##
-      openshift:
-        ## @param identityPostgresql.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
-        ##
-        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
-  # https://hub.docker.com/r/bitnami/postgresql/tags
-  ## @param identityPostgresql.image.repository (DEPRECATED) PostgreSQL repo
-  ## @param identityPostgresql.image.tag (DEPRECATED) PostgreSQL image tag
-  ## @param identityPostgresql.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-  ##
+
+  ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
+  configuration: ""
+  ## @param console.extraConfiguration if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.
+  extraConfiguration: []
+
+  ## console.image configuration to configure the Console image specifics
+  # https://hub.docker.com/r/camunda/console/tags
   image:
-    repository: bitnamilegacy/postgresql
-    tag: 15.10.0-debian-12-r2
+    ## @param console.image.registry can be used to set container image registry.
+    registry: ""
+    ## @param console.image.repository defines which image repository to use
+    repository: camunda/console
+    ## @param console.image.tag can be used to set the Docker image tag for the Console image
+    tag: 8.9.25
+    ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
-  ## @param identityPostgresql.nameOverride (DEPRECATED) the name used for Management Identity PostgreSQL.
-  ##
-  nameOverride: identity-postgresql
-  auth:
-    ## @param identityPostgresql.auth.username (DEPRECATED) Non-root username
-    ##
-    username: identity
-    ## @param identityPostgresql.auth.database (DEPRECATED) The database name
-    ##
-    database: identity
-    ## @param identityPostgresql.auth.password (DEPRECATED) Password for the non-root username
-    ##
-    password: ""
-    ## @param identityPostgresql.auth.existingSecret (DEPRECATED) Name of an existing secret resource containing the database credentials
-    ##
-    existingSecret: ""
-    secretKeys:
-      ## @param identityPostgresql.auth.secretKeys.adminPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "identity-postgresql-admin-password"
-      ## @param identityPostgresql.auth.secretKeys.userPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "identity-postgresql-user-password"
-  volumePermissions:
-    image:
-      ## @param identityPostgresql.volumePermissions.image.repository (DEPRECATED)
-      repository: bitnamilegacy/os-shell
-  metrics:
-    image:
-      ## @param identityPostgresql.metrics.image.repository (DEPRECATED)
-      repository: bitnamilegacy/postgres-exporter
+    ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
 
-# Management Identity.
-#    # ###### #   #  ####  #       ####    ##   #    #
-#   #  #       # #  #    # #      #    #  #  #  #   #
-####   #####    #   #      #      #    # #    # ####
-#  #   #        #   #      #      #    # ###### #  #
-#   #  #        #   #    # #      #    # #    # #   #
-#    # ######   #    ####  ######  ####  #    # #    #
-## @section Management Identity - Keycloak Parameters (DEPRECATED)
-## @extra identityKeycloak (DEPRECATED) configuration, for the Keycloak dependency chart which is used by Management Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
-identityKeycloak:
-  ## @param identityKeycloak.enabled (DEPRECATED) Enable Management Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
-  # Internal Keycloak: set to true (deploys Keycloak as part of this Helm release).
-  # External Keycloak: set to false and configure global.identity.keycloak.url to point to your external Keycloak.
-  # External OIDC: set to false (no Keycloak is used).
-  enabled: false
-  ## @extra identityKeycloak.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
-  global:
-    ## Compatibility adaptations for Kubernetes platforms
-    ##
-    compatibility:
-      ## Compatibility adaptations for Openshift
-      ##
-      openshift:
-        ## @param identityKeycloak.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
-        ##
-        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
-    security:
-      ## @param identityKeycloak.global.security.allowInsecureImages (DEPRECATED) Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)
-      allowInsecureImages: true
+  ## @param console.nodeEnv can be used to set the node environment.
+  nodeEnv: prod
 
-  ## @param identityKeycloak.nameOverride (DEPRECATED) the name used for Keycloak.
-  nameOverride: "keycloak"
+  ## @param console.sidecars can be used to attach extra containers to the console deployment
+  sidecars: []
 
-  ## @extra identityKeycloak.image (DEPRECATED) configuration.
-  # https://hub.docker.com/r/bitnami/keycloak/tags
-  image:
-    ## @param identityKeycloak.image.repository (DEPRECATED) image repo
-    repository: camunda/keycloak
-    ## @param identityKeycloak.image.tag (DEPRECATED) image tag
-    tag: 26.3.3
-    ## @param identityKeycloak.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-    digest: ""
+  ## @param console.replicas Number of Console replicas
+  replicas: 1
 
-  ## @extra identityKeycloak.resources (DEPRECATED) configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param identityKeycloak.resources.requests.cpu (DEPRECATED)
-  ## @param identityKeycloak.resources.requests.memory (DEPRECATED)
-  ## @param identityKeycloak.resources.limits.cpu (DEPRECATED)
-  ## @param identityKeycloak.resources.limits.memory (DEPRECATED)
+  ## console.tls Configure the Console TLS options
+  tls:
+    ## @param console.tls.enabled if true, enable TLS traffic for console
+    enabled: false
+    ## @param console.tls.certKeyFilename defines certificate Key filename
+    certKeyFilename: ""
+    ## console.tls.secret New secret configuration pattern (>= 8.9)
+    secret:
+      ## @param console.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificates
+      existingSecret: ""
+
+  ## console.keycloak configuration to configure Keycloak authentication settings.
+  keycloak:
+    ## @param console.keycloak.realm Specifies the Keycloak realm used for authentication.
+    realm: "camunda-platform"
+
+  ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  contextPath: ""
+
+  ## @param console.initContainers can be used to set up extra init containers for the application Pod
+  initContainers: []
+
+  ## @param console.podAnnotations can be used to define extra Console pod annotations. Supports templating (e.g., {{ .Release.Name }}).
+  podAnnotations: {}
+  ## @param console.podLabels can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }}).
+  podLabels: {}
+
+  ## @param console.logging configuration for the Console logging. This template will be directly included in the configuration YAML file
+  logging: {}
+
+  ## console.service configuration to configure the Console service.
+  service:
+    ## @param console.service.annotations can be used to define annotations, which will be applied to the Console service
+    annotations: {}
+    ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    ## @param console.service.port defines the port number where the web application will be available
+    port: 80
+    ## @param console.service.serverName defines the port name where the web application will be available
+    serverName: http
+    ## @param console.service.managementPort defines the management port used to access metrics and app status
+    managementPort: 9100
+
+  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param console.resources.requests.cpu
+  ## @param console.resources.requests.memory
+  ## @param console.resources.limits.cpu
+  ## @param console.resources.limits.memory
   resources:
     requests:
-      cpu: 1000m
+      cpu: "1000m"
       memory: 1Gi
     limits:
-      cpu: 2000m
+      cpu: "2000m"
       memory: 2Gi
 
-  ## @extra identityKeycloak.postgresql (DEPRECATED) configuration.
-  postgresql:
-    # https://hub.docker.com/r/bitnami/postgresql/tags
-    image:
-      ## @param identityKeycloak.postgresql.image.repository (DEPRECATED) image repo
-      repository: bitnamilegacy/postgresql
-      ## @param identityKeycloak.postgresql.image.tag (DEPRECATED) image tag
-      tag: 15.10.0-debian-12-r2
-      ## @param identityKeycloak.postgresql.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-      digest: ""
-    auth:
-      ## @param identityKeycloak.postgresql.auth.existingSecret (DEPRECATED) defines the existing secret resource containing the database credentials
-      existingSecret: camunda-credentials
-      secretKeys:
-        ## @param identityKeycloak.postgresql.auth.secretKeys.adminPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.
-        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
-        ## @param identityKeycloak.postgresql.auth.secretKeys.userPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL user.
-        userPasswordKey: "identity-keycloak-postgresql-user-password"
-    primary:
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.allowPrivilegeEscalation (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsNonRoot (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsUser (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.capabilities.drop (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.seccompProfile.type (DEPRECATED)
-      containerSecurityContext:
-        enabled: true
-        privileged: false
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
-        runAsNonRoot: true
-        runAsUser: 1001
-        capabilities:
-          drop: ["ALL"]
-        seccompProfile:
-          type: RuntimeDefault
-      ## @param identityKeycloak.postgresql.primary.podSecurityContext.enabled (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.podSecurityContext.runAsNonRoot (DEPRECATED)
-      ## @param identityKeycloak.postgresql.primary.podSecurityContext.fsGroup (DEPRECATED)
-      podSecurityContext:
-        enabled: true
-        runAsNonRoot: true
-        fsGroup: 1001
-    volumePermissions:
-      image:
-        ## @param identityKeycloak.postgresql.volumePermissions.image.repository (DEPRECATED)
-        repository: bitnamilegacy/os-shell
-    metrics:
-      image:
-        ## @param identityKeycloak.postgresql.metrics.image.repository (DEPRECATED)
-        repository: bitnamilegacy/postgres-exporter
-  # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
-  # Docs: https://www.keycloak.org/server/reverseproxy
-  ## @param identityKeycloak.proxy (DEPRECATED) keycloak proxy
-  proxy: edge
+  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.
+  env: []
+  ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
+  envFrom: []
+  ## @param console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  command: []
+  ## @param console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumes: []
+  ## @param console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
+  extraVolumeMounts: []
 
-  ## @extra identityKeycloak.tls (DEPRECATED) can be used to enable TLS encryption. Required for HTTPs traffic.
-  tls:
-    ## @param identityKeycloak.tls.enabled (DEPRECATED) enabling tls
+  ## console.startupProbe configuration
+  startupProbe:
+    ## @param console.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
+    ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.startupProbe.probePath defines the startup probe route used on the app
+    probePath: /health/readiness
+    ## @param console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.startupProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
 
-  # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
-  # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
-  ## @skip identityKeycloak.extraVolumes (DEPRECATED) [object] Extra volumes for keycloak
-  ## @skip identityKeycloak.extraVolumes[0].name (DEPRECATED)
-  ## @skip identityKeycloak.extraVolumes[0].emptyDir (DEPRECATED)
-  ## @skip identityKeycloak.extraVolumes[1].name (DEPRECATED)
-  ## @skip identityKeycloak.extraVolumes[1].emptyDir (DEPRECATED)
-  extraVolumes:
-    - name: data-tmp
-      emptyDir: {}
-  ## @param identityKeycloak.extraVolumeMounts[0].name (DEPRECATED)
-  ## @param identityKeycloak.extraVolumeMounts[0].mountPath (DEPRECATED)
-  extraVolumeMounts:
-    - name: data-tmp
-      mountPath: /opt/bitnami/keycloak/data/tmp
+  ## console.readinessProbe configuration
+  readinessProbe:
+    ## @param console.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    enabled: true
+    ## @param console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.readinessProbe.probePath defines the readiness probe route used on the app
+    probePath: /health/readiness
+    ## @param console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.readinessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    successThreshold: 1
+    ## @param console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    failureThreshold: 5
+    ## @param console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
 
-  ## @param identityKeycloak.containerSecurityContext.privileged (DEPRECATED)
-  ## @param identityKeycloak.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
-  ## @param identityKeycloak.containerSecurityContext.allowPrivilegeEscalation (DEPRECATED)
-  ## @param identityKeycloak.containerSecurityContext.runAsNonRoot (DEPRECATED)
-  ## @param identityKeycloak.containerSecurityContext.runAsUser (DEPRECATED)
-  ## @param identityKeycloak.containerSecurityContext.capabilities.drop (DEPRECATED)
-  ## @param identityKeycloak.containerSecurityContext.seccompProfile.type (DEPRECATED)
-  containerSecurityContext:
-    privileged: false
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
-    runAsNonRoot: true
-    runAsUser: 1001
-    capabilities:
-      drop: ["ALL"]
-    seccompProfile:
-      type: RuntimeDefault
-  ## @param identityKeycloak.podSecurityContext.runAsNonRoot (DEPRECATED)
-  ## @param identityKeycloak.podSecurityContext.fsGroup (DEPRECATED)
+  ## console.livenessProbe configuration
+  livenessProbe:
+    ## @param console.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    enabled: false
+    ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
+    scheme: HTTP
+    ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
+    probePath: /health/liveness
+    ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    # the probe is initiated.
+    initialDelaySeconds: 30
+    ## @param console.livenessProbe.periodSeconds defines how often the probe is executed
+    periodSeconds: 30
+    ## @param console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    successThreshold: 1
+    ## @param console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    failureThreshold: 5
+    ## @param console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    timeoutSeconds: 1
+
+  ## console.metrics configuration
+  metrics:
+    ## @param console.metrics.prometheus Prometheus metrics endpoint
+    prometheus: /prometheus
+
+  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
+  serviceAccount:
+    ## @param console.serviceAccount.enabled if true, enables the Console service account
+    enabled: true
+    ## @param console.serviceAccount.name can be used to set the name of the Console service account
+    name: ""
+    ## @param console.serviceAccount.annotations can be used to set the annotations of the service account
+    annotations: {}
+    ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
+
+  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
   podSecurityContext:
+    ## @param console.podSecurityContext.runAsNonRoot run as non root
     runAsNonRoot: true
+    ## @param console.podSecurityContext.fsGroup
     fsGroup: 1001
-  ## @param identityKeycloak.httpRelativePath (DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
-  # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
-  # NOTE: This should be the same as ".Values.global.identity.keycloak.contextPath" plus a trailing slash,
-  # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
-  # NOTE: In Keycloak v23, accessing this path without the trailing slash will return "Internal Server Error".
-  httpRelativePath: /auth/
-  ## @param identityKeycloak.extraEnvVars (DEPRECATED) can be used set extra environment variables to be set on Keycloak container.
-  extraEnvVars: []
+    ## @extra console.podSecurityContext.seccompProfile
+    seccompProfile:
+      ## @param console.podSecurityContext.seccompProfile.type
+      type: RuntimeDefault
 
-  # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
-  # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
-  ingress:
-    ## @param identityKeycloak.ingress.enabled (DEPRECATED) can be used enable ingress record generation for Keycloak.
-    enabled: false
-    ## @param identityKeycloak.ingress.tls (DEPRECATED) can be used to enable TLS configuration for the host defined at ingress.hostname parameter.
-    tls: false
-    ## @param identityKeycloak.ingress.extraTls (DEPRECATED) configuration for additional hostnames to be covered with this ingress record.
-    extraTls: []
-    ## @param identityKeycloak.ingress.labels (DEPRECATED) [object] can be used to define labels which will be applied to the Keycloak ingress resource
-    labels: {}
-    ## @extra identityKeycloak.ingress.annotations (DEPRECATED) configures annotations to be applied to the ingress record.
-    annotations:
-      ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size (DEPRECATED)
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-      ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffering (DEPRECATED)
-      nginx.ingress.kubernetes.io/proxy-buffering: "on"
-    ## @param identityKeycloak.ingress.pathType (DEPRECATED) defines Ingress path type.
-    pathType: Prefix
+  # ContainerSecurityContext defines the security options the Console broker container should be run with
+  containerSecurityContext:
+    ## @param console.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @param console.containerSecurityContext.privileged
+    privileged: false
+    ## @param console.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param console.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param console.containerSecurityContext.runAsUser
+    runAsUser: 1001
+    ## @extra console.containerSecurityContext.seccompProfile
+    seccompProfile:
+      ## @param console.containerSecurityContext.seccompProfile.type
+      type: RuntimeDefault
 
-  ## @extra identityKeycloak.service (DEPRECATED) configuration, to configure the service which is deployed along with keycloak
-  service:
-    ## @param identityKeycloak.service.type (DEPRECATED) can be set to change the service type.
-    # We use clusterIP for keycloak service, since per default LoadBalancer is used, which is not supported on all cloud providers.
-    # This might prevent scheduling of the service.
-    type: ClusterIP
-  ## Keycloak authentication parameters
-  ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
-  ##
-  ## @extra identityKeycloak.auth (DEPRECATED) uses the secrets generated by keycloak, to access keycloak.
-  auth:
-    ## @param identityKeycloak.auth.adminUser (DEPRECATED) defines the keycloak administrator user
-    adminUser: admin
-    ## @param identityKeycloak.auth.existingSecret (DEPRECATED) can be used to reuse an existing secret containing authentication information.
-    # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
-    existingSecret: camunda-credentials
-    ## @param identityKeycloak.auth.passwordSecretKey (DEPRECATED) defines the key within the existing secret object.
-    passwordSecretKey: identity-keycloak-admin-password
-  keycloakConfigCli:
-    image:
-      ## @param identityKeycloak.keycloakConfigCli.image.repository (DEPRECATED)
-      repository: bitnamilegacy/keycloak-config-cli
-
+  ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
+  nodeSelector: {}
+  ## @param console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: []
+  ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  affinity: {}
+  ## @param console.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+  dnsPolicy: ""
+  ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+  dnsConfig: {}
 
 ###############################################################################
 #  #####                                              #     #
@@ -1342,1227 +1242,575 @@ identityKeycloak:
 ###############################################################################
 ## @section CamundaHub Parameters
 ## @extra camundaHub configuration for the consolidated Console + WebModeler component.
-## Camunda Hub combines Console and WebModeler into a single logical component.
-## Set camundaHub.enabled to true to deploy both sub-components.
-##
-## IMPORTANT: The legacy top-level console.* and webModeler.* keys are DEPRECATED.
-## Values set under those keys are silently ignored when camundaHub values are populated.
-## Migrate all customizations to camundaHub.console.* and camundaHub.webModeler.* respectively.
+## When camundaHub.enabled is true, both Console and WebModeler are deployed as sub-components
+## of Camunda Hub. The legacy top-level console.* and webModeler.* keys still work for
+## backward compatibility but emit deprecation warnings when camundaHub is also enabled.
 camundaHub:
   ## @param camundaHub.enabled if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.
   ## When enabled, this takes precedence over the individual console.enabled and webModeler.enabled flags.
   enabled: false
 
-  #################################################
-  ## @section CamundaHub - Console Parameters
-  ## @extra camundaHub.console configuration for the Console sub-component.
+  ## @skip camundaHub.console Override values for the Console sub-component when using Camunda Hub.
+  ## Any values set here take precedence over the legacy top-level console.* values.
+  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
+  ## To override a value, set it explicitly under camundaHub.console (e.g. camundaHub.console.replicas: 3).
+  ##
+  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
+  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
+  ## camundaHub.console.readinessProbe.enabled=false will NOT disable the probe if the
+  ## legacy console.readinessProbe.enabled is true. Use the legacy keys directly for
+  ## falsy overrides.
   console:
-    ## @param camundaHub.console.configuration Configuration passed directly to Console as YAML file.
-    configuration: ""
-    ## @param camundaHub.console.extraConfiguration if specified, contents will be used for an extra configuration file.
-    extraConfiguration: []
+    image: {}
+    tls: {}
+    keycloak: {}
+    service: {}
+    startupProbe: {}
+    readinessProbe: {}
+    livenessProbe: {}
+    metrics: {}
+    serviceAccount: {}
 
-    ## camundaHub.console.image configuration to configure the Console image specifics
+  ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
+  ## Any values set here take precedence over the legacy top-level webModeler.* values.
+  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
+  ## To override a value, set it explicitly under camundaHub.webModeler (e.g. camundaHub.webModeler.contextPath: /modeler).
+  ##
+  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
+  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
+  ## camundaHub.webModeler.restapi.readinessProbe.enabled=false will NOT disable the probe
+  ## if the legacy webModeler.restapi.readinessProbe.enabled is true. Use the legacy keys
+  ## directly for falsy overrides.
+  webModeler:
+    image: {}
+    security:
+      authentication: {}
+    restapi:
+      image: {}
+      externalDatabase: {}
+      mail: {}
+      pusher:
+        client: {}
+      startupProbe: {}
+      readinessProbe: {}
+      livenessProbe: {}
+      metrics: {}
+      service: {}
+      logging: {}
+    websockets:
+      image: {}
+      startupProbe: {}
+      readinessProbe: {}
+      livenessProbe: {}
+      service: {}
+    serviceAccount: {}
+    persistence: {}
+
+#######################################################################
+#     #               #     #
+#  #  # ###### #####  ##   ##  ####  #####  ###### #      ###### #####
+#  #  # #      #    # # # # # #    # #    # #      #      #      #    #
+#  #  # #####  #####  #  #  # #    # #    # #####  #      #####  #    #
+#  #  # #      #    # #     # #    # #    # #      #      #      #####
+#  #  # #      #    # #     # #    # #    # #      #      #      #   #
+## ##  ###### #####  #     #  ####  #####  ###### ###### ###### #    #
+#######################################################################
+## @section WebModeler Parameters
+# WebModeler configuration of the WebModeler deployment
+webModeler:
+  ## @param webModeler.enabled if true, the WebModeler deployment and its related resources are deployed via a helm release
+  enabled: false
+
+  ## @param webModeler.fullnameOverride can be used to override the full name of the WebModeler resources
+  fullnameOverride: ""
+  ## @param webModeler.nameOverride can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)
+  nameOverride: ""
+
+  ## @extra webModeler.image configuration of the WebModeler Docker images
+  image:
+    ## @param webModeler.image.registry can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)
+    registry: ""
+    ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images
+    # renovate: datasource=docker depName=camunda/hub
+    tag: 8.10.0-alpha1-rc1
+    ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
+
+  # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
+  # contextPath: "/modeler"
+  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
+  contextPath: ""
+
+  security:
+    ## Authentication configuration
+    ## @extra webModeler.security.authentication
+    authentication:
+      ## @param webModeler.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
+      method: ""
+
+  # WebModeler.
+  ######                         #    ######  ###
+  #     # ######  ####  #####   # #   #     #  #
+  #     # #      #        #    #   #  #     #  #
+  ######  #####   ####    #   #     # ######   #
+  #   #   #           #   #   ####### #        #
+  #    #  #      #    #   #   #     # #        #
+  #     # ######  ####    #   #     # #       ###
+  ## @section WebModeler - RestAPI Parameters
+  ## @extra webModeler.restapi configuration of the WebModeler restapi component
+  restapi:
+    ## @extra webModeler.restapi.image configuration of the restapi Docker image
     image:
-      ## @param camundaHub.console.image.registry can be used to set container image registry.
-      registry: ""
-      ## @param camundaHub.console.image.repository defines which image repository to use
-      repository: camunda/console
-      ## @param camundaHub.console.image.tag can be used to set the Docker image tag for the Console image
-      tag: 8.9.25
-      ## @param camundaHub.console.image.digest can be used to set image digest
+      ## @param webModeler.restapi.image.repository defines which image repository to use for the restapi Docker image
+      repository: camunda/hub
+      ## @param webModeler.restapi.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
       digest: ""
-      ## @param camundaHub.console.image.pullSecrets can be used to configure image pull secrets
-      pullSecrets: []
 
-    ## @param camundaHub.console.nodeEnv can be used to set the node environment.
-    nodeEnv: prod
-
-    ## @param camundaHub.console.sidecars can be used to attach extra containers to the console deployment
+    ## @param webModeler.restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
+    ## @param webModeler.restapi.initContainers can be used to set up extra init containers for the application Pod
+    initContainers: []
 
-    ## @param camundaHub.console.replicas Number of Console replicas
+    ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
+    externalDatabase:
+      ## @param webModeler.restapi.externalDatabase.url defines the JDBC url of the database instance.
+      # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
+      url: ""
+      ## @param webModeler.restapi.externalDatabase.host Database host (used when url is not provided)
+      host: ""
+      ## @param webModeler.restapi.externalDatabase.port Database port number (used when url is not provided)
+      port: 5432
+      ## @param webModeler.restapi.externalDatabase.database The database name (used when url is not provided)
+      database: "web-modeler"
+      ## @param webModeler.restapi.externalDatabase.username defines the database user
+      username: ""
+      ## @extra webModeler.restapi.externalDatabase.secret configuration to provide the database password secret.
+      secret:
+        ## @param webModeler.restapi.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+
+    ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
+    mail:
+      ## @param webModeler.restapi.mail.smtpHost defines the host name of the SMTP server to be used by WebModeler
+      smtpHost: ""
+      ## @param webModeler.restapi.mail.smtpPort defines the port number of the SMTP server
+      smtpPort: 587
+      ## @param webModeler.restapi.mail.smtpUser can be used to provide a user for the SMTP server
+      smtpUser: ""
+      ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
+      smtpTlsEnabled: true
+      ## @extra webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
+      secret:
+        ## @param webModeler.restapi.mail.secret.inlineSecret can be used to provide the SMTP password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the SMTP password.
+        existingSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+      ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
+      # NOTE: This value is mandatory.
+      fromAddress: ""
+      ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
+      fromName: "Camunda 8"
+    ## @extra webModeler.restapi.pusher configuration for Pusher integration
+    pusher:
+      ## @extra webModeler.restapi.pusher.client configuration for the Pusher client
+      client:
+        ## @extra webModeler.restapi.pusher.client.secret configuration to provide the Pusher app key
+        secret:
+          ## @param webModeler.restapi.pusher.client.secret.inlineSecret can be used to provide the Pusher app key as a plain-text value for non-production usage
+          inlineSecret: ""
+          ## @param webModeler.restapi.pusher.client.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Pusher app key
+          existingSecret: ""
+          ## @param webModeler.restapi.pusher.client.secret.existingSecretKey defines the key within the existing secret object
+          existingSecretKey: ""
+      ## @extra webModeler.restapi.pusher.secret configuration to provide the Pusher app secret
+      secret:
+        ## @param webModeler.restapi.pusher.secret.inlineSecret can be used to provide the Pusher app secret as a plain-text value for non-production usage
+        inlineSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Pusher app secret
+        existingSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecretKey defines the key within the existing secret object
+        existingSecretKey: ""
+
+    ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)
+    clusters: []
+    #  - id: "default-cluster"
+    #    name: "Default cluster"
+    #    version: "8.8.0"
+    #    authentication: "BEARER_TOKEN"
+    #    url:
+    #      grpc: "grpc://camunda-platform-orchestration:26500"
+    #      rest: "http://camunda-platform-orchestration:8080"
+    #      web-app: "http://localhost:8080"
+
+    ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations. Supports templating (e.g., {{ .Release.Name }}).
+    podAnnotations: {}
+    ## @param webModeler.restapi.podLabels can be used to define extra restapi pod labels. Supports templating (e.g., {{ .Release.Name }}).
+    podLabels: {}
+
+    ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
+    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
+    ## @param webModeler.restapi.logging.level.io.grpc
+    logging:
+      level:
+        io.camunda.modeler: INFO
+        io.grpc: INFO
+
+    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.
+    env: []
+    ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
+    envFrom: []
+    ## @param webModeler.restapi.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+    command: []
+    ## @param webModeler.restapi.extraVolumes can be used to define extra volumes for the restapi pods, useful for TLS and self-signed certificates
+    extraVolumes: []
+    ## @param webModeler.restapi.extraVolumeMounts can be used to mount extra volumes for the restapi pods, useful for TLS and self-signed certificates
+    extraVolumeMounts: []
+
+    ## @param webModeler.restapi.replicas can be used to set the number of replicas for the restapi deployment
     replicas: 1
 
-    ## camundaHub.console.tls Configure the Console TLS options
-    tls:
-      ## @param camundaHub.console.tls.enabled if true, enable TLS traffic for console
+    ## @extra webModeler.restapi.podSecurityContext can be used to define the security options the restapi pod should be run with
+    podSecurityContext:
+      ## @param webModeler.restapi.podSecurityContext.runAsNonRoot
+      ## @param webModeler.restapi.podSecurityContext.fsGroup
+      runAsNonRoot: true
+      fsGroup: 1001
+      ## @extra webModeler.restapi.podSecurityContext.seccompProfile
+      seccompProfile:
+        ## @param webModeler.restapi.podSecurityContext.seccompProfile.type
+        type: RuntimeDefault
+    ## @extra webModeler.restapi.containerSecurityContext can be used to define the security options the restapi container should be run with
+    ## @param webModeler.restapi.containerSecurityContext.privileged
+    ## @param webModeler.restapi.containerSecurityContext.readOnlyRootFilesystem
+    ## @param webModeler.restapi.containerSecurityContext.allowPrivilegeEscalation
+    ## @param webModeler.restapi.containerSecurityContext.runAsNonRoot
+    ## @param webModeler.restapi.containerSecurityContext.runAsUser
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1001
+      ## @extra webModeler.restapi.containerSecurityContext.seccompProfile
+      seccompProfile:
+        ## @param webModeler.restapi.containerSecurityContext.seccompProfile.type
+        type: RuntimeDefault
+
+    ## @extra webModeler.restapi.startupProbe configuration of the restapi startup probe
+    startupProbe:
+      ## @param webModeler.restapi.startupProbe.enabled if true, the startup probe will be enabled for the restapi container
       enabled: false
-      ## @param camundaHub.console.tls.certKeyFilename defines certificate Key filename
-      certKeyFilename: ""
-      ## camundaHub.console.tls.secret New secret configuration pattern (>= 8.9)
-      secret:
-        ## @param camundaHub.console.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificates
-        existingSecret: ""
+      ## @param webModeler.restapi.startupProbe.scheme defines the startup probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.restapi.startupProbe.probePath defines the HTTP endpoint used for the startup probe
+      probePath: /health/liveness
+      ## @param webModeler.restapi.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 30
+      ## @param webModeler.restapi.startupProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      ## @param webModeler.restapi.startupProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      ## @param webModeler.restapi.startupProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      ## @param webModeler.restapi.startupProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
 
-    ## camundaHub.console.keycloak configuration to configure Keycloak authentication settings.
-    keycloak:
-      ## @param camundaHub.console.keycloak.realm Specifies the Keycloak realm used for authentication.
-      realm: "camunda-platform"
+    ## @extra webModeler.restapi.readinessProbe configuration of the restapi readiness probe
+    readinessProbe:
+      ## @param webModeler.restapi.readinessProbe.enabled if true, the readiness probe will be enabled for the restapi container
+      enabled: true
+      ## @param webModeler.restapi.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.restapi.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
+      probePath: /health/readiness
+      ## @param webModeler.restapi.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 30
+      ## @param webModeler.restapi.readinessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      ## @param webModeler.restapi.readinessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      ## @param webModeler.restapi.readinessProbe.failureThreshold defines when the probe is considered failed so the Pod will be marked unready
+      failureThreshold: 5
+      ## @param webModeler.restapi.readinessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
 
-    ## @param camundaHub.console.contextPath can be used to make Console web application works on a custom sub-path.
-    contextPath: ""
+    ## @extra webModeler.restapi.livenessProbe configuration of the restapi liveness probe
+    livenessProbe:
+      ## @param webModeler.restapi.livenessProbe.enabled if true, the liveness probe will be enabled for the restapi container
+      enabled: false
+      ## @param webModeler.restapi.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.restapi.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /health/liveness
+      ## @param webModeler.restapi.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 30
+      ## @param webModeler.restapi.livenessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      ## @param webModeler.restapi.livenessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      ## @param webModeler.restapi.livenessProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      ## @param webModeler.restapi.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
 
-    ## @param camundaHub.console.initContainers can be used to set up extra init containers for the application Pod
-    initContainers: []
+    ## Metrics configuration
+    metrics:
+      ## @param webModeler.restapi.metrics.prometheus Prometheus metrics endpoint
+      prometheus: /metrics
 
-    ## @param camundaHub.console.podAnnotations can be used to define extra Console pod annotations.
-    podAnnotations: {}
-    ## @param camundaHub.console.podLabels can be used to define extra Console pod labels.
-    podLabels: {}
+    ## @param webModeler.restapi.nodeSelector can be used to select the nodes the restapi pods should run on
+    nodeSelector: {}
+    ## @param webModeler.restapi.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+    tolerations: []
+    ## @param webModeler.restapi.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    affinity: {}
 
-    ## @param camundaHub.console.logging configuration for the Console logging.
-    logging: {}
-
-    ## camundaHub.console.service configuration to configure the Console service.
-    service:
-      ## @param camundaHub.console.service.annotations can be used to define annotations
-      annotations: {}
-      ## @param camundaHub.console.service.type defines the type of the service
-      type: ClusterIP
-      ## @param camundaHub.console.service.port defines the port number
-      port: 80
-      ## @param camundaHub.console.service.serverName defines the port name
-      serverName: http
-      ## @param camundaHub.console.service.managementPort defines the management port
-      managementPort: 9100
-
-    ## camundaHub.console.resources configuration
+    ## @extra webModeler.restapi.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+    ## @param webModeler.restapi.resources.requests.cpu
+    ## @param webModeler.restapi.resources.requests.memory
+    ## @param webModeler.restapi.resources.limits.cpu
+    ## @param webModeler.restapi.resources.limits.memory
     resources:
       requests:
-        ## @param camundaHub.console.resources.requests.cpu CPU resource value
-        cpu: "1000m"
-        ## @param camundaHub.console.resources.requests.memory memory resource value
-        memory: 1Gi
+        cpu: 900m
+        memory: 1280Mi
       limits:
-        ## @param camundaHub.console.resources.limits.cpu CPU resource value
-        cpu: "2000m"
-        ## @param camundaHub.console.resources.limits.memory memory resource value
-        memory: 2Gi
+        cpu: 1800m
+        memory: 2560Mi
 
-    ## @param camundaHub.console.env can be used to set extra environment variables
-    env: []
-    ## @param camundaHub.console.envFrom list of environment variables to import
-    envFrom: []
-    ## @param camundaHub.console.command can be used to override the default command
-    command: []
-    ## @param camundaHub.console.extraVolumes can be used to define extra volumes
-    extraVolumes: []
-    ## @param camundaHub.console.extraVolumeMounts can be used to mount extra volumes
-    extraVolumeMounts: []
-
-    ## camundaHub.console.startupProbe configuration
-    startupProbe:
-      ## @param camundaHub.console.startupProbe.enabled if true, the startupProbe is enabled in the app container
-      enabled: false
-      ## @param camundaHub.console.startupProbe.scheme defines the startupProbe scheme used on calling the probePath
-      scheme: HTTP
-      ## @param camundaHub.console.startupProbe.probePath defines the startupProbe route used on the app
-      probePath: /health/readiness
-      ## @param camundaHub.console.startupProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-      initialDelaySeconds: 30
-      ## @param camundaHub.console.startupProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param camundaHub.console.startupProbe.successThreshold defines how many consecutive successes mark the probe as ready
-      successThreshold: 1
-      ## @param camundaHub.console.startupProbe.failureThreshold defines when the probe is considered as failed
-      failureThreshold: 5
-      ## @param camundaHub.console.startupProbe.timeoutSeconds defines the seconds after the probe times out
-      timeoutSeconds: 1
-
-    ## camundaHub.console.readinessProbe configuration
-    readinessProbe:
-      ## @param camundaHub.console.readinessProbe.enabled if true, the readinessProbe is enabled in the app container
-      enabled: true
-      ## @param camundaHub.console.readinessProbe.scheme defines the readinessProbe scheme used on calling the probePath
-      scheme: HTTP
-      ## @param camundaHub.console.readinessProbe.probePath defines the readinessProbe route used on the app
-      probePath: /health/readiness
-      ## @param camundaHub.console.readinessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-      initialDelaySeconds: 30
-      ## @param camundaHub.console.readinessProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param camundaHub.console.readinessProbe.successThreshold defines how many consecutive successes mark the probe as ready
-      successThreshold: 1
-      ## @param camundaHub.console.readinessProbe.failureThreshold defines when the probe is considered as failed
-      failureThreshold: 5
-      ## @param camundaHub.console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-      timeoutSeconds: 1
-
-    ## camundaHub.console.livenessProbe configuration
-    livenessProbe:
-      ## @param camundaHub.console.livenessProbe.enabled if true, the livenessProbe is enabled in the app container
-      enabled: false
-      ## @param camundaHub.console.livenessProbe.scheme defines the livenessProbe scheme used on calling the probePath
-      scheme: HTTP
-      ## @param camundaHub.console.livenessProbe.probePath defines the livenessProbe route used on the app
-      probePath: /health/liveness
-      ## @param camundaHub.console.livenessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-      initialDelaySeconds: 30
-      ## @param camundaHub.console.livenessProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param camundaHub.console.livenessProbe.successThreshold defines how many consecutive successes mark the probe as ready
-      successThreshold: 1
-      ## @param camundaHub.console.livenessProbe.failureThreshold defines when the probe is considered as failed
-      failureThreshold: 5
-      ## @param camundaHub.console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-      timeoutSeconds: 1
-
-    ## camundaHub.console.metrics configuration
-    metrics:
-      ## @param camundaHub.console.metrics.prometheus Prometheus metrics endpoint path
-      prometheus: /prometheus
-
-    ## camundaHub.console.serviceAccount configuration
-    serviceAccount:
-      ## @param camundaHub.console.serviceAccount.enabled if true, enables serviceAccount
-      enabled: true
-      ## @param camundaHub.console.serviceAccount.name the name of the service account
-      name: ""
-      ## @param camundaHub.console.serviceAccount.annotations custom annotations
-      annotations: {}
-      ## @param camundaHub.console.serviceAccount.automountServiceAccountToken automount service account token
-      automountServiceAccountToken: false
-
-    ## camundaHub.console.podSecurityContext
-    podSecurityContext:
-      ## @param camundaHub.console.podSecurityContext.runAsNonRoot run as non-root user
-      runAsNonRoot: true
-      ## @param camundaHub.console.podSecurityContext.fsGroup filesystem group ID
-      fsGroup: 1001
-      seccompProfile:
-        ## @param camundaHub.console.podSecurityContext.seccompProfile.type seccomp profile type
-        type: RuntimeDefault
-
-    ## camundaHub.console.containerSecurityContext
-    containerSecurityContext:
-      ## @param camundaHub.console.containerSecurityContext.allowPrivilegeEscalation allow privilege escalation
-      allowPrivilegeEscalation: false
-      ## @param camundaHub.console.containerSecurityContext.privileged run container in privileged mode
-      privileged: false
-      ## @param camundaHub.console.containerSecurityContext.readOnlyRootFilesystem mount root filesystem as read only
-      readOnlyRootFilesystem: true
-      ## @param camundaHub.console.containerSecurityContext.runAsNonRoot run as non-root user
-      runAsNonRoot: true
-      ## @param camundaHub.console.containerSecurityContext.runAsUser run as specific user ID
-      runAsUser: 1001
-      seccompProfile:
-        ## @param camundaHub.console.containerSecurityContext.seccompProfile.type seccomp profile type
-        type: RuntimeDefault
-
-    ## @param camundaHub.console.nodeSelector
-    nodeSelector: {}
-    ## @param camundaHub.console.tolerations
-    tolerations: []
-    ## @param camundaHub.console.affinity
-    affinity: {}
-    ## @param camundaHub.console.dnsPolicy
-    dnsPolicy: ""
-    ## @param camundaHub.console.dnsConfig
-    dnsConfig: {}
-
-  #######################################################################
-  ## @section CamundaHub - WebModeler Parameters
-  ## @extra camundaHub.webModeler configuration for the WebModeler sub-component.
-  webModeler:
-    ## @param camundaHub.webModeler.fullnameOverride can be used to override the full name of the WebModeler resources
-    fullnameOverride: ""
-    ## @param camundaHub.webModeler.nameOverride can be used to partly override the name of the WebModeler resources
-    nameOverride: ""
-
-    ## @extra camundaHub.webModeler.image configuration of the WebModeler Docker images
-    image:
-      ## @param camundaHub.webModeler.image.registry can be used to set the Docker registry
-      registry: ""
-      ## @param camundaHub.webModeler.image.tag can be used to set the Docker image tag
-      # renovate: datasource=docker depName=camunda/hub
-      tag: 8.10.0-alpha1-rc1
-      ## @param camundaHub.webModeler.image.pullSecrets can be used to configure image pull secrets
-      pullSecrets: []
-
-    ## @param camundaHub.webModeler.contextPath can be used to make WebModeler available on a custom sub-path.
-    contextPath: ""
-
-    security:
-      ## Authentication configuration
-      authentication:
-        ## @param camundaHub.webModeler.security.authentication.method defines the authentication method. Possible values: `basic`, `oidc`, or `none`.
-        method: ""
-
-    ## @section CamundaHub - WebModeler RestAPI Parameters
-    ## @extra camundaHub.webModeler.restapi configuration of the WebModeler restapi component
-    restapi:
-      ## @extra camundaHub.webModeler.restapi.image configuration of the restapi Docker image
-      image:
-        ## @param camundaHub.webModeler.restapi.image.repository defines which image repository to use for the restapi Docker image
-        repository: camunda/hub
-        ## @param camundaHub.webModeler.restapi.image.digest can be used to set image digest
-        digest: ""
-
-      ## @param camundaHub.webModeler.restapi.sidecars can be used to attach extra containers
-      sidecars: []
-      ## @param camundaHub.webModeler.restapi.initContainers can be used to set up extra init containers
-      initContainers: []
-
-      ## @extra camundaHub.webModeler.restapi.externalDatabase connection to an external database
-      externalDatabase:
-        ## @param camundaHub.webModeler.restapi.externalDatabase.url defines the JDBC url
-        url: ""
-        ## @param camundaHub.webModeler.restapi.externalDatabase.host Database host
-        host: ""
-        ## @param camundaHub.webModeler.restapi.externalDatabase.port Database port number
-        port: 5432
-        ## @param camundaHub.webModeler.restapi.externalDatabase.database The database name
-        database: "web-modeler"
-        ## @param camundaHub.webModeler.restapi.externalDatabase.username defines the database user
-        username: ""
-        ## @extra camundaHub.webModeler.restapi.externalDatabase.secret configuration to provide the database password secret.
-        secret:
-          ## @param camundaHub.webModeler.restapi.externalDatabase.secret.inlineSecret
-          inlineSecret: ""
-          ## @param camundaHub.webModeler.restapi.externalDatabase.secret.existingSecret
-          existingSecret: ""
-          ## @param camundaHub.webModeler.restapi.externalDatabase.secret.existingSecretKey
-          existingSecretKey: ""
-
-      ## @extra camundaHub.webModeler.restapi.mail configuration for emails sent by WebModeler
-      mail:
-        ## @param camundaHub.webModeler.restapi.mail.smtpHost defines the host name of the SMTP server
-        smtpHost: ""
-        ## @param camundaHub.webModeler.restapi.mail.smtpPort defines the port number of the SMTP server
-        smtpPort: 587
-        ## @param camundaHub.webModeler.restapi.mail.smtpUser can be used to provide a user for the SMTP server
-        smtpUser: ""
-        ## @param camundaHub.webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption
-        smtpTlsEnabled: true
-        ## @extra camundaHub.webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
-        secret:
-          ## @param camundaHub.webModeler.restapi.mail.secret.inlineSecret inline secret value
-          inlineSecret: ""
-          ## @param camundaHub.webModeler.restapi.mail.secret.existingSecret name of an existing secret
-          existingSecret: ""
-          ## @param camundaHub.webModeler.restapi.mail.secret.existingSecretKey key within the existing secret
-          existingSecretKey: ""
-        ## @param camundaHub.webModeler.restapi.mail.fromAddress defines the email sender address
-        fromAddress: ""
-        ## @param camundaHub.webModeler.restapi.mail.fromName defines the email sender name
-        fromName: "Camunda 8"
-
-      ## @extra camundaHub.webModeler.restapi.pusher configuration for Pusher integration.
-      ## Secret leaf keys (inlineSecret, existingSecret, existingSecretKey) are intentionally
-      ## absent from defaults — they are only set by user overrides. This ensures mustMergeOverwrite
-      ## with the legacy path works correctly for backward compatibility.
-      pusher:
-        client:
-          ## @skip camundaHub.webModeler.restapi.pusher.client.secret
-          secret: {}
-        ## @skip camundaHub.webModeler.restapi.pusher.secret
-        secret: {}
-
-      ## @param camundaHub.webModeler.restapi.clusters configure Camunda 8 clusters available in Web Modeler
-      clusters: []
-
-      ## @param camundaHub.webModeler.restapi.podAnnotations extra restapi pod annotations
-      podAnnotations: {}
-      ## @param camundaHub.webModeler.restapi.podLabels extra restapi pod labels
-      podLabels: {}
-
-      ## @extra camundaHub.webModeler.restapi.logging configuration
-      logging:
-        level:
-          ## @param camundaHub.webModeler.restapi.logging.level.io.camunda.modeler modeler configuration
-          io.camunda.modeler: INFO
-          ## @param camundaHub.webModeler.restapi.logging.level.io.grpc grpc configuration
-          io.grpc: INFO
-
-      ## @param camundaHub.webModeler.restapi.env extra environment variables
-      env: []
-      ## @param camundaHub.webModeler.restapi.envFrom import from configMapRef and secretRef
-      envFrom: []
-      ## @param camundaHub.webModeler.restapi.command override the default command
-      command: []
-      ## @param camundaHub.webModeler.restapi.extraVolumes extra volumes
-      extraVolumes: []
-      ## @param camundaHub.webModeler.restapi.extraVolumeMounts extra volume mounts
-      extraVolumeMounts: []
-
-      ## @param camundaHub.webModeler.restapi.replicas number of restapi replicas
-      replicas: 1
-
-      ## camundaHub.webModeler.restapi.podSecurityContext
-      podSecurityContext:
-        ## @param camundaHub.webModeler.restapi.podSecurityContext.runAsNonRoot run as non-root user
-        runAsNonRoot: true
-        ## @param camundaHub.webModeler.restapi.podSecurityContext.fsGroup filesystem group ID
-        fsGroup: 1001
-        seccompProfile:
-          ## @param camundaHub.webModeler.restapi.podSecurityContext.seccompProfile.type seccomp profile type
-          type: RuntimeDefault
-      ## camundaHub.webModeler.restapi.containerSecurityContext
-      containerSecurityContext:
-        ## @param camundaHub.webModeler.restapi.containerSecurityContext.allowPrivilegeEscalation allow privilege escalation
-        allowPrivilegeEscalation: false
-        ## @param camundaHub.webModeler.restapi.containerSecurityContext.privileged run container in privileged mode
-        privileged: false
-        ## @param camundaHub.webModeler.restapi.containerSecurityContext.readOnlyRootFilesystem mount root filesystem as read only
-        readOnlyRootFilesystem: true
-        ## @param camundaHub.webModeler.restapi.containerSecurityContext.runAsNonRoot run as non-root user
-        runAsNonRoot: true
-        ## @param camundaHub.webModeler.restapi.containerSecurityContext.runAsUser run as specific user ID
-        runAsUser: 1001
-        seccompProfile:
-          ## @param camundaHub.webModeler.restapi.containerSecurityContext.seccompProfile.type seccomp profile type
-          type: RuntimeDefault
-
-      ## camundaHub.webModeler.restapi.startupProbe configuration
-      startupProbe:
-        ## @param camundaHub.webModeler.restapi.startupProbe.enabled if true, the startupProbe is enabled in the app container
-        enabled: false
-        ## @param camundaHub.webModeler.restapi.startupProbe.scheme defines the startupProbe scheme used on calling the probePath
-        scheme: HTTP
-        ## @param camundaHub.webModeler.restapi.startupProbe.probePath defines the startupProbe route used on the app
-        probePath: /health/liveness
-        ## @param camundaHub.webModeler.restapi.startupProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-        initialDelaySeconds: 30
-        ## @param camundaHub.webModeler.restapi.startupProbe.periodSeconds defines how often the probe is executed
-        periodSeconds: 30
-        ## @param camundaHub.webModeler.restapi.startupProbe.successThreshold defines how many consecutive successes mark the probe as ready
-        successThreshold: 1
-        ## @param camundaHub.webModeler.restapi.startupProbe.failureThreshold defines when the probe is considered as failed
-        failureThreshold: 5
-        ## @param camundaHub.webModeler.restapi.startupProbe.timeoutSeconds defines the seconds after the probe times out
-        timeoutSeconds: 1
-
-      ## camundaHub.webModeler.restapi.readinessProbe configuration
-      readinessProbe:
-        ## @param camundaHub.webModeler.restapi.readinessProbe.enabled if true, the readinessProbe is enabled in the app container
-        enabled: true
-        ## @param camundaHub.webModeler.restapi.readinessProbe.scheme defines the readinessProbe scheme used on calling the probePath
-        scheme: HTTP
-        ## @param camundaHub.webModeler.restapi.readinessProbe.probePath defines the readinessProbe route used on the app
-        probePath: /health/readiness
-        ## @param camundaHub.webModeler.restapi.readinessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-        initialDelaySeconds: 30
-        ## @param camundaHub.webModeler.restapi.readinessProbe.periodSeconds defines how often the probe is executed
-        periodSeconds: 30
-        ## @param camundaHub.webModeler.restapi.readinessProbe.successThreshold defines how many consecutive successes mark the probe as ready
-        successThreshold: 1
-        ## @param camundaHub.webModeler.restapi.readinessProbe.failureThreshold defines when the probe is considered as failed
-        failureThreshold: 5
-        ## @param camundaHub.webModeler.restapi.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-        timeoutSeconds: 1
-
-      ## camundaHub.webModeler.restapi.livenessProbe configuration
-      livenessProbe:
-        ## @param camundaHub.webModeler.restapi.livenessProbe.enabled if true, the livenessProbe is enabled in the app container
-        enabled: false
-        ## @param camundaHub.webModeler.restapi.livenessProbe.scheme defines the livenessProbe scheme used on calling the probePath
-        scheme: HTTP
-        ## @param camundaHub.webModeler.restapi.livenessProbe.probePath defines the livenessProbe route used on the app
-        probePath: /health/liveness
-        ## @param camundaHub.webModeler.restapi.livenessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-        initialDelaySeconds: 30
-        ## @param camundaHub.webModeler.restapi.livenessProbe.periodSeconds defines how often the probe is executed
-        periodSeconds: 30
-        ## @param camundaHub.webModeler.restapi.livenessProbe.successThreshold defines how many consecutive successes mark the probe as ready
-        successThreshold: 1
-        ## @param camundaHub.webModeler.restapi.livenessProbe.failureThreshold defines when the probe is considered as failed
-        failureThreshold: 5
-        ## @param camundaHub.webModeler.restapi.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-        timeoutSeconds: 1
-
-      ## Metrics configuration
-      metrics:
-        ## @param camundaHub.webModeler.restapi.metrics.prometheus Prometheus metrics endpoint path
-        prometheus: /metrics
-
-      ## @param camundaHub.webModeler.restapi.nodeSelector
-      nodeSelector: {}
-      ## @param camundaHub.webModeler.restapi.tolerations
-      tolerations: []
-      ## @param camundaHub.webModeler.restapi.affinity
-      affinity: {}
-
-      ## camundaHub.webModeler.restapi.resources configuration
-      resources:
-        requests:
-          ## @param camundaHub.webModeler.restapi.resources.requests.cpu CPU resource value
-          cpu: 900m
-          ## @param camundaHub.webModeler.restapi.resources.requests.memory memory resource value
-          memory: 1280Mi
-        limits:
-          ## @param camundaHub.webModeler.restapi.resources.limits.cpu CPU resource value
-          cpu: 1800m
-          ## @param camundaHub.webModeler.restapi.resources.limits.memory memory resource value
-          memory: 2560Mi
-
-      ## camundaHub.webModeler.restapi.service configuration
-      service:
-        ## @param camundaHub.webModeler.restapi.service.annotations custom annotations
-        annotations: {}
-        ## @param camundaHub.webModeler.restapi.service.type defines the type of the service
-        type: ClusterIP
-        ## @param camundaHub.webModeler.restapi.service.port service port number
-        port: 80
-        ## @param camundaHub.webModeler.restapi.service.managementPort management port number
-        managementPort: 8091
-
-      ## @param camundaHub.webModeler.restapi.configuration application.yaml contents
-      configuration: ""
-      ## @param camundaHub.webModeler.restapi.extraConfiguration extra configuration files
-      extraConfiguration: []
-      ## @param camundaHub.webModeler.restapi.dnsPolicy
-      dnsPolicy: ""
-      ## @param camundaHub.webModeler.restapi.dnsConfig
-      dnsConfig: {}
-      ## @param camundaHub.webModeler.restapi.javaOpts extra Java options
-      javaOpts: >-
-        -XX:MaxRAMPercentage=80.0
-      ## @param camundaHub.webModeler.restapi.zeebeClientConfigPath custom path for the Zeebe client config
-      zeebeClientConfigPath: /tmp/zeebe_client_cache.txt
-
-    ## @section CamundaHub - WebModeler WebSockets Parameters
-    ## @extra camundaHub.webModeler.websockets configuration of the WebModeler websockets component
-    websockets:
-      ## @extra camundaHub.webModeler.websockets.image configuration of the websockets Docker image
-      image:
-        ## @param camundaHub.webModeler.websockets.image.repository defines image repository
-        repository: camunda/hub-websockets
-        ## @param camundaHub.webModeler.websockets.image.digest can be used to set image digest
-        digest: ""
-
-      ## @param camundaHub.webModeler.websockets.sidecars extra containers
-      sidecars: []
-      ## @param camundaHub.webModeler.websockets.initContainers extra init containers
-      initContainers: []
-
-      ## @param camundaHub.webModeler.websockets.publicHost WebSockets server host for browser access
-      publicHost: localhost
-      ## @param camundaHub.webModeler.websockets.publicPort WebSockets server port for browser access
-      publicPort: 8085
-
-      ## @param camundaHub.webModeler.websockets.podAnnotations extra websockets pod annotations
-      podAnnotations: {}
-      ## @param camundaHub.webModeler.websockets.podLabels extra websockets pod labels
-      podLabels: {}
-
-      ## @param camundaHub.webModeler.websockets.env extra environment variables
-      env: []
-      ## @param camundaHub.webModeler.websockets.envFrom import from configMapRef and secretRef
-      envFrom: []
-      ## @param camundaHub.webModeler.websockets.command override the default command
-      command: []
-      ## @param camundaHub.webModeler.websockets.extraVolumes extra volumes
-      extraVolumes: []
-      ## @param camundaHub.webModeler.websockets.extraVolumeMounts extra volume mounts
-      extraVolumeMounts: []
-
-      ## camundaHub.webModeler.websockets.podSecurityContext
-      podSecurityContext:
-        ## @param camundaHub.webModeler.websockets.podSecurityContext.runAsNonRoot run as non-root user
-        runAsNonRoot: true
-        ## @param camundaHub.webModeler.websockets.podSecurityContext.fsGroup filesystem group ID
-        fsGroup: 1001
-        seccompProfile:
-          ## @param camundaHub.webModeler.websockets.podSecurityContext.seccompProfile.type seccomp profile type
-          type: RuntimeDefault
-      ## camundaHub.webModeler.websockets.containerSecurityContext
-      containerSecurityContext:
-        ## @param camundaHub.webModeler.websockets.containerSecurityContext.allowPrivilegeEscalation allow privilege escalation
-        allowPrivilegeEscalation: false
-        ## @param camundaHub.webModeler.websockets.containerSecurityContext.privileged run container in privileged mode
-        privileged: false
-        ## @param camundaHub.webModeler.websockets.containerSecurityContext.readOnlyRootFilesystem mount root filesystem as read only
-        readOnlyRootFilesystem: true
-        ## @param camundaHub.webModeler.websockets.containerSecurityContext.runAsNonRoot run as non-root user
-        runAsNonRoot: true
-        ## @param camundaHub.webModeler.websockets.containerSecurityContext.runAsUser run as specific user ID
-        runAsUser: 1001
-        seccompProfile:
-          ## @param camundaHub.webModeler.websockets.containerSecurityContext.seccompProfile.type seccomp profile type
-          type: RuntimeDefault
-
-      ## camundaHub.webModeler.websockets.startupProbe configuration
-      startupProbe:
-        ## @param camundaHub.webModeler.websockets.startupProbe.enabled if true, the startupProbe is enabled in the app container
-        enabled: false
-        ## @param camundaHub.webModeler.websockets.startupProbe.scheme defines the startupProbe scheme used on calling the probePath
-        scheme: HTTP
-        ## @param camundaHub.webModeler.websockets.startupProbe.probePath defines the startupProbe route used on the app
-        probePath: /up
-        ## @param camundaHub.webModeler.websockets.startupProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-        initialDelaySeconds: 10
-        ## @param camundaHub.webModeler.websockets.startupProbe.periodSeconds defines how often the probe is executed
-        periodSeconds: 30
-        ## @param camundaHub.webModeler.websockets.startupProbe.successThreshold defines how many consecutive successes mark the probe as ready
-        successThreshold: 1
-        ## @param camundaHub.webModeler.websockets.startupProbe.failureThreshold defines when the probe is considered as failed
-        failureThreshold: 5
-        ## @param camundaHub.webModeler.websockets.startupProbe.timeoutSeconds defines the seconds after the probe times out
-        timeoutSeconds: 1
-
-      ## camundaHub.webModeler.websockets.readinessProbe configuration
-      readinessProbe:
-        ## @param camundaHub.webModeler.websockets.readinessProbe.enabled if true, the readinessProbe is enabled in the app container
-        enabled: true
-        ## @param camundaHub.webModeler.websockets.readinessProbe.scheme defines the readinessProbe scheme used on calling the probePath
-        scheme: HTTP
-        ## @param camundaHub.webModeler.websockets.readinessProbe.probePath defines the readinessProbe route used on the app
-        probePath: /up
-        ## @param camundaHub.webModeler.websockets.readinessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-        initialDelaySeconds: 10
-        ## @param camundaHub.webModeler.websockets.readinessProbe.periodSeconds defines how often the probe is executed
-        periodSeconds: 30
-        ## @param camundaHub.webModeler.websockets.readinessProbe.successThreshold defines how many consecutive successes mark the probe as ready
-        successThreshold: 1
-        ## @param camundaHub.webModeler.websockets.readinessProbe.failureThreshold defines when the probe is considered as failed
-        failureThreshold: 5
-        ## @param camundaHub.webModeler.websockets.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-        timeoutSeconds: 1
-
-      ## camundaHub.webModeler.websockets.livenessProbe configuration
-      livenessProbe:
-        ## @param camundaHub.webModeler.websockets.livenessProbe.enabled if true, the livenessProbe is enabled in the app container
-        enabled: false
-        ## @param camundaHub.webModeler.websockets.livenessProbe.scheme defines the livenessProbe scheme used on calling the probePath
-        scheme: HTTP
-        ## @param camundaHub.webModeler.websockets.livenessProbe.probePath defines the livenessProbe route used on the app
-        probePath: /up
-        ## @param camundaHub.webModeler.websockets.livenessProbe.initialDelaySeconds defines the number of seconds before the probe is initiated
-        initialDelaySeconds: 10
-        ## @param camundaHub.webModeler.websockets.livenessProbe.periodSeconds defines how often the probe is executed
-        periodSeconds: 30
-        ## @param camundaHub.webModeler.websockets.livenessProbe.successThreshold defines how many consecutive successes mark the probe as ready
-        successThreshold: 1
-        ## @param camundaHub.webModeler.websockets.livenessProbe.failureThreshold defines when the probe is considered as failed
-        failureThreshold: 5
-        ## @param camundaHub.webModeler.websockets.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-        timeoutSeconds: 1
-
-      ## @param camundaHub.webModeler.websockets.nodeSelector
-      nodeSelector: {}
-      ## @param camundaHub.webModeler.websockets.tolerations
-      tolerations: []
-      ## @param camundaHub.webModeler.websockets.affinity
-      affinity: {}
-
-      ## camundaHub.webModeler.websockets.resources configuration
-      resources:
-        requests:
-          ## @param camundaHub.webModeler.websockets.resources.requests.cpu CPU resource value
-          cpu: 100m
-          ## @param camundaHub.webModeler.websockets.resources.requests.memory memory resource value
-          memory: 64Mi
-        limits:
-          ## @param camundaHub.webModeler.websockets.resources.limits.cpu CPU resource value
-          cpu: 200m
-          ## @param camundaHub.webModeler.websockets.resources.limits.memory memory resource value
-          memory: 128Mi
-
-      ## camundaHub.webModeler.websockets.service configuration
-      service:
-        ## @param camundaHub.webModeler.websockets.service.annotations custom annotations
-        annotations: {}
-        ## @param camundaHub.webModeler.websockets.service.type defines the type of the service
-        type: ClusterIP
-        ## @param camundaHub.webModeler.websockets.service.port service port number
-        port: 80
-      ## @param camundaHub.webModeler.websockets.configuration application.yaml contents
-      configuration: ""
-      ## @param camundaHub.webModeler.websockets.extraConfiguration extra config files
-      extraConfiguration: {}
-      ## @param camundaHub.webModeler.websockets.dnsPolicy
-      dnsPolicy: ""
-      ## @param camundaHub.webModeler.websockets.dnsConfig
-      dnsConfig: {}
-
-    ## @extra camundaHub.webModeler.serviceAccount configuration
-    serviceAccount:
-      ## @param camundaHub.webModeler.serviceAccount.enabled if true, enables serviceAccount
-      enabled: true
-      ## @param camundaHub.webModeler.serviceAccount.name the name of the service account
-      name: ""
-      ## @param camundaHub.webModeler.serviceAccount.annotations custom annotations
-      annotations: {}
-      ## @param camundaHub.webModeler.serviceAccount.automountServiceAccountToken automount service account token
-      automountServiceAccountToken: false
-
-    ## @extra camundaHub.webModeler.persistence configuration for optional PVC creation
-    persistence:
-      ## @param camundaHub.webModeler.persistence.enabled if true, enables persistence
-      enabled: false
-      ## @param camundaHub.webModeler.persistence.size PVC size
-      size: "5Gi"
-      ## @param camundaHub.webModeler.persistence.accessModes PVC access modes
-      accessModes: ["ReadWriteOnce"]
-      ## @param camundaHub.webModeler.persistence.storageClassName PVC storage class name
-      storageClassName: ""
-      ## @param camundaHub.webModeler.persistence.existingClaim name of an existing PVC to use
-      existingClaim: ""
-      ## @param camundaHub.webModeler.persistence.annotations custom annotations
-      annotations: {}
-      ## @param camundaHub.webModeler.persistence.selector PVC selector
-      selector: {}
-
-#################################################
-## @section Console Parameters (DEPRECATED)
-## DEPRECATED: Use camundaHub.console.* instead.
-## These keys exist for backward compatibility with the enablement helper only.
-## Value overrides set here are silently ignored — use camundaHub.console.* instead.
-#################################################
-  ## @skip console.affinity (DEPRECATED)
-  ## @skip console.command (DEPRECATED)
-  ## @skip console.configuration (DEPRECATED)
-  ## @skip console.containerSecurityContext (DEPRECATED)
-  ## @skip console.contextPath (DEPRECATED)
-  ## @skip console.dnsConfig (DEPRECATED)
-  ## @skip console.dnsPolicy (DEPRECATED)
-  ## @skip console.env (DEPRECATED)
-  ## @skip console.envFrom (DEPRECATED)
-  ## @skip console.extraConfiguration (DEPRECATED)
-  ## @skip console.extraVolumeMounts (DEPRECATED)
-  ## @skip console.extraVolumes (DEPRECATED)
-  ## @skip console.image.digest (DEPRECATED)
-  ## @skip console.image.pullSecrets (DEPRECATED)
-  ## @skip console.image.registry (DEPRECATED)
-  ## @skip console.image.repository (DEPRECATED)
-  ## @skip console.image.tag (DEPRECATED)
-  ## @skip console.initContainers (DEPRECATED)
-  ## @skip console.keycloak.realm (DEPRECATED)
-  ## @skip console.livenessProbe.enabled (DEPRECATED)
-  ## @skip console.livenessProbe.failureThreshold (DEPRECATED)
-  ## @skip console.livenessProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip console.livenessProbe.periodSeconds (DEPRECATED)
-  ## @skip console.livenessProbe.probePath (DEPRECATED)
-  ## @skip console.livenessProbe.scheme (DEPRECATED)
-  ## @skip console.livenessProbe.successThreshold (DEPRECATED)
-  ## @skip console.livenessProbe.timeoutSeconds (DEPRECATED)
-  ## @skip console.logging (DEPRECATED)
-  ## @skip console.metrics.prometheus (DEPRECATED)
-  ## @skip console.nodeEnv (DEPRECATED)
-  ## @skip console.nodeSelector (DEPRECATED)
-  ## @skip console.podAnnotations (DEPRECATED)
-  ## @skip console.podLabels (DEPRECATED)
-  ## @skip console.podSecurityContext (DEPRECATED)
-  ## @skip console.readinessProbe.enabled (DEPRECATED)
-  ## @skip console.readinessProbe.failureThreshold (DEPRECATED)
-  ## @skip console.readinessProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip console.readinessProbe.periodSeconds (DEPRECATED)
-  ## @skip console.readinessProbe.probePath (DEPRECATED)
-  ## @skip console.readinessProbe.scheme (DEPRECATED)
-  ## @skip console.readinessProbe.successThreshold (DEPRECATED)
-  ## @skip console.readinessProbe.timeoutSeconds (DEPRECATED)
-  ## @skip console.replicas (DEPRECATED)
-  ## @skip console.resources (DEPRECATED)
-  ## @skip console.service.annotations (DEPRECATED)
-  ## @skip console.service.managementPort (DEPRECATED)
-  ## @skip console.service.port (DEPRECATED)
-  ## @skip console.service.serverName (DEPRECATED)
-  ## @skip console.service.type (DEPRECATED)
-  ## @skip console.serviceAccount.annotations (DEPRECATED)
-  ## @skip console.serviceAccount.automountServiceAccountToken (DEPRECATED)
-  ## @skip console.serviceAccount.enabled (DEPRECATED)
-  ## @skip console.serviceAccount.name (DEPRECATED)
-  ## @skip console.sidecars (DEPRECATED)
-  ## @skip console.startupProbe.enabled (DEPRECATED)
-  ## @skip console.startupProbe.failureThreshold (DEPRECATED)
-  ## @skip console.startupProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip console.startupProbe.periodSeconds (DEPRECATED)
-  ## @skip console.startupProbe.probePath (DEPRECATED)
-  ## @skip console.startupProbe.scheme (DEPRECATED)
-  ## @skip console.startupProbe.successThreshold (DEPRECATED)
-  ## @skip console.startupProbe.timeoutSeconds (DEPRECATED)
-  ## @skip console.tls.certKeyFilename (DEPRECATED)
-  ## @skip console.tls.enabled (DEPRECATED)
-  ## @skip console.tls.secret (DEPRECATED)
-  ## @skip console.tolerations (DEPRECATED)
-console:
-  ## @param console.enabled (DEPRECATED) Use camundaHub.enabled instead.
-  enabled: false
-  ## Intermediate maps required by templates (all leaves are falsy — camundaHub wins via 'or'):
-  image:
-    registry: ""
-    repository: ""
-    tag: ""
-    digest: ""
-    pullSecrets: []
-  configuration: ""
-  extraConfiguration: []
-  nodeEnv: ""
-  sidecars: []
-  replicas: 0
-  tls:
-    enabled: false
-    certKeyFilename: ""
-    ## NOTE: 'existingSecret' deliberately absent — hasKey check in constraints.tpl.
-    secret: {}
-  keycloak:
-    realm: ""
-  contextPath: ""
-  initContainers: []
-  podAnnotations: {}
-  podLabels: {}
-  logging: {}
-  service:
-    annotations: {}
-    type: ""
-    port: 0
-    serverName: ""
-    managementPort: 0
-  resources: {}
-  env: []
-  envFrom: []
-  command: []
-  extraVolumes: []
-  extraVolumeMounts: []
-  startupProbe:
-    enabled: false
-    scheme: ""
-    probePath: ""
-    initialDelaySeconds: 0
-    periodSeconds: 0
-    successThreshold: 0
-    failureThreshold: 0
-    timeoutSeconds: 0
-  readinessProbe:
-    enabled: false
-    scheme: ""
-    probePath: ""
-    initialDelaySeconds: 0
-    periodSeconds: 0
-    successThreshold: 0
-    failureThreshold: 0
-    timeoutSeconds: 0
-  livenessProbe:
-    enabled: false
-    scheme: ""
-    probePath: ""
-    initialDelaySeconds: 0
-    periodSeconds: 0
-    successThreshold: 0
-    failureThreshold: 0
-    timeoutSeconds: 0
-  metrics:
-    prometheus: ""
-  serviceAccount:
-    enabled: true
-    name: ""
-    annotations: {}
-    automountServiceAccountToken: false
-  podSecurityContext: {}
-  containerSecurityContext: {}
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-  dnsPolicy: ""
-  dnsConfig: {}
-  ## NOTE: 'overrideConfiguration' deliberately absent — hasKey check in constraints.tpl.
-
-#######################################################################
-## @section WebModeler Parameters (DEPRECATED)
-## DEPRECATED: Use camundaHub.webModeler.* instead.
-## These keys exist for backward compatibility with the enablement helper only.
-## Value overrides set here are silently ignored — use camundaHub.webModeler.* instead.
-#######################################################################
-  ## @skip webModeler.configuration (DEPRECATED)
-  ## @skip webModeler.contextPath (DEPRECATED)
-  ## @skip webModeler.extraConfiguration (DEPRECATED)
-  ## @skip webModeler.fullnameOverride (DEPRECATED)
-  ## @skip webModeler.image.pullSecrets (DEPRECATED)
-  ## @skip webModeler.image.registry (DEPRECATED)
-  ## @skip webModeler.image.tag (DEPRECATED)
-  ## @skip webModeler.nameOverride (DEPRECATED)
-  ## @skip webModeler.persistence.accessModes (DEPRECATED)
-  ## @skip webModeler.persistence.annotations (DEPRECATED)
-  ## @skip webModeler.persistence.enabled (DEPRECATED)
-  ## @skip webModeler.persistence.existingClaim (DEPRECATED)
-  ## @skip webModeler.persistence.selector (DEPRECATED)
-  ## @skip webModeler.persistence.size (DEPRECATED)
-  ## @skip webModeler.persistence.storageClassName (DEPRECATED)
-  ## @skip webModeler.restapi.affinity (DEPRECATED)
-  ## @skip webModeler.restapi.clusters (DEPRECATED)
-  ## @skip webModeler.restapi.command (DEPRECATED)
-  ## @skip webModeler.restapi.configuration (DEPRECATED)
-  ## @skip webModeler.restapi.containerSecurityContext (DEPRECATED)
-  ## @skip webModeler.restapi.dnsConfig (DEPRECATED)
-  ## @skip webModeler.restapi.dnsPolicy (DEPRECATED)
-  ## @skip webModeler.restapi.env (DEPRECATED)
-  ## @skip webModeler.restapi.envFrom (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.database (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.host (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.port (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.secret.existingSecret (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.secret.existingSecretKey (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.secret.inlineSecret (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.url (DEPRECATED)
-  ## @skip webModeler.restapi.externalDatabase.username (DEPRECATED)
-  ## @skip webModeler.restapi.extraConfiguration (DEPRECATED)
-  ## @skip webModeler.restapi.extraVolumeMounts (DEPRECATED)
-  ## @skip webModeler.restapi.extraVolumes (DEPRECATED)
-  ## @skip webModeler.restapi.image.digest (DEPRECATED)
-  ## @skip webModeler.restapi.image.repository (DEPRECATED)
-  ## @skip webModeler.restapi.initContainers (DEPRECATED)
-  ## @skip webModeler.restapi.javaOpts (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.enabled (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.failureThreshold (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.periodSeconds (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.probePath (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.scheme (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.successThreshold (DEPRECATED)
-  ## @skip webModeler.restapi.livenessProbe.timeoutSeconds (DEPRECATED)
-  ## @skip webModeler.restapi.logging (DEPRECATED)
-  ## @skip webModeler.restapi.mail.fromAddress (DEPRECATED)
-  ## @skip webModeler.restapi.mail.fromName (DEPRECATED)
-  ## @skip webModeler.restapi.mail.secret.existingSecret (DEPRECATED)
-  ## @skip webModeler.restapi.mail.secret.existingSecretKey (DEPRECATED)
-  ## @skip webModeler.restapi.mail.secret.inlineSecret (DEPRECATED)
-  ## @skip webModeler.restapi.mail.smtpHost (DEPRECATED)
-  ## @skip webModeler.restapi.mail.smtpPort (DEPRECATED)
-  ## @skip webModeler.restapi.mail.smtpTlsEnabled (DEPRECATED)
-  ## @skip webModeler.restapi.mail.smtpUser (DEPRECATED)
-  ## @skip webModeler.restapi.metrics.prometheus (DEPRECATED)
-  ## @skip webModeler.restapi.nodeSelector (DEPRECATED)
-  ## @skip webModeler.restapi.podAnnotations (DEPRECATED)
-  ## @skip webModeler.restapi.podLabels (DEPRECATED)
-  ## @skip webModeler.restapi.podSecurityContext (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.client.secret (DEPRECATED)
-  ## @skip webModeler.restapi.pusher.secret (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.enabled (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.failureThreshold (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.periodSeconds (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.probePath (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.scheme (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.successThreshold (DEPRECATED)
-  ## @skip webModeler.restapi.readinessProbe.timeoutSeconds (DEPRECATED)
-  ## @skip webModeler.restapi.replicas (DEPRECATED)
-  ## @skip webModeler.restapi.resources (DEPRECATED)
-  ## @skip webModeler.restapi.service.annotations (DEPRECATED)
-  ## @skip webModeler.restapi.service.managementPort (DEPRECATED)
-  ## @skip webModeler.restapi.service.port (DEPRECATED)
-  ## @skip webModeler.restapi.service.type (DEPRECATED)
-  ## @skip webModeler.restapi.sidecars (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.enabled (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.failureThreshold (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.periodSeconds (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.probePath (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.scheme (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.successThreshold (DEPRECATED)
-  ## @skip webModeler.restapi.startupProbe.timeoutSeconds (DEPRECATED)
-  ## @skip webModeler.restapi.tolerations (DEPRECATED)
-  ## @skip webModeler.restapi.zeebeClientConfigPath (DEPRECATED)
-  ## @skip webModeler.security.authentication.method (DEPRECATED)
-  ## @skip webModeler.serviceAccount.annotations (DEPRECATED)
-  ## @skip webModeler.serviceAccount.automountServiceAccountToken (DEPRECATED)
-  ## @skip webModeler.serviceAccount.enabled (DEPRECATED)
-  ## @skip webModeler.serviceAccount.name (DEPRECATED)
-  ## @skip webModeler.websockets.affinity (DEPRECATED)
-  ## @skip webModeler.websockets.command (DEPRECATED)
-  ## @skip webModeler.websockets.configuration (DEPRECATED)
-  ## @skip webModeler.websockets.containerSecurityContext (DEPRECATED)
-  ## @skip webModeler.websockets.dnsConfig (DEPRECATED)
-  ## @skip webModeler.websockets.dnsPolicy (DEPRECATED)
-  ## @skip webModeler.websockets.env (DEPRECATED)
-  ## @skip webModeler.websockets.envFrom (DEPRECATED)
-  ## @skip webModeler.websockets.extraConfiguration (DEPRECATED)
-  ## @skip webModeler.websockets.extraVolumeMounts (DEPRECATED)
-  ## @skip webModeler.websockets.extraVolumes (DEPRECATED)
-  ## @skip webModeler.websockets.image.digest (DEPRECATED)
-  ## @skip webModeler.websockets.image.repository (DEPRECATED)
-  ## @skip webModeler.websockets.initContainers (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.enabled (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.failureThreshold (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.periodSeconds (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.probePath (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.scheme (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.successThreshold (DEPRECATED)
-  ## @skip webModeler.websockets.livenessProbe.timeoutSeconds (DEPRECATED)
-  ## @skip webModeler.websockets.nodeSelector (DEPRECATED)
-  ## @skip webModeler.websockets.podAnnotations (DEPRECATED)
-  ## @skip webModeler.websockets.podLabels (DEPRECATED)
-  ## @skip webModeler.websockets.podSecurityContext (DEPRECATED)
-  ## @skip webModeler.websockets.publicHost (DEPRECATED)
-  ## @skip webModeler.websockets.publicPort (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.enabled (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.failureThreshold (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.periodSeconds (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.probePath (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.scheme (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.successThreshold (DEPRECATED)
-  ## @skip webModeler.websockets.readinessProbe.timeoutSeconds (DEPRECATED)
-  ## @skip webModeler.websockets.resources (DEPRECATED)
-  ## @skip webModeler.websockets.service.annotations (DEPRECATED)
-  ## @skip webModeler.websockets.service.port (DEPRECATED)
-  ## @skip webModeler.websockets.service.type (DEPRECATED)
-  ## @skip webModeler.websockets.sidecars (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.enabled (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.failureThreshold (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.initialDelaySeconds (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.periodSeconds (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.probePath (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.scheme (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.successThreshold (DEPRECATED)
-  ## @skip webModeler.websockets.startupProbe.timeoutSeconds (DEPRECATED)
-  ## @skip webModeler.websockets.tolerations (DEPRECATED)
-webModeler:
-  ## @param webModeler.enabled (DEPRECATED) Use camundaHub.enabled instead.
-  enabled: false
-  fullnameOverride: ""
-  nameOverride: ""
-  ## Intermediate maps required by templates (all leaves are falsy — camundaHub wins via 'or'):
-  image:
-    registry: ""
-    tag: ""
-    pullSecrets: []
-  contextPath: ""
-  configuration: ""
-  extraConfiguration: []
-  security:
-    authentication:
-      method: ""
-  serviceAccount:
-    enabled: true
-    name: ""
-    annotations: {}
-    automountServiceAccountToken: false
-  persistence:
-    enabled: false
-    size: ""
-    accessModes: []
-    storageClassName: ""
-    existingClaim: ""
-    annotations: {}
-    selector: {}
-  restapi:
-    image:
-      repository: ""
-      digest: ""
-    sidecars: []
-    initContainers: []
-    externalDatabase:
-      ## NOTE: 'password', 'existingSecret', 'existingSecretPasswordKey', 'user' deliberately
-      ## absent — hasKey checks in constraints.tpl detect these as removed keys.
-      url: ""
-      host: ""
-      port: 0
-      database: ""
-      username: ""
-      secret:
-        inlineSecret: ""
-        existingSecret: ""
-        existingSecretKey: ""
-    mail:
-      ## NOTE: 'smtpPassword', 'existingSecret', 'existingSecretPasswordKey' deliberately
-      ## absent — hasKey checks in constraints.tpl detect these as removed keys.
-      smtpHost: ""
-      smtpPort: 0
-      smtpUser: ""
-      smtpTlsEnabled: false
-      secret:
-        inlineSecret: ""
-        existingSecret: ""
-        existingSecretKey: ""
-      fromAddress: ""
-      fromName: ""
-    pusher:
-      client:
-        secret: {}
-      secret: {}
-    clusters: []
-    podAnnotations: {}
-    podLabels: {}
-    logging: {}
-    env: []
-    envFrom: []
-    command: []
-    extraVolumes: []
-    extraVolumeMounts: []
-    replicas: 0
-    podSecurityContext: {}
-    containerSecurityContext: {}
-    startupProbe:
-      enabled: false
-      scheme: ""
-      probePath: ""
-      initialDelaySeconds: 0
-      periodSeconds: 0
-      successThreshold: 0
-      failureThreshold: 0
-      timeoutSeconds: 0
-    readinessProbe:
-      enabled: false
-      scheme: ""
-      probePath: ""
-      initialDelaySeconds: 0
-      periodSeconds: 0
-      successThreshold: 0
-      failureThreshold: 0
-      timeoutSeconds: 0
-    livenessProbe:
-      enabled: false
-      scheme: ""
-      probePath: ""
-      initialDelaySeconds: 0
-      periodSeconds: 0
-      successThreshold: 0
-      failureThreshold: 0
-      timeoutSeconds: 0
-    metrics:
-      prometheus: ""
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-    resources: {}
+    ## @extra webModeler.restapi.service configuration of the WebModeler restapi service
     service:
+      ## @param webModeler.restapi.service.annotations can be used to define annotations which will be applied to the service
       annotations: {}
-      type: ""
-      port: 0
-      managementPort: 0
+      ## @param webModeler.restapi.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
+      ## @param webModeler.restapi.service.port defines the default port of the service
+      port: 80
+      ## @param webModeler.restapi.service.managementPort defines the management port of the service
+      managementPort: 8091
+
+    ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
+    ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+    ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
     extraConfiguration: []
+    ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
+    ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
-    javaOpts: ""
-    zeebeClientConfigPath: ""
+    ## @param webModeler.restapi.javaOpts can be used to set extra Java options for the restapi container
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+    ## @param webModeler.restapi.zeebeClientConfigPath can be used to set a custom path for the Zeebe client configuration file
+    zeebeClientConfigPath: /tmp/zeebe_client_cache.txt
+
+
+  # WebModeler.
+  #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
+  #    # #      #    # #      #    # #    # #   #  #        #   #
+  #    # #####  #####   ####  #    # #      ####   #####    #    ####
+  # ## # #      #    #      # #    # #      #  #   #        #        #
+  ##  ## #      #    # #    # #    # #    # #   #  #        #   #    #
+  #    # ###### #####   ####   ####   ####  #    # ######   #    ####
+  ## @section WebModeler - WebSockets Parameters
+  ## @extra webModeler.websockets configuration of the WebModeler websockets component
   websockets:
+    ## @extra webModeler.websockets.image configuration of the websockets Docker image
     image:
-      repository: ""
+      ## @param webModeler.websockets.image.repository defines which image repository to use for the websockets Docker image
+      repository: camunda/hub-websockets
+      ## @param webModeler.websockets.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
       digest: ""
+
+    ## @param webModeler.websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
+    ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
-    publicHost: ""
-    publicPort: 0
+
+    ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.
+    # The default value assumes that a port-forwarding to the websockets service has been created.
+    # Note: The host will only be used if the Ingress resource for WebModeler is disabled.
+    publicHost: localhost
+    ## @param webModeler.websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.
+    # The default value assumes that a port-forwarding to the websockets service on port 8085 has been created.
+    # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
+    publicPort: 8085
+
+    ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).
     podAnnotations: {}
+    ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels. Supports templating (e.g., {{ .Release.Name }}).
     podLabels: {}
+
+    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.
     env: []
+    ## @param webModeler.websockets.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
+    ## @param webModeler.websockets.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
     command: []
+    ## @param webModeler.websockets.extraVolumes can be used to define extra volumes for the websockets pod; useful for logging to a file
     extraVolumes: []
+    ## @param webModeler.websockets.extraVolumeMounts can be used to mount extra volumes for the websockets pod; useful for logging to a file
     extraVolumeMounts: []
-    podSecurityContext: {}
-    containerSecurityContext: {}
-    startupProbe:
-      enabled: false
-      scheme: ""
-      probePath: ""
-      initialDelaySeconds: 0
-      periodSeconds: 0
-      successThreshold: 0
-      failureThreshold: 0
-      timeoutSeconds: 0
-    readinessProbe:
-      enabled: false
-      scheme: ""
-      probePath: ""
-      initialDelaySeconds: 0
-      periodSeconds: 0
-      successThreshold: 0
-      failureThreshold: 0
-      timeoutSeconds: 0
-    livenessProbe:
-      enabled: false
-      scheme: ""
-      probePath: ""
-      initialDelaySeconds: 0
-      periodSeconds: 0
-      successThreshold: 0
-      failureThreshold: 0
-      timeoutSeconds: 0
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-    resources: {}
-    service:
-      annotations: {}
-      type: ""
-      port: 0
-    configuration: ""
-    extraConfiguration: {}
-    dnsPolicy: ""
-    dnsConfig: {}
 
-# WebModeler.
-#####   ####   ####  #####  ####  #####  ######  ####   ####  #
-#    # #    # #        #   #    # #    # #      #      #    # #
-#    # #    #  ####    #   #      #    # #####   ####  #    # #
-#####  #    #      #   #   #  ### #####  #           # #  # # #
-#      #    # #    #   #   #    # #   #  #      #    # #   #  #
-#       ####   ####    #    ####  #    # ######  ####   ### # ######
-## @section WebModeler - PostgreSQL Parameters (DEPRECATED)
-## @extra postgresql (DEPRECATED) configuration for the postgresql dependency chart used by WebModeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
-webModelerPostgresql:
-  ## @param webModelerPostgresql.enabled (DEPRECATED) if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
-  # Note: If WebModeler is enabled, and WebModeler Postgresql is disabled, the external database configuration must be set under "webModeler.restapi.externalDatabase".
-  enabled: false
-  ## @extra postgresql.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
-  global:
-    ## Compatibility adaptations for Kubernetes platforms
-    ##
-    compatibility:
-      ## Compatibility adaptations for Openshift
-      ##
-      openshift:
-        ## @param webModelerPostgresql.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
-        ##
-        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
-  ## @param webModelerPostgresql.nameOverride (DEPRECATED) defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
-  # Note: Don't use the name "postgresql" which is already used for Keycloak's database.
-  nameOverride: postgresql-web-modeler
-  # https://hub.docker.com/r/bitnami/postgresql/tags
-  ## @param webModelerPostgresql.image.repository (DEPRECATED) PostgreSQL repo
-  ## @param webModelerPostgresql.image.tag (DEPRECATED) PostgreSQL image tag
-  ## @param webModelerPostgresql.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-  image:
-    repository: bitnamilegacy/postgresql
-    tag: 14.18.0-debian-12-r0
-    digest: ""
-  ## @extra postgresql.auth (DEPRECATED) configuration of the database authentication
-  auth:
-    ## @param webModelerPostgresql.auth.username (DEPRECATED) defines the name of the database user to be created for WebModeler
-    username: web-modeler
-    ## @param webModelerPostgresql.auth.password (DEPRECATED) can be used to provide the database user's password; a random password will be generated if left empty / ignored if `postgresql.auth.existingSecret` is set
-    password: ""
-    ## @param webModelerPostgresql.auth.database (DEPRECATED) defines the name of the database to be created for WebModeler
-    database: web-modeler
-    ## @param webModelerPostgresql.auth.existingSecret (DEPRECATED) can be used to provide the name of an existing secret resource containing the database password
-    existingSecret: ""
-    secretKeys:
-      ## @param webModelerPostgresql.auth.secretKeys.adminPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.
-      adminPasswordKey: "web-modeler-postgresql-admin-password"
-      ## @param webModelerPostgresql.auth.secretKeys.userPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL user.
-      userPasswordKey: "web-modeler-postgresql-user-password"
-
-  ## @param webModelerPostgresql.primary.containerSecurityContext.enabled (DEPRECATED)
-  ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation (DEPRECATED)
-  ## @param webModelerPostgresql.primary.containerSecurityContext.privileged (DEPRECATED)
-  ## @param webModelerPostgresql.primary.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
-  ## @param webModelerPostgresql.primary.containerSecurityContext.runAsNonRoot (DEPRECATED)
-  ## @param webModelerPostgresql.primary.containerSecurityContext.runAsUser (DEPRECATED)
-  ## @param webModelerPostgresql.primary.containerSecurityContext.capabilities.drop (DEPRECATED)
-  ## @param webModelerPostgresql.primary.containerSecurityContext.seccompProfile.type (DEPRECATED)
-  primary:
+    ## @extra webModeler.websockets.podSecurityContext can be used to define the security options the websockets pod should be run with
+    ## @param webModeler.websockets.podSecurityContext.runAsNonRoot
+    ## @param webModeler.websockets.podSecurityContext.fsGroup
+    podSecurityContext:
+      runAsNonRoot: true
+      fsGroup: 1001
+      ## @extra webModeler.websockets.podSecurityContext.seccompProfile
+      seccompProfile:
+        ## @param webModeler.websockets.podSecurityContext.seccompProfile.type
+        type: RuntimeDefault
+    ## @extra webModeler.websockets.containerSecurityContext can be used to define the security options the websockets container should be run with
+    ## @param webModeler.websockets.containerSecurityContext.privileged
+    ## @param webModeler.websockets.containerSecurityContext.readOnlyRootFilesystem
+    ## @param webModeler.websockets.containerSecurityContext.allowPrivilegeEscalation
+    ## @param webModeler.websockets.containerSecurityContext.runAsNonRoot
+    ## @param webModeler.websockets.containerSecurityContext.runAsUser
     containerSecurityContext:
-      enabled: true
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1001
-      capabilities:
-        drop: ["ALL"]
+      ## @extra webModeler.websockets.containerSecurityContext.seccompProfile
       seccompProfile:
+        ## @param webModeler.websockets.containerSecurityContext.seccompProfile.type
         type: RuntimeDefault
-    ## @param webModelerPostgresql.primary.podSecurityContext.enabled (DEPRECATED)
-    ## @param webModelerPostgresql.primary.podSecurityContext.runAsNonRoot (DEPRECATED)
-    ## @param webModelerPostgresql.primary.podSecurityContext.fsGroup (DEPRECATED)
-    podSecurityContext:
+
+    ## @extra webModeler.websockets.startupProbe configuration of the websockets startup probe
+    startupProbe:
+      ## @param webModeler.websockets.startupProbe.enabled if true, the startup probe will be enabled for the websockets container
+      enabled: false
+      ## @param webModeler.websockets.startupProbe.scheme defines the startup probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.startupProbe.probePath defines the HTTP endpoint used for the startup probe
+      probePath: /up
+      ## @param webModeler.websockets.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 10
+      ## @param webModeler.websockets.startupProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      ## @param webModeler.websockets.startupProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      ## @param webModeler.websockets.startupProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      ## @param webModeler.websockets.startupProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    ## @extra webModeler.websockets.readinessProbe configuration of the websockets readiness probe
+    readinessProbe:
+      ## @param webModeler.websockets.readinessProbe.enabled if true, the readiness probe will be enabled for the websockets container
       enabled: true
-      runAsNonRoot: true
-      fsGroup: 1001
+      ## @param webModeler.websockets.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
+      probePath: /up
+      ## @param webModeler.websockets.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 10
+      ## @param webModeler.websockets.readinessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      ## @param webModeler.websockets.readinessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      ## @param webModeler.websockets.readinessProbe.failureThreshold defines when the probe is considered failed so the Pod will be marked unready
+      failureThreshold: 5
+      ## @param webModeler.websockets.readinessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    ## @extra webModeler.websockets.livenessProbe configuration of the websockets liveness probe
+    livenessProbe:
+      ## @param webModeler.websockets.livenessProbe.enabled if true, the liveness probe will be enabled for the websockets container
+      enabled: false
+      ## @param webModeler.websockets.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /up
+      ## @param webModeler.websockets.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
+      initialDelaySeconds: 10
+      ## @param webModeler.websockets.livenessProbe.periodSeconds defines how often the probe is executed
+      periodSeconds: 30
+      ## @param webModeler.websockets.livenessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
+      successThreshold: 1
+      ## @param webModeler.websockets.livenessProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
+      failureThreshold: 5
+      ## @param webModeler.websockets.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
+      timeoutSeconds: 1
+
+    ## @param webModeler.websockets.nodeSelector can be used to select the nodes the websockets pods should run on
+    nodeSelector: {}
+    ## @param webModeler.websockets.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+    tolerations: []
+    ## @param webModeler.websockets.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    affinity: {}
+
+    ## @extra webModeler.websockets.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+    ## @param webModeler.websockets.resources.requests.cpu
+    ## @param webModeler.websockets.resources.requests.memory
+    ## @param webModeler.websockets.resources.limits.cpu
+    ## @param webModeler.websockets.resources.limits.memory
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+    ## @extra webModeler.websockets.service configuration of the WebModeler websockets service
+    service:
+      ## @param webModeler.websockets.service.annotations can be used to define annotations which will be applied to the service
+      annotations: {}
+      ## @param webModeler.websockets.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
+      ## @param webModeler.websockets.service.port defines the port of the service
+      port: 80
+    ## @param webModeler.websockets.configuration if specified, contents will be used as the application.yaml
+    configuration: ""
+    ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    extraConfiguration: {}
+    ## @param webModeler.websockets.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+    dnsPolicy: ""
+    ## @param webModeler.websockets.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+    dnsConfig: {}
+
+  ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
+  serviceAccount:
+    ## @param webModeler.serviceAccount.enabled if true, enables the WebModeler service account
+    enabled: true
+    ## @param webModeler.serviceAccount.name can be used to set the name of the WebModeler service account
+    name: ""
+    ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the WebModeler service account
+    annotations: {}
+    ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    automountServiceAccountToken: false
+
+  ## @extra webModeler.persistence configuration for optional PVC creation
+  persistence:
+    ## @param webModeler.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
+    enabled: false
+    ## @param webModeler.persistence.size can be used to define the size of the persistent volume claim
+    size: "5Gi"
+    ## @param webModeler.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    accessModes: ["ReadWriteOnce"]
+    ## @param webModeler.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    # Set to "-" to disable use of default storage class
+    storageClassName: ""
+    ## @param webModeler.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    existingClaim: ""
+    ## @param webModeler.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    annotations: {}
+    ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
+    selector: {}
+
+  ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
 
 #####################################################################
  #####
@@ -2651,11 +1899,10 @@ connectors:
     serverName: http
 
   ## @extra connectors.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @skip connectors.resources.requests.cpu
+  ## @param connectors.resources.requests.cpu
   ## @param connectors.resources.requests.memory
-  ## @skip connectors.resources.limits.cpu
+  ## @param connectors.resources.limits.cpu
   ## @param connectors.resources.limits.memory
-  ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
   resources:
     requests:
       cpu: "1000m"
@@ -3458,6 +2705,8 @@ orchestration:
   dnsPolicy: ""
   ## @param orchestration.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param orchestration.hostNetwork if true, the orchestration pods will use the host network namespace. When enabled, dnsPolicy defaults to `ClusterFirstWithHostNet` unless explicitly overridden via `orchestration.dnsPolicy`. https://kubernetes.io/docs/concepts/configuration/overview/#services
+  hostNetwork: false
 
   ## @param orchestration.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
   extraVolumeClaimTemplates: []
@@ -3819,104 +3068,6 @@ optimize:
       maxSize: 10000
       ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds defines the minimum interval between fetches from the database for the cache
       minFetchIntervalSeconds: 600000
-
-#####################################################################################
-#######
-#       #        ##    ####  ##### #  ####   ####  ######   ##   #####   ####  #    #
-#       #       #  #  #        #   # #    # #      #       #  #  #    # #    # #    #
-#####   #      #    #  ####    #   # #       ####  #####  #    # #    # #      ######
-#       #      ######      #   #   # #           # #      ###### #####  #      #    #
-#       #      #    # #    #   #   # #    # #    # #      #    # #   #  #    # #    #
-####### ###### #    #  ####    #   #  ####   ####  ###### #    # #    #  ####  #    #
-#####################################################################################
-
-## @section Elasticsearch Parameters (DEPRECATED)
-
-## @extra elasticsearch (DEPRECATED)
-elasticsearch:
-  ## @param elasticsearch.enabled (DEPRECATED)
-  enabled: false
-  ## @extra elasticsearch.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
-  global:
-    ## Compatibility adaptations for Kubernetes platforms
-    ##
-    compatibility:
-      ## Compatibility adaptations for Openshift
-      ##
-      openshift:
-        ## @param elasticsearch.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
-        ##
-        adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
-  # https://hub.docker.com/r/bitnami/elasticsearch/tags
-  image:
-    ## @param elasticsearch.image.repository (DEPRECATED)
-    repository: bitnamilegacy/elasticsearch
-    ## @param elasticsearch.image.tag (DEPRECATED)
-    tag: 8.18.0
-    ## @param elasticsearch.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-    digest: ""
-  ## @skip elasticsearch.extraConfig (DEPRECATED) Append extra configuration to the elasticsearch node configuration
-  extraConfig:
-    # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
-    logger.org.elasticsearch.deprecation: "OFF"
-  master:
-    ## @param elasticsearch.master.replicaCount (DEPRECATED) defines number of master-elegible replicas to deploy
-    replicaCount: 3
-    ## @param elasticsearch.master.podAntiAffinityPreset (DEPRECATED) defines Pod anti-affinity preset. Ignored if master.affinity is set
-    podAntiAffinityPreset: hard
-    containerSecurityContext:
-      ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
-      readOnlyRootFilesystem: true
-    ## @param elasticsearch.master.masterOnly (DEPRECATED)
-    masterOnly: false
-    ## @param elasticsearch.master.heapSize (DEPRECATED)
-    heapSize: 1024m
-    persistence:
-      ## @param elasticsearch.master.persistence.size (DEPRECATED)
-      size: 64Gi
-    ## @skip elasticsearch.master.resources.requests.cpu (DEPRECATED) cpu request
-    ## @param elasticsearch.master.resources.requests.memory (DEPRECATED) request
-    ## @skip elasticsearch.master.resources.limits.cpu (DEPRECATED) cpu limit
-    ## @param elasticsearch.master.resources.limits.memory (DEPRECATED) memory limit
-    ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
-    resources:
-      requests:
-        cpu: "1000m"
-        memory: 2Gi
-      limits:
-        cpu: "2000m"
-        memory: 2Gi
-    extraEnvVars:
-      ## @param elasticsearch.master.extraEnvVars[0].name (DEPRECATED) env
-      - name: ELASTICSEARCH_ENABLE_REST_TLS
-        ## @param elasticsearch.master.extraEnvVars[0].value (DEPRECATED) env value
-        value: "false"
-  sysctlImage:
-    ## @param elasticsearch.sysctlImage.enabled (DEPRECATED)
-    enabled: true
-    ## @param elasticsearch.sysctlImage.repository (DEPRECATED)
-    repository: bitnamilegacy/os-shell
-  data:
-    ## @param elasticsearch.data.replicaCount (DEPRECATED)
-    replicaCount: 0
-  coordinating:
-    ## @param elasticsearch.coordinating.replicaCount (DEPRECATED)
-    replicaCount: 0
-  ingest:
-    ## @param elasticsearch.ingest.enabled (DEPRECATED)
-    enabled: false
-  metrics:
-    image:
-      ## @param elasticsearch.metrics.image.repository (DEPRECATED)
-      repository: bitnamilegacy/elasticsearch-exporter
-  volumePermissions:
-    image:
-      ## @param elasticsearch.volumePermissions.image.repository (DEPRECATED)
-      repository: bitnamilegacy/os-shell
-  copyTlsCerts:
-    image:
-      ## @param elasticsearch.copyTlsCerts.image.repository (DEPRECATED)
-      repository: bitnamilegacy/os-shell
 
 #####################################################################
 ######

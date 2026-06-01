@@ -25,6 +25,3 @@ orchestration:
   data:
     secondaryStorage:
       type: elasticsearch
-
-elasticsearch:
-  enabled: true

@@ -61,6 +61,7 @@ type PreparedScenario struct {
 	ValuesFiles         []string
 	LayeredFiles        []string // Source values files resolved from layers (pre-processing)
 	VaultSecretPath     string
+	CompanionCharts     []config.CompanionChart
 	TempDir             string
 	RealmName           string
 	OptimizePrefix      string

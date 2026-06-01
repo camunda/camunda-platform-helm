@@ -2210,6 +2210,10 @@ func parseHelmSetPairs(pairs []string) map[string]string {
 	return out
 }
 
+func shouldExtractBitnamiPGPasswords(targetVersion string) bool {
+	return compareVersions(targetVersion, "8.10") < 0
+}
+
 // extractBitnamiPGPasswords reads the "integration-test-credentials" Kubernetes Secret from the
 // given namespace and returns a map of Helm --set key=value pairs that provide Bitnami PostgreSQL
 // passwords explicitly. This prevents the PASSWORDS ERROR that occurs when Bitnami's template
@@ -2433,9 +2437,12 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
 	// Defensive: prevents the PASSWORDS ERROR that Bitnami's secrets.yaml can trigger when the
 	// Secret lookup returns nil during upgrades (e.g. when a Secret is being patched mid-render).
-	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-		for k, v := range pgPasswords {
-			step2Flags.Deployment.ExtraHelmSets[k] = v
+	// Skip for 8.10+ which removed all Bitnami subcharts — constraints.tpl rejects these keys.
+	if shouldExtractBitnamiPGPasswords(entry.Version) {
+		if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
+			for k, v := range pgPasswords {
+				step2Flags.Deployment.ExtraHelmSets[k] = v
+			}
 		}
 	}
 
@@ -2469,8 +2476,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 // and only runs the upgrade job against the namespace of a prior "install" flow.
 //
 // The sequence is:
-//  1. Run pre-upgrade script (if it exists on disk).
-//  2. Helm upgrade to the current on-disk chart with upgrade-specific flags.
+//  1. Run pre-upgrade script (if declared).
+//  2. Run scenario pre-install hooks immediately before helm upgrade.
+//  3. Helm upgrade to the current on-disk chart with upgrade-specific flags.
 //
 // Unlike executeTwoStepUpgrade, there is NO Step 1 install from the Helm repo.
 // The previous version must already be deployed (by a prior "install" flow entry).
@@ -2523,6 +2531,8 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		Msg("Upgrading to current chart version")
 
 	upgradeFlags := *flags
+	upgradeFlags.PreInstallHooks = append([]func(context.Context) error(nil), flags.PreInstallHooks...)
+	upgradeFlags.PostDeployHooks = append([]func(context.Context) error(nil), flags.PostDeployHooks...)
 	upgradeFlags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
 	upgradeFlags.Deployment.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
 	upgradeFlags.Deployment.Flow = "install"             // Must match the prior install's Flow so $FLOW in index prefixes resolves identically.
@@ -2531,12 +2541,21 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
 	)
 
+	// Upgrade-only flows reuse an existing namespace, but scenario pre-install
+	// fixtures may still be required before the target chart can start.
+	if err := registerDeclarativePreInstallHook(&upgradeFlags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+		return err
+	}
+
 	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
 	// Defensive: prevents the PASSWORDS ERROR that Bitnami's secrets.yaml can trigger when the
 	// Secret lookup returns nil during upgrades (e.g. when a Secret is being patched mid-render).
-	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-		for k, v := range pgPasswords {
-			upgradeFlags.Deployment.ExtraHelmSets[k] = v
+	// Skip for 8.10+ which removed all Bitnami subcharts — constraints.tpl rejects these keys.
+	if shouldExtractBitnamiPGPasswords(entry.Version) {
+		if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
+			for k, v := range pgPasswords {
+				upgradeFlags.Deployment.ExtraHelmSets[k] = v
+			}
 		}
 	}
 

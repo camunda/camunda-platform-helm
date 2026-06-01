@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgresql.fullname" . }}-initdb
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+data:
+  01-create-databases.sh: |
+    #!/bin/sh
+    set -eu
+{{- range .Values.databases }}
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<'SQL'
+    SELECT 'CREATE DATABASE "{{ . }}"'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ . }}')\gexec
+    SQL
+{{- end }}

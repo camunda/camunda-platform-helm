@@ -14,23 +14,30 @@
 # limitations under the License.
 #
 # Pre-install script for the "rdbms-self-signed" persistence layer.
-# Generates self-signed TLS material and creates K8s secrets in the target
-# namespace (rdbms-tls-server, rdbms-tls-ca).
-#
-# The Bitnami PostgreSQL companion chart is installed separately by the
-# matrix runner via the `dependencies:` block in ci-test-config.yaml — it
-# runs AFTER this pre-install hook, so the TLS secrets are guaranteed to
-# exist when PostgreSQL starts.
+# Provisions a CloudNativePG `Cluster` in the scenario namespace with the
+# `orchestration` database for RDBMS secondary storage plus `identity` and
+# `webmodeler` databases for the Identity + WebModeler external DBs. CNPG
+# generates a self-signed CA + server cert by default; the CA is exposed via
+# the `postgresql-cluster-ca` secret and consumed by Camunda for
+# `sslmode=verify-full` validation.
 #
 # Required env vars (set by the matrix runner):
-#   TEST_NAMESPACE  - target Kubernetes namespace
-#   KUBE_CONTEXT    - kubectl context (optional)
+#   TEST_NAMESPACE             - target Kubernetes namespace
+#   KUBE_CONTEXT               - kubectl context (optional)
+#   RDBMS_POSTGRESQL_USERNAME  - app-role username (passed to CNPG)
+#   RDBMS_POSTGRESQL_PASSWORD  - app-role password (passed to CNPG)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESOURCE_PATH="${SCRIPT_DIR}/../common/resources/postgresql-cluster-tls.yaml"
 
-# Generate certs + create K8s secrets.
-bash "${SCRIPT_DIR}/create-rdbms-tls-secrets.sh"
+KUBECTL_FLAGS=()
+[[ -n "${KUBE_CONTEXT:-}" ]] && KUBECTL_FLAGS+=(--context="${KUBE_CONTEXT}")
 
-echo "[pre-install-rdbms-self-signed] TLS secrets created."
+NAMESPACE="${TEST_NAMESPACE}" envsubst < "${RESOURCE_PATH}" | \
+  kubectl "${KUBECTL_FLAGS[@]}" apply -n "${TEST_NAMESPACE}" -f -
+kubectl "${KUBECTL_FLAGS[@]}" wait --for=condition=Ready --timeout=300s \
+  -n "${TEST_NAMESPACE}" cluster.postgresql.cnpg.io/postgresql-cluster
+
+echo "[pre-install-rdbms-self-signed] CNPG TLS cluster ready."

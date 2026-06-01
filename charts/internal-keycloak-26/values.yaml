@@ -1,0 +1,125 @@
+# Minimal Keycloak chart values — CI use only.
+# Not intended for production deployments.
+
+## @param fullnameOverride Override the full resource name (e.g., "keycloak").
+fullnameOverride: ""
+
+## @param nameOverride Override the chart name portion of resource names.
+nameOverride: ""
+
+image:
+  registry: quay.io
+  repository: keycloak/keycloak
+  tag: "26.3.3"
+  pullPolicy: IfNotPresent
+
+## @param command Path to the kc.sh binary inside the image.
+## Upstream quay.io image: /opt/keycloak/bin/kc.sh
+## Camunda (Bitnami-based) image: /opt/bitnami/keycloak/bin/kc.sh
+command: /opt/keycloak/bin/kc.sh
+
+## @param imagePullSecrets Array of image pull secret names.
+imagePullSecrets: []
+
+## Keycloak authentication settings.
+auth:
+  ## @param auth.adminUser Keycloak admin username.
+  adminUser: admin
+  ## @param auth.adminPassword Keycloak admin password (ignored if existingSecret is set).
+  adminPassword: ""
+  ## @param auth.existingSecret Name of an existing Secret containing the admin password.
+  existingSecret: ""
+  ## @param auth.passwordSecretKey Key within the existing Secret holding the password.
+  passwordSecretKey: "keycloak-admin-password"
+
+## @param httpRelativePath Context path Keycloak serves on (e.g., "/auth/" or "/").
+httpRelativePath: "/auth/"
+
+## @param proxy Proxy mode: edge, reencrypt, passthrough.
+proxy: edge
+
+## @param extraEnv Additional environment variables for the Keycloak container.
+extraEnv: []
+
+service:
+  ## @param service.type Kubernetes Service type.
+  type: ClusterIP
+  ## @param service.port Service HTTP port.
+  port: 80
+  ## @param service.annotations Additional annotations for the Service.
+  annotations: {}
+
+## Keycloak container resources.
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+## Keycloak readiness probe (targets management port 9000 at /health/ready).
+readinessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 12
+
+## Keycloak liveness probe (targets management port 9000 at /health/live).
+livenessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 10
+
+## Startup probe — gives Keycloak time to boot without being killed.
+## Targets management port 9000 at /health/started.
+## Note: Keycloak does a ~30s augmentation on first start, then ~20s boot.
+startupProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 60
+
+## @param replicas Number of Keycloak replicas.
+replicas: 1
+
+## @param podAnnotations Additional annotations for Keycloak pods.
+podAnnotations: {}
+
+## @param nodeSelector Node selector for Keycloak pods.
+nodeSelector: {}
+
+## @param tolerations Tolerations for Keycloak pods.
+tolerations: []
+
+## Bundled PostgreSQL for Keycloak's database.
+postgresql:
+  ## @param postgresql.enabled Deploy a minimal PostgreSQL instance for Keycloak.
+  enabled: true
+  image:
+    registry: docker.io
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  ## @param postgresql.auth.database Database name for Keycloak.
+  auth:
+    database: keycloak
+    username: keycloak
+    ## @param postgresql.auth.password PostgreSQL password (ignored if existingSecret is set).
+    password: ""
+    ## @param postgresql.auth.existingSecret Existing secret with PostgreSQL credentials.
+    existingSecret: ""
+    ## @param postgresql.auth.passwordSecretKey Key in existing secret for the password.
+    passwordSecretKey: "postgresql-password"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  ## @param postgresql.storage.size PVC size for PostgreSQL data.
+  storage:
+    size: 2Gi
+    storageClassName: ""

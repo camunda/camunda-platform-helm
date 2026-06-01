@@ -48,6 +48,22 @@ runs:
           done
         }
 
+        wait_for_secret_keys() {
+          local namespace="$1"
+          local secret_name="$2"
+          local expected_keys missing_keys
+          expected_keys="$(kubectl get externalsecret -n "$namespace" -o json | jq -r --arg secret "$secret_name" '.items[] | select(.spec.target.name == $secret) | .spec.data[]?.secretKey')"
+          test -n "$expected_keys" || { echo "❌ No ExternalSecret found for target Secret $secret_name"; return 1; }
+          for _ in {1..60}; do
+            missing_keys="$(while IFS= read -r key; do kubectl get secret "$secret_name" -n "$namespace" -o json 2>/dev/null | jq -e --arg key "$key" '.data[$key] // empty' >/dev/null || printf '%s\n' "$key"; done <<< "$expected_keys")"
+            test -n "$missing_keys" || { echo "✅ Secret $secret_name contains all expected ExternalSecret keys"; return 0; }
+            echo "⏳ Waiting for Secret $secret_name keys: $(tr '\n' ' ' <<< "$missing_keys")"
+            sleep 10
+          done
+          echo "❌ Secret $secret_name is missing expected keys: $(tr '\n' ' ' <<< "$missing_keys")"
+          return 1
+        }
+
         if [[ "$DISTRO_PLATFORM" == "gke" || "$DISTRO_PLATFORM" == "rosa" ]]; then
           echo "🔧 Applying external secret certificates for $DISTRO_PLATFORM"
           apply_external_secret_with_retry \
@@ -74,6 +90,7 @@ runs:
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
             kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
+          wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
 
         else
           echo "🔧 Running in EKS mode — using vault-backed ExternalSecrets"
@@ -113,6 +130,7 @@ runs:
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
             kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
+          wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
         fi
 
         if [[ "$DISTRO_PLATFORM" == "eks" ]]; then
@@ -125,4 +143,3 @@ runs:
         fi
 
         echo "✅ TLS Certificates/Secrets configuration completed."
-

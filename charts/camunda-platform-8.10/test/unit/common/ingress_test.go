@@ -24,8 +24,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 )
 
@@ -55,62 +53,12 @@ func TestIngressTemplate(t *testing.T) {
 func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Skip:                 true,
-			Name:                 "TestIngressEnabledWithKeycloakCustomContextPathIngress",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"global.ingress.enabled":               "true",
-				"global.identity.keycloak.contextPath": "/custom",
-				"identityKeycloak.enabled":             "true",
-				"identityKeycloak.httpRelativePath":    "/custom",
-				"identity.contextPath":                 "/identity",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var ingress netv1.Ingress
-				helm.UnmarshalK8SYaml(t, output, &ingress)
-
-				// then
-				path := ingress.Spec.Rules[0].HTTP.Paths[0]
-				require.Equal(t, "/custom/", path.Path)
-				require.Equal(t, "camunda-platform-test-keycloak", path.Backend.Service.Name)
-			},
-		},
-		{
-			Skip:                 true,
-			Name:                 "TestIngressEnabledWithKeycloakCustomContextPathSts",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: nil,
-			},
-			RenderTemplateExtraArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
-			Values: map[string]string{
-				"global.ingress.enabled":               "true",
-				"global.identity.keycloak.contextPath": "/custom",
-				"identityKeycloak.enabled":             "true",
-				"identityKeycloak.httpRelativePath":    "/custom",
-				"identity.contextPath":                 "/identity",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var statefulSet appsv1.StatefulSet
-				helm.UnmarshalK8SYaml(t, output, &statefulSet)
-
-				// then
-				env := statefulSet.Spec.Template.Spec.Containers[0].Env
-				require.Contains(t, env,
-					corev1.EnvVar{
-						Name:  "KC_HTTP_RELATIVE_PATH",
-						Value: "/custom",
-					})
-			},
-		},
-		{
 			Name:                 "TestIngressWithKeycloakChartIsDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled": "true",
 				"identity.contextPath":   "/identity",
 				// Disable Identity Keycloak chart.
-				"identityKeycloak.enabled": "false",
 				// Set vars to use existing Keycloak.
 				"global.identity.keycloak.url.protocol": "https",
 				"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",

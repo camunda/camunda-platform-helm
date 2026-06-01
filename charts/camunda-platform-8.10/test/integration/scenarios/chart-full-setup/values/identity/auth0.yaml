@@ -99,20 +99,31 @@ global:
         audience: $AUTH0_AUDIENCE
         redirectUrl: "https://{{ .Values.global.host }}/"
 
-# identityPostgresql + webModelerPostgresql password secrets are pre-provisioned
-# in CI via the integration-test-credentials ExternalSecret (vault-backed). The
-# auth0 client_secrets land in client-secret-for-components instead, written by
-# ensure-clients. Two secrets, two distinct concerns.
-identityPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
-    secretKeys:
-      adminPasswordKey: identity-postgresql-admin-password
-      userPasswordKey: identity-postgresql-user-password
+# Identity + WebModeler external DBs point at the CNPG cluster provisioned
+# by the scenario's pre-install fixture (postgresql-cluster.yaml). The bundled
+# Bitnami subcharts (identityKeycloak/identityPostgresql/webModelerPostgresql)
+# were dropped from 8.10 in #6146; setting their `enabled` keys now trips the
+# keyRemoved constraint in templates/common/constraints.tpl.
+identity:
+  externalDatabase:
+    enabled: true
+    host: postgresql-cluster-rw
+    port: 5432
+    database: identity
+    username: $RDBMS_POSTGRESQL_USERNAME
+    secret:
+      inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
 
-identityKeycloak:
-  enabled: false
+webModeler:
+  restapi:
+    externalDatabase:
+      enabled: true
+      host: postgresql-cluster-rw
+      port: 5432
+      database: webmodeler
+      username: $RDBMS_POSTGRESQL_USERNAME
+      secret:
+        inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
 
 connectors:
   security:

@@ -6,6 +6,3 @@ global:
     enabled: false
 
   noSecondaryStorage: true
-
-elasticsearch:
-  enabled: false

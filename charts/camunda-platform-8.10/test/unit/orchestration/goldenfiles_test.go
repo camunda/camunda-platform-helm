@@ -47,7 +47,6 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
 			SetValues: map[string]string{
 				"global.elasticsearch.enabled": "true",
-				"elasticsearch.enabled":        "true",
 			},
 			IgnoredLines: []string{
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
@@ -72,7 +71,6 @@ func TestGoldenDefaultsTemplateOrchestrationMigrationIdentity(t *testing.T) {
 			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
 			SetValues: map[string]string{
 				"global.elasticsearch.enabled": "true",
-				"elasticsearch.enabled":        "true",
 			},
 			IgnoredLines: []string{
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.

@@ -15,6 +15,13 @@ metadata:
   namespace: $NAMESPACE
 spec:
   instances: 1
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+      postInitSQL:
+        - CREATE DATABASE identity OWNER app
+        - CREATE DATABASE webmodeler OWNER app
   managed:
     roles:
       - name: app

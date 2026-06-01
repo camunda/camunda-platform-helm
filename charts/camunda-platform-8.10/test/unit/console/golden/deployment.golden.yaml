@@ -66,9 +66,9 @@ spec:
             - name: NODE_ENV
               value: "prod"
             - name: KEYCLOAK_INTERNAL_BASE_URL
-              value: "http://camunda-platform-test-keycloak/auth"
+              value: "https://keycloak.example.com:8443/auth"
             - name: KEYCLOAK_BASE_URL
-              value: "http://localhost:18080/auth"
+              value: ""
             - name: KEYCLOAK_REALM
               value: "camunda-platform"
             - name: CAMUNDA_IDENTITY_AUDIENCE

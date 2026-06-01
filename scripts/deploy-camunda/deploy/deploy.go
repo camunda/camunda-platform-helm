@@ -312,7 +312,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		ExtraArgs:             flags.Deployment.ExtraHelmArgs,
 		SetPairs:              flags.Deployment.ExtraHelmSets,
 		PreInstallHooks:       flags.PreInstallHooks,
-		CompanionCharts:       toDeployerCompanionCharts(flags.CompanionCharts),
+		CompanionCharts:       toDeployerCompanionCharts(prepared.CompanionCharts),
 	}
 
 	// Log deployment options (redact sensitive fields)

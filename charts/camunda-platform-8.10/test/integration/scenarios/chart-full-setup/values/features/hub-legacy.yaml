@@ -30,7 +30,7 @@ webModeler:
       -XX:TieredStopAtLevel=1
       -XX:+UseG1GC
       -XX:+UseStringDeduplication
-    # Wait for PostgreSQL to accept connections before starting restapi.
+    # Wait for the external PostgreSQL fixture to accept connections before starting restapi.
     initContainers:
       - name: wait-for-postgresql
         image: busybox:1.36
@@ -43,8 +43,8 @@ webModeler:
           - sh
           - -c
           - |
-            echo "Waiting for PostgreSQL at {{ .Release.Name }}-postgresql-web-modeler:5432 ..."
-            until nc -z "{{ .Release.Name }}-postgresql-web-modeler" 5432; do
+            echo "Waiting for PostgreSQL at postgresql-cluster-rw:5432 ..."
+            until nc -z "postgresql-cluster-rw" 5432; do
               sleep 2
             done
             echo "PostgreSQL is ready"

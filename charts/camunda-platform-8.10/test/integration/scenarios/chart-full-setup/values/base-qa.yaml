@@ -61,9 +61,6 @@ orchestration:
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_4
       value: "lisa-user-mapping-rule"
 
-identityKeycloak:
-  enabled: true
-
 identity:
   firstUser:
     user: demo

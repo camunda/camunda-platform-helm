@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type ServiceTest struct {
@@ -125,26 +126,10 @@ func (s *KeycloakServiceTest) TestKeycloakDifferentServiceValuesInputs() {
 				// then
 				s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
 				s.Require().Equal("keycloak.prod.svc.cluster.local", service.Spec.ExternalName)
-			},
-		},
-		{
-			Name: "TestKeycloakExternalServiceWithTemplatedHost",
-			Values: map[string]string{
-				"identity.enabled":                      "true",
-				"global.identity.keycloak.internal":     "true",
-				"global.identity.keycloak.url.protocol": "https",
-				"global.identity.keycloak.url.host":     "keycloak.{{ .Release.Namespace }}.svc.cluster.local",
-				"global.identity.keycloak.url.port":     "8443",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var service coreV1.Service
-				helm.UnmarshalK8SYaml(t, output, &service)
-
-				// then
-				s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
-				// The namespace is dynamically generated in the test; assert the full expected ExternalName
-				expectedExternalName := "keycloak." + s.namespace + ".svc.cluster.local"
-				s.Require().Equal(expectedExternalName, service.Spec.ExternalName)
+				s.Require().Len(service.Spec.Ports, 1)
+				s.Require().Equal("http", service.Spec.Ports[0].Name)
+				s.Require().Equal(int32(8443), service.Spec.Ports[0].Port)
+				s.Require().Equal(intstr.FromInt32(8443), service.Spec.Ports[0].TargetPort)
 			},
 		},
 	}

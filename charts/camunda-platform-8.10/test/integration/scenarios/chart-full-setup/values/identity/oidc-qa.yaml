@@ -45,9 +45,6 @@ global:
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.console.contextPath }}"
 
-identityKeycloak:
-  enabled: false
-
 orchestration:
   security:
     authentication:

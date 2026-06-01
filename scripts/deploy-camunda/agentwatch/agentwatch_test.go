@@ -407,6 +407,57 @@ func TestSnapshot_AllPodsReady(t *testing.T) {
 	}
 }
 
+func TestSnapshot_InstallCompleteRequiresDeployedRelease(t *testing.T) {
+	readyPods := json.RawMessage(`{"items":[{"status":{"phase":"Running","conditions":[{"type":"Ready","status":"True"}]}}]}`)
+
+	cases := []struct {
+		name     string
+		snapshot Snapshot
+		want     bool
+	}{
+		{
+			name:     "no release keeps legacy pod-only behavior",
+			snapshot: Snapshot{Pods: readyPods},
+			want:     true,
+		},
+		{
+			name: "pending Helm release keeps watching",
+			snapshot: Snapshot{
+				Release:    "integration",
+				Pods:       readyPods,
+				HelmStatus: json.RawMessage(`{"info":{"status":"pending-install"}}`),
+			},
+			want: false,
+		},
+		{
+			name: "missing Helm status keeps watching",
+			snapshot: Snapshot{
+				Release:       "integration",
+				Pods:          readyPods,
+				HelmStatusErr: "release not found",
+			},
+			want: false,
+		},
+		{
+			name: "deployed Helm release completes watch",
+			snapshot: Snapshot{
+				Release:    "integration",
+				Pods:       readyPods,
+				HelmStatus: json.RawMessage(`{"info":{"status":"deployed"}}`),
+			},
+			want: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.snapshot.InstallComplete(); got != tc.want {
+				t.Fatalf("InstallComplete = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestWatch_MaxDurationStopsLoop(t *testing.T) {
 	// With a sub-second wall-clock cap and no real cluster, snapshot
 	// gathering will fail repeatedly. The MaxDuration timeout must close

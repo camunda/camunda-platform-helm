@@ -182,6 +182,42 @@ func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, 
 	return processedFiles, nil
 }
 
+func processCompanionCharts(ctx context.Context, charts []config.CompanionChart, outputDir, envFile string, envOverrides map[string]string) ([]config.CompanionChart, error) {
+	if len(charts) == 0 {
+		return nil, nil
+	}
+
+	processed := make([]config.CompanionChart, len(charts))
+	copy(processed, charts)
+	companionOutputDir := filepath.Join(outputDir, "companion-values")
+
+	for i, chart := range processed {
+		if chart.ValuesFile == "" {
+			continue
+		}
+		content, err := os.ReadFile(chart.ValuesFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read companion values file %q: %w", chart.ValuesFile, err)
+		}
+		if !strings.Contains(string(content), "$RDBMS_POSTGRESQL_") && !strings.Contains(string(content), "${RDBMS_POSTGRESQL_") {
+			continue
+		}
+
+		outputPath, _, err := values.Process(ctx, chart.ValuesFile, values.Options{
+			OutputDir:    companionOutputDir,
+			Interactive:  false,
+			EnvFile:      envFile,
+			EnvOverrides: envOverrides,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to process companion values file %q: %w", chart.ValuesFile, err)
+		}
+		processed[i].ValuesFile = outputPath
+	}
+
+	return processed, nil
+}
+
 // generateDebugValuesFile creates a temporary values file with debug configuration
 // for the specified components. Returns the path to the generated file, or empty string
 // if no debug components are enabled.
@@ -557,6 +593,12 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		return nil, fmt.Errorf("failed to build scenario env: %w", err)
 	}
 
+	companionCharts, err := processCompanionCharts(ctx, flags.CompanionCharts, tempDir, flags.EnvFile, envMap)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return nil, err
+	}
+
 	// Helper function to process values files
 	processValues := func(scen string) error {
 		logging.Logger.Debug().
@@ -843,6 +885,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		ValuesFiles:         vals,
 		LayeredFiles:        resolvedLayerFiles,
 		VaultSecretPath:     vaultSecretPath,
+		CompanionCharts:     companionCharts,
 		TempDir:             tempDir,
 		RealmName:           realmName,
 		OptimizePrefix:      optimizePrefix,

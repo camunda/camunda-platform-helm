@@ -94,6 +94,21 @@ jobs:
               --docker-password "${TEST_DOCKER_PASSWORD}" \
               --dry-run=client -o yaml | kubectl apply -f -
           fi
+      - name: Install ECK operator + Elasticsearch (8.10+)
+        if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.10' }}
+        run: |
+          # renovate: datasource=github-releases depName=elastic/cloud-on-k8s
+          ECK_VERSION="3.3.2"
+          kubectl apply --server-side -f \
+            "https://download.elastic.co/downloads/eck/${ECK_VERSION}/crds.yaml"
+          kubectl apply --server-side -f \
+            "https://download.elastic.co/downloads/eck/${ECK_VERSION}/operator.yaml"
+          kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 \
+            --timeout=300s statefulset/elastic-operator -n elastic-system
+          kubectl apply -n ${{ env.TEST_NAMESPACE }} -f \
+            "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/kind/elasticsearch-cluster.yaml"
+          kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=600s \
+            elasticsearch/elasticsearch -n ${{ env.TEST_NAMESPACE }}
       - name: Prepare Camunda Helm chart installation
         run: |
           make helm.repos-add

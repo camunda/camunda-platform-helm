@@ -263,7 +263,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				var statefulSetBefore appsv1.StatefulSet
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -293,7 +292,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				var statefulSetBefore appsv1.StatefulSet
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -325,7 +323,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				var statefulSetBefore appsv1.StatefulSet
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -356,7 +353,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				var statefulSetBefore appsv1.StatefulSet
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -532,7 +528,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				var statefulSetBefore appsv1.StatefulSet
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -570,7 +565,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				var statefulSetBefore appsv1.StatefulSet
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -801,7 +795,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name: "TestHybridAuthOrchestrationBasicNoOidcSecret",
 			Values: map[string]string{
 				"identity.enabled":                             "true",
-				"identityKeycloak.enabled":                     "true",
 				"global.identity.auth.enabled":                 "true",
 				"orchestration.security.authentication.method": "basic",
 			},
@@ -821,7 +814,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name: "TestOrchestrationOidcSecretOnlyWithOidcAuth",
 			Values: map[string]string{
 				"identity.enabled":                                                    "true",
-				"identityKeycloak.enabled":                                            "true",
 				"global.identity.auth.enabled":                                        "true",
 				"orchestration.security.authentication.method":                        "oidc",
 				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",

@@ -55,7 +55,6 @@ func (c *CompatibilityHelpersTest) TestElasticsearchDisabledWithOpenShiftAdaptSe
 		{
 			Name: "ElasticsearchDisabledWithOpenShiftForce",
 			Values: map[string]string{
-				"elasticsearch.enabled":                               "false",
 				"global.compatibility.openshift.adaptSecurityContext": "force",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -65,7 +64,6 @@ func (c *CompatibilityHelpersTest) TestElasticsearchDisabledWithOpenShiftAdaptSe
 		{
 			Name: "ElasticsearchDisabledWithOpenShiftForceNoCommonLabels",
 			Values: map[string]string{
-				"elasticsearch.enabled":                               "false",
 				"global.compatibility.openshift.adaptSecurityContext": "force",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -75,7 +73,6 @@ func (c *CompatibilityHelpersTest) TestElasticsearchDisabledWithOpenShiftAdaptSe
 		{
 			Name: "ElasticsearchEnabledWithOpenShiftForce",
 			Values: map[string]string{
-				"elasticsearch.enabled":                               "true",
 				"global.compatibility.openshift.adaptSecurityContext": "force",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -85,9 +82,7 @@ func (c *CompatibilityHelpersTest) TestElasticsearchDisabledWithOpenShiftAdaptSe
 		{
 			Name: "ElasticsearchEnabledWithOpenShiftForceAndExistingCommonLabels",
 			Values: map[string]string{
-				"elasticsearch.enabled":                               "true",
 				"global.compatibility.openshift.adaptSecurityContext": "force",
-				"elasticsearch.commonLabels.custom-label":             "custom-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Nil(t, err, "Chart rendering should succeed when elasticsearch is enabled with existing commonLabels")

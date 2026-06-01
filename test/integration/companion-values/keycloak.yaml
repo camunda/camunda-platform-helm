@@ -1,0 +1,40 @@
+# Companion values for internal-keycloak-26 chart.
+# Deployed as a separate Helm release before the Camunda chart.
+# Uses the same credential secret that the matrix runner provisions.
+
+fullnameOverride: keycloak
+
+image:
+  registry: quay.io
+  repository: keycloak/keycloak
+  tag: "26.3.3"
+
+auth:
+  adminUser: admin
+  existingSecret: integration-test-credentials
+  passwordSecretKey: identity-keycloak-admin-password
+
+httpRelativePath: "/auth/"
+proxy: edge
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+postgresql:
+  enabled: true
+  auth:
+    database: keycloak
+    username: keycloak
+    password: "keycloak-ci-password"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

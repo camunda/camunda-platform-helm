@@ -260,20 +260,14 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 {{- define "camundaPlatform.authIssuerBackendUrl" -}}
   {{- if .Values.global.identity.auth.issuerBackendUrl -}}
     {{- tpl .Values.global.identity.auth.issuerBackendUrl . -}}
-  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
-    {{- if .Values.global.identity.keycloak.url -}}
-      {{-
-        printf "%s://%s:%v%s"
-          .Values.global.identity.keycloak.url.protocol
-          (include "identity.keycloak.host" .)
-          .Values.global.identity.keycloak.url.port
-          (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
-      -}}
-    {{- else -}}
-      {{- $url := include "identity.keycloak.url" . | trimSuffix "/" -}}
-      {{- $realm := .Values.global.identity.keycloak.realm | trimPrefix "/" -}}
-      {{- printf "%s/%s" $url $realm -}}
-    {{- end -}}
+  {{- else if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (.Values.global.identity.keycloak.url).host -}}
+    {{-
+      printf "%s://%s:%v%s"
+        .Values.global.identity.keycloak.url.protocol
+        (include "identity.keycloak.host" .)
+        .Values.global.identity.keycloak.url.port
+        (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
+    -}}
   {{- end -}}
 {{- end -}}
 
@@ -319,15 +313,16 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 {{- end -}}
 
 {{/*
-Get the external url for keycloak
+Get the externally-reachable Keycloak URL for display in Console and NOTES.txt.
+When the chart proxies Keycloak through its combined Ingress (internal: true), use
+the chart host + contextPath. Otherwise return the configured external Keycloak URL.
 */}}
 {{- define "camundaPlatform.keycloakExternalURL" -}}
-  {{ if .Values.identityKeycloak.ingress.enabled -}}
-    {{- $proto := ternary "https" "http" .Values.identityKeycloak.ingress.tls -}}
-    {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
-  {{ else if .Values.identityKeycloak.enabled -}}
+  {{- if .Values.global.identity.keycloak.internal -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+  {{- else if (.Values.global.identity.keycloak.url).host -}}
+    {{- include "identity.keycloak.url" . -}}
   {{- end -}}
 {{- end -}}
 
@@ -748,7 +743,6 @@ Release templates.
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
     id: keycloak
-    version: {{ .Values.identityKeycloak.image.tag }}
     url: {{ include "camundaPlatform.keycloakExternalURL" . }}
   - name: Identity
     id: identity
