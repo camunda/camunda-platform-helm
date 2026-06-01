@@ -46,7 +46,6 @@ flowchart LR
     MIG(["Migrate 8.9 → 8.10\n(once-per-version path)"])
     TRB(["Troubleshooting & FAQ"])
 
-    QS -.->|"shortcut\nnot prod-shaped"| BASE
     PLAN --> BASE
     BASE -->|"Baseline healthy"| EXTEND
     BASE --> DAY2
