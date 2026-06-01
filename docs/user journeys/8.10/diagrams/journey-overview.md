@@ -20,11 +20,10 @@ flowchart LR
         b1["1. Provision infrastructure\n[K8s: cloud provider + K8s config]\n[Containers: Docker / ECS]\n[Manual: VM]"]
         b2["2. Provision databases\n(PostgreSQL / ES-OS / Keycloak)"]
         b3["3. Set up authentication\n(OIDC / Keycloak / basic auth)"]
-        b4["4. Install Camunda\nInstall Hub · Install OC · Register OC in Hub"]
-        b5["5. Configure Camunda\n(chart params / secrets / license / connectors)"]
+        b4["4. Install Camunda\nLicense key · Secret management\nInstall Hub · Install OC · Register OC in Hub"]
         bPROD["Production readiness checklist"]
         bSMOKE["Smoke test & exit criteria"]
-        b1 --> b2 --> b3 --> b4 --> b5 --> bPROD --> bSMOKE
+        b1 --> b2 --> b3 --> b4 --> bPROD --> bSMOKE
     end
 
     subgraph EXTEND["③ Extend your deployment\n(independent, any order, any time)"]
