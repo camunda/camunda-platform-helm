@@ -1,4 +1,4 @@
-# Diagram: Availability & DR Tier Selection
+# Diagram: High Availability Architectures — Tier Selection
 
 Three named tiers replace ad-hoc multi-region patterns. Choose based on RTO/RPO requirements and platform constraints.
 

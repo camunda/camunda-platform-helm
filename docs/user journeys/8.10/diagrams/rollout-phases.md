@@ -18,7 +18,7 @@ flowchart TB
     subgraph P2["Phase 2 — ship with 8.10 GA  (8.10-tied changes)"]
         direction LR
         p2a["Introduce\nPlan → Baseline → Extend → Day-2\nspine (structure first, full content later)"]
-        p2b["Availability & DR section\nTier 1 / 2 / 3 + CockroachDB-style\ntier comparison table"]
+        p2b["High availability architectures section\nTier 1 / 2 / 3 + CockroachDB-style\ntier comparison table"]
         p2c["Migrate 8.9 → 8.10 section\n(replaces Upgrade; slug /migrate/)"]
         p2d["Physical Tenant pages\n(Concept · Add PT · Per-PT creds & backups)"]
         p2e["Optimize-per-PT pages\n(Add Optimize · Hub BV · Storage req\nMgmt Identity reg · Sizing)"]
@@ -27,8 +27,8 @@ flowchart TB
 
     subgraph P3["Phase 3 — ship with 8.10.x  (full structural cleanup)"]
         direction LR
-        p3a["Dissolve Concepts section entirely\nDB pages → Database topology\nAuth pages → Plan → Identity\nBackup pages already moved in Phase 1"]
-        p3b["Build Database topology sub-trees\nOperating RDBMS full sub-tree\nOperating ES/OS full sub-tree"]
+        p3a["Dissolve Concepts section entirely\nDB pages → 2. Provision databases\nAuth pages → Plan → Identity & authentication\nBackup pages already moved in Phase 1"]
+        p3b["Build Provision databases sub-trees\nPostgreSQL / RDBMS full sub-tree\nElasticsearch / OpenSearch full sub-tree"]
         p3c["Build Ref Arch variants\nTier 2 blueprint · Tier 3 blueprint\nMulti-PT blueprint\n(tracked: product-hub#3561)"]
         p3d["Apply Confluent-style pattern\nacross all Extend option pages:\nWhen to use · When NOT to use\nUse cases · Implementation"]
     end
@@ -43,4 +43,4 @@ flowchart TB
 |---|---|
 | 1 | Backup docs are findable. OpenShift not duplicated. Kind is in Quickstart. Glossary has 8.10 terms. |
 | 2 | 8.10 journey has a logical structure. Physical Tenants documented. Tier 1/2/3 DR is first-class. Migrate path is clear. |
-| 3 | Concepts section gone — everything lives where you'd look for it. Full DB topology guidance. Reference architectures for Tier 2/3/multi-PT. |
+| 3 | Concepts section gone — everything lives where you'd look for it. Full DB provisioning guidance. Reference architectures for Tier 2/3/multi-PT. |

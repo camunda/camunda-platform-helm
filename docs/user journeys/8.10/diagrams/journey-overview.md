@@ -8,9 +8,9 @@ flowchart LR
 
     subgraph PLAN["① Plan your deployment"]
         direction TB
-        pDT["Decide: deployment target\n+ Architecture diagrams"]
-        pDB["Decide: database technology\n(depends on target)"]
-        pID["Decide: identity strategy\n(depends on target + database)"]
+        pDT["Choose your deployment target\n(K8s / Containers / Manual / VM)"]
+        pDB["Database options\n(depends on target)"]
+        pID["Identity & authentication\n(depends on target + database)"]
         pCL["Pre-install checklist"]
         pDT --> pDB --> pID --> pCL
     end
@@ -28,10 +28,9 @@ flowchart LR
 
     subgraph EXTEND["③ Extend your deployment\n(independent, any order, any time)"]
         direction TB
-        eADR["Availability & DR\nTier 1 / 2 / 3"]
+        eADR["High availability architectures\nTier 1 / 2 / 3 + DR drills"]
         eTEN["Tenancy & isolation\nLogical / Physical Tenant / Separate OC"]
-        eANA["Process analytics\nOptimize per Physical Tenant"]
-        eDBT["Database topology\nSplitting / operating DB backends"]
+        eANA["Process analytics with Optimize\nOptimize per Physical Tenant"]
     end
 
     subgraph DAY2["④ Day-2 operations"]
@@ -40,7 +39,6 @@ flowchart LR
         dBAK["Backups & restore"]
         dMON["Monitoring"]
         dSCA["Scaling"]
-        dDRD["DR drills (per tier)"]
         dONB["Onboard new teams\n(new PT vs new OC)"]
         dCRED["Credentials rotation"]
     end
@@ -64,6 +62,6 @@ flowchart LR
 | Categories to browse | Phases to act through |
 | Quickstart · Ref Arch · Deploy & manage · Concepts · Components · Upgrade | Quickstart · ① Plan · ② Baseline · ③ Extend · ④ Day-2 · Migrate · Troubleshooting |
 | Backup & restore buried under Concepts | Backup & restore top-level Day-2 entry |
-| Multi-region buried as one Concepts page | First-class Availability & DR with Tier 1/2/3 |
+| Multi-region buried as one Concepts page | First-class High availability architectures with Tier 1/2/3 |
 | Deployment target choice implicit | Deployment target chosen explicitly in Plan |
-| Bitnami subcharts removed but no migration path | Migrate from Bitnami in Baseline → Provision |
+| Bitnami subcharts removed but no migration path | Migrate from Bitnami in Migrate from 8.9 → 8.10 |
