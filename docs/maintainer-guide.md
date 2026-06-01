@@ -15,15 +15,21 @@ This guide is for **Distro team members and HC owners** — those who review PRs
 
 ## Architecture Decision Records (ADRs)
 
-ADRs are required for architectural decisions. Features and config additions do not require an ADR — a feature request issue is sufficient.
+ADRs are required for architectural decisions. Additive config knobs and
+features that have no architectural or cross-component footprint do not
+require an ADR — a feature request issue is sufficient.
 
 | Change type | ADR required? |
 |---|---|
+| New component added to the chart, or feature with architectural / cross-component impact | Yes |
 | Architectural or structural change | Yes |
 | Directional / cross-team impact | Yes |
-| New component added to the chart | Yes |
-| New feature or config addition | No — feature request issue instead |
+| Additive config knob on an existing component (no architectural footprint) | No — feature request issue instead |
 | Bug fix / documentation update | No |
+
+Footprint test: if the change forces other components to be aware of it,
+alters a shared contract (auth, storage, networking), or sets precedent for a
+class of problem, it needs an ADR. A purely local toggle does not.
 
 ### ADR process
 
