@@ -72,6 +72,8 @@ data:
         size: "3"
         replication-factor: "3"
         partition-count: "3"
+        network:
+          max-message-size: "10MB"
         # zeebe.broker.cluster
         initial-contact-points:
           - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
@@ -82,6 +84,7 @@ data:
         grpc:
           address: 0.0.0.0
           port: 26500
+          max-message-size: "10MB"
     
       # Database configuration - Separated syntax.
       database:
@@ -180,6 +183,7 @@ data:
         network:
           advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
           host: 0.0.0.0
+          maxMessageSize: "10MB"
           commandApi:
             port: 26501
           internalApi:

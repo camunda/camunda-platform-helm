@@ -27,12 +27,14 @@ data:
           enable: true
           network:
             port: 26500
+            maxMessageSize: "10MB"
           security:
             enabled: false
             authentication:
               mode: none
         network:
           host: 0.0.0.0
+          maxMessageSize: "10MB"
           commandApi:
             port: 26501
           internalApi:

@@ -90,7 +90,7 @@
                     "properties": {
                         "requestBodySize": {
                             "type": "string",
-                            "description": "defines applications request body size which used for upload files.",
+                            "description": "defines the maximum request body size for file uploads and Zeebe messages.",
                             "default": "10MB"
                         }
                     }

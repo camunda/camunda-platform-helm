@@ -57,12 +57,14 @@ data:
           enable: true
           network:
             port: 26500
+            maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
           security:
             enabled: false
             authentication:
               mode: none
         network:
           host: 0.0.0.0
+          maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
           commandApi:
             port: {{ .Values.zeebe.service.commandPort }}
           internalApi:
