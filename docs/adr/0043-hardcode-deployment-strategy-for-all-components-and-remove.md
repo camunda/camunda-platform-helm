@@ -1,6 +1,6 @@
 # Hardcode deployment strategy for all components and remove user-configurable strategy option
 
-- Status: accepted
+- Status: accepted (amended by [ADR 0092](0092-allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence.md))
 - Date: 2024-07-30
 - Decision-makers: Hamza Masood
 
