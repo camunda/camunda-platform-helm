@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6285/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6285/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/runtime~main.329cd641.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/main.d036cbfb.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/runtime~main.5d256423.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/main.3ac58476.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -43,9 +43,6 @@ consumer; a single bump touches many scenarios × four files.</li>
 <li class=""><strong><code>pr</code> vs <code>nightly</code></strong> — scheduling a scenario in both tiers requires
 copying the full blob and toggling <code>enabled</code>.</li>
 </ul>
-<p>Precedent: <code>.github/config/permitted-flows.yaml</code> is loaded separately
-by <code>matrix/config.go</code> (<code>LoadPermittedFlows</code>, <code>FilterFlows</code>) and applied
-as a cross-cutting filter. This ADR generalizes that pattern.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
 <p>Applies to all currently supported chart versions — <strong>8.7, 8.8, 8.9,
 8.10</strong>. Versions 8.3–8.6 remain on the legacy file until removed; they
@@ -100,23 +97,17 @@ concern; files keyed by stable ID matching the filename stem:</p>
 its purpose is cross-version sharing. ADR 0063 internalized test
 artifacts within this repository; it did not constrain them to the
 chart subtree.</p>
-<p>A version manifest references scenario IDs only, grouped under
-<code>pr:</code> and <code>nightly:</code> schedule lists. A scenario references
-identity, persistence, platforms, infra, e2e, hooks, dependencies,
-and features by ID, and carries a plural <code>flows: [&lt;flow-id&gt;, …]</code>
-list (one composition × multiple flows). The loader fans out one
-registry scenario × N flows into N <code>CIScenario</code> entries with the
-same composition and distinct singular <code>Flow</code> field, preserving
-the existing <code>CITestConfig</code> struct unchanged. A scenario also owns
-its own scalars (shortname, prefix key, Helm version override).
-Numeric <code>tier</code> and <code>enabled</code> live on the version-manifest
-reference, not the shared scenario file. Identities reference
-companion charts via <code>dependencies/&lt;id&gt;</code> IDs; inline companion
-blocks in identity or version files MUST NOT be permitted.</p>
+<p>Scenario files carry a plural <code>flows: [&lt;flow-id&gt;, …]</code>. The loader
+fans out one registry scenario × N flows into N <code>CIScenario</code>
+entries with distinct singular <code>Flow</code>, preserving the existing
+<code>CITestConfig</code> struct unchanged. Numeric <code>tier</code> and <code>enabled</code> live
+on the version-manifest reference, not the shared scenario file.
+Inline companion-chart blocks in identity or version files MUST
+NOT be permitted; identities reference <code>dependencies/&lt;id&gt;</code> by ID.</p>
 <p>Version-scoped paths (values-layer files under <code>chart-full-setup/values/</code>,
 hook manifests under <code>common/resources/</code>, hook scripts under
-<code>pre-setup-scripts/</code>) are named by basename in registry files and
-resolved by the loader against the version&#x27;s
+<code>pre-setup-scripts/</code>) are named by basename and resolved by the
+loader against the version&#x27;s
 <code>charts/&lt;X.Y&gt;/test/integration/scenarios/</code> tree.</p>
 </li>
 <li class="">
@@ -181,12 +172,11 @@ uses it to detect direct edits and point at the corresponding
 registry file. Unmigrated versions lack the marker and are skipped.</p>
 </li>
 </ol>
-<p>First-landing PR: 8.10 registry migration. Follow-ups: 8.9, 8.8, 8.7
+<p>Follow-ups (not in the first-landing 8.10 PR): 8.9 / 8.8 / 8.7
 migrations; removal of <code>LoadCITestConfig</code> and the legacy files;
-refactor of <code>scripts/deploy-camunda/matrix/runner.go</code> into
-concern-scoped packages; migration of scenario-specific behavior
-currently in <code>.github/workflows/test-integration-runner.yaml</code> into
-registry data.</p>
+<code>runner.go</code> split into concern-scoped packages; migration of
+scenario-specific behavior in <code>.github/workflows/test-integration-runner.yaml</code>
+into registry data.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
 <ul>
 <li class="">Adding a scenario creates one <code>scenarios/&lt;id&gt;.yaml</code> and one
