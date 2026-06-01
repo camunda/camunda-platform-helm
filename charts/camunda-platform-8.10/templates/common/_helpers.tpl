@@ -150,14 +150,6 @@ Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "o
 {{- end -}}
 
 {{/*
-Get image according the values of "global" or "subchart" values.
-Usage: {{ include "camundaPlatform.image" . }}
-*/}}
-{{- define "camundaPlatform.image" -}}
-    {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values) }}
-{{- end -}}
-
-{{/*
 Return the version label for resources.
 If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., "8.8.x"); otherwise use the resolved image tag.
 */}}
@@ -177,9 +169,9 @@ If an image digest is specified without a tag, fall back to .Chart.AppVersion (e
 {{- end -}}
 
 {{/*
-Get imagePullSecrets according the values of global, subchart, or empty.
+Get imagePullSecrets according the values of global, component, or empty.
 */}}
-{{- define "camundaPlatform.subChartImagePullSecrets" -}}
+{{- define "camundaPlatform.componentImagePullSecrets" -}}
     {{- if (.Values.image.pullSecrets) -}}
         {{- .Values.image.pullSecrets | toYaml -}}
     {{- else if (.Values.global.image.pullSecrets) -}}
@@ -255,7 +247,6 @@ Authentication.
 
 {{/*
 [camunda-platform] Auth issuer backend URL which used internally for Camunda apps.
-TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrl" -}}
   {{- if .Values.global.identity.auth.issuerBackendUrl -}}
@@ -738,12 +729,14 @@ Release templates.
     readiness: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.readinessProbe.probePath .Values.console.readinessProbe.probePath) }}
     metrics: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.metrics.prometheus .Values.console.metrics.prometheus) }}
   {{- end }}
-  {{ if .Values.identity.enabled -}}
+  {{- if .Values.identity.enabled }}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
+  {{- if include "camundaPlatform.keycloakExternalURL" . }}
   - name: Keycloak
     id: keycloak
     url: {{ include "camundaPlatform.keycloakExternalURL" . }}
+  {{- end }}
   - name: Identity
     id: identity
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}

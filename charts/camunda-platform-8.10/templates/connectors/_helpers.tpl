@@ -44,7 +44,7 @@ If release name contains chart name it will be used as a full name.
 [connectors] Get the image pull secrets.
 */}}
 {{- define "connectors.imagePullSecrets" -}}
-{{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
+{{- include "camundaPlatform.componentImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
 {{- end }}
 
 {{/*
