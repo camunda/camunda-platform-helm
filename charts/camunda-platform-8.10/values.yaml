@@ -1289,7 +1289,8 @@ camundaHub:
       image: {}
       externalDatabase: {}
       mail: {}
-      pusher: {}
+      pusher:
+        client: {}
       startupProbe: {}
       readinessProbe: {}
       livenessProbe: {}
