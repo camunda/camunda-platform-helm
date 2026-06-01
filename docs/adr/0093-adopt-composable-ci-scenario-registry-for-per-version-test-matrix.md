@@ -18,7 +18,7 @@ shortname, prefix key, and Helm version override. The 8.10 file is
 
 The 100-commit sample in
 [#6264](https://github.com/camunda/camunda-platform-helm/issues/6264)
-shows 11–16 edits per per-version file. Structurally independent
+shows 11–16 edits per version file. Structurally independent
 changes (new scenarios, hook tweaks, infra routing, skip policy)
 collide as merge conflicts in the same ordered list — structural
 conflicts, not stale-branch artifacts.
