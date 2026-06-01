@@ -92,7 +92,7 @@ are normative:
    ```text
    test/ci/registry/
      versions/<X.Y>.yaml       # per-version manifest: scenario refs grouped by schedule (pr | nightly), each with enabled, numeric tier, and optional field overrides
-     scenarios/<id>.yaml       # composition: refs to identity, persistence, flow, platforms, infra, e2e, hooks, deps, features; plus scenario scalars (shortname, prefix-key, helm-version-override)
+     scenarios/<id>.yaml       # composition: refs to identity, persistence, flows, platforms, infra, e2e, hooks, deps, features; plus scenario scalars (shortname, prefix-key, helm-version-override)
      identities/<id>.yaml      # keycloak | oidc | auth0 | basic | hybrid; references companion charts by `dependencies/<id>` ID, never inlines them
      persistence/<id>.yaml     # elasticsearch | opensearch-embedded | opensearch-self-signed | rdbms | rdbms-self-signed
      flows/<id>.yaml           # install | upgrade-patch | upgrade-minor | modular-upgrade-minor (owns pre-upgrade hook)
@@ -111,13 +111,17 @@ are normative:
 
    A version manifest references scenario IDs only, grouped under
    `pr:` and `nightly:` schedule lists. A scenario references
-   identity, persistence, flow, platforms, infra, e2e, hooks,
-   dependencies, and features by ID and owns its own scalars
-   (shortname, prefix key, Helm version override). Numeric `tier`
-   and `enabled` live on the version-manifest reference, not the
-   shared scenario file. Identities reference companion charts via
-   `dependencies/<id>` IDs; inline companion blocks in identity or
-   version files MUST NOT be permitted.
+   identity, persistence, platforms, infra, e2e, hooks, dependencies,
+   and features by ID, and carries a plural `flows: [<flow-id>, …]`
+   list (one composition × multiple flows). The loader fans out one
+   registry scenario × N flows into N `CIScenario` entries with the
+   same composition and distinct singular `Flow` field, preserving
+   the existing `CITestConfig` struct unchanged. A scenario also owns
+   its own scalars (shortname, prefix key, Helm version override).
+   Numeric `tier` and `enabled` live on the version-manifest
+   reference, not the shared scenario file. Identities reference
+   companion charts via `dependencies/<id>` IDs; inline companion
+   blocks in identity or version files MUST NOT be permitted.
 
    Version-scoped paths (values-layer files under `chart-full-setup/values/`,
    hook manifests under `common/resources/`, hook scripts under
@@ -166,8 +170,10 @@ are normative:
    load both the legacy `ci-test-config.yaml` and the registry and
    assert the two `*CITestConfig` values are equal via `cmp.Diff`,
    with explicit slice-order normalization for order-independent
-   fields (e.g. `platforms`, `flows`). Gates the per-version rollout
-   and remains until that version's legacy file is removed.
+   fields (`Platforms`) and for the post-fan-out scenario list itself
+   (registry-derived scenarios are emitted in fan-out order, legacy
+   scenarios in file order). Gates the per-version rollout and remains
+   until that version's legacy file is removed.
 
 6. **Migration order and source switch.** 8.10 migrates first
    (highest churn); 8.9, 8.8, 8.7 follow after 8.10's equivalence
