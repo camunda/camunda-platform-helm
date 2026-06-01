@@ -6,6 +6,15 @@
 > No release-state migration is needed when switching the local CLI from v3 to v4
 > against an existing release — `helm` is client-side only and cluster state is unaffected.
 
+> [!IMPORTANT]
+> **Bundled infrastructure was removed in 8.10.** The chart no longer ships the Bitnami
+> Keycloak, PostgreSQL, or Elasticsearch subcharts. From 8.10 you bring your own externally
+> managed database, search engine, and identity provider. The removed keys
+> (`identityKeycloak`, `identityPostgresql`, `webModelerPostgresql`, `elasticsearch`) now make
+> `helm template` fail with a migration message. See the
+> [migration from Bitnami guide](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/)
+> and its accompanying toolkit for moving each component to externally managed infrastructure.
+
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
 
 - [Architecture](#architecture)
@@ -186,25 +195,13 @@ Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/se
 
 ### Elasticsearch
 
-Camunda 8 Helm chart has a dependency on the [Elasticsearch 8 Helm Chart](https://artifacthub.io/packages/helm/bitnami/elasticsearch). All variables related to Elasticsearch can be set under `elasticsearch`.
-
-> [!NOTE]
->
-> The default setup of the Elasticsearch 8 part of Camunda 8 uses nodes that have all roles (master, data, coordinating, and ingest).
-> For high-demand deployments, it's recommended to deploy the Elasticsearch master-eligible nodes as master-only nodes.
-
-| Section         | Parameter | Description                                                                 | Default |
-| --------------- | --------- | --------------------------------------------------------------------------- | ------- |
-| `elasticsearch` | `enabled` | If true, enables Elasticsearch deployment as part of the Camunda Helm chart | `true`  |
-
-**Example:**
-
-```yaml
-elasticsearch:
-  enabled: true
-  image:
-    tag: <YOUR_VERSION_HERE>
-```
+From 8.10 the chart no longer bundles Elasticsearch. Provision Elasticsearch (or OpenSearch)
+externally — a managed service or an operator such as
+[ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html) — and point the chart
+at it via `orchestration.data.secondaryStorage.elasticsearch` (and
+`optimize.database.elasticsearch` for Optimize). See the
+[migration from Bitnami guide](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/)
+for moving off the previously bundled Bitnami Elasticsearch.
 
 #### Elasticsearch Retention
 
@@ -212,52 +209,18 @@ Since moving to Elasticsearch 8, [Curator](https://github.com/elastic/curator) i
 
 ### Keycloak
 
-When Camunda 8 Identity component is enabled by default, and it depends on
-[Bitnami Keycloak chart](https://github.com/bitnami/charts/tree/main/bitnami/keycloak).
-Since Keycloak is a dependency for Identity, all variables related to Keycloak can be found in
-[bitnami/keycloak/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/keycloak/values.yaml)
-and can be set under `identityKeycloak`.
-
-| Section            | Parameter | Description                                                                  | Default |
-| ------------------ | --------- | ---------------------------------------------------------------------------- | ------- |
-| `identityKeycloak` | `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Helm chart | `true`  |
-
-**Example:**
-
-```yaml
-identityKeycloak:
-  enabled: true
-```
+From 8.10 the chart no longer bundles Keycloak. The Identity component authenticates against
+an externally managed Keycloak (or any OIDC provider). Point the chart at your Keycloak via
+`global.identity.keycloak.url.*` and `global.identity.keycloak.auth.*`. See the
+[migration from Bitnami guide](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/)
+for moving off the previously bundled Bitnami Keycloak.
 
 #### Keycloak Theme
 
-Camunda provides a custom theme for the login page used in all apps. The theme is copied from the Identity image.
-
-The theme is added to Keycloak by default. Helm replaces YAML lists wholesale rather than merging them
-across values files, so if you override any of `extraVolumes`, `initContainers`, or `extraVolumeMounts`
-in your own values file you must re-include the entries below alongside your additions.
-
-```yaml
-identity:
-  keycloak:
-    extraVolumes:
-      - name: camunda-theme
-        emptyDir:
-          sizeLimit: 10Mi
-    initContainers:
-      - name: copy-camunda-theme
-        image: >-
-          {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
-          {{- include "camundaPlatform.imageByParams" $identityImageParams }}
-        imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
-        command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
-        volumeMounts:
-          - name: camunda-theme
-            mountPath: /mnt
-    extraVolumeMounts:
-      - name: camunda-theme
-        mountPath: /opt/bitnami/keycloak/themes/identity
-```
+Camunda ships a custom login theme inside the Identity image (at `/app/keycloak-theme`). To use
+it, copy the theme into your own Keycloak deployment — for example via an init container that
+mounts the Identity image's theme directory into your Keycloak themes path. The exact themes
+path depends on the Keycloak image you run.
 
 ## Development
 
@@ -265,7 +228,7 @@ For development purposes, you might want to deploy and test the charts without c
 To do this you can run the following:
 
 ```sh
- helm install camunda --atomic --debug ./charts/camunda-platform
+ helm install camunda --atomic --debug ./charts/camunda-platform-8.10
 ```
 
 - `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
@@ -276,46 +239,27 @@ To generate the resources/manifests without really installing them, you can use:
 
 - `--dry-run simulate an install`
 
-If you see errors like:
+If you see an error like:
 
 ```sh
-Error: found in Chart.yaml, but missing in charts/ directory: elasticsearch
+Error: found in Chart.yaml, but missing in charts/ directory: common
 ```
 
-Then you need to download the dependencies first.
-
-Run the following to add resolve the dependencies:
+then download the chart dependencies first:
 
 ```sh
-make helm.repos-add
+make helm.dependency-update chartPath=charts/camunda-platform-8.10
 ```
-
-After this, you can run: `make helm.dependency-update`, which will update and download the dependencies for all charts.
 
 The execution should look like this:
 
 ```text
-$ make helm.dependency-update
-helm dependency update charts/camunda-platform
+$ make helm.dependency-update chartPath=charts/camunda-platform-8.10
+helm dependency update charts/camunda-platform-8.10
 Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "camunda-platform" chart repository
-...Successfully got an update from the "bitnami" chart repository
 Update Complete. ⎈Happy Helming!⎈
-Saving 6 charts
-Dependency zeebe did not declare a repository. Assuming it exists in the charts directory
-Dependency zeebe-gateway did not declare a repository. Assuming it exists in the charts directory
-Dependency operate did not declare a repository. Assuming it exists in the charts directory
-Dependency tasklist did not declare a repository. Assuming it exists in the charts directory
-Dependency identity did not declare a repository. Assuming it exists in the charts directory
+Saving 1 charts
 Deleting outdated charts
-helm dependency update charts/camunda-platform/charts/identity
-Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "camunda-platform" chart repository
-...Successfully got an update from the "bitnami" chart repository
-Update Complete. ⎈Happy Helming!⎈
-Saving 2 charts
-Downloading keycloak from repo https://charts.bitnami.com/bitnami
-Downloading common from repo https://charts.bitnami.com/bitnami
 ```
 
 ## Releasing the Charts
