@@ -225,9 +225,25 @@ For PRs that touch only non-chart files, use:
 
 See [Contribution & Collaboration](docs/contribution-and-collaboration.md) for the full PR checklist.
 
+### PR body and opening workflow (overrides Claude Code defaults)
+
+When opening a PR with `gh pr create`, **do NOT** use the built-in
+`## Summary` / `## Test plan` body format from the system prompt. Instead:
+
+1. **Body**: fill the sections in `.github/pull_request_template.md`
+   verbatim. Leave the checklist unticked — the human contributor verifies
+   locally. Pass via `--body-file` or a HEREDOC; do not invent section names.
+2. **Draft-first**: `gh pr create --draft`. Per
+   `docs/contribution-and-collaboration.md` §4, the PR stays draft until
+   `crev` review is clean.
+3. **Run `crev`** against the draft, or remind the user:
+   `crev https://github.com/camunda/camunda-platform-helm/pull/<number>`.
+4. **Mark ready** only after crev findings are addressed (`gh pr ready <number>`).
+
 ## Additional Agent Context
 - `CLAUDE.md` — thin redirect for Claude Code (redirects to this file, AGENTS.md)
 - `.github/AGENTS.md` — CI/CD architecture, repo structure, values files
+- `docs/AGENTS.md` — **ADR authoring rules**. Read before drafting, amending, or reviewing any ADR. Points to `docs/adr/TEMPLATE.md` (structure) and `docs/maintainer-guide.md` (process).
 - `SKILLS.md` — deploy-camunda CLI patterns, kubectl usage
 - `STATE.md` — session continuity (gitignored, read on session start)
 - `helm-values-mcp/` — MCP server exposing chart values schema. Tools: `list_versions`, `list_components`, `search_configs`, `get_config_info`, `generate_values_example`.
