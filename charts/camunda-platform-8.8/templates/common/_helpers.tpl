@@ -588,8 +588,9 @@ Zeebe templates.
 */}}
 {{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
   {{- if .Values.orchestration.enabled -}}
+    {{- $proto := ternary "https" "http" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true") -}}
     {{-
-      printf "http://%s%s"
+      printf "%s://%s%s" $proto
         (include "orchestration.serviceNameHTTP" .)
         (.Values.orchestration.contextPath | default "")
     -}}
@@ -601,11 +602,27 @@ Zeebe templates.
 */}}
 {{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
   {{- if .Values.orchestration.enabled -}}
+    {{- $proto := ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true") -}}
     {{-
-      printf "grpc://%s"
+      printf "%s://%s" $proto
         (include "orchestration.serviceNameGRPC" .)
     -}}
   {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns true when the last orchestration.env entry for name has value true.
+*/}}
+{{- define "camundaPlatform.orchestrationEnvIsTrue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $enabled := false -}}
+  {{- range $env := $ctx.Values.orchestration.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- $enabled = (eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true") -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $enabled -}}
 {{- end -}}
 
 
