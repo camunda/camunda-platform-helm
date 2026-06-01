@@ -17,13 +17,14 @@ flowchart LR
 
     subgraph BASE["② Build your Baseline"]
         direction TB
-        bPROV["Provision dependencies\n(PostgreSQL / ES-OS / Keycloak)"]
-        bINST["Install\n(Provision K8s → Install Helm → Configure)"]
-        bCONF["Common configuration\n(auth / secrets / license / connectors)"]
-        bREG["Register OC in Hub"]
+        b1["1. Provision infrastructure\n[K8s: cloud provider + K8s config]\n[Containers: Docker / ECS]\n[Manual: VM]"]
+        b2["2. Provision databases\n(PostgreSQL / ES-OS / Keycloak)"]
+        b3["3. Set up authentication\n(OIDC / Keycloak / basic auth)"]
+        b4["4. Install Camunda\nInstall Hub · Install OC · Register OC in Hub"]
+        b5["5. Configure Camunda\n(chart params / secrets / license / connectors)"]
         bPROD["Production readiness checklist"]
         bSMOKE["Smoke test & exit criteria"]
-        bPROV --> bINST --> bCONF --> bREG --> bPROD --> bSMOKE
+        b1 --> b2 --> b3 --> b4 --> b5 --> bPROD --> bSMOKE
     end
 
     subgraph EXTEND["③ Extend your deployment\n(independent, any order, any time)"]
