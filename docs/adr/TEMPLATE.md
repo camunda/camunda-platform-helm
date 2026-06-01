@@ -48,4 +48,4 @@ PR, and follow-ups.
 
 <!-- Optional. Omit if empty. -->
 
-- Builds on [ADR NNNN — title](NNNN-slug.md). One-line relevance.
+- Builds on ADR NNNN — title (link the file). One-line relevance.
