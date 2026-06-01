@@ -1,6 +1,11 @@
 # RDBMS feature configuration for 8.10 (PostgreSQL)
 # Layer 4: Feature - RDBMS secondary storage
 
+global:
+  elasticsearch:
+    url:
+      host: "elasticsearch-master"
+
 orchestration:
   data:
     secondaryStorage:

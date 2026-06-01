@@ -186,3 +186,35 @@ func (s Snapshot) AllPodsReady() bool {
 	}
 	return true
 }
+
+// InstallComplete reports whether the watched install reached a successful
+// terminal state. Pod readiness alone is not enough while Helm is still
+// pending: companion/pre-install pods can all be ready before the main release
+// has created its workloads.
+func (s Snapshot) InstallComplete() bool {
+	if !s.AllPodsReady() {
+		return false
+	}
+	if s.Release == "" {
+		return true
+	}
+	return s.HelmReleaseDeployed()
+}
+
+// HelmReleaseDeployed reports whether `helm status -o json` says the watched
+// release is deployed. Missing/erroring Helm status is treated as incomplete so
+// the watch loop keeps collecting snapshots and can see later failing pods.
+func (s Snapshot) HelmReleaseDeployed() bool {
+	if len(s.HelmStatus) == 0 {
+		return false
+	}
+	var status struct {
+		Info struct {
+			Status string `json:"status"`
+		} `json:"info"`
+	}
+	if err := json.Unmarshal(s.HelmStatus, &status); err != nil {
+		return false
+	}
+	return status.Info.Status == "deployed"
+}

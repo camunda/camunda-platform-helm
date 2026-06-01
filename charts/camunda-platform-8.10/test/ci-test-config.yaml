@@ -424,6 +424,12 @@ integration:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: rdbms-external
           enabled: false
           auth: keycloak
@@ -469,6 +475,12 @@ integration:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
         - name: hub-legacy
           enabled: true
           auth: keycloak

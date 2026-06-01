@@ -63,8 +63,38 @@ Keycloak helpers
 [identity] Get Keycloak URL service name when the chart proxies an external Keycloak via an in-cluster ExternalName service.
 */}}
 {{- define "identity.keycloak.service" -}}
-    {{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
+    {{- $sameNamespaceServiceName := include "identity.keycloak.sameNamespaceServiceName" . -}}
+    {{- if $sameNamespaceServiceName -}}
+        {{- $sameNamespaceServiceName -}}
+    {{- else if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
         {{- printf "%s-keycloak-custom" .Release.Name | trunc 63 -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Get the Keycloak service name when the configured host points to a Service in the release namespace.
+*/}}
+{{- define "identity.keycloak.sameNamespaceServiceName" -}}
+    {{- $host := include "identity.keycloak.host" . -}}
+    {{- $serviceName := "" -}}
+    {{- if and $host (not (contains "." $host)) -}}
+        {{- $serviceName = $host -}}
+    {{- else -}}
+        {{- range $suffix := list (printf ".%s.svc.cluster.local" $.Release.Namespace) (printf ".%s.svc" $.Release.Namespace) -}}
+            {{- if and (not $serviceName) (hasSuffix $suffix $host) -}}
+                {{- $serviceName = trimSuffix $suffix $host -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+    {{- $serviceName -}}
+{{- end -}}
+
+{{/*
+[identity] Whether the chart should render an ExternalName proxy Service for Keycloak.
+*/}}
+{{- define "identity.keycloak.externalNameService.enabled" -}}
+    {{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal (not (include "identity.keycloak.sameNamespaceServiceName" .)) -}}
+        {{- true -}}
     {{- end -}}
 {{- end -}}
 

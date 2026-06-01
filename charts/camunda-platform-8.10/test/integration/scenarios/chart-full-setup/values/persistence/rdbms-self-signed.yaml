@@ -27,6 +27,11 @@
 #     and run RDBMS as the dual exporter (mirrors `rdbms.yaml`).
 # =============================================================================
 
+global:
+  elasticsearch:
+    url:
+      host: "elasticsearch-master"
+
 orchestration:
   data:
     secondaryStorage:
