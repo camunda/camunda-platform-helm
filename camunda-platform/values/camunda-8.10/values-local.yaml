@@ -3,8 +3,6 @@
 # It disables some features and reduces the resource requirements to run the Camunda Platform locally.
 #
 global:
-  elasticsearch:
-    enabled: true
   identity:
     auth:
       # Disable the Identity authentication for local development
@@ -16,9 +14,6 @@ global:
 #
 
 identity:
-  enabled: false
-
-identityKeycloak:
   enabled: false
 
 #
@@ -35,13 +30,16 @@ orchestration:
   partitionCount: "1"
   replicationFactor: "1"
   pvcSize: 10Gi
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: http://elasticsearch-es-http:9200
+        auth:
+          username: elastic
+          secret:
+            existingSecret: elasticsearch-es-elastic-user
+            existingSecretKey: elastic
 
 optimize:
   enabled: false
-
-elasticsearch:
-  enabled: true
-  master:
-    replicaCount: 1
-    persistence:
-      size: 10Gi
