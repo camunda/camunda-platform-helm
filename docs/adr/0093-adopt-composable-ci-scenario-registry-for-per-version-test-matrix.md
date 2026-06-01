@@ -76,7 +76,7 @@ are not migrated.
 
 A composable CI scenario registry rooted at `test/ci/registry/`
 becomes the source of truth for the integration test matrix. The
-legacy per-version `charts/<version>/test/ci-test-config.yaml` files
+legacy per-version `charts/camunda-platform-<X.Y>/test/ci-test-config.yaml` files
 remain as **generated compatibility artifacts** during migration and
 are removed once all four supported versions have migrated and held
 green for one full nightly cycle on `main`. The following constraints
