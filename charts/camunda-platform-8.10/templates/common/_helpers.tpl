@@ -1145,6 +1145,30 @@ false
 {{- end -}}
 
 {{/*
+caBundleChecksumAnnotation
+Emits a `checksum/ca-bundle` pod annotation derived from the live CA-bundle
+Secret so that, on `helm upgrade`, pods roll automatically when the CA is
+rotated — the init container then rebuilds the truststore with the new CA.
+Without this, rotating the secret has no effect until the operator manually
+runs `kubectl rollout restart`.
+
+`lookup` returns an empty value during `helm template` / `--dry-run` (no API
+access), so the checksum is stable there and only carries real content on a
+live `helm upgrade`. It therefore does NOT react to a raw `kubectl edit secret`
+— that path still needs a manual rollout restart (documented in
+docs/tls-values-quickstart.md). Emits nothing when caBundle is unset.
+
+Usage (inside a pod template's metadata.annotations):
+  {{- include "camundaPlatform.caBundleChecksumAnnotation" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.caBundleChecksumAnnotation" -}}
+{{- if eq (include "camundaPlatform.hasCaBundle" .) "true" -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.global.tls.caBundle.secret.existingSecret -}}
+checksum/ca-bundle: {{ $secret | toYaml | sha256sum }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 caBundleVolume
 Emits the volume entry that exposes global.tls.caBundle as a single file
 under /etc/camunda/tls/ca.crt inside the container. Always called from a

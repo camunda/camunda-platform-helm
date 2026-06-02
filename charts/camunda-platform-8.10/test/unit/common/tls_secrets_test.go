@@ -479,6 +479,36 @@ func (s *tlsSecretsTest) TestCaBundleInitContainerSecurityContext() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle stamps a checksum/ca-bundle pod annotation for rotation auto-rollout",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: map[string]string{
+				"orchestration.enabled":                     "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				// lookup is empty under `helm template`, so the value is the stable
+				// sha256 of an empty object — presence is what we assert here.
+				"spec.template.metadata.annotations.checksum/ca-bundle": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+			},
+		},
+		{
+			Name:     "no checksum/ca-bundle annotation when caBundle is unset",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: map[string]string{
+				"orchestration.enabled": "true",
+			},
+			Expected: map[string]string{
+				"spec.template.metadata.annotations.checksum/ca-bundle": "",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func TestTLSSecretsTestSuite(t *testing.T) {
 	suite.Run(t, new(tlsSecretsTest))
 }
