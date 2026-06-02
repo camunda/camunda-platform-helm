@@ -514,6 +514,16 @@
                                             "default": "ca.crt"
                                         }
                                     }
+                                },
+                                "image": {
+                                    "type": "string",
+                                    "description": "dedicated init-container image with keytool used to import the user CA into a JKS at runtime. Defaults to eclipse-temurin:21-jre because not all Camunda component images expose JAVA_HOME consistently. Override if your environment requires an internal mirror.",
+                                    "default": "eclipse-temurin:21-jre"
+                                },
+                                "imagePullPolicy": {
+                                    "type": "string",
+                                    "description": "pull policy for the init-container image.",
+                                    "default": "IfNotPresent"
                                 }
                             }
                         }
