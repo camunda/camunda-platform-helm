@@ -214,6 +214,11 @@ type ChartDependency struct {
 	// ValuesFile is the path to a values file for the companion chart,
 	// relative to the repo root. Optional — omit to use chart defaults.
 	ValuesFile string `yaml:"values-file,omitempty" json:"values-file,omitempty"`
+	// EnvVars is the explicit allowlist of environment variable names to
+	// substitute in ValuesFile ($VAR / ${VAR}). Only these names are expanded;
+	// all other $-tokens (e.g. shell vars $n, $max in init scripts) are left
+	// intact. Empty means the values file is used verbatim.
+	EnvVars []string `yaml:"env-vars,omitempty" json:"env-vars,omitempty"`
 	// RepoName is the Helm repository name to register before installing
 	// the chart (e.g., "opensearch"). Required for repo-style chart refs;
 	// not needed for OCI or local paths.

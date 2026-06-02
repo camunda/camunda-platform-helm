@@ -1735,6 +1735,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 				ChartRef:    chartRef,
 				Version:     version,
 				ReleaseName: dep.ReleaseName,
+				EnvVars:     dep.EnvVars,
 				RepoName:    dep.RepoName,
 				RepoURL:     dep.RepoURL,
 			}
