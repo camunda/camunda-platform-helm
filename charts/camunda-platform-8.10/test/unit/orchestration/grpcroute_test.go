@@ -232,6 +232,85 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "port: 9090")
 			},
 		},
+		{
+			Name: "TestGRPCRouteWithGatewayNamespace",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.gateway.namespace":           "shared-infra",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: camunda-platform-test")
+				require.Contains(t, output, "namespace: shared-infra")
+			},
+		},
+		{
+			Name: "TestGRPCRouteWithoutGatewayNamespace",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// parentRefs namespace uses 4-space indent; backendRefs namespace uses 6-space indent
+				require.NotContains(t, output, "\n    namespace: ")
+			},
+		},
+		{
+			Name: "TestGRPCRouteWithGatewayNamespaceAndTLS",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.gateway.namespace":           "shared-infra",
+				"global.gateway.tls.enabled":         "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "namespace: shared-infra")
+				require.Contains(t, output, "sectionName: grpcs")
+			},
+		},
+		{
+			Name: "TestGRPCRouteWithGatewayName",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.gateway.name":                "shared-gateway",
+				"global.gateway.namespace":           "shared-infra",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: shared-gateway")
+			},
+		},
+		{
+			Name: "TestGRPCRouteNotRenderedWhenExternalEvenWithNamespace",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.gateway.external":            "true",
+				"global.gateway.namespace":           "shared-infra",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NotContains(t, output, "kind: GRPCRoute")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

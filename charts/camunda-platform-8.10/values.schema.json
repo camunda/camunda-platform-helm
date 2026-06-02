@@ -139,24 +139,29 @@
                 "gateway": {
                     "type": "object",
                     "properties": {
-                        "createGatewayResource": {
-                            "type": "boolean",
-                            "description": "if true, the Gateway resource is created. This is dependent on whether you have a separate network administrator installing your Gateway or if you are installing it as part of the helm chart.",
-                            "default": false
-                        },
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, a gateway resource is deployed. Only useful if a gateway controller is available, like Ingress-NGINX or Gateway API.",
+                            "description": "if true, enables the Kubernetes Gateway API integration. Requires Gateway API CRDs and a Gateway controller (for example, NGINX Gateway Fabric) to be installed in the cluster.",
+                            "default": false
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "name of the Gateway resource that Routes attach to. Defaults to the Helm release fullname when unset, which is correct for Scenario A (chart-managed Gateway in the same namespace). Set this when referencing a pre-existing Gateway whose name differs from the release name, for example a shared Gateway in another namespace (Scenario B).",
+                            "default": ""
+                        },
+                        "createGatewayResource": {
+                            "type": "boolean",
+                            "description": "if true, the chart creates the Gateway CustomResource in the release namespace. Set to false when a Gateway already exists (either in the same namespace or in a shared namespace referenced via global.gateway.namespace).",
                             "default": false
                         },
                         "external": {
                             "type": "boolean",
-                            "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
+                            "description": "if true, no Gateway API resources are created by this chart (no Gateway, HTTPRoutes, GRPCRoute, or ReferenceGrant). Use this when you manage all networking resources yourself.",
                             "default": false
                         },
                         "className": {
                             "type": "string",
-                            "description": "Gateway.className defines the class or configuration of gateway which should be used by the controller",
+                            "description": "name of the GatewayClass resource that tells the cluster which Gateway controller manages this Gateway.",
                             "default": "nginx"
                         },
                         "tls": {
@@ -164,19 +169,24 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then tls is configured on the gateway resource. If enabled the Ingress.host need to be defined.",
+                                    "description": "if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.",
                                     "default": false
                                 },
                                 "secretName": {
                                     "type": "string",
-                                    "description": "defines the secret name which contains the TLS private key and certificate",
+                                    "description": "name of the Kubernetes Secret containing the TLS certificate and private key.",
                                     "default": "camunda-platform"
                                 }
                             }
                         },
                         "controllerNamespace": {
                             "type": "string",
-                            "description": "defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.",
+                            "description": "answers \"where do Routes that point AT my Services come from?\". When an external controller or operator creates Routes in its own namespace that route traffic to Camunda services, set this to that namespace. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.",
+                            "default": ""
+                        },
+                        "namespace": {
+                            "type": "string",
+                            "description": "answers \"where is the Gateway my Routes point TO?\". When the Gateway lives in a different namespace than the Camunda components (for example, a shared Gateway in an infrastructure namespace), set this to that namespace. The chart adds namespace: <value> to the parentRefs of every Route so Kubernetes can locate the cross-namespace Gateway. When unset, Kubernetes assumes the Gateway is in the same namespace as the Route. Also set global.gateway.createGatewayResource=false when the Gateway is managed outside this chart.",
                             "default": ""
                         }
                     }
