@@ -82,6 +82,3 @@ optimize:
         secret:
           existingSecret: opensearch-jks
           existingSecretKey: externaldb.jks
-
-elasticsearch:
-  enabled: false
