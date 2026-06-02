@@ -3,6 +3,8 @@ package cmd
 import (
 	"strings"
 	"testing"
+
+	"scripts/deploy-camunda/matrix"
 )
 
 func TestValidateChartRefFlags(t *testing.T) {
@@ -55,6 +57,67 @@ func TestValidateChartRefFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateChartRefFlags(tt.chartRef, tt.chartRefVersion)
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("expected error containing %q, got nil", tt.wantErr)
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("expected error containing %q, got %q", tt.wantErr, err.Error())
+			}
+		})
+	}
+}
+
+func TestValidateChartRefVersionSpan(t *testing.T) {
+	entriesFor := func(versions ...string) []matrix.Entry {
+		out := make([]matrix.Entry, 0, len(versions))
+		for _, v := range versions {
+			out = append(out, matrix.Entry{Version: v})
+		}
+		return out
+	}
+
+	tests := []struct {
+		name     string
+		chartRef string
+		entries  []matrix.Entry
+		wantErr  string // substring; empty = expect success
+	}{
+		{
+			name:    "no chart-ref allows any version span",
+			entries: entriesFor("8.8", "8.9", "8.10"),
+		},
+		{
+			name:     "single version single entry is allowed",
+			chartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			entries:  entriesFor("8.10"),
+		},
+		{
+			name:     "single version multiple entries is allowed",
+			chartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			entries:  entriesFor("8.10", "8.10", "8.10"),
+		},
+		{
+			name:     "multiple versions are rejected",
+			chartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			entries:  entriesFor("8.8", "8.9"),
+			wantErr:  "spans 2 versions (8.8, 8.9)",
+		},
+		{
+			name:     "empty entries with chart-ref does not panic",
+			chartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			entries:  nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateChartRefVersionSpan(tt.chartRef, tt.entries)
 			if tt.wantErr == "" {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
