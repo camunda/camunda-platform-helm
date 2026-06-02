@@ -29,7 +29,7 @@ Create the name of the service account to use
 */}}
 {{- define "console.serviceAccountName" -}}
     {{- $saName := (or .Values.camundaHub.console.serviceAccount.name .Values.console.serviceAccount.name) -}}
-    {{- if (or .Values.camundaHub.console.serviceAccount.enabled .Values.console.serviceAccount.enabled) -}}
+    {{- if .Values.camundaHub.console.serviceAccount.enabled -}}
         {{- $saName | default (include "console.fullname" .) -}}
     {{- else -}}
         {{- $saName | default "default" -}}

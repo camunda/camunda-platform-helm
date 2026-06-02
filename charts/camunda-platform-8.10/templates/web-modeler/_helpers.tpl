@@ -120,7 +120,7 @@ app.kubernetes.io/component: {{ .componentName }}
 */}}
 {{- define "webModeler.serviceAccountName" -}}
     {{- $saName := (or .Values.camundaHub.webModeler.serviceAccount.name .Values.webModeler.serviceAccount.name) -}}
-    {{- if (or .Values.camundaHub.webModeler.serviceAccount.enabled .Values.webModeler.serviceAccount.enabled) -}}
+    {{- if .Values.camundaHub.webModeler.serviceAccount.enabled -}}
         {{- $saName | default (include "webModeler.fullname" .) -}}
     {{- else -}}
         {{- $saName | default "default" -}}
