@@ -1111,6 +1111,18 @@
                         }
                     }
                 }
+            },
+            "properties": {
+                "persistence": {
+                    "properties": {
+                        "deploymentStrategy": {
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
+                        }
+                    }
+                }
             }
         },
         "elasticsearch": {

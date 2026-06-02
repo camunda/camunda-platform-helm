@@ -1,4 +1,11 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $deploymentStrategy := (or .Values.camundaHub.webModeler.persistence.deploymentStrategy .Values.webModeler.persistence.deploymentStrategy) | default "RollingUpdate" -}}
+{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
+{{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- end -}}
+{{- if and (eq $deploymentStrategy "Recreate") (not (or .Values.camundaHub.webModeler.persistence.enabled .Values.webModeler.persistence.enabled)) -}}
+{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true (it avoids a Multi-Attach deadlock on the chart-managed RWO PVC; without persistence it only adds upgrade downtime)" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +14,7 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   strategy:
-    type: RollingUpdate
+    type: {{ $deploymentStrategy }}
   replicas: {{ (or .Values.camundaHub.webModeler.restapi.replicas .Values.webModeler.restapi.replicas) }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
