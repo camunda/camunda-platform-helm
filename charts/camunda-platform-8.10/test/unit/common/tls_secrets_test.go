@@ -491,7 +491,7 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
 			Expected: map[string]string{
 				// lookup is empty under `helm template`, so the value is the stable
 				// sha256 of an empty object — presence is what we assert here.
-				"spec.template.metadata.annotations.checksum/ca-bundle": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+				"spec.template.metadata.annotations.checksum/ca-bundle": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
 			},
 		},
 		{
