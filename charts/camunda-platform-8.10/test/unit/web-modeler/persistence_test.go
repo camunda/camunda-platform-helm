@@ -286,3 +286,24 @@ func TestDeploymentStrategyInvalidValueFails(t *testing.T) {
 	}
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
 }
+func TestDeploymentStrategyRecreateRequiresPersistence(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyRecreateRequiresPersistence",
+		Values: map[string]string{
+			"identity.enabled":                                     "true",
+			"global.elasticsearch.enabled":                         "true",
+			"webModeler.enabled":                                   "true",
+			"camundaHub.webModeler.restapi.mail.fromAddress":       "example@example.com",
+			"camundaHub.webModeler.persistence.deploymentStrategy": "Recreate",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "Recreate requires webModeler.persistence.enabled: true")
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
+}

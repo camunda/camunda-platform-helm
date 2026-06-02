@@ -3,6 +3,9 @@
 {{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
 {{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
 {{- end -}}
+{{- if and (eq $deploymentStrategy "Recreate") (not .Values.webModeler.persistence.enabled) -}}
+{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true (it avoids a Multi-Attach deadlock on the chart-managed RWO PVC; without persistence it only adds upgrade downtime)" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

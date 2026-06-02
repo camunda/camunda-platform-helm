@@ -254,13 +254,13 @@ func TestDeploymentStrategyRecreateOptIn(t *testing.T) {
 	testCase := testhelpers.TestCase{
 		Name: "TestDeploymentStrategyRecreateOptIn",
 		Values: map[string]string{
-			"identity.enabled":                            "true",
-			"global.elasticsearch.enabled":                "true",
-			"elasticsearch.enabled":                       "true",
-			"webModeler.enabled":                          "true",
-			"webModeler.restapi.mail.fromAddress":         "example@example.com",
-			"webModeler.persistence.enabled":              "true",
-			"webModeler.persistence.deploymentStrategy":   "Recreate",
+			"identity.enabled":                          "true",
+			"global.elasticsearch.enabled":              "true",
+			"elasticsearch.enabled":                     "true",
+			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
+			"webModeler.persistence.enabled":            "true",
+			"webModeler.persistence.deploymentStrategy": "Recreate",
 		},
 		Verifier: func(t *testing.T, output string, err error) {
 			var deployment appsv1.Deployment
@@ -289,6 +289,28 @@ func TestDeploymentStrategyInvalidValueFails(t *testing.T) {
 		Verifier: func(t *testing.T, output string, err error) {
 			require.Error(t, err)
 			require.Contains(t, err.Error(), "value must be one of 'RollingUpdate', 'Recreate'")
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
+}
+func TestDeploymentStrategyRecreateRequiresPersistence(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyRecreateRequiresPersistence",
+		Values: map[string]string{
+			"identity.enabled":                          "true",
+			"global.elasticsearch.enabled":              "true",
+			"elasticsearch.enabled":                     "true",
+			"webModeler.enabled":                        "true",
+			"webModeler.restapi.mail.fromAddress":       "example@example.com",
+			"webModeler.persistence.deploymentStrategy": "Recreate",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "Recreate requires webModeler.persistence.enabled: true")
 		},
 	}
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
