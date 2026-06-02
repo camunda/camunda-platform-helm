@@ -51,3 +51,6 @@ STATE.md
 
 .claude/
 c8e2e-results/
+
+# crev review-tool run artifacts (never commit)
+.crev/
