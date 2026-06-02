@@ -509,6 +509,42 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
+	const sentinel = "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "web-modeler restapi gets checksum/ca-bundle even with no user podAnnotations (restructured block)",
+			Template: "templates/web-modeler/deployment-restapi.yaml",
+			Values: map[string]string{
+				"webModeler.enabled":                        "true",
+				"webModeler.restapi.mail.fromAddress":       "test@example.com",
+				"identity.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.metadata.annotations.checksum/ca-bundle": sentinel,
+			},
+		},
+		{
+			Name:     "web-modeler restapi keeps caBundle checksum alongside user podAnnotations",
+			Template: "templates/web-modeler/deployment-restapi.yaml",
+			Values: map[string]string{
+				"webModeler.enabled":                        "true",
+				"webModeler.restapi.mail.fromAddress":       "test@example.com",
+				"identity.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+				"webModeler.restapi.podAnnotations.my-anno": "v1",
+			},
+			Expected: map[string]string{
+				"spec.template.metadata.annotations.checksum/ca-bundle": sentinel,
+				"spec.template.metadata.annotations.my-anno":            "v1",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func TestTLSSecretsTestSuite(t *testing.T) {
 	suite.Run(t, new(tlsSecretsTest))
 }

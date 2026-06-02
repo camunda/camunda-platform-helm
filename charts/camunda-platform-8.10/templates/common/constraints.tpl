@@ -347,6 +347,11 @@ The following values inside your values.yaml need to be set but were not:
 
     {{/* (3) A component-level JAVA_TOOL_OPTIONS env entry overrides (last-wins) the
            chart's truststore flags, silently breaking JVM trust. */}}
+    {{/* webModeler.restapi env uses `or` to mirror deployment-restapi.yaml's own
+         env coalescing (camundaHub takes precedence; only that one list is
+         applied). We check exactly the list the deployment uses, so we never warn
+         about a JAVA_TOOL_OPTIONS in the ignored list — that would be a false
+         alarm since it is not applied. */}}
     {{- $envComponents := list
         (dict "comp" "orchestration" "env" .Values.orchestration.env)
         (dict "comp" "optimize" "env" .Values.optimize.env)
