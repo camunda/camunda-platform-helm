@@ -70,7 +70,8 @@ global:
       # The truststore init container reuses each component's OWN image by
       # default (it already ships `keytool`), so air-gapped installs need no
       # extra mirrored image. Only set `image:` to override for a component
-      # image that lacks keytool; `global.image.registry` is prefixed to it.
+      # image that lacks keytool; the value is used verbatim, so give the
+      # full mirror/registry path (it is NOT prefixed with global.image.registry).
       # image: ""
       # imagePullPolicy: ""
 

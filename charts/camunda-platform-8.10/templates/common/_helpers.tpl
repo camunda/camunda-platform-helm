@@ -1265,13 +1265,14 @@ restricted SCC assign a namespace-range UID.
 {{- $ctx := .context -}}
 {{- $img := .image -}}
 {{- /* An explicit global.tls.caBundle.image override wins over the
-       component image; only that override gets the global.image.registry
-       prefix (the component image is already fully resolved). */ -}}
+       component image and is used VERBATIM. We deliberately do NOT prepend
+       global.image.registry: the override is frequently already fully
+       qualified (e.g. myregistry.io/eclipse-temurin:21-jre), and prefixing
+       it would double it (myregistry.io/myregistry.io/...) and break the
+       pull. The user supplying an override owns its routability. The
+       component-image default (.image) is already fully resolved. */ -}}
 {{- if $ctx.Values.global.tls.caBundle.image -}}
 {{-   $img = $ctx.Values.global.tls.caBundle.image -}}
-{{-   if and $ctx.Values.global.image $ctx.Values.global.image.registry -}}
-{{-     $img = printf "%s/%s" $ctx.Values.global.image.registry $img -}}
-{{-   end -}}
 {{- end -}}
 - name: ca-bundle-truststore-init
   image: {{ $img | quote }}

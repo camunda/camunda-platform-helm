@@ -326,7 +326,7 @@ global:
         existingSecret: ""
         ## @param global.tls.caBundle.secret.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
         existingSecretKey: "ca.crt"
-      ## @param global.tls.caBundle.image OPTIONAL override for the truststore init-container image. Empty (default) reuses each component's OWN image: it already ships keytool, it is already mirrored in your registry (so this adds no new image dependency in air-gapped installs), and copying its cacerts preserves any CAs baked into a custom build. Set this only if a component image lacks keytool — when set, global.image.registry is prefixed.
+      ## @param global.tls.caBundle.image OPTIONAL override for the truststore init-container image. Empty (default) reuses each component's OWN image: it already ships keytool, it is already mirrored in your registry (so this adds no new image dependency in air-gapped installs), and copying its cacerts preserves any CAs baked into a custom build. Set this only if a component image lacks keytool — the value is used verbatim (NOT prefixed with global.image.registry), so include your registry/mirror path if needed.
       image: ""
       ## @param global.tls.caBundle.imagePullPolicy pull policy for the init-container image. Empty (default) inherits global.image.pullPolicy.
       imagePullPolicy: ""
