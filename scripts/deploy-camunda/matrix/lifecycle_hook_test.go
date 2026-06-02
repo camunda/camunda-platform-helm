@@ -56,9 +56,9 @@ var preSetupScriptAllowlist = map[string]bool{
 //	                                (8.10) via envsubst+kubectl, not via the
 //	                                runner's declarative fixtures pipeline.
 var commonResourcesAllowlist = map[string]bool{
-	"postgres-createdb-job.yaml":    true,
-	"postgresql-cluster-tls.yaml":   true,
-	"gateway-proxy-settings.yaml":   true,
+	"postgres-createdb-job.yaml":  true,
+	"postgresql-cluster-tls.yaml": true,
+	"gateway-proxy-settings.yaml": true,
 }
 
 // TestLifecycleFixtures asserts the integrity of the declarative lifecycle
@@ -189,6 +189,16 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		collect("scenario "+scn.Name+" (PR pre-install)", scn.PreInstall)
 		collect("scenario "+scn.Name+" (PR post-deploy)", scn.PostDeploy)
 		addScenarioFlows(scn)
+	}
+	for _, scn := range cfg.Integration.Case.Nightly.Scenarios {
+		collect("scenario "+scn.Name+" (nightly pre-install)", scn.PreInstall)
+		collect("scenario "+scn.Name+" (nightly post-deploy)", scn.PostDeploy)
+		addScenarioFlows(scn)
+	}
+	// Validate dependency-profile pre-install fixtures directly, so a typo in a
+	// profile not yet referenced by any scenario is still caught.
+	for profName, prof := range cfg.Integration.DependencyProfiles {
+		collect("dependency-profile "+profName+" (pre-install)", prof.PreInstall)
 	}
 	for flowName, hooks := range cfg.Integration.Flows {
 		if !knownFlows[flowName] {

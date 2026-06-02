@@ -62,7 +62,22 @@ type CITestConfig struct {
 		// e.g. pre-upgrade scripts shared by all scenarios using a given flow.
 		// Keys are flow strings such as "upgrade-patch", "upgrade-minor".
 		Flows map[string]*FlowHooks `yaml:"flows,omitempty"`
+		// DependencyProfiles are reusable companion-chart bundles keyed by name.
+		// Scenarios reference them via Profiles; ResolveProfiles expands the
+		// references into each scenario's Dependencies and PreInstall at load
+		// time, so common companion setup is declared once instead of repeated
+		// in every scenario.
+		DependencyProfiles map[string]DependencyProfile `yaml:"dependency-profiles,omitempty"`
 	} `yaml:"integration"`
+}
+
+// DependencyProfile is a reusable bundle of companion-chart dependencies and an
+// optional pre-install hook, referenced by name from a scenario's Profiles list.
+// PreInstall, when set, must use fixtures (not a script) so profiles compose
+// cleanly across scenarios.
+type DependencyProfile struct {
+	Dependencies []ChartDependency `yaml:"dependencies,omitempty"`
+	PreInstall   *LifecycleHook    `yaml:"pre-install,omitempty"`
 }
 
 // LifecycleHook declares a fixture or shell script that runs at a defined
@@ -174,8 +189,17 @@ type CIScenario struct {
 	SkipE2E bool `yaml:"skip-e2e,omitempty"`
 	SkipIT  bool `yaml:"skip-it,omitempty"`
 
+	// Profiles names reusable dependency profiles (see
+	// integration.dependency-profiles) to expand into this scenario's
+	// Dependencies and PreInstall. Profiles are applied in list order, before
+	// any scenario-inline Dependencies. Special scenarios may omit Profiles and
+	// declare Dependencies/PreInstall directly.
+	Profiles []string `yaml:"profiles,omitempty"`
+
 	// Dependencies specifies companion charts to deploy before the main Camunda chart.
 	// Each dependency is deployed as a separate Helm release in the same namespace.
+	// After ResolveProfiles, this holds the fully-expanded list (profile
+	// dependencies first, then any inline entries).
 	Dependencies []ChartDependency `yaml:"dependencies,omitempty"`
 
 	// PrefixKey, when set, overrides the scenario name for index prefix
@@ -240,7 +264,129 @@ func LoadCITestConfig(chartDir string) (*CITestConfig, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse ci-test-config.yaml from %s: %w", chartDir, err)
 	}
+	if err := ResolveProfiles(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to resolve dependency profiles in %s: %w", chartDir, err)
+	}
 	return &cfg, nil
+}
+
+// ResolveProfiles expands every scenario's Profiles into its Dependencies and
+// PreInstall, in place. Profile dependencies are placed first, in profile-list
+// order, followed by any scenario-inline Dependencies. A profile pre-install
+// fixture is merged into the scenario PreInstall (fixtures are unioned). The
+// resolution is deterministic so that matrix list/run output is unchanged from
+// the equivalent fully-inlined config. Returns an error for an unknown profile
+// reference or a pre-install mode conflict.
+func ResolveProfiles(cfg *CITestConfig) error {
+	if cfg == nil {
+		return nil
+	}
+	profiles := cfg.Integration.DependencyProfiles
+	// Iterate by index over each backing slice directly so the in-place writes
+	// in resolveScenarioProfiles are obviously reaching the real structs.
+	for i := range cfg.Integration.Case.PR.Scenarios {
+		if err := resolveScenarioProfiles(&cfg.Integration.Case.PR.Scenarios[i], profiles); err != nil {
+			return err
+		}
+	}
+	for i := range cfg.Integration.Case.Nightly.Scenarios {
+		if err := resolveScenarioProfiles(&cfg.Integration.Case.Nightly.Scenarios[i], profiles); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// resolveScenarioProfiles expands a single scenario's Profiles in place.
+func resolveScenarioProfiles(s *CIScenario, profiles map[string]DependencyProfile) error {
+	if len(s.Profiles) == 0 {
+		return nil
+	}
+	var deps []ChartDependency
+	for _, name := range s.Profiles {
+		p, ok := profiles[name]
+		if !ok {
+			return fmt.Errorf("scenario %q references unknown dependency profile %q", s.Name, name)
+		}
+		for _, d := range p.Dependencies {
+			// Deep-copy EnvVars so two scenarios expanding the same profile do
+			// not alias one slice (mirrors the fixtures copy in
+			// mergeProfilePreInstall).
+			if len(d.EnvVars) > 0 {
+				d.EnvVars = append([]string(nil), d.EnvVars...)
+			}
+			deps = append(deps, d)
+		}
+		merged, err := mergeProfilePreInstall(s.Name, name, s.PreInstall, p.PreInstall)
+		if err != nil {
+			return err
+		}
+		s.PreInstall = merged
+	}
+	// Scenario-inline dependencies follow the profile-derived ones.
+	deps = append(deps, s.Dependencies...)
+	s.Dependencies = deps
+	// Clear Profiles so ResolveProfiles is idempotent: a second call must not
+	// re-expand and double the already-resolved dependencies.
+	s.Profiles = nil
+	return nil
+}
+
+// mergeProfilePreInstall folds a profile's pre-install hook into the scenario's
+// current pre-install. Profiles may only contribute fixtures; the result unions
+// fixtures. Merging into a scenario script pre-install (or a profile declaring a
+// script) is a conflict.
+func mergeProfilePreInstall(scenario, profile string, existing, add *LifecycleHook) (*LifecycleHook, error) {
+	if add == nil {
+		return existing, nil
+	}
+	if add.Script != "" {
+		return nil, fmt.Errorf("scenario %q: dependency profile %q pre-install must use fixtures, not script", scenario, profile)
+	}
+	if existing == nil {
+		clone := *add
+		clone.Fixtures = append([]string(nil), add.Fixtures...)
+		return &clone, nil
+	}
+	if existing.Script != "" {
+		return nil, fmt.Errorf("scenario %q: cannot merge fixtures from dependency profile %q into a script pre-install", scenario, profile)
+	}
+	// Concatenate descriptions so no profile's rationale is silently dropped
+	// when two fixture-contributing hooks merge.
+	desc := existing.Description
+	if add.Description != "" {
+		if desc != "" {
+			desc += "\n" + add.Description
+		} else {
+			desc = add.Description
+		}
+	}
+	// Ordering: existing fixtures (the scenario inline hook, or the accumulator
+	// from earlier profiles in list order) come first, then this profile's, so
+	// multiple fixture-contributing profiles yield profile-list order. Duplicate
+	// fixture names are dropped (first occurrence wins) so e.g. an inline
+	// postgresql-cluster.yaml plus a profile that also provides it does not
+	// apply the same manifest twice.
+	merged := &LifecycleHook{
+		Fixtures:    dedupeStrings(append(append([]string(nil), existing.Fixtures...), add.Fixtures...)),
+		Description: desc,
+	}
+	return merged, nil
+}
+
+// dedupeStrings returns s with duplicate values removed, preserving first-seen
+// order.
+func dedupeStrings(s []string) []string {
+	seen := make(map[string]bool, len(s))
+	out := s[:0]
+	for _, v := range s {
+		if seen[v] {
+			continue
+		}
+		seen[v] = true
+		out = append(out, v)
+	}
+	return out
 }
 
 // PermittedFlows holds the parsed content of .github/config/permitted-flows.yaml.
