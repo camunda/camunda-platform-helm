@@ -1,4 +1,8 @@
 {{- if .Values.webModeler.enabled -}}
+{{- $deploymentStrategy := .Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate" -}}
+{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
+{{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +11,7 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   strategy:
-    type: RollingUpdate
+    type: {{ $deploymentStrategy }}
   replicas: {{ .Values.webModeler.restapi.replicas }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
