@@ -320,13 +320,26 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
 
     {{/* (2) caBundle provides CA trust, not encryption. A plaintext datastore URL
-           means traffic is still unencrypted despite the bundle being set. */}}
+           means traffic is still unencrypted despite the bundle being set.
+           Orchestration secondaryStorage URLs are full scheme strings;
+           Optimize database URLs are split into a separate .protocol field. */}}
     {{- range $url := (list .Values.orchestration.data.secondaryStorage.opensearch.url .Values.orchestration.data.secondaryStorage.elasticsearch.url) }}
       {{- if and $url (hasPrefix "http://" $url) }}
         {{- $warningMessage := printf "%s %s %s"
             "[camunda][warning]"
             (printf "global.tls.caBundle is set, but the secondary-storage URL '%s' is plaintext http://." $url)
             "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the URL to https:// to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+    {{- range $db := (list "opensearch" "elasticsearch") }}
+      {{- $u := index $.Values.optimize.database $db "url" }}
+      {{- if and $u $u.protocol (eq (lower $u.protocol) "http") }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but optimize.database.%s.url.protocol is plaintext 'http'." $db)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the protocol to https to actually encrypt the connection."
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
@@ -339,6 +352,7 @@ The following values inside your values.yaml need to be set but were not:
         (dict "comp" "optimize" "env" .Values.optimize.env)
         (dict "comp" "connectors" "env" .Values.connectors.env)
         (dict "comp" "identity" "env" .Values.identity.env)
+        (dict "comp" "webModeler.restapi" "env" (or .Values.camundaHub.webModeler.restapi.env .Values.webModeler.restapi.env))
     }}
     {{- range $c := $envComponents }}
       {{- range $e := $c.env }}
