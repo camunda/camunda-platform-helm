@@ -216,16 +216,23 @@ type ChartDependency struct {
 	RepoURL string `yaml:"repo-url,omitempty" json:"repo-url,omitempty"`
 }
 
-// LoadCITestConfig reads and parses the ci-test-config.yaml for a given chart directory.
-func LoadCITestConfig(chartDir string) (*CITestConfig, error) {
-	path := filepath.Join(chartDir, "test", "ci-test-config.yaml")
+// LoadCITestConfig reads and parses the CI test config for a given chart directory.
+// By default it reads test/ci-test-config.yaml. Pass an optional filename (e.g.
+// "ci-reference-scenarios.yaml") to load an alternative config from the same
+// test/ directory without affecting any existing callers.
+func LoadCITestConfig(chartDir string, configFile ...string) (*CITestConfig, error) {
+	name := "ci-test-config.yaml"
+	if len(configFile) > 0 && configFile[0] != "" {
+		name = configFile[0]
+	}
+	path := filepath.Join(chartDir, "test", name)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read ci-test-config.yaml from %s: %w", chartDir, err)
+		return nil, fmt.Errorf("failed to read %s from %s: %w", name, chartDir, err)
 	}
 	var cfg CITestConfig
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse ci-test-config.yaml from %s: %w", chartDir, err)
+		return nil, fmt.Errorf("failed to parse %s from %s: %w", name, chartDir, err)
 	}
 	return &cfg, nil
 }
