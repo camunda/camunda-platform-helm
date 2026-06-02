@@ -13,6 +13,8 @@ spring:
 server:
   address: 0.0.0.0
   port: {{ .Values.orchestration.service.httpPort }}
+  tomcat:
+    max-http-form-post-size: {{ .Values.global.config.requestBodySize | quote }}
   {{- if .Values.orchestration.contextPath }}
   servlet:
     context-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
