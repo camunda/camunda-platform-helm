@@ -24,6 +24,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 )
 
@@ -68,8 +69,8 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
-				"identity.enabled":                "true",
-				"console.enabled":                 "true",
+				"identity.enabled": "true",
+				"console.enabled":  "true",
 				"camundaHub.console.service.annotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -83,4 +84,39 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ServiceTest) TestLegacyServiceAccountEnabledOverrideDoesNotBreakDeploymentReference() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"console.enabled":                           "true",
+			"identity.enabled":                          "true",
+			"console.serviceAccount.enabled":            "false",
+			"camundaHub.console.serviceAccount.enabled": "true",
+			"global.elasticsearch.enabled":              "true",
+		},
+	}
+	templates := []string{
+		"templates/console/serviceaccount.yaml",
+		"templates/console/deployment.yaml",
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, templates)
+
+	var serviceAccount coreV1.ServiceAccount
+	var deployment appsv1.Deployment
+	for _, object := range strings.Split(output, "---") {
+		if strings.Contains(object, "kind: ServiceAccount") {
+			helm.UnmarshalK8SYaml(s.T(), object, &serviceAccount)
+		}
+		if strings.Contains(object, "kind: Deployment") {
+			helm.UnmarshalK8SYaml(s.T(), object, &deployment)
+		}
+	}
+
+	// then
+	s.Require().NotEmpty(serviceAccount.Name)
+	s.Require().Equal(serviceAccount.Name, deployment.Spec.Template.Spec.ServiceAccountName)
 }
