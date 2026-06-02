@@ -1239,57 +1239,58 @@ points -Djavax.net.ssl.trustStore at this file.
 
 This is the JVM-side counterpart to caBundleEnv (SSL_CERT_FILE): the
 JVM does not honour SSL_CERT_FILE, so we have to give it a real
-truststore. Runs `keytool` from a dedicated JRE image (default
-eclipse-temurin:21-jre — see "Image and pull policy" below for why
-we don't reuse the main container image). Runs as a non-root user
-with readOnlyRootFilesystem and dropped capabilities.
+truststore. Runs `keytool` as a non-root user with readOnlyRootFilesystem
+and dropped capabilities.
 
-Usage (inside .spec.initContainers):
+Usage (inside .spec.initContainers) — pass the calling component's own
+resolved image so the init container reuses an image the customer has
+already mirrored and inherits that image's cacerts:
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-  {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+  {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.orchestration))) | nindent 8 }}
   {{- end }}
 
-Image and pull policy come from global.tls.caBundle.image and
-global.tls.caBundle.imagePullPolicy. We pin a dedicated JRE image
-(eclipse-temurin:21-jre by default) because not every Camunda
-component image exposes JAVA_HOME consistently — using a known JRE
-image keeps the keytool step robust across orchestration / optimize /
-identity / connectors / console / web-modeler restapi.
+Image: defaults to the calling component's own image (the `image` key of
+the dict). That image already ships a JRE with keytool, it is one the
+customer has already mirrored (so this adds NO new registry dependency in
+air-gapped installs), and copying its cacerts preserves any CAs baked into
+a custom build. `global.tls.caBundle.image` is an explicit override (with
+`global.image.registry` prefixing) for the rare image that lacks keytool.
+
+SecurityContext: comes from global.tls.caBundle.containerSecurityContext,
+rendered through common.compatibility.renderSecurityContext so OpenShift's
+adaptSecurityContext drops the fixed runAsUser/runAsGroup and lets the
+restricted SCC assign a namespace-range UID.
 */}}
 {{- define "camundaPlatform.caBundleInitContainer" -}}
-{{- $defaultImg := "eclipse-temurin:21-jre" -}}
-{{- $img := .Values.global.tls.caBundle.image | default $defaultImg -}}
-{{- /* Prepend global.image.registry when set AND the user has not
-       overridden the image. A regex-based "is this fully qualified"
-       detection breaks for port-based registries with no dots
-       (`localhost:5000/foo`, `myregistry:5000/foo`); we sidestep that
-       by only prefixing the chart default. If the user supplied an
-       explicit override they are responsible for making it routable
-       in their environment. */ -}}
-{{- if and (eq $img $defaultImg) .Values.global.image .Values.global.image.registry -}}
-{{-   $img = printf "%s/%s" .Values.global.image.registry $img -}}
+{{- $ctx := .context -}}
+{{- $img := .image -}}
+{{- /* An explicit global.tls.caBundle.image override wins over the
+       component image; only that override gets the global.image.registry
+       prefix (the component image is already fully resolved). */ -}}
+{{- if $ctx.Values.global.tls.caBundle.image -}}
+{{-   $img = $ctx.Values.global.tls.caBundle.image -}}
+{{-   if and $ctx.Values.global.image $ctx.Values.global.image.registry -}}
+{{-     $img = printf "%s/%s" $ctx.Values.global.image.registry $img -}}
+{{-   end -}}
 {{- end -}}
 - name: ca-bundle-truststore-init
   image: {{ $img | quote }}
-  imagePullPolicy: {{ .Values.global.tls.caBundle.imagePullPolicy | default "IfNotPresent" | quote }}
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 1000
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    capabilities:
-      drop: ["ALL"]
-    seccompProfile:
-      type: RuntimeDefault
+  imagePullPolicy: {{ $ctx.Values.global.tls.caBundle.imagePullPolicy | default $ctx.Values.global.image.pullPolicy | quote }}
+  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $ctx.Values.global.tls.caBundle.containerSecurityContext "context" $ctx) | nindent 4 }}
   command: ["sh", "-c"]
   args:
     - |
       set -eu
       umask 022
+      # Locate the JRE. Prefer JAVA_HOME; otherwise derive it from keytool
+      # on PATH. Reusing the component's own image means we cannot assume a
+      # single layout, so resolve it at runtime and call keytool by full
+      # path (it is not always on PATH even when JAVA_HOME is set).
+      JH="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v keytool)")")")}"
+      KEYTOOL="$JH/bin/keytool"
       # Java 21 default cacerts is PKCS12; copy it as-is so we keep all
-      # public CAs and add our user CA on top.
-      cp -L "$JAVA_HOME/lib/security/cacerts" /var/camunda/tls-truststore/cacerts
+      # public CAs (including any baked into this image) and add the user CA.
+      cp -L "$JH/lib/security/cacerts" /var/camunda/tls-truststore/cacerts
       chmod 0644 /var/camunda/tls-truststore/cacerts
       # Split a multi-cert PEM bundle into single-cert files and import
       # each under its own alias. keytool -importcert with a single
@@ -1311,7 +1312,7 @@ identity / connectors / console / web-modeler restapi.
         # the literal pattern is iterated once. Skip non-files.
         [ -f "$cert" ] || continue
         i=$((i+1))
-        keytool -importcert \
+        "$KEYTOOL" -importcert \
           -noprompt \
           -trustcacerts \
           -keystore /var/camunda/tls-truststore/cacerts \

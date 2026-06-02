@@ -527,13 +527,68 @@
                                 },
                                 "image": {
                                     "type": "string",
-                                    "description": "dedicated init-container image with keytool used to import the user CA into a JKS at runtime. Defaults to eclipse-temurin:21-jre because not all Camunda component images expose JAVA_HOME consistently. Override if your environment requires an internal mirror.",
-                                    "default": "eclipse-temurin:21-jre"
+                                    "description": "OPTIONAL override for the truststore init-container image. Empty (default) reuses each component's OWN image: it already ships keytool, it is already mirrored in your registry (so this adds no new image dependency in air-gapped installs), and copying its cacerts preserves any CAs baked into a custom build. Set this only if a component image lacks keytool — when set, global.image.registry is prefixed.",
+                                    "default": ""
                                 },
                                 "imagePullPolicy": {
                                     "type": "string",
-                                    "description": "pull policy for the init-container image.",
-                                    "default": "IfNotPresent"
+                                    "description": "pull policy for the init-container image. Empty (default) inherits global.image.pullPolicy.",
+                                    "default": ""
+                                },
+                                "containerSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "runAsUser": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "runAsGroup": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": false
+                                        },
+                                        "readOnlyRootFilesystem": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "capabilities": {
+                                            "type": "object",
+                                            "properties": {
+                                                "drop": {
+                                                    "type": "array",
+                                                    "description": "",
+                                                    "default": [
+                                                        "ALL"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

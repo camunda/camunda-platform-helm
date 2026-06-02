@@ -27,7 +27,7 @@ spec:
       imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.connectors))) | nindent 8 }}
         {{- end }}
         {{- with .Values.connectors.initContainers }}
         {{- tpl (toYaml . | nindent 8) $ }}

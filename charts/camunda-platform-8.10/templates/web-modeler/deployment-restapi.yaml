@@ -33,7 +33,7 @@ spec:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "webModeler.restapi.image" $)) | nindent 8 }}
         {{- end }}
         {{- with (or .Values.camundaHub.webModeler.restapi.initContainers .Values.webModeler.restapi.initContainers) }}
         {{- tpl (toYaml . | nindent 8) $ }}

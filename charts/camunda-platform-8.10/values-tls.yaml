@@ -67,10 +67,12 @@ global:
       secret:
         existingSecret: "camunda-ca-bundle"
         existingSecretKey: "ca.crt"
-      # The init container is a dedicated JRE image (it needs `keytool`).
-      # Override if you mirror images internally.
-      image: "eclipse-temurin:21-jre"
-      imagePullPolicy: "IfNotPresent"
+      # The truststore init container reuses each component's OWN image by
+      # default (it already ships `keytool`), so air-gapped installs need no
+      # extra mirrored image. Only set `image:` to override for a component
+      # image that lacks keytool; `global.image.registry` is prefixed to it.
+      # image: ""
+      # imagePullPolicy: ""
 
 
 # -----------------------------------------------------------------------------

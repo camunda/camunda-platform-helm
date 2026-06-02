@@ -38,7 +38,7 @@ spec:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.orchestration))) | nindent 8 }}
         {{- end }}
         {{- with (coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) }}
         {{- tpl (toYaml . | nindent 8) $ }}
