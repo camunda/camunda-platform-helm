@@ -500,7 +500,6 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			Name: "TestLegacyESExporterAbsentWhenRdbmsAndOptimizeButNoElasticsearch",
 			Values: map[string]string{
 				"global.elasticsearch.enabled":                                  "false",
-				"elasticsearch.enabled":                                         "false",
 				"global.opensearch.enabled":                                     "true",
 				"global.opensearch.url.host":                                    "opensearch.example.com",
 				"orchestration.exporters.rdbms.enabled":                         "true",
@@ -535,7 +534,6 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeDatabaseElasticsearchOnly",
 			Values: map[string]string{
 				"global.elasticsearch.enabled":                                  "false",
-				"elasticsearch.enabled":                                         "false",
 				"global.opensearch.enabled":                                     "true",
 				"global.opensearch.url.host":                                    "opensearch.example.com",
 				"orchestration.exporters.rdbms.enabled":                         "true",
@@ -556,7 +554,6 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			Name: "TestLegacyESExporterAbsentForSupport32901CustomerConfig",
 			Values: map[string]string{
 				"global.elasticsearch.enabled":                                  "false",
-				"elasticsearch.enabled":                                         "false",
 				"global.opensearch.enabled":                                     "true",
 				"global.opensearch.url.host":                                    "opensearch.example.com",
 				"orchestration.exporters.rdbms.enabled":                         "true",
@@ -579,7 +576,6 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			Name: "TestLegacyESExporterAbsentWhenOnlyRdbmsNoOptimize",
 			Values: map[string]string{
 				"global.elasticsearch.enabled":                                  "false",
-				"elasticsearch.enabled":                                         "false",
 				"global.opensearch.enabled":                                     "true",
 				"global.opensearch.url.host":                                    "opensearch.example.com",
 				"orchestration.exporters.rdbms.enabled":                         "true",
