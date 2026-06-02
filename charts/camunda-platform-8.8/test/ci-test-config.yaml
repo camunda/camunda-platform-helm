@@ -75,11 +75,14 @@ integration:
           features: [enterprise]  # symlink: values/features/enterprise.yaml -> values-enterprise.yaml
           platforms: [gke]
         - name: upgrade-migration
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
           enabled: false
           flow: upgrade-minor
           helmVersion: 3.20.2
           auth: keycloak
           shortname: eske-upgm
+          tier: 2
           exclude: []
           features: [migrator]
           infra-type:
@@ -118,9 +121,12 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
-          enabled: false # our upgrade testing has issues with credentials on 8.7 -> 8.8 upgrade, so disabling for now to get green CI while we investigate
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
+          enabled: false
           exclude: []
           shortname: kemt
+          tier: 2
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
@@ -132,9 +138,12 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
           enabled: false
           exclude: []
           shortname: kerba
+          tier: 2
           auth: keycloak
           flow: upgrade-minor
           helmVersion: 3.20.2
@@ -166,9 +175,12 @@ integration:
               and elasticsearch-jks Secrets consumed by the Elasticsearch
               StatefulSet's TLS config.
         - name: keycloak-original
+          # Disabled until upgrade-minor applies the previous chart's ExternalSecret for step 1.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
           enabled: false
           exclude: []
           shortname: keyc
+          tier: 2
           auth: keycloak
           flow: upgrade-minor
           helmVersion: 3.20.2
@@ -252,6 +264,22 @@ integration:
           platforms: [eks]
           infra-type:
             eks: preemptible
+        - name: component-persistence
+          enabled: true
+          exclude: []
+          shortname: cprst
+          tier: 2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          # upgrade-minor disabled until step 1 applies the previous chart's ExternalSecret.
+          # See https://github.com/camunda/camunda-platform-helm/issues/6262.
+          flow: install
+          helmVersion: 3.20.2
+          infra-type:
+            gke: distroci
+          features: [persistence,migrator]
+          platforms: [gke]
 
         # ===========================================================================
         # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
