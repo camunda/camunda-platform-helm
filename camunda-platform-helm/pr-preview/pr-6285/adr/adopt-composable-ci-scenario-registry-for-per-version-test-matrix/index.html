@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6285/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6285/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6285/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/runtime~main.190d1af5.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/main.c7c37fbb.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/runtime~main.3eb5b754.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6285/assets/js/main.1f2157c9.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -21,32 +21,28 @@
 <p>The Camunda Helm chart&#x27;s CI integration test matrix is defined by one
 <code>ci-test-config.yaml</code> per chart version at
 <code>charts/camunda-platform-{8.7,8.8,8.9,8.10}/test/ci-test-config.yaml</code>.
-Each file is an ordered list under <code>integration.case.pr</code> and
-<code>integration.case.nightly</code>. Each list item is an inline <code>CIScenario</code>
-blob mixing identity, persistence, platform/infra routing, flow
-selection, lifecycle hooks, companion-chart dependencies, skip policy,
-shortname, prefix key, and Helm version override. The 8.10 file is
-~1200 lines, ~30 lines per scenario.</p>
+Each file is an ordered list under
+<code>integration.case.pr.scenario</code>; each list item is a ~30-line inline
+<code>CIScenario</code> blob mixing identity, persistence, platform/infra,
+flow, tier, lifecycle hooks, dependencies, and scenario scalars.
+The 8.10 file is ~1200 lines.</p>
 <p>The 100-commit sample in
 <a href="https://github.com/camunda/camunda-platform-helm/issues/6264" target="_blank" rel="noopener noreferrer" class="">#6264</a>
 shows 11–16 edits per version file. Structurally independent
 changes (new scenarios, hook tweaks, infra routing, skip policy)
 collide as merge conflicts in the same ordered list — structural
 conflicts, not stale-branch artifacts.</p>
-<p>Three duplication pressures compound it:</p>
+<p>Two duplication pressures compound it:</p>
 <ul>
 <li class=""><strong>Inlined hooks</strong> — identical <code>pre-install</code> fixtures and descriptions
 copied across every CloudNativePG-using scenario.</li>
 <li class=""><strong>Inlined companion dependencies</strong> — same <code>internal-keycloak-26</code> and
 <code>elastic/elasticsearch 8.5.1</code> repo+values blocks copied across every
 consumer; a single bump touches many scenarios × four files.</li>
-<li class=""><strong><code>pr</code> vs <code>nightly</code></strong> — scheduling a scenario in both tiers requires
-copying the full blob and toggling <code>enabled</code>.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
 <p>Applies to all currently supported chart versions — <strong>8.7, 8.8, 8.9,
-8.10</strong>. Versions 8.3–8.6 remain on the legacy file until removed; they
-are not migrated.</p>
+8.10</strong>.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
 <ul>
 <li class=""><strong>Conflict surface area.</strong> Independent scenario or policy changes
@@ -55,10 +51,10 @@ must touch independent files. Primary motivation from #6264.</li>
 without scrolling a 1200-line file; a hook or dependency change must
 show its full blast radius via ID references.</li>
 <li class=""><strong>Migration safety.</strong> <code>deploy-camunda matrix list/run</code> MUST
-produce equivalent CI matrices during transition, enforced by the
-equivalence test (item 5).</li>
-<li class=""><strong>Single source of truth.</strong> While both layouts exist, exactly one is
-hand-edited; the other is generated and CI-guarded against drift.</li>
+produce a matrix equivalent to the pre-migration one at the
+migration cut, enforced by the equivalence test (item 4).</li>
+<li class=""><strong>Single source of truth.</strong> Post-migration, only the registry is
+edited; the legacy file is a frozen snapshot with a header comment.</li>
 <li class=""><strong>Internal scope.</strong> Registry is a CI-internal mechanism. MUST NOT
 alter user-facing chart values, templates, golden files, or
 <code>values.schema.json</code>. MUST NOT change the <code>CITestConfig</code> struct
@@ -69,107 +65,86 @@ consumed by <code>deploy-camunda matrix run</code>.</li>
 <li class=""><strong>Keep the monolithic file; rely on smaller PRs and rebase
 discipline.</strong> Rejected — conflict pattern is structural; process
 cannot remove file-level adjacency.</li>
-<li class=""><strong>Sort each version&#x27;s scenario list alphabetically by <code>name</code>.</strong>
-Rejected — reduces but does not eliminate adjacency; leaves hooks
-and dependencies duplicated; breaks reviewer ordering.</li>
-<li class=""><strong>Split only <code>dependencies</code> into a shared file.</strong> Rejected — removes
-one duplication but leaves hooks, infra, identity, persistence, and
-platforms coupled in the same ordered list.</li>
-<li class=""><strong>Composable registry; each concept its own file, referenced by ID
-from a thin per-version manifest (chosen).</strong> Independent concepts →
-independent files. Composition becomes data, validated cross-file
-at load time. Generalizes the <code>permitted-flows.yaml</code> precedent.</li>
+<li class=""><strong>Full composable registry; identity, persistence, flows,
+platforms, infra, features, and e2e each extracted into their own
+subdirectory alongside scenarios, hooks, and dependencies.</strong>
+Rejected — scenario-specific, not cited in #6264 as duplication
+sources; extracting them imposes multi-file reads without removing
+conflict surface.</li>
+<li class=""><strong>Cross-version composable registry; one repo-global tree shared
+by 8.7/8.8/8.9/8.10 with per-version field overrides.</strong> Rejected —
+version divergence collapses shared defaults into per-version
+overrides, and the override layer becomes the new
+single-point-of-conflict.</li>
+<li class=""><strong>Scenarios into their own files, plus hooks and dependencies
+extracted; everything else inline (chosen).</strong> Targets exactly the
+duplication sources #6264 cites — the ordered scenario list and
+the inlined hooks/dependencies. Layout in item 1.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
-<p>A composable CI scenario registry rooted at <code>test/ci/registry/</code>
-becomes the source of truth for the integration test matrix. The
-legacy per-version <code>charts/camunda-platform-&lt;X.Y&gt;/test/ci-test-config.yaml</code> files
-remain as <strong>generated compatibility artifacts</strong> during migration and
-are removed once all four supported versions have migrated and held
-green for one full nightly cycle on <code>main</code>. The following constraints
-are normative:</p>
+<p>A composable CI scenario registry at
+<code>charts/camunda-platform-&lt;X.Y&gt;/test/ci/registry/</code> becomes the source
+of truth for that version&#x27;s integration test matrix. <code>deploy-camunda</code>
+reads the registry directly once migrated; the legacy
+<code>ci-test-config.yaml</code> is frozen as the pre-migration snapshot for
+item 4 and is deleted once all four versions have migrated and held
+green for one nightly cycle on <code>main</code>. Normative constraints:</p>
 <ol>
 <li class="">
-<p><strong>Layout.</strong> Single repo-global path with one subdirectory per
-concern; files keyed by stable ID matching the filename stem:</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#bfc7d5;--prism-background-color:#292d3e"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#bfc7d5;background-color:#292d3e"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#bfc7d5"><span class="token plain">test/ci/registry/</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  versions/&lt;X.Y&gt;.yaml       # per-version manifest: scenario refs grouped by schedule (pr | nightly), each with enabled, numeric tier, and optional field overrides</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  scenarios/&lt;id&gt;.yaml       # composition: refs to identity, persistence, flows, platforms, infra, e2e, hooks, deps, features; plus scenario scalars (shortname, prefix-key, helm-version-override)</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  identities/&lt;id&gt;.yaml      # keycloak | oidc | auth0 | basic | hybrid; references companion charts by `dependencies/&lt;id&gt;` ID, never inlines them</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  persistence/&lt;id&gt;.yaml     # elasticsearch | opensearch-embedded | opensearch-self-signed | rdbms | rdbms-self-signed</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  flows/&lt;id&gt;.yaml           # install | upgrade-patch | upgrade-minor | modular-upgrade-minor (owns pre-upgrade hook)</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  platforms/&lt;id&gt;.yaml       # gke | eks | openshift</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  infra/&lt;id&gt;.yaml           # distroci | preemptible | alwaysgreen — selects values-infra-&lt;id&gt;.yaml</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  hooks/&lt;id&gt;.yaml           # named pre-install / post-deploy LifecycleHook blocks</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  dependencies/&lt;id&gt;.yaml    # named ChartDependency entries (chart, version, repo, values-file)</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  features/&lt;id&gt;.yaml        # named feature toggles mapping to values/features/&lt;id&gt;.yaml (e.g. postgresql-companion, hub-pinned-images, migrator)</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  e2e/&lt;id&gt;.yaml             # smoke | full | skip-keycloak-dependent</span><br></div></code></pre></div></div>
-<p>Registry lives at repo root, not under <code>charts/&lt;version&gt;/</code>, because
-its purpose is cross-version sharing. ADR 0063 internalized test
-artifacts within this repository; it did not constrain them to the
-chart subtree.</p>
+<p><strong>Layout.</strong> Thin manifest plus <code>scenarios/</code>, <code>hooks/</code>,
+<code>dependencies/</code> subdirectories; files keyed by stable ID:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#bfc7d5;--prism-background-color:#292d3e"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#bfc7d5;background-color:#292d3e"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#bfc7d5"><span class="token plain">charts/camunda-platform-&lt;X.Y&gt;/test/ci/registry/</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  manifest.yaml             # ordered list of scenario IDs with numeric tier and enabled</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  scenarios/&lt;id&gt;.yaml       # one scenario per file; inlines all `CIScenario` fields (identity, persistence, platforms, infra-type, features, shortname, prefix-key, helmVersion, skip-e2e, skip-it, qa, image-tags, upgrade, enterprise) except `flow`, `pre-install`, `post-deploy`, and `dependencies`</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  hooks/&lt;id&gt;.yaml           # named pre-install / post-deploy LifecycleHook blocks</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  dependencies/&lt;id&gt;.yaml    # named ChartDependency entries (chart, version, repo, values-file)</span><br></div></code></pre></div></div>
+<p>Registry lives under the version&#x27;s chart subtree, matching the
+ADR 0063 precedent.</p>
 <p>Scenario files carry a plural <code>flows: [&lt;flow-id&gt;, …]</code>. The loader
-fans out one registry scenario × N flows into N <code>CIScenario</code>
-entries with distinct singular <code>Flow</code>, preserving the existing
-<code>CITestConfig</code> struct unchanged. Numeric <code>tier</code> and <code>enabled</code> live
-on the version-manifest reference, not the shared scenario file.
-Inline companion-chart blocks in identity or version files MUST
-NOT be permitted; identities reference <code>dependencies/&lt;id&gt;</code> by ID.</p>
-<p>Version-scoped paths (values-layer files under <code>chart-full-setup/values/</code>,
-hook manifests under <code>common/resources/</code>, hook scripts under
-<code>pre-setup-scripts/</code>) are named by basename and resolved by the
-loader against the version&#x27;s
-<code>charts/camunda-platform-&lt;X.Y&gt;/test/integration/scenarios/</code> tree.</p>
+fans out one scenario × N flows into N <code>CIScenario</code> entries with
+distinct singular <code>Flow</code>, preserving the existing <code>CITestConfig</code>
+struct unchanged. Inline companion-chart blocks MUST NOT be
+permitted; identity sections reference <code>dependencies/&lt;id&gt;</code> by ID.</p>
+<p>Values-layer files (under <code>chart-full-setup/values/</code>), hook
+manifests (<code>common/resources/</code>), and hook scripts
+(<code>pre-setup-scripts/</code>) are named by basename and resolved against
+the same version&#x27;s <code>test/integration/scenarios/</code> tree.</p>
 </li>
 <li class="">
 <p><strong>Loader.</strong> <code>scripts/deploy-camunda/matrix/config.go</code> gains
-<code>LoadRegistry(repoRoot, version string) (*CITestConfig, error)</code>,
-which resolves a version manifest&#x27;s ID references against the
+<code>LoadRegistry(chartDir string) (*CITestConfig, error)</code>, which
+resolves the manifest&#x27;s ID references against the colocated
 registry and returns the existing <code>CITestConfig</code> struct. Legacy
-<code>LoadCITestConfig(chartDir)</code> is retained until all four supported
-versions have migrated, then removed.</p>
+<code>LoadCITestConfig</code> is retained until all four supported versions
+have migrated, then removed.</p>
 </li>
 <li class="">
 <p><strong>Validation.</strong> A new <code>RegistryValidator</code> enforces at load time:</p>
 <ul>
-<li class="">Every referenced ID resolves to a file on disk.</li>
-<li class="">IDs and shortnames are unique within scope.</li>
-<li class="">Per-version × platform × flow tuples do not duplicate.</li>
-<li class="">Version-scoped paths (hooks, dependency values-files, scenario
-values-layer files, <code>features/&lt;id&gt;</code> → <code>values/features/&lt;id&gt;.yaml</code>)
-resolve under the target version&#x27;s tree.</li>
-<li class="">Version × platform × flow combinations are not denied by
+<li class="">Every referenced hook and dependency ID resolves to a file.</li>
+<li class="">Scenario IDs and shortnames are unique.</li>
+<li class="">Platform × flow tuples do not duplicate.</li>
+<li class="">Referenced basenames (hook manifests, hook scripts, dependency
+values-files, scenario values-layer files, feature values-files)
+resolve under <code>test/integration/scenarios/</code>.</li>
+<li class="">Platform × flow combinations are not denied by
 <code>.github/config/permitted-flows.yaml</code>.</li>
 </ul>
-<p>Existing <code>LifecycleHook.Validate</code> plain-filename rule is reused.</p>
 </li>
 <li class="">
-<p><strong>Per-version overrides.</strong> Per-version scenario drift (e.g. 8.7
-lacks <code>modular-upgrade-minor</code>; per-version values-file paths
-differ) is expressed as field-level overrides on the scenario
-reference in <code>versions/&lt;X.Y&gt;.yaml</code>. Listed fields override the
-shared <code>scenarios/&lt;id&gt;.yaml</code>; absent fields inherit. Forking the
-shared scenario file per version MUST NOT be permitted.</p>
-<div class="language-yaml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#bfc7d5;--prism-background-color:#292d3e"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-yaml codeBlock_bY9V thin-scrollbar" style="color:#bfc7d5;background-color:#292d3e"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#bfc7d5"><span class="token comment" style="color:rgb(105, 112, 152);font-style:italic"># versions/8.7.yaml</span><span class="token plain"></span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain"></span><span class="token key atrule">pr</span><span class="token punctuation" style="color:rgb(199, 146, 234)">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  </span><span class="token punctuation" style="color:rgb(199, 146, 234)">-</span><span class="token plain"> </span><span class="token key atrule">id</span><span class="token punctuation" style="color:rgb(199, 146, 234)">:</span><span class="token plain"> orchestration</span><span class="token punctuation" style="color:rgb(199, 146, 234)">-</span><span class="token plain">upgrade</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">    </span><span class="token key atrule">tier</span><span class="token punctuation" style="color:rgb(199, 146, 234)">:</span><span class="token plain"> </span><span class="token number" style="color:rgb(247, 140, 108)">1</span><span class="token plain"></span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">    </span><span class="token key atrule">enabled</span><span class="token punctuation" style="color:rgb(199, 146, 234)">:</span><span class="token plain"> </span><span class="token boolean important" style="color:rgb(255, 88, 116)">true</span><span class="token plain"></span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">    </span><span class="token key atrule">flows</span><span class="token punctuation" style="color:rgb(199, 146, 234)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(199, 146, 234)">[</span><span class="token plain">upgrade</span><span class="token punctuation" style="color:rgb(199, 146, 234)">-</span><span class="token plain">patch</span><span class="token punctuation" style="color:rgb(199, 146, 234)">,</span><span class="token plain"> upgrade</span><span class="token punctuation" style="color:rgb(199, 146, 234)">-</span><span class="token plain">minor</span><span class="token punctuation" style="color:rgb(199, 146, 234)">]</span><span class="token plain">   </span><span class="token comment" style="color:rgb(105, 112, 152);font-style:italic"># drops modular-upgrade-minor for 8.7</span><span class="token plain"></span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain"></span><span class="token key atrule">nightly</span><span class="token punctuation" style="color:rgb(199, 146, 234)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(199, 146, 234)">[</span><span class="token punctuation" style="color:rgb(199, 146, 234)">]</span><br></div></code></pre></div></div>
-</li>
-<li class="">
-<p><strong>Equivalence test.</strong> A Go test in
-<code>scripts/deploy-camunda/matrix/</code> MUST, per active chart version,
-load both the legacy <code>ci-test-config.yaml</code> and the registry and
-assert the two <code>*CITestConfig</code> values are equal via <code>cmp.Diff</code>,
-with explicit slice-order normalization for order-independent
-fields (<code>Platforms</code>) and for the post-fan-out scenario list itself
-(registry-derived scenarios are emitted in fan-out order, legacy
-scenarios in file order). Gates the per-version rollout and remains
-until that version&#x27;s legacy file is removed.</p>
+<p><strong>Equivalence test (one-shot, in the migration PR).</strong> A Go test
+in <code>scripts/deploy-camunda/matrix/</code> loads both the legacy
+<code>ci-test-config.yaml</code> and the registry and asserts the two
+<code>*CITestConfig</code> values equal via <code>cmp.Diff</code>, with slice-order
+normalization for order-independent fields and the post-fan-out
+scenario list. Proves the migration cut; not a long-running
+invariant. Post-migration regressions caught by the nightly
+integration suite.</p>
 </li>
 <li class="">
 <p><strong>Migration order and source switch.</strong> 8.10 migrates first
-(highest churn); 8.9, 8.8, 8.7 follow after 8.10&#x27;s equivalence
-test holds green on <code>main</code> for one full nightly run. Each
-migration is a single PR: registry files added, legacy
-<code>ci-test-config.yaml</code> regenerated and committed for review-diff
-visibility, equivalence test enabled. The loader picks the
-registry when <code>test/ci/registry/versions/&lt;X.Y&gt;.yaml</code> exists and
-falls back to <code>LoadCITestConfig</code> otherwise. No runtime flag.</p>
-</li>
-<li class="">
-<p><strong>Generated-file guard.</strong> A new <code>make ci.registry-check</code>, invoked
-from <code>make helm.lint-all</code>, regenerates each migrated version&#x27;s
-<code>ci-test-config.yaml</code> and fails if the working tree differs. The
-generated file carries a header marker
-(<code># GENERATED FROM test/ci/registry — DO NOT EDIT</code>); the guard
-uses it to detect direct edits and point at the corresponding
-registry file. Unmigrated versions lack the marker and are skipped.</p>
+(highest churn); 8.9, 8.8, 8.7 follow after 8.10 holds green on
+<code>main</code> for one full nightly run. Each migration is a single PR:
+registry files added, equivalence test (item 4) green, legacy
+file frozen with header comment. At runtime the loader picks the
+registry when <code>&lt;chartDir&gt;/test/ci/registry/manifest.yaml</code> exists,
+else falls back to <code>LoadCITestConfig</code>. No runtime flag.</p>
 </li>
 </ol>
 <p>Follow-ups (not in the first-landing 8.10 PR): 8.9 / 8.8 / 8.7
@@ -180,34 +155,25 @@ into registry data.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
 <ul>
 <li class="">Adding a scenario creates one <code>scenarios/&lt;id&gt;.yaml</code> and one
-version-manifest line. Two unrelated scenario PRs collide only if
-they touch the same scenario or the same shared policy file.</li>
-<li class="">Editing a hook, dependency, identity, persistence, or infra mapping
-touches one file; blast radius is visible via ID references.</li>
-<li class="">Scenario review shows a composed document instead of a 30-line
-inline blob in a 1200-line file.</li>
+manifest line. Two unrelated scenario PRs collide only if they
+touch the same scenario or the same shared file.</li>
+<li class="">Editing a hook or dependency touches one file; blast radius
+visible via ID references back to consuming scenarios.</li>
+<li class="">Scenario review shows a focused <code>scenarios/&lt;id&gt;.yaml</code> instead of
+a blob in a 1200-line file.</li>
 <li class=""><code>deploy-camunda matrix list/run</code> behavior is preserved; GHA
 workflows and external callers continue to work unchanged.</li>
-<li class="">The <code>permitted-flows.yaml</code> extraction precedent is generalized
-rather than duplicated.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative-consequences">Negative Consequences<a href="#negative-consequences" class="hash-link" aria-label="Direct link to Negative Consequences" title="Direct link to Negative Consequences" translate="no">​</a></h3>
 <ul>
-<li class="">During migration each migrated version has two sources of truth
-(registry + generated legacy file). The guard mitigates drift but
-contributors editing the legacy file see CI failures until they
-re-apply against the registry.</li>
+<li class="">Frozen legacy file mitigated only by header comment, not a CI
+guard; regressions surface in the nightly integration run, not at
+PR time.</li>
 <li class="">Reading a scenario&#x27;s effective configuration means reading its
-scenario file plus referenced identity, persistence, flow, hooks,
-and dependency files. Multi-file composition replaces long inline
-blobs as the cognitive cost.</li>
+file plus referenced hook and dependency files; two-hop
+composition replaces long inline blobs as the cognitive cost.</li>
 <li class="">New loader, validator, and equivalence test add maintenance surface
 in <code>scripts/deploy-camunda/matrix/</code>.</li>
-<li class="">Per-version field-level overrides (item 4) make drift between a
-shared default and a version override invisible without rendering
-the resolved scenario. The equivalence test catches it only during
-the migration window; post-migration, confirm an override&#x27;s effect
-via <code>deploy-camunda matrix list</code>.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="links">Links<a href="#links" class="hash-link" aria-label="Direct link to Links" title="Direct link to Links" translate="no">​</a></h2>
 <ul>
