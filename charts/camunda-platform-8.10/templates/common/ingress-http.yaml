@@ -72,7 +72,7 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
         {{- /* Orchestration Cluster */ -}}
-          {{- if and .Values.orchestration.enabled .Values.orchestration.contextPath }}
+          {{- if and .Values.orchestration.enabled .Values.orchestration.contextPath (ne (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true") }}
           # Orchestration.
           - backend:
               service:

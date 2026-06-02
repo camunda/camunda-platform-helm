@@ -588,9 +588,8 @@ Zeebe templates.
 */}}
 {{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
   {{- if .Values.orchestration.enabled -}}
-    {{- $proto := ternary "https" "http" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true") -}}
     {{-
-      printf "%s://%s%s" $proto
+      printf "http://%s%s"
         (include "orchestration.serviceNameHTTP" .)
         (.Values.orchestration.contextPath | default "")
     -}}
@@ -602,9 +601,8 @@ Zeebe templates.
 */}}
 {{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
   {{- if .Values.orchestration.enabled -}}
-    {{- $proto := ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true") -}}
     {{-
-      printf "%s://%s" $proto
+      printf "grpc://%s"
         (include "orchestration.serviceNameGRPC" .)
     -}}
   {{- end -}}

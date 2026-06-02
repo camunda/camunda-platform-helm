@@ -701,6 +701,21 @@ Zeebe templates.
   {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Returns true when the last orchestration.env entry for name has value true.
+*/}}
+{{- define "camundaPlatform.orchestrationEnvIsTrue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $enabled := false -}}
+  {{- range $env := $ctx.Values.orchestration.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- $enabled = (eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true") -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $enabled -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************

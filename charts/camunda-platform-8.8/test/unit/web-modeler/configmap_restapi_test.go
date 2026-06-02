@@ -385,45 +385,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	}
 }
 
-func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterInternalUrlsWithTls() {
-	// given
-	values := map[string]string{
-		"identity.enabled":                              "true",
-		"webModelerPostgresql.enabled":                  "false",
-		"global.zeebeClusterName":                       "test-zeebe",
-		"global.identity.auth.enabled":                  "true",
-		"orchestration.contextPath":                     "/orchestration",
-		"orchestration.security.authorizations.enabled": "false",
-		"orchestration.env[0].name":                     "CAMUNDA_API_GRPC_SSL_ENABLED",
-		"orchestration.env[1].name":                     "SERVER_SSL_ENABLED",
-	}
-	stringValues := map[string]string{
-		"orchestration.env[0].value": "true",
-		"orchestration.env[1].value": "true",
-	}
-	maps.Insert(values, maps.All(requiredValues))
-	options := &helm.Options{
-		SetValues:      values,
-		SetStrValues:   stringValues,
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication WebModelerRestAPIApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26500", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-	s.Require().Equal("https://camunda-platform-test-zeebe-gateway:8080/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
-}
-
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
 	// given
 	values := map[string]string{
