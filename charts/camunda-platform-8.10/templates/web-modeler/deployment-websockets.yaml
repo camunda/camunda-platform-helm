@@ -61,6 +61,9 @@ spec:
             - name: PUSHER_APP_PATH
               value: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+          {{- end }}
           {{- with (or .Values.camundaHub.webModeler.websockets.env .Values.webModeler.websockets.env) }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -120,6 +123,9 @@ spec:
           {{- with (or .Values.camundaHub.webModeler.websockets.extraConfiguration .Values.webModeler.websockets.extraConfiguration) }}
           {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
           {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+          {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+          {{- end }}
           {{- if (or .Values.camundaHub.webModeler.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) }}
           {{- (or .Values.camundaHub.webModeler.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) | toYaml | nindent 12 }}
           {{- end }}
@@ -130,6 +136,9 @@ spec:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-websockets-configuration
+      {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+      {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+      {{- end }}
       {{- if (or .Values.camundaHub.webModeler.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) }}
       {{- (or .Values.camundaHub.webModeler.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) | toYaml | nindent 8 }}
       {{- end }}

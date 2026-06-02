@@ -1129,6 +1129,89 @@ See common.java_tool_options_tls_env for full documentation.
 {{- end }}
 
 {{/*
+hasCaBundle
+Returns "true" when global.tls.caBundle.secret.existingSecret is set,
+"false" otherwise. Mirrors hasSecretConfig but specific to the OS-level
+CA bundle.
+Usage:
+  {{ if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+*/}}
+{{- define "camundaPlatform.hasCaBundle" -}}
+{{- if and .Values.global.tls .Values.global.tls.caBundle .Values.global.tls.caBundle.secret .Values.global.tls.caBundle.secret.existingSecret -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+caBundleVolume
+Emits the volume entry that exposes global.tls.caBundle as a single file
+under /etc/camunda/tls/ca.crt inside the container. Always called from a
+.spec.volumes list; the caller is responsible for the conditional. Use
+hasCaBundle to gate.
+
+The secret may carry the bundle under any key; we re-project it to the
+fixed filename "ca.crt" so SSL_CERT_FILE points at a stable path.
+
+Usage:
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleVolume" -}}
+- name: ca-bundle
+  secret:
+    secretName: {{ .Values.global.tls.caBundle.secret.existingSecret | quote }}
+    items:
+      - key: {{ .Values.global.tls.caBundle.secret.existingSecretKey | default "ca.crt" | quote }}
+        path: ca.crt
+    optional: false
+{{- end -}}
+
+{{/*
+caBundleVolumeMount
+Emits the volumeMount entry pointing at the ca-bundle volume. Mounts
+read-only at /etc/camunda/tls so SSL_CERT_FILE=/etc/camunda/tls/ca.crt
+resolves.
+
+Usage:
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleVolumeMount" -}}
+- name: ca-bundle
+  mountPath: /etc/camunda/tls
+  readOnly: true
+{{- end -}}
+
+{{/*
+caBundleEnv
+Emits env vars pointing at the mounted CA bundle so both native and
+Node.js TLS stacks can resolve trust:
+  - SSL_CERT_FILE: honoured by the OpenSearch client (post-8.6.7) and many
+    native HTTP/TLS libraries that resolve trust through the OS.
+  - NODE_EXTRA_CA_CERTS: honoured by Node.js (Web Modeler websockets,
+    Console, etc.)
+
+Note: Console gates its own NODE_EXTRA_CA_CERTS behind
+`ne (include "camundaPlatform.hasCaBundle" .) "true"` to avoid
+duplication when this helper is also included.
+
+Usage (inside an env: list):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleEnv" -}}
+- name: SSL_CERT_FILE
+  value: /etc/camunda/tls/ca.crt
+- name: NODE_EXTRA_CA_CERTS
+  value: /etc/camunda/tls/ca.crt
+{{- end -}}
+
+{{/*
 ********************************************************************************
 Release highlights.
 ********************************************************************************

@@ -356,6 +356,53 @@ func (s *tlsSecretsTest) TestOptimizeOpenSearchTLSNewPatternDefaultKey() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+// global.tls.caBundle tests
+
+func (s *tlsSecretsTest) TestCaBundleOrchestration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle injects SSL_CERT_FILE + NODE_EXTRA_CA_CERTS env, volume, and mount into orchestration",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: map[string]string{
+				"orchestration.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret":      "my-ca-bundle",
+				"global.tls.caBundle.secret.existingSecretKey":   "ca.crt",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":                      "my-ca-bundle",
+				"spec.template.spec.containers[0].volumeMounts[?(@.name=='ca-bundle')].mountPath":           "/etc/camunda/tls",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":                    "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value":              "/etc/camunda/tls/ca.crt",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *tlsSecretsTest) TestCaBundleWebModelerWebsockets() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle injects NODE_EXTRA_CA_CERTS into web-modeler websockets",
+			Template: "templates/web-modeler/deployment-websockets.yaml",
+			Values: map[string]string{
+				"webModeler.enabled":                             "true",
+				"webModeler.restapi.mail.fromAddress":            "test@example.com",
+				"identity.enabled":                               "true",
+				"global.tls.caBundle.secret.existingSecret":      "my-ca-bundle",
+				"global.tls.caBundle.secret.existingSecretKey":   "ca.crt",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":         "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":       "/etc/camunda/tls/ca.crt",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func TestTLSSecretsTestSuite(t *testing.T) {
 	suite.Run(t, new(tlsSecretsTest))
 }

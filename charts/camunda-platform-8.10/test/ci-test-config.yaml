@@ -142,6 +142,36 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch-tls.yaml
+        - name: opensearch-self-signed-os-trust
+          enabled: true
+          shortname: osot
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch-self-signed-os-trust
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
+          pre-install:
+            script: pre-install-opensearch-self-signed-os-trust.sh
+            description: |
+              Provisions the Identity/WebModeler PostgreSQL fixture, then
+              generates a self-signed CA plus node certificate via openssl
+              and creates the opensearch-tls-certs, opensearch-tls-ca, and
+              opensearch-jks Secrets consumed by the OpenSearch companion
+              chart's TLS config. Identical cert generation to the
+              opensearch-self-signed scenario.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: opensearch/opensearch
+              version: "3.6.0"
+              release-name: opensearch
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+              values-file: test/integration/companion-values/opensearch-tls.yaml
         - name: upgrade-migration
           # upgrade migrators are only for 8.7 -> 8.8, not for 8.10
           enabled: false
