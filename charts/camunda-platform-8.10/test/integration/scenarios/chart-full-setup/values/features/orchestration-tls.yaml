@@ -1,0 +1,112 @@
+orchestration:
+  env:
+    - name: CAMUNDA_API_GRPC_SSL_ENABLED
+      value: "true"
+    - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
+      value: /usr/local/camunda/certificates/orchestration/tls.crt
+    - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
+      value: /usr/local/camunda/certificates/orchestration/tls.key
+    - name: SERVER_SSL_ENABLED
+      value: "true"
+    - name: SERVER_SSL_CERTIFICATE
+      value: /usr/local/camunda/certificates/orchestration/tls.crt
+    - name: SERVER_SSL_CERTIFICATEPRIVATEKEY
+      value: /usr/local/camunda/certificates/orchestration/tls.key
+  extraVolumes:
+    - name: orchestration-tls
+      secret:
+        secretName: orchestration-tls
+  extraVolumeMounts:
+    - name: orchestration-tls
+      mountPath: /usr/local/camunda/certificates/orchestration
+      readOnly: true
+
+webModeler:
+  restapi:
+    clusters:
+      - id: default-cluster
+        name: integration-zeebe
+        version: 8.10-SNAPSHOT
+        authentication: BEARER_TOKEN
+        authorizations:
+          enabled: true
+        url:
+          grpc: grpcs://integration-zeebe-gateway:26500
+          rest: https://integration-zeebe-gateway:8080/orchestration
+          web-app: https://$CAMUNDA_HOSTNAME/orchestration
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+      -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/orchestration/truststore.jks
+      -Djavax.net.ssl.trustStorePassword=changeit
+    extraVolumes:
+      - name: orchestration-tls-truststore
+        secret:
+          secretName: orchestration-tls-truststore
+    extraVolumeMounts:
+      - name: orchestration-tls-truststore
+        mountPath: /usr/local/camunda/certificates/orchestration
+        readOnly: true
+
+connectors:
+  configuration: |
+    server:
+      port: 8080
+      servlet:
+        context-path: "/connectors"
+
+    management:
+      context-path: /actuator
+      endpoints:
+        web:
+          exposure:
+            include: metrics,health,prometheus
+      endpoint:
+        health:
+          show-details: always
+          show-components: always
+          group:
+            readiness:
+              include:
+              - processDefinitionImport
+              - zeebeClient
+
+    camunda:
+      client:
+        rest-address: https://integration-zeebe-gateway:8080/orchestration
+        grpc-address: https://integration-zeebe-gateway:26500
+        worker:
+          defaults:
+            max-jobs-active: 32
+            stream-enabled: true
+        mode: selfManaged
+        auth:
+          issuer-url: "http://keycloak:80/auth/realms/camunda-platform"
+          client-id: "connectors"
+          client-secret: "\u0024{VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}"
+          audience: "orchestration-api"
+      connector:
+        headless:
+          service-url: "integration-connectors-headless"
+        webhook:
+          enabled: true
+        polling:
+          enabled: true
+        agenticai:
+          enabled: true
+
+    logging:
+      level:
+        io.camunda.connector: INFO
+  env:
+    - name: JAVA_TOOL_OPTIONS
+      value: >-
+        -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/orchestration/truststore.jks
+        -Djavax.net.ssl.trustStorePassword=changeit
+  extraVolumes:
+    - name: orchestration-tls-truststore
+      secret:
+        secretName: orchestration-tls-truststore
+  extraVolumeMounts:
+    - name: orchestration-tls-truststore
+      mountPath: /usr/local/camunda/certificates/orchestration
+      readOnly: true
