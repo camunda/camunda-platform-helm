@@ -2,6 +2,28 @@
     "properties": {
         "global": {
             "properties": {
+                "documentStore": {
+                    "properties": {
+                        "type": {
+                            "properties": {
+                                "aws": {
+                                    "properties": {
+                                        "forcePathStyle": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, path-style is auto-enabled if an endpoint is configured, otherwise the SDK default is used.",
+                                            "default": null
+                                        },
+                                        "chunkedEncodingEnabled": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Enable AWS chunked transfer encoding. Set to false for S3-compatible backends that do not support it (e.g. Garage). When unset, the SDK default (true) is used.",
+                                            "default": null
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "ingress": {
                     "properties": {
                         "annotations": {
