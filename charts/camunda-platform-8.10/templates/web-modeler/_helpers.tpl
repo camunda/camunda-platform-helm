@@ -98,7 +98,7 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the image pull secrets.
 */}}
 {{- define "webModeler.imagePullSecrets" -}}
-  {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" (or .Values.camundaHub.webModeler.image .Values.webModeler.image))) }}
+  {{- include "camundaPlatform.componentImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" (or .Values.camundaHub.webModeler.image .Values.webModeler.image))) }}
 {{- end }}
 
 {{/*

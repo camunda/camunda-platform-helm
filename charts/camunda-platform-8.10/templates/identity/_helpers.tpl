@@ -165,23 +165,8 @@ Keycloak helpers
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak auth admin user.
-*/}}
-{{- define "identity.keycloak.authAdminUser" -}}
-    {{- .Values.global.identity.keycloak.auth.adminUser | default "" -}}
-{{- end -}}
-
-{{/*
 [identity] External PostgreSQL helpers.
 */}}
-
-{{- define "identity.postgresql.secretName" -}}
-    {{- .Values.identity.externalDatabase.secret.existingSecret | default "" -}}
-{{- end -}}
-
-{{- define "identity.postgresql.secretKey" -}}
-    {{- .Values.identity.externalDatabase.secret.existingSecretKey | default "password" -}}
-{{- end -}}
 
 {{- define "identity.postgresql.host" -}}
     {{- .Values.identity.externalDatabase.host | default "" -}}
@@ -203,5 +188,5 @@ Keycloak helpers
 [identity] Get the image pull secrets.
 */}}
 {{- define "identity.imagePullSecrets" -}}
-    {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.identity.image)) }}
+    {{- include "camundaPlatform.componentImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.identity.image)) }}
 {{- end }}

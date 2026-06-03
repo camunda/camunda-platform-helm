@@ -1012,7 +1012,7 @@ identity:
     automountServiceAccountToken: true
 
   ## External PostgreSQL configuration
-  ## All of these values are only used when postgresql.enabled is set to false
+  ## Identity requires an external PostgreSQL database; configure the connection here.
   ## @param identity.externalDatabase.enabled
   ## @param identity.externalDatabase.host Database host
   ## @param identity.externalDatabase.port Database port number
@@ -1430,7 +1430,7 @@ webModeler:
     ## @param webModeler.restapi.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
+    ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database for Web Modeler
     externalDatabase:
       ## @param webModeler.restapi.externalDatabase.url defines the JDBC url of the database instance.
       # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
