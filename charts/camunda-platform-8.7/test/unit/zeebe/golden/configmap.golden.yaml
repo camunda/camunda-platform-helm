@@ -27,13 +27,13 @@ data:
           enable: true
           network:
             port: 26500
-            maxMessageSize: "10MB"
           security:
             enabled: false
             authentication:
               mode: none
         network:
           host: 0.0.0.0
+          # Bounds inbound messages on the broker command API, including requests from the standalone gateway.
           maxMessageSize: "10MB"
           commandApi:
             port: 26501

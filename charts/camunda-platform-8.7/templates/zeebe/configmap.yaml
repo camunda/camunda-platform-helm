@@ -57,13 +57,13 @@ data:
           enable: true
           network:
             port: 26500
-            maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
           security:
             enabled: false
             authentication:
               mode: none
         network:
           host: 0.0.0.0
+          # Bounds inbound messages on the broker command API, including requests from the standalone gateway.
           maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
           commandApi:
             port: {{ .Values.zeebe.service.commandPort }}

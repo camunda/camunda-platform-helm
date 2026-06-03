@@ -120,6 +120,30 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapLegacyTemplateTest) TestRequestBodySizeConfiguresUploadLimits() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRequestBodySizeConfiguresUploadLimits",
+			Values: map[string]string{
+				"global.config.requestBodySize": "50MB",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+
+				require.Contains(t, applicationYaml, "max-http-form-post-size: \"50MB\"")
+				require.Contains(t, applicationYaml, "max-message-size: \"50MB\"")
+				require.Contains(t, applicationYaml, "maxMessageSize: \"50MB\"")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 	testCases := []testhelpers.TestCase{
 		{
