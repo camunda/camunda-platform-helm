@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -182,7 +183,15 @@ func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, 
 	return processedFiles, nil
 }
 
-func processCompanionCharts(ctx context.Context, charts []config.CompanionChart, outputDir, envFile string, envOverrides map[string]string) ([]config.CompanionChart, error) {
+// processCompanionCharts substitutes environment variables into companion
+// chart values files. Substitution is opt-in and allowlist-scoped: a chart is
+// processed only when it declares EnvVars, and only the names in that allowlist
+// are expanded. This keeps ordinary shell variables embedded in companion
+// values (e.g. $n, $max in Elasticsearch/OpenSearch init scripts) untouched and
+// avoids the previous service-specific content scan for $RDBMS_POSTGRESQL_.
+// envOverrides is deploy-camunda's isolated scenario env map; it is never the
+// process environment.
+func processCompanionCharts(_ context.Context, charts []config.CompanionChart, outputDir, _ string, envOverrides map[string]string) ([]config.CompanionChart, error) {
 	if len(charts) == 0 {
 		return nil, nil
 	}
@@ -192,30 +201,72 @@ func processCompanionCharts(ctx context.Context, charts []config.CompanionChart,
 	companionOutputDir := filepath.Join(outputDir, "companion-values")
 
 	for i, chart := range processed {
-		if chart.ValuesFile == "" {
+		if chart.ValuesFile == "" || len(chart.EnvVars) == 0 {
 			continue
 		}
 		content, err := os.ReadFile(chart.ValuesFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read companion values file %q: %w", chart.ValuesFile, err)
 		}
-		if !strings.Contains(string(content), "$RDBMS_POSTGRESQL_") && !strings.Contains(string(content), "${RDBMS_POSTGRESQL_") {
-			continue
-		}
-
-		outputPath, _, err := values.Process(ctx, chart.ValuesFile, values.Options{
-			OutputDir:    companionOutputDir,
-			Interactive:  false,
-			EnvFile:      envFile,
-			EnvOverrides: envOverrides,
-		})
+		substituted, err := substituteCompanionEnvVars(string(content), chart.EnvVars, envOverrides)
 		if err != nil {
 			return nil, fmt.Errorf("failed to process companion values file %q: %w", chart.ValuesFile, err)
+		}
+		if err := os.MkdirAll(companionOutputDir, 0o755); err != nil {
+			return nil, fmt.Errorf("failed to create companion values dir %q: %w", companionOutputDir, err)
+		}
+		// Prefix with the loop index (and release name for readability) so two
+		// companion charts whose values files share a basename cannot overwrite
+		// each other's processed output. The index guarantees uniqueness within
+		// this call regardless of release-name/basename concatenation.
+		outputPath := filepath.Join(companionOutputDir, fmt.Sprintf("%d-%s-%s", i, chart.ReleaseName, filepath.Base(chart.ValuesFile)))
+		if err := os.WriteFile(outputPath, []byte(substituted), 0o644); err != nil {
+			return nil, fmt.Errorf("failed to write companion values file %q: %w", outputPath, err)
 		}
 		processed[i].ValuesFile = outputPath
 	}
 
 	return processed, nil
+}
+
+// substituteCompanionEnvVars replaces only the allowlisted $VAR / ${VAR} tokens
+// in content using envMap. Any $-token whose name is not in allowlist is left
+// intact, so shell variables such as $n or $max survive untouched. It returns
+// an error naming every allowlisted variable that is missing from envMap, so a
+// misconfigured scenario fails early with a useful message.
+func substituteCompanionEnvVars(content string, allowlist []string, envMap map[string]string) (string, error) {
+	if len(allowlist) == 0 {
+		return content, nil
+	}
+
+	var missing []string
+	for _, name := range allowlist {
+		if _, ok := envMap[name]; !ok {
+			missing = append(missing, name)
+		}
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("missing required environment variable(s) for substitution: %s", strings.Join(missing, ", "))
+	}
+
+	// Sort longest-first so a name that is a prefix of another (e.g. FOO vs
+	// FOOBAR) cannot shadow it in the alternation. The trailing \b on the bare
+	// $VAR form already prevents partial matches, but ordering is cheap insurance.
+	names := append([]string(nil), allowlist...)
+	sort.Slice(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
+	quoted := make([]string, len(names))
+	for i, n := range names {
+		quoted[i] = regexp.QuoteMeta(n)
+	}
+	alt := strings.Join(quoted, "|")
+	re := regexp.MustCompile(`\$\{(?:` + alt + `)\}|\$(?:` + alt + `)\b`)
+
+	return re.ReplaceAllStringFunc(content, func(match string) string {
+		name := strings.TrimPrefix(match, "$")
+		name = strings.TrimPrefix(name, "{")
+		name = strings.TrimSuffix(name, "}")
+		return envMap[name]
+	}), nil
 }
 
 // generateDebugValuesFile creates a temporary values file with debug configuration

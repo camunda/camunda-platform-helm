@@ -251,6 +251,10 @@ type CompanionChart struct {
 	ReleaseName string
 	// ValuesFile is the absolute path to a values file. Empty means use chart defaults.
 	ValuesFile string
+	// EnvVars is the explicit allowlist of environment variable names to
+	// substitute in ValuesFile before deploying. Only these names are expanded;
+	// all other $-tokens are left intact. Empty means no substitution.
+	EnvVars []string
 	// RepoName is the Helm repository name to register before installing
 	// (e.g., "opensearch"). Empty means no repo registration is needed.
 	RepoName string
