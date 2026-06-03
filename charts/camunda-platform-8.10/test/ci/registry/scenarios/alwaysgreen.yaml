@@ -1,0 +1,15 @@
+name: alwaysgreen
+shortname: agrn
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+platforms:
+  - gke
+infra-type:
+  gke: alwaysgreen
+pre-install: postgresql-cluster-default
+dependencies:
+  - keycloak
+  - elasticsearch-8.5.1

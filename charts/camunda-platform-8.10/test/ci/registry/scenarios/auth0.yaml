@@ -1,0 +1,19 @@
+name: auth0
+shortname: esa0
+auth: oidc
+flows:
+  - install
+identity: auth0
+persistence: elasticsearch
+platforms:
+  - gke
+exclude:
+  - identity
+  - console
+  - orchestration-grpc
+infra-type:
+  eks: preemptible
+  gke: distroci
+pre-install: postgresql-cluster-default
+dependencies:
+  - elasticsearch-8.5.1

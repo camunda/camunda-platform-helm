@@ -1,0 +1,15 @@
+name: rdbms-self-signed
+shortname: rdbss
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: rdbms-self-signed
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+pre-install: rdbms-self-signed
+dependencies:
+  - keycloak
+  - elasticsearch-8.5.1

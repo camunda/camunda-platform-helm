@@ -83,8 +83,9 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		if dep.ValuesFile == "" {
 			return
 		}
-		// values-file paths in deps are relative to the chart directory.
-		path := filepath.Join(v.ChartDir, dep.ValuesFile)
+		// values-file paths in deps are relative to the repository root,
+		// matching the runner's resolution at runner.go:1742.
+		path := filepath.Join(repoRoot, dep.ValuesFile)
 		if info, err := os.Stat(path); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				problems = append(problems, fmt.Sprintf("%s: dependency %s: values-file %q: missing at %s", ctx, dep.ReleaseName, dep.ValuesFile, path))

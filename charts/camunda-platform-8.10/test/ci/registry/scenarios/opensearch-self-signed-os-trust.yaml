@@ -1,0 +1,15 @@
+name: opensearch-self-signed-os-trust
+shortname: osot
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: opensearch-self-signed-os-trust
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+pre-install: opensearch-self-signed-os-trust
+dependencies:
+  - keycloak
+  - opensearch-3.6.0-tls

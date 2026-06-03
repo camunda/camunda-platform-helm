@@ -1,0 +1,18 @@
+name: documentstore
+shortname: docstr
+auth: keycloak
+flows:
+  - ""
+identity: keycloak
+persistence: elasticsearch
+features:
+  - postgresql-companion
+  - documentstore
+platforms:
+  - eks
+infra-type:
+  eks: preemptible
+dependencies:
+  - postgresql
+  - keycloak
+  - elasticsearch-8.5.1
