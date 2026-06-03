@@ -1,0 +1,5 @@
+defaults:
+  flows:
+    - install
+    - upgrade-minor
+rules: []
