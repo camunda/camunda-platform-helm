@@ -106,12 +106,16 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		problems = append(problems, fmt.Sprintf("permitted-flows: %v", err))
 	}
 
-	// Track (Name, Shortname, Flow, Platform) tuples for duplicate detection.
-	// Empty Platform is replaced with "" in the key — matrix.Generate defaults
-	// these to "gke" downstream, but the validator's job is to catch source-level
-	// duplication only.
+	// Track (Shortname, Flow, Platform) tuples for duplicate detection. This is
+	// the exact tuple Kubernetes namespace generation uses in runner.go
+	// (`<version>-<shortname>-<flow>[-<platform>]`); including the scenario
+	// name in the key would let two scenarios with distinct names but the same
+	// shortname collide silently at namespace generation time, since
+	// runner.go's formula ignores Name entirely. Empty Platform is replaced
+	// with "" in the key — matrix.Generate defaults these to "gke" downstream,
+	// but the validator's job is to catch source-level duplication only.
 	type key struct {
-		name, shortname, flow, platform string
+		shortname, flow, platform string
 	}
 	seen := map[key]string{} // key -> first occurrence label
 
@@ -138,7 +142,7 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			}
 		}
 		for _, plat := range platforms {
-			k := key{scn.Name, scn.Shortname, scn.Flow, plat}
+			k := key{scn.Shortname, scn.Flow, plat}
 			if prev, ok := seen[k]; ok {
 				problems = append(problems, fmt.Sprintf("%s platform %q: duplicate of %s", label, plat, prev))
 			} else {
