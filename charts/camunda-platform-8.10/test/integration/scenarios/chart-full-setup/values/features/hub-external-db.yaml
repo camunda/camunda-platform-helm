@@ -4,7 +4,6 @@
 #
 # Many enterprise customers don't use the bundled Bitnami PostgreSQL. They point
 # webModeler at an external database (RDS, CloudSQL, self-managed). This layer:
-# - Disables the bundled webModelerPostgresql subchart
 # - Configures externalDatabase.* with host/port/credentials pointing to the pre-install fixture
 # - Uses camundaHub.enabled: false + legacy keys (most common enterprise pattern)
 #
@@ -20,9 +19,6 @@ console:
     pullSecrets:
       - name: index-docker-io
       - name: registry-camunda-cloud
-
-webModelerPostgresql:
-  enabled: false
 
 webModeler:
   enabled: true
