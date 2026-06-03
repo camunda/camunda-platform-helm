@@ -23,6 +23,7 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/optimize/configmap.yaml") . | sha256sum }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.optimize.podAnnotations }}
         {{- tpl (toYaml .Values.optimize.podAnnotations) $ | nindent 8 }}
       {{- end }}

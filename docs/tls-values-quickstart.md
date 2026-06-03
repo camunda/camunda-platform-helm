@@ -75,17 +75,38 @@ You should see:
 
 ## Updating the CA
 
-To rotate the CA bundle, replace the secret and bounce the affected pods:
+To rotate the CA bundle, replace the secret and re-run `helm upgrade`:
 
 ```bash
 kubectl -n "$NAMESPACE" delete secret camunda-ca-bundle
 kubectl -n "$NAMESPACE" create secret generic camunda-ca-bundle \
   --from-file=ca.crt=./new-ca-bundle.pem
 
-kubectl -n "$NAMESPACE" rollout restart statefulset,deployment
+helm upgrade --install camunda camunda/camunda-platform -f values-tls.yaml -f your-values.yaml
 ```
 
-The init container re-runs on each pod start and imports the new CA into a fresh truststore.
+The chart stamps a `checksum/ca-bundle` pod annotation derived from the secret's
+contents, so `helm upgrade` automatically rolls the Java components when the CA
+changes — the init container re-runs on each new pod and imports the new CA into
+a fresh truststore. No manual `rollout restart` needed.
+
+> **Note:** the checksum is computed by reading the live secret via Helm's `lookup`,
+> which only has cluster access during a real `helm upgrade`. So the auto-rollout
+> fires on `helm upgrade`, **not** on a raw `kubectl edit secret`, and **not** under
+> pure `helm template` rendering. If you change the secret outside Helm, trigger the
+> rollout yourself: `kubectl -n "$NAMESPACE" rollout restart statefulset,deployment`.
+>
+> **GitOps (ArgoCD / Flux):** these render with `helm template` (no `lookup`), so the
+> `checksum/ca-bundle` annotation is constant and the auto-rollout does **not** fire
+> on CA rotation. Drive the restart from your GitOps stack instead — e.g. an Argo CD
+> `PostSync` hook or a Flux `kustomize` patch that rolls the Java workloads when the
+> CA Secret changes — or run the `kubectl rollout restart` above as part of rotation.
+
+> **Reminder:** `global.tls.caBundle` provides CA **trust**, not encryption. It does
+> not turn a plaintext datastore connection into TLS — point the datastore URL at
+> `https://` (or set the JDBC `sslmode`) to actually encrypt the traffic. The chart
+> emits an install-time warning if the bundle is set while a datastore URL is still
+> `http://`.
 
 ## Common gotchas
 
