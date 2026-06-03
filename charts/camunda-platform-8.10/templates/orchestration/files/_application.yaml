@@ -26,6 +26,8 @@ spring:
 server:
   address: 0.0.0.0
   port: {{ .Values.orchestration.service.httpPort }}
+  tomcat:
+    max-http-form-post-size: {{ .Values.global.config.requestBodySize | quote }}
   {{- if .Values.orchestration.contextPath }}
   servlet:
     context-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
@@ -71,6 +73,9 @@ camunda:
     size: {{ .Values.orchestration.clusterSize | quote }}
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    # Keep the unified Camunda and legacy Zeebe network limits aligned while supported versions bind both namespaces.
+    network:
+      max-message-size: {{ .Values.global.config.requestBodySize | quote }}
     # zeebe.broker.cluster
     {{- if le (int .Values.global.multiregion.regions) 1 }}
     initial-contact-points:
@@ -88,6 +93,7 @@ camunda:
     grpc:
       address: 0.0.0.0
       port: {{ .Values.orchestration.service.grpcPort }}
+      max-message-size: {{ .Values.global.config.requestBodySize | quote }}
 
   # Database configuration - Separated syntax.
   database:
@@ -309,6 +315,8 @@ zeebe:
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
       {{- end }}
       host: 0.0.0.0
+      # Legacy Zeebe namespace retained while supported versions still bind it; keep it aligned with camunda.cluster.network.
+      maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
       commandApi:
         port: {{ .Values.orchestration.service.commandPort }}
       internalApi:

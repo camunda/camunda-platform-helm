@@ -65,7 +65,7 @@ global:
 
   ## @extra global.config Config used in various places.
   config:
-    ## @param global.config.requestBodySize defines applications request body size which used for upload files.
+    ## @param global.config.requestBodySize defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.
     requestBodySize: 10MB
 
   ## Multitenancy configuration.

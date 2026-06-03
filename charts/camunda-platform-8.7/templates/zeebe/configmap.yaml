@@ -63,6 +63,8 @@ data:
               mode: none
         network:
           host: 0.0.0.0
+          # Bounds inbound messages on the broker command API, including requests from the standalone gateway.
+          maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
           commandApi:
             port: {{ .Values.zeebe.service.commandPort }}
           internalApi:
