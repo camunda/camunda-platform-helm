@@ -15,6 +15,7 @@
 package matrix
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -262,5 +263,275 @@ integration:
 	}
 	if cfg.Integration.Flows != nil {
 		t.Errorf("flows: want nil when omitted")
+	}
+}
+
+// profileTestConfig is a representative config exercising dependency profiles:
+// two companion profiles plus a fixtures-only cnpg profile.
+const profileTestConfig = `
+integration:
+  dependency-profiles:
+    keycloak:
+      dependencies:
+        - chart: charts/internal-keycloak-26
+          release-name: keycloak
+          values-file: test/integration/companion-values/keycloak.yaml
+    elasticsearch:
+      dependencies:
+        - chart: elastic/elasticsearch
+          version: "8.5.1"
+          release-name: elasticsearch
+          repo-name: elastic
+          repo-url: https://helm.elastic.co
+          values-file: test/integration/companion-values/elasticsearch.yaml
+    cnpg:
+      pre-install:
+        fixtures: [postgresql-cluster.yaml]
+        description: |
+          Provisions a CloudNativePG Cluster + auth Secret.
+  case:
+    pr:
+      scenario:
+        - name: %s
+`
+
+func loadAndResolve(t *testing.T, src string) *CITestConfig {
+	t.Helper()
+	var cfg CITestConfig
+	if err := yaml.Unmarshal([]byte(src), &cfg); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if err := ResolveProfiles(&cfg); err != nil {
+		t.Fatalf("ResolveProfiles: %v", err)
+	}
+	return &cfg
+}
+
+func TestResolveProfiles_ExpandsDependenciesInOrder(t *testing.T) {
+	scenario := `elasticsearch
+          enabled: true
+          shortname: eske
+          profiles: [keycloak, elasticsearch, cnpg]`
+	cfg := loadAndResolve(t, fmt.Sprintf(profileTestConfig, scenario))
+
+	deps := cfg.Integration.Case.PR.Scenarios[0].Dependencies
+	gotCharts := make([]string, len(deps))
+	for i, d := range deps {
+		gotCharts[i] = d.Chart
+	}
+	want := []string{"charts/internal-keycloak-26", "elastic/elasticsearch"}
+	if len(gotCharts) != len(want) {
+		t.Fatalf("dependencies: got %v, want %v", gotCharts, want)
+	}
+	for i := range want {
+		if gotCharts[i] != want[i] {
+			t.Errorf("dependency[%d] chart: got %q, want %q", i, gotCharts[i], want[i])
+		}
+	}
+	// The remote ES dependency keeps its repo metadata after expansion.
+	if deps[1].RepoURL != "https://helm.elastic.co" || deps[1].Version != "8.5.1" {
+		t.Errorf("es dependency lost metadata: %+v", deps[1])
+	}
+	// cnpg profile contributed the pre-install fixture.
+	pi := cfg.Integration.Case.PR.Scenarios[0].PreInstall
+	if pi == nil || len(pi.Fixtures) != 1 || pi.Fixtures[0] != "postgresql-cluster.yaml" {
+		t.Fatalf("pre-install fixtures: got %+v", pi)
+	}
+}
+
+func TestResolveProfiles_UnknownProfileErrors(t *testing.T) {
+	scenario := `bad
+          enabled: true
+          shortname: bad
+          profiles: [keycloak, nope]`
+	var cfg CITestConfig
+	if err := yaml.Unmarshal([]byte(fmt.Sprintf(profileTestConfig, scenario)), &cfg); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	err := ResolveProfiles(&cfg)
+	if err == nil {
+		t.Fatal("expected error for unknown profile, got nil")
+	}
+	if !strings.Contains(err.Error(), "nope") {
+		t.Errorf("error should name the unknown profile, got: %v", err)
+	}
+}
+
+func TestResolveProfiles_ScriptPreInstallConflicts(t *testing.T) {
+	// A scenario with a script pre-install cannot also pull cnpg fixtures.
+	scenario := `conflict
+          enabled: true
+          shortname: cflt
+          profiles: [cnpg]
+          pre-install:
+            script: pre-install-custom.sh
+            description: custom`
+	var cfg CITestConfig
+	if err := yaml.Unmarshal([]byte(fmt.Sprintf(profileTestConfig, scenario)), &cfg); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	err := ResolveProfiles(&cfg)
+	if err == nil {
+		t.Fatal("expected conflict error, got nil")
+	}
+	if !strings.Contains(err.Error(), "script pre-install") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveProfiles_InlineDependenciesAppendedAfterProfiles(t *testing.T) {
+	scenario := `mixed
+          enabled: true
+          shortname: mix
+          profiles: [keycloak]
+          dependencies:
+            - chart: charts/extra
+              release-name: extra`
+	cfg := loadAndResolve(t, fmt.Sprintf(profileTestConfig, scenario))
+	deps := cfg.Integration.Case.PR.Scenarios[0].Dependencies
+	if len(deps) != 2 || deps[0].Chart != "charts/internal-keycloak-26" || deps[1].Chart != "charts/extra" {
+		t.Fatalf("expected profile dep then inline dep, got %+v", deps)
+	}
+}
+
+func TestResolveProfiles_Idempotent(t *testing.T) {
+	scenario := `idem
+          enabled: true
+          shortname: idem
+          profiles: [keycloak, elasticsearch, cnpg]`
+	src := fmt.Sprintf(profileTestConfig, scenario)
+	var cfg CITestConfig
+	if err := yaml.Unmarshal([]byte(src), &cfg); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if err := ResolveProfiles(&cfg); err != nil {
+		t.Fatalf("ResolveProfiles (1): %v", err)
+	}
+	first := len(cfg.Integration.Case.PR.Scenarios[0].Dependencies)
+	// Second call must not re-expand the already-resolved dependencies.
+	if err := ResolveProfiles(&cfg); err != nil {
+		t.Fatalf("ResolveProfiles (2): %v", err)
+	}
+	second := len(cfg.Integration.Case.PR.Scenarios[0].Dependencies)
+	if first != 2 || second != first {
+		t.Fatalf("not idempotent: first=%d second=%d (want 2, 2)", first, second)
+	}
+}
+
+func TestResolveProfiles_MergesTwoFixtureDescriptions(t *testing.T) {
+	src := `
+integration:
+  dependency-profiles:
+    fx-a:
+      pre-install:
+        fixtures: [a.yaml]
+        description: AAA
+    fx-b:
+      pre-install:
+        fixtures: [b.yaml]
+        description: BBB
+  case:
+    pr:
+      scenario:
+        - name: two
+          enabled: true
+          shortname: two
+          profiles: [fx-a, fx-b]
+`
+	cfg := loadAndResolve(t, src)
+	pi := cfg.Integration.Case.PR.Scenarios[0].PreInstall
+	if pi == nil {
+		t.Fatal("pre-install: nil")
+	}
+	if len(pi.Fixtures) != 2 || pi.Fixtures[0] != "a.yaml" || pi.Fixtures[1] != "b.yaml" {
+		t.Errorf("fixtures: got %v, want [a.yaml b.yaml]", pi.Fixtures)
+	}
+	if !strings.Contains(pi.Description, "AAA") || !strings.Contains(pi.Description, "BBB") {
+		t.Errorf("description dropped a profile's text: %q", pi.Description)
+	}
+}
+
+func TestResolveProfiles_InlinePreInstallMergesBeforeProfileFixtures(t *testing.T) {
+	// Documented ordering: a scenario's own inline pre-install fixtures come
+	// before a fixture-contributing profile's. Locks the contract noted in
+	// mergeProfilePreInstall.
+	src := `
+integration:
+  dependency-profiles:
+    fx-p:
+      pre-install:
+        fixtures: [profile.yaml]
+        description: from profile
+  case:
+    pr:
+      scenario:
+        - name: combo
+          enabled: true
+          shortname: combo
+          profiles: [fx-p]
+          pre-install:
+            fixtures: [inline.yaml]
+            description: from scenario
+`
+	cfg := loadAndResolve(t, src)
+	pi := cfg.Integration.Case.PR.Scenarios[0].PreInstall
+	if pi == nil {
+		t.Fatal("pre-install: nil")
+	}
+	if len(pi.Fixtures) != 2 || pi.Fixtures[0] != "inline.yaml" || pi.Fixtures[1] != "profile.yaml" {
+		t.Errorf("fixtures: got %v, want [inline.yaml profile.yaml] (inline first)", pi.Fixtures)
+	}
+	if !strings.Contains(pi.Description, "from scenario") || !strings.Contains(pi.Description, "from profile") {
+		t.Errorf("description dropped text: %q", pi.Description)
+	}
+}
+
+func TestResolveProfiles_DeduplicatesMergedFixtures(t *testing.T) {
+	// Inline and profile both provide postgresql-cluster.yaml — the merged hook
+	// must list it once, not apply the same manifest twice.
+	src := `
+integration:
+  dependency-profiles:
+    fx-p:
+      pre-install:
+        fixtures: [postgresql-cluster.yaml]
+        description: from profile
+  case:
+    pr:
+      scenario:
+        - name: dup
+          enabled: true
+          shortname: dup
+          profiles: [fx-p]
+          pre-install:
+            fixtures: [postgresql-cluster.yaml]
+            description: from scenario
+`
+	cfg := loadAndResolve(t, src)
+	pi := cfg.Integration.Case.PR.Scenarios[0].PreInstall
+	if pi == nil || len(pi.Fixtures) != 1 || pi.Fixtures[0] != "postgresql-cluster.yaml" {
+		t.Fatalf("fixtures: got %+v, want exactly [postgresql-cluster.yaml]", pi)
+	}
+}
+
+func TestResolveProfiles_NoProfilesUnchanged(t *testing.T) {
+	// Backward compatibility: a scenario with only inline dependencies and no
+	// profiles resolves unchanged.
+	src := `
+integration:
+  case:
+    pr:
+      scenario:
+        - name: inline
+          enabled: true
+          shortname: inl
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+`
+	cfg := loadAndResolve(t, src)
+	deps := cfg.Integration.Case.PR.Scenarios[0].Dependencies
+	if len(deps) != 1 || deps[0].Chart != "charts/internal-keycloak-26" {
+		t.Fatalf("inline deps changed: %+v", deps)
 	}
 }
