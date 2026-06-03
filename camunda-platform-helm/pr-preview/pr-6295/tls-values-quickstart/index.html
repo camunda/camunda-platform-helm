@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">values-tls.yaml quickstart — Camunda 8.10 TLS-everywhere | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6295/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6295/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6295/tls-values-quickstart"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="values-tls.yaml quickstart — Camunda 8.10 TLS-everywhere | Camunda Helm Charts"><meta data-rh="true" name="description" content="A two-step path from a fresh namespace to a fully TLS-enabled Camunda 8.10 deployment talking to TLS-secured Elasticsearch / OpenSearch / PostgreSQL with a private (self-signed or internal) CA. No init-container-as-root workarounds, no custom images."><meta data-rh="true" property="og:description" content="A two-step path from a fresh namespace to a fully TLS-enabled Camunda 8.10 deployment talking to TLS-secured Elasticsearch / OpenSearch / PostgreSQL with a private (self-signed or internal) CA. No init-container-as-root workarounds, no custom images."><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6295/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6295/tls-values-quickstart"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6295/tls-values-quickstart" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6295/tls-values-quickstart" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6295/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6295/assets/js/runtime~main.e7305470.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6295/assets/js/main.115d2598.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6295/assets/js/runtime~main.eef06363.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6295/assets/js/main.5e33efe9.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -49,10 +49,16 @@ contents, so <code>helm upgrade</code> automatically rolls the Java components w
 changes — the init container re-runs on each new pod and imports the new CA into
 a fresh truststore. No manual <code>rollout restart</code> needed.</p>
 <blockquote>
-<p><strong>Note:</strong> the checksum is computed by reading the live secret at render time, so
-the auto-rollout fires on <code>helm upgrade</code>, not on a raw <code>kubectl edit secret</code>. If
-you change the secret outside Helm, trigger the rollout yourself:
-<code>kubectl -n &quot;$NAMESPACE&quot; rollout restart statefulset,deployment</code>.</p>
+<p><strong>Note:</strong> the checksum is computed by reading the live secret via Helm&#x27;s <code>lookup</code>,
+which only has cluster access during a real <code>helm upgrade</code>. So the auto-rollout
+fires on <code>helm upgrade</code>, <strong>not</strong> on a raw <code>kubectl edit secret</code>, and <strong>not</strong> under
+pure <code>helm template</code> rendering. If you change the secret outside Helm, trigger the
+rollout yourself: <code>kubectl -n &quot;$NAMESPACE&quot; rollout restart statefulset,deployment</code>.</p>
+<p><strong>GitOps (ArgoCD / Flux):</strong> these render with <code>helm template</code> (no <code>lookup</code>), so the
+<code>checksum/ca-bundle</code> annotation is constant and the auto-rollout does <strong>not</strong> fire
+on CA rotation. Drive the restart from your GitOps stack instead — e.g. an Argo CD
+<code>PostSync</code> hook or a Flux <code>kustomize</code> patch that rolls the Java workloads when the
+CA Secret changes — or run the <code>kubectl rollout restart</code> above as part of rotation.</p>
 </blockquote>
 <blockquote>
 <p><strong>Reminder:</strong> <code>global.tls.caBundle</code> provides CA <strong>trust</strong>, not encryption. It does
