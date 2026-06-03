@@ -17,9 +17,9 @@ import (
 //     exactly one of fixtures or script, plain basenames);
 //   - referenced basenames (hook fixtures under common/resources/, hook
 //     scripts under pre-setup-scripts/, feature values-files, dependency
-//     values-files) resolve to existing files;
 //   - no two post-fan-out CIScenario entries collide on
-//     (Name, Shortname, Flow, Platform) — the natural CI namespace key;
+//     (Shortname, Flow, Platform) after applying matrix.Generate's flow
+//     defaulting (empty flow treated as "install") — the natural CI namespace key;
 //   - every scenario's (Platform, Flow) is not denied by
 //     .github/config/permitted-flows.yaml for this chart version.
 //
