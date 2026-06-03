@@ -645,6 +645,17 @@ jobs:
             fi
           fi
 
+          # Apply workflow-supplied extra values (e.g. the run-built image tag) last
+          # so they override chart defaults. The "Pre-install scenario tweaks" step
+          # above tees ${{ inputs.extra-values }} to /tmp/extra-values-file.yaml.
+          # `matrix run` does not yet natively consume that file (see #6312), so
+          # forward it to every helm command via --extra-helm-arg=--values. Skip when
+          # empty/whitespace-only. Safe here because the install flow is single-step;
+          # the upgrade flow deliberately omits this (see the note in its deploy step).
+          if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
+            EXTRA_HELM_ARGS+=(--extra-helm-arg=--values=/tmp/extra-values-file.yaml)
+          fi
+
           cd ./scripts/deploy-camunda
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -960,6 +971,15 @@ jobs:
               ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
             fi
           fi
+
+          # NOTE: extra-values (e.g. the run-built image tag) are intentionally NOT
+          # forwarded for upgrade flows. `matrix run` runs upgrade as a two-step
+          # orchestration — Step 1 installs the previous released version, Step 2
+          # upgrades to the current chart — and --extra-helm-arg fans out to BOTH
+          # steps, which would inject the new image tag into the previous-version
+          # install and break the upgrade-from-stable baseline. Step-2-only / per-
+          # scenario injection is tracked in #6312. (The install flow, being single-
+          # step, forwards the file safely; see that step.)
 
           cd ./scripts/deploy-camunda
           go run . matrix run \
