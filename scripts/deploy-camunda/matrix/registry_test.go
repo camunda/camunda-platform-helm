@@ -164,22 +164,11 @@ func TestRegistryValidatorRejectsMissingFixture(t *testing.T) {
 // hostile or malformed registry cannot escape <chartDir>/test/ci/registry/
 // via filepath.Join.
 func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
-	dir := t.TempDir()
-	chartDir := filepath.Join(dir, "charts", "camunda-platform-99.99")
-	regDir := filepath.Join(chartDir, "test", "ci", "registry")
-	for _, sub := range []string{"scenarios", "hooks", "dependencies"} {
-		if err := os.MkdirAll(filepath.Join(regDir, sub), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	manifest := "integration:\n  vars:\n    tasksBaseDir: x\n    valuesBaseDir: x\n    chartsBaseDir: x\n  scenarios:\n    - id: bad\n      enabled: true\n"
-	if err := os.WriteFile(filepath.Join(regDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	scenario := "name: bad\nshortname: bad\nflows: [install]\npre-install: ../evil\n"
-	if err := os.WriteFile(filepath.Join(regDir, "scenarios", "bad.yaml"), []byte(scenario), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: bad\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
+		"name: bad\nshortname: bad\nflows: [install]\npre-install: ../evil\n")
+
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "plain filename") {
 		t.Fatalf("want plain-filename rejection error, got: %v", err)
@@ -190,39 +179,223 @@ func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
 // path. A scenario whose flow is denied by the version's permitted-flows
 // rules must be flagged by the validator even when all other invariants hold.
 func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
+	dir, chartDir, regDir := syntheticChart(t)
+	writePermittedFlows(t, dir, "rules:\n  - match: ==99.99\n    deny: [install]\n")
+	writeManifest(t, regDir, "    - id: a\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+		"name: a\nshortname: a\nflows: [install]\nplatforms: [gke]\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "denied by permitted-flows") {
+		t.Fatalf("want denied-flow error, got: %v", err)
+	}
+}
+
+// TestLoadRegistryRejectsPathTraversalDepID mirrors the hook traversal guard
+// for dependency IDs. Same `isPlainFilename` helper, separate call site in
+// the loader; covered independently so a future refactor that drops the
+// guard from one branch is caught.
+func TestLoadRegistryRejectsPathTraversalDepID(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: bad\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
+		"name: bad\nshortname: bad\nflows: [install]\ndependencies:\n  - ../evil\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection on dep ID, got: %v", err)
+	}
+}
+
+// TestLoadRegistryRejectsPathTraversalManifestID covers the third call site
+// of isPlainFilename: a manifest scenario entry whose ID escapes the
+// scenarios/ directory.
+func TestLoadRegistryRejectsPathTraversalManifestID(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: ../evil\n      enabled: true\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection on manifest ID, got: %v", err)
+	}
+}
+
+// TestLoadRegistryRejectsMalformedManifest surfaces YAML parse failures at
+// load time with the manifest path in the error so authors can locate the
+// broken file.
+func TestLoadRegistryRejectsMalformedManifest(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeFile(t, filepath.Join(regDir, "manifest.yaml"), "integration: [: not yaml\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "parse manifest") {
+		t.Fatalf("want parse-manifest error, got: %v", err)
+	}
+}
+
+// TestLoadRegistryRejectsMissingScenarioFile covers the dangling-reference
+// case: manifest names a scenario ID that has no corresponding
+// scenarios/<id>.yaml file.
+func TestLoadRegistryRejectsMissingScenarioFile(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: missing\n      enabled: true\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "read scenario") {
+		t.Fatalf("want read-scenario error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsMissingScript exercises checkHook's script
+// branch — symmetric to the existing fixture coverage but a separate code
+// path in registry_validator.go.
+func TestRegistryValidatorRejectsMissingScript(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].PreInstall = &LifecycleHook{
+		Script:      "never-exists.sh",
+		Description: "synthetic missing script",
+	}
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "never-exists.sh") {
+		t.Fatalf("want missing-script error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsMissingFeatureValues exercises checkFeature.
+// Feature names resolve to <feature>.yaml under chart-full-setup/values/features/;
+// a dangling name must surface as a validation error so PR review catches
+// the typo before deployment.
+func TestRegistryValidatorRejectsMissingFeatureValues(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].Features = []string{"nonexistent-feature"}
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "nonexistent-feature") {
+		t.Fatalf("want missing-feature error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsMissingDepValuesFile exercises checkDep.
+// values-file paths are repo-root-relative (matching runner.go:1742); a
+// dangling reference must be caught at validation, not at deploy time.
+func TestRegistryValidatorRejectsMissingDepValuesFile(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].Dependencies = []ChartDependency{{
+		ReleaseName: "synthetic-dep",
+		ValuesFile:  "does/not/exist.yaml",
+	}}
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "does/not/exist.yaml") {
+		t.Fatalf("want missing-dep-values error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsHookValidateFailure covers the upstream
+// LifecycleHook.Validate rejection path. The validator delegates to
+// LifecycleHook.Validate for cross-field invariants (description present,
+// exactly one of fixtures/script). A hook with both set must be flagged
+// even though both basenames individually resolve.
+func TestRegistryValidatorRejectsHookValidateFailure(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].PreInstall = &LifecycleHook{
+		Fixtures:    []string{"postgresql-cluster.yaml"},
+		Script:      "pre-upgrade.sh",
+		Description: "both set — must be rejected",
+	}
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "exactly one of fixtures or script") {
+		t.Fatalf("want hook-validate error, got: %v", err)
+	}
+}
+
+// TestLoadRegistryCachesHooksAndDepsByID asserts the per-ID caches in
+// LoadRegistry return identical content across scenarios that reference
+// the same ID. alpha and beta in testdata/registry-good both reference
+// `cnpg-default` (hook) and `keycloak-26` + `elasticsearch-8.5.1` (deps);
+// a cache miscompute would silently swap content between scenarios.
+func TestLoadRegistryCachesHooksAndDepsByID(t *testing.T) {
+	cfg, err := LoadRegistry(absChartDir(t))
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	scns := cfg.Integration.Case.PR.Scenarios
+	if len(scns) < 2 || scns[0].Name != "alpha" || scns[1].Name != "beta" {
+		t.Fatalf("expected alpha + beta as first two scenarios, got %+v", scns)
+	}
+	// Same hook ID → cached pointer is reused.
+	if scns[0].PreInstall != scns[1].PreInstall {
+		t.Errorf("hook cache: alpha.PreInstall (%p) != beta.PreInstall (%p)", scns[0].PreInstall, scns[1].PreInstall)
+	}
+	// Same dep IDs → cached values identical (deps are stored by value, not pointer).
+	if len(scns[0].Dependencies) < 2 || len(scns[1].Dependencies) < 2 {
+		t.Fatalf("expected ≥2 deps on alpha and beta, got %d/%d", len(scns[0].Dependencies), len(scns[1].Dependencies))
+	}
+	if !reflect.DeepEqual(scns[0].Dependencies[0], scns[1].Dependencies[0]) {
+		t.Errorf("dep cache: alpha[0] != beta[0]\nalpha: %+v\nbeta:  %+v", scns[0].Dependencies[0], scns[1].Dependencies[0])
+	}
+	if !reflect.DeepEqual(scns[0].Dependencies[1], scns[1].Dependencies[1]) {
+		t.Errorf("dep cache: alpha[1] != beta[1]\nalpha: %+v\nbeta:  %+v", scns[0].Dependencies[1], scns[1].Dependencies[1])
+	}
+}
+
+// syntheticChart sets up a throwaway charts/camunda-platform-99.99 layout
+// under t.TempDir() with the registry + basename-resolution directories
+// the validator stats. Returns (repoRoot, chartDir, registryDir).
+func syntheticChart(t *testing.T) (string, string, string) {
+	t.Helper()
 	dir := t.TempDir()
 	chartDir := filepath.Join(dir, "charts", "camunda-platform-99.99")
 	regDir := filepath.Join(chartDir, "test", "ci", "registry")
-	for _, sub := range []string{"scenarios", "hooks", "dependencies"} {
-		if err := os.MkdirAll(filepath.Join(regDir, sub), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// Empty basename-resolution trees so the validator's filesystem checks pass.
-	for _, sub := range []string{
+	dirs := []string{
+		filepath.Join(regDir, "scenarios"),
+		filepath.Join(regDir, "hooks"),
+		filepath.Join(regDir, "dependencies"),
 		filepath.Join(chartDir, "test", "integration", "scenarios", "common", "resources"),
 		filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts"),
 		filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "features"),
 		filepath.Join(dir, ".github", "config"),
-	} {
-		if err := os.MkdirAll(sub, 0o755); err != nil {
+	}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
-	permittedFlows := "defaults:\n  flows: []\nrules:\n  - match: ==99.99\n    deny: [install]\n"
-	if err := os.WriteFile(filepath.Join(dir, ".github", "config", "permitted-flows.yaml"), []byte(permittedFlows), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	manifest := "integration:\n  vars:\n    tasksBaseDir: x\n    valuesBaseDir: x\n    chartsBaseDir: x\n  scenarios:\n    - id: a\n      enabled: true\n"
-	if err := os.WriteFile(filepath.Join(regDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	scenario := "name: a\nshortname: a\nflows: [install]\nplatforms: [gke]\n"
-	if err := os.WriteFile(filepath.Join(regDir, "scenarios", "a.yaml"), []byte(scenario), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	_, err := LoadRegistry(chartDir)
-	if err == nil || !strings.Contains(err.Error(), "denied by permitted-flows") {
-		t.Fatalf("want denied-flow error, got: %v", err)
+	// Permissive default so tests that don't care about permitted-flows pass.
+	writePermittedFlows(t, dir, "rules: []\n")
+	return dir, chartDir, regDir
+}
+
+// writeManifest writes a minimal manifest.yaml whose scenarios block is the
+// caller-supplied YAML fragment (must be properly indented under `scenarios:`).
+func writeManifest(t *testing.T, regDir, scenariosFragment string) {
+	t.Helper()
+	manifest := "integration:\n  vars:\n    tasksBaseDir: x\n    valuesBaseDir: x\n    chartsBaseDir: x\n  scenarios:\n" + scenariosFragment
+	writeFile(t, filepath.Join(regDir, "manifest.yaml"), manifest)
+}
+
+func writePermittedFlows(t *testing.T, repoRoot, body string) {
+	t.Helper()
+	writeFile(t, filepath.Join(repoRoot, ".github", "config", "permitted-flows.yaml"), "defaults:\n  flows: []\n"+body)
+}
+
+func writeFile(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
 	}
 }
