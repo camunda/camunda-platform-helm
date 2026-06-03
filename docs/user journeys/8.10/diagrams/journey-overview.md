@@ -26,15 +26,20 @@ flowchart LR
         PLAN --> BASE --> bPROD
     end
 
-    subgraph ANC["Architecture and concepts\n(reference — consult in any order)"]
+    subgraph CON["Concepts\n(explanation — understand a decision)"]
         direction TB
-        aRA["Reference architectures"]
         aHUB["Hub / OC topology"]
         aTEN["Tenancy and isolation\n(Logical / Physical Tenant / Separate OC)"]
         aADR["Availability & DR\n(Tier 1 / 2 / 3)"]
         aANA["Process analytics"]
-        aDB["Databases"]
+        aDB["Database strategy"]
         aAUT["Authentication"]
+    end
+
+    subgraph REF["Reference\n(look-up — find an exact value)"]
+        direction TB
+        aRA["Reference architectures"]
+        aDBR["Databases\n(Operating ES/OS, RDBMS, Exporters)"]
     end
 
     subgraph RNM["Run and maintain"]
@@ -51,19 +56,20 @@ flowchart LR
     COMP(["Components\n(cross-reference)"])
 
     QS -.->|"not prod-shaped"| BASE
-    DTP -.->|"consult as needed"| ANC
+    DTP -.->|"understand a decision"| CON
+    DTP -.->|"look something up"| REF
     DTP --> RNM
     MIG -->|"forced changes\n(Helm v4, Bitnami, Hub values)"| DTP
-    MIG -.->|"post-upgrade optional"| ANC
+    MIG -.->|"post-upgrade optional"| CON
 ```
 
 ## 8.9 vs 8.10 sidebar shape
 
 | 8.9 | 8.10 |
 |---|---|
-| Categories to browse | Action path to baseline, then reference |
-| Quickstart · Ref Arch · Deploy & manage · Concepts · Components · Upgrade | Quickstart · Deploy to production · Architecture and concepts · Run and maintain · Components · Migrate |
+| Categories to browse | Action path to baseline, then explanation / look-up split |
+| Quickstart · Ref Arch · Deploy & manage · Concepts · Components · Upgrade | Quickstart · Deploy to production · Concepts · Reference · Run and maintain · Components · Migrate |
 | Backup & restore buried under Concepts | Backup & restore top-level Run and maintain entry |
-| Multi-region buried as one Concepts page | First-class Availability & DR with Tier 1 / 2 / 3 |
+| Multi-region buried as one Concepts page | First-class Availability & DR with Tier 1 / 2 / 3 in Concepts |
 | Deployment target choice implicit | Deployment target chosen explicitly in Plan your deployment |
-| "Concepts" mixes definitions with operations | Concepts → Architecture and concepts; Operations → Run and maintain |
+| "Concepts" mixes definitions, operations, and look-up material | Concepts = explanation only; Reference = look-up only; Operations → Run and maintain |
