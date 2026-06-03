@@ -1,0 +1,1374 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          shortname: eske
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: opensearch
+          enabled: true
+          shortname: oske
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-embedded
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: opensearch-self-signed
+          enabled: true
+          shortname: osss
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-self-signed
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch-tls.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          pre-install:
+            script: pre-install-opensearch-self-signed.sh
+            description: |
+              Provisions the Identity/WebModeler PostgreSQL fixture, then
+              Generates a self-signed CA plus node certificate via openssl
+              and creates the opensearch-tls-certs, opensearch-tls-ca, and
+              opensearch-jks Secrets consumed by the OpenSearch companion
+              chart's TLS config.
+        - name: opensearch-self-signed-os-trust
+          enabled: true
+          shortname: osot
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-self-signed-os-trust
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch-tls.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          pre-install:
+            script: pre-install-opensearch-self-signed-os-trust.sh
+            description: |
+              Provisions the Identity/WebModeler PostgreSQL fixture, then
+              generates a self-signed CA plus node certificate via openssl
+              and creates the opensearch-tls-certs, opensearch-tls-ca, and
+              opensearch-jks Secrets consumed by the OpenSearch companion
+              chart's TLS config. Identical cert generation to the
+              opensearch-self-signed scenario.
+        - name: upgrade-migration
+          enabled: false
+          shortname: eske-upgm
+          auth: keycloak
+          flow: upgrade-minor
+          platforms: []
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+        - name: elasticsearch-basic
+          enabled: false
+          shortname: esba
+          auth: basic
+          flow: install
+          platforms: []
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: oidc
+          enabled: false
+          shortname: esoi
+          auth: oidc
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          skip-e2e: true
+          skip-it: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: auth0
+          enabled: true
+          shortname: esa0
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: auth0
+          persistence: elasticsearch
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: keycloak-mt
+          enabled: false
+          shortname: kemt
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: keycloak-rba
+          enabled: false
+          shortname: kerba
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - rba
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: keycloak-original
+          enabled: false
+          shortname: keyc
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: keycloak-original
+          enabled: true
+          shortname: keorg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: gateway-keycloak
+          enabled: true
+          shortname: gatkc
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - gateway
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+          post-deploy:
+            script: post-deploy-gateway-keycloak.sh
+            description: |
+              Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
+              sizes. Runs after helm install because the Gateway API CRD is only
+              registered by the chart itself.
+        - name: elasticsearch-arm
+          enabled: false
+          shortname: esarm
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: arm
+          identity: keycloak-external
+          persistence: elasticsearch
+          features:
+            - arm
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: noSecondaryStorage
+          enabled: true
+          shortname: nosec
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: no-elasticsearch
+          features:
+            - no-secondary-storage
+          skip-e2e: true
+          skip-it: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: documentstore
+          enabled: true
+          shortname: docstr
+          auth: keycloak
+          flow: ""
+          platforms:
+            - eks
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: rdbms-self-signed
+          enabled: true
+          shortname: rdbss
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms-self-signed
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            script: pre-install-rdbms-self-signed.sh
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario namespace
+              with the `orchestration` database (RDBMS secondary storage),
+              plus `identity` and `webmodeler` databases. CNPG generates a
+              self-signed CA + server cert by default; the CA is exposed via
+              the `postgresql-cluster-ca` secret and consumed by Camunda for
+              `sslmode=verify-full` validation.
+        - name: rdbms-external
+          enabled: false
+          shortname: rdbme
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms-external
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: rdbms
+          enabled: true
+          shortname: rdbms
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the
+              scenario namespace. The cluster bootstraps with three databases:
+              `app` (RDBMS secondary storage backend) plus `identity` and
+              `webmodeler` (Identity + WebModeler external databases needed
+              when no bundled PostgreSQL is deployed).
+        - name: hub-legacy
+          enabled: true
+          shortname: huble
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-legacy
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: shadow-e2e
+          enabled: true
+          shortname: shde2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: hub-legacy
+          enabled: false
+          shortname: hublu
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-legacy
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: hub-mixed
+          enabled: false
+          shortname: hubmu
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-mixed
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: hub-external-db
+          enabled: true
+          shortname: hubdb
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-external-db
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+              - hub-external-postgresql.yaml
+            description: |
+              Provisions the standard CloudNativePG `Cluster` required by
+              Identity, plus a standalone PostgreSQL pod for Web Modeler
+              restapi to connect to via externalDatabase config.
+        - name: keycloak-original
+          enabled: true
+          shortname: keyco
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: alwaysgreen
+          enabled: false
+          shortname: agrn
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: alwaysgreen
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` in the scenario
+              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
+              and WebModeler need external databases now that no
+              bundled PostgreSQL subchart is deployed (8.10+).
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch
+          enabled: false
+          shortname: qael
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-opensearch
+          enabled: false
+          shortname: qaos
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: qa-opensearch-upg
+          enabled: false
+          shortname: qaosupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          prefix-key: qa-opensearch-upg
+        - name: qa-opensearch-upg
+          enabled: false
+          shortname: qaosupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          prefix-key: qa-opensearch-upg
+        - name: qa-elasticsearch-mt
+          enabled: false
+          shortname: qaelmt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - multitenancy
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          shortname: qaelmtupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - multitenancy
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          shortname: qaelmtupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - multitenancy
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-rba
+          enabled: false
+          shortname: qaelrba
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - rba
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store
+          enabled: false
+          shortname: qadoc
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store
+          enabled: false
+          shortname: qadoc
+          auth: keycloak
+          flow: install
+          platforms:
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-license
+          enabled: false
+          shortname: lic
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - license
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+    nightly:
+      scenario: []
+  flows:
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the patch upgrade. Required because the
+          target chart's PostgreSQL spec has immutable diffs vs the prior
+          patch (PSQL 15→14 rollback path) — Helm cannot reconcile in place.
