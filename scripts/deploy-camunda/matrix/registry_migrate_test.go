@@ -136,7 +136,6 @@ func hashJSON(v any) string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
 }
-}
 
 // hookSlug derives a human-readable slug from a LifecycleHook payload.
 //
