@@ -647,7 +647,7 @@ jobs:
 
           # Apply workflow-supplied extra values (e.g. the run-built image tag) last
           # so they override chart defaults. The "Pre-install scenario tweaks" step
-          # above tees ${{ inputs.extra-values }} to /tmp/extra-values-file.yaml.
+          # above tees the workflow's extra-values input to /tmp/extra-values-file.yaml.
           # `matrix run` does not yet natively consume that file (see #6312), so
           # forward it to every helm command via --extra-helm-arg=--values. Skip when
           # empty/whitespace-only. Safe here because the install flow is single-step;
