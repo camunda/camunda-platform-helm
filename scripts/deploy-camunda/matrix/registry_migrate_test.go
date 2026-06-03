@@ -217,11 +217,24 @@ func (w *yamlStringWriter) Write(p []byte) (int, error) {
 }
 
 // sanitize maps a free-form name to a filesystem-safe slug: lowercase ASCII,
-// alphanumeric + `-` + `_` only. Spaces and slashes become `-`; all other
-// runes are dropped.
+// alphanumeric + `-` + `_` only. CamelCase is split (`noSecondaryStorage` →
+// `no-secondary-storage`). Spaces and slashes become `-`; all other runes
+// are dropped.
 func sanitize(s string) string {
 	s = strings.TrimSpace(s)
-	s = strings.ToLower(s)
+	var withHyphens strings.Builder
+	var prev rune
+	for _, r := range s {
+		isUpper := r >= 'A' && r <= 'Z'
+		prevIsLower := prev >= 'a' && prev <= 'z'
+		prevIsDigit := prev >= '0' && prev <= '9'
+		if isUpper && (prevIsLower || prevIsDigit) {
+			withHyphens.WriteRune('-')
+		}
+		withHyphens.WriteRune(r)
+		prev = r
+	}
+	s = strings.ToLower(withHyphens.String())
 	var b strings.Builder
 	for _, r := range s {
 		switch {
@@ -234,37 +247,129 @@ func sanitize(s string) string {
 	return strings.Trim(b.String(), "-_")
 }
 
-// uniqueScenarioID picks the shortest readable ID that is still unique among
-// already-assigned IDs. Strategy: `name` → `name-shortname` →
-// `name-shortname-flow` → numeric suffix. Reviewers should hand-rename ugly
-// numeric-suffix IDs after the first run when the underlying collision is
-// expected to persist.
-func uniqueScenarioID(taken map[string]bool, name, shortname, flow string) string {
-	candidates := []string{
-		sanitize(name),
-		sanitize(name + "-" + shortname),
-		sanitize(name + "-" + shortname + "-" + flow),
+// flowSlug maps full flow names to short, human-readable suffixes used in
+// scenario IDs when a scenario name collides across multiple flow values.
+// Unknown flows are emitted with hyphens stripped so they still produce a
+// valid slug; the empty flow returns the empty string (callers treat that
+// as "this scenario does not contribute to the flow axis").
+func flowSlug(f string) string {
+	switch f {
+	case "":
+		return ""
+	case "install":
+		return "install"
+	case "upgrade-minor":
+		return "upgrade"
+	case "modular-upgrade-minor":
+		return "modular"
+	case "upgrade-patch":
+		return "patch"
+	default:
+		return strings.ReplaceAll(f, "-", "")
 	}
-	for _, c := range candidates {
-		if c == "" {
+}
+
+// axisKey builds a per-scenario disambiguation key from the requested axes.
+// Each axis contributes a part only when the scenario actually carries that
+// dimension (flow non-empty, platforms non-empty, tier > 0). Empty parts are
+// dropped so a `{flow,tier}` subset still produces "upgrade" for a scenario
+// that has flow but no tier set. Returns "" when the scenario contributes
+// nothing to any requested axis — callers treat that as "subset invalid for
+// this scenario" and try the next subset.
+func axisKey(scn CIScenario, axes []string) string {
+	parts := []string{}
+	for _, a := range axes {
+		switch a {
+		case "flow":
+			if f := flowSlug(scn.Flow); f != "" {
+				parts = append(parts, f)
+			}
+		case "platform":
+			if len(scn.Platforms) > 0 {
+				parts = append(parts, scn.Platforms[0])
+			}
+		case "tier":
+			if scn.Tier > 0 {
+				parts = append(parts, fmt.Sprintf("tier%d", scn.Tier))
+			}
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.Join(parts, "-")
+}
+
+// assignScenarioIDs picks a deterministic, human-readable ID per scenario by
+// grouping by sanitize(Name) and, for any group of size > 1, finding the
+// smallest subset of disambiguation axes (flow, platform, tier) that
+// produces distinct non-empty keys across the group. The chosen axis
+// combination is applied uniformly to every scenario in the group, so two
+// scenarios in the same group share the same dimension labels (e.g. both
+// gain a flow suffix, not one gaining flow and the other gaining platform).
+//
+// Subset order is tuned for legacy collision shapes seen across 8.7-8.10:
+// flow first (most common axis), then platform, then tier, then their
+// pairwise combinations, then the triple. Unique-name scenarios skip
+// disambiguation and use the plain sanitized name. A pathological group
+// that cannot be disambiguated by any subset falls back to a numeric
+// suffix; this never fires on current chart data but is kept for safety.
+func assignScenarioIDs(scenarios []CIScenario) []string {
+	ids := make([]string, len(scenarios))
+	groups := map[string][]int{}
+	for i, s := range scenarios {
+		groups[sanitize(s.Name)] = append(groups[sanitize(s.Name)], i)
+	}
+
+	subsetOrder := [][]string{
+		{"flow"},
+		{"platform"},
+		{"tier"},
+		{"flow", "platform"},
+		{"flow", "tier"},
+		{"platform", "tier"},
+		{"flow", "platform", "tier"},
+	}
+
+	for name, idxs := range groups {
+		if len(idxs) == 1 {
+			ids[idxs[0]] = name
 			continue
 		}
-		if !taken[c] {
-			taken[c] = true
-			return c
+		assigned := false
+		for _, subset := range subsetOrder {
+			keys := make([]string, len(idxs))
+			validSubset := true
+			seen := map[string]bool{}
+			for k, i := range idxs {
+				key := axisKey(scenarios[i], subset)
+				if key == "" || seen[key] {
+					validSubset = false
+					break
+				}
+				seen[key] = true
+				keys[k] = key
+			}
+			if !validSubset {
+				continue
+			}
+			for k, i := range idxs {
+				ids[i] = name + "-" + keys[k]
+			}
+			assigned = true
+			break
+		}
+		if !assigned {
+			for k, i := range idxs {
+				if k == 0 {
+					ids[i] = name
+				} else {
+					ids[i] = fmt.Sprintf("%s-%d", name, k+1)
+				}
+			}
 		}
 	}
-	base := sanitize(name + "-" + shortname + "-" + flow)
-	if base == "" {
-		base = "scenario"
-	}
-	for i := 2; ; i++ {
-		c := fmt.Sprintf("%s-%d", base, i)
-		if !taken[c] {
-			taken[c] = true
-			return c
-		}
-	}
+	return ids
 }
 
 // TestMigrate8_10 reads the legacy ci-test-config.yaml from -chartDir and
@@ -301,7 +406,7 @@ func TestMigrate8_10(t *testing.T) {
 
 	hooks := newDedup[*LifecycleHook]()
 	deps := newDedup[ChartDependency]()
-	takenIDs := map[string]bool{}
+	scenarioIDs := assignScenarioIDs(cfg.Integration.Case.PR.Scenarios)
 	var entries []outManifestEntry
 
 	hookID := func(h *LifecycleHook) string {
@@ -314,8 +419,8 @@ func TestMigrate8_10(t *testing.T) {
 		return deps.put(hashJSON(d), depSlug(d), d)
 	}
 
-	for _, scn := range cfg.Integration.Case.PR.Scenarios {
-		id := uniqueScenarioID(takenIDs, scn.Name, scn.Shortname, scn.Flow)
+	for i, scn := range cfg.Integration.Case.PR.Scenarios {
+		id := scenarioIDs[i]
 		out := outScenario{
 			Name:        scn.Name,
 			Shortname:   scn.Shortname,
