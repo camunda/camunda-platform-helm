@@ -134,15 +134,20 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		if len(platforms) == 0 {
 			platforms = []string{""}
 		}
-		flows := []string{scn.Flow}
+
+		effectiveFlow := strings.TrimSpace(scn.Flow)
+		if effectiveFlow == "" {
+			effectiveFlow = "install"
+		}
+
 		if pf != nil {
-			permitted := FilterFlows(pf, version, flows)
-			if len(permitted) == 0 && scn.Flow != "" {
-				problems = append(problems, fmt.Sprintf("%s: flow denied by permitted-flows for version %s", label, version))
+			permitted := FilterFlows(pf, version, []string{effectiveFlow})
+			if len(permitted) == 0 {
+				problems = append(problems, fmt.Sprintf("%s: flow %q denied by permitted-flows for version %s", label, effectiveFlow, version))
 			}
 		}
 		for _, plat := range platforms {
-			k := key{scn.Shortname, scn.Flow, plat}
+			k := key{scn.Shortname, effectiveFlow, plat}
 			if prev, ok := seen[k]; ok {
 				problems = append(problems, fmt.Sprintf("%s platform %q: duplicate of %s", label, plat, prev))
 			} else {
