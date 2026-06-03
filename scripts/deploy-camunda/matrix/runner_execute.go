@@ -535,7 +535,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// Upgrade-only flows skip pre-install entirely (no install step). We
 	// append to flags.{PreInstall,PostDeploy}Hooks rather than overwriting
 	// because earlier code (e.g. the OIDC venom-secret PreInstallHook
-	// registered at line 1738) may have populated those slots already.
+	// registered above) may have populated those slots already.
 	isTwoStepUpgrade := versionmatrix.IsTwoStepUpgradeFlow(entry.Flow)
 	isUpgradeOnly := versionmatrix.IsUpgradeOnlyFlow(entry.Flow)
 	if !isTwoStepUpgrade && !isUpgradeOnly {
