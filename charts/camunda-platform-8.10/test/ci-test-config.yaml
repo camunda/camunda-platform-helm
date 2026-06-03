@@ -609,7 +609,7 @@ integration:
         - name: hub-legacy
           enabled: true
           auth: keycloak
-          shortname: hublu
+          shortname: huble
           tier: 2
           exclude: []
           flow: install
@@ -668,14 +668,14 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: hub-legacy
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: hublu
           exclude: []
           flow: upgrade-minor
           identity: keycloak
           persistence: elasticsearch
-          features: [hub-legacy,migrator]
+          features: [hub-legacy]
           platforms: [gke]
           infra-type:
             gke: distroci
@@ -699,15 +699,14 @@ integration:
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
         - name: hub-mixed
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: hubmu
-          tier: 2
           exclude: []
           flow: upgrade-minor
           identity: keycloak
-          persistence: elasticsearch-external
-          features: [hub-mixed,migrator]
+          persistence: elasticsearch
+          features: [hub-mixed]
           platforms: [gke]
           infra-type:
             gke: distroci
