@@ -15,6 +15,7 @@
 package matrix
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -154,5 +155,74 @@ func TestRegistryValidatorRejectsMissingFixture(t *testing.T) {
 	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 	if err == nil || !strings.Contains(err.Error(), "never-exists.yaml") {
 		t.Fatalf("want missing-fixture error, got: %v", err)
+	}
+}
+
+// TestLoadRegistryRejectsPathTraversalHookID exercises the isPlainFilename
+// guard in LoadRegistry. A manifest scenario referencing a hook ID with a
+// path separator (`../evil`) must be rejected before the file read, so a
+// hostile or malformed registry cannot escape <chartDir>/test/ci/registry/
+// via filepath.Join.
+func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
+	dir := t.TempDir()
+	chartDir := filepath.Join(dir, "charts", "camunda-platform-99.99")
+	regDir := filepath.Join(chartDir, "test", "ci", "registry")
+	for _, sub := range []string{"scenarios", "hooks", "dependencies"} {
+		if err := os.MkdirAll(filepath.Join(regDir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	manifest := "integration:\n  vars:\n    tasksBaseDir: x\n    valuesBaseDir: x\n    chartsBaseDir: x\n  scenarios:\n    - id: bad\n      enabled: true\n"
+	if err := os.WriteFile(filepath.Join(regDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	scenario := "name: bad\nshortname: bad\nflows: [install]\npre-install: ../evil\n"
+	if err := os.WriteFile(filepath.Join(regDir, "scenarios", "bad.yaml"), []byte(scenario), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsDeniedFlow exercises the permitted-flows denial
+// path. A scenario whose flow is denied by the version's permitted-flows
+// rules must be flagged by the validator even when all other invariants hold.
+func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
+	dir := t.TempDir()
+	chartDir := filepath.Join(dir, "charts", "camunda-platform-99.99")
+	regDir := filepath.Join(chartDir, "test", "ci", "registry")
+	for _, sub := range []string{"scenarios", "hooks", "dependencies"} {
+		if err := os.MkdirAll(filepath.Join(regDir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Empty basename-resolution trees so the validator's filesystem checks pass.
+	for _, sub := range []string{
+		filepath.Join(chartDir, "test", "integration", "scenarios", "common", "resources"),
+		filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts"),
+		filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "features"),
+		filepath.Join(dir, ".github", "config"),
+	} {
+		if err := os.MkdirAll(sub, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	permittedFlows := "defaults:\n  flows: []\nrules:\n  - match: ==99.99\n    deny: [install]\n"
+	if err := os.WriteFile(filepath.Join(dir, ".github", "config", "permitted-flows.yaml"), []byte(permittedFlows), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := "integration:\n  vars:\n    tasksBaseDir: x\n    valuesBaseDir: x\n    chartsBaseDir: x\n  scenarios:\n    - id: a\n      enabled: true\n"
+	if err := os.WriteFile(filepath.Join(regDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	scenario := "name: a\nshortname: a\nflows: [install]\nplatforms: [gke]\n"
+	if err := os.WriteFile(filepath.Join(regDir, "scenarios", "a.yaml"), []byte(scenario), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "denied by permitted-flows") {
+		t.Fatalf("want denied-flow error, got: %v", err)
 	}
 }
