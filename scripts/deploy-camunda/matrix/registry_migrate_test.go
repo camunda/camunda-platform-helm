@@ -129,9 +129,13 @@ func (d *dedup[T]) put(hash, slug string, value T) string {
 }
 
 func hashJSON(v any) string {
-	b, _ := json.Marshal(v)
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(fmt.Sprintf("hashJSON: %v", err))
+	}
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
+}
 }
 
 // hookSlug derives a human-readable slug from a LifecycleHook payload.
