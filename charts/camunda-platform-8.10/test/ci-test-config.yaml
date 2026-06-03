@@ -731,6 +731,38 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
+        - name: hub-external-db
+          enabled: true
+          auth: keycloak
+          shortname: hubdb
+          tier: 2
+          exclude: []
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch
+          features: [hub-external-db]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+              - hub-external-postgresql.yaml
+            description: |
+              Provisions the standard CloudNativePG `Cluster` required by
+              Identity, plus a standalone PostgreSQL pod for Web Modeler
+              restapi to connect to via externalDatabase config.
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: "8.5.1"
+              release-name: elasticsearch
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+              values-file: test/integration/companion-values/elasticsearch.yaml
+        # Used by camunda/connectors FEATURE_BRANCH_HELM_TEST workflow (main/8.10).
         - name: keycloak-original
           enabled: true
           flow: install
