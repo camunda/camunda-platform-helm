@@ -101,9 +101,15 @@ func TestRegistryEquivalence(t *testing.T) {
 // expanded those references into each scenario's Dependencies, making the map
 // informational from the loader's perspective. matrix.Generate never consults
 // it after load, so divergence is harmless.
+//
+// IgnoreFields workaround: CITestConfig.Integration is an anonymous struct,
+// so the conventional `IgnoreFields(CITestConfig{}, "Integration.DependencyProfiles")`
+// form fails — go-cmp's path resolver cannot traverse a nested field path
+// through an anonymous type. We instead pass the anonymous value
+// `CITestConfig{}.Integration` directly so cmpopts reads the field name off
+// the anonymous struct's reflect.Type. This is a known go-cmp limitation,
+// not a typo; see https://github.com/google/go-cmp/issues/350.
 func equivalenceOpts() []cmp.Option {
-	type integration struct{} // sentinel for the anonymous struct path; not used directly.
-	_ = integration{}
 	return []cmp.Option{
 		cmpopts.EquateEmpty(),
 		cmpopts.IgnoreFields(CITestConfig{}.Integration, "DependencyProfiles"),

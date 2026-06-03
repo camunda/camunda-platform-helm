@@ -35,9 +35,9 @@ integration:
       enabled: false
     - id: keycloak-rba
       enabled: false
-    - id: keycloak-original
+    - id: keycloak-original-upgrade
       enabled: false
-    - id: keycloak-original-keorg
+    - id: keycloak-original-install-tier2
       tier: 2
       enabled: true
     - id: gateway-keycloak
@@ -46,7 +46,7 @@ integration:
     - id: elasticsearch-arm
       tier: 2
       enabled: false
-    - id: nosecondarystorage
+    - id: no-secondary-storage
       tier: 2
       enabled: true
     - id: documentstore
@@ -60,55 +60,55 @@ integration:
     - id: rdbms
       tier: 2
       enabled: true
-    - id: hub-legacy
+    - id: hub-legacy-install
       tier: 2
       enabled: true
     - id: shadow-e2e
       tier: 2
       enabled: true
-    - id: hub-legacy-hublu
+    - id: hub-legacy-upgrade
       enabled: false
     - id: hub-mixed
       enabled: false
     - id: hub-external-db
       tier: 2
       enabled: true
-    - id: keycloak-original-keyco
+    - id: keycloak-original-install-tier1
       tier: 1
       enabled: true
     - id: alwaysgreen
       enabled: false
-    - id: qa-elasticsearch-upg
+    - id: qa-elasticsearch-upg-install
       enabled: false
-    - id: qa-elasticsearch-upg-qaelupg
+    - id: qa-elasticsearch-upg-modular
       enabled: false
     - id: qa-elasticsearch
       enabled: false
     - id: qa-opensearch
       enabled: false
-    - id: qa-opensearch-upg
+    - id: qa-opensearch-upg-install
       enabled: false
-    - id: qa-opensearch-upg-qaosupg
+    - id: qa-opensearch-upg-modular
       enabled: false
     - id: qa-elasticsearch-mt
       enabled: false
-    - id: qa-elasticsearch-mt-upg
+    - id: qa-elasticsearch-mt-upg-install
       enabled: false
-    - id: qa-elasticsearch-mt-upg-qaelmtupg
+    - id: qa-elasticsearch-mt-upg-modular
       enabled: false
     - id: qa-elasticsearch-rba
       enabled: false
-    - id: qa-document-store
+    - id: qa-document-store-gke
       enabled: false
-    - id: qa-document-store-qadoc
+    - id: qa-document-store-eks
       enabled: false
-    - id: qa-document-store-upg
+    - id: qa-document-store-upg-install-gke
       enabled: false
-    - id: qa-document-store-upg-qadocupg
+    - id: qa-document-store-upg-install-eks
       enabled: false
-    - id: qa-document-store-upg-qadocupg-modular-upgrade-minor
+    - id: qa-document-store-upg-modular-gke
       enabled: false
-    - id: qa-document-store-upg-qadocupg-modular-upgrade-minor-2
+    - id: qa-document-store-upg-modular-eks
       enabled: false
     - id: qa-license
       enabled: false
