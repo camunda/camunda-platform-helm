@@ -1,0 +1,14 @@
+name: alpha
+shortname: alp
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+platforms: [gke]
+infra-type:
+  gke: distroci
+pre-install: cnpg-default
+dependencies:
+  - keycloak-26
+  - elasticsearch-8.5.1

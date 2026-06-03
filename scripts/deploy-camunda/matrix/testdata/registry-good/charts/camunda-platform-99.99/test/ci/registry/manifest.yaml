@@ -1,0 +1,20 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  flows:
+    upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade.sh
+        description: |
+          Pre-upgrade fixture for the synthetic registry-good test.
+  scenarios:
+    - id: alpha
+      tier: 1
+      enabled: true
+    - id: beta
+      tier: 2
+      enabled: true
+    - id: gamma-collapsed
+      enabled: false
