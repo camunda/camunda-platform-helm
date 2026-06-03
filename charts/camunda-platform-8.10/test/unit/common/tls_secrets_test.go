@@ -491,7 +491,7 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
 			Expected: map[string]string{
 				// lookup is empty under `helm template`, so the value is the stable
 				// sha256 of an empty object — presence is what we assert here.
-				"spec.template.metadata.annotations.checksum/ca-bundle": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+				"spec.template.metadata.annotations.checksum/ca-bundle": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
 			},
 		},
 		{
@@ -510,7 +510,7 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
 }
 
 func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
-	const sentinel = "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+	const sentinel = "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
 	testCases := []testhelpers.TestCase{
 		{
 			Name:     "web-modeler restapi gets checksum/ca-bundle even with no user podAnnotations (restructured block)",

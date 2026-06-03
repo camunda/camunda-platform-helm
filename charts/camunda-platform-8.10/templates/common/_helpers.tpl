@@ -1164,12 +1164,15 @@ Usage (inside a pod template's metadata.annotations):
 {{- define "camundaPlatform.caBundleChecksumAnnotation" -}}
 {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" -}}
 {{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.global.tls.caBundle.secret.existingSecret -}}
-{{- /* Hash only .data (the actual CA bytes), NOT the whole object — the full
-       Secret carries server-managed metadata (resourceVersion, managedFields,
+{{- $key := .Values.global.tls.caBundle.secret.existingSecretKey | default "ca.crt" -}}
+{{- /* Hash ONLY the CA-bundle key's bytes, not the whole Secret. The full
+       object carries server-managed metadata (resourceVersion, managedFields,
        uid) that controllers (cert-manager, ArgoCD, server-side apply) churn
-       without touching the CA, which would otherwise cause spurious rollouts.
-       .data is nil under helm template/--dry-run, giving a stable sentinel. */ -}}
-checksum/ca-bundle: {{ ($secret | default dict).data | toYaml | sha256sum }}
+       without touching the CA; and a Secret may hold co-located keys whose
+       rotation is unrelated to the CA. Scoping to existingSecretKey avoids
+       spurious rollouts from either. `get` returns "" under helm template /
+       --dry-run (no API access), giving a stable sentinel. */ -}}
+checksum/ca-bundle: {{ get (($secret | default dict).data | default dict) $key | toYaml | sha256sum }}
 {{- end -}}
 {{- end -}}
 
