@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: openldap
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 389
+      protocol: TCP
+      name: ldap
+  selector:
+    app.kubernetes.io/name: openldap
+    app.kubernetes.io/instance: {{ .Release.Name }}

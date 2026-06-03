@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config-ldif
+  labels:
+    app.kubernetes.io/name: openldap
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  # Enable the memberOf overlay module.
+  # This LDIF is loaded against cn=config during bootstrap (not the main DIT).
+  # It causes OpenLDAP to automatically maintain memberOf attributes on user
+  # entries when groups (groupOfNames) are modified — mimicking Active Directory behavior.
+  03-memberOf.ldif: |
+    dn: cn=module,cn=config
+    cn: module
+    objectClass: olcModuleList
+    olcModuleLoad: memberof
+
+    dn: olcOverlay=memberof,olcDatabase={1}mdb,cn=config
+    objectClass: olcOverlayConfig
+    objectClass: olcMemberOf
+    olcOverlay: memberof
+    olcMemberOfDangling: ignore
+    olcMemberOfGroupOC: groupOfNames
+    olcMemberOfMemberAD: member
+    olcMemberOfMemberOfAD: memberOf

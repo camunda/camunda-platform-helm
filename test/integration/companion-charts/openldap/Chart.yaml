@@ -1,0 +1,15 @@
+apiVersion: v2
+name: openldap
+description: Minimal OpenLDAP for CI integration testing (memberOf overlay enabled)
+type: application
+version: 0.1.0
+appVersion: "2.6"
+# Purpose: Reproduce Keycloak #45256 — a regression in KC 26.x where multiple
+# LDAP group mappers with GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE strategy and
+# LDAP_ONLY mode cause cross-mapper group deletion during user sync.
+#
+# The memberOf overlay mimics Active Directory's automatic memberOf attribute
+# maintenance, which is required to trigger the regression code path in
+# Keycloak's UserRolesRetrieveStrategy.GetRolesFromUserMemberOfAttribute.
+#
+# Ref: SUPPORT-32686, https://github.com/keycloak/keycloak/issues/45256

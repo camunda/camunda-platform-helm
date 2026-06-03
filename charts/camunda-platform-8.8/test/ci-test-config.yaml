@@ -280,6 +280,30 @@ integration:
             gke: distroci
           features: [persistence,migrator]
           platforms: [gke]
+        - name: keycloak-ldap
+          # Disabled: reproducing the regression requires manual post-deploy
+          # steps (configure group mappers via KC Admin API, trigger sync, verify
+          # token). There is no E2E test that automates this flow yet. Enable
+          # only for manual investigation of Keycloak #45256.
+          #
+          # Bug: multiple LDAP group mappers with LDAP_ONLY mode +
+          # GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE cause cross-mapper group
+          # deletion during user sync (KC 26.x regression).
+          # Ref: SUPPORT-32686, https://github.com/keycloak/keycloak/issues/45256
+          enabled: false
+          shortname: keldp
+          auth: keycloak
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch
+          features: [ldap]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+          dependencies:
+            - chart: test/integration/companion-charts/openldap
+              release-name: openldap
+              values-file: test/integration/companion-values/openldap.yaml
 
         # ===========================================================================
         # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
