@@ -1,0 +1,20 @@
+name: qa-document-store
+shortname: qadoc
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - postgresql-companion
+  - documentstore
+platforms:
+  - eks
+infra-type:
+  eks: preemptible
+qa: true
+image-tags: true
+dependencies:
+  - postgresql
+  - keycloak
+  - elasticsearch-8.5.1

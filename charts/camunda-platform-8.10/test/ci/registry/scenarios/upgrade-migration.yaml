@@ -1,0 +1,8 @@
+name: upgrade-migration
+shortname: eske-upgm
+auth: keycloak
+flows:
+  - upgrade-minor
+infra-type:
+  eks: preemptible
+  gke: distroci

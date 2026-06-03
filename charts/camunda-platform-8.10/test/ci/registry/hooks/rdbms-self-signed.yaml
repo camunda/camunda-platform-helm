@@ -1,0 +1,8 @@
+script: pre-install-rdbms-self-signed.sh
+description: |
+  Provisions a CloudNativePG `Cluster` in the scenario namespace
+  with the `orchestration` database (RDBMS secondary storage),
+  plus `identity` and `webmodeler` databases. CNPG generates a
+  self-signed CA + server cert by default; the CA is exposed via
+  the `postgresql-cluster-ca` secret and consumed by Camunda for
+  `sslmode=verify-full` validation.

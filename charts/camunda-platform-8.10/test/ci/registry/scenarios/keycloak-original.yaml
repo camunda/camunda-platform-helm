@@ -1,0 +1,16 @@
+name: keycloak-original
+shortname: keyc
+auth: keycloak
+flows:
+  - upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci
+pre-install: postgresql-cluster-default
+dependencies:
+  - keycloak
+  - elasticsearch-8.5.1

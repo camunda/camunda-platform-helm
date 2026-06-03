@@ -1,0 +1,17 @@
+name: elasticsearch-arm
+shortname: esarm
+auth: keycloak
+flows:
+  - install
+identity: keycloak-external
+persistence: elasticsearch
+features:
+  - arm
+platforms:
+  - gke
+infra-type:
+  gke: arm
+skip-e2e: true
+pre-install: postgresql-cluster-default
+dependencies:
+  - elasticsearch-8.5.1

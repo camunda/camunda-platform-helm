@@ -1,0 +1,114 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  flows:
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the patch upgrade. Required because the
+          target chart's PostgreSQL spec has immutable diffs vs the prior
+          patch (PSQL 15→14 rollback path) — Helm cannot reconcile in place.
+  scenarios:
+    - id: elasticsearch
+      tier: 1
+      enabled: true
+    - id: opensearch
+      tier: 2
+      enabled: true
+    - id: opensearch-self-signed
+      enabled: true
+    - id: opensearch-self-signed-os-trust
+      enabled: true
+    - id: upgrade-migration
+      enabled: false
+    - id: elasticsearch-basic
+      enabled: false
+    - id: oidc
+      enabled: false
+    - id: auth0
+      enabled: true
+    - id: keycloak-mt
+      enabled: false
+    - id: keycloak-rba
+      enabled: false
+    - id: keycloak-original
+      enabled: false
+    - id: keycloak-original-keorg
+      tier: 2
+      enabled: true
+    - id: gateway-keycloak
+      tier: 2
+      enabled: true
+    - id: elasticsearch-arm
+      tier: 2
+      enabled: false
+    - id: nosecondarystorage
+      tier: 2
+      enabled: true
+    - id: documentstore
+      tier: 2
+      enabled: true
+    - id: rdbms-self-signed
+      tier: 2
+      enabled: true
+    - id: rdbms-external
+      enabled: false
+    - id: rdbms
+      tier: 2
+      enabled: true
+    - id: hub-legacy
+      tier: 2
+      enabled: true
+    - id: shadow-e2e
+      tier: 2
+      enabled: true
+    - id: hub-legacy-hublu
+      enabled: false
+    - id: hub-mixed
+      enabled: false
+    - id: hub-external-db
+      tier: 2
+      enabled: true
+    - id: keycloak-original-keyco
+      tier: 1
+      enabled: true
+    - id: alwaysgreen
+      enabled: false
+    - id: qa-elasticsearch-upg
+      enabled: false
+    - id: qa-elasticsearch-upg-qaelupg
+      enabled: false
+    - id: qa-elasticsearch
+      enabled: false
+    - id: qa-opensearch
+      enabled: false
+    - id: qa-opensearch-upg
+      enabled: false
+    - id: qa-opensearch-upg-qaosupg
+      enabled: false
+    - id: qa-elasticsearch-mt
+      enabled: false
+    - id: qa-elasticsearch-mt-upg
+      enabled: false
+    - id: qa-elasticsearch-mt-upg-qaelmtupg
+      enabled: false
+    - id: qa-elasticsearch-rba
+      enabled: false
+    - id: qa-document-store
+      enabled: false
+    - id: qa-document-store-qadoc
+      enabled: false
+    - id: qa-document-store-upg
+      enabled: false
+    - id: qa-document-store-upg-qadocupg
+      enabled: false
+    - id: qa-document-store-upg-qadocupg-modular-upgrade-minor
+      enabled: false
+    - id: qa-document-store-upg-qadocupg-modular-upgrade-minor-2
+      enabled: false
+    - id: qa-license
+      enabled: false

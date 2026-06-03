@@ -1,0 +1,18 @@
+name: noSecondaryStorage
+shortname: nosec
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: no-elasticsearch
+features:
+  - no-secondary-storage
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+skip-e2e: true
+skip-it: true
+pre-install: postgresql-cluster-default
+dependencies:
+  - keycloak

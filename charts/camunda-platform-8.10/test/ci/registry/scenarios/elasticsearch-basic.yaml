@@ -1,0 +1,16 @@
+name: elasticsearch-basic
+shortname: esba
+auth: basic
+flows:
+  - install
+identity: basic
+persistence: elasticsearch
+exclude:
+  - identity
+  - console
+  - orchestration-grpc
+infra-type:
+  eks: preemptible
+  gke: distroci
+dependencies:
+  - elasticsearch-8.5.1

@@ -1,0 +1,20 @@
+name: qa-elasticsearch-mt-upg
+shortname: qaelmtupg
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - postgresql-companion
+  - multitenancy
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true
+dependencies:
+  - postgresql-qa
+  - keycloak-qa
+  - elasticsearch-8.5.1-qa

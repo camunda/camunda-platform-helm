@@ -134,12 +134,23 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	for _, version := range versions {
 		chartDir := filepath.Join(repoRoot, "charts", fmt.Sprintf("camunda-platform-%s", version))
 
-		cfg, err := LoadCITestConfig(chartDir)
+		// Per ADR 0093 §5: registry takes precedence when its manifest
+		// exists; otherwise fall back to the legacy ci-test-config.yaml. No
+		// runtime flag — the dispatch is purely file-presence based.
+		var (
+			cfg *CITestConfig
+			err error
+		)
+		if HasRegistry(chartDir) {
+			cfg, err = LoadRegistry(chartDir)
+		} else {
+			cfg, err = LoadCITestConfig(chartDir)
+		}
 		if err != nil {
 			logging.Logger.Warn().
 				Str("version", version).
 				Err(err).
-				Msg("Skipping version — failed to load ci-test-config.yaml")
+				Msg("Skipping version — failed to load CI test config")
 			continue
 		}
 
