@@ -95,12 +95,16 @@ func TestRegistryEquivalence(t *testing.T) {
 
 // equivalenceOpts captures the comparison rules: empty vs nil slice equivalence
 // (yaml-omitempty erases that distinction across a round trip), plus we ignore
-// CITestConfig.Integration.DependencyProfiles. The registry stores fully-
-// inlined dependencies per scenario, so DependencyProfiles is unused on the
-// registry path; the legacy path populates the map but ResolveProfiles already
-// expanded those references into each scenario's Dependencies, making the map
-// informational from the loader's perspective. matrix.Generate never consults
-// it after load, so divergence is harmless.
+// CITestConfig.Integration.DependencyProfiles and LifecycleHook.Description.
+//
+// DependencyProfiles: the registry stores fully-inlined dependencies per scenario,
+// so DependencyProfiles is unused on the registry path; the legacy path populates
+// the map but ResolveProfiles already expanded those references into each
+// scenario's Dependencies, making the map informational from the loader's
+// perspective. matrix.Generate never consults it after load.
+//
+// LifecycleHook.Description: documentation text only; the runner never reads it.
+// Registry hooks may carry updated descriptions without breaking equivalence.
 //
 // IgnoreFields workaround: CITestConfig.Integration is an anonymous struct,
 // so the conventional `IgnoreFields(CITestConfig{}, "Integration.DependencyProfiles")`
@@ -113,6 +117,7 @@ func equivalenceOpts() []cmp.Option {
 	return []cmp.Option{
 		cmpopts.EquateEmpty(),
 		cmpopts.IgnoreFields(CITestConfig{}.Integration, "DependencyProfiles"),
+		cmpopts.IgnoreFields(LifecycleHook{}, "Description"),
 	}
 }
 

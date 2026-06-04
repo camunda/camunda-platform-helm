@@ -1,7 +1,8 @@
 fixtures:
   - postgresql-cluster.yaml
 description: |
-  Provisions a CloudNativePG `Cluster` in the scenario
-  namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-  and WebModeler need external databases now that no
-  bundled PostgreSQL subchart is deployed (8.10+).
+  Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+  namespace. The cluster bootstraps with three databases: `app`
+  (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+  (Identity + WebModeler external databases needed when no bundled
+  PostgreSQL subchart is deployed).
