@@ -1,8 +1,0 @@
-fixtures:
-  - postgresql-cluster.yaml
-description: |
-  Provisions a CloudNativePG `Cluster` plus auth Secret in the
-  scenario namespace. The cluster bootstraps with three databases:
-  `app` (RDBMS secondary storage backend) plus `identity` and
-  `webmodeler` (Identity + WebModeler external databases needed
-  when no bundled PostgreSQL is deployed).

@@ -141,10 +141,10 @@ func hashJSON(v any) string {
 //
 //   - Script-based: drop the well-known `pre-install-` / `post-deploy-`
 //     prefix and `.sh` suffix so the slug matches what an author would write.
-//   - Single-fixture: when the fixture is `postgresql-cluster.yaml`, map to
-//     the `cnpg` family established by #6288 (`cnpg` default, `cnpg-rdbms`
-//     for the three-database bootstrap). Other fixtures keep the
-//     `-self-signed` / `-default` derivation.
+//   - Single-fixture: when the fixture is `postgresql-cluster.yaml`, return
+//     `cnpg` — the fixture always provisions all three databases (`app`,
+//     `identity`, `webmodeler`), so a single slug covers all use cases.
+//     Other fixtures keep the `-self-signed` / `-default` derivation.
 //   - Multi-fixture: when `postgresql-cluster.yaml` is one of the fixtures,
 //     extend the `cnpg-` family using the other fixture basenames (with any
 //     `postgresql` segments trimmed). Otherwise join basenames with `-`.
@@ -161,10 +161,6 @@ func hookSlug(h *LifecycleHook) string {
 	const pgClusterFixture = "postgresql-cluster.yaml"
 	if len(h.Fixtures) == 1 {
 		if h.Fixtures[0] == pgClusterFixture {
-			if strings.Contains(h.Description, "three databases:") &&
-				strings.Contains(h.Description, "`app`") {
-				return "cnpg-rdbms"
-			}
 			return "cnpg"
 		}
 		base := strings.TrimSuffix(h.Fixtures[0], ".yaml")

@@ -34,10 +34,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: opensearch
           enabled: true
           shortname: oske
@@ -65,10 +66,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: opensearch-self-signed
           enabled: true
           shortname: osss
@@ -222,10 +224,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: keycloak-mt
           enabled: false
           shortname: kemt
@@ -253,10 +256,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: keycloak-rba
           enabled: false
           shortname: kerba
@@ -286,10 +290,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: keycloak-original
           enabled: false
           shortname: keyc
@@ -317,10 +322,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: keycloak-original
           enabled: true
           shortname: keorg
@@ -349,10 +355,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: gateway-keycloak
           enabled: true
           shortname: gatkc
@@ -383,10 +390,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
           post-deploy:
             script: post-deploy-gateway-keycloak.sh
             description: |
@@ -422,10 +430,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: noSecondaryStorage
           enabled: true
           shortname: nosec
@@ -451,10 +460,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: documentstore
           enabled: true
           shortname: docstr
@@ -545,10 +555,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: rdbms
           enabled: true
           shortname: rdbms
@@ -576,11 +587,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the
-              scenario namespace. The cluster bootstraps with three databases:
-              `app` (RDBMS secondary storage backend) plus `identity` and
-              `webmodeler` (Identity + WebModeler external databases needed
-              when no bundled PostgreSQL is deployed).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: hub-legacy
           enabled: true
           shortname: huble
@@ -610,10 +621,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: shadow-e2e
           enabled: true
           shortname: shde2
@@ -642,10 +654,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: hub-legacy
           enabled: false
           shortname: hublu
@@ -675,10 +688,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: hub-mixed
           enabled: false
           shortname: hubmu
@@ -708,10 +722,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: hub-external-db
           enabled: true
           shortname: hubdb
@@ -772,10 +787,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: alwaysgreen
           enabled: false
           shortname: agrn
@@ -802,10 +818,11 @@ integration:
             fixtures:
               - postgresql-cluster.yaml
             description: |
-              Provisions a CloudNativePG `Cluster` in the scenario
-              namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-              and WebModeler need external databases now that no
-              bundled PostgreSQL subchart is deployed (8.10+).
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
+              namespace. The cluster bootstraps with three databases: `app`
+              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
+              (Identity + WebModeler external databases needed when no bundled
+              PostgreSQL subchart is deployed).
         - name: qa-elasticsearch-upg
           enabled: false
           shortname: qaelupg
