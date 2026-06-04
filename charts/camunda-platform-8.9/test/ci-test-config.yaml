@@ -21,7 +21,7 @@ unit:
 #
 # 2. Selection + Composition (new - preferred for clarity):
 #    - name: my-test
-#      identity: keycloak        # Explicit: keycloak, keycloak-external, oidc, basic, hybrid
+#      identity: keycloak        # Explicit: keycloak, oidc, basic, hybrid
 #      persistence: elasticsearch # Explicit: elasticsearch, opensearch, rdbms, rdbms-oracle
 #      platforms: [gke]          # Explicit: gke, eks, openshift
 #      features: [multitenancy]  # Explicit: any filename (without .yaml) from test/integration/scenarios/chart-full-setup/values/features/
@@ -92,18 +92,6 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
-        - name: opensearch-external
-          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
-          shortname: osex
-          tier: 2
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          persistence: opensearch-external
-          flow: install
-          infra-type:
-            gke: distroci
-          platforms: [gke]
         - name: elasticsearch-basic
           enabled: false
           shortname: esba

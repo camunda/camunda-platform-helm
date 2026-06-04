@@ -198,7 +198,7 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 }
 
 // keycloakVersionSuffix extracts a version suffix from a Keycloak hostname.
-// For example, "keycloak-24-9-0.ci.distro.ultrawombat.com" → "24_9_0".
+// For example, "keycloak-25-0-0.example.com" → "25_0_0".
 // The hostname is expected to have the form "keycloak-<version>.<domain>",
 // where <version> uses hyphens that are replaced with underscores.
 // If the hostname does not match this pattern, the full hostname (with

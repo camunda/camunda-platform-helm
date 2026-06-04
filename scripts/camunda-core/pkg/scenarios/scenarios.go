@@ -30,7 +30,7 @@ const (
 // selection + composition model. This replaces the old LayeredConfig.
 type DeploymentConfig struct {
 	// Required selections
-	Identity    string // keycloak, keycloak-external, oidc, basic, hybrid
+	Identity    string // keycloak, oidc, basic, hybrid
 	Persistence string // elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle
 	Platform    string // gke, eks, openshift
 
@@ -53,7 +53,7 @@ type DeploymentConfig struct {
 // Validate checks that required fields are set and feature constraints are satisfied.
 func (c *DeploymentConfig) Validate() error {
 	if c.Identity == "" {
-		return errors.New("--identity is required (keycloak, keycloak-external, oidc, auth0, basic, hybrid)")
+		return errors.New("--identity is required (keycloak, oidc, auth0, basic, hybrid)")
 	}
 	if c.Persistence == "" {
 		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle)")
@@ -63,7 +63,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate identity values
-	validIdentities := []string{"keycloak", "keycloak-external", "oidc", "auth0", "basic", "hybrid"}
+	validIdentities := []string{"keycloak", "oidc", "auth0", "basic", "hybrid"}
 	if !contains(validIdentities, c.Identity) {
 		return fmt.Errorf("invalid --identity value %q: must be one of: %s", c.Identity, strings.Join(validIdentities, ", "))
 	}
@@ -71,13 +71,13 @@ func (c *DeploymentConfig) Validate() error {
 	// Validate persistence values.
 	// Note: this list is global across chart versions. Some values resolve to
 	// values files that exist only in 8.10+ — `elasticsearch-self-signed`,
-	// `elasticsearch-external-self-signed`, `opensearch-self-signed`,
-	// `opensearch-self-signed-os-trust`, `rdbms-self-signed`. Selecting one of
+	// `opensearch-self-signed`, `opensearch-self-signed-os-trust`,
+	// `rdbms-self-signed`. Selecting one of
 	// these against an older chart version passes Validate() but produces no
 	// persistence layer (ResolvePaths skips missing files), so the deploy
 	// proceeds with no TLS wiring. Treated as an 8.10-only scope intentionally;
 	// when 8.10 becomes the only supported series this comment can be removed.
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "elasticsearch-external-self-signed", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-external", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -318,24 +318,25 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive QA mode from prefix
 	if strings.HasPrefix(s, "qa-") {
 		config.QA = true
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 	}
 
 	// Handle well-known composite scenarios that can't be derived from name parsing alone.
-	// keycloak-original historically means: external Keycloak + external Elasticsearch.
-	// The name is misleading (it refers to the "original" test config format), but
-	// 3rd parties call test-integration-template.yaml with scenario: keycloak-original,
-	// so it must keep working.
+	// keycloak-original historically meant external Keycloak + external Elasticsearch; that
+	// shared CI infra was decommissioned (#6245), so it now maps to the bundled Keycloak +
+	// bundled Elasticsearch. The name is misleading (it refers to the "original" test config
+	// format), but 3rd parties call test-integration-template.yaml with
+	// scenario: keycloak-original, so it must keep working.
 	if s == "keycloak-original" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 		config.Platform = "gke"
 		return config
 	}
 
 	if s == "elasticsearch" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 		config.Platform = "gke"
 		return config
 	}
@@ -366,7 +367,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "opensearch-embedded"):
 		config.Persistence = "opensearch-embedded"
 	case strings.Contains(s, "opensearch"):
-		config.Persistence = "opensearch-external"
+		config.Persistence = "opensearch"
 	case strings.Contains(s, "rdbms-self-signed"):
 		config.Persistence = "rdbms-self-signed"
 	case strings.Contains(s, "rdbms-external"):
@@ -376,7 +377,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "rdbms"):
 		config.Persistence = "rdbms"
 	default:
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 	}
 
 	// Derive platform (default to gke)
@@ -420,7 +421,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 // BuilderOverrides holds optional overrides applied on top of name-derived defaults.
 // Zero-value fields are ignored so callers only need to set the dimensions they care about.
 type BuilderOverrides struct {
-	Identity     string   // keycloak, keycloak-external, oidc, basic, hybrid
+	Identity     string   // keycloak, oidc, basic, hybrid
 	Persistence  string   // elasticsearch, opensearch, rdbms, rdbms-oracle
 	Platform     string   // effective platform (already resolved from TestPlatform/Platform)
 	Features     []string // multitenancy, rba, documentstore

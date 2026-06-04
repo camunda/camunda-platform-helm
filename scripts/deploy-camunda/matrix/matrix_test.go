@@ -395,7 +395,7 @@ func TestFilter(t *testing.T) {
 	// --- Tier filter tests ---
 	tieredEntries := []Entry{
 		{Version: "8.9", Scenario: "elasticsearch", Shortname: "eske", Flow: "install", Tier: 1, Enabled: true},
-		{Version: "8.9", Scenario: "opensearch-external", Shortname: "osex", Flow: "install", Tier: 1, Enabled: true},
+		{Version: "8.9", Scenario: "opensearch", Shortname: "oseb", Flow: "install", Tier: 1, Enabled: true},
 		{Version: "8.9", Scenario: "keycloak-mt", Shortname: "kemt", Flow: "install", Tier: 2, Enabled: true},
 		{Version: "8.9", Scenario: "keycloak-rba", Shortname: "kerba", Flow: "install", Tier: 2, Enabled: true},
 		{Version: "8.9", Scenario: "no-tier-set", Shortname: "notier", Flow: "install", Tier: 0, Enabled: true},

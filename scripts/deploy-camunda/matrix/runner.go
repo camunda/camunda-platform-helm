@@ -31,14 +31,6 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 )
 
-// numESPools is the number of Elasticsearch pools across which matrix entries
-// are distributed via round-robin. This matches the 4-cluster pool infra.
-const numESPools = 4
-
-// numOSPools is the number of OpenSearch pools across which matrix entries
-// are distributed via round-robin. This matches the 4-cluster pool infra.
-const numOSPools = 4
-
 // RunOptions controls matrix execution.
 type RunOptions struct {
 	// DryRun logs what would be done without executing.
@@ -1714,9 +1706,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		},
 	}
 
-	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
-	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
-
 	// Wire companion chart dependencies from ci-test-config.yaml.
 	// Values file paths are resolved relative to the repo root.
 	// Chart references are resolved to absolute paths when they point to an
@@ -2063,8 +2052,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Str("persistence", entry.Persistence).
 		Strs("features", entry.Features).
 		Bool("vaultBackedSecrets", useVault).
-		Str("esPoolIndex", flags.ESPoolIndex).
-		Str("osPoolIndex", flags.OSPoolIndex).
 		Msg("Deploying matrix entry")
 
 	// --- Lifecycle hook registration (single-step flows) ---

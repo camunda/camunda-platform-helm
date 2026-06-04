@@ -19,8 +19,10 @@ var ValidIngressBaseDomains = []string{
 }
 
 const (
-	// DefaultKeycloakHost is the default external Keycloak hostname used in CI.
-	DefaultKeycloakHost = "keycloak-24-9-0.ci.distro.ultrawombat.com"
+	// DefaultKeycloakHost is the default external Keycloak host. The shared CI
+	// Keycloak was decommissioned (#6245), so there is no default; external-keycloak
+	// deploys must pass --keycloak-host explicitly.
+	DefaultKeycloakHost = ""
 	// DefaultKeycloakProtocol is the default protocol for the external Keycloak.
 	DefaultKeycloakProtocol = "https"
 )

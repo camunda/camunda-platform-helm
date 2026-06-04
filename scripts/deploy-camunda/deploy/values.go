@@ -407,26 +407,6 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	}
 	envMap["FLOW"] = flags.Deployment.Flow
 
-	// Default ES pool index to 0 if not set (for local dev / manual runs).
-	esPoolIndex := flags.ESPoolIndex
-	if esPoolIndex == "" {
-		esPoolIndex = envMap["ES_POOL_INDEX"]
-	}
-	if esPoolIndex == "" {
-		esPoolIndex = "0"
-	}
-	envMap["ES_POOL_INDEX"] = esPoolIndex
-
-	// Default OS pool index to 0 if not set (for local dev / manual runs).
-	osPoolIndex := flags.OSPoolIndex
-	if osPoolIndex == "" {
-		osPoolIndex = envMap["OS_POOL_INDEX"]
-	}
-	if osPoolIndex == "" {
-		osPoolIndex = "0"
-	}
-	envMap["OS_POOL_INDEX"] = osPoolIndex
-
 	// 4. Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
 	for k, v := range flags.ExtraEnv {
 		envMap[k] = v
@@ -552,7 +532,7 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 
 		fmt.Fprintf(&helpMsg, "Hint: Use the new flags directly. Examples:\n")
 		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke\n")
-		fmt.Fprintf(&helpMsg, "  --identity keycloak-external --persistence opensearch --test-platform gke --features multitenancy\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence opensearch --test-platform gke --features multitenancy\n")
 		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke --qa --image-tags\n")
 	} else {
 		// Legacy single-file structure
@@ -799,7 +779,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		// Deep-merge all layered files into a single YAML file to prevent
 		// Helm's shallow array replacement from silently dropping entries.
 		// Without this, a later layer's array (e.g., rba.yaml's operate.env)
-		// completely replaces an earlier layer's array (e.g., elasticsearch-external.yaml's
+		// completely replaces an earlier layer's array (e.g., elasticsearch.yaml's
 		// operate.env), losing critical env vars like index prefix overrides.
 		scenarioValueFiles, err = MergeLayeredValues(scenarioValueFiles, tempDir)
 		if err != nil {

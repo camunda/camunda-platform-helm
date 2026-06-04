@@ -111,11 +111,6 @@ runs:
             ".github/config/external-secret/external-secret-certificates-vault.yaml" \
             "$TEST_NAMESPACE"
 
-          # Apply infra secrets (creates infra-credentials secret)
-          apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-infra-vault.yaml" \
-            "$TEST_NAMESPACE"
-
           # Apply credentials secrets (creates integration-test secret, for backward compat)
           apply_external_secret_with_retry \
             ".github/config/external-secret/external-secret-credentials-vault.yaml" \
@@ -150,15 +145,6 @@ runs:
             kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
           wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
-        fi
-
-        if [[ "$DISTRO_PLATFORM" == "eks" ]]; then
-          echo "✅ Infra secrets already applied via vault-backed ExternalSecrets above"
-        else
-          echo "🔧 Applying external secret infra configuration"
-          apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-infra.yaml" \
-            "$TEST_NAMESPACE"
         fi
 
         echo "✅ TLS Certificates/Secrets configuration completed."

@@ -246,8 +246,8 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Test.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
 	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
-	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-external, elasticsearch-self-signed, elasticsearch-external-self-signed, no-elasticsearch, opensearch, opensearch-embedded, opensearch-external, opensearch-self-signed, opensearch-self-signed-os-trust, rdbms, rdbms-external, rdbms-oracle, rdbms-self-signed")
+	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection: keycloak, oidc, basic, hybrid")
+	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-self-signed, no-elasticsearch, opensearch, opensearch-embedded, opensearch-self-signed, opensearch-self-signed-os-trust, rdbms, rdbms-external, rdbms-oracle, rdbms-self-signed")
 	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
 	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
 	f.BoolVar(&flags.Selection.QA, "qa", false, "Enable QA configuration (test users, etc.)")
@@ -394,7 +394,7 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Identity completion
 	_ = cmd.RegisterFlagCompletionFunc("identity", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultIdentities := []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}
+		defaultIdentities := []string{"keycloak", "oidc", "basic", "hybrid"}
 
 		if scenarioPath == "" {
 			return defaultIdentities, cobra.ShellCompDirectiveNoFileComp
@@ -410,7 +410,7 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Persistence completion
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPersistence := []string{"elasticsearch", "elasticsearch-external", "elasticsearch-self-signed", "elasticsearch-external-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-external", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
+		defaultPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 
 		if scenarioPath == "" {
 			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
@@ -466,12 +466,12 @@ func registerLayeredValuesCompletion(cmd *cobra.Command) {
 		scenarioPath := resolveScenarioPath(cmd)
 		if scenarioPath == "" {
 			// Return default auth types
-			return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
+			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		authTypes, err := scenarios.ListLayeredAuthTypes(scenarioPath)
 		if err != nil || len(authTypes) == 0 {
-			return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
+			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
 		}
 		return authTypes, cobra.ShellCompDirectiveNoFileComp
 	})

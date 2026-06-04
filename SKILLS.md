@@ -81,7 +81,7 @@ deploy-camunda \
   --chart-path ./charts/camunda-platform-8.9 \
   --namespace $NS --release $RELEASE \
   --scenario chart-full-setup \
-  --identity keycloak-external \
+  --identity keycloak \
   --persistence opensearch \
   --features multitenancy,documentstore \
   --qa
@@ -91,7 +91,7 @@ Available selections:
 
 | Flag | Values |
 |------|--------|
-| `--identity` | `keycloak`, `keycloak-external`, `oidc`, `basic`, `hybrid` |
+| `--identity` | `keycloak`, `oidc`, `basic`, `hybrid` |
 | `--persistence` | `elasticsearch`, `opensearch`, `rdbms`, `rdbms-oracle` |
 | `--test-platform` | `gke`, `eks`, `openshift` |
 | `--features` | `multitenancy`, `rba`, `documentstore` |

@@ -18,16 +18,7 @@ rosa:
   ingress-hostname-base: ci.distro.ultrawombat.com
   namespace-prefix: camunda
 
-elasticsearch:
-  # In-cluster ES on GKE (4 pools: pool-0 through pool-3)
-  host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-  namespace: distribution-elasticsearch-21-6-3
-  pools: 4
-
 opensearch:
-  # In-cluster OS on GKE (4 pools: pool-0 through pool-3)
-  host: opensearch-2-19.ci.distro.ultrawombat.com
-  pools: 4
   # AWS OpenSearch (used for EKS scenarios)
   aws:
     host: search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com
@@ -40,7 +31,3 @@ postgresql:
 
 teleport:
   proxy: camunda.teleport.sh:443
-
-keycloak:
-  version-prefix: "24-9-0"
-  protocol: https

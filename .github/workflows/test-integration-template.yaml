@@ -100,7 +100,7 @@ on:
       # and features instead of relying on scenario name parsing.
       # =============================================================================
       test-identity:
-        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        description: "Identity selection: keycloak, oidc, basic, hybrid"
         required: false
         type: string
       test-persistence:
