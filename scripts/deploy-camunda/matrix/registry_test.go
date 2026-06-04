@@ -165,9 +165,9 @@ func TestRegistryValidatorRejectsMissingFixture(t *testing.T) {
 // via filepath.Join.
 func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: bad\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
-		"name: bad\nshortname: bad\nflows: [install]\npre-install: ../evil\n")
+		"name: bad\nflows: [install]\npre-install: ../evil\n")
 
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "plain filename") {
@@ -181,9 +181,9 @@ func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
 func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
 	dir, chartDir, regDir := syntheticChart(t)
 	writePermittedFlows(t, dir, "rules:\n  - match: ==99.99\n    deny: [install]\n")
-	writeManifest(t, regDir, "    - id: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
-		"name: a\nshortname: a\nflows: [install]\nplatforms: [gke]\n")
+		"name: a\nflows: [install]\nplatforms: [gke]\n")
 
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "denied by permitted-flows") {
@@ -197,9 +197,9 @@ func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
 // guard from one branch is caught.
 func TestLoadRegistryRejectsPathTraversalDepID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: bad\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
-		"name: bad\nshortname: bad\nflows: [install]\ndependencies:\n  - ../evil\n")
+		"name: bad\nflows: [install]\ndependencies:\n  - ../evil\n")
 
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "plain filename") {

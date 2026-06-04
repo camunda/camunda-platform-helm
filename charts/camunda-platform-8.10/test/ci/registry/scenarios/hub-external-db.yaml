@@ -1,5 +1,4 @@
 name: hub-external-db
-shortname: hubdb
 auth: keycloak
 flows:
   - install
@@ -11,7 +10,7 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-pre-install: postgresql-cluster-hub-external-postgresql
+pre-install: cnpg-hub-external
 dependencies:
   - keycloak
-  - elasticsearch-8.5.1
+  - elasticsearch

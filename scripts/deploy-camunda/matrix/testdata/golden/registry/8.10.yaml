@@ -394,7 +394,7 @@ integration:
               sizes. Runs after helm install because the Gateway API CRD is only
               registered by the chart itself.
         - name: elasticsearch-arm
-          enabled: false
+          enabled: true
           shortname: esarm
           auth: keycloak
           flow: install
@@ -404,12 +404,14 @@ integration:
           tier: 2
           infra-type:
             gke: arm
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch
           features:
             - arm
-          skip-e2e: true
           dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch

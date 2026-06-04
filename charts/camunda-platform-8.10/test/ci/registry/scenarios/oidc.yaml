@@ -1,5 +1,4 @@
 name: oidc
-shortname: esoi
 auth: oidc
 flows:
   - upgrade-minor
@@ -20,4 +19,4 @@ skip-e2e: true
 skip-it: true
 dependencies:
   - postgresql
-  - elasticsearch-8.5.1
+  - elasticsearch

@@ -1,5 +1,4 @@
 name: alpha
-shortname: alp
 auth: keycloak
 flows:
   - install

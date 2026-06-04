@@ -1,5 +1,4 @@
 name: opensearch
-shortname: oske
 auth: keycloak
 flows:
   - install
@@ -9,7 +8,7 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-pre-install: postgresql-cluster-default
+pre-install: cnpg
 dependencies:
   - keycloak
-  - opensearch-3.6.0
+  - opensearch

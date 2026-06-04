@@ -1,5 +1,4 @@
 name: qa-elasticsearch-upg
-shortname: qaelupg
 auth: keycloak
 flows:
   - modular-upgrade-minor
@@ -16,4 +15,4 @@ image-tags: true
 dependencies:
   - postgresql-qa
   - keycloak-qa
-  - elasticsearch-8.5.1-qa
+  - elasticsearch-qa

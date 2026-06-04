@@ -1,5 +1,4 @@
 name: qa-opensearch
-shortname: qaos
 auth: keycloak
 flows:
   - install
@@ -16,4 +15,4 @@ image-tags: true
 dependencies:
   - postgresql-qa
   - keycloak-qa
-  - opensearch-3.6.0
+  - opensearch

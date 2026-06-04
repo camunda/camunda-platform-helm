@@ -1,5 +1,4 @@
 name: documentstore
-shortname: docstr
 auth: keycloak
 flows:
   - ""
@@ -15,4 +14,4 @@ infra-type:
 dependencies:
   - postgresql
   - keycloak
-  - elasticsearch-8.5.1
+  - elasticsearch

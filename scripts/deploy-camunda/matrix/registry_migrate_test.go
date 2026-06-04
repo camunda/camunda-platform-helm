@@ -60,7 +60,6 @@ var migrateChartDir = flag.String("chartDir", "", "absolute or repo-relative pat
 // scenarios that omit defaults.
 type outScenario struct {
 	Name         string            `yaml:"name"`
-	Shortname    string            `yaml:"shortname"`
 	Auth         string            `yaml:"auth,omitempty"`
 	Flows        []string          `yaml:"flows"`
 	Identity     string            `yaml:"identity,omitempty"`
@@ -83,9 +82,10 @@ type outScenario struct {
 }
 
 type outManifestEntry struct {
-	ID      string `yaml:"id"`
-	Tier    int    `yaml:"tier,omitempty"`
-	Enabled bool   `yaml:"enabled"`
+	ID        string `yaml:"id"`
+	Shortname string `yaml:"shortname"`
+	Tier      int    `yaml:"tier,omitempty"`
+	Enabled   bool   `yaml:"enabled"`
 }
 
 type outManifest struct {
@@ -141,11 +141,13 @@ func hashJSON(v any) string {
 //
 //   - Script-based: drop the well-known `pre-install-` / `post-deploy-`
 //     prefix and `.sh` suffix so the slug matches what an author would write.
-//   - Single-fixture: append a `-rdbms`, `-self-signed`, or `-default`
-//     suffix based on description keywords so the popular
-//     `postgresql-cluster.yaml` fixture distinguishes its variants.
-//   - Multi-fixture: join fixture basenames with `-` so multi-fixture hooks
-//     have a unique, predictable slug.
+//   - Single-fixture: when the fixture is `postgresql-cluster.yaml`, map to
+//     the `cnpg` family established by #6288 (`cnpg` default, `cnpg-rdbms`
+//     for the three-database bootstrap). Other fixtures keep the
+//     `-self-signed` / `-default` derivation.
+//   - Multi-fixture: when `postgresql-cluster.yaml` is one of the fixtures,
+//     extend the `cnpg-` family using the other fixture basenames (with any
+//     `postgresql` segments trimmed). Otherwise join basenames with `-`.
 //   - Empty (no script, no fixtures) is invalid per LifecycleHook.Validate
 //     and never reaches the translator; fall back to "hook" so the call
 //     remains total.
@@ -156,12 +158,17 @@ func hookSlug(h *LifecycleHook) string {
 		s = strings.TrimPrefix(s, "post-deploy-")
 		return s
 	}
+	const pgClusterFixture = "postgresql-cluster.yaml"
 	if len(h.Fixtures) == 1 {
+		if h.Fixtures[0] == pgClusterFixture {
+			if strings.Contains(h.Description, "three databases:") &&
+				strings.Contains(h.Description, "`app`") {
+				return "cnpg-rdbms"
+			}
+			return "cnpg"
+		}
 		base := strings.TrimSuffix(h.Fixtures[0], ".yaml")
 		switch {
-		case strings.Contains(h.Description, "three databases:") &&
-			strings.Contains(h.Description, "`app`"):
-			return base + "-rdbms"
 		case strings.Contains(h.Description, "self-signed CA"):
 			return base + "-self-signed"
 		default:
@@ -169,6 +176,18 @@ func hookSlug(h *LifecycleHook) string {
 		}
 	}
 	if len(h.Fixtures) > 1 {
+		hasPgCluster := false
+		var others []string
+		for _, f := range h.Fixtures {
+			if f == pgClusterFixture {
+				hasPgCluster = true
+				continue
+			}
+			others = append(others, trimPostgresqlSegments(strings.TrimSuffix(f, ".yaml")))
+		}
+		if hasPgCluster && len(others) > 0 {
+			return "cnpg-" + strings.Join(others, "-")
+		}
 		parts := make([]string, 0, len(h.Fixtures))
 		for _, f := range h.Fixtures {
 			parts = append(parts, strings.TrimSuffix(f, ".yaml"))
@@ -178,15 +197,29 @@ func hookSlug(h *LifecycleHook) string {
 	return "hook"
 }
 
-// depSlug derives a slug from a ChartDependency. Base is the release name
-// optionally suffixed by version (so `elastic-elasticsearch-8.5.1`
-// distinguishes from a hypothetical future bump). A `-qa` or `-tls` suffix
-// is appended when the values-file basename signals a variant.
+// trimPostgresqlSegments drops leading/trailing `postgresql` word segments so
+// a multi-fixture cnpg companion (e.g. `hub-external-postgresql.yaml`)
+// contributes its semantic tag (`hub-external`) without the redundant word —
+// `cnpg-` already conveys the PostgreSQL role.
+func trimPostgresqlSegments(s string) string {
+	for {
+		switch {
+		case strings.HasPrefix(s, "postgresql-"):
+			s = strings.TrimPrefix(s, "postgresql-")
+		case strings.HasSuffix(s, "-postgresql"):
+			s = strings.TrimSuffix(s, "-postgresql")
+		default:
+			return s
+		}
+	}
+}
+
+// depSlug derives a slug from a ChartDependency. Base is the release name;
+// the pinned version lives in the dep YAML's `version:` field, not the
+// filename. A `-qa` or `-tls` suffix is appended when the values-file
+// basename signals a variant.
 func depSlug(d ChartDependency) string {
 	name := d.ReleaseName
-	if d.Version != "" {
-		name = name + "-" + d.Version
-	}
 	switch {
 	case strings.HasSuffix(d.ValuesFile, "-qa.yaml"):
 		name = name + "-qa"
@@ -426,7 +459,6 @@ func TestMigrate8_10(t *testing.T) {
 		id := scenarioIDs[i]
 		out := outScenario{
 			Name:        scn.Name,
-			Shortname:   scn.Shortname,
 			Auth:        scn.Auth,
 			Flows:       []string{scn.Flow},
 			Identity:    scn.Identity,
@@ -453,7 +485,7 @@ func TestMigrate8_10(t *testing.T) {
 		if err := writeYAML(filepath.Join(registryDir, "scenarios", id+".yaml"), out); err != nil {
 			t.Fatalf("write scenario %s: %v", id, err)
 		}
-		entries = append(entries, outManifestEntry{ID: id, Tier: scn.Tier, Enabled: scn.Enabled})
+		entries = append(entries, outManifestEntry{ID: id, Shortname: scn.Shortname, Tier: scn.Tier, Enabled: scn.Enabled})
 	}
 
 	for _, slug := range hooks.order {

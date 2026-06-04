@@ -1,5 +1,4 @@
 name: gamma
-shortname: gam
 auth: keycloak
 flows:
   - install

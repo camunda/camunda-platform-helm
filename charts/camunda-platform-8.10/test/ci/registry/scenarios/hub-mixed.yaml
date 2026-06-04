@@ -1,5 +1,4 @@
 name: hub-mixed
-shortname: hubmu
 auth: keycloak
 flows:
   - upgrade-minor
@@ -12,7 +11,7 @@ platforms:
 infra-type:
   eks: preemptible
   gke: distroci
-pre-install: postgresql-cluster-default
+pre-install: cnpg
 dependencies:
   - keycloak
-  - elasticsearch-8.5.1
+  - elasticsearch

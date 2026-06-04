@@ -1,5 +1,4 @@
 name: auth0
-shortname: esa0
 auth: oidc
 flows:
   - install
@@ -14,6 +13,6 @@ exclude:
 infra-type:
   eks: preemptible
   gke: distroci
-pre-install: postgresql-cluster-default
+pre-install: cnpg
 dependencies:
-  - elasticsearch-8.5.1
+  - elasticsearch

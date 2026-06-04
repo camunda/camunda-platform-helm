@@ -1,5 +1,4 @@
 name: qa-opensearch-upg
-shortname: qaosupg
 auth: keycloak
 flows:
   - install
@@ -17,4 +16,4 @@ prefix-key: qa-opensearch-upg
 dependencies:
   - postgresql-qa
   - keycloak-qa
-  - opensearch-3.6.0
+  - opensearch
