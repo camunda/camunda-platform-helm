@@ -1,5 +1,24 @@
 # Changelog
 
+## [13.10.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.10.0...camunda-platform-8.8-13.10.1) (2026-06-03)
+
+
+### Bug Fixes
+
+* **8.8,8.9,8.10:** allow Recreate strategy for Web Modeler persistence ([#6014](https://github.com/camunda/camunda-platform-helm/issues/6014)) ([2ef2760](https://github.com/camunda/camunda-platform-helm/commit/2ef27600438e33e23552be8152399d3a7bd53307))
+* align upload size with Zeebe message limits ([#6279](https://github.com/camunda/camunda-platform-helm/issues/6279)) ([f61f37c](https://github.com/camunda/camunda-platform-helm/commit/f61f37c7cecdb073d4330a6a15f0c57fec0f1f78))
+
+
+### Dependencies
+
+* update patch-updates (patch) ([#5837](https://github.com/camunda/camunda-platform-helm/issues/5837)) ([baee40a](https://github.com/camunda/camunda-platform-helm/commit/baee40afccd73d91a8943f2723017ee80116bc41))
+* update patch-updates (patch) ([#6274](https://github.com/camunda/camunda-platform-helm/issues/6274)) ([2aeb314](https://github.com/camunda/camunda-platform-helm/commit/2aeb314a1e12828c25f47cf23141d1272b96852a))
+
+
+### Refactors
+
+* **8.10:** drop bundled Bitnami subcharts ([#6146](https://github.com/camunda/camunda-platform-helm/issues/6146)) ([4374cff](https://github.com/camunda/camunda-platform-helm/commit/4374cff37d2e3b7cfaa2e661b0893705e5fbc14e))
+
 ## [13.10.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.9.1...camunda-platform-8.8-13.10.0) (2026-05-27)
 
 
