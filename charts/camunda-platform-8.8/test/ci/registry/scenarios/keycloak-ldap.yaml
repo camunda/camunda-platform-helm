@@ -1,0 +1,14 @@
+name: keycloak-ldap
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - ldap
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+dependencies:
+  - openldap
