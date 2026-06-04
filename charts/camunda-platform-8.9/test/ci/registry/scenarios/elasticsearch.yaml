@@ -1,0 +1,11 @@
+name: elasticsearch
+auth: keycloak
+flows:
+  - install,upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci
