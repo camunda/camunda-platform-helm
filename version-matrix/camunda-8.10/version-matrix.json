@@ -36,13 +36,13 @@
     "chart_version": "15.0.0-alpha2",
     "chart_images": [
       "busybox:1.36",
-      "docker.io/camunda/camunda:8.10.0-alpha1",
-      "docker.io/camunda/connectors-bundle:8.10.0-alpha1",
-      "docker.io/camunda/console:8.9.25",
-      "docker.io/camunda/hub-websockets:8.10.0-alpha1-rc1",
-      "docker.io/camunda/hub:8.10.0-alpha1-rc1",
-      "docker.io/camunda/identity:8.10.0-alpha1",
-      "docker.io/camunda/optimize:8.10.0-alpha1"
+      "docker.io/camunda/camunda:8.10.0-alpha2",
+      "docker.io/camunda/connectors-bundle:8.10.0-alpha2",
+      "docker.io/camunda/console:8.10.0-alpha2",
+      "docker.io/camunda/hub-websockets:8.10.0-alpha2",
+      "docker.io/camunda/hub:8.10.0-alpha2",
+      "docker.io/camunda/identity:8.10.0-alpha2",
+      "docker.io/camunda/optimize:8.10.0-alpha2"
     ]
   }
 ]
