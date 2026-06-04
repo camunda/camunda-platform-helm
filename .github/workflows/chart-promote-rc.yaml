@@ -175,6 +175,7 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            helm
             yq
 
       - name: Pull and validate dev package
