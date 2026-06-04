@@ -1,5 +1,58 @@
 # Changelog
 
+## [15.0.0-alpha2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha1...camunda-platform-8.10-15.0.0-alpha2) (2026-06-04)
+
+
+### Features
+
+* **8.10:** [TLS A2] add rdbms-self-signed CI scenario for in-cluster TLS validation ([#6036](https://github.com/camunda/camunda-platform-helm/issues/6036)) ([f2d9531](https://github.com/camunda/camunda-platform-helm/commit/f2d9531b42c0aa4a3d45eb976e67d9e8bebdfe74))
+* **8.10:** [TLS B1] add global.tls.caBundle helper for OS-level CA injection part 1 of helm[#3498](https://github.com/camunda/camunda-platform-helm/issues/3498) ([#6039](https://github.com/camunda/camunda-platform-helm/issues/6039)) ([c677de2](https://github.com/camunda/camunda-platform-helm/commit/c677de29eb9ce50c0fa223716d994469ab0864b9))
+* **8.10:** [TLS B2] add init-container truststore import — closes helm[#3498](https://github.com/camunda/camunda-platform-helm/issues/3498) for JVM clients ([#6040](https://github.com/camunda/camunda-platform-helm/issues/6040)) ([4ec15f8](https://github.com/camunda/camunda-platform-helm/commit/4ec15f8bc49babce8e8d6bc224ff77a79be533cc))
+* **8.10:** [TLS D] add values-tls.yaml customer overlay + quickstart doc ([#6042](https://github.com/camunda/camunda-platform-helm/issues/6042)) ([63e4f4a](https://github.com/camunda/camunda-platform-helm/commit/63e4f4a735135f14df5e1167859306a0da5e9747))
+* **8.10:** [TLS F] deprecate legacy per-component JKS truststore fields ([#6050](https://github.com/camunda/camunda-platform-helm/issues/6050)) ([0cf7375](https://github.com/camunda/camunda-platform-helm/commit/0cf73754ab2cc51509121425f575f4ee9b93d7bf))
+* **8.10:** add global.gateway.namespace to support cross-namespace Gateway parentRefs ([#6174](https://github.com/camunda/camunda-platform-helm/issues/6174)) ([a47a4f1](https://github.com/camunda/camunda-platform-helm/commit/a47a4f15337a5245bba1df55d984cabc408a268c))
+* **8.10:** add orchestration.hostNetwork value ([#6210](https://github.com/camunda/camunda-platform-helm/issues/6210)) ([7e3cce1](https://github.com/camunda/camunda-platform-helm/commit/7e3cce1ebe15678c92d4afc3eeb12e0257fa926f))
+* **8.10:** fail early when Helm CLI &lt; v4 is used with chart 15.x ([#6156](https://github.com/camunda/camunda-platform-helm/issues/6156)) ([9eab821](https://github.com/camunda/camunda-platform-helm/commit/9eab82105be30605537e8164fc30b538400d081c))
+* added service account labels ([#5877](https://github.com/camunda/camunda-platform-helm/issues/5877)) ([a616db5](https://github.com/camunda/camunda-platform-helm/commit/a616db54ef09b5f45ca1db868bc7918b05b18c7c))
+* explicit lifecycle fixtures in ci-test-config.yaml ([#6103](https://github.com/camunda/camunda-platform-helm/issues/6103)) ([027f327](https://github.com/camunda/camunda-platform-helm/commit/027f327aae50a2e968912efe939153f59fab6991))
+
+
+### Bug Fixes
+
+* **8.10:** align camunda hub service account gating ([#6294](https://github.com/camunda/camunda-platform-helm/issues/6294)) ([2952d90](https://github.com/camunda/camunda-platform-helm/commit/2952d9062d96d8e6daaa3eec3164ce9e9cd5a9ca))
+* **8.8,8.9,8.10:** allow Recreate strategy for Web Modeler persistence ([#6014](https://github.com/camunda/camunda-platform-helm/issues/6014)) ([2ef2760](https://github.com/camunda/camunda-platform-helm/commit/2ef27600438e33e23552be8152399d3a7bd53307))
+* **8.8:** add missing qa-document-store-upg backward-compat scenario ([#6061](https://github.com/camunda/camunda-platform-helm/issues/6061)) ([a3b424d](https://github.com/camunda/camunda-platform-helm/commit/a3b424d5b0d5931d933b40ce178ed03807e986c2))
+* **8.9,8.10:** expose cpu keys in connectors/console resources schema ([#6229](https://github.com/camunda/camunda-platform-helm/issues/6229)) ([2d67c82](https://github.com/camunda/camunda-platform-helm/commit/2d67c82d4d50487c70ba477cb800f9f51fd2ac7a))
+* align upload size with Zeebe message limits ([#6279](https://github.com/camunda/camunda-platform-helm/issues/6279)) ([f61f37c](https://github.com/camunda/camunda-platform-helm/commit/f61f37c7cecdb073d4330a6a15f0c57fec0f1f78))
+* **ci:** remove $FLOW suffix from opensearch-embedded index prefixes in 8.8/8.9/8.10 ([#6179](https://github.com/camunda/camunda-platform-helm/issues/6179)) ([ef9c97c](https://github.com/camunda/camunda-platform-helm/commit/ef9c97c05d51a458f24d00eccd402b8c2adfba7a))
+* guard legacy ES exporter on global.elasticsearch.enabled ([#6244](https://github.com/camunda/camunda-platform-helm/issues/6244)) ([8a96247](https://github.com/camunda/camunda-platform-helm/commit/8a96247db85844273b2509e7cd7d85629b1dffe8))
+* normalize trailing whitespace in golden file writer ([#6159](https://github.com/camunda/camunda-platform-helm/issues/6159)) ([e3ab8f5](https://github.com/camunda/camunda-platform-helm/commit/e3ab8f555626bfc00b1f9ff6f98999148ffc2b3e))
+* **schema:** allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets ([#6234](https://github.com/camunda/camunda-platform-helm/issues/6234)) ([368b4ac](https://github.com/camunda/camunda-platform-helm/commit/368b4ac9c6b3031b21d1674df14c32c030308c7f))
+* test Helm 3 or 4 and use helm v4 for dev ([#5918](https://github.com/camunda/camunda-platform-helm/issues/5918)) ([8ddffec](https://github.com/camunda/camunda-platform-helm/commit/8ddffec8afa14e000b63f7d4033d3fc72e095d6c))
+* update image tags to 8.10.0-alpha1 ([#6148](https://github.com/camunda/camunda-platform-helm/issues/6148)) ([9b0717a](https://github.com/camunda/camunda-platform-helm/commit/9b0717a742d3e952aa2a3b368cb63ae33cb583ba))
+
+
+### Documentation
+
+* **8.10:** document bitnami removal and add removal ADR ([#6278](https://github.com/camunda/camunda-platform-helm/issues/6278)) ([dcc8e77](https://github.com/camunda/camunda-platform-helm/commit/dcc8e77c1c8a020bc08cb3528aef10ea69dc1856))
+* **8.10:** mark chart 15.x as Helm v4 only ([#6170](https://github.com/camunda/camunda-platform-helm/issues/6170)) ([62a3628](https://github.com/camunda/camunda-platform-helm/commit/62a3628222ef7298de0ccbc30caa8301ae58b7d0))
+
+
+### Dependencies
+
+* update hashicorp/vault-action action to v4 ([#6176](https://github.com/camunda/camunda-platform-helm/issues/6176)) ([5c4f611](https://github.com/camunda/camunda-platform-helm/commit/5c4f611acff4d3bcdea89ae8e6e5706078fb06fb))
+* update module github.com/gruntwork-io/terratest to v1 ([#6157](https://github.com/camunda/camunda-platform-helm/issues/6157)) ([eaf63e7](https://github.com/camunda/camunda-platform-helm/commit/eaf63e750cd23490b8b0cc1dc01b4ffcf41d2be5))
+* update module github.com/jackc/pgx/v5 to v5.9.2 [security] ([#5843](https://github.com/camunda/camunda-platform-helm/issues/5843)) ([b37bb34](https://github.com/camunda/camunda-platform-helm/commit/b37bb34c7b90ed6187598c92f6a0069801a810dc))
+* update patch-updates (patch) ([#5837](https://github.com/camunda/camunda-platform-helm/issues/5837)) ([baee40a](https://github.com/camunda/camunda-platform-helm/commit/baee40afccd73d91a8943f2723017ee80116bc41))
+
+
+### Refactors
+
+* **8.10:** drop bundled Bitnami subcharts ([#6146](https://github.com/camunda/camunda-platform-helm/issues/6146)) ([4374cff](https://github.com/camunda/camunda-platform-helm/commit/4374cff37d2e3b7cfaa2e661b0893705e5fbc14e))
+* **8.10:** drop camundaPlatform.toYamlPretty helm v3 compat wrapper ([#6169](https://github.com/camunda/camunda-platform-helm/issues/6169)) ([aaaf6ae](https://github.com/camunda/camunda-platform-helm/commit/aaaf6aec6a3a075c674b36be2bbb32886cf9a90d))
+* **8.10:** drop orphan helpers and guard keycloak release info ([#6277](https://github.com/camunda/camunda-platform-helm/issues/6277)) ([c5a0c3b](https://github.com/camunda/camunda-platform-helm/commit/c5a0c3b1ff231d2b1aff9e0b6382cadb3c2f4f8d))
+* **8.10:** migrate console and webModeler values under camundaHub namespace [1/6] ([#6223](https://github.com/camunda/camunda-platform-helm/issues/6223)) ([d9ecf02](https://github.com/camunda/camunda-platform-helm/commit/d9ecf02477303ecc3d5db39a7facf7376a7f4b00))
+
 ## [15.0.0-alpha1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha0...camunda-platform-8.10-15.0.0-alpha1) (2026-05-12)
 
 
