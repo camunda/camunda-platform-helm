@@ -551,9 +551,13 @@ jobs:
       - name: Helm - OCI Registry Login
         if: inputs.helmChartVersion != ''
         run: |
-          printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
-            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
-            --password-stdin
+          export HARBOR_REGISTRY_HOST=registry.camunda.cloud
+          export HARBOR_REGISTRY_USER="${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
+          export HARBOR_REGISTRY_PASSWORD="${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+          export HARBOR_RETRY_DELAY=15
+
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
           echo "TEST_CHART_VERSION=${{ inputs.helmChartVersion }}" >> "$GITHUB_ENV"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
@@ -893,9 +897,13 @@ jobs:
       - name: Helm - OCI Registry Login (Upgrade)
         if: inputs.helmChartVersion != ''
         run: |
-          printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
-            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
-            --password-stdin
+          export HARBOR_REGISTRY_HOST=registry.camunda.cloud
+          export HARBOR_REGISTRY_USER="${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
+          export HARBOR_REGISTRY_PASSWORD="${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+          export HARBOR_RETRY_DELAY=15
+
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         env:
