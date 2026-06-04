@@ -1,4 +1,23 @@
 # Used in the GitHub Actions unit test CI workflow.
+# auth can be the following values: basic, keycloak, oidc
+#
+# ─── `unit:` block: LIVE ─────────────────────────────────────────────────────
+# The `unit:` block below is still the source of truth for the unit test
+# workflow — read via yq in `.github/actions/test-type-vars/action.yaml`.
+# Edit freely.
+#
+# ─── `integration:` block: FROZEN SNAPSHOT (do not edit) ─────────────────────
+# As of 2026-06-04 the integration test matrix is sourced from the
+# composable scenario registry under `test/ci/registry/` (ADR 0093).
+# `deploy-camunda matrix run/list` auto-detects the registry via
+# `test/ci/registry/manifest.yaml`; the `integration:` block here is retained
+# only as the equivalence-test baseline (`TestRegistryEquivalence` in
+# `scripts/deploy-camunda/matrix/registry_equivalence_test.go`).
+# 8.7 is the final version migration; this file is scheduled for deletion
+# in #6302 (together with the 8.8/8.9/8.10 frozen files and
+# `LoadCITestConfig`) once the matrix has held green on `main` for one full
+# nightly cycle.
+# ─────────────────────────────────────────────────────────────────────────────
 unit:
   enabled: true
   matrix:

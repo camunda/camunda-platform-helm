@@ -1,0 +1,313 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          shortname: eske
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: enterprise-values
+          enabled: true
+          shortname: entv
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - enterprise
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: keycloak-mt
+          enabled: true
+          shortname: kemt
+          auth: keycloak
+          flow: install,upgrade-patch
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: keycloak-rba
+          enabled: true
+          shortname: kerba
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: oidc
+          enabled: true
+          shortname: esoi
+          auth: oidc
+          flow: install,upgrade-patch
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+          skip-it: true
+        - name: keycloak-original
+          enabled: true
+          shortname: keyc
+          auth: keycloak
+          flow: install,upgrade-patch
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: opensearch-external
+          enabled: false
+          shortname: osex
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-external
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: opensearch-embedded
+          enabled: true
+          shortname: osem
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-embedded
+          dependencies:
+            - chart: opensearch/opensearch
+              version: 2.31.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: component-persistence
+          enabled: true
+          shortname: cprst
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - persistence
+          skip-e2e: true
+        - name: shadow-e2e
+          enabled: true
+          shortname: shde2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          skip-e2e: true
+        - name: keycloak-original
+          enabled: true
+          shortname: keyco
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
+        - name: alwaysgreen
+          enabled: false
+          shortname: agrn
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: alwaysgreen
+          identity: keycloak
+          persistence: elasticsearch
+        - name: qa-elasticsearch
+          enabled: false
+          shortname: qael
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          image-tags: true
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours. Prevents session-expiry flakiness
+              in long-running E2E test flows (diagram building, process deployment)
+              when the cluster is under heavy load.
+        - name: qa-elasticsearch-rba
+          enabled: false
+          shortname: qarba
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - rba
+          qa: true
+          image-tags: true
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
+        - name: qa-elasticsearch-mt
+          enabled: false
+          shortname: qamt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - multitenancy
+          qa: true
+          image-tags: true
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
+        - name: qa-license
+          enabled: false
+          shortname: lic
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - license
+          qa: true
+          image-tags: true
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
+        - name: qa-opensearch
+          enabled: false
+          shortname: qaos
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: opensearch/opensearch
+              version: 2.31.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          post-deploy:
+            script: post-deploy-keycloak-token-lifespan.sh
+            description: |
+              Increases Keycloak access token lifespan to 30 minutes and SSO
+              session idle timeout to 2 hours for E2E test stability.
+    nightly:
+      scenario: []
