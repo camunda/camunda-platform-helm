@@ -885,6 +885,19 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		}
 		overlayPath := filepath.Join(flags.Chart.ChartPath, "values-"+overlay+".yaml")
 		if _, statErr := os.Stat(overlayPath); statErr == nil {
+			// The digest overlay pins image.digest, which the chart image helper
+			// prefers over tag. If --extra-values overrides a component's image
+			// coordinates (without its own digest), strip that component's digest
+			// from the overlay so the override actually takes effect instead of
+			// being silently shadowed. See neutralizeOverriddenDigests.
+			if overlay == "digest" && len(flags.Deployment.ExtraValues) > 0 {
+				sanitized, sanErr := neutralizeOverriddenDigests(overlayPath, flags.Deployment.ExtraValues, tempDir)
+				if sanErr != nil {
+					os.RemoveAll(tempDir)
+					return nil, fmt.Errorf("failed to sanitize digest overlay: %w", sanErr)
+				}
+				overlayPath = sanitized
+			}
 			chartRootOverlayFiles = append(chartRootOverlayFiles, overlayPath)
 			logging.Logger.Info().
 				Str("overlay", overlay).
