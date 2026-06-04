@@ -220,9 +220,8 @@ integration:
           infra-type:
             gke: arm
           flow: install
-          skip-e2e: true # Test are unstable
-          identity: keycloak-external
-          persistence: elasticsearch-external
+          identity: keycloak
+          persistence: elasticsearch
           features: [arm]
           platforms: [gke]
         - name: noSecondaryStorage

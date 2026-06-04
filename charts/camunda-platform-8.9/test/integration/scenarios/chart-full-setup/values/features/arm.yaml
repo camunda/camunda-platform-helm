@@ -21,3 +21,14 @@ webModelerPostgresql:
   primary:
     persistence:
       storageClass: hyperdisk-balanced
+
+identityKeycloak:
+  postgresql:
+    primary:
+      persistence:
+        storageClass: hyperdisk-balanced
+
+elasticsearch:
+  master:
+    persistence:
+      storageClass: hyperdisk-balanced
