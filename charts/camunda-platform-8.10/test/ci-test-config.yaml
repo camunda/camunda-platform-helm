@@ -339,20 +339,19 @@ integration:
               sizes. Runs after helm install because the Gateway API CRD is only
               registered by the chart itself.
         - name: elasticsearch-arm
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: esarm
           tier: 2
           exclude: []
-          skip-e2e: true  # The smoke tests in 8.10 don't support the external keycloak
           infra-type:
             gke: arm
           flow: install
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch
           features: [arm]
           platforms: [gke]
-          profiles: [elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, cnpg]
         - name: noSecondaryStorage
           enabled: true
           auth: keycloak

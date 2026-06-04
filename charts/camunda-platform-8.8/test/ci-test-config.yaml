@@ -215,9 +215,9 @@ integration:
           flow: install
           helmVersion: 3.20.2
           skip-e2e: true  # 8.8 ARM frontend bug: Deploy-and-Run API call never reaches restapi
-          identity: keycloak-external
+          identity: keycloak
           features: [arm]
-          persistence: elasticsearch-external
+          persistence: elasticsearch
         - name: opensearch
           enabled: true
           exclude: []
