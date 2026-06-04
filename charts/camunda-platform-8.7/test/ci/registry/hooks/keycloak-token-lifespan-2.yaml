@@ -1,6 +1,0 @@
-script: post-deploy-keycloak-token-lifespan.sh
-description: |
-  Increases Keycloak access token lifespan to 30 minutes and SSO
-  session idle timeout to 2 hours. Prevents session-expiry flakiness
-  in long-running E2E test flows (diagram building, process deployment)
-  when the cluster is under heavy load.

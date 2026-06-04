@@ -12,4 +12,4 @@ infra-type:
   gke: qa-workloads
 qa: true
 image-tags: true
-post-deploy: keycloak-token-lifespan-2
+post-deploy: keycloak-token-lifespan

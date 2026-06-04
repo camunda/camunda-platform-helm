@@ -211,7 +211,9 @@ integration:
             script: post-deploy-keycloak-token-lifespan.sh
             description: |
               Increases Keycloak access token lifespan to 30 minutes and SSO
-              session idle timeout to 2 hours for E2E test stability.
+              session idle timeout to 2 hours. Prevents session-expiry flakiness
+              in long-running E2E test flows (diagram building, process deployment)
+              when the cluster is under heavy load.
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
         # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
@@ -262,7 +264,9 @@ integration:
             script: post-deploy-keycloak-token-lifespan.sh
             description: |
               Increases Keycloak access token lifespan to 30 minutes and SSO
-              session idle timeout to 2 hours for E2E test stability.
+              session idle timeout to 2 hours. Prevents session-expiry flakiness
+              in long-running E2E test flows (diagram building, process deployment)
+              when the cluster is under heavy load.
         - name: qa-elasticsearch-mt
           enabled: false
           flow: install
@@ -280,7 +284,9 @@ integration:
             script: post-deploy-keycloak-token-lifespan.sh
             description: |
               Increases Keycloak access token lifespan to 30 minutes and SSO
-              session idle timeout to 2 hours for E2E test stability.
+              session idle timeout to 2 hours. Prevents session-expiry flakiness
+              in long-running E2E test flows (diagram building, process deployment)
+              when the cluster is under heavy load.
         - name: qa-license
           enabled: false
           flow: install
@@ -298,7 +304,9 @@ integration:
             script: post-deploy-keycloak-token-lifespan.sh
             description: |
               Increases Keycloak access token lifespan to 30 minutes and SSO
-              session idle timeout to 2 hours for E2E test stability.
+              session idle timeout to 2 hours. Prevents session-expiry flakiness
+              in long-running E2E test flows (diagram building, process deployment)
+              when the cluster is under heavy load.
         - name: qa-opensearch
           enabled: false
           flow: install
@@ -315,7 +323,9 @@ integration:
             script: post-deploy-keycloak-token-lifespan.sh
             description: |
               Increases Keycloak access token lifespan to 30 minutes and SSO
-              session idle timeout to 2 hours for E2E test stability.
+              session idle timeout to 2 hours. Prevents session-expiry flakiness
+              in long-running E2E test flows (diagram building, process deployment)
+              when the cluster is under heavy load.
           dependencies:
             - chart: opensearch/opensearch
               version: "2.31.0"
