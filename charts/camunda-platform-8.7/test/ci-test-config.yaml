@@ -157,6 +157,18 @@ integration:
             gke: distroci
           features: [persistence]
           platforms: [gke]
+        - name: shadow-e2e
+          enabled: true
+          shortname: shde2
+          tier: 2
+          auth: keycloak
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+          skip-e2e: true  # Standard smoke tests skipped; full suite runs via shadow job
 
         # ===========================================================================
         # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
