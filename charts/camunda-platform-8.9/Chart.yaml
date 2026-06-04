@@ -75,8 +75,18 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Explicit lifecycle fixtures in ci-test-config.yaml"
+      description: "Add orchestration.hostNetwork value"
+    - kind: added
+      description: "Added service account labels"
+    - kind: changed
+      description: "Drop bundled Bitnami subcharts"
     - kind: fixed
-      description: "Test Helm 3 or 4 and use helm v4 for dev"
+      description: "Expose cpu keys in connectors/console resources schema"
     - kind: fixed
-      description: "Normalize trailing whitespace in golden file writer"
+      description: "Allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets"
+    - kind: fixed
+      description: "Allow Recreate strategy for Web Modeler persistence"
+    - kind: fixed
+      description: "Guard legacy ES exporter on global.elasticsearch.enabled"
+    - kind: fixed
+      description: "Align upload size with Zeebe message limits"
