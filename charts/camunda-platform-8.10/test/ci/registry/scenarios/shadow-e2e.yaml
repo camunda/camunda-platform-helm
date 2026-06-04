@@ -1,5 +1,4 @@
 name: shadow-e2e
-shortname: shde2
 auth: keycloak
 flows:
   - install
@@ -10,7 +9,7 @@ platforms:
 infra-type:
   gke: distroci
 skip-e2e: true
-pre-install: postgresql-cluster-default
+pre-install: cnpg
 dependencies:
   - keycloak
-  - elasticsearch-8.5.1
+  - elasticsearch

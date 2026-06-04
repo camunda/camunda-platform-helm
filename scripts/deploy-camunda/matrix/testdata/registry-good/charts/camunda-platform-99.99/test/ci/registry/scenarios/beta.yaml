@@ -1,5 +1,4 @@
 name: beta
-shortname: bet
 auth: keycloak
 flows:
   - install

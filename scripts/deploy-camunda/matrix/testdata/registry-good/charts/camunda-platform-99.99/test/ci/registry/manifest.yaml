@@ -11,10 +11,13 @@ integration:
           Pre-upgrade fixture for the synthetic registry-good test.
   scenarios:
     - id: alpha
+      shortname: alp
       tier: 1
       enabled: true
     - id: beta
+      shortname: bet
       tier: 2
       enabled: true
     - id: gamma-collapsed
+      shortname: gam
       enabled: false

@@ -1,5 +1,4 @@
 name: rdbms-self-signed
-shortname: rdbss
 auth: keycloak
 flows:
   - install
@@ -12,4 +11,4 @@ infra-type:
 pre-install: rdbms-self-signed
 dependencies:
   - keycloak
-  - elasticsearch-8.5.1
+  - elasticsearch

@@ -1,5 +1,4 @@
 name: opensearch-self-signed-os-trust
-shortname: osot
 auth: keycloak
 flows:
   - install
@@ -12,4 +11,4 @@ infra-type:
 pre-install: opensearch-self-signed-os-trust
 dependencies:
   - keycloak
-  - opensearch-3.6.0-tls
+  - opensearch-tls

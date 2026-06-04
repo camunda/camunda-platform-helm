@@ -31,13 +31,14 @@ type registryManifest struct {
 }
 
 // registryManifestEntry is one row in the manifest's ordered scenario list.
-// It carries only the manifest-scoped fields: ID (resolves to scenarios/<id>.yaml),
-// Tier (a manifest-level concern, kept here so per-scenario files describe
-// shape but not curation), and Enabled.
+// It carries the manifest-scoped fields: ID (resolves to scenarios/<id>.yaml),
+// Shortname (the human-facing CLI/CI handle — same surface as `--shortname-filter`
+// and the K8s namespace fragment), Tier (curation), and Enabled.
 type registryManifestEntry struct {
-	ID      string `yaml:"id"`
-	Tier    int    `yaml:"tier,omitempty"`
-	Enabled bool   `yaml:"enabled"`
+	ID        string `yaml:"id"`
+	Shortname string `yaml:"shortname"`
+	Tier      int    `yaml:"tier,omitempty"`
+	Enabled   bool   `yaml:"enabled"`
 }
 
 // registryScenario is the parsed shape of <registry>/scenarios/<id>.yaml.
@@ -47,7 +48,6 @@ type registryManifestEntry struct {
 //   - Dependencies carries dep *IDs* (basenames under dependencies/).
 type registryScenario struct {
 	Name        string            `yaml:"name"`
-	Shortname   string            `yaml:"shortname"`
 	Auth        string            `yaml:"auth"`
 	Flows       []string          `yaml:"flows"`
 	Platforms   []string          `yaml:"platforms,omitempty"`
@@ -197,7 +197,7 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 			cfg.Integration.Case.PR.Scenarios = append(cfg.Integration.Case.PR.Scenarios, CIScenario{
 				Name:         rscn.Name,
 				Enabled:      entry.Enabled,
-				Shortname:    rscn.Shortname,
+				Shortname:    entry.Shortname,
 				Auth:         rscn.Auth,
 				Flow:         flow,
 				Platforms:    rscn.Platforms,

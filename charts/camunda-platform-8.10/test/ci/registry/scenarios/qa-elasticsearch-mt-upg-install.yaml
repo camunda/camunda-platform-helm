@@ -1,5 +1,4 @@
 name: qa-elasticsearch-mt-upg
-shortname: qaelmtupg
 auth: keycloak
 flows:
   - install
@@ -17,4 +16,4 @@ image-tags: true
 dependencies:
   - postgresql-qa
   - keycloak-qa
-  - elasticsearch-8.5.1-qa
+  - elasticsearch-qa

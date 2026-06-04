@@ -1,5 +1,4 @@
 name: gateway-keycloak
-shortname: gatkc
 auth: keycloak
 flows:
   - install
@@ -12,8 +11,8 @@ platforms:
 infra-type:
   eks: preemptible
   gke: distroci
-pre-install: postgresql-cluster-default
+pre-install: cnpg
 post-deploy: gateway-keycloak
 dependencies:
   - keycloak
-  - elasticsearch-8.5.1
+  - elasticsearch

@@ -1,5 +1,4 @@
 name: qa-document-store-upg
-shortname: qadocupg
 auth: keycloak
 flows:
   - install
@@ -17,4 +16,4 @@ image-tags: true
 dependencies:
   - postgresql
   - keycloak
-  - elasticsearch-8.5.1
+  - elasticsearch
