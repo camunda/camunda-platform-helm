@@ -399,6 +399,12 @@ This command calls deploy.Execute() for each matrix entry.`,
 				return nil
 			}
 
+			// An external --chart-ref artifact corresponds to a single Camunda
+			// version, so it must not be applied across a multi-version matrix.
+			if err := validateChartRefVersionSpan(chartRef, entries); err != nil {
+				return err
+			}
+
 			// Block e2e runs with many entries — Playwright spawns a browser per test
 			// which can exhaust machine resources fast.
 			const e2eWarnThreshold = 5
@@ -761,6 +767,33 @@ func validateChartRefFlags(chartRef, chartRefVersion string) error {
 		return fmt.Errorf("--chart-version is required when --chart-ref is an OCI reference")
 	}
 
+	return nil
+}
+
+// validateChartRefVersionSpan rejects a --chart-ref override that would span
+// more than one chart version. An external chart artifact (OCI ref or .tgz)
+// corresponds to a single Camunda version, so applying it across multiple
+// resolved matrix versions would install the wrong chart on every entry but the
+// matching one. Multiple entries that share one version (scenarios/flows) are
+// allowed — that is the normal RC-validation workflow.
+func validateChartRefVersionSpan(chartRef string, entries []matrix.Entry) error {
+	if chartRef == "" {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	order := []string{}
+	for _, e := range entries {
+		if _, ok := seen[e.Version]; !ok {
+			seen[e.Version] = struct{}{}
+			order = append(order, e.Version)
+		}
+	}
+	if len(order) > 1 {
+		return fmt.Errorf(
+			"--chart-ref applies a single external chart artifact, but the resolved matrix spans %d versions (%s); "+
+				"narrow the run to one version with --versions (e.g. --versions %s)",
+			len(order), strings.Join(order, ", "), order[0])
+	}
 	return nil
 }
 
