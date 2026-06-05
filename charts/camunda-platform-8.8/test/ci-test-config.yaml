@@ -551,19 +551,33 @@ integration:
           flow: install
           shortname: qaelupg
           auth: keycloak
-          identity: keycloak
+          # keycloak-companion: realm/users live in the companion internal-keycloak-26
+          # release (deployed below) instead of the bundled Bitnami subchart, so they
+          # survive the later upgrade to 8.9/8.10. This is the upgrade-path install
+          # variant; the shared qa-elasticsearch scenario stays on bundled Keycloak.
+          identity: keycloak-companion
           persistence: elasticsearch
           qa: true
           image-tags: true
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars: [RDBMS_POSTGRESQL_USERNAME, RDBMS_POSTGRESQL_PASSWORD]
         - name: qa-elasticsearch-upg
           enabled: false
           flow: modular-upgrade-minor
           shortname: qaelupg
           auth: keycloak
-          identity: keycloak
+          # Must match the install entry above: both steps target the same
+          # companion Keycloak so the realm persists across the upgrade.
+          identity: keycloak-companion
           persistence: elasticsearch
           features: [migrator]
           qa: true
@@ -571,6 +585,14 @@ integration:
           platforms: [gke]
           infra-type:
             gke: qa-workloads
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars: [RDBMS_POSTGRESQL_USERNAME, RDBMS_POSTGRESQL_PASSWORD]
         - name: qa-elasticsearch-document-upg
           enabled: false
           flow: install
