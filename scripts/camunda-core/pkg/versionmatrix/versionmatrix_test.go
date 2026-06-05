@@ -512,9 +512,9 @@ func findRepoRoot(t *testing.T) string {
 }
 
 func TestPreSetupScriptPath(t *testing.T) {
-	got := PreSetupScriptPath("/repo", "8.10", "pre-install-elasticsearch-self-signed.sh")
+	got := PreSetupScriptPath("/repo", "8.10", "pre-install-opensearch-self-signed.sh")
 	want := filepath.Join("/repo", "charts", "camunda-platform-8.10",
-		"test", "integration", "scenarios", "pre-setup-scripts", "pre-install-elasticsearch-self-signed.sh")
+		"test", "integration", "scenarios", "pre-setup-scripts", "pre-install-opensearch-self-signed.sh")
 	if got != want {
 		t.Errorf("PreSetupScriptPath() = %q, want %q", got, want)
 	}
@@ -526,9 +526,9 @@ func TestHasPreSetupScript(t *testing.T) {
 		t.Skip("cannot find repo root")
 	}
 
-	// 8.10 has pre-install-elasticsearch-self-signed.sh.
-	if !HasPreSetupScript(repoRoot, "8.10", "pre-install-elasticsearch-self-signed.sh") {
-		t.Error("expected HasPreSetupScript(8.10, pre-install-elasticsearch-self-signed.sh) = true")
+	// 8.10 has pre-install-opensearch-self-signed.sh.
+	if !HasPreSetupScript(repoRoot, "8.10", "pre-install-opensearch-self-signed.sh") {
+		t.Error("expected HasPreSetupScript(8.10, pre-install-opensearch-self-signed.sh) = true")
 	}
 
 	// Empty filename should return false.
@@ -542,7 +542,7 @@ func TestHasPreSetupScript(t *testing.T) {
 	}
 
 	// Non-existent version should return false.
-	if HasPreSetupScript(repoRoot, "99.99", "pre-install-elasticsearch-self-signed.sh") {
-		t.Error("expected HasPreSetupScript(99.99, pre-install-elasticsearch-self-signed.sh) = false")
+	if HasPreSetupScript(repoRoot, "99.99", "pre-install-opensearch-self-signed.sh") {
+		t.Error("expected HasPreSetupScript(99.99, pre-install-opensearch-self-signed.sh) = false")
 	}
 }

@@ -31,14 +31,6 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 )
 
-// numESPools is the number of Elasticsearch pools across which matrix entries
-// are distributed via round-robin. This matches the 4-cluster pool infra.
-const numESPools = 4
-
-// numOSPools is the number of OpenSearch pools across which matrix entries
-// are distributed via round-robin. This matches the 4-cluster pool infra.
-const numOSPools = 4
-
 // RunOptions controls matrix execution.
 type RunOptions struct {
 	// DryRun logs what would be done without executing.
@@ -979,7 +971,6 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 	versions := VersionOrder(entries)
 	groups := GroupByVersion(entries)
 
-	globalIndex := 0
 	for _, version := range versions {
 		versionEntries := groups[version]
 
@@ -989,8 +980,7 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 			Msg("Processing version")
 
 		for _, entry := range versionEntries {
-			result := executeEntry(ctx, entry, opts, globalIndex)
-			globalIndex++
+			result := executeEntry(ctx, entry, opts)
 			results = append(results, result)
 
 			if result.Error != nil {
@@ -1070,7 +1060,7 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 				return
 			}
 
-			result := executeEntry(runCtx, e, opts, idx)
+			result := executeEntry(runCtx, e, opts)
 			results[idx] = result
 
 			if result.Error != nil {
@@ -1551,12 +1541,11 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 }
 
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
-// The entryIndex is used for round-robin ES pool distribution across the 4-cluster pool infra.
 // The flow determines the execution strategy:
 //   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
 //   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
 //   - Install (default): Single-step fresh install.
-func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex int) RunResult {
+func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	start := time.Now()
 	namespace := resolveNamespace(opts, entry)
 	baseNamespace := buildBaseNamespace(entry)
@@ -1713,9 +1702,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			UpgradeFlow: entry.Upgrade,
 		},
 	}
-
-	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
-	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
 
 	// Wire companion chart dependencies from ci-test-config.yaml.
 	// Values file paths are resolved relative to the repo root.
@@ -2063,8 +2049,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Str("persistence", entry.Persistence).
 		Strs("features", entry.Features).
 		Bool("vaultBackedSecrets", useVault).
-		Str("esPoolIndex", flags.ESPoolIndex).
-		Str("osPoolIndex", flags.OSPoolIndex).
 		Msg("Deploying matrix entry")
 
 	// --- Lifecycle hook registration (single-step flows) ---

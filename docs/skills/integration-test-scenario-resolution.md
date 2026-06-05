@@ -45,7 +45,7 @@ There are two configuration approaches in `ci-test-config.yaml`:
 
 1. **Legacy (name parsing)** — The scenario `name` is parsed by
    `MapScenarioToConfig()` to derive identity, persistence, platform, and
-   features. Example: `name: keycloak-mt` → identity=`keycloak-external`,
+   features. Example: `name: keycloak-mt` → identity=`keycloak`,
    features=`[multitenancy]`.
 
 2. **Selection + Composition (explicit)** — The scenario entry includes
@@ -53,8 +53,8 @@ There are two configuration approaches in `ci-test-config.yaml`:
    name parsing. Example:
    ```yaml
    name: keycloak-original
-   identity: keycloak-external
-   persistence: elasticsearch-external
+   identity: keycloak
+   persistence: elasticsearch
    ```
 
 Both approaches produce a `DeploymentConfig` that is resolved into file paths.
@@ -192,8 +192,8 @@ scenario name is parsed by `MapScenarioToConfig()` using substring matching:
 
 | Scenario name contains | Identity assigned |
 |------------------------|-------------------|
-| `keycloak-original` (exact) | `keycloak-external` (early return) |
-| `keycloak-mt`, `-mt-`, `multitenancy` | `keycloak-external` |
+| `keycloak-original` (exact) | `keycloak` (early return) |
+| `keycloak-mt`, `-mt-`, `multitenancy` | `keycloak` |
 | `oidc`, `entra` | `oidc` |
 | `basic` | `basic` |
 | `hybrid` | `hybrid` |
@@ -203,12 +203,12 @@ scenario name is parsed by `MapScenarioToConfig()` using substring matching:
 
 | Scenario name contains | Persistence assigned |
 |------------------------|----------------------|
-| `keycloak-original` (exact) | `elasticsearch-external` (early return) |
-| `elasticsearch` (exact) | `elasticsearch-external` (early return) |
+| `keycloak-original` (exact) | `elasticsearch` (early return) |
+| `elasticsearch` (exact) | `elasticsearch` (early return) |
 | `opensearch` | `opensearch` |
 | `rdbms` + `oracle` | `rdbms-oracle` |
 | `rdbms` | `rdbms` |
-| _(default)_ | `elasticsearch-external` |
+| _(default)_ | `elasticsearch` |
 
 ### Platform derivation
 
@@ -255,8 +255,8 @@ if len(flags.Features) > 0    { deployConfig.Features = flags.Features }
 This means a scenario like:
 ```yaml
 name: keycloak-original
-identity: keycloak-external
-persistence: elasticsearch-external
+identity: keycloak
+persistence: elasticsearch
 ```
 ...first parses `keycloak-original` (which already returns the correct values
 via the early-return path), then applies the explicit overrides (which happen to
@@ -283,13 +283,11 @@ Versions 8.2–8.5 use the legacy (non-layered) values system and do not have a
 | `base-image-tags.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
 | **Identity** | | | | | |
 | `identity/keycloak.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `identity/keycloak-external.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
 | `identity/oidc.yaml` | &#x2717; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
 | `identity/basic.yaml` | &#x2717; | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
 | `identity/hybrid.yaml` | &#x2717; | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
 | **Persistence** | | | | | |
 | `persistence/elasticsearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `persistence/elasticsearch-external.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
 | `persistence/opensearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
 | `persistence/rdbms.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
 | `persistence/rdbms-oracle.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
@@ -366,7 +364,7 @@ identity, persistence, platform, and features subdirectories.
 |------|----------|-----------|------|------|-----------|--------------------|
 | PR | `elasticsearch` | es | keycloak | install, upgrade-patch | gke, eks | identity=`keycloak`, persistence=`elasticsearch`, platform=per-entry |
 | Nightly | `elasticsearch` | es | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak`, persistence=`elasticsearch`, platform=`gke` |
-| Nightly | `multitenancy` | mt | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak-external`, persistence=`elasticsearch`, platform=`gke`, features=`[multitenancy]` |
+| Nightly | `multitenancy` | mt | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak`, persistence=`elasticsearch`, platform=`gke`, features=`[multitenancy]` |
 | Nightly | `opensearch` | os | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak`, persistence=`opensearch`, platform=`gke` |
 
 None of these scenarios have explicit `identity`/`persistence`/`features` fields,
@@ -393,7 +391,7 @@ values/platform/eks.yaml
 **`multitenancy` on GKE:**
 ```
 values/base.yaml
-values/identity/keycloak-external.yaml
+values/identity/keycloak.yaml
 values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 values/features/multitenancy.yaml
@@ -412,12 +410,6 @@ values/platform/gke.yaml
 - No `base-upgrade.yaml`
 - No `documentstore.yaml` feature
 
-#### Note on `elasticsearch-external.yaml`
-The `persistence/elasticsearch-external.yaml` file exists on 8.6 for
-consistency, but no scenario in ci-test-config.yaml currently uses it.
-The `multitenancy` scenario uses `keycloak-external` identity with internal
-`elasticsearch` persistence (same as 8.7+).
-
 ---
 
 ### 8.7
@@ -430,11 +422,11 @@ and upgrade support.
 | Tier | Scenario | Shortname | Auth | Flow | Platforms | Explicit Fields | Name-Parsed Config |
 |------|----------|-----------|------|------|-----------|-----------------|---------------------|
 | PR | `elasticsearch` | es | keycloak | install, upgrade-patch | gke, eks | — | identity=`keycloak`, persistence=`elasticsearch` |
-| PR | `keycloak-mt` | kemt | keycloak | install, upgrade-patch | _(gke)_ | — | identity=`keycloak-external`, persistence=`elasticsearch`, features=`[multitenancy]` |
+| PR | `keycloak-mt` | kemt | keycloak | install, upgrade-patch | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch`, features=`[multitenancy]` |
 | PR | `oidc` | esoi | oidc | install, upgrade-patch | _(gke)_ | — | identity=`oidc`, persistence=`elasticsearch` |
-| PR | `keycloak-original` | keyc | keycloak | install, upgrade-patch | _(gke)_ | identity=`keycloak-external`, persistence=`elasticsearch-external` | identity=`keycloak-external`, persistence=`elasticsearch-external` (override matches early-return) |
+| PR | `keycloak-original` | keyc | keycloak | install, upgrade-patch | _(gke)_ | identity=`keycloak`, persistence=`elasticsearch` | identity=`keycloak`, persistence=`elasticsearch` (override matches early-return) |
 | Nightly | `elasticsearch` | es | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch` |
-| Nightly | `multitenancy` | mt | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak-external`, persistence=`elasticsearch`, features=`[multitenancy]` |
+| Nightly | `multitenancy` | mt | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch`, features=`[multitenancy]` |
 | Nightly | `oidc` | oi | keycloak | _(all)_ | _(gke)_ | — | identity=`oidc`, persistence=`elasticsearch` |
 | Nightly | `opensearch` | os | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`opensearch` |
 | Nightly | `elasticsearch` (enterprise) | — | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch` |
@@ -455,7 +447,7 @@ values/platform/gke.yaml
 **`keycloak-mt` on GKE:**
 ```
 values/base.yaml
-values/identity/keycloak-external.yaml
+values/identity/keycloak.yaml
 values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 values/features/multitenancy.yaml
@@ -472,8 +464,8 @@ values/platform/gke.yaml
 **`keycloak-original` on GKE:**
 ```
 values/base.yaml
-values/identity/keycloak-external.yaml
-values/persistence/elasticsearch-external.yaml
+values/identity/keycloak.yaml
+values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 ```
 
@@ -497,7 +489,7 @@ values/features/documentstore.yaml
 **`multitenancy` on GKE:**
 ```
 values/base.yaml
-values/identity/keycloak-external.yaml
+values/identity/keycloak.yaml
 values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 values/features/multitenancy.yaml
@@ -505,7 +497,6 @@ values/features/multitenancy.yaml
 
 #### What 8.7 Adds Over 8.6
 - `identity/oidc.yaml` — Microsoft Entra ID configuration
-- `persistence/elasticsearch-external.yaml` — shared CI Elasticsearch cluster
 - `features/documentstore.yaml` — AWS S3 document store
 - `base-upgrade.yaml` — Elasticsearch availability during upgrades
 
@@ -527,20 +518,19 @@ Major restructuring: zeebe, operate, and tasklist are unified into a single
 | PR | `upgrade-migration` | eske-upgm | keycloak | upgrade-minor | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | PR | `elasticsearch-basic` | esba | basic | install | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | PR | `oidc` | esoi | oidc | upgrade-minor | _(gke)_ | — | `oidc` | `elasticsearch` | — |
-| PR | `keycloak-mt` | kemt | keycloak | upgrade-minor | _(gke)_ | — | `keycloak-external` | `elasticsearch` | `[multitenancy]` |
+| PR | `keycloak-mt` | kemt | keycloak | upgrade-minor | _(gke)_ | — | `keycloak` | `elasticsearch` | `[multitenancy]` |
 | PR | `keycloak-rba` | kerba | keycloak | upgrade-minor | _(gke)_ | — | `keycloak` | `elasticsearch` | `[rba]` |
-| PR | `keycloak-original` | keyc | keycloak | upgrade-minor | _(gke)_ | identity=`keycloak-external`, persistence=`elasticsearch-external` | `keycloak-external` | `elasticsearch-external` | — |
+| PR | `keycloak-original` | keyc | keycloak | upgrade-minor | _(gke)_ | identity=`keycloak`, persistence=`elasticsearch` | `keycloak` | `elasticsearch` | — |
 | PR | `elasticsearch` (hybrid) | eshy | hybrid | install | _(gke)_ | — | `hybrid` | `elasticsearch` | — |
 | Nightly | `elasticsearch` | eskey | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | Nightly | `elasticsearch-basic` | esba | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `elasticsearch-oidc` | esoi | oidc | _(all)_ | _(gke)_ | — | `oidc` | `elasticsearch` | — |
-| Nightly | `multitenancy` | mtke | keycloak | _(all)_ | _(gke)_ | — | `keycloak-external` | `elasticsearch` | `[multitenancy]` |
+| Nightly | `multitenancy` | mtke | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[multitenancy]` |
 | Nightly | `opensearch` (keycloak) | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch` | — |
 | Nightly | `opensearch` (basic) | osba | basic | _(all)_ | _(gke)_ | — | `basic` | `opensearch` | — |
 | Nightly | `identity-migration` | idmike | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | Nightly | `elasticsearch` (enterprise) | elbae | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `documentstore` | docstr | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[documentstore]` |
-| Nightly | `keycloak-external-mimic` | kcextm | keycloak | _(all)_ | _(gke)_ | — | `keycloak-external` | `elasticsearch` | — |
 
 Note: `elasticsearch-basic` (PR) and `elasticsearch-oidc` (nightly) are **disabled**.
 `opensearch` with keycloak auth (nightly) is **disabled**.
@@ -582,7 +572,7 @@ values/platform/gke.yaml
 **`keycloak-mt` on GKE:**
 ```
 values/base.yaml
-values/identity/keycloak-external.yaml
+values/identity/keycloak.yaml
 values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 values/features/multitenancy.yaml
@@ -600,8 +590,8 @@ values/features/rba.yaml
 **`keycloak-original` on GKE:**
 ```
 values/base.yaml
-values/identity/keycloak-external.yaml
-values/persistence/elasticsearch-external.yaml
+values/identity/keycloak.yaml
+values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 ```
 
@@ -610,14 +600,6 @@ values/platform/gke.yaml
 values/base.yaml
 values/identity/basic.yaml
 values/persistence/opensearch.yaml
-values/platform/gke.yaml
-```
-
-**`keycloak-external-mimic` on GKE:**
-```
-values/base.yaml
-values/identity/keycloak-external.yaml
-values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 ```
 
@@ -661,21 +643,20 @@ Adds RDBMS persistence backends and a second `keycloak-original` entry.
 | PR | `upgrade-migration` | eske-upgm | keycloak | upgrade-minor | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | PR | `elasticsearch-basic` | esba | basic | install | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | PR | `oidc` | esoi | oidc | upgrade-minor | _(gke)_ | — | `oidc` | `elasticsearch` | — |
-| PR | `keycloak-mt` | kemt | keycloak | upgrade-minor | _(gke)_ | — | `keycloak-external` | `elasticsearch` | `[multitenancy]` |
+| PR | `keycloak-mt` | kemt | keycloak | upgrade-minor | _(gke)_ | — | `keycloak` | `elasticsearch` | `[multitenancy]` |
 | PR | `keycloak-rba` | kerba | keycloak | upgrade-minor | _(gke)_ | — | `keycloak` | `elasticsearch` | `[rba]` |
-| PR | `keycloak-original` | keyc | keycloak | upgrade-minor | _(gke)_ | identity=`keycloak-external`, persistence=`elasticsearch-external` | `keycloak-external` | `elasticsearch-external` | — |
-| PR | `keycloak-original` | keorg | keycloak | install | _(gke)_ | identity=`keycloak-external`, persistence=`elasticsearch-external` | `keycloak-external` | `elasticsearch-external` | — |
+| PR | `keycloak-original` | keyc | keycloak | upgrade-minor | _(gke)_ | identity=`keycloak`, persistence=`elasticsearch` | `keycloak` | `elasticsearch` | — |
+| PR | `keycloak-original` | keorg | keycloak | install | _(gke)_ | identity=`keycloak`, persistence=`elasticsearch` | `keycloak` | `elasticsearch` | — |
 | PR | `gateway-keycloak` | gatkc | keycloak | install | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | Nightly | `elasticsearch` | eskey | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | Nightly | `elasticsearch-basic` | esba | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `elasticsearch-oidc` | esoi | oidc | _(all)_ | _(gke)_ | — | `oidc` | `elasticsearch` | — |
-| Nightly | `multitenancy` | mtke | keycloak | _(all)_ | _(gke)_ | — | `keycloak-external` | `elasticsearch` | `[multitenancy]` |
+| Nightly | `multitenancy` | mtke | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[multitenancy]` |
 | Nightly | `opensearch` (keycloak) | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch` | — |
 | Nightly | `opensearch` (basic) | osba | basic | _(all)_ | _(gke)_ | — | `basic` | `opensearch` | — |
 | Nightly | `identity-migration` | idmike | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | Nightly | `elasticsearch` (enterprise) | elbae | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `documentstore` | docstr | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[documentstore]` |
-| Nightly | `keycloak-external-mimic` | kcextm | keycloak | _(all)_ | _(gke)_ | — | `keycloak-external` | `elasticsearch` | — |
 
 Note: `upgrade-migration`, `elasticsearch-basic` (PR), `elasticsearch-oidc`, and
 `opensearch` with keycloak (nightly) are **disabled**.
@@ -695,8 +676,8 @@ values/platform/gke.yaml
 **`keycloak-original` (keorg, flow=install) on GKE:**
 ```
 values/base.yaml
-values/identity/keycloak-external.yaml
-values/persistence/elasticsearch-external.yaml
+values/identity/keycloak.yaml
+values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 ```
 (Same files as the `keyc` entry — only the flow and shortname differ.)
@@ -763,9 +744,8 @@ path ignores the `auth` field (it uses `identity` instead), but adding explicit
 
 | Version | Scenario | `auth` field | Derived Identity | Notes |
 |---------|----------|--------------|------------------|-------|
-| 8.7–8.9 | `keycloak-mt` | keycloak | `keycloak-external` | Name parsing maps `-mt` to external keycloak |
-| 8.6–8.9 | `multitenancy` | keycloak | `keycloak-external` | Name parsing maps `multitenancy` to external keycloak |
-| 8.8–8.9 | `keycloak-external-mimic` | keycloak | `keycloak-external` | Name parsing maps `keycloak-external` substring |
+| 8.7–8.9 | `keycloak-mt` | keycloak | `keycloak` | Name parsing maps `-mt` to keycloak |
+| 8.6–8.9 | `multitenancy` | keycloak | `keycloak` | Name parsing maps `multitenancy` to keycloak |
 | 8.8–8.9 | `elasticsearch` (hybrid) | hybrid | `hybrid` | `auth` and derived identity happen to align |
 | 8.8–8.9 | `elasticsearch-basic` | basic | `basic` | `auth` and derived identity happen to align |
 

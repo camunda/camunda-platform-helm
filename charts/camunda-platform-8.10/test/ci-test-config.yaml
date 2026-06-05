@@ -21,7 +21,7 @@ unit:
 #
 # 2. Selection + Composition (new - preferred for clarity):
 #    - name: my-test
-#      identity: keycloak        # Explicit: keycloak, keycloak-external, oidc, basic, hybrid
+#      identity: keycloak        # Explicit: keycloak, oidc, basic, hybrid
 #      persistence: elasticsearch # Explicit: elasticsearch, opensearch, rdbms, rdbms-oracle
 #      platform: gke             # Explicit: gke, eks, openshift
 #      features: [multitenancy]  # Explicit: any filename (without .yaml) from test/integration/scenarios/chart-full-setup/values/features/

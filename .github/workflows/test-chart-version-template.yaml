@@ -87,11 +87,11 @@ on:
       # test-integration-template and ultimately to the Taskfile env vars.
       # =============================================================================
       test-identity:
-        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        description: "Identity selection: keycloak, oidc, basic, hybrid"
         required: false
         type: string
       test-persistence:
-        description: "Persistence selection: elasticsearch, elasticsearch-external, opensearch, rdbms"
+        description: "Persistence selection: elasticsearch, opensearch, rdbms"
         required: false
         type: string
       test-platform:

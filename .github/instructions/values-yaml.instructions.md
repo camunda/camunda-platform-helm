@@ -218,9 +218,9 @@ Layers live in `test/integration/scenarios/chart-full-setup/values/<chart-versio
 | 7 | Migrator | `values-enable-migrator.yaml` | Chart version starts with `13` |
 | 8 | Image tags | `values/base-image-tags.yaml` | `ImageTags == true` |
 
-**Available identity layers:** `keycloak`, `keycloak-external`, `oidc` (8.7+), `basic` (8.8+), `hybrid` (8.8+)
+**Available identity layers:** `keycloak`, `oidc` (8.7+), `basic` (8.8+), `hybrid` (8.8+)
 
-**Available persistence layers:** `elasticsearch`, `elasticsearch-external`, `opensearch`, `rdbms` (8.9+), `rdbms-oracle` (8.9+)
+**Available persistence layers:** `elasticsearch`, `opensearch`, `rdbms` (8.9+), `rdbms-oracle` (8.9+)
 
 **Available feature layers:** `multitenancy`, `rba`, `documentstore` (8.7+), `mcp` (8.10+)
 
@@ -228,15 +228,15 @@ Layers live in `test/integration/scenarios/chart-full-setup/values/<chart-versio
 
 | Scenario name contains | Identity | Persistence | Features |
 |------------------------|----------|-------------|---------|
-| `-mt`, `multitenancy` | `keycloak-external` | `elasticsearch` | `multitenancy` |
-| `keycloak-original` | `keycloak-external` | `elasticsearch-external` | — |
+| `-mt`, `multitenancy` | `keycloak` | `elasticsearch` | `multitenancy` |
+| `keycloak-original` | `keycloak` | `elasticsearch` | — |
 | `oidc`, `entra` | `oidc` | `elasticsearch` | — |
 | `basic` | `basic` | `elasticsearch` | — |
 | `hybrid` | `hybrid` | `elasticsearch` | — |
 | `opensearch` | `keycloak` | `opensearch` | — |
 | `rdbms` + `oracle` | `keycloak` | `rdbms-oracle` | — |
 | `rdbms` | `keycloak` | `rdbms` | — |
-| _(default)_ | `keycloak` | `elasticsearch-external` | — |
+| _(default)_ | `keycloak` | `elasticsearch` | — |
 
 When adding a new integration test values file, check which chart versions it should apply to
 using the layer availability table in `docs/skills/integration-test-scenario-resolution.md`.

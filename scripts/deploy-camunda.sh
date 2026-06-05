@@ -76,8 +76,9 @@ LOG_LEVEL="${LOG_LEVEL:-info}"
 SKIP_DEPENDENCY_UPDATE="${SKIP_DEPENDENCY_UPDATE:-true}"
 EXTERNAL_SECRETS_ENABLED="${EXTERNAL_SECRETS_ENABLED:-true}"
 
-# Keycloak external configuration (required for GKE/ROSA with Keycloak)
-KEYCLOAK_EXT_HOST="${KEYCLOAK_EXT_HOST:-keycloak-24-9-0.ci.distro.ultrawombat.com}"
+# Keycloak external configuration (required when deploying against an external Keycloak;
+# the shared CI Keycloak was decommissioned, so KEYCLOAK_EXT_HOST must be set explicitly)
+KEYCLOAK_EXT_HOST="${KEYCLOAK_EXT_HOST:-}"
 KEYCLOAK_EXT_PROTOCOL="${KEYCLOAK_EXT_PROTOCOL:-https}"
 
 # Binary paths
@@ -103,7 +104,7 @@ Optional:
   --log-level LEVEL          Log level: trace, debug, info, warn, error (default: info)
   --skip-dependency-update   Skip Helm dependency update (default: true)
   --external-secrets BOOL    Enable external secrets (default: true)
-  --keycloak-host HOST       Keycloak external host (default: keycloak-24-9-0.ci.distro.ultrawombat.com)
+  --keycloak-host HOST       Keycloak external host (required for external Keycloak; no default)
   --keycloak-protocol PROTO  Keycloak protocol (default: https)
   --repo-root PATH           Repository root path (default: auto-detected)
   --help                     Show this help message
@@ -262,8 +263,6 @@ export KEYCLOAK_REALM="$REALM_NAME"
 export OPTIMIZE_INDEX_PREFIX="$OPTIMIZE_PREFIX"
 export ORCHESTRATION_INDEX_PREFIX="$ORCHESTRATION_PREFIX"
 export FLOW="$FLOW"
-export ES_POOL_INDEX="${ES_POOL_INDEX:-0}"
-export OS_POOL_INDEX="${OS_POOL_INDEX:-0}"
 
 # Only export Keycloak host if provided (required for some platforms)
 if [[ -n "$KEYCLOAK_EXT_HOST" ]]; then

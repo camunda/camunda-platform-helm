@@ -110,20 +110,6 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
-        - name: opensearch-external
-          enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
-          shortname: osex
-          tier: 2
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
-          persistence: opensearch-external
-          flow: install
-          helmVersion: 3.20.2
-          infra-type:
-            gke: distroci
-          platforms: [gke]
         - name: opensearch-embedded
           enabled: true
           shortname: osem
