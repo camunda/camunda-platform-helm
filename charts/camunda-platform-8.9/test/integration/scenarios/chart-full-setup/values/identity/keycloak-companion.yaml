@@ -1,0 +1,155 @@
+# Companion Keycloak auth configuration for 8.9 (upgrade-path layer)
+# Layer 2: Auth method — external companion internal-keycloak-26 release.
+#
+# This is the bundled-Keycloak-free variant of keycloak.yaml. It is selected by
+# the upgrade-minor scenarios so that the realm, users, and clients live in a
+# companion Keycloak (a separate Helm release) instead of the in-chart Bitnami
+# Keycloak subchart. When the chart is later upgraded to 8.10 — which removes
+# the Bitnami subcharts entirely — the companion Keycloak (and therefore the
+# realm) survives, so authentication keeps working after the upgrade.
+#
+# The companion internal-keycloak-26 chart creates a Service named "keycloak"
+# in the same namespace; Identity + WebModeler external databases point at the
+# "postgresql" service from the internal-postgresql companion chart.
+
+global:
+  ingress:
+    enabled: true
+    className: nginx
+    # The Ingress host will be added via CLI.
+    host: "$CAMUNDA_HOSTNAME"
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+  identity:
+    keycloak:
+      url:
+        protocol: http
+        # FQDN required: the ExternalName service target must be resolvable from
+        # the ingress-nginx namespace (which runs in a different namespace).
+        host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
+        port: "80"
+      internal: true
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-keycloak-admin-password"
+    auth:
+      enabled: true
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-console-client-token"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-optimize-client-token"
+  security:
+    authentication:
+      method: oidc
+
+# -- Wait for Keycloak before starting Identity --------------------------------
+# Identity's /actuator/health returns 503 while Keycloak is not reachable,
+# which burns through startup probe budget and causes unnecessary restarts.
+# This init container blocks until the companion Keycloak's health endpoint
+# responds. Targets the companion Service ("keycloak"), not the bundled
+# "{{ .Release.Name }}-keycloak" StatefulSet Service.
+identity:
+  initContainers:
+    - name: wait-for-keycloak
+      image: busybox:1.36
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak at keycloak:80/auth/ ..."
+          until wget -q --spider --timeout=2 "http://keycloak:80/auth/"; do
+            sleep 2
+          done
+          echo "Keycloak is ready"
+  # Identity application database -> companion internal-postgresql release.
+  externalDatabase:
+    enabled: true
+    host: postgresql
+    port: 5432
+    database: identity
+    username: $RDBMS_POSTGRESQL_USERNAME
+    secret:
+      inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
+
+# -- Bundled Bitnami subcharts disabled: Keycloak + its PostgreSQL are provided
+#    by companion Helm releases so they persist across the 8.10 upgrade. --------
+identityKeycloak:
+  enabled: false
+
+identityPostgresql:
+  enabled: false
+
+webModeler:
+  restapi:
+    externalDatabase:
+      enabled: true
+      host: postgresql
+      port: 5432
+      database: webmodeler
+      username: $RDBMS_POSTGRESQL_USERNAME
+      secret:
+        inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: true
+  contextPath: "/optimize"
+  livenessProbe:
+    enabled: true
+
+connectors:
+  security:
+    authentication:
+      oidc:
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
+
+orchestration:
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api

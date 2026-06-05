@@ -561,7 +561,10 @@ integration:
           flow: install
           shortname: qaelupg
           auth: keycloak
-          identity: keycloak
+          # keycloak-companion: realm/users live in the companion internal-keycloak-26
+          # release (keycloak-qa profile), NOT the bundled Bitnami subchart, so they
+          # survive the 8.10 upgrade that removes the bundled Keycloak. See PR.
+          identity: keycloak-companion
           persistence: elasticsearch
           features: [postgresql-companion]
           qa: true
@@ -575,7 +578,9 @@ integration:
           flow: modular-upgrade-minor
           shortname: qaelupg
           auth: keycloak
-          identity: keycloak
+          # Must match the install entry above: both steps target the same
+          # companion Keycloak so the realm persists across the upgrade.
+          identity: keycloak-companion
           persistence: elasticsearch
           features: [postgresql-companion]
           qa: true

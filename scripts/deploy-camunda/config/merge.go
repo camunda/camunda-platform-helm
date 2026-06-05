@@ -122,7 +122,7 @@ type TestFlags struct {
 
 // SelectionFlags holds selection + composition model flags.
 type SelectionFlags struct {
-	Identity     string   // Identity selection: keycloak, keycloak-external, oidc, basic, hybrid
+	Identity     string   // Identity selection: keycloak, keycloak-companion, keycloak-external, oidc, basic, hybrid
 	Persistence  string   // Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle
 	TestPlatform string   // Test platform selection: gke, eks, openshift
 	Features     []string // Feature selections: multitenancy, rba, documentstore

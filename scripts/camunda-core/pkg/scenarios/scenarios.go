@@ -30,7 +30,7 @@ const (
 // selection + composition model. This replaces the old LayeredConfig.
 type DeploymentConfig struct {
 	// Required selections
-	Identity    string // keycloak, keycloak-external, oidc, basic, hybrid
+	Identity    string // keycloak, keycloak-companion, keycloak-external, oidc, basic, hybrid
 	Persistence string // elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle
 	Platform    string // gke, eks, openshift
 
@@ -53,7 +53,7 @@ type DeploymentConfig struct {
 // Validate checks that required fields are set and feature constraints are satisfied.
 func (c *DeploymentConfig) Validate() error {
 	if c.Identity == "" {
-		return errors.New("--identity is required (keycloak, keycloak-external, oidc, auth0, basic, hybrid)")
+		return errors.New("--identity is required (keycloak, keycloak-companion, keycloak-external, oidc, auth0, basic, hybrid)")
 	}
 	if c.Persistence == "" {
 		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle)")
@@ -63,7 +63,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate identity values
-	validIdentities := []string{"keycloak", "keycloak-external", "oidc", "auth0", "basic", "hybrid"}
+	validIdentities := []string{"keycloak", "keycloak-companion", "keycloak-external", "oidc", "auth0", "basic", "hybrid"}
 	if !contains(validIdentities, c.Identity) {
 		return fmt.Errorf("invalid --identity value %q: must be one of: %s", c.Identity, strings.Join(validIdentities, ", "))
 	}
