@@ -4,6 +4,114 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Fail early when Helm CLI < v4 is used with chart 15.x"
+        - kind: added
+          description: "Add orchestration.hostNetwork value"
+        - kind: added
+          description: "[TLS B1] add global.tls.caBundle helper for OS-level CA injection part 1 of helm#3498"
+        - kind: added
+          description: "[TLS B2] add init-container truststore import — closes helm#3498 for JVM clients"
+        - kind: added
+          description: "[TLS D] add values-tls.yaml customer overlay + quickstart doc"
+        - kind: added
+          description: "[TLS F] deprecate legacy per-component JKS truststore fields"
+        - kind: added
+          description: "Add global.gateway.namespace to support cross-namespace Gateway parentRefs"
+        - kind: added
+          description: "Added service account labels"
+        - kind: changed
+          description: "Drop camundaPlatform.toYamlPretty helm v3 compat wrapper"
+        - kind: changed
+          description: "Migrate console and webModeler values under camundaHub namespace [1/6]"
+        - kind: changed
+          description: "Drop bundled Bitnami subcharts"
+        - kind: changed
+          description: "Drop orphan helpers and guard keycloak release info"
+        - kind: fixed
+          description: "Update image tags to 8.10.0-alpha1"
+        - kind: fixed
+          description: "Expose cpu keys in connectors/console resources schema"
+        - kind: fixed
+          description: "Allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets"
+        - kind: fixed
+          description: "Allow Recreate strategy for Web Modeler persistence"
+        - kind: fixed
+          description: "Guard legacy ES exporter on global.elasticsearch.enabled"
+        - kind: fixed
+          description: "Align camunda hub service account gating"
+        - kind: fixed
+          description: "Align upload size with Zeebe message limits"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/component-image-versions: |
+        camunda: 8.10.0-alpha2
+        managementIdentity: 8.10.0-alpha2
+        optimize: 8.10.0-alpha2
+        webModeler: 8.10.0-alpha2
+        connectors: 8.10.0-alpha2
+        console: 8.10.0-alpha2
+      camunda.io/helmCLIVersion: 4.1.4
+      camunda.io/imageOverrides: |+
+        connectors: 8.10.0-alpha2
+        console: 8.10.0-alpha2
+        optimize: 8.10.0-alpha2
+        orchestration: 8.10.0-alpha2
+        modeler: 8.10.0-alpha2
+        identity: 8.10.0-alpha2
+
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-06-05T11:07:40.580674409Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: b811f34f37871fb21e1fcd543282395d4b6742f7baf6609ab6f3c71a501d2cd7
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.0.0-alpha2/camunda-platform-15.0.0-alpha2.tgz
+    version: 15.0.0-alpha2
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Add tpl rendering for global identity auth URL values"
         - kind: added
           description: "Add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10"
@@ -28520,4 +28628,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-06-04T12:05:37.545964814Z"
+generated: "2026-06-05T11:07:40.581711075Z"
