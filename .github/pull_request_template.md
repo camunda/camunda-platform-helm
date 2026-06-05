@@ -20,7 +20,7 @@ Please make sure to follow our [Contributing Guide](../docs/contribution-and-col
 - [ ] In the repo's root dir, run `make go.update-golden-only`.
 - [ ] There is no other open [pull request](../pulls) for the same update/change.
 - [ ] Tests for charts are added (if needed).
-- [ ] In-repo [documentation](../docs/contribution-and-collaboration.md#pull-request-requirements) are updated (if needed).
+- [ ] In-repo [documentation](../docs/contribution-and-collaboration.md#contribution-policy) are updated (if needed).
 
 **After opening the PR:**
 
