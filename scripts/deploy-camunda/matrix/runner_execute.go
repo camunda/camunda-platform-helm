@@ -542,6 +542,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		if err := registerDeclarativePreInstallHook(flags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 			return RunResult{Entry: entry, Namespace: namespace, Error: err}
 		}
+		if err := registerDeclarativePostInfraHook(flags, entry.PostInfra, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, Error: err}
+		}
 	}
 	if !isTwoStepUpgrade {
 		if err := registerDeclarativePostDeployHook(flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {

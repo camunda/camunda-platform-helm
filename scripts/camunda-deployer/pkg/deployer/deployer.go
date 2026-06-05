@@ -129,5 +129,15 @@ func Deploy(ctx context.Context, o types.Options) error {
 		}
 	}
 
+	// Run post-infra hooks after the companion charts (external infrastructure)
+	// are deployed and ready, but before the main Camunda chart. This is the
+	// point to act on freshly-provisioned infrastructure — e.g. migrating data
+	// from a prior release's bundled backends onto the companion services.
+	for i, hook := range o.PostInfraHooks {
+		if err := hook(ctx); err != nil {
+			return fmt.Errorf("post-infra hook [%d] failed: %w", i, err)
+		}
+	}
+
 	return upgradeInstall(ctx, o)
 }

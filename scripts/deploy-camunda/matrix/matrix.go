@@ -48,6 +48,11 @@ type Entry struct {
 	// without re-loading ci-test-config.yaml.
 	PreInstall *LifecycleHook `json:"preInstall,omitempty"`
 
+	// PostInfra declares a fixture or script to run after companion charts
+	// (external infrastructure) are deployed but before the main Camunda chart.
+	// Carried from CIScenario.PostInfra.
+	PostInfra *LifecycleHook `json:"postInfra,omitempty"`
+
 	// PostDeploy declares a fixture or script to run after helm install
 	// completes successfully. Carried from CIScenario.PostDeploy.
 	PostDeploy *LifecycleHook `json:"postDeploy,omitempty"`
@@ -215,6 +220,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						SkipIT:       scenario.SkipIT,
 						Dependencies: append([]ChartDependency(nil), scenario.Dependencies...),
 						PreInstall:   scenario.PreInstall,
+						PostInfra:    scenario.PostInfra,
 						PostDeploy:   scenario.PostDeploy,
 						PreUpgrade:   preUpgrade,
 						HelmVersion:  scenario.HelmVersion,

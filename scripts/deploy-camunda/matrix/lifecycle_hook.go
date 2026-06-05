@@ -103,6 +103,7 @@ type hookKind string
 
 const (
 	hookPreInstall hookKind = "pre-install"
+	hookPostInfra  hookKind = "post-infra"
 	hookPostDeploy hookKind = "post-deploy"
 	hookPreUpgrade hookKind = "pre-upgrade"
 )
@@ -185,6 +186,16 @@ func registerDeclarativeHook(flags *config.RuntimeFlags, hook *LifecycleHook, ki
 // for pre-install registrations.
 func registerDeclarativePreInstallHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
 	return registerDeclarativeHook(flags, hook, hookPreInstall, &flags.PreInstallHooks, repoRoot, appVersion, scenario)
+}
+
+// registerDeclarativePostInfraHook is a thin shim that pins the slot and kind
+// for post-infra registrations. The hook runs after companion charts (the
+// external infrastructure: PostgreSQL, Elasticsearch, Keycloak, …) are deployed
+// and ready, but before the main Camunda chart is installed/upgraded. Use it to
+// act on freshly-provisioned infrastructure — e.g. migrating data from a prior
+// release's bundled backends onto the companion services.
+func registerDeclarativePostInfraHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
+	return registerDeclarativeHook(flags, hook, hookPostInfra, &flags.PostInfraHooks, repoRoot, appVersion, scenario)
 }
 
 // registerDeclarativePostDeployHook is a thin shim that pins the slot and kind
