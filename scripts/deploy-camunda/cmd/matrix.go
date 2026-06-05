@@ -590,7 +590,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&useVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets for all platforms (overridden by --use-vault-backed-secrets-gke/--use-vault-backed-secrets-eks)")
 	f.BoolVar(&useVaultBackedSecretsGKE, "use-vault-backed-secrets-gke", false, "Use vault-backed external secrets for GKE entries")
 	f.BoolVar(&useVaultBackedSecretsEKS, "use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
-	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host (defaults to "+config.DefaultKeycloakHost+")")
+	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host")
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
 	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")

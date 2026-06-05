@@ -35,9 +35,6 @@ outputs:
   namespace:
     description: The namespace for the deployment
     value: ${{ steps.vars.outputs.namespace }}
-  es-pool-index:
-    description: Elasticsearch pool index (0..pools-1) for per-scenario hash-based cluster routing
-    value: ${{ steps.vars.outputs.es-pool-index }}
 
 runs:
   using: composite

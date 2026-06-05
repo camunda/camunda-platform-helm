@@ -971,7 +971,6 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 	versions := VersionOrder(entries)
 	groups := GroupByVersion(entries)
 
-	globalIndex := 0
 	for _, version := range versions {
 		versionEntries := groups[version]
 
@@ -981,8 +980,7 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 			Msg("Processing version")
 
 		for _, entry := range versionEntries {
-			result := executeEntry(ctx, entry, opts, globalIndex)
-			globalIndex++
+			result := executeEntry(ctx, entry, opts)
 			results = append(results, result)
 
 			if result.Error != nil {
@@ -1062,7 +1060,7 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 				return
 			}
 
-			result := executeEntry(runCtx, e, opts, idx)
+			result := executeEntry(runCtx, e, opts)
 			results[idx] = result
 
 			if result.Error != nil {
@@ -1543,12 +1541,11 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 }
 
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
-// The entryIndex is used for round-robin ES pool distribution across the 4-cluster pool infra.
 // The flow determines the execution strategy:
 //   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
 //   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
 //   - Install (default): Single-step fresh install.
-func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex int) RunResult {
+func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	start := time.Now()
 	namespace := resolveNamespace(opts, entry)
 	baseNamespace := buildBaseNamespace(entry)
