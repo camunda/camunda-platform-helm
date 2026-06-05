@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
-	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
@@ -88,11 +87,11 @@ All diagnostic output goes to stderr via the logger.`,
 	f.StringVar(&pv.scenarioPath, "scenario-path", "", "Path to the scenario directory (e.g., chart-full-setup)")
 	f.StringVar(&pv.chartPath, "chart-path", "", "Path to the Camunda chart directory (used to derive scenario-path if not set)")
 	f.StringVar(&pv.scenario, "scenario", "chart-full-setup", "Scenario name (used to derive defaults from naming conventions)")
-	f.StringVar(&pv.identity, "identity", "", "Identity selection: keycloak, oidc, basic, hybrid")
-	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-self-signed, no-elasticsearch, opensearch, opensearch-embedded, opensearch-self-signed, opensearch-self-signed-os-trust, rdbms, rdbms-external, rdbms-oracle, rdbms-self-signed")
-	f.StringVar(&pv.testPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
-	f.StringVar(&pv.platform, "platform", "gke", "Deploy platform: gke, rosa, eks (fallback for --test-platform)")
-	f.StringSliceVar(&pv.features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
+	f.StringVar(&pv.identity, "identity", "", "Identity selection (one of values/identity/*.yaml under the scenario)")
+	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection (one of values/persistence/*.yaml under the scenario)")
+	f.StringVar(&pv.testPlatform, "test-platform", "", "Test platform selection (one of values/platform/*.yaml under the scenario)")
+	f.StringVar(&pv.platform, "platform", "gke", "Deploy platform (fallback for --test-platform)")
+	f.StringSliceVar(&pv.features, "features", nil, "Feature selections, comma-separated (each one of values/features/*.yaml under the scenario)")
 	f.BoolVar(&pv.qa, "qa", false, "Enable QA configuration (test users, etc.)")
 	f.BoolVar(&pv.imageTags, "image-tags", false, "Enable image tag overrides from env vars")
 	f.BoolVar(&pv.upgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
@@ -105,18 +104,20 @@ All diagnostic output goes to stderr via the logger.`,
 	f.BoolVar(&pv.interactive, "interactive", false, "Enable interactive prompts for missing variables")
 	f.StringVarP(&pv.logLevel, "log-level", "l", "info", "Log level")
 
-	// Register completions for selection flags
+	// Selection completions: discovered from the scenario directory's values/
+	// tree at completion time (see discoverCompletions). Adding a values file
+	// in any chart is sufficient to make its name completable here.
 	_ = cmd.RegisterFlagCompletionFunc("identity", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListIdentities), cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"elasticsearch", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListPersistence), cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return config.TestPlatforms, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListPlatforms), cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return completeMultiSelect(toComplete, []string{"multitenancy", "rba", "documentstore", "arm", "migrator"})
+		return completeMultiSelect(toComplete, discoverCompletions(cmd, scenarios.ListFeatures))
 	})
 	_ = cmd.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return completeLogLevels(toComplete)
@@ -218,7 +219,7 @@ func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir stri
 		effectivePlatform = pv.platform
 	}
 
-	deployConfig, err := scenarios.BuildDeploymentConfig(pv.scenario, scenarios.BuilderOverrides{
+	deployConfig, err := scenarios.BuildDeploymentConfig(pv.scenario, scenarioDir, scenarios.BuilderOverrides{
 		Identity:     pv.identity,
 		Persistence:  pv.persistence,
 		Platform:     effectivePlatform,

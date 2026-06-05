@@ -26,8 +26,8 @@ import (
 //   - no orphan files exist in pre-setup-scripts/ or common/resources/ —
 //     every .sh / .yaml must be referenced by at least one LifecycleHook
 //     across PR/Nightly scenarios, dependency-profile pre-install hooks, and
-//     flow-scoped pre-upgrade hooks (allowlists in lifecycle_allowlist.go
-//     exempt helper scripts and staged-but-disabled fixtures).
+//     flow-scoped pre-upgrade hooks (per-chart .orphan-allowlist.yaml exempts
+//     helper scripts and staged-but-disabled fixtures; see LoadOrphanAllowlist).
 //
 // The validator runs at the tail of LoadRegistry. Errors are aggregated and
 // returned as a single error so the caller sees every problem at once.
@@ -193,9 +193,15 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		checkHook(fmt.Sprintf("flow %q pre-upgrade", flowName), hooks.PreUpgrade)
 	}
 
+	// Load per-chart exemptions for the orphan walks below. Missing file is
+	// allowed (chart versions with no exempt files don't need a stub).
+	scriptAllowlist, resourceAllowlist, err := LoadOrphanAllowlist(v.ChartDir)
+	if err != nil {
+		problems = append(problems, err.Error())
+	}
+
 	// Orphan walk: every .sh in pre-setup-scripts/ must be referenced by some
-	// LifecycleHook, modulo preSetupScriptAllowlist (helper scripts sourced
-	// indirectly and sed-target markers).
+	// LifecycleHook, modulo the .orphan-allowlist.yaml exemptions.
 	if entries, err := os.ReadDir(scriptsDir); err == nil {
 		for _, e := range entries {
 			if e.IsDir() {
@@ -205,11 +211,11 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			if !strings.HasSuffix(name, ".sh") {
 				continue
 			}
-			if preSetupScriptAllowlist[name] {
+			if scriptAllowlist[name] {
 				continue
 			}
 			if !referencedScripts[name] {
-				problems = append(problems, fmt.Sprintf("orphan script %q in pre-setup-scripts/: no LifecycleHook references it", name))
+				problems = append(problems, fmt.Sprintf("orphan script %q in pre-setup-scripts/: no LifecycleHook references it (add to %s if intentional)", name, OrphanAllowlistFile))
 			}
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
@@ -217,9 +223,8 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	}
 
 	// Orphan walk: every .yaml/.yml in common/resources/ must be referenced by
-	// some LifecycleHook fixtures: list, modulo commonResourcesAllowlist
-	// (staged-but-disabled fixtures and resources applied by scripts via
-	// envsubst+kubectl rather than the runner's declarative pipeline).
+	// some LifecycleHook fixtures: list, modulo the .orphan-allowlist.yaml
+	// exemptions.
 	if entries, err := os.ReadDir(resourcesDir); err == nil {
 		for _, e := range entries {
 			if e.IsDir() {
@@ -229,15 +234,29 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
 				continue
 			}
-			if commonResourcesAllowlist[name] {
+			if resourceAllowlist[name] {
 				continue
 			}
 			if !referencedFixtures[name] {
-				problems = append(problems, fmt.Sprintf("orphan fixture %q in common/resources/: no LifecycleHook references it", name))
+				problems = append(problems, fmt.Sprintf("orphan fixture %q in common/resources/: no LifecycleHook references it (add to %s if intentional)", name, OrphanAllowlistFile))
 			}
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		problems = append(problems, fmt.Sprintf("read common/resources/: %v", err))
+	}
+
+	// Dead-entry check: every name in the allowlist must match a file in this
+	// chart version. Catches stale entries left behind after the underlying
+	// file is removed.
+	for name := range scriptAllowlist {
+		if _, err := os.Stat(filepath.Join(scriptsDir, name)); err != nil {
+			problems = append(problems, fmt.Sprintf("%s: pre-setup-scripts entry %q matches no file in pre-setup-scripts/ — remove it", OrphanAllowlistFile, name))
+		}
+	}
+	for name := range resourceAllowlist {
+		if _, err := os.Stat(filepath.Join(resourcesDir, name)); err != nil {
+			problems = append(problems, fmt.Sprintf("%s: common-resources entry %q matches no file in common/resources/ — remove it", OrphanAllowlistFile, name))
+		}
 	}
 
 	if len(problems) == 0 {

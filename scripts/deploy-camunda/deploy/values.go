@@ -434,7 +434,11 @@ func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName str
 		return nil, nil
 	}
 
-	return scenarios.BuildDeploymentConfig(scenarioName, scenarios.BuilderOverrides{
+	scenariosDir := flags.Deployment.ScenarioPath
+	if scenariosDir == "" {
+		scenariosDir = filepath.Join(flags.Chart.ChartPath, "test/integration/scenarios/chart-full-setup")
+	}
+	return scenarios.BuildDeploymentConfig(scenarioName, scenariosDir, scenarios.BuilderOverrides{
 		Identity:     flags.Selection.Identity,
 		Persistence:  flags.Selection.Persistence,
 		Platform:     flags.Selection.TestPlatform,
@@ -705,7 +709,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if effectivePlatform == "" {
 			effectivePlatform = flags.Deployment.Platform
 		}
-		deployConfig, err := scenarios.BuildDeploymentConfig(scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
+		deployConfig, err := scenarios.BuildDeploymentConfig(scenarioCtx.ScenarioName, effectiveScenarioDir, scenarios.BuilderOverrides{
 			Identity:     flags.Selection.Identity,
 			Persistence:  flags.Selection.Persistence,
 			Platform:     effectivePlatform,

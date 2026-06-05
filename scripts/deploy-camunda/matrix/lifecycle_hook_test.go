@@ -24,9 +24,9 @@ import (
 	"testing"
 )
 
-// Allowlists for orphan exemption live in lifecycle_allowlist.go (consumed
-// by both RegistryValidator's load-time orphan walk and TestLifecycleFixtures's
-// cross-version dead-entry check below).
+// Orphan exemptions live in each chart's .orphan-allowlist.yaml; loaded by
+// LoadOrphanAllowlist. Per-version dead-entry checks happen inside
+// RegistryValidator (and the orphan walk below).
 
 // TestLifecycleFixtures asserts the integrity of the declarative lifecycle
 // fixture system across every chart version:
@@ -35,57 +35,30 @@ import (
 //   - every LifecycleHook.Script value resolves to an existing file;
 //   - every LifecycleHook.Fixtures[i] resolves to an existing file in
 //     common/resources/;
-//   - every script in pre-setup-scripts/ (modulo the allowlist) is referenced
-//     by ≥1 hook — no orphan scripts;
-//   - integration.flows.* keys reference flows that some scenario actually uses;
-//   - allowlist entries point to files that exist in at least one chart version.
+//   - every script in pre-setup-scripts/ (modulo the chart's
+//     .orphan-allowlist.yaml) is referenced by ≥1 hook — no orphan scripts;
+//   - integration.flows.* keys reference flows that some scenario actually uses.
 func TestLifecycleFixtures(t *testing.T) {
 	repoRoot := findRepoRoot(t)
-	chartsDir := filepath.Join(repoRoot, "charts")
-	entries, err := os.ReadDir(chartsDir)
+	// Source of truth for "which versions are under active CI": alpha +
+	// supportStandard from charts/chart-versions.yaml. supportExtended series
+	// remain on disk for archival reasons but are not in the active CI matrix,
+	// so we don't assert their pre-setup-scripts/ hygiene here.
+	cv, err := LoadChartVersions(repoRoot)
 	if err != nil {
-		t.Fatalf("read charts dir: %v", err)
+		t.Fatalf("LoadChartVersions: %v", err)
 	}
-
-	versions := make([]string, 0)
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		const prefix = "camunda-platform-"
-		if !strings.HasPrefix(e.Name(), prefix) {
-			continue
-		}
-		versions = append(versions, strings.TrimPrefix(e.Name(), prefix))
-	}
+	versions := append([]string(nil), cv.ActiveVersions()...)
 	sort.Strings(versions)
 
-	// Allowlist usage tracking — entries unused across every version are dead
-	// references and must be removed.
-	usedScriptAllowlist := make(map[string]bool)
-	usedFixtureAllowlist := make(map[string]bool)
-
 	for _, v := range versions {
-		v := v
 		t.Run(v, func(t *testing.T) {
-			validateLifecycleFixturesForVersion(t, repoRoot, v, usedScriptAllowlist, usedFixtureAllowlist)
+			validateLifecycleFixturesForVersion(t, repoRoot, v)
 		})
-	}
-
-	for name := range preSetupScriptAllowlist {
-		if !usedScriptAllowlist[name] {
-			t.Errorf("preSetupScriptAllowlist entry %q matches no file in any version — remove it", name)
-		}
-	}
-	for name := range commonResourcesAllowlist {
-		if !usedFixtureAllowlist[name] {
-			t.Errorf("commonResourcesAllowlist entry %q matches no file in any version — remove it", name)
-		}
 	}
 }
 
-func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
-	usedScriptAllowlist, usedFixtureAllowlist map[string]bool) {
+func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string) {
 	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+version)
 	// Some chart dirs (end-of-life, alpha channel) ship without a test/ tree
 	// at all — those are not testable here. Skip the version entirely.
@@ -191,9 +164,13 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		collect("flow "+flowName+" (pre-upgrade)", hooks.PreUpgrade)
 	}
 
-	// Orphan check: every script in pre-setup-scripts/ (minus allowlist)
-	// must be referenced by at least one declarative hook. Allowlist matches
-	// here count as "used" for the cross-version dead-entry check.
+	scriptAllowlist, resourceAllowlist, err := LoadOrphanAllowlist(chartDir)
+	if err != nil {
+		t.Errorf("%s: load .orphan-allowlist.yaml: %v", version, err)
+	}
+
+	// Orphan check: every script in pre-setup-scripts/ (minus exemptions)
+	// must be referenced by at least one declarative hook.
 	scriptsEntries, err := os.ReadDir(scriptsDir)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("%s: read pre-setup-scripts/: %v", version, err)
@@ -206,12 +183,11 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		if !strings.HasSuffix(name, ".sh") {
 			continue
 		}
-		if preSetupScriptAllowlist[name] {
-			usedScriptAllowlist[name] = true
+		if scriptAllowlist[name] {
 			continue
 		}
 		if !referencedScripts[name] {
-			t.Errorf("%s: orphan script %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
+			t.Errorf("%s: orphan script %q has no LifecycleHook reference in ci-test-config.yaml (add to %s if intentional)", version, name, OrphanAllowlistFile)
 		}
 	}
 
@@ -229,12 +205,25 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
 			continue
 		}
-		if commonResourcesAllowlist[name] {
-			usedFixtureAllowlist[name] = true
+		if resourceAllowlist[name] {
 			continue
 		}
 		if !referencedFixtures[name] {
-			t.Errorf("%s: orphan fixture %q has no LifecycleHook reference in ci-test-config.yaml", version, name)
+			t.Errorf("%s: orphan fixture %q has no LifecycleHook reference in ci-test-config.yaml (add to %s if intentional)", version, name, OrphanAllowlistFile)
+		}
+	}
+
+	// Dead-entry check: every allowlist entry must match a file that exists
+	// in this chart version (the per-chart YAML cannot drift the way the old
+	// cross-version Go map could).
+	for name := range scriptAllowlist {
+		if _, err := os.Stat(filepath.Join(scriptsDir, name)); err != nil {
+			t.Errorf("%s: %s pre-setup-scripts entry %q matches no file in pre-setup-scripts/ — remove it", version, OrphanAllowlistFile, name)
+		}
+	}
+	for name := range resourceAllowlist {
+		if _, err := os.Stat(filepath.Join(resourcesDir, name)); err != nil {
+			t.Errorf("%s: %s common-resources entry %q matches no file in common/resources/ — remove it", version, OrphanAllowlistFile, name)
 		}
 	}
 }

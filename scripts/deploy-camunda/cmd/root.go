@@ -13,6 +13,7 @@ import (
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/format"
 	"scripts/prepare-helm-values/pkg/env"
+	"sort"
 	"strings"
 	"syscall"
 
@@ -389,128 +390,80 @@ func completeMultiSelect(toComplete string, available []string) ([]string, cobra
 	return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
 }
 
-// registerSelectionCompletion adds tab completion for the new selection + composition flags.
+// registerSelectionCompletion adds tab completion for the new selection +
+// composition flags. The available choices are discovered from the scenario
+// directory's values/ tree at completion time, so dropping a new
+// values/<dir>/foo.yaml file in any chart version is sufficient to make `foo`
+// completable.
 func registerSelectionCompletion(cmd *cobra.Command) {
-	// Identity completion
 	_ = cmd.RegisterFlagCompletionFunc("identity", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		defaultIdentities := []string{"keycloak", "oidc", "basic", "hybrid"}
-
-		if scenarioPath == "" {
-			return defaultIdentities, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		identities, err := scenarios.ListIdentities(scenarioPath)
-		if err != nil || len(identities) == 0 {
-			return defaultIdentities, cobra.ShellCompDirectiveNoFileComp
-		}
-		return identities, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListIdentities), cobra.ShellCompDirectiveNoFileComp
 	})
-
-	// Persistence completion
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		defaultPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
-
-		if scenarioPath == "" {
-			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		persistence, err := scenarios.ListPersistence(scenarioPath)
-		if err != nil || len(persistence) == 0 {
-			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
-		}
-		return persistence, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListPersistence), cobra.ShellCompDirectiveNoFileComp
 	})
-
-	// Test platform completion
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		defaultPlatforms := config.TestPlatforms
-
-		if scenarioPath == "" {
-			return defaultPlatforms, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		platforms, err := scenarios.ListPlatforms(scenarioPath)
-		if err != nil || len(platforms) == 0 {
-			return defaultPlatforms, cobra.ShellCompDirectiveNoFileComp
-		}
-		return platforms, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListPlatforms), cobra.ShellCompDirectiveNoFileComp
 	})
-
-	// Features completion (supports comma-separated multi-select)
 	_ = cmd.RegisterFlagCompletionFunc("features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		defaultFeatures := []string{"multitenancy", "rba", "documentstore"}
-
-		var features []string
-		if scenarioPath != "" {
-			var err error
-			features, err = scenarios.ListFeatures(scenarioPath)
-			if err != nil || len(features) == 0 {
-				features = defaultFeatures
-			}
-		} else {
-			features = defaultFeatures
-		}
-
-		return completeMultiSelect(toComplete, features)
+		return completeMultiSelect(toComplete, discoverCompletions(cmd, scenarios.ListFeatures))
 	})
+}
+
+// discoverCompletions runs lister against the scenario path resolved from the
+// command. Returns nil if no scenario path can be found — cobra treats nil as
+// "no completions", which is the correct behaviour when there is nothing to
+// discover (better than serving a stale hardcoded list).
+func discoverCompletions(cmd *cobra.Command, lister func(string) ([]string, error)) []string {
+	path := discoverScenarioPath(cmd)
+	if path == "" {
+		return nil
+	}
+	names, err := lister(path)
+	if err != nil {
+		return nil
+	}
+	return names
 }
 
 // registerLayeredValuesCompletion adds tab completion for layered values flags.
 func registerLayeredValuesCompletion(cmd *cobra.Command) {
 	// Auth types completion
 	_ = cmd.RegisterFlagCompletionFunc("values-auth", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		if scenarioPath == "" {
-			// Return default auth types
-			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		authTypes, err := scenarios.ListLayeredAuthTypes(scenarioPath)
-		if err != nil || len(authTypes) == 0 {
-			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
-		}
-		return authTypes, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListLayeredAuthTypes), cobra.ShellCompDirectiveNoFileComp
 	})
-
-	// Backend types completion
 	_ = cmd.RegisterFlagCompletionFunc("values-backend", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		if scenarioPath == "" {
-			return []string{"elasticsearch", "opensearch"}, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		backends, err := scenarios.ListLayeredBackends(scenarioPath)
-		if err != nil || len(backends) == 0 {
-			return []string{"elasticsearch", "opensearch"}, cobra.ShellCompDirectiveNoFileComp
-		}
-		return backends, cobra.ShellCompDirectiveNoFileComp
+		return discoverCompletions(cmd, scenarios.ListLayeredBackends), cobra.ShellCompDirectiveNoFileComp
 	})
-
-	// Feature types completion
 	_ = cmd.RegisterFlagCompletionFunc("values-features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		defaultFeatures := []string{"multitenancy", "rba", "documentstore", "rdbms", "rdbms-external", "rdbms-oracle", "upgrade"}
-
-		if scenarioPath == "" {
-			return defaultFeatures, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		features, err := scenarios.ListLayeredFeatures(scenarioPath)
-		if err != nil || len(features) == 0 {
-			return defaultFeatures, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		return completeMultiSelect(toComplete, features)
+		return completeMultiSelect(toComplete, discoverCompletions(cmd, scenarios.ListLayeredFeatures))
 	})
 
 	// Infra types completion
 	_ = cmd.RegisterFlagCompletionFunc("values-infra", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"eks"}, cobra.ShellCompDirectiveNoFileComp
 	})
+}
+
+// discoverScenarioPath returns a scenario directory suitable for listing
+// available identity/persistence/platform/feature names. It first honours
+// any explicit --scenario-path / --chart-path, then falls back to the newest
+// in-repo chart (charts/camunda-platform-*/test/integration/scenarios/chart-full-setup).
+// Returns "" if no candidate is found — callers should treat that as "offer
+// no completions" rather than a hardcoded fallback list (the whole point of
+// dynamic discovery is to avoid carrying a parallel list in code).
+func discoverScenarioPath(cmd *cobra.Command) string {
+	if p := resolveScenarioPath(cmd); p != "" {
+		return p
+	}
+	matches, err := filepath.Glob("charts/camunda-platform-*/test/integration/scenarios/chart-full-setup")
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	// Newest version directory wins (lexical sort on "camunda-platform-X.Y" is
+	// fine for the two-digit minor range this repo uses).
+	sort.Strings(matches)
+	return matches[len(matches)-1]
 }
 
 // resolveScenarioPath resolves the scenario path from CLI flags or config.

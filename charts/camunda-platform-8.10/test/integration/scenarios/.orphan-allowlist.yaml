@@ -1,0 +1,18 @@
+# Files in pre-setup-scripts/ and common/resources/ permitted to exist
+# without being referenced by any LifecycleHook in test/ci-test-config.yaml.
+# Loaded by scripts/deploy-camunda/matrix.LoadOrphanAllowlist.
+#
+# Adding an entry requires a one-line reason — reviewers should be able to
+# tell from a YAML diff alone why the exemption exists.
+pre-setup-scripts:
+  - name: pre-install-upgrade.sh
+    reason: sed-target marker for values uncommenting (alpha8 backcompat); not invoked by the matrix runner.
+  - name: create-opensearch-tls-secrets.sh
+    reason: helper sourced by pre-install-opensearch-self-signed*.sh; never invoked by the runner directly.
+common-resources:
+  - name: postgres-createdb-job.yaml
+    reason: fixture staged for the disabled rdbms-external scenario; kept to avoid a separate re-add PR when it is enabled.
+  - name: postgresql-cluster.yaml
+    reason: legacy CloudNativePG fixture retained for opt-in use; the 8.10 registry no longer references it (scenarios moved to internal-postgresql via #6339).
+  - name: gateway-proxy-settings.yaml
+    reason: applied by post-deploy-gateway-keycloak.sh via envsubst+kubectl, not via the runner's declarative fixtures pipeline.

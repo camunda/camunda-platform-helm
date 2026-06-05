@@ -19,6 +19,7 @@ func writeTempFile(t *testing.T, dir, name, content string) string {
 	return p
 }
 
+
 func captureStdout(t *testing.T, fn func() error) (string, error) {
 	t.Helper()
 	oldStdout := os.Stdout

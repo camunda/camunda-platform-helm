@@ -304,7 +304,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 
 			// Resolve deployment layers via the canonical builder (same logic as deploy.go prepareScenarioValues).
 			scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
-			deployConfig, buildErr := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
+			deployConfig, buildErr := scenarios.BuildDeploymentConfig(entry.Scenario, scenarioDir, scenarios.BuilderOverrides{
 				Identity:    entry.Identity,
 				Persistence: entry.Persistence,
 				Platform:    platform,
@@ -628,7 +628,8 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 			platform := resolvePlatform(opts, entry)
 
 			// Resolve deployment layers via the canonical builder.
-			deployConfig, buildErr := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
+			scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
+			deployConfig, buildErr := scenarios.BuildDeploymentConfig(entry.Scenario, scenarioDir, scenarios.BuilderOverrides{
 				Identity:    entry.Identity,
 				Persistence: entry.Persistence,
 				Platform:    platform,

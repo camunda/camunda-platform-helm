@@ -434,14 +434,43 @@ func TestDeploymentConfigValidate(t *testing.T) {
 		},
 	}
 
+	scenariosDir := makeFakeScenariosDir(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
+			err := tt.config.Validate(scenariosDir)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
+}
+
+// makeFakeScenariosDir builds a values/ tree containing the names referenced
+// by the validation tests, and excluding the names that those tests assert
+// should be rejected (mongodb, opensearch-external, elasticsearch-external,
+// keycloak-external). Adding/removing a name here mirrors what a chart
+// maintainer would do by adding/removing a values file in a real chart.
+func makeFakeScenariosDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	tree := map[string][]string{
+		IdentityDir:    {"keycloak", "oidc", "auth0", "basic", "hybrid"},
+		PersistenceDir: {"elasticsearch", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"},
+		PlatformDir:    {"gke", "eks", "openshift"},
+		FeaturesDir:    {"multitenancy", "rba", "documentstore", "mcp", "license", "tasklist-v1"},
+	}
+	for sub, names := range tree {
+		full := filepath.Join(dir, ValuesDir, sub)
+		if err := os.MkdirAll(full, 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", full, err)
+		}
+		for _, n := range names {
+			if err := os.WriteFile(filepath.Join(full, n+".yaml"), nil, 0o644); err != nil {
+				t.Fatalf("write %s: %v", n, err)
+			}
+		}
+	}
+	return dir
 }
 
 func TestDeploymentConfigResolvePaths(t *testing.T) {
@@ -889,7 +918,7 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := BuildDeploymentConfig("qa-elasticsearch", BuilderOverrides{
+			cfg, err := BuildDeploymentConfig("qa-elasticsearch", makeFakeScenariosDir(t), BuilderOverrides{
 				Identity:     "keycloak",
 				Persistence:  "elasticsearch",
 				Platform:     "gke",

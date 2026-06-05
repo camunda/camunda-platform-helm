@@ -1,0 +1,11 @@
+# Files in pre-setup-scripts/ and common/resources/ permitted to exist
+# without being referenced by any LifecycleHook in test/ci-test-config.yaml.
+# Loaded by scripts/deploy-camunda/matrix.LoadOrphanAllowlist.
+#
+# Adding an entry requires a one-line reason — reviewers should be able to
+# tell from a YAML diff alone why the exemption exists.
+pre-setup-scripts:
+  - name: pre-install-upgrade.sh
+    reason: sed-target marker for values uncommenting (alpha8 backcompat); not invoked by the matrix runner.
+  - name: create-elasticsearch-tls-secrets.sh
+    reason: helper sourced by pre-install-elasticsearch-self-signed-upgrade.sh; never invoked by the runner directly.
