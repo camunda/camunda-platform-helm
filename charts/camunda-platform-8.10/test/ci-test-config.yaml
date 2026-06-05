@@ -97,16 +97,23 @@ integration:
           release-name: postgresql
           values-file: test/integration/companion-values/postgresql-qa.yaml
           env-vars: [RDBMS_POSTGRESQL_USERNAME, RDBMS_POSTGRESQL_PASSWORD]
-    # CloudNativePG pre-install fixture shared by Keycloak-backed scenarios.
-    cnpg:
-      pre-install:
-        fixtures:
-          - postgresql-cluster.yaml
-        description: |
-          Provisions a CloudNativePG `Cluster` in the scenario
-          namespace, bootstrapped with `identity` and `webmodeler` databases. Required because Identity
-          and WebModeler need external databases now that no
-          bundled PostgreSQL subchart is deployed (8.10+).
+    # PostgreSQL companion variant that also creates the `app` database used by
+    # the RDBMS secondary-storage exporter (alongside identity + webmodeler).
+    postgresql-rdbms:
+      dependencies:
+        - chart: charts/internal-postgresql
+          release-name: postgresql
+          values-file: test/integration/companion-values/postgresql-rdbms.yaml
+          env-vars: [RDBMS_POSTGRESQL_USERNAME, RDBMS_POSTGRESQL_PASSWORD]
+    # PostgreSQL companion variant with self-signed TLS (ssl=on, CA in the
+    # `postgresql-tls` secret) plus the `orchestration` database. Replaces the
+    # CloudNativePG `postgresql-cluster-tls.yaml` fixture for rdbms-self-signed.
+    postgresql-tls:
+      dependencies:
+        - chart: charts/internal-postgresql
+          release-name: postgresql
+          values-file: test/integration/companion-values/postgresql-tls.yaml
+          env-vars: [RDBMS_POSTGRESQL_USERNAME, RDBMS_POSTGRESQL_PASSWORD]
   case:
     pr:
       # NOTE (5985): install-flow scenarios now use identity: keycloak with the
@@ -128,7 +135,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: opensearch
           enabled: true
           auth: keycloak
@@ -141,7 +148,7 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
-          profiles: [keycloak, opensearch, cnpg]
+          profiles: [keycloak, opensearch, postgresql]
         - name: opensearch-self-signed
           enabled: true
           shortname: osss
@@ -153,15 +160,15 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
-          profiles: [keycloak]
+          profiles: [keycloak, postgresql]
           pre-install:
             script: pre-install-opensearch-self-signed.sh
             description: |
-              Provisions the Identity/WebModeler PostgreSQL fixture, then
               Generates a self-signed CA plus node certificate via openssl
               and creates the opensearch-tls-certs, opensearch-tls-ca, and
               opensearch-jks Secrets consumed by the OpenSearch companion
-              chart's TLS config.
+              chart's TLS config. The Identity/WebModeler PostgreSQL database
+              is provided by the `postgresql` companion profile.
           dependencies:
             - chart: opensearch/opensearch
               version: "3.6.0"
@@ -185,15 +192,17 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+          profiles: [postgresql]
           pre-install:
             script: pre-install-opensearch-self-signed-os-trust.sh
             description: |
-              Provisions the Identity/WebModeler PostgreSQL fixture, then
-              generates a self-signed CA plus node certificate via openssl
+              Generates a self-signed CA plus node certificate via openssl
               and creates the opensearch-tls-certs, opensearch-tls-ca, and
               opensearch-jks Secrets consumed by the OpenSearch companion
               chart's TLS config. Identical cert generation to the
-              opensearch-self-signed scenario.
+              opensearch-self-signed scenario. The Identity/WebModeler
+              PostgreSQL database is provided by the `postgresql` companion
+              profile.
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -262,7 +271,7 @@ integration:
           identity: auth0
           persistence: elasticsearch
           platforms: [gke]
-          profiles: [elasticsearch, cnpg]
+          profiles: [elasticsearch, postgresql]
         - name: keycloak-mt
           enabled: false
           exclude: []
@@ -275,7 +284,7 @@ integration:
             gke: distroci
             eks: preemptible
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: keycloak-rba
           enabled: false
           exclude: []
@@ -289,7 +298,7 @@ integration:
           persistence: elasticsearch
           features: [rba]
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: keycloak-original
           enabled: false
           exclude: []
@@ -302,7 +311,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: keycloak-original
           enabled: true
           exclude: []
@@ -316,7 +325,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: gateway-keycloak
           enabled: true
           exclude: []
@@ -331,7 +340,7 @@ integration:
           persistence: elasticsearch
           features: [gateway]
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
           post-deploy:
             script: post-deploy-gateway-keycloak.sh
             description: |
@@ -351,7 +360,7 @@ integration:
           persistence: elasticsearch
           features: [arm]
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: noSecondaryStorage
           enabled: true
           auth: keycloak
@@ -367,7 +376,7 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
-          profiles: [keycloak, cnpg]
+          profiles: [keycloak, postgresql]
         - name: documentstore
           enabled: true
           exclude: []
@@ -393,16 +402,11 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
-          profiles: [keycloak, elasticsearch]
-          pre-install:
-            script: pre-install-rdbms-self-signed.sh
-            description: |
-              Provisions a CloudNativePG `Cluster` in the scenario namespace
-              with the `orchestration` database (RDBMS secondary storage),
-              plus `identity` and `webmodeler` databases. CNPG generates a
-              self-signed CA + server cert by default; the CA is exposed via
-              the `postgresql-cluster-ca` secret and consumed by Camunda for
-              `sslmode=verify-full` validation.
+          # PostgreSQL (incl. self-signed TLS + the `orchestration` database) is
+          # provided by the `postgresql-tls` companion profile; the CA is
+          # published in the `postgresql-tls` secret and consumed by Camunda for
+          # `sslmode=verify-full` validation.
+          profiles: [keycloak, elasticsearch, postgresql-tls]
         - name: rdbms-external
           enabled: false
           auth: keycloak
@@ -414,16 +418,12 @@ integration:
           identity: keycloak
           persistence: rdbms-external
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
-        # rdbms: persistence layer points Camunda at an external PostgreSQL
-        # cluster (postgresql-cluster-rw.<namespace>.svc.cluster.local). The
-        # CloudNativePG `Cluster` + auth Secret are NOT part of the chart —
-        # they're a CI-only fixture that must exist before helm install or
-        # Camunda pods crash-loop connecting. Provisioned via the
-        # `pre-install: fixtures: [postgresql-cluster.yaml]` declaration below;
-        # the matrix runner applies it via Go server-side apply immediately
-        # before `helm install` (replaces the legacy Taskfile `setup.pre`
-        # rdbms branch).
+          profiles: [keycloak, elasticsearch, postgresql]
+        # rdbms: persistence layer points Camunda's RDBMS secondary storage at
+        # the in-cluster `postgresql` service (database `app`) provided by the
+        # `postgresql-rdbms` companion profile, which also creates the
+        # `identity` and `webmodeler` databases. Replaces the former
+        # CloudNativePG `postgresql-cluster.yaml` pre-install fixture.
         - name: rdbms
           enabled: true
           auth: keycloak
@@ -436,16 +436,7 @@ integration:
           identity: keycloak
           persistence: rdbms
           platforms: [gke]
-          profiles: [keycloak, elasticsearch]
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the
-              scenario namespace. The cluster bootstraps with three databases:
-              `app` (RDBMS secondary storage backend) plus `identity` and
-              `webmodeler` (Identity + WebModeler external databases needed
-              when no bundled PostgreSQL is deployed).
+          profiles: [keycloak, elasticsearch, postgresql-rdbms]
         - name: hub-legacy
           enabled: true
           auth: keycloak
@@ -459,7 +450,7 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: shadow-e2e
           enabled: true
           shortname: shde2
@@ -472,7 +463,7 @@ integration:
           infra-type:
             gke: distroci
           skip-e2e: true  # Standard smoke tests skipped; full suite runs via c8e2e distributed runner
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: hub-legacy
           enabled: false
           auth: keycloak
@@ -486,7 +477,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: hub-mixed
           enabled: false
           auth: keycloak
@@ -500,7 +491,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: hub-external-db
           enabled: true
           auth: keycloak
@@ -514,15 +505,17 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
-          profiles: [keycloak, elasticsearch]
+          # Identity uses the `postgresql` companion profile; the hub-external-db
+          # feature overrides Web Modeler's restapi onto the standalone
+          # `hub-external-postgresql` pod from the pre-install fixture below.
+          profiles: [keycloak, elasticsearch, postgresql]
           pre-install:
             fixtures:
-              - postgresql-cluster.yaml
               - hub-external-postgresql.yaml
             description: |
-              Provisions the standard CloudNativePG `Cluster` required by
-              Identity, plus a standalone PostgreSQL pod for Web Modeler
-              restapi to connect to via externalDatabase config.
+              Provisions a standalone PostgreSQL pod for Web Modeler restapi to
+              connect to via externalDatabase config. Identity's database is
+              provided separately by the `postgresql` companion profile.
         # Used by camunda/connectors FEATURE_BRANCH_HELM_TEST workflow (main/8.10).
         - name: keycloak-original
           enabled: true
@@ -535,7 +528,7 @@ integration:
           platforms: [gke]
           infra-type:
             gke: distroci
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         # AlwaysGreen scenario — referenced by camunda/camunda's
         # docker-build-helm-integration.yml. Deploys onto dedicated alwaysgreen
         # GKE node pool (workload=alwaysgreen label + NoSchedule taint).
@@ -549,7 +542,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
-          profiles: [keycloak, elasticsearch, cnpg]
+          profiles: [keycloak, elasticsearch, postgresql]
         - name: qa-elasticsearch-upg
           enabled: false
           flow: install

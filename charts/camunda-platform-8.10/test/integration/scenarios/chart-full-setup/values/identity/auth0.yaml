@@ -99,15 +99,15 @@ global:
         audience: $AUTH0_AUDIENCE
         redirectUrl: "https://{{ .Values.global.host }}/"
 
-# Identity + WebModeler external DBs point at the CNPG cluster provisioned
-# by the scenario's pre-install fixture (postgresql-cluster.yaml). The bundled
-# Bitnami subcharts (identityKeycloak/identityPostgresql/webModelerPostgresql)
-# were dropped from 8.10 in #6146; setting their `enabled` keys now trips the
-# keyRemoved constraint in templates/common/constraints.tpl.
+# Identity + WebModeler external DBs point at the `postgresql` companion chart
+# (internal-postgresql) deployed via the scenario's `postgresql` profile. The
+# bundled Bitnami subcharts (identityKeycloak/identityPostgresql/
+# webModelerPostgresql) were dropped from 8.10 in #6146; setting their `enabled`
+# keys now trips the keyRemoved constraint in templates/common/constraints.tpl.
 identity:
   externalDatabase:
     enabled: true
-    host: postgresql-cluster-rw
+    host: postgresql
     port: 5432
     database: identity
     username: $RDBMS_POSTGRESQL_USERNAME
@@ -118,7 +118,7 @@ webModeler:
   restapi:
     externalDatabase:
       enabled: true
-      host: postgresql-cluster-rw
+      host: postgresql
       port: 5432
       database: webmodeler
       username: $RDBMS_POSTGRESQL_USERNAME

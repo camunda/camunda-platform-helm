@@ -43,8 +43,8 @@ webModeler:
           - sh
           - -c
           - |
-            echo "Waiting for PostgreSQL at postgresql-cluster-rw:5432 ..."
-            until nc -z "postgresql-cluster-rw" 5432; do
+            echo "Waiting for PostgreSQL at postgresql:5432 ..."
+            until nc -z "postgresql" 5432; do
               sleep 2
             done
             echo "PostgreSQL is ready"

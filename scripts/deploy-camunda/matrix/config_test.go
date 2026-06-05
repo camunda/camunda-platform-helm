@@ -140,24 +140,24 @@ func TestGenerate_PropagatesPreInstall(t *testing.T) {
 		t.Fatalf("Generate: %v", err)
 	}
 
-	var rdbms *Entry
+	var hub *Entry
 	for i := range entries {
-		if entries[i].Scenario == "rdbms" && entries[i].Version == "8.10" {
-			rdbms = &entries[i]
+		if entries[i].Scenario == "hub-external-db" && entries[i].Version == "8.10" {
+			hub = &entries[i]
 			break
 		}
 	}
-	if rdbms == nil {
-		t.Fatal("rdbms 8.10 entry not found")
+	if hub == nil {
+		t.Fatal("hub-external-db 8.10 entry not found")
 	}
-	if rdbms.PreInstall == nil {
-		t.Fatal("rdbms 8.10: PreInstall: nil")
+	if hub.PreInstall == nil {
+		t.Fatal("hub-external-db 8.10: PreInstall: nil")
 	}
-	if len(rdbms.PreInstall.Fixtures) != 1 || rdbms.PreInstall.Fixtures[0] != "postgresql-cluster.yaml" {
-		t.Errorf("rdbms 8.10 fixtures: got %v", rdbms.PreInstall.Fixtures)
+	if len(hub.PreInstall.Fixtures) != 1 || hub.PreInstall.Fixtures[0] != "hub-external-postgresql.yaml" {
+		t.Errorf("hub-external-db 8.10 fixtures: got %v", hub.PreInstall.Fixtures)
 	}
-	if rdbms.PreInstall.Description == "" {
-		t.Error("rdbms 8.10: description: empty")
+	if hub.PreInstall.Description == "" {
+		t.Error("hub-external-db 8.10: description: empty")
 	}
 }
 

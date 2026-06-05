@@ -52,12 +52,8 @@ var preSetupScriptAllowlist = map[string]bool{
 //
 //	postgres-createdb-job.yaml    — fixture for the disabled rdbms-external
 //	                                scenario in 8.9/8.10. Pending its own enable PR.
-//	postgresql-cluster-tls.yaml   — applied by pre-install-rdbms-self-signed.sh
-//	                                (8.10) via envsubst+kubectl, not via the
-//	                                runner's declarative fixtures pipeline.
 var commonResourcesAllowlist = map[string]bool{
 	"postgres-createdb-job.yaml":  true,
-	"postgresql-cluster-tls.yaml": true,
 	"gateway-proxy-settings.yaml": true,
 }
 
