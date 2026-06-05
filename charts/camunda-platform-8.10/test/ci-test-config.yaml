@@ -114,6 +114,19 @@ integration:
           release-name: postgresql
           values-file: test/integration/companion-values/postgresql-tls.yaml
           env-vars: [RDBMS_POSTGRESQL_USERNAME, RDBMS_POSTGRESQL_PASSWORD]
+    # CloudNativePG pre-install fixture. Kept available so a scenario can opt
+    # back into the operator-managed cluster if needed, but intentionally
+    # referenced by NO scenario: CNPG operator reconcile flakiness on the CI
+    # cluster (#6338) is why scenarios now use the `postgresql` companion chart
+    # instead. Re-adding `cnpg` to a scenario's `profiles:` reactivates it.
+    cnpg:
+      pre-install:
+        fixtures:
+          - postgresql-cluster.yaml
+        description: |
+          Provisions a CloudNativePG `Cluster` in the scenario namespace,
+          bootstrapped with `identity` and `webmodeler` databases. Available
+          for opt-in use; no scenario references it by default (see #6338).
   case:
     pr:
       # NOTE (5985): install-flow scenarios now use identity: keycloak with the
