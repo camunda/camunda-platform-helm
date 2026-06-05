@@ -152,9 +152,13 @@ make tools.asdf-install
 - Do not swallow errors; return/assert with useful context.
 
 ### Golden Files
-- Template output changes often require golden snapshot updates.
-- During iteration use `make go.update-golden-only-lite chartPath=...`.
-- Before finalizing, run `make go.test chartPath=...`.
+
+Two golden systems exist; both refreshed by `make go.update-golden-only` and verified by `make go.test`:
+
+- **Chart template goldens** under `charts/<v>/test/unit/.../testdata/`. Pin helm-rendered manifests. During iteration use `make go.update-golden-only-lite chartPath=...`; before finalizing, run `make go.test chartPath=...`.
+- **Registry snapshots** at `charts/<v>/test/ci/registry-snapshot.yaml`. Compiled `CITestConfig` view of the composable scenario registry (`test/ci/registry/`). Use as a diff target when editing scenarios/hooks/dependencies — the snapshot shows exactly what the loader produces. Standalone refresh: `make go.update-registry-golden`. The matrix-package test suite invoked by `make go.test` runs across all chart versions regardless of `chartPath=` scope (fast — YAML parse only).
+
+Never edit either file by hand — regenerate via the make targets above.
 
 ## Version-Aware Rules
 - `8.8+` uses unified `templates/orchestration/`.

@@ -87,6 +87,8 @@ endef
 .PHONY: go.test
 go.test: helm.dependency-update
 	@$(call go_test_run, go test ./...)
+	@echo "\n[$@] Matrix package: registry validator + snapshot drift + lifecycle fixtures"
+	@cd scripts/deploy-camunda && go test ./matrix/
 
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
@@ -105,6 +107,15 @@ go.update-golden-only-cleanup: helm.dependency-update
 .PHONY: go.update-golden-only-lite
 go.update-golden-only-lite:
 	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
+	@$(MAKE) go.update-registry-golden
+
+# go.update-registry-golden: refresh charts/<v>/test/ci/registry-snapshot.yaml for every
+# chart version that has a composable registry. Runs the matrix-package golden test
+# in update mode, which writes the compiled CITestConfig view back to disk.
+.PHONY: go.update-registry-golden
+go.update-registry-golden:
+	@echo "\n[$@] Updating registry snapshots in charts/<v>/test/ci/registry-snapshot.yaml"
+	@cd scripts/deploy-camunda && go test ./matrix/ -run TestRegistryGolden -update-golden
 
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only

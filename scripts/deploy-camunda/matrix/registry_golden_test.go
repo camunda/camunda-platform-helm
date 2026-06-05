@@ -24,12 +24,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// updateGolden regenerates registry golden snapshots in place. Run:
+// updateGolden regenerates registry snapshots in place. Snapshots live at
+// charts/camunda-platform-<v>/test/ci/registry-snapshot.yaml — co-located with
+// the registry they pin so contributors can diff "what my registry edit
+// produces" against the previous compiled CITestConfig view.
+//
+// Refresh via `make go.update-golden-only` (which chains both template
+// goldens and registry snapshots) or `make go.update-registry-golden`
+// standalone. Direct invocation:
 //
 //	cd scripts/deploy-camunda && go test ./matrix/ -run TestRegistryGolden -update-golden
 //
-// Inspect the diff in `testdata/golden/registry/` before committing.
-var updateGolden = flag.Bool("update-golden", false, "regenerate registry golden snapshots")
+// Inspect the per-version diff in charts/camunda-platform-*/test/ci/
+// before committing.
+var updateGolden = flag.Bool("update-golden", false, "regenerate registry snapshots")
 
 // TestRegistryGolden pins LoadRegistry's CITestConfig output for every chart
 // version that has a registry. Replaces the safety net provided by
@@ -81,7 +89,7 @@ func TestRegistryGolden(t *testing.T) {
 			_ = enc.Close()
 			got := buf.Bytes()
 
-			goldenPath := filepath.Join("testdata", "golden", "registry", version+".yaml")
+			goldenPath := filepath.Join(chartDir, "test", "ci", "registry-snapshot.yaml")
 			if *updateGolden {
 				if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
 					t.Fatal(err)
@@ -89,17 +97,17 @@ func TestRegistryGolden(t *testing.T) {
 				if err := os.WriteFile(goldenPath, got, 0o644); err != nil {
 					t.Fatal(err)
 				}
-				t.Logf("updated golden: %s (%d bytes)", goldenPath, len(got))
+				t.Logf("updated snapshot: %s (%d bytes)", goldenPath, len(got))
 				return
 			}
 			want, err := os.ReadFile(goldenPath)
 			if err != nil {
-				t.Fatalf("read golden %s: %v (run with -update-golden to create)", goldenPath, err)
+				t.Fatalf("read snapshot %s: %v (run `make go.update-registry-golden` to create)", goldenPath, err)
 			}
 			if !bytes.Equal(got, want) {
-				t.Errorf("%s: registry snapshot drifted from golden\n"+
-					"  golden: %s\n"+
-					"  to update: cd scripts/deploy-camunda && go test ./matrix/ -run TestRegistryGolden -update-golden\n"+
+				t.Errorf("%s: registry snapshot drifted\n"+
+					"  snapshot: %s\n"+
+					"  to update: make go.update-golden-only (or make go.update-registry-golden)\n"+
 					"  inspect the diff before committing",
 					version, goldenPath)
 			}

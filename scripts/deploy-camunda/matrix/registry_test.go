@@ -158,6 +158,74 @@ func TestRegistryValidatorRejectsMissingFixture(t *testing.T) {
 	}
 }
 
+// TestRegistryValidatorRejectsOrphanScript: a .sh file in pre-setup-scripts/
+// that no LifecycleHook references must be flagged. Guards against the
+// coverage gap bkenez raised on #6318: post-#6302 (frozen ci-test-config.yaml
+// deletion), this validator is the only place orphan scripts are caught at
+// load time. Allowlist entries (preSetupScriptAllowlist) remain exempt.
+func TestRegistryValidatorRejectsOrphanScript(t *testing.T) {
+	abs := absChartDir(t)
+	orphanPath := filepath.Join(abs, "test", "integration", "scenarios", "pre-setup-scripts", "orphan-test.sh")
+	if err := os.WriteFile(orphanPath, []byte("#!/bin/sh\n"), 0o644); err != nil {
+		t.Fatalf("write orphan: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(orphanPath) })
+
+	_, err := LoadRegistry(abs)
+	if err == nil {
+		t.Fatal("expected LoadRegistry to reject orphan script via tail-validator")
+	}
+	if !strings.Contains(err.Error(), "orphan script") || !strings.Contains(err.Error(), "orphan-test.sh") {
+		t.Fatalf("want orphan script error mentioning orphan-test.sh, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsOrphanFixture: a .yaml/.yml file in
+// common/resources/ that no LifecycleHook references must be flagged. Mirrors
+// the orphan-script gate. Allowlist entries (commonResourcesAllowlist) remain
+// exempt.
+func TestRegistryValidatorRejectsOrphanFixture(t *testing.T) {
+	abs := absChartDir(t)
+	orphanPath := filepath.Join(abs, "test", "integration", "scenarios", "common", "resources", "orphan-test.yaml")
+	if err := os.WriteFile(orphanPath, []byte("kind: Test\n"), 0o644); err != nil {
+		t.Fatalf("write orphan: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(orphanPath) })
+
+	_, err := LoadRegistry(abs)
+	if err == nil {
+		t.Fatal("expected LoadRegistry to reject orphan fixture via tail-validator")
+	}
+	if !strings.Contains(err.Error(), "orphan fixture") || !strings.Contains(err.Error(), "orphan-test.yaml") {
+		t.Fatalf("want orphan fixture error mentioning orphan-test.yaml, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorExemptsAllowlistedOrphans: a file listed in
+// preSetupScriptAllowlist / commonResourcesAllowlist is permitted to exist
+// without a hook reference. Asserts both allowlists are consulted by the
+// orphan walks (regression guard if the allowlist consumer is removed).
+func TestRegistryValidatorExemptsAllowlistedOrphans(t *testing.T) {
+	abs := absChartDir(t)
+	// pre-install-upgrade.sh is in preSetupScriptAllowlist (sed-target marker).
+	allowedScript := filepath.Join(abs, "test", "integration", "scenarios", "pre-setup-scripts", "pre-install-upgrade.sh")
+	if err := os.WriteFile(allowedScript, []byte("#!/bin/sh\n# sed marker\n"), 0o644); err != nil {
+		t.Fatalf("write allowed script: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(allowedScript) })
+
+	// gateway-proxy-settings.yaml is in commonResourcesAllowlist.
+	allowedFixture := filepath.Join(abs, "test", "integration", "scenarios", "common", "resources", "gateway-proxy-settings.yaml")
+	if err := os.WriteFile(allowedFixture, []byte("kind: ProxySettingsPolicy\n"), 0o644); err != nil {
+		t.Fatalf("write allowed fixture: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(allowedFixture) })
+
+	if _, err := LoadRegistry(abs); err != nil {
+		t.Fatalf("LoadRegistry should accept allowlisted files: %v", err)
+	}
+}
+
 // TestLoadRegistryRejectsPathTraversalHookID exercises the isPlainFilename
 // guard in LoadRegistry. A manifest scenario referencing a hook ID with a
 // path separator (`../evil`) must be rejected before the file read, so a

@@ -24,38 +24,9 @@ import (
 	"testing"
 )
 
-// preSetupScriptAllowlist names files inside pre-setup-scripts/ that are
-// permitted to exist without being referenced by any LifecycleHook in
-// ci-test-config.yaml. These files exist for purposes other than runner-driven
-// hook execution and must be hand-audited when added.
-//
-//	pre-install-upgrade.sh         — sed-target marker for values-file
-//	                                 uncommenting (alpha8 backwards-compat),
-//	                                 not invoked by the matrix runner.
-//	create-opensearch-tls-secrets.sh — helper sourced by
-//	                                 pre-install-opensearch-self-signed*.sh,
-//	                                 never invoked by the runner directly.
-//	create-elasticsearch-tls-secrets.sh — helper sourced by
-//	                                 pre-install-elasticsearch-self-signed*.sh
-//	                                 (8.7-8.9 only; removed from 8.10.)
-var preSetupScriptAllowlist = map[string]bool{
-	"pre-install-upgrade.sh":              true,
-	"create-elasticsearch-tls-secrets.sh": true,
-	"create-opensearch-tls-secrets.sh":    true,
-}
-
-// commonResourcesAllowlist names files inside common/resources/ that are
-// permitted to exist without being referenced by any LifecycleHook. These are
-// fixtures kept for scenarios that are currently disabled but staged for
-// activation; deleting them would force a separate PR to re-add them when the
-// scenario is enabled.
-//
-//	postgres-createdb-job.yaml    — fixture for the disabled rdbms-external
-//	                                scenario in 8.9/8.10. Pending its own enable PR.
-var commonResourcesAllowlist = map[string]bool{
-	"postgres-createdb-job.yaml":  true,
-	"gateway-proxy-settings.yaml": true,
-}
+// Allowlists for orphan exemption live in lifecycle_allowlist.go (consumed
+// by both RegistryValidator's load-time orphan walk and TestLifecycleFixtures's
+// cross-version dead-entry check below).
 
 // TestLifecycleFixtures asserts the integrity of the declarative lifecycle
 // fixture system across every chart version:
