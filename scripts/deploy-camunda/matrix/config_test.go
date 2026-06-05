@@ -16,6 +16,9 @@ package matrix
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -158,6 +161,86 @@ func TestGenerate_PropagatesPreInstall(t *testing.T) {
 	}
 	if hub.PreInstall.Description == "" {
 		t.Error("hub-external-db 8.10: description: empty")
+	}
+}
+
+// TestGenerate_PostgresqlCompanionProfiles pins the internal-postgresql companion
+// profiles that replaced the CloudNativePG fixtures (#6338/#6339): the rdbms and
+// rdbms-self-signed scenarios must resolve to the right values-file, chart, release
+// name, and credential env-vars. A typo in a profile's values-file would otherwise
+// only surface at deploy time on GKE.
+func TestGenerate_PostgresqlCompanionProfiles(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	want := map[string]string{
+		"rdbms":             "test/integration/companion-values/postgresql-rdbms.yaml",
+		"rdbms-self-signed": "test/integration/companion-values/postgresql-tls.yaml",
+	}
+	for scenario, wantValuesFile := range want {
+		var entry *Entry
+		for i := range entries {
+			if entries[i].Scenario == scenario && entries[i].Version == "8.10" {
+				entry = &entries[i]
+				break
+			}
+		}
+		if entry == nil {
+			t.Errorf("%s 8.10 entry not found", scenario)
+			continue
+		}
+		var pg *ChartDependency
+		for i := range entry.Dependencies {
+			if entry.Dependencies[i].Chart == "charts/internal-postgresql" {
+				pg = &entry.Dependencies[i]
+				break
+			}
+		}
+		if pg == nil {
+			t.Errorf("%s: no internal-postgresql dependency; got %v", scenario, entry.Dependencies)
+			continue
+		}
+		if pg.ValuesFile != wantValuesFile {
+			t.Errorf("%s: values-file: got %q, want %q", scenario, pg.ValuesFile, wantValuesFile)
+		}
+		if pg.ReleaseName != "postgresql" {
+			t.Errorf("%s: release-name: got %q, want %q", scenario, pg.ReleaseName, "postgresql")
+		}
+		if !slices.Contains(pg.EnvVars, "RDBMS_POSTGRESQL_USERNAME") || !slices.Contains(pg.EnvVars, "RDBMS_POSTGRESQL_PASSWORD") {
+			t.Errorf("%s: env-vars missing RDBMS_POSTGRESQL_*; got %v", scenario, pg.EnvVars)
+		}
+	}
+}
+
+// TestGenerate_DependencyValuesFilesExist guards every companion-chart dependency
+// across all 8.10 scenarios: each `values-file` (resolved relative to the repo
+// root, matching the matrix runner) must exist on disk. This catches a mistyped
+// or stale path in any dependency-profile without needing a live deploy.
+func TestGenerate_DependencyValuesFilesExist(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	seen := map[string]bool{}
+	for _, e := range entries {
+		for _, dep := range e.Dependencies {
+			if dep.ValuesFile == "" || seen[dep.ValuesFile] {
+				continue
+			}
+			seen[dep.ValuesFile] = true
+			path := filepath.Join(repoRoot, dep.ValuesFile)
+			if info, err := os.Stat(path); err != nil || info.IsDir() {
+				t.Errorf("dependency values-file %q (chart %q): missing or not a file at %s",
+					dep.ValuesFile, dep.Chart, path)
+			}
+		}
 	}
 }
 
