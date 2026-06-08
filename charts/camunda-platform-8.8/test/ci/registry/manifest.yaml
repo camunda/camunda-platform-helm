@@ -1,0 +1,157 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  flows:
+    modular-upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade-minor.sh
+        description: |
+          Deletes the postgresql and postgresql-web-modeler StatefulSets to
+          handle immutable spec diffs across the 8.7→8.8 minor upgrade.
+          Helm recreates them with the new spec while keeping PVC data.
+    upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade-minor.sh
+        description: |
+          Deletes the postgresql and postgresql-web-modeler StatefulSets to
+          handle immutable spec diffs across the 8.7→8.8 minor upgrade.
+          Helm recreates them with the new spec while keeping PVC data.
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the 8.7→8.8 patch upgrade. PostgreSQL 15→14
+          rollback requires fresh statefulset spec.
+  scenarios:
+    - id: elasticsearch
+      shortname: eske
+      tier: 1
+      enabled: true
+    - id: enterprise-values
+      shortname: entv
+      tier: 2
+      enabled: false
+    - id: upgrade-migration
+      shortname: eske-upgm
+      tier: 2
+      enabled: false
+    - id: elasticsearch-basic
+      shortname: esba
+      enabled: false
+    - id: oidc
+      shortname: esoi
+      tier: 2
+      enabled: true
+    - id: keycloak-mt
+      shortname: kemt
+      tier: 2
+      enabled: false
+    - id: keycloak-rba
+      shortname: kerba
+      tier: 2
+      enabled: false
+    - id: elasticsearch-self-signed-upgrade
+      shortname: esss
+      enabled: false
+    - id: keycloak-original-upgrade-tier2
+      shortname: keyc
+      tier: 2
+      enabled: false
+    - id: elasticsearch-2
+      shortname: eshy
+      enabled: false
+    - id: elasticsearch-arm
+      shortname: esarm
+      tier: 2
+      enabled: true
+    - id: opensearch
+      shortname: oske
+      tier: 2
+      enabled: true
+    - id: documentstore
+      shortname: docstr
+      tier: 2
+      enabled: true
+    - id: component-persistence
+      shortname: cprst
+      tier: 2
+      enabled: true
+    - id: keycloak-ldap
+      shortname: keldp
+      enabled: false
+    - id: keycloak-original-install-tier1
+      shortname: keyco
+      tier: 1
+      enabled: true
+    - id: alwaysgreen
+      shortname: agrn
+      enabled: false
+    - id: keycloak-original-install
+      shortname: kcor
+      enabled: false
+    - id: elasticsearch-3
+      shortname: es
+      enabled: false
+    - id: qa-elasticsearch
+      shortname: qael
+      enabled: false
+    - id: qa-opensearch
+      shortname: qaos
+      enabled: false
+    - id: qa-elasticsearch-rba
+      shortname: qaelrba
+      enabled: false
+    - id: qa-elasticsearch-mt
+      shortname: qaelmt
+      enabled: false
+    - id: qa-license
+      shortname: lic
+      enabled: false
+    - id: qa-entra
+      shortname: qaen
+      enabled: false
+    - id: qa-document-store
+      shortname: qadoc
+      enabled: false
+    - id: qa-document-store-upg
+      shortname: qadocupg
+      enabled: false
+    - id: qa-elasticsearch-tasklist-v1
+      shortname: qaeltlv1
+      enabled: false
+    - id: qa-opensearch-tasklist-v1
+      shortname: qaosupg
+      enabled: false
+    - id: qa-elasticsearch-rba-tasklist-v1
+      shortname: qaelrbaupg
+      enabled: false
+    - id: qa-elasticsearch-mt-tasklist-v1
+      shortname: qaelmtupg
+      enabled: false
+    - id: qa-license-tasklist-v1
+      shortname: licupg
+      enabled: false
+    - id: qa-elasticsearch-upg-install
+      shortname: qaelupg
+      enabled: false
+    - id: qa-elasticsearch-upg-modular
+      shortname: qaelupg
+      enabled: false
+    - id: qa-elasticsearch-document-upg
+      shortname: qaeldocupg
+      enabled: false
+    - id: qa-opensearch-upg
+      shortname: qaosupg2
+      enabled: false
+    - id: qa-elasticsearch-rba-upg
+      shortname: qaelrbaup2
+      enabled: false
+    - id: qa-elasticsearch-mt-upg
+      shortname: qaelmtup2
+      enabled: false
+    - id: qa-license-upg
+      shortname: licup2
+      enabled: false

@@ -1,0 +1,15 @@
+name: qa-license-tasklist-v1
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - license
+  - tasklist-v1
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true

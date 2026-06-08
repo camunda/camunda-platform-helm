@@ -1,0 +1,14 @@
+name: elasticsearch-arm
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - arm
+platforms:
+  - gke
+infra-type:
+  gke: arm
+helmVersion: 3.20.2
+skip-e2e: true

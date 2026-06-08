@@ -1,0 +1,6 @@
+chart: opensearch/opensearch
+version: 2.31.0
+release-name: opensearch
+values-file: test/integration/companion-values/opensearch.yaml
+repo-name: opensearch
+repo-url: https://opensearch-project.github.io/helm-charts/
