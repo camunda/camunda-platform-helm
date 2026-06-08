@@ -94,15 +94,29 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		t.Skipf("no test/ tree for %s", version)
 		return
 	}
-	cfgPath := filepath.Join(testDir, "ci-test-config.yaml")
-	if _, err := os.Stat(cfgPath); err != nil {
-		// test/ exists but config is missing — a regression, not a skip.
-		t.Errorf("ci-test-config.yaml missing for %s at %s: %v", version, cfgPath, err)
-		return
-	}
-	cfg, err := LoadCITestConfig(chartDir)
-	if err != nil {
-		t.Fatalf("LoadCITestConfig: %v", err)
+	// Dispatch matches matrix.Generate: prefer the live registry when present
+	// so registry-driven versions (post-ADR-0093 migration) are validated
+	// against the registry, not the frozen ci-test-config.yaml snapshot.
+	// Without this branch, new hooks added to the registry would false-positive
+	// the orphan walk because the frozen snapshot does not see them.
+	var cfg *CITestConfig
+	if HasRegistry(chartDir) {
+		var err error
+		cfg, err = LoadRegistry(chartDir)
+		if err != nil {
+			t.Fatalf("LoadRegistry: %v", err)
+		}
+	} else {
+		cfgPath := filepath.Join(testDir, "ci-test-config.yaml")
+		if _, err := os.Stat(cfgPath); err != nil {
+			t.Errorf("ci-test-config.yaml missing for %s at %s: %v", version, cfgPath, err)
+			return
+		}
+		var err error
+		cfg, err = LoadCITestConfig(chartDir)
+		if err != nil {
+			t.Fatalf("LoadCITestConfig: %v", err)
+		}
 	}
 
 	scriptsDir := filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts")
