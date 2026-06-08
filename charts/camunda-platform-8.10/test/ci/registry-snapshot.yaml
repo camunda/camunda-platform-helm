@@ -30,15 +30,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: opensearch
           enabled: true
           shortname: oske
@@ -62,15 +59,12 @@ integration:
               values-file: test/integration/companion-values/opensearch.yaml
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: opensearch-self-signed
           enabled: true
           shortname: osss
@@ -87,6 +81,12 @@ integration:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak.yaml
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
             - chart: opensearch/opensearch
               version: 3.6.0
               release-name: opensearch
@@ -114,6 +114,12 @@ integration:
           identity: keycloak
           persistence: opensearch-self-signed-os-trust
           dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak.yaml
@@ -220,15 +226,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-mt
           enabled: false
           shortname: kemt
@@ -252,15 +255,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-rba
           enabled: false
           shortname: kerba
@@ -286,15 +286,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-original
           enabled: false
           shortname: keyc
@@ -318,15 +315,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-original
           enabled: true
           shortname: keorg
@@ -351,15 +345,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: gateway-keycloak
           enabled: true
           shortname: gatkc
@@ -386,15 +377,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
           post-deploy:
             script: post-deploy-gateway-keycloak.sh
             description: |
@@ -426,15 +414,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: noSecondaryStorage
           enabled: true
           shortname: nosec
@@ -456,15 +441,12 @@ integration:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
               values-file: test/integration/companion-values/keycloak.yaml
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: documentstore
           enabled: true
           shortname: docstr
@@ -520,15 +502,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            script: pre-install-rdbms-self-signed.sh
-            description: |
-              Provisions a CloudNativePG `Cluster` in the scenario namespace
-              with the `orchestration` database (RDBMS secondary storage),
-              plus `identity` and `webmodeler` databases. CNPG generates a
-              self-signed CA + server cert by default; the CA is exposed via
-              the `postgresql-cluster-ca` secret and consumed by Camunda for
-              `sslmode=verify-full` validation.
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-tls.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: rdbms-external
           enabled: false
           shortname: rdbme
@@ -551,15 +530,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: rdbms
           enabled: true
           shortname: rdbms
@@ -583,15 +559,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-rdbms.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: hub-legacy
           enabled: true
           shortname: huble
@@ -617,15 +590,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: shadow-e2e
           enabled: true
           shortname: shde2
@@ -650,15 +620,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: hub-legacy
           enabled: false
           shortname: hublu
@@ -684,15 +651,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: hub-mixed
           enabled: false
           shortname: hubmu
@@ -718,15 +682,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: hub-external-db
           enabled: true
           shortname: hubdb
@@ -752,14 +713,19 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
           pre-install:
             fixtures:
-              - postgresql-cluster.yaml
               - hub-external-postgresql.yaml
             description: |
-              Provisions the standard CloudNativePG `Cluster` required by
-              Identity, plus a standalone PostgreSQL pod for Web Modeler
-              restapi to connect to via externalDatabase config.
+              Provisions a standalone PostgreSQL pod for Web Modeler restapi to
+              connect to via externalDatabase config. Identity's database is
+              provided separately by the `postgresql` companion profile.
         - name: keycloak-original
           enabled: true
           shortname: keyco
@@ -783,15 +749,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: alwaysgreen
           enabled: false
           shortname: agrn
@@ -814,15 +777,12 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          pre-install:
-            fixtures:
-              - postgresql-cluster.yaml
-            description: |
-              Provisions a CloudNativePG `Cluster` plus auth Secret in the scenario
-              namespace. The cluster bootstraps with three databases: `app`
-              (RDBMS secondary storage backend) plus `identity` and `webmodeler`
-              (Identity + WebModeler external databases needed when no bundled
-              PostgreSQL subchart is deployed).
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: qa-elasticsearch-upg
           enabled: false
           shortname: qaelupg

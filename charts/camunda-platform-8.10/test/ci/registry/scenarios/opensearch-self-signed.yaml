@@ -11,4 +11,5 @@ infra-type:
 pre-install: opensearch-self-signed
 dependencies:
   - keycloak
+  - postgresql
   - opensearch-tls

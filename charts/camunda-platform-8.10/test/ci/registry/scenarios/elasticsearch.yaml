@@ -9,7 +9,7 @@ platforms:
 infra-type:
   eks: preemptible
   gke: distroci
-pre-install: cnpg
 dependencies:
   - keycloak
   - elasticsearch
+  - postgresql

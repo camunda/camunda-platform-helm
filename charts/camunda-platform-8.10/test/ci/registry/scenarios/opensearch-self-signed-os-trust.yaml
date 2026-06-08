@@ -10,5 +10,6 @@ infra-type:
   gke: distroci
 pre-install: opensearch-self-signed-os-trust
 dependencies:
+  - postgresql
   - keycloak
   - opensearch-tls

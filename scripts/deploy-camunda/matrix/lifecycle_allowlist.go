@@ -43,11 +43,14 @@ var preSetupScriptAllowlist = map[string]bool{
 //
 //	postgres-createdb-job.yaml    — fixture for the disabled rdbms-external
 //	                                scenario in 8.9/8.10. Pending its own enable PR.
-//	postgresql-cluster-tls.yaml   — applied by pre-install-rdbms-self-signed.sh
-//	                                (8.10) via envsubst+kubectl, not via the
-//	                                runner's declarative fixtures pipeline.
+//	postgresql-cluster.yaml       — CloudNativePG `Cluster` fixture for the
+//	                                legacy `cnpg` dependency-profile (8.10).
+//	                                The 8.10 registry no longer references the
+//	                                profile (all scenarios moved to the
+//	                                `postgresql` internal companion chart), but
+//	                                the fixture is retained for opt-in use.
 var commonResourcesAllowlist = map[string]bool{
 	"postgres-createdb-job.yaml":  true,
-	"postgresql-cluster-tls.yaml": true,
+	"postgresql-cluster.yaml":     true,
 	"gateway-proxy-settings.yaml": true,
 }

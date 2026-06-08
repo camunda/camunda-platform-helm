@@ -1,7 +1,0 @@
-fixtures:
-  - postgresql-cluster.yaml
-  - hub-external-postgresql.yaml
-description: |
-  Provisions the standard CloudNativePG `Cluster` required by
-  Identity, plus a standalone PostgreSQL pod for Web Modeler
-  restapi to connect to via externalDatabase config.

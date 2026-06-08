@@ -10,7 +10,8 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-pre-install: cnpg-hub-external
+pre-install: hub-external-postgresql
 dependencies:
   - keycloak
   - elasticsearch
+  - postgresql

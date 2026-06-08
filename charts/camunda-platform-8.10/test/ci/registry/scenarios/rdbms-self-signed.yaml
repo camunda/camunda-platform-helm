@@ -8,7 +8,7 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-pre-install: rdbms-self-signed
 dependencies:
   - keycloak
   - elasticsearch
+  - postgresql-tls

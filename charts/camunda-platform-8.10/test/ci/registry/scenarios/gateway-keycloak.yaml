@@ -11,8 +11,8 @@ platforms:
 infra-type:
   eks: preemptible
   gke: distroci
-pre-install: cnpg
 post-deploy: gateway-keycloak
 dependencies:
   - keycloak
   - elasticsearch
+  - postgresql
