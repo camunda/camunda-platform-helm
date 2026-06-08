@@ -144,7 +144,8 @@ func hashJSON(v any) string {
 //   - Single-fixture: when the fixture is `postgresql-cluster.yaml`, return
 //     `cnpg` — the fixture always provisions all three databases (`app`,
 //     `identity`, `webmodeler`), so a single slug covers all use cases.
-//     Other fixtures keep the `-self-signed` / `-default` derivation.
+//     Other fixtures: `-self-signed` when the description names a
+//     self-signed CA, otherwise the bare fixture basename.
 //   - Multi-fixture: when `postgresql-cluster.yaml` is one of the fixtures,
 //     extend the `cnpg-` family using the other fixture basenames (with any
 //     `postgresql` segments trimmed). Otherwise join basenames with `-`.
@@ -168,7 +169,7 @@ func hookSlug(h *LifecycleHook) string {
 		case strings.Contains(h.Description, "self-signed CA"):
 			return base + "-self-signed"
 		default:
-			return base + "-default"
+			return base
 		}
 	}
 	if len(h.Fixtures) > 1 {
@@ -281,10 +282,23 @@ func sanitize(s string) string {
 
 // flowSlug maps full flow names to short, human-readable suffixes used in
 // scenario IDs when a scenario name collides across multiple flow values.
-// Unknown flows are emitted with hyphens stripped so they still produce a
-// valid slug; the empty flow returns the empty string (callers treat that
-// as "this scenario does not contribute to the flow axis").
+// Comma-joined flows (e.g. "install,modular-upgrade-minor" on 8.9
+// qa-document-store-upg) split on `,`, slug each part, and rejoin with `-`
+// so the slug stays filesystem-safe. Unknown flows are emitted with hyphens
+// stripped so they still produce a valid slug; the empty flow returns the
+// empty string (callers treat that as "this scenario does not contribute to
+// the flow axis").
 func flowSlug(f string) string {
+	if strings.Contains(f, ",") {
+		parts := strings.Split(f, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			if s := flowSlug(strings.TrimSpace(p)); s != "" {
+				out = append(out, s)
+			}
+		}
+		return strings.Join(out, "-")
+	}
 	switch f {
 	case "":
 		return ""

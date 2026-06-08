@@ -1,0 +1,14 @@
+name: gateway-keycloak
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - gateway
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci
+post-deploy: gateway-proxy-settings

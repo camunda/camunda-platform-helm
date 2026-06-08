@@ -1,0 +1,13 @@
+name: keycloak-rba
+auth: keycloak
+flows:
+  - upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+features:
+  - rba
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci

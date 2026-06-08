@@ -1,0 +1,7 @@
+fixtures:
+  - gateway-proxy-settings.yaml
+description: |
+  Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
+  sizes so the Camunda Gateway can carry Keycloak auth headers
+  without 502s. Runs after helm install because the Gateway API
+  CRD is only registered by the chart itself.
