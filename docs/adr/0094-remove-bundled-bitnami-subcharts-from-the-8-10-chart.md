@@ -62,6 +62,17 @@ extraction off for ≥8.10. Bundled-only unit suites and golden snapshots
 value files are deleted. The migration guide and toolkit are not re-authored; they are linked
 from the chart README and the upgrade documentation.
 
+> **Amendment (2026-06-05, [#6339](https://github.com/camunda/camunda-platform-helm/pull/6339)):**
+> The CNPG cluster pre-install fixture for the `rdbms` and `rdbms-self-signed`
+> scenarios was superseded by `internal-postgresql` companion-chart profiles
+> (`postgresql-rdbms` and a TLS-enabled `postgresql-tls`) because the CloudNativePG
+> operator on the shared CI cluster intermittently stops reconciling, failing every
+> dependent scenario ([#6338](https://github.com/camunda/camunda-platform-helm/issues/6338)).
+> This narrows CI's reliance on per-run operator reconciliation; it does not change
+> the ADR's decision to remove the bundled Bitnami subcharts. The `cnpg`
+> dependency-profile is retained as an opt-in escape hatch for scenarios that
+> explicitly want an operator-managed cluster, but no scenario references it by default.
+
 ### Positive Consequences
 
 - The chart no longer ships unmaintained third-party infrastructure; the recurring Bitnami CVE surface is eliminated.

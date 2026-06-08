@@ -3,8 +3,9 @@
 #
 # The companion internal-keycloak-26 chart creates a Service named "keycloak"
 # in the same namespace. This layer tells the Camunda chart where to find it.
-# Also configures Identity + WebModeler external databases (backed by CNPG by
-# default; QA scenarios override this to use an internal-postgresql companion).
+# Also configures Identity + WebModeler external databases, pointed at the
+# `postgresql` service from the internal-postgresql companion chart (deployed
+# via the scenario's `postgresql` profile).
 
 global:
   host: "$CAMUNDA_HOSTNAME"
@@ -92,7 +93,7 @@ identity:
           echo "Keycloak is ready"
   externalDatabase:
     enabled: true
-    host: postgresql-cluster-rw
+    host: postgresql
     port: 5432
     database: identity
     username: $RDBMS_POSTGRESQL_USERNAME
@@ -103,7 +104,7 @@ webModeler:
   restapi:
     externalDatabase:
       enabled: true
-      host: postgresql-cluster-rw
+      host: postgresql
       port: 5432
       database: webmodeler
       username: $RDBMS_POSTGRESQL_USERNAME

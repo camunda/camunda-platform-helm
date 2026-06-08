@@ -1,26 +1,26 @@
 # =============================================================================
-# RDBMS Backend with CNPG-managed TLS
+# RDBMS Backend with self-signed TLS (internal-postgresql companion chart)
 # =============================================================================
-# Layer 3: Backend - PostgreSQL (CloudNativePG, self-signed TLS)
+# Layer 3: Backend - PostgreSQL (internal-postgresql companion, self-signed TLS)
 # Used with: --persistence rdbms-self-signed
 #
-# Connects Camunda 8.10 to a TLS-enabled PostgreSQL cluster provisioned in the
-# scenario namespace by the `postgresql-cluster-tls.yaml` pre-install fixture.
-# CloudNativePG generates its own self-signed CA + server cert by default; the
-# CA is exposed via the `postgresql-cluster-ca` secret and mounted into
-# Camunda for `sslmode=verify-full` validation.
+# Connects Camunda 8.10 to a TLS-enabled PostgreSQL provisioned by the
+# `internal-postgresql` companion chart (profile `postgresql-tls`). The chart
+# generates its own self-signed CA + server cert at install time and starts
+# PostgreSQL with `ssl=on`; the CA is published in the `postgresql-tls` Secret
+# under `ca.crt` and mounted into Camunda for `sslmode=verify-full` validation.
+# Replaces the former CloudNativePG `postgresql-cluster-tls.yaml` fixture.
 #
-# Prerequisites (created by the pre-install hook):
-#   - CNPG Cluster `postgresql-cluster` with database `orchestration`
-#   - Service `postgresql-cluster-rw` (TLS-enabled by CNPG default)
-#   - Secret `postgresql-cluster-ca` with key `ca.crt`
-#   - Secret `postgresql-secret` with `username` + `password` keys, matching
-#     the CNPG-managed `app` role (sourced from $RDBMS_POSTGRESQL_USERNAME /
-#     $RDBMS_POSTGRESQL_PASSWORD env vars).
+# Prerequisites (provided by the `postgresql-tls` companion profile):
+#   - Deployment + Service `postgresql` (ClusterIP, TLS-enabled) with database
+#     `orchestration`.
+#   - Secret `postgresql-tls` with key `ca.crt`.
+#   - PostgreSQL role/password sourced from $RDBMS_POSTGRESQL_USERNAME /
+#     $RDBMS_POSTGRESQL_PASSWORD.
 #
 # Auth/TLS notes:
 #   - JDBC URL uses `sslmode=verify-full` to require server cert validation
-#     against CNPG's CA. `sslrootcert` points at the mounted PEM.
+#     against the companion chart's CA. `sslrootcert` points at the mounted PEM.
 #   - PostgreSQL JDBC reads the CA cert as PEM directly; no JKS truststore
 #     needed for this path.
 #   - Hybrid storage: keep Elasticsearch enabled as primary secondary storage
@@ -37,7 +37,7 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
-        url: "jdbc:postgresql://postgresql-cluster-rw:5432/orchestration?sslmode=verify-full&sslrootcert=/etc/camunda/tls/ca.crt"
+        url: "jdbc:postgresql://postgresql:5432/orchestration?sslmode=verify-full&sslrootcert=/etc/camunda/tls/ca.crt"
         username: ${RDBMS_POSTGRESQL_USERNAME}
         secret:
           inlineSecret: ${RDBMS_POSTGRESQL_PASSWORD}
@@ -52,7 +52,7 @@ orchestration:
   extraVolumes:
     - name: rdbms-ca
       secret:
-        secretName: postgresql-cluster-ca
+        secretName: postgresql-tls
         items:
           - key: ca.crt
             path: ca.crt

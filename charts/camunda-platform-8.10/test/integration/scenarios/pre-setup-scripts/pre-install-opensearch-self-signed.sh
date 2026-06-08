@@ -14,9 +14,11 @@
 # limitations under the License.
 #
 # Pre-install script for the "opensearch-self-signed" persistence layer.
-# Applies the PostgreSQL fixture needed by Identity/WebModeler, then generates
-# self-signed TLS material and creates K8s secrets in the target namespace
-# (opensearch-tls-certs, opensearch-tls-ca, opensearch-jks).
+# Generates self-signed TLS material and creates K8s secrets in the target
+# namespace (opensearch-tls-certs, opensearch-tls-ca, opensearch-jks).
+#
+# The Identity/WebModeler PostgreSQL database is provided by the `postgresql`
+# companion profile (ci-test-config.yaml), not by this script.
 #
 # The OpenSearch companion chart is installed separately by the matrix
 # runner via the `dependencies:` block in ci-test-config.yaml — it runs
@@ -26,24 +28,10 @@
 # Required env vars:
 #   TEST_NAMESPACE  - target Kubernetes namespace
 #   KUBE_CONTEXT    - kubectl context (optional)
-#   RDBMS_POSTGRESQL_USERNAME / RDBMS_POSTGRESQL_PASSWORD
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RESOURCE_DIR="$(cd "${SCRIPT_DIR}/../common/resources" && pwd)"
-KUBECTL_FLAGS=()
-
-if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  KUBECTL_FLAGS+=(--context="${KUBE_CONTEXT}")
-fi
-
-echo "[pre-install-opensearch-self-signed] Applying PostgreSQL fixture..."
-NAMESPACE="${TEST_NAMESPACE}" envsubst < "${RESOURCE_DIR}/postgresql-cluster.yaml" | \
-  kubectl "${KUBECTL_FLAGS[@]}" apply --server-side --force-conflicts -f -
-kubectl "${KUBECTL_FLAGS[@]}" wait --for=condition=Ready --timeout=300s \
-  -n "${TEST_NAMESPACE}" cluster.postgresql.cnpg.io/postgresql-cluster
-echo "[pre-install-opensearch-self-signed] PostgreSQL fixture ready."
 
 # Generate certs + create K8s secrets.
 bash "${SCRIPT_DIR}/create-opensearch-tls-secrets.sh"

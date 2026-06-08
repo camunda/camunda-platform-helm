@@ -64,3 +64,10 @@ Image reference helper.
 {{- define "postgresql.image" -}}
 {{- printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
 {{- end }}
+
+{{/*
+TLS Secret name (holds ca.crt / tls.crt / tls.key when tls.enabled).
+*/}}
+{{- define "postgresql.tlsSecretName" -}}
+{{- printf "%s-tls" (include "postgresql.fullname" .) }}
+{{- end }}
