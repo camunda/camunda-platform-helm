@@ -1,0 +1,4 @@
+orchestration:
+  env:
+    - name: CAMUNDA_API_GRPC_SSL_ENABLED
+      value: "true"

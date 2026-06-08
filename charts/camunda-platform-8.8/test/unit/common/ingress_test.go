@@ -488,6 +488,25 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(ingress.Labels, "app.kubernetes.io/name")
 			},
 		},
+		{
+			Name:                 "TestGrpcIngressUsesSecureBackendProtocolWhenOrchestrationGrpcTlsIsEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-orchestration-grpc-tls.yaml")},
+			Values: map[string]string{
+				"orchestration.enabled":                              "true",
+				"orchestration.ingress.grpc.enabled":                 "true",
+				"orchestration.ingress.grpc.annotations.custom\\.io": "kept",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				s.Require().Equal("kept", ingress.Annotations["custom.io"])
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

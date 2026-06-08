@@ -12,7 +12,11 @@ metadata:
       )
       "context" .
     ) | nindent 4 }}
-{{- with .Values.orchestration.ingress.grpc.annotations }}
+{{- $grpcAnnotations := .Values.orchestration.ingress.grpc.annotations -}}
+{{- if eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true" -}}
+{{- $grpcAnnotations = mergeOverwrite (dict) $grpcAnnotations (dict "nginx.ingress.kubernetes.io/backend-protocol" "GRPCS") -}}
+{{- end -}}
+{{- with $grpcAnnotations }}
   annotations:
   {{- tpl (toYaml .) $ | nindent 4 }}
 {{- end }}

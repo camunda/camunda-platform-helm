@@ -6,12 +6,6 @@ orchestration:
       value: /usr/local/camunda/certificates/orchestration/tls.crt
     - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
       value: /usr/local/camunda/certificates/orchestration/tls.key
-    - name: SERVER_SSL_ENABLED
-      value: "true"
-    - name: SERVER_SSL_CERTIFICATE
-      value: /usr/local/camunda/certificates/orchestration/tls.crt
-    - name: SERVER_SSL_CERTIFICATEPRIVATEKEY
-      value: /usr/local/camunda/certificates/orchestration/tls.key
   extraVolumes:
     - name: orchestration-tls
       secret:
@@ -32,7 +26,7 @@ webModeler:
           enabled: true
         url:
           grpc: grpcs://integration-zeebe-gateway:26500
-          rest: https://integration-zeebe-gateway:8080/orchestration
+          rest: http://integration-zeebe-gateway:8080/orchestration
           web-app: https://$CAMUNDA_HOSTNAME/orchestration
     javaOpts: >-
       -XX:MaxRAMPercentage=80.0
@@ -72,7 +66,7 @@ connectors:
 
     camunda:
       client:
-        rest-address: https://integration-zeebe-gateway:8080/orchestration
+        rest-address: http://integration-zeebe-gateway:8080/orchestration
         grpc-address: https://integration-zeebe-gateway:26500
         worker:
           defaults:

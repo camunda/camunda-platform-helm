@@ -126,6 +126,20 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"configmapApplication.camunda.client.auth.client-id": "connectors",
 			},
 		},
+		{
+			Name:        "TestConnectorsShouldUseSecureGrpcAddressWhenOrchestrationGrpcTlsIsEnabled",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/connectors/testdata/values-orchestration-grpc-tls.yaml")},
+			Values: map[string]string{
+				"connectors.enabled":             "true",
+				"orchestration.contextPath":      "/orchestration",
+				"orchestration.service.grpcPort": "26600",
+				"orchestration.service.httpPort": "8090",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.grpc-address": "https://camunda-platform-test-zeebe-gateway:26600",
+				"configmapApplication.camunda.client.rest-address": "http://camunda-platform-test-zeebe-gateway:8090/orchestration",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
