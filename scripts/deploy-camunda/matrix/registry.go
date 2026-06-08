@@ -214,7 +214,7 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 				HelmVersion:  rscn.HelmVersion,
 				SkipE2E:      rscn.SkipE2E,
 				SkipIT:       rscn.SkipIT,
-				Dependencies: deps,
+				Dependencies: append([]ChartDependency(nil), deps...),
 				PrefixKey:    rscn.PrefixKey,
 				PreInstall:   preInstall,
 				PostDeploy:   postDeploy,

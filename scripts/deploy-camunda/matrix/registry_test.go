@@ -126,7 +126,7 @@ func TestRegistryValidatorAcceptsGood(t *testing.T) {
 }
 
 // TestRegistryValidatorRejectsDuplicatePlatformFlow: a fabricated config with
-// two CIScenarios colliding on (Name, Shortname, Flow, Platform) is rejected.
+// two CIScenarios colliding on (Shortname, Flow, Platform) is rejected.
 func TestRegistryValidatorRejectsDuplicatePlatformFlow(t *testing.T) {
 	abs := absChartDir(t)
 	cfg, err := LoadRegistry(abs)

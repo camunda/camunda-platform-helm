@@ -88,7 +88,8 @@ endef
 go.test: helm.dependency-update
 	@$(call go_test_run, go test ./...)
 	@echo "\n[$@] Matrix package: registry validator + snapshot drift + lifecycle fixtures"
-	@cd scripts/deploy-camunda && go test ./matrix/
+	# Intentionally cross-version: walks all charts/*/test/ci/ regardless of chartPath (YAML parse only, fast).
+	@cd scripts/deploy-camunda && go test -timeout 2m ./matrix/
 
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
