@@ -764,3 +764,80 @@ es:
 	}
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *DeploymentTemplateTest) TestOptimizeJKSPassword() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "JKS password via existingSecret",
+			Values: map[string]string{
+				"global.elasticsearch.tls.existingSecret":               "es-tls",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "name: \"truststore-secret\"")
+				require.Contains(t, output, "key: \"truststore-password\"")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+			},
+		},
+		{
+			Name: "JKS password via inlineSecret",
+			Values: map[string]string{
+				"global.elasticsearch.tls.existingSecret":          "es-tls",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "value: \"changeit\"")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+			},
+		},
+		{
+			Name: "TLS without JKS omits password",
+			Values: map[string]string{
+				"global.elasticsearch.tls.existingSecret": "es-tls",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.NotContains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *DeploymentTemplateTest) TestOptimizeMigrationInitContainerJKSPassword() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Optimize migration init container picks migration.javaOpts and emits JKS password",
+			Values: map[string]string{
+				"optimize.migration.enabled":                            "true",
+				"optimize.migration.javaOpts":                           "-Xmx512m",
+				"optimize.javaOpts":                                     "-Xmx2g",
+				"global.elasticsearch.tls.existingSecret":               "es-tls",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Migration container must use migration.javaOpts (-Xmx512m), NOT optimize.javaOpts (-Xmx2g)
+				require.Contains(t, output, "-Xmx512m")
+				// And both containers should get the JKS password injection
+				count := strings.Count(output, "name: TRUSTSTORE_PASSWORD")
+				require.Equalf(t, 2, count,
+					"Expected TRUSTSTORE_PASSWORD twice (init + main container). Found %d.", count)
+				require.Contains(t, output, "name: \"truststore-secret\"")
+				require.Contains(t, output, "key: \"truststore-password\"")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
