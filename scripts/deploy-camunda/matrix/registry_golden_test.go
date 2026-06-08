@@ -19,6 +19,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -66,7 +67,7 @@ func TestRegistryGolden(t *testing.T) {
 			continue
 		}
 		name := e.Name()
-		if !filepathHasPrefix(name, prefix) {
+		if !strings.HasPrefix(name, prefix) {
 			continue
 		}
 		version := name[len(prefix):]

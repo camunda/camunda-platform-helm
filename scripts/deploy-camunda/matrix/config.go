@@ -253,23 +253,6 @@ type ChartDependency struct {
 	RepoURL string `yaml:"repo-url,omitempty" json:"repo-url,omitempty"`
 }
 
-// LoadCITestConfig reads and parses the ci-test-config.yaml for a given chart directory.
-func LoadCITestConfig(chartDir string) (*CITestConfig, error) {
-	path := filepath.Join(chartDir, "test", "ci-test-config.yaml")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read ci-test-config.yaml from %s: %w", chartDir, err)
-	}
-	var cfg CITestConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse ci-test-config.yaml from %s: %w", chartDir, err)
-	}
-	if err := ResolveProfiles(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to resolve dependency profiles in %s: %w", chartDir, err)
-	}
-	return &cfg, nil
-}
-
 // ResolveProfiles expands every scenario's Profiles into its Dependencies and
 // PreInstall, in place. Profile dependencies are placed first, in profile-list
 // order, followed by any scenario-inline Dependencies. A profile pre-install

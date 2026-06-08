@@ -71,19 +71,18 @@ type registryScenario struct {
 }
 
 // HasRegistry reports whether <chartDir>/test/<RegistryDirName>/manifest.yaml
-// exists. Callers use it to choose between LoadRegistry and LoadCITestConfig
-// without surfacing the path detail.
+// exists.
 func HasRegistry(chartDir string) bool {
 	_, err := os.Stat(filepath.Join(chartDir, "test", RegistryDirName, "manifest.yaml"))
 	return err == nil
 }
 
 // LoadRegistry reads the composable CI scenario registry under
-// <chartDir>/test/<RegistryDirName>/ and returns a *CITestConfig with the
-// same shape that LoadCITestConfig produces. Plural flows fan out to N
-// CIScenario entries with distinct singular Flow values. Validation runs
-// after assembly; assembly errors are returned immediately so the caller
-// sees the file-resolution problem rather than a downstream validation one.
+// <chartDir>/test/<RegistryDirName>/ and returns a *CITestConfig. Plural
+// flows fan out to N CIScenario entries with distinct singular Flow values.
+// Validation runs after assembly; assembly errors are returned immediately
+// so the caller sees the file-resolution problem rather than a downstream
+// validation one.
 func LoadRegistry(chartDir string) (*CITestConfig, error) {
 	registryDir := filepath.Join(chartDir, "test", RegistryDirName)
 	manifestPath := filepath.Join(registryDir, "manifest.yaml")
