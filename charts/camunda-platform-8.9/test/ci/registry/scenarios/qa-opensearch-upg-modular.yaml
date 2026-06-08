@@ -1,0 +1,15 @@
+name: qa-opensearch-upg
+auth: keycloak
+flows:
+  - modular-upgrade-minor
+identity: keycloak
+persistence: opensearch-embedded
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true
+prefix-key: qa-opensearch-upg
+dependencies:
+  - opensearch

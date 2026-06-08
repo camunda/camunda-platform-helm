@@ -1,0 +1,12 @@
+name: qa-entra
+auth: oidc
+flows:
+  - install
+identity: oidc
+persistence: elasticsearch
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true
