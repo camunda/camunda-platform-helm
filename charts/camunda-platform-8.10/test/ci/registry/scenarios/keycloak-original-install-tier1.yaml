@@ -1,0 +1,14 @@
+name: keycloak-original
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

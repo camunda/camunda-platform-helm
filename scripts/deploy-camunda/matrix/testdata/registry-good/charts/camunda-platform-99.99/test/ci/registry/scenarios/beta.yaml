@@ -1,0 +1,15 @@
+name: beta
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+platforms: [gke]
+infra-type:
+  gke: distroci
+features: [synthetic-feature]
+pre-install: cnpg-default
+post-deploy: post-deploy-beta
+dependencies:
+  - keycloak-26
+  - elasticsearch-8.5.1

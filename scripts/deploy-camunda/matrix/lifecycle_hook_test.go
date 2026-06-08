@@ -24,38 +24,9 @@ import (
 	"testing"
 )
 
-// preSetupScriptAllowlist names files inside pre-setup-scripts/ that are
-// permitted to exist without being referenced by any LifecycleHook in
-// ci-test-config.yaml. These files exist for purposes other than runner-driven
-// hook execution and must be hand-audited when added.
-//
-//	pre-install-upgrade.sh         — sed-target marker for values-file
-//	                                 uncommenting (alpha8 backwards-compat),
-//	                                 not invoked by the matrix runner.
-//	create-opensearch-tls-secrets.sh — helper sourced by
-//	                                 pre-install-opensearch-self-signed*.sh,
-//	                                 never invoked by the runner directly.
-//	create-elasticsearch-tls-secrets.sh — helper sourced by
-//	                                 pre-install-elasticsearch-self-signed*.sh
-//	                                 (8.7-8.9 only; removed from 8.10.)
-var preSetupScriptAllowlist = map[string]bool{
-	"pre-install-upgrade.sh":              true,
-	"create-elasticsearch-tls-secrets.sh": true,
-	"create-opensearch-tls-secrets.sh":    true,
-}
-
-// commonResourcesAllowlist names files inside common/resources/ that are
-// permitted to exist without being referenced by any LifecycleHook. These are
-// fixtures kept for scenarios that are currently disabled but staged for
-// activation; deleting them would force a separate PR to re-add them when the
-// scenario is enabled.
-//
-//	postgres-createdb-job.yaml    — fixture for the disabled rdbms-external
-//	                                scenario in 8.9/8.10. Pending its own enable PR.
-var commonResourcesAllowlist = map[string]bool{
-	"postgres-createdb-job.yaml":  true,
-	"gateway-proxy-settings.yaml": true,
-}
+// Allowlists for orphan exemption live in lifecycle_allowlist.go (consumed
+// by both RegistryValidator's load-time orphan walk and TestLifecycleFixtures's
+// cross-version dead-entry check below).
 
 // TestLifecycleFixtures asserts the integrity of the declarative lifecycle
 // fixture system across every chart version:
@@ -123,15 +94,29 @@ func validateLifecycleFixturesForVersion(t *testing.T, repoRoot, version string,
 		t.Skipf("no test/ tree for %s", version)
 		return
 	}
-	cfgPath := filepath.Join(testDir, "ci-test-config.yaml")
-	if _, err := os.Stat(cfgPath); err != nil {
-		// test/ exists but config is missing — a regression, not a skip.
-		t.Errorf("ci-test-config.yaml missing for %s at %s: %v", version, cfgPath, err)
-		return
-	}
-	cfg, err := LoadCITestConfig(chartDir)
-	if err != nil {
-		t.Fatalf("LoadCITestConfig: %v", err)
+	// Dispatch matches matrix.Generate: prefer the live registry when present
+	// so registry-driven versions (post-ADR-0093 migration) are validated
+	// against the registry, not the frozen ci-test-config.yaml snapshot.
+	// Without this branch, new hooks added to the registry would false-positive
+	// the orphan walk because the frozen snapshot does not see them.
+	var cfg *CITestConfig
+	if HasRegistry(chartDir) {
+		var err error
+		cfg, err = LoadRegistry(chartDir)
+		if err != nil {
+			t.Fatalf("LoadRegistry: %v", err)
+		}
+	} else {
+		cfgPath := filepath.Join(testDir, "ci-test-config.yaml")
+		if _, err := os.Stat(cfgPath); err != nil {
+			t.Errorf("ci-test-config.yaml missing for %s at %s: %v", version, cfgPath, err)
+			return
+		}
+		var err error
+		cfg, err = LoadCITestConfig(chartDir)
+		if err != nil {
+			t.Fatalf("LoadCITestConfig: %v", err)
+		}
 	}
 
 	scriptsDir := filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts")

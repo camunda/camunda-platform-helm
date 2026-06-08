@@ -790,11 +790,14 @@ func TestEnsureVenomApp_NewApp(t *testing.T) {
 
 	origGraph := graphBaseURL
 	origLogin := loginBaseURL
+	origPropSleep := propagationSleepDuration
 	graphBaseURL = srv.URL
 	loginBaseURL = srv.URL
+	propagationSleepDuration = 0
 	defer func() {
 		graphBaseURL = origGraph
 		loginBaseURL = origLogin
+		propagationSleepDuration = origPropSleep
 	}()
 
 	// Override createVenomK8sSecret to avoid requiring a real K8s cluster.

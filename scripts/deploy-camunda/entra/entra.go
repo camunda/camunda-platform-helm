@@ -37,6 +37,10 @@ var retryMaxBackoff = 8 * time.Second
 // right after creating an app registration).
 var retryMaxAttempts = 15
 
+// propagationSleepDuration is the sleep between propagation-check attempts after
+// creating a new app registration. Exposed as a variable so tests can set it to zero.
+var propagationSleepDuration = 2 * time.Second
+
 // loginBaseURL is the Microsoft identity platform base URL. It is a variable
 // so tests can override it with a local httptest server URL.
 var loginBaseURL = "https://login.microsoftonline.com"
@@ -672,11 +676,13 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 		successes := 0
 
 		for !propogated && attempts < 45 && successes < 5 {
-			appID, objectID, err = findApp(ctx, client, token, displayName)
-			if err != nil {
-				logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
+			foundAppID, foundObjID, findErr := findApp(ctx, client, token, displayName)
+			if findErr != nil {
+				logging.Logger.Warn().Err(findErr).Msg("Error while checking for app registration propagation")
 			}
-			if appID != "" && objectID != "" {
+			if foundAppID != "" && foundObjID != "" {
+				appID = foundAppID
+				objectID = foundObjID
 				propogated = true
 				// success counter is used to ensure that the app is consistently found across multiple attempts, indicating that it has fully propagated through the system.
 				successes++
@@ -684,7 +690,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 				successes = 0
 			}
 			attempts++
-			time.Sleep(2 * time.Second)
+			time.Sleep(propagationSleepDuration)
 		}
 
 	}

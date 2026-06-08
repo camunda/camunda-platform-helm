@@ -1,0 +1,3 @@
+script: post-deploy-beta.sh
+description: |
+  Synthetic post-deploy hook script for the registry-good test.

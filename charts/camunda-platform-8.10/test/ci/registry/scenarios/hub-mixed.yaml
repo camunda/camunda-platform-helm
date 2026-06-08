@@ -1,0 +1,17 @@
+name: hub-mixed
+auth: keycloak
+flows:
+  - upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+features:
+  - hub-mixed
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql
