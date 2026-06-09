@@ -3,9 +3,9 @@ package kube
 import "time"
 
 type ApplyManifestOptions struct {
-	Retry bool
+	Retry         bool
 	RetryAttempts int
-	Timeout time.Duration
+	Timeout       time.Duration
 }
 
 func DefaultApplyManifestOptions() ApplyManifestOptions {
@@ -18,7 +18,7 @@ func DefaultApplyManifestOptions() ApplyManifestOptions {
 
 type ExternalSecretsOptions struct {
 	SkipIfCRDMissing bool
-	Timeout time.Duration
+	Timeout          time.Duration
 }
 
 func DefaultExternalSecretsOptions() ExternalSecretsOptions {
@@ -30,7 +30,7 @@ func DefaultExternalSecretsOptions() ExternalSecretsOptions {
 
 type SecretOptions struct {
 	RetryOnConflict bool
-	FailIfExists bool
+	FailIfExists    bool
 }
 
 func DefaultSecretOptions() SecretOptions {
@@ -41,8 +41,8 @@ func DefaultSecretOptions() SecretOptions {
 }
 
 type NamespaceOptions struct {
-	Labels map[string]string
-	Annotations map[string]string
+	Labels          map[string]string
+	Annotations     map[string]string
 	RetryOnConflict bool
 }
 
@@ -53,4 +53,3 @@ func DefaultNamespaceOptions() NamespaceOptions {
 		RetryOnConflict: true,
 	}
 }
-

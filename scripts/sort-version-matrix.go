@@ -19,11 +19,11 @@ type CamundaVersion struct {
 // e.g., "8.3.10" -> [8, 3, 10], "13.0.0-alpha4.2" -> [13, 0, 0, -1, 4, 2]
 func parseVersion(version string) []int {
 	parts := []int{}
-	
+
 	// Split on dots and dashes
 	version = strings.ReplaceAll(version, "-", ".")
 	segments := strings.Split(version, ".")
-	
+
 	for _, segment := range segments {
 		// Handle alpha/beta/rc releases
 		if strings.HasPrefix(segment, "alpha") {
@@ -55,7 +55,7 @@ func parseVersion(version string) []int {
 			}
 		}
 	}
-	
+
 	return parts
 }
 
@@ -63,12 +63,12 @@ func parseVersion(version string) []int {
 func compareVersions(v1, v2 string) int {
 	p1 := parseVersion(v1)
 	p2 := parseVersion(v2)
-	
+
 	maxLen := len(p1)
 	if len(p2) > maxLen {
 		maxLen = len(p2)
 	}
-	
+
 	for i := 0; i < maxLen; i++ {
 		var n1, n2 int
 		if i < len(p1) {
@@ -81,7 +81,7 @@ func compareVersions(v1, v2 string) int {
 		} else {
 			n2 = 0
 		}
-		
+
 		if n1 < n2 {
 			return -1
 		}
@@ -89,7 +89,7 @@ func compareVersions(v1, v2 string) int {
 			return 1
 		}
 	}
-	
+
 	return 0
 }
 
@@ -101,12 +101,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error decoding JSON: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Sort by app version (descending - newest first)
 	sort.Slice(versions, func(i, j int) bool {
 		return compareVersions(versions[i].App, versions[j].App) > 0
 	})
-	
+
 	// Sort charts within each version (descending - newest first)
 	for i := range versions {
 		charts := versions[i].Charts
@@ -115,7 +115,7 @@ func main() {
 		})
 		versions[i].Charts = charts
 	}
-	
+
 	// Output sorted JSON
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")

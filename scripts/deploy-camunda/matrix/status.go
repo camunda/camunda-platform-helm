@@ -110,7 +110,7 @@ func NewStatusDisplay(out io.Writer, entries []Entry, isTerminal bool, logDir st
 			tea.WithOutput(out),
 			tea.WithoutSignalHandler(), // parent context handles SIGINT/SIGTERM
 		)
-		d.states = nil // not used in terminal mode; model owns the state
+		d.states = nil     // not used in terminal mode; model owns the state
 		go d.program.Run() //nolint:errcheck // best-effort UI; errors are non-fatal
 	}
 
