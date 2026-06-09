@@ -554,6 +554,19 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
 				"spec.template.metadata.annotations.my-anno":            "v1",
 			},
 		},
+		{
+			Name:     "web-modeler restapi has no checksum annotation when caBundle is set but autoRollout is off (no empty annotations block)",
+			Template: "templates/web-modeler/deployment-restapi.yaml",
+			Values: map[string]string{
+				"webModeler.enabled":                        "true",
+				"webModeler.restapi.mail.fromAddress":       "test@example.com",
+				"identity.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.metadata.annotations.checksum/ca-bundle": "",
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

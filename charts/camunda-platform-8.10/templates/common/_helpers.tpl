@@ -1290,8 +1290,9 @@ Image: defaults to the calling component's own image (the `image` key of
 the dict). That image already ships a JRE with keytool, it is one the
 customer has already mirrored (so this adds NO new registry dependency in
 air-gapped installs), and copying its cacerts preserves any CAs baked into
-a custom build. `global.tls.caBundle.image` is an explicit override (with
-`global.image.registry` prefixing) for the rare image that lacks keytool.
+a custom build. `global.tls.caBundle.image` is an explicit override for the
+rare image that lacks keytool; it is used VERBATIM (NOT prefixed with
+`global.image.registry`), so it must already be a routable reference.
 
 SecurityContext: comes from global.tls.caBundle.containerSecurityContext,
 rendered through common.compatibility.renderSecurityContext so OpenShift's

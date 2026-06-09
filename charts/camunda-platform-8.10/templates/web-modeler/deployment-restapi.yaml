@@ -24,7 +24,7 @@ spec:
       {{- if (or .Values.camundaHub.webModeler.restapi.podLabels .Values.webModeler.restapi.podLabels) }}
       {{- tpl (toYaml (or .Values.camundaHub.webModeler.restapi.podLabels .Values.webModeler.restapi.podLabels)) $ | nindent 8 }}
       {{- end }}
-      {{- if or (eq (include "camundaPlatform.hasCaBundle" .) "true") (or .Values.camundaHub.webModeler.restapi.podAnnotations .Values.webModeler.restapi.podAnnotations) }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) (or .Values.camundaHub.webModeler.restapi.podAnnotations .Values.webModeler.restapi.podAnnotations) }}
       annotations:
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- with (or .Values.camundaHub.webModeler.restapi.podAnnotations .Values.webModeler.restapi.podAnnotations) }}

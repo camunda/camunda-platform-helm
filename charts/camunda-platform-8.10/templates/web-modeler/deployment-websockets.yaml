@@ -17,7 +17,7 @@ spec:
       {{- if (or .Values.camundaHub.webModeler.websockets.podLabels .Values.webModeler.websockets.podLabels) }}
       {{- tpl (toYaml (or .Values.camundaHub.webModeler.websockets.podLabels .Values.webModeler.websockets.podLabels)) $ | nindent 8 }}
       {{- end }}
-      {{- if or (eq (include "camundaPlatform.hasCaBundle" .) "true") (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
       annotations:
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- with (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
