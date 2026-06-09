@@ -1,0 +1,59 @@
+# Hub WebModeler-Only feature layer - customer who never enabled Console SM.
+# When used in an upgrade-minor flow, this ensures Step 1 (8.9) also deploys
+# without Console, matching the customer's actual 8.9 configuration.
+
+console:
+  enabled: false
+
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  restapi:
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+      -XX:+TieredCompilation
+      -XX:TieredStopAtLevel=1
+      -XX:+UseG1GC
+      -XX:+UseStringDeduplication
+    initContainers:
+      - name: wait-for-postgresql
+        image: busybox:1.36
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for PostgreSQL at {{ .Release.Name }}-postgresql-web-modeler:5432 ..."
+            until nc -z "{{ .Release.Name }}-postgresql-web-modeler" 5432; do
+              sleep 2
+            done
+            echo "PostgreSQL is ready"
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      failureThreshold: 30
+      timeoutSeconds: 1
+    mail:
+      fromAddress: noreply@example.com
+    resources:
+      requests:
+        cpu: 400m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+  websockets:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi

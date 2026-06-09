@@ -97,6 +97,10 @@ integration:
     - id: hub-mixed
       shortname: hubmu
       enabled: false
+    - id: hub-webmodeler-only
+      shortname: hubwo
+      tier: 2
+      enabled: true
     - id: hub-external-db
       shortname: hubdb
       tier: 2
