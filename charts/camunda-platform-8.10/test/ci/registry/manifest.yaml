@@ -17,6 +17,10 @@ integration:
       shortname: eske
       tier: 1
       enabled: true
+    - id: orchestration-tls
+      shortname: estls
+      tier: 2
+      enabled: true
     - id: opensearch
       shortname: oske
       tier: 2
