@@ -84,6 +84,10 @@ jobs:
       #
       # Post Upgrade Tasks.
       #
+      # SUPPORTED_CHANGED = CHANGED_CHARTS minus out-of-support chart versions.
+      # The exclusion list is derived dynamically from charts/chart-versions.yaml
+      # (supportExtended + endOfLife), so updating that file is the only thing
+      # needed when a version transitions to end-of-support — no changes here.
       - name: Set vars
         run: |
           CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')
