@@ -44,13 +44,13 @@ openssl req -x509 -nodes -newkey rsa:4096 \
   -extensions v3_req \
   2>/dev/null
 
-keytool -importcert \
-  -keystore "$WORK_DIR/truststore.jks" \
-  -storetype JKS \
-  -storepass "$KEYSTORE_PASSWORD" \
-  -alias orchestration-tls \
-  -file "$WORK_DIR/tls.crt" \
-  -noprompt 2>/dev/null
+openssl pkcs12 -export \
+  -in "$WORK_DIR/tls.crt" \
+  -inkey "$WORK_DIR/tls.key" \
+  -out "$WORK_DIR/truststore.p12" \
+  -password "pass:$KEYSTORE_PASSWORD" \
+  -name orchestration-tls \
+  2>/dev/null
 
 create_or_replace_secret() {
   local name="$1"
@@ -66,5 +66,5 @@ create_or_replace_secret "orchestration-tls" \
   --from-file="tls.key=$WORK_DIR/tls.key"
 
 create_or_replace_secret "orchestration-tls-truststore" \
-  --from-file="truststore.jks=$WORK_DIR/truststore.jks" \
+  --from-file="truststore.p12=$WORK_DIR/truststore.p12" \
   --from-literal="truststore-password=$KEYSTORE_PASSWORD"

@@ -30,7 +30,8 @@ webModeler:
           web-app: https://$CAMUNDA_HOSTNAME/orchestration
     javaOpts: >-
       -XX:MaxRAMPercentage=80.0
-      -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/orchestration/truststore.jks
+      -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/orchestration/truststore.p12
+      -Djavax.net.ssl.trustStoreType=PKCS12
       -Djavax.net.ssl.trustStorePassword=changeit
     extraVolumes:
       - name: orchestration-tls-truststore
@@ -94,7 +95,8 @@ connectors:
   env:
     - name: JAVA_TOOL_OPTIONS
       value: >-
-        -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/orchestration/truststore.jks
+        -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/orchestration/truststore.p12
+        -Djavax.net.ssl.trustStoreType=PKCS12
         -Djavax.net.ssl.trustStorePassword=changeit
   extraVolumes:
     - name: orchestration-tls-truststore
