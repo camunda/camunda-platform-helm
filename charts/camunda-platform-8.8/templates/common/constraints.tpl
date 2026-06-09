@@ -237,6 +237,87 @@ The following values inside your values.yaml need to be set but were not:
 
   {{/* Secret configuration warnings */}}
   {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+
+  {{/* Legacy JKS truststore deprecation, superseded by the global.tls.caBundle PEM
+       bundle (which the chart converts to a PKCS12 truststore at pod start via the
+       caBundle init container — see helm#3498). */}}
+  {{- range $entry := list
+      (dict "path" "global.elasticsearch.tls.existingSecret" "set" (not (empty .Values.global.elasticsearch.tls.existingSecret)))
+      (dict "path" "global.opensearch.tls.existingSecret" "set" (not (empty .Values.global.opensearch.tls.existingSecret)))
+      (dict "path" "global.elasticsearch.tls.jks.secret" "set" (or (not (empty .Values.global.elasticsearch.tls.jks.secret.existingSecret)) (not (empty .Values.global.elasticsearch.tls.jks.secret.inlineSecret))))
+      (dict "path" "global.opensearch.tls.jks.secret" "set" (or (not (empty .Values.global.opensearch.tls.jks.secret.existingSecret)) (not (empty .Values.global.opensearch.tls.jks.secret.inlineSecret))))
+  }}
+    {{- if $entry.set }}
+        {{- $warningMessage := printf "%s %s %s %s %s"
+            "[camunda][warning]"
+            (printf "DEPRECATION: values.yaml is using legacy JKS truststore option '%s'." $entry.path)
+            "This option is deprecated as of chart 13.x and will be removed in a future major release."
+            "Please migrate to 'global.tls.caBundle.secret.{existingSecret,existingSecretKey}', supplying a PEM-encoded CA bundle."
+            "The chart will build the JVM truststore at pod start (no offline keytool needed). Remove the legacy tls.existingSecret / tls.jks entries plus any -Djavax.net.ssl.trustStore* flags from javaOpts."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
+       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+
+    {{/* (1) A legacy JKS truststore silently wins over caBundle for the JVM
+           components — the init container still builds a truststore the JVM never uses. */}}
+    {{- range $j := list
+        (dict "comp" "global.elasticsearch" "set" (or (not (empty .Values.global.elasticsearch.tls.existingSecret)) (not (empty .Values.global.elasticsearch.tls.jks.secret.existingSecret))))
+        (dict "comp" "global.opensearch" "set" (or (not (empty .Values.global.opensearch.tls.existingSecret)) (not (empty .Values.global.opensearch.tls.jks.secret.existingSecret))))
+    }}
+      {{- if $j.set }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but %s also configures a legacy JKS truststore (tls.existingSecret / tls.jks)." $j.comp)
+            "The JKS takes precedence on JAVA_TOOL_OPTIONS, so the caBundle truststore is NOT used by the JVM there (its init container still builds an unused truststore). Remove the legacy tls.existingSecret/tls.jks to switch to the caBundle, or ignore this if the JKS is intentional."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (2) caBundle provides CA trust, not encryption. A plaintext datastore URL
+           means traffic is still unencrypted despite the bundle being set. */}}
+    {{- range $u := list
+        (dict "name" "global.elasticsearch.url.protocol" "proto" .Values.global.elasticsearch.url.protocol)
+        (dict "name" "global.opensearch.url.protocol" "proto" .Values.global.opensearch.url.protocol)
+    }}
+      {{- if and $u.proto (eq (lower ($u.proto | toString)) "http") }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but %s is plaintext 'http'." $u.name)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the protocol to https to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (3) A component-level JAVA_TOOL_OPTIONS env entry overrides (last-wins) the
+           chart's truststore flags, silently breaking JVM trust. */}}
+    {{- $envComponents := list
+        (dict "comp" "orchestration" "env" .Values.orchestration.env)
+        (dict "comp" "optimize" "env" .Values.optimize.env)
+        (dict "comp" "connectors" "env" .Values.connectors.env)
+        (dict "comp" "identity" "env" .Values.identity.env)
+        (dict "comp" "webModeler.restapi" "env" .Values.webModeler.restapi.env)
+    }}
+    {{- range $c := $envComponents }}
+      {{- range $e := $c.env }}
+        {{- if eq $e.name "JAVA_TOOL_OPTIONS" }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "global.tls.caBundle is set, but %s.env sets JAVA_TOOL_OPTIONS directly." $c.comp)
+              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Components that expose a 'javaOpts' value (orchestration, optimize, web-modeler restapi) can set that instead — the chart appends its truststore flags to it."
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+  {{- end }}
 {{- end }}
 
 {{/*
