@@ -7,7 +7,6 @@ name: "Test - Release Tooling"
 # coupled to inputs that live outside scripts/ (charts/**/values*.yaml,
 # charts/chart-versions.yaml, the committed version-matrix, the release-please
 # trace + Harbor API shapes), so a chart-only PR must still run these tests.
-# A `go test` run is seconds; always-run cannot be skipped by a chart-only PR.
 on:
   pull_request:
   push:
@@ -16,6 +15,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -30,11 +33,18 @@ jobs:
         with:
           tools: |
             golang
+            helm
 
-      # The chartmeta real-chart contract tests (TestImageSetRealChartContract,
-      # TestComponentImageVersionsRealCharts) run against the actual chart
-      # values here — catching chart-side structural drift at PR time, with no
-      # `helm template` render.
+      # TestImageSetRealChartContract reads each chart's vendored subcharts
+      # (keycloak/ES/PG for 8.7-8.9), so they must be present before `go test`.
+      # dependency-update downloads the subcharts; it does not render templates.
+      - name: Vendor subcharts for the real-chart contract tests
+        run: |
+          make helm.repos-add
+          for v in 8.7 8.8 8.9 8.10; do
+            make helm.dependency-update chartPath="charts/camunda-platform-$v"
+          done
+
       - name: camunda-core — vet + test
         working-directory: scripts/camunda-core
         run: |
