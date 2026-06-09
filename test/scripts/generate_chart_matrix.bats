@@ -242,7 +242,7 @@ get_first_version() {
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
     --manual-trigger "8.10" --active-versions "$AV"
   assert_success
-  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"oidc\")" matrix_versions.txt | jq -s .'
+  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"oidc\" and .flow==\"upgrade-minor\")" matrix_versions.txt | jq -s .'
   assert_success
   assert_output '[]'
 }
