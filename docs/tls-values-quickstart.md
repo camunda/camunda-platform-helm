@@ -75,7 +75,7 @@ You should see:
 
 ## Updating the CA
 
-To rotate the CA bundle, replace the secret and bounce the affected pods:
+To rotate the CA bundle, replace the secret and restart the Camunda workloads so the init container rebuilds the truststore from the new CA:
 
 ```bash
 kubectl -n "$NAMESPACE" delete secret camunda-ca-bundle
@@ -85,7 +85,31 @@ kubectl -n "$NAMESPACE" create secret generic camunda-ca-bundle \
 kubectl -n "$NAMESPACE" rollout restart statefulset,deployment
 ```
 
-The init container re-runs on each pod start and imports the new CA into a fresh truststore.
+### Optional: automatic rollout on `helm upgrade`
+
+Set `global.tls.caBundle.autoRollout: true` to have the chart stamp a `checksum/ca-bundle`
+pod annotation derived from the CA secret, so the next `helm upgrade` rolls the Java
+components automatically when the CA changes — no manual `rollout restart`.
+
+It's **off by default** because it uses Helm's `lookup` to read the secret at upgrade
+time, which has two important constraints:
+
+- **RBAC:** the identity running `helm upgrade` must have `get` on Secrets in the
+  release namespace. Without it, `lookup` raises a `Forbidden` error that is **not**
+  catchable in templates and **fails the `helm upgrade`**. Only enable `autoRollout`
+  where the upgrader has Secret-read access.
+- **GitOps:** Argo CD / Flux render with `helm template` (no cluster access for
+  `lookup`), so the annotation stays constant and the rollout never fires. Drive the
+  restart from your GitOps stack instead (an Argo CD `PostSync` hook or a Flux
+  `kustomize` patch), or use the `kubectl rollout restart` above.
+
+Trust itself never depends on this flag — it only controls the rollout convenience.
+
+> **Reminder:** `global.tls.caBundle` provides CA **trust**, not encryption. It does
+> not turn a plaintext datastore connection into TLS — point the datastore URL at
+> `https://` (or set the JDBC `sslmode`) to actually encrypt the traffic. The chart
+> emits an install-time warning if the bundle is set while a datastore URL is still
+> `http://`.
 
 ## Common gotchas
 

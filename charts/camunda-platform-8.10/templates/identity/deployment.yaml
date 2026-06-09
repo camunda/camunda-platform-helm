@@ -20,6 +20,7 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.identity.podAnnotations }}
         {{- tpl (toYaml .Values.identity.podAnnotations) $ | nindent 8 }}
       {{- end }}
@@ -28,7 +29,7 @@ spec:
         {{- include "identity.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.identity))) | nindent 8 }}
         {{- end }}
         {{- with .Values.identity.initContainers }}
         {{- tpl (toYaml . | nindent 8) $ }}

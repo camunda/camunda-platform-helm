@@ -294,6 +294,86 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
+       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+
+    {{/* (1) A per-component JKS truststore silently wins over caBundle for that
+           component — the init container still builds a truststore the JVM never uses. */}}
+    {{- $jksOverrides := list
+        (dict "comp" "orchestration secondaryStorage.elasticsearch" "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)
+        (dict "comp" "orchestration secondaryStorage.opensearch" "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)
+        (dict "comp" "optimize database.elasticsearch" "config" .Values.optimize.database.elasticsearch.tls)
+        (dict "comp" "optimize database.opensearch" "config" .Values.optimize.database.opensearch.tls)
+        (dict "comp" "global.elasticsearch" "config" .Values.global.elasticsearch.tls)
+        (dict "comp" "global.opensearch" "config" .Values.global.opensearch.tls)
+    }}
+    {{- range $jksOverrides }}
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true" }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but %s also configures a per-component JKS truststore (tls.secret)." .comp)
+            "The JKS takes precedence for that component, so the caBundle is NOT used there (its init container still builds an unused truststore). Remove the per-component tls.secret to switch to the caBundle, or ignore this if the JKS is intentional."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (2) caBundle provides CA trust, not encryption. A plaintext datastore URL
+           means traffic is still unencrypted despite the bundle being set.
+           Orchestration secondaryStorage URLs are full scheme strings;
+           Optimize database URLs are split into a separate .protocol field. */}}
+    {{- range $url := (list .Values.orchestration.data.secondaryStorage.opensearch.url .Values.orchestration.data.secondaryStorage.elasticsearch.url) }}
+      {{- if and $url (hasPrefix "http://" (lower $url)) }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but the secondary-storage URL '%s' is plaintext http://." $url)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the URL to https:// to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+    {{- range $db := (list "opensearch" "elasticsearch") }}
+      {{- $u := index $.Values.optimize.database $db "url" }}
+      {{- if and $u $u.protocol (eq (lower $u.protocol) "http") }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but optimize.database.%s.url.protocol is plaintext 'http'." $db)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the protocol to https to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (3) A component-level JAVA_TOOL_OPTIONS env entry overrides (last-wins) the
+           chart's truststore flags, silently breaking JVM trust. */}}
+    {{/* webModeler.restapi env uses `or` to mirror deployment-restapi.yaml's own
+         env coalescing (camundaHub takes precedence; only that one list is
+         applied). We check exactly the list the deployment uses, so we never warn
+         about a JAVA_TOOL_OPTIONS in the ignored list — that would be a false
+         alarm since it is not applied. */}}
+    {{- $envComponents := list
+        (dict "comp" "orchestration" "env" .Values.orchestration.env)
+        (dict "comp" "optimize" "env" .Values.optimize.env)
+        (dict "comp" "connectors" "env" .Values.connectors.env)
+        (dict "comp" "identity" "env" .Values.identity.env)
+        (dict "comp" "webModeler.restapi" "env" (or .Values.camundaHub.webModeler.restapi.env .Values.webModeler.restapi.env))
+    }}
+    {{- range $c := $envComponents }}
+      {{- range $e := $c.env }}
+        {{- if eq $e.name "JAVA_TOOL_OPTIONS" }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "global.tls.caBundle is set, but %s.env sets JAVA_TOOL_OPTIONS directly." $c.comp)
+              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Components that expose a 'javaOpts' value (orchestration, optimize, web-modeler restapi) can set that instead — the chart appends its truststore flags to it."
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+  {{- end }}
+
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
     {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}

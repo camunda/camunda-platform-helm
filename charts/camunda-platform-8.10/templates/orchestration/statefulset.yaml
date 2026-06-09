@@ -27,6 +27,7 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- if .Values.orchestration.podAnnotations }}
         {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}
         {{- end }}
@@ -38,7 +39,7 @@ spec:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.orchestration))) | nindent 8 }}
         {{- end }}
         {{- with (coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) }}
         {{- tpl (toYaml . | nindent 8) $ }}
