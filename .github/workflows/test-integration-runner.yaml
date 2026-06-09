@@ -328,7 +328,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -758,7 +758,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -1044,7 +1044,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1119,7 +1119,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1198,7 +1198,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1256,7 +1256,7 @@ jobs:
     needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1352,7 +1352,7 @@ jobs:
       statuses: write
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1403,7 +1403,7 @@ jobs:
         uses: ./.github/actions/failed-pods-info
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
