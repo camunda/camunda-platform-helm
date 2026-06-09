@@ -93,10 +93,12 @@ integration:
       enabled: true
     - id: hub-legacy-upgrade
       shortname: hublu
-      enabled: false
+      tier: 2
+      enabled: true
     - id: hub-mixed
       shortname: hubmu
-      enabled: false
+      tier: 2
+      enabled: true
     - id: hub-external-db
       shortname: hubdb
       tier: 2

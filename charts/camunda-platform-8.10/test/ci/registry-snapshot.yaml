@@ -665,13 +665,14 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: hub-legacy
-          enabled: false
+          enabled: true
           shortname: hublu
           auth: keycloak
           flow: upgrade-minor
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -696,13 +697,14 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: hub-mixed
-          enabled: false
+          enabled: true
           shortname: hubmu
           auth: keycloak
           flow: upgrade-minor
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci

@@ -8,3 +8,14 @@ orchestration:
   env:
     - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
       value: "false"
+  security:
+    initialization:
+      # 8.10 upgrade scenarios start from 8.9 state where the Admin role may
+      # not yet grant Orchestration Admin component access to OIDC mapping rules.
+      authorizations:
+        - ownerType: MAPPING_RULE
+          ownerId: demo-user-mapping-rule
+          resourceType: COMPONENT
+          resourceId: "*"
+          permissions:
+            - ACCESS
