@@ -1,0 +1,74 @@
+// Command release-tools provides the data-transformation subcommands the Camunda
+// chart release pipelines use; each subcommand wraps a tested package in
+// scripts/camunda-core/pkg. It is a lean stdlib-flag dispatcher (no cobra):
+//
+//	release-tools <subcommand> [flags]
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	if len(os.Args) < 2 {
+		usage()
+		os.Exit(2)
+	}
+
+	var err error
+	switch sub := os.Args[1]; sub {
+	case "chart-images":
+		err = runChartImages(os.Args[2:])
+	case "update-matrix":
+		err = runUpdateMatrix(os.Args[2:])
+	case "resolve-tag":
+		err = runResolveTag(os.Args[2:])
+	case "harbor-tag":
+		err = runHarborTag(os.Args[2:])
+	case "component-image-versions":
+		err = runComponentImageVersions(os.Args[2:])
+	case "image-overrides":
+		err = runImageOverrides(os.Args[2:])
+	case "chart-metadata":
+		err = runChartMetadata(os.Args[2:])
+	case "release-version":
+		err = runReleaseVersion(os.Args[2:])
+	case "release-notes":
+		err = runReleaseNotes(os.Args[2:])
+	case "inject-values":
+		err = runInjectValues(os.Args[2:])
+	case "version-matrix":
+		err = runVersionMatrix(os.Args[2:])
+	case "-h", "--help", "help":
+		usage()
+		return
+	default:
+		fmt.Fprintf(os.Stderr, "release-tools: unknown subcommand %q\n", sub)
+		usage()
+		os.Exit(2)
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "release-tools: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func usage() {
+	fmt.Fprint(os.Stderr, `release-tools <subcommand> [flags]
+
+Subcommands:
+  chart-images    Derive the chart's declared image set from values.yaml (one ref per line)
+  update-matrix   Update a version-matrix.json entry from the chart's recorded camunda.io/chart-images annotation
+  resolve-tag     Resolve a rolling Harbor tag to concrete, validate, and emit its parts to $GITHUB_OUTPUT
+  harbor-tag      Idempotent Harbor artifact tag operations (digest|add|delete|ensure)
+  component-image-versions  Build the human-readable component-image-versions annotation block
+  image-overrides Collect *-image-tag override inputs into the imageOverrides annotation + HAS_IMAGE_OVERRIDES
+  chart-metadata  Read a pulled artifact's Chart.yaml and emit its metadata to $GITHUB_OUTPUT
+  release-version Compute the dev-build release version + dev tag from release-please trace → $GITHUB_ENV
+  release-notes   Generate RELEASE-NOTES.md + Chart.yaml release annotations (--main / --footer)
+  inject-values   Override component image tags in a chart's values.yaml from *_IMAGE_TAG env
+  version-matrix  Render version-matrix/camunda-<app>/README.md (--readme <app>) or version-matrix/README.md (--index)
+`)
+}

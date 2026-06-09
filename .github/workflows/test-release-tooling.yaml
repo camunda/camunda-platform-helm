@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+---
+name: "Test - Release Tooling"
+
+# Gates the Go that the release pipelines depend on (scripts/camunda-core +
+# scripts/release-tools). Deliberately UNFILTERED: the tooling's behavior is
+# coupled to inputs that live outside scripts/ (charts/**/values*.yaml,
+# charts/chart-versions.yaml, the committed version-matrix, the release-please
+# trace + Harbor API shapes), so a chart-only PR must still run these tests.
+# A `go test` run is seconds; always-run cannot be skipped by a chart-only PR.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go test + vet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+
+      # The chartmeta real-chart contract tests (TestImageSetRealChartContract,
+      # TestComponentImageVersionsRealCharts) run against the actual chart
+      # values here — catching chart-side structural drift at PR time, with no
+      # `helm template` render.
+      - name: camunda-core — vet + test
+        working-directory: scripts/camunda-core
+        run: |
+          go vet ./pkg/...
+          go test ./pkg/...
+
+      - name: release-tools — vet + test
+        working-directory: scripts/release-tools
+        run: |
+          go vet ./...
+          go test ./...

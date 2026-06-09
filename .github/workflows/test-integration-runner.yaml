@@ -128,18 +128,15 @@ on:
         description: "Enable QA configuration"
         required: false
         default: false
-        type: boolean
       test-upgrade:
         description: "Enable upgrade flow configuration"
         required: false
         default: false
         type: boolean
-      skip-e2e:
         description: "Skip E2E (Playwright smoke) tests for this scenario (declared in ci-test-config.yaml)"
         required: false
         default: false
         type: boolean
-      skip-it:
         description: "Skip integration (Playwright IT) tests for this scenario (declared in ci-test-config.yaml)"
         required: false
         default: false
@@ -1276,16 +1273,16 @@ jobs:
       - name: Validate and cleanup blob reports
         run: |
           echo "Validating blob report ZIP files..."
-          
+
           # Check if download succeeded and directory exists with files
           if [[ "${{ steps.download-reports.outcome }}" != "success" ]] || [[ ! -d "all-blob-reports" ]]; then
             echo "⚠️ No blob reports were downloaded (download outcome: ${{ steps.download-reports.outcome }})"
             mkdir -p all-blob-reports
             exit 0
           fi
-          
+
           cd all-blob-reports
-          
+
           for zip_file in *.zip; do
             if [[ -f "$zip_file" ]]; then
               if ! unzip -t "$zip_file" > /dev/null 2>&1; then
@@ -1296,10 +1293,10 @@ jobs:
               fi
             fi
           done
-          
+
           remaining_files=$(ls -1 *.zip 2>/dev/null | wc -l || echo "0")
           echo "Valid blob reports remaining: $remaining_files"
-          
+
           if [[ "$remaining_files" -eq 0 ]]; then
             echo "⚠️ No valid blob reports found to merge"
             exit 0
@@ -1314,7 +1311,7 @@ jobs:
             echo "<html><body><h1>No E2E test reports available</h1><p>All blob reports were corrupted or no tests ran.</p></body></html>" > playwright-report/index.html
             exit 0
           fi
-          
+
           npm install -g playwright
           npx playwright merge-reports --reporter html ./all-blob-reports
 

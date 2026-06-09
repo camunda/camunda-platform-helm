@@ -44,7 +44,7 @@ The charts are built, linted, and tested on every push to the main branch. The r
 1. Builds dev packages for all **active** chart versions (alpha + standard support).
 2. Computes the release version using `release-please --dry-run`.
 3. Applies release transformations (removes dev comments, badges).
-4. Generates release notes using `generate-release-notes.sh` (included in the package).
+4. Generates release notes using the `release-tools release-notes` command.
 5. Packages the chart with the **final release version** in `Chart.yaml`.
 6. Pushes to Harbor with dev tags.
 7. Signs with Cosign.
