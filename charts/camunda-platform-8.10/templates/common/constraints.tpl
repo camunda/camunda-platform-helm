@@ -324,7 +324,7 @@ The following values inside your values.yaml need to be set but were not:
            Orchestration secondaryStorage URLs are full scheme strings;
            Optimize database URLs are split into a separate .protocol field. */}}
     {{- range $url := (list .Values.orchestration.data.secondaryStorage.opensearch.url .Values.orchestration.data.secondaryStorage.elasticsearch.url) }}
-      {{- if and $url (hasPrefix "http://" $url) }}
+      {{- if and $url (hasPrefix "http://" (lower $url)) }}
         {{- $warningMessage := printf "%s %s %s"
             "[camunda][warning]"
             (printf "global.tls.caBundle is set, but the secondary-storage URL '%s' is plaintext http://." $url)
