@@ -203,6 +203,29 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 				s.Require().True(logsVolumeFound, "logs volume should exist as emptyDir")
 			},
 		},
+		{
+			Name: "TestContainerSetInitContainerResources",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":                                  "true",
+				"orchestration.migration.identity.secret.inlineSecret":                     "s",
+				"orchestration.migration.identity.waitContainer.resources.requests.cpu":    "25m",
+				"orchestration.migration.identity.waitContainer.resources.requests.memory": "32Mi",
+				"orchestration.migration.identity.waitContainer.resources.limits.cpu":      "50m",
+				"orchestration.migration.identity.waitContainer.resources.limits.memory":   "64Mi",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				initContainers := job.Spec.Template.Spec.InitContainers
+				s.Require().Equal(1, len(initContainers))
+				res := initContainers[0].Resources
+				s.Require().Equal(resource.MustParse("25m"), *res.Requests.Cpu())
+				s.Require().Equal(resource.MustParse("32Mi"), *res.Requests.Memory())
+				s.Require().Equal(resource.MustParse("50m"), *res.Limits.Cpu())
+				s.Require().Equal(resource.MustParse("64Mi"), *res.Limits.Memory())
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
