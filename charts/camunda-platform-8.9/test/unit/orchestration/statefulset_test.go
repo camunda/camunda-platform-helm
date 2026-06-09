@@ -1141,9 +1141,9 @@ func (s *StatefulSetTest) TestJKSDoesNotFireForSecondaryStorageOnlyTLS() {
 		{
 			Name: "secondaryStorage TLS triggers truststore path injection but NOT password — documented limit",
 			Values: map[string]string{
-				"orchestration.enabled":                                                                  "true",
-				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret":            "ssec-tls",
-				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey":         "externaldb.jks",
+				"orchestration.enabled": "true",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret":    "ssec-tls",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
 				// Customer also sets global jks.secret expecting it to apply — it does NOT for secondaryStorage-only TLS.
 				"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
 			},
@@ -1187,10 +1187,10 @@ func (s *StatefulSetTest) TestJKSWithModernTlsSecretPattern() {
 		{
 			Name: "Elasticsearch via tls.secret.existingSecret + jks.secret.inlineSecret",
 			Values: map[string]string{
-				"orchestration.enabled":                            "true",
-				"global.elasticsearch.tls.secret.existingSecret":   "es-tls-modern",
+				"orchestration.enabled":                             "true",
+				"global.elasticsearch.tls.secret.existingSecret":    "es-tls-modern",
 				"global.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
-				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+				"global.elasticsearch.tls.jks.secret.inlineSecret":  "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

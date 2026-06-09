@@ -49,13 +49,13 @@ func TestGoldenDefaultsTemplateIdentity(t *testing.T) {
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},
 			SetValues: map[string]string{
-				"global.identity.auth.enabled":                          "true",
-				"identity.enabled":                                      "true",
-				"global.identity.keycloak.url.protocol":                 "https",
-				"global.identity.keycloak.url.host":                     "keycloak.example.com",
-				"global.identity.keycloak.url.port":                     "8443",
-				"global.identity.keycloak.auth.adminUser":               "admin",
-				"global.identity.keycloak.auth.secret.existingSecret":   "kc-secret",
+				"global.identity.auth.enabled":                           "true",
+				"identity.enabled":                                       "true",
+				"global.identity.keycloak.url.protocol":                  "https",
+				"global.identity.keycloak.url.host":                      "keycloak.example.com",
+				"global.identity.keycloak.url.port":                      "8443",
+				"global.identity.keycloak.auth.adminUser":                "admin",
+				"global.identity.keycloak.auth.secret.existingSecret":    "kc-secret",
 				"global.identity.keycloak.auth.secret.existingSecretKey": "password",
 			},
 		})

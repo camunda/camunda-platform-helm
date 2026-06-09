@@ -768,7 +768,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 					"dnsPolicy should default to ClusterFirstWithHostNet when hostNetwork is enabled")
 			},
 		}, {
-			Name: "TestHostNetworkDisabledByDefault",
+			Name:   "TestHostNetworkDisabledByDefault",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet

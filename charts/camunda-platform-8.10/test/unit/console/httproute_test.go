@@ -103,11 +103,11 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHTTPRouteWithContextPath",
 			Values: map[string]string{
-				"global.gateway.enabled": "true",
-				"global.host":            "camunda.example.com",
-				"console.enabled":        "true",
-				"identity.enabled":       "true",
-				"camundaHub.console.contextPath":    "/console",
+				"global.gateway.enabled":         "true",
+				"global.host":                    "camunda.example.com",
+				"console.enabled":                "true",
+				"identity.enabled":               "true",
+				"camundaHub.console.contextPath": "/console",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

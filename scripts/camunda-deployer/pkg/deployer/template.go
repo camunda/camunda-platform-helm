@@ -50,7 +50,7 @@ func renderTemplates(ctx context.Context, o types.Options) error {
 		return fmt.Errorf("failed to create render output dir %q: %w", outputDir, err)
 	}
 	args = append(args, "--output-dir", outputDir)
-	
+
 	args = append(args, "--debug")
 
 	logging.Logger.Info().
@@ -66,5 +66,3 @@ func renderTemplates(ctx context.Context, o types.Options) error {
 	logging.Logger.Info().Str("outputDir", outputDir).Msg("Templates rendered successfully")
 	return nil
 }
-
-

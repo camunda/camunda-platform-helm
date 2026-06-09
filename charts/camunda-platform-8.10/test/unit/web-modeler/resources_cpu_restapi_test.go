@@ -54,9 +54,9 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                           "true",
-			"identity.enabled":                             "true",
-			"global.elasticsearch.enabled":                 "true",
+			"webModeler.enabled":                                      "true",
+			"identity.enabled":                                        "true",
+			"global.elasticsearch.enabled":                            "true",
 			"camundaHub.webModeler.restapi.mail.fromAddress":          "test@example.com",
 			"camundaHub.webModeler.restapi.resources.requests.cpu":    "300m",
 			"camundaHub.webModeler.restapi.resources.limits.cpu":      "1.5",
@@ -93,9 +93,9 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesCustomValues() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                           "true",
-			"identity.enabled":                             "true",
-			"global.elasticsearch.enabled":                 "true",
+			"webModeler.enabled":                                      "true",
+			"identity.enabled":                                        "true",
+			"global.elasticsearch.enabled":                            "true",
 			"camundaHub.webModeler.restapi.mail.fromAddress":          "test@example.com",
 			"camundaHub.webModeler.restapi.resources.requests.cpu":    "500m",
 			"camundaHub.webModeler.restapi.resources.limits.cpu":      "1000m",
