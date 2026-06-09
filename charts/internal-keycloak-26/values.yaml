@@ -10,7 +10,7 @@ nameOverride: ""
 image:
   registry: quay.io
   repository: keycloak/keycloak
-  tag: "26.3.5"
+  tag: "26.6.3"
   pullPolicy: IfNotPresent
 
 ## @param command Path to the kc.sh binary inside the image.
