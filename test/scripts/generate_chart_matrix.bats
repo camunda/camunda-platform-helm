@@ -238,3 +238,21 @@ get_first_version() {
   assert_output '["install"]'
 }
 
+@test "oidc+upgrade-minor is excluded from matrix" {
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger "8.10" --active-versions "$AV"
+  assert_success
+  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"oidc\")" matrix_versions.txt | jq -s .'
+  assert_success
+  assert_output '[]'
+}
+
+@test "yaml_block emits required GHA fields" {
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger "8.10" --active-versions "$AV"
+  assert_success
+  prev="$(yq '.matrix[0].camundaVersionPrevious' matrix_versions.txt)"
+  [[ "$prev" != "" && "$prev" != "null" ]]
+  gke="$(yq '.matrix[0].infraTypeGke' matrix_versions.txt)"
+  [[ "$gke" != "null" ]]
+}
