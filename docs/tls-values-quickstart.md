@@ -75,32 +75,35 @@ You should see:
 
 ## Updating the CA
 
-To rotate the CA bundle, replace the secret and re-run `helm upgrade`:
+To rotate the CA bundle, replace the secret and restart the Camunda workloads so the init container rebuilds the truststore from the new CA:
 
 ```bash
 kubectl -n "$NAMESPACE" delete secret camunda-ca-bundle
 kubectl -n "$NAMESPACE" create secret generic camunda-ca-bundle \
   --from-file=ca.crt=./new-ca-bundle.pem
 
-helm upgrade --install camunda camunda/camunda-platform -f values-tls.yaml -f your-values.yaml
+kubectl -n "$NAMESPACE" rollout restart statefulset,deployment
 ```
 
-The chart stamps a `checksum/ca-bundle` pod annotation derived from the secret's
-contents, so `helm upgrade` automatically rolls the Java components when the CA
-changes — the init container re-runs on each new pod and imports the new CA into
-a fresh truststore. No manual `rollout restart` needed.
+### Optional: automatic rollout on `helm upgrade`
 
-> **Note:** the checksum is computed by reading the live secret via Helm's `lookup`,
-> which only has cluster access during a real `helm upgrade`. So the auto-rollout
-> fires on `helm upgrade`, **not** on a raw `kubectl edit secret`, and **not** under
-> pure `helm template` rendering. If you change the secret outside Helm, trigger the
-> rollout yourself: `kubectl -n "$NAMESPACE" rollout restart statefulset,deployment`.
->
-> **GitOps (ArgoCD / Flux):** these render with `helm template` (no `lookup`), so the
-> `checksum/ca-bundle` annotation is constant and the auto-rollout does **not** fire
-> on CA rotation. Drive the restart from your GitOps stack instead — e.g. an Argo CD
-> `PostSync` hook or a Flux `kustomize` patch that rolls the Java workloads when the
-> CA Secret changes — or run the `kubectl rollout restart` above as part of rotation.
+Set `global.tls.caBundle.autoRollout: true` to have the chart stamp a `checksum/ca-bundle`
+pod annotation derived from the CA secret, so the next `helm upgrade` rolls the Java
+components automatically when the CA changes — no manual `rollout restart`.
+
+It's **off by default** because it uses Helm's `lookup` to read the secret at upgrade
+time, which has two important constraints:
+
+- **RBAC:** the identity running `helm upgrade` must have `get` on Secrets in the
+  release namespace. Without it, `lookup` raises a `Forbidden` error that is **not**
+  catchable in templates and **fails the `helm upgrade`**. Only enable `autoRollout`
+  where the upgrader has Secret-read access.
+- **GitOps:** Argo CD / Flux render with `helm template` (no cluster access for
+  `lookup`), so the annotation stays constant and the rollout never fires. Drive the
+  restart from your GitOps stack instead (an Argo CD `PostSync` hook or a Flux
+  `kustomize` patch), or use the `kubectl rollout restart` above.
+
+Trust itself never depends on this flag — it only controls the rollout convenience.
 
 > **Reminder:** `global.tls.caBundle` provides CA **trust**, not encryption. It does
 > not turn a plaintext datastore connection into TLS — point the datastore URL at

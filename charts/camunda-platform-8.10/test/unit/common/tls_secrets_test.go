@@ -482,16 +482,28 @@ func (s *tlsSecretsTest) TestCaBundleInitContainerSecurityContext() {
 func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "caBundle stamps a checksum/ca-bundle pod annotation for rotation auto-rollout",
+			Name:     "caBundle + autoRollout stamps a checksum/ca-bundle pod annotation",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: map[string]string{
+				"orchestration.enabled":                     "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+				"global.tls.caBundle.autoRollout":           "true",
+			},
+			Expected: map[string]string{
+				// lookup is empty under `helm template`, so the value is the stable
+				// sha256 of an empty object — presence is what we assert here.
+				"spec.template.metadata.annotations.checksum/ca-bundle": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+			},
+		},
+		{
+			Name:     "no checksum/ca-bundle annotation when caBundle is set but autoRollout is off (default)",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: map[string]string{
 				"orchestration.enabled":                     "true",
 				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
 			},
 			Expected: map[string]string{
-				// lookup is empty under `helm template`, so the value is the stable
-				// sha256 of an empty object — presence is what we assert here.
-				"spec.template.metadata.annotations.checksum/ca-bundle": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+				"spec.template.metadata.annotations.checksum/ca-bundle": "",
 			},
 		},
 		{
@@ -520,6 +532,7 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
 				"webModeler.restapi.mail.fromAddress":       "test@example.com",
 				"identity.enabled":                          "true",
 				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+				"global.tls.caBundle.autoRollout":           "true",
 			},
 			Expected: map[string]string{
 				"spec.template.metadata.annotations.checksum/ca-bundle": sentinel,
@@ -533,6 +546,7 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
 				"webModeler.restapi.mail.fromAddress":       "test@example.com",
 				"identity.enabled":                          "true",
 				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+				"global.tls.caBundle.autoRollout":           "true",
 				"webModeler.restapi.podAnnotations.my-anno": "v1",
 			},
 			Expected: map[string]string{

@@ -1162,7 +1162,12 @@ Usage (inside a pod template's metadata.annotations):
   {{- include "camundaPlatform.caBundleChecksumAnnotation" . | nindent 8 }}
 */}}
 {{- define "camundaPlatform.caBundleChecksumAnnotation" -}}
-{{- if eq (include "camundaPlatform.hasCaBundle" .) "true" -}}
+{{- /* Gated on autoRollout (default off): the lookup below requires `get` on
+       Secrets for the upgrading identity — a Forbidden error there is NOT
+       catchable in templates and fails `helm upgrade` — and is inert under
+       GitOps `helm template` rendering. Opt in only where the upgrader has
+       Secret-read RBAC. See global.tls.caBundle.autoRollout. */ -}}
+{{- if and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout -}}
 {{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.global.tls.caBundle.secret.existingSecret -}}
 {{- $key := .Values.global.tls.caBundle.secret.existingSecretKey | default "ca.crt" -}}
 {{- /* Hash ONLY the CA-bundle key's bytes, not the whole Secret. The full
