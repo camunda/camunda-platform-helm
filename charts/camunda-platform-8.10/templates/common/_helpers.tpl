@@ -1325,6 +1325,14 @@ restricted SCC assign a namespace-range UID.
       # on PATH. Reusing the component's own image means we cannot assume a
       # single layout, so resolve it at runtime and call keytool by full
       # path (it is not always on PATH even when JAVA_HOME is set).
+      # Fail with a clear message if neither is available, rather than letting
+      # the fallback resolve to "." and surface a confusing "cacerts: No such
+      # file or directory" later (e.g. a global.tls.caBundle.image override
+      # that lacks keytool).
+      if [ -z "${JAVA_HOME:-}" ] && ! command -v keytool >/dev/null 2>&1; then
+        echo "[ca-bundle-truststore-init] ERROR: no JAVA_HOME set and no keytool on PATH in this image. Set global.tls.caBundle.image to a JRE image that ships keytool." >&2
+        exit 1
+      fi
       JH="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v keytool)")")")}"
       KEYTOOL="$JH/bin/keytool"
       # Java 21 default cacerts is PKCS12; copy it as-is so we keep all
