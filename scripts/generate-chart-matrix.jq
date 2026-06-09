@@ -67,7 +67,6 @@ def yaml_block($version; $version_prev):
   | (if $platforms == "" then "gke" else $platforms end) as $platforms
   | ($e.exclude // [] | join("|")) as $exclude_str
   | ($e.features // [] | join(",")) as $features_str
-  | ($e.infraType // "") as $infra_single
   | (map(select(.platform == "gke") | .infraType) | first // "preemptible") as $infra_gke
   | (map(select(.platform == "eks") | .infraType) | first // "preemptible") as $infra_eks
   | "  - version: \"\($version)\"\n" +
