@@ -84,9 +84,19 @@ jobs:
       #
       # Post Upgrade Tasks.
       #
+      # SUPPORTED_CHANGED = CHANGED_CHARTS minus out-of-support chart versions.
+      # The exclusion list is derived dynamically from charts/chart-versions.yaml
+      # (supportExtended + endOfLife), so updating that file is the only thing
+      # needed when a version transitions to end-of-support — no changes here.
       - name: Set vars
         run: |
-          echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
+          CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')
+          echo "CHANGED_CHARTS=${CHANGED_CHARTS}" | tee -a $GITHUB_ENV
+          # Build exclude pattern from supportExtended + endOfLife in charts/chart-versions.yaml.
+          # Dots are escaped (8\.6 not 8.6) so the regex matches literal version strings only.
+          EXCLUDED_VERSIONS=$(yq '.camundaVersions.supportExtended + .camundaVersions.endOfLife | map(. | sub("\.", "\\.")) | join("|")' charts/chart-versions.yaml)
+          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev "camunda-platform-(${EXCLUDED_VERSIONS})([^0-9]|$)" | tr '\n' ' ' | xargs || true)
+          echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a $GITHUB_ENV
       - name: Run go mod tidy
         run: |
           set -euo pipefail
@@ -102,27 +112,24 @@ jobs:
           echo "✅ 'go mod tidy' completed successfully"
       - name: Update golden files
         run: |
-          if [ -n "${CHANGED_CHARTS}" ]; then
-            chartPath="${CHANGED_CHARTS}" \
-              make go.update-golden-only
+          if [ -n "${SUPPORTED_CHANGED}" ]; then
+            chartPath="${SUPPORTED_CHANGED}" make go.update-golden-only
           else
-            make go.update-golden-only
+            echo "No supported chart changes, skipping golden file update."
           fi
       - name: Update README
         run: |
-          if [ -n "${CHANGED_CHARTS}" ]; then
-            chartPath="${CHANGED_CHARTS}" \
-              make helm.readme-update
+          if [ -n "${SUPPORTED_CHANGED}" ]; then
+            chartPath="${SUPPORTED_CHANGED}" make helm.readme-update
           else
-            make helm.readme-update
+            echo "No supported chart changes, skipping README update."
           fi
       - name: Update Schema
         run: |
-          if [ -n "${CHANGED_CHARTS}" ]; then
-            chartPath="${CHANGED_CHARTS}" \
-              make helm.schema-update
+          if [ -n "${SUPPORTED_CHANGED}" ]; then
+            chartPath="${SUPPORTED_CHANGED}" make helm.schema-update
           else
-            make helm.schema-update
+            echo "No supported chart changes, skipping schema update."
           fi
       - name: Git pull
         run: git pull --rebase --autostash .
