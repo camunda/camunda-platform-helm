@@ -25,9 +25,9 @@
 #
 # When is *every* chart built?
 # ---------------------------
-# If the change touches `.github/workflows/**`, `.github/actions/**`, or 
-# `.github/config/**`, the CI pipeline or shared configuration may have changed. 
-# In the absence of guarantees we take the conservative route and rebuild every 
+# If the change touches `.github/workflows/**`, `.github/actions/**`, or
+# `.github/config/**`, the CI pipeline or shared configuration may have changed.
+# In the absence of guarantees we take the conservative route and rebuild every
 # chart to retain confidence.
 #
 # Manual override
@@ -78,6 +78,22 @@ runs:
     - name: Get chart versions
       id: get-chart-versions
       uses: ./.github/actions/get-chart-versions
+    # generate-chart-matrix.sh shells out to `deploy-camunda matrix list`
+    # (per ADR 0093 §5 cleanup, issue #6302). Build the binary so the
+    # wrapper's PATH lookup succeeds; avoids the per-invocation `go run`
+    # compile cost in the fallback path.
+    - name: Setup Go
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      with:
+        go-version-file: scripts/deploy-camunda/go.mod
+        cache: true
+        cache-dependency-path: scripts/deploy-camunda/go.sum
+    - name: Build deploy-camunda
+      shell: bash
+      run: |
+        mkdir -p "$HOME/.local/bin"
+        (cd scripts/deploy-camunda && go build -o "$HOME/.local/bin/deploy-camunda" .)
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
     - name: Generate matrix
       shell: bash
       id: set-chart-versions

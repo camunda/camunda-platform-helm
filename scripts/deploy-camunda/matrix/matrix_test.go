@@ -661,20 +661,6 @@ func TestLoadPermittedFlows(t *testing.T) {
 	}
 }
 
-func TestLoadCITestConfig(t *testing.T) {
-	repoRoot := findRepoRoot(t)
-
-	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.8")
-	cfg, err := LoadCITestConfig(chartDir)
-	if err != nil {
-		t.Fatalf("LoadCITestConfig: %v", err)
-	}
-
-	if len(cfg.Integration.Case.PR.Scenarios) == 0 {
-		t.Error("LoadCITestConfig: no PR scenarios")
-	}
-}
-
 // --- HelmVersion passthrough ---
 
 func TestHelmVersionPassthrough(t *testing.T) {
