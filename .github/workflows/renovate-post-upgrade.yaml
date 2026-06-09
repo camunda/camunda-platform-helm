@@ -88,8 +88,9 @@ jobs:
         run: |
           CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')
           echo "CHANGED_CHARTS=${CHANGED_CHARTS}" | tee -a $GITHUB_ENV
-          # Filter out out-of-support versions (8.6 and below).
-          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev 'camunda-platform-8\.[3-6]([^0-9]|$)' | tr '\n' ' ' | xargs || true)
+          # Build exclude pattern from supportExtended + endOfLife in charts/chart-versions.yaml.
+          EOL_VERSIONS=$(yq '.camundaVersions.supportExtended + .camundaVersions.endOfLife | join("|")' charts/chart-versions.yaml)
+          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev "camunda-platform-(${EOL_VERSIONS})([^0-9]|$)" | tr '\n' ' ' | xargs || true)
           echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a $GITHUB_ENV
       - name: Run go mod tidy
         run: |
