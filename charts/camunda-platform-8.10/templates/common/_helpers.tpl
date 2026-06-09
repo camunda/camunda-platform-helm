@@ -1335,6 +1335,14 @@ restricted SCC assign a namespace-range UID.
       fi
       JH="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v keytool)")")")}"
       KEYTOOL="$JH/bin/keytool"
+      # Validate the derivation before using it. The keytool-on-PATH heuristic
+      # mis-resolves when keytool is a non-symlink binary (e.g. /usr/bin/keytool
+      # gives JH=/usr), so confirm cacerts and keytool actually exist at $JH and
+      # fail with an actionable message rather than a confusing later error.
+      if [ ! -f "$JH/lib/security/cacerts" ] || [ ! -x "$KEYTOOL" ]; then
+        echo "[ca-bundle-truststore-init] ERROR: could not locate a JRE at JH='$JH' (expected \$JH/lib/security/cacerts and \$JH/bin/keytool). Set JAVA_HOME in the image, or set global.tls.caBundle.image to a JRE image with a standard layout." >&2
+        exit 1
+      fi
       # Java 21 default cacerts is PKCS12; copy it as-is so we keep all
       # public CAs (including any baked into this image) and add the user CA.
       cp -L "$JH/lib/security/cacerts" /var/camunda/tls-truststore/cacerts
