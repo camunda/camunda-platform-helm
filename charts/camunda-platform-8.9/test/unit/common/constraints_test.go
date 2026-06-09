@@ -214,3 +214,136 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestLegacyJksTruststoreFieldsRenderWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestSecondaryStorageElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                    "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                 "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestOptimizeElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"optimize.database.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestOptimizeOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"optimize.database.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			// Minimal config: only existingSecret set, existingSecretKey defaults to "".
+			// Pins the round-2 P1 fix: deprecation gate must fire on existingSecret-only,
+			// not require both fields (which the old hasSecretConfig-based gate did).
+			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk_ExistingSecretOnly",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":           "elasticsearch",
+				"global.elasticsearch.tls.jks.secret.existingSecret": "my-jks-pw-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalOpensearchTlsJksSecretRendersOk_ExistingSecretOnly",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":        "opensearch",
+				"global.opensearch.tls.jks.secret.existingSecret": "my-jks-pw-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			// Exercises the inlineSecret branch of the gate
+			// (or .secret.existingSecret .secret.inlineSecret).
+			// Both branches must fire the warning independently.
+			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk_InlineSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":         "elasticsearch",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalOpensearchTlsJksSecretRendersOk_InlineSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":      "opensearch",
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":       "elasticsearch",
+				"global.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":    "opensearch",
+				"global.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk_Elasticsearch",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                    "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+				"global.tls.caBundle.secret.existingSecret":                                   "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk_Opensearch",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                 "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+				"global.tls.caBundle.secret.existingSecret":                                "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
