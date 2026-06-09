@@ -20,8 +20,8 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.9.5
-    digest: "sha256:02dce20fa2fd14b7cc530fd53bf4be96645945a94043d54402913e500c747d44"
+    tag: 8.9.7
+    digest: "sha256:8f1887417eb3cd28c5e5ebbcc8750e61a2bdcba3bf843de41b19af87e20582c9"
 
 #
 # Web Modeler
@@ -32,15 +32,15 @@ webModeler:
   restapi:
     image:
       repository: camunda/web-modeler-restapi
-      tag: 8.9.3
-      digest: "sha256:bc9483523a58334574b05cb32c92c0b7035e52a07f392ae702f237391eca9d85"
+      tag: 8.9.4
+      digest: "sha256:4429f50ba0d17918125207f095efb737e42dc95a5cd2704be6da0f5e3ee2adc7"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
     image:
       repository: camunda/web-modeler-websockets
-      tag: 8.9.3
-      digest: "sha256:8c5120e1260291eabff34c16bd6f580dfac9f5963eead4ec5627e4825f120673"
+      tag: 8.9.4
+      digest: "sha256:974a29b21ae1e1936db46577f4c64326e0fc63fe3e77c40cece137bd67f65b2e"
 
 #
 # Orchestration Cluster
@@ -50,8 +50,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.9.5
-    digest: "sha256:0fae3b9568e99214d609c4e170a5e97896c775038bbb06af0097f2bec4f7b3cb"
+    tag: 8.9.7
+    digest: "sha256:1f76020275d38456721abafbe6903a1af3ddd449f241eb34c56dc19026174e29"
 
 #
 # Identity
