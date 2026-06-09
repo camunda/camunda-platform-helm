@@ -93,8 +93,9 @@ jobs:
           CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')
           echo "CHANGED_CHARTS=${CHANGED_CHARTS}" | tee -a $GITHUB_ENV
           # Build exclude pattern from supportExtended + endOfLife in charts/chart-versions.yaml.
-          EOL_VERSIONS=$(yq '.camundaVersions.supportExtended + .camundaVersions.endOfLife | join("|")' charts/chart-versions.yaml)
-          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev "camunda-platform-(${EOL_VERSIONS})([^0-9]|$)" | tr '\n' ' ' | xargs || true)
+          # Dots are escaped (8\.6 not 8.6) so the regex matches literal version strings only.
+          EXCLUDED_VERSIONS=$(yq '.camundaVersions.supportExtended + .camundaVersions.endOfLife | map(. | sub("\.", "\\.")) | join("|")' charts/chart-versions.yaml)
+          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev "camunda-platform-(${EXCLUDED_VERSIONS})([^0-9]|$)" | tr '\n' ' ' | xargs || true)
           echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a $GITHUB_ENV
       - name: Run go mod tidy
         run: |
