@@ -176,7 +176,13 @@ create_or_replace_secret "elasticsearch-jks" \
   --from-file="externaldb.jks=$WORK_DIR/externaldb.jks" \
   --from-literal="truststore-password=$TRUSTSTORE_PASSWORD"
 
+# PEM CA bundle for the global.tls.caBundle path (elasticsearch-self-signed-os-trust
+# scenario). Unused by the legacy-JKS scenario; harmless to create unconditionally.
+create_or_replace_secret "elasticsearch-tls-ca" \
+  --from-file="ca.crt=$WORK_DIR/ca.crt"
+
 echo "[elasticsearch-tls] Done. Created secrets:"
 echo "  - elasticsearch-tls-certs     (JKS keystore + truststore for ES nodes)"
 echo "  - elasticsearch-tls-passwords (passwords for ES node stores)"
 echo "  - elasticsearch-jks           (JKS truststore for Camunda components)"
+echo "  - elasticsearch-tls-ca        (PEM CA bundle for global.tls.caBundle)"

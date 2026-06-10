@@ -51,6 +51,9 @@ integration:
     - id: elasticsearch-self-signed
       shortname: esss
       enabled: false
+    - id: elasticsearch-self-signed-os-trust
+      shortname: esot
+      enabled: true
     - id: gateway-keycloak
       shortname: gatkc
       tier: 2
