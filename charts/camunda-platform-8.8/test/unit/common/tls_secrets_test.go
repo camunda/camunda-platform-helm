@@ -322,6 +322,85 @@ func (s *tlsSecretsTest) TestCaBundleOptimize() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *tlsSecretsTest) TestCaBundleImporter() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle wires the migration importer deployment (JVM)",
+			Template: "templates/orchestration/importer-deployment.yaml",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":      "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":                                                                "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":                                                              "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].volumeMounts[?(@.name=='ca-bundle-truststore')].mountPath": "/var/camunda/tls-truststore",
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *tlsSecretsTest) TestCaBundleMigrationDataJob() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle wires the data-migration job (JVM): init container + SSL_CERT_FILE + truststore JAVA_TOOL_OPTIONS",
+			Template: "templates/orchestration/migration-data-job.yaml",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":      "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":                                                                "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":                                                              "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].volumeMounts[?(@.name=='ca-bundle-truststore')].mountPath": "/var/camunda/tls-truststore",
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *tlsSecretsTest) TestCaBundleMigrationIdentityJob() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle wires the identity-migration job (JVM): init container + SSL_CERT_FILE + truststore JAVA_TOOL_OPTIONS",
+			Template: "templates/orchestration/migration-identity-job.yaml",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":  "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":                                                                "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":                                                              "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='JAVA_TOOL_OPTIONS')].value":                                                          "-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit",
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].volumeMounts[?(@.name=='ca-bundle-truststore')].mountPath": "/var/camunda/tls-truststore",
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *tlsSecretsTest) TestCaBundleWebModelerWebapp() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle wires web-modeler webapp (Node): SSL_CERT_FILE + NODE_EXTRA_CA_CERTS + bundle volume, no truststore",
+			Template: "templates/web-modeler/deployment-webapp.yaml",
+			Values: map[string]string{
+				"webModeler.enabled":                        "true",
+				"webModeler.restapi.mail.fromAddress":       "test@example.com",
+				"identity.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":         "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":       "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/etc/camunda/tls/ca.crt",
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func TestTLSSecretsTestSuite(t *testing.T) {
 	suite.Run(t, new(tlsSecretsTest))
 }

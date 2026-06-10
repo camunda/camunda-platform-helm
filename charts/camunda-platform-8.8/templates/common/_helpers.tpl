@@ -1238,24 +1238,6 @@ Usage (inside an env: list):
 {{- end -}}
 
 {{/*
-caBundleSslCertFileEnv
-SSL_CERT_FILE only — for components that already manage their own
-NODE_EXTRA_CA_CERTS via component-specific values (Console pins the env
-var to its own server cert path; injecting another NODE_EXTRA_CA_CERTS
-from this helper would emit a duplicate env name with last-wins
-behavior). Use this variant on those components.
-
-Usage (inside an env: list):
-  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-  {{- include "camundaPlatform.caBundleSslCertFileEnv" . | nindent 12 }}
-  {{- end }}
-*/}}
-{{- define "camundaPlatform.caBundleSslCertFileEnv" -}}
-- name: SSL_CERT_FILE
-  value: /etc/camunda/tls/ca.crt
-{{- end -}}
-
-{{/*
 caBundleInitContainer
 Emits an init container that builds a Java truststore (PKCS12-format JKS)
 combining the system $JAVA_HOME/lib/security/cacerts with the user CA

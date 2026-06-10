@@ -40,7 +40,6 @@ spec:
       imagePullSecrets:
         []
       initContainers:
-        []
       containers:
         - name: orchestration-migration-importer
           image: camunda/camunda:8.8.27

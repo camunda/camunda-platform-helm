@@ -23,11 +23,17 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
         checksum/env-vars: {{ include (print $.Template.BasePath "/orchestration/importer-configmap-env-vars.yaml") . | sha256sum }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
     spec:
       imagePullSecrets:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.orchestration))) | nindent 8 }}
+        {{- end }}
+        {{- with (coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: orchestration-migration-importer
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
@@ -79,6 +85,9 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "orchestration" ) | nindent 12 }}
+            {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ printf "%s %s" .Values.orchestration.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.orchestration.javaOpts | quote }}
@@ -87,6 +96,9 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -200,6 +212,10 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
               readOnly: true
             {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
             {{- if .Values.orchestration.importer.extraVolumeMounts }}
             {{ .Values.orchestration.importer.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -233,6 +249,10 @@ spec:
             items:
               - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
                 path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.orchestration.importer.extraVolumes }}
           {{ .Values.orchestration.importer.extraVolumes | toYaml | nindent 8 }}

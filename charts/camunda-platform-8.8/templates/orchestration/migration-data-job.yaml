@@ -21,6 +21,10 @@ spec:
       {{- if .Values.orchestration.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
+      {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+      initContainers:
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.orchestration))) | nindent 8 }}
+      {{- end }}
       containers:
         - name: camunda-migration-data
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
@@ -48,6 +52,12 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "orchestration" ) | nindent 12 }}
+            {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ printf "%s %s" .Values.orchestration.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
@@ -72,6 +82,10 @@ spec:
             - name: keystore
               mountPath: /usr/local/camunda/certificates/externaldb.jks
               subPath: externaldb.jks
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
             {{- if .Values.orchestration.migration.data.extraVolumeMounts }}
             {{- .Values.orchestration.migration.data.extraVolumeMounts | toYaml | nindent 12 }}
@@ -108,6 +122,10 @@ spec:
           secret:
             secretName: {{ .Values.global.opensearch.tls.existingSecret }}
             optional: false
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.orchestration.migration.data.extraVolumes }}
         {{- .Values.orchestration.migration.data.extraVolumes | toYaml | nindent 8 }}
