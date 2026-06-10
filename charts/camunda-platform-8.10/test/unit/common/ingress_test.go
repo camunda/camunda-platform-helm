@@ -222,6 +222,99 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("tls-secret", ingress.Spec.TLS[0].SecretName)
 			},
 		},
+		{
+			Name: "TestHttpIngressOmitsOrchestrationPathWithServerTLS",
+			Values: map[string]string{
+				"global.ingress.enabled":    "true",
+				"orchestration.enabled":     "true",
+				"orchestration.contextPath": "/orchestration",
+				"orchestration.env[0].name": "SERVER_SSL_ENABLED",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.env[0].value=true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				require.NotContains(t, output, "path: /orchestration")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+type OrchestrationHttpIngressTemplateTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+	templates []string
+	extraArgs []string
+}
+
+func TestOrchestrationHttpIngressTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &OrchestrationHttpIngressTemplateTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{"templates/common/ingress-orchestration-http.yaml"},
+	})
+}
+
+func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestOrchestrationHttpIngressWithServerTLS",
+			Values: map[string]string{
+				"global.ingress.enabled":                     "true",
+				"global.host":                                "camunda.example.com",
+				"global.ingress.tls.enabled":                 "true",
+				"global.ingress.annotations.test-annotation": "test-value",
+				"orchestration.enabled":                      "true",
+				"orchestration.contextPath":                  "/orchestration",
+				"orchestration.env[0].name":                  "SERVER_SSL_ENABLED",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.env[0].value=true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				require.Equal(t, "camunda-platform-test-orchestration-http", ingress.Name)
+				require.Equal(t, "HTTPS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				require.Equal(t, "test-value", ingress.Annotations["test-annotation"])
+				require.Equal(t, "camunda.example.com", ingress.Spec.Rules[0].Host)
+				require.Equal(t, "/orchestration", ingress.Spec.Rules[0].HTTP.Paths[0].Path)
+				require.Equal(t, "camunda-platform-test-zeebe-gateway", ingress.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Name)
+				require.Equal(t, int32(8080), ingress.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Number)
+				require.Equal(t, "camunda.example.com", ingress.Spec.TLS[0].Hosts[0])
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressDisabledWithoutServerTLS",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: nil,
+			},
+			Values: map[string]string{
+				"global.ingress.enabled":    "true",
+				"orchestration.enabled":     "true",
+				"orchestration.contextPath": "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				require.NotContains(t, output, "name: camunda-platform-test-orchestration-http")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -341,6 +434,25 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("grpc", ingress.Labels["protocol"], "grpc-specific labels should be present")
 				// standard chart labels should still be there for non-conflicting keys
 				s.Require().Contains(ingress.Labels, "app.kubernetes.io/name")
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressUsesSecureBackendProtocolWhenOrchestrationGrpcTlsIsEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-orchestration-grpc-tls.yaml")},
+			Values: map[string]string{
+				"orchestration.enabled":                              "true",
+				"orchestration.ingress.grpc.enabled":                 "true",
+				"orchestration.ingress.grpc.annotations.custom\\.io": "kept",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				s.Require().Equal("kept", ingress.Annotations["custom.io"])
 			},
 		},
 	}

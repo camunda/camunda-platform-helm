@@ -484,6 +484,39 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	}
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOrchestrationGrpcTlsIsEnabled() {
+	values := map[string]string{
+		"identity.enabled":                              "true",
+		"global.elasticsearch.enabled":                  "true",
+		"global.zeebeClusterName":                       "test-zeebe",
+		"global.ingress.enabled":                        "true",
+		"global.ingress.tls.enabled":                    "true",
+		"global.host":                                   "example.com",
+		"orchestration.contextPath":                     "/orchestration",
+		"orchestration.data.secondaryStorage.type":      "elasticsearch",
+		"orchestration.service.grpcPort":                "26600",
+		"orchestration.service.httpPort":                "8090",
+		"orchestration.security.authorizations.enabled": "false",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		ValuesFiles:    []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-orchestration-grpc-tls.yaml")},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	require.NoError(s.T(), err)
+
+	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
 	// given
 	values := map[string]string{

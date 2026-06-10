@@ -1,0 +1,6 @@
+script: pre-install-orchestration-tls.sh
+description: |
+  Generates a self-signed certificate/key pair for the Orchestration
+  Cluster gRPC endpoint, creates the server TLS Secret, and creates
+  a truststore Secret consumed by Web Modeler restapi. The Identity/WebModeler
+  PostgreSQL database is provided by the `postgresql` companion dependency.
