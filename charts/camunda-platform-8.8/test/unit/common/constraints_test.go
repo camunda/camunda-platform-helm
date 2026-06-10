@@ -143,3 +143,25 @@ func (s *ConstraintTemplateTest) TestCaBundleAndLegacyJksRenderWithoutCrash() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestCaBundleConsoleCertKeyFilenameWarningRendersOk() {
+	testCases := []testhelpers.TestCase{
+		{
+			// Exercises the constraints warning that fires when caBundle is set
+			// AND console.tls.certKeyFilename is configured (the latter no longer
+			// contributes trust). Asserts the warning path renders without crashing.
+			Name: "TestCaBundleWithConsoleCertKeyFilenameRendersOk",
+			Values: map[string]string{
+				"console.enabled":                           "true",
+				"identity.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "camunda-ca-bundle",
+				"console.tls.certKeyFilename":               "tls.crt",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
