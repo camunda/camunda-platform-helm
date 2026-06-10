@@ -60,6 +60,9 @@ integration:
     - id: elasticsearch-self-signed-upgrade
       shortname: esss
       enabled: false
+    - id: elasticsearch-self-signed-os-trust
+      shortname: esot
+      enabled: true
     - id: keycloak-original-upgrade-tier2
       shortname: keyc
       tier: 2

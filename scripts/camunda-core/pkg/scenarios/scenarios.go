@@ -77,7 +77,7 @@ func (c *DeploymentConfig) Validate() error {
 	// persistence layer (ResolvePaths skips missing files), so the deploy
 	// proceeds with no TLS wiring. Treated as an 8.10-only scope intentionally;
 	// when 8.10 becomes the only supported series this comment can be removed.
-	validPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "elasticsearch-self-signed-os-trust", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}

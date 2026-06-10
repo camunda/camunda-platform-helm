@@ -167,6 +167,28 @@ integration:
               creates the elasticsearch-tls-certs, elasticsearch-tls-passwords,
               and elasticsearch-jks Secrets consumed by the Elasticsearch
               StatefulSet's TLS config.
+        - name: elasticsearch-self-signed-os-trust
+          enabled: true
+          shortname: esot
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-self-signed-os-trust
+          pre-install:
+            script: pre-install-elasticsearch-self-signed-os-trust.sh
+            description: |
+              Same self-signed Elasticsearch infra as elasticsearch-self-signed
+              (reuses the cert generator, which additionally creates the
+              elasticsearch-tls-ca PEM Secret). This scenario validates the
+              backported global.tls.caBundle path: Camunda — including the importer
+              and data-migration workloads — trusts the self-signed ES endpoint solely
+              via the chart-built JVM truststore (JDK cacerts + the user CA), with NO
+              legacy JKS tls.secret configured.
         - name: keycloak-original
           enabled: false
           shortname: keyc
