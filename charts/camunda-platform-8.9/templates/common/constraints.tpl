@@ -398,6 +398,19 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
+    {{/* (4) Console (Node.js) pins NODE_EXTRA_CA_CERTS to its own
+           console.tls.certKeyFilename when caBundle is unset; once caBundle is
+           set, NODE_EXTRA_CA_CERTS points at the bundle instead, so a configured
+           certKeyFilename no longer contributes trust. */}}
+    {{- if and .Values.console.enabled .Values.console.tls.certKeyFilename }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "global.tls.caBundle is set, so Console's NODE_EXTRA_CA_CERTS now points at the CA bundle and console.tls.certKeyFilename is no longer used for trust."
+          "If that cert's CA must still be trusted, include it in the global.tls.caBundle bundle."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}

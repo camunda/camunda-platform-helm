@@ -1357,7 +1357,10 @@ restricted SCC assign a namespace-range UID.
       # /var/camunda — readOnlyRootFilesystem is set on this container.
       WORK=/var/camunda/tls-truststore/work
       mkdir -p "$WORK"
+      # Strip trailing CR first so a CRLF (Windows-authored) PEM still matches
+      # the BEGIN/END markers and the split cert files stay LF-clean for keytool.
       awk 'BEGIN{n=0; out=""}
+           { sub(/\r$/, "") }
            /-----BEGIN CERTIFICATE-----/ {n++; out=sprintf("'"$WORK"'/cert-%02d.pem", n)}
            out!="" {print > out}
            /-----END CERTIFICATE-----/ {close(out); out=""}' \
