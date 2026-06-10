@@ -886,6 +886,68 @@ func (s *tlsSecretsTest) TestCaBundleConsole() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *tlsSecretsTest) TestCaBundleConnectors() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle wires connectors: volume, SSL_CERT_FILE, NODE_EXTRA_CA_CERTS, truststore JAVA_TOOL_OPTIONS, and init container",
+			Template: "templates/connectors/deployment.yaml",
+			Values: map[string]string{
+				"connectors.enabled":                        "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":                                                                "my-ca-bundle",
+				"spec.template.spec.containers[0].volumeMounts[?(@.name=='ca-bundle')].mountPath":                                                     "/etc/camunda/tls",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":                                                              "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value":                                                        "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='JAVA_TOOL_OPTIONS')].value":                                                          "-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit",
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].volumeMounts[?(@.name=='ca-bundle-truststore')].mountPath": "/var/camunda/tls-truststore",
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *tlsSecretsTest) TestCaBundleIdentity() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle wires identity: volume, SSL_CERT_FILE, truststore JAVA_TOOL_OPTIONS, and init container",
+			Template: "templates/identity/deployment.yaml",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"global.security.authentication.method":     "oidc",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":                                                                "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":                                                              "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='JAVA_TOOL_OPTIONS')].value":                                                          "-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit",
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].volumeMounts[?(@.name=='ca-bundle-truststore')].mountPath": "/var/camunda/tls-truststore",
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *tlsSecretsTest) TestCaBundleOptimize() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle wires optimize: volume, SSL_CERT_FILE, truststore mount, and init container",
+			Template: "templates/optimize/deployment.yaml",
+			Values: map[string]string{
+				"optimize.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":                       "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":                     "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].volumeMounts[?(@.name=='ca-bundle-truststore')].mountPath": "/var/camunda/tls-truststore",
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func TestTLSSecretsTestSuite(t *testing.T) {
 	suite.Run(t, new(tlsSecretsTest))
 }
