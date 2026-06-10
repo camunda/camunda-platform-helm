@@ -1,5 +1,60 @@
 # Changelog
 
+## [14.4.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.3.0...camunda-platform-8.9-14.4.0) (2026-06-04)
+
+
+### Features
+
+* **8.9:** add orchestration.hostNetwork value ([#6248](https://github.com/camunda/camunda-platform-helm/issues/6248)) ([d9a2e41](https://github.com/camunda/camunda-platform-helm/commit/d9a2e416d58b9c04770b3ead3fed2ceee7b0aec5))
+* added service account labels ([#5877](https://github.com/camunda/camunda-platform-helm/issues/5877)) ([a616db5](https://github.com/camunda/camunda-platform-helm/commit/a616db54ef09b5f45ca1db868bc7918b05b18c7c))
+
+
+### Bug Fixes
+
+* **8.8,8.9,8.10:** allow Recreate strategy for Web Modeler persistence ([#6014](https://github.com/camunda/camunda-platform-helm/issues/6014)) ([2ef2760](https://github.com/camunda/camunda-platform-helm/commit/2ef27600438e33e23552be8152399d3a7bd53307))
+* **8.9,8.10:** expose cpu keys in connectors/console resources schema ([#6229](https://github.com/camunda/camunda-platform-helm/issues/6229)) ([2d67c82](https://github.com/camunda/camunda-platform-helm/commit/2d67c82d4d50487c70ba477cb800f9f51fd2ac7a))
+* align upload size with Zeebe message limits ([#6279](https://github.com/camunda/camunda-platform-helm/issues/6279)) ([f61f37c](https://github.com/camunda/camunda-platform-helm/commit/f61f37c7cecdb073d4330a6a15f0c57fec0f1f78))
+* **ci:** remove $FLOW suffix from opensearch-embedded index prefixes in 8.8/8.9/8.10 ([#6179](https://github.com/camunda/camunda-platform-helm/issues/6179)) ([ef9c97c](https://github.com/camunda/camunda-platform-helm/commit/ef9c97c05d51a458f24d00eccd402b8c2adfba7a))
+* guard legacy ES exporter on global.elasticsearch.enabled ([#6244](https://github.com/camunda/camunda-platform-helm/issues/6244)) ([8a96247](https://github.com/camunda/camunda-platform-helm/commit/8a96247db85844273b2509e7cd7d85629b1dffe8))
+* **schema:** allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets ([#6234](https://github.com/camunda/camunda-platform-helm/issues/6234)) ([368b4ac](https://github.com/camunda/camunda-platform-helm/commit/368b4ac9c6b3031b21d1674df14c32c030308c7f))
+
+
+### Documentation
+
+* **version-matrix:** add helm CLI versions per chart minor ([#6155](https://github.com/camunda/camunda-platform-helm/issues/6155)) ([20faed1](https://github.com/camunda/camunda-platform-helm/commit/20faed1e517e7581a903057c51fa131c790b44db))
+
+
+### Dependencies
+
+* update hashicorp/vault-action action to v4 ([#6176](https://github.com/camunda/camunda-platform-helm/issues/6176)) ([5c4f611](https://github.com/camunda/camunda-platform-helm/commit/5c4f611acff4d3bcdea89ae8e6e5706078fb06fb))
+* update module github.com/jackc/pgx/v5 to v5.9.2 [security] ([#5843](https://github.com/camunda/camunda-platform-helm/issues/5843)) ([b37bb34](https://github.com/camunda/camunda-platform-helm/commit/b37bb34c7b90ed6187598c92f6a0069801a810dc))
+* update patch-updates (patch) ([#5837](https://github.com/camunda/camunda-platform-helm/issues/5837)) ([baee40a](https://github.com/camunda/camunda-platform-helm/commit/baee40afccd73d91a8943f2723017ee80116bc41))
+* update patch-updates (patch) ([#6274](https://github.com/camunda/camunda-platform-helm/issues/6274)) ([2aeb314](https://github.com/camunda/camunda-platform-helm/commit/2aeb314a1e12828c25f47cf23141d1272b96852a))
+
+
+### Refactors
+
+* **8.10:** drop bundled Bitnami subcharts ([#6146](https://github.com/camunda/camunda-platform-helm/issues/6146)) ([4374cff](https://github.com/camunda/camunda-platform-helm/commit/4374cff37d2e3b7cfaa2e661b0893705e5fbc14e))
+
+## [14.3.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.2.0...camunda-platform-8.9-14.3.0) (2026-05-20)
+
+
+### Features
+
+* explicit lifecycle fixtures in ci-test-config.yaml ([#6103](https://github.com/camunda/camunda-platform-helm/issues/6103)) ([027f327](https://github.com/camunda/camunda-platform-helm/commit/027f327aae50a2e968912efe939153f59fab6991))
+
+
+### Bug Fixes
+
+* normalize trailing whitespace in golden file writer ([#6159](https://github.com/camunda/camunda-platform-helm/issues/6159)) ([e3ab8f5](https://github.com/camunda/camunda-platform-helm/commit/e3ab8f555626bfc00b1f9ff6f98999148ffc2b3e))
+* test Helm 3 or 4 and use helm v4 for dev ([#5918](https://github.com/camunda/camunda-platform-helm/issues/5918)) ([8ddffec](https://github.com/camunda/camunda-platform-helm/commit/8ddffec8afa14e000b63f7d4033d3fc72e095d6c))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6102](https://github.com/camunda/camunda-platform-helm/issues/6102)) ([75a61d9](https://github.com/camunda/camunda-platform-helm/commit/75a61d9f863aff8ac4ddb27189681aa6e13f1dc6))
+* update module github.com/gruntwork-io/terratest to v1 ([#6157](https://github.com/camunda/camunda-platform-helm/issues/6157)) ([eaf63e7](https://github.com/camunda/camunda-platform-helm/commit/eaf63e750cd23490b8b0cc1dc01b4ffcf41d2be5))
+
 ## [14.2.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.1.0...camunda-platform-8.9-14.2.0) (2026-05-11)
 
 

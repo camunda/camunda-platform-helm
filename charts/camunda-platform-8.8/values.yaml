@@ -89,7 +89,7 @@ global:
 
   ## @extra global.config Config used in various places.
   config:
-    ## @param global.config.requestBodySize defines applications request body size which used for upload files.
+    ## @param global.config.requestBodySize defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.
     requestBodySize: 10MB
 
   ## Multitenancy configuration.
@@ -646,7 +646,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.12
+    tag: 8.8.13
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -828,6 +828,8 @@ identity:
     name: ""
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
+    ## @param identity.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: true
 
@@ -1184,7 +1186,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.133
+    tag: 8.8.135
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1338,6 +1340,8 @@ console:
     name: ""
     ## @param console.serviceAccount.annotations can be used to set the annotations of the service account
     annotations: {}
+    ## @param console.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -1406,7 +1410,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.14
+    tag: 8.8.15
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2040,6 +2044,8 @@ webModeler:
     name: ""
     ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the WebModeler service account
     annotations: {}
+    ## @param webModeler.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -2060,6 +2066,8 @@ webModeler:
     annotations: {}
     ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
+    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate (zero-downtime), which only works when the PVC supports concurrent attach (RWX storage, or accessModes including ReadWriteMany). For chart-managed PVCs on RWO storage, set to "Recreate" to avoid Multi-Attach deadlocks during helm upgrade (introduces brief downtime per upgrade).
+    deploymentStrategy: RollingUpdate
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
 
@@ -2190,7 +2198,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.11
+    tag: 8.8.14
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2328,6 +2336,8 @@ connectors:
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the service account
     annotations: {}
+    ## @param connectors.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -2559,7 +2569,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.24
+    tag: 8.8.26
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2634,6 +2644,18 @@ orchestration:
       extraVolumes: []
       ## @param orchestration.migration.data.extraVolumeMounts can be used to mount extra volumes for the migration data job pod
       extraVolumeMounts: []
+      ## @extra orchestration.migration.data.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+      ## @param orchestration.migration.data.resources.requests.cpu
+      ## @param orchestration.migration.data.resources.requests.memory
+      ## @param orchestration.migration.data.resources.limits.cpu
+      ## @param orchestration.migration.data.resources.limits.memory
+      resources:
+        limits:
+          cpu: 500m
+          memory: 500Mi
+        requests:
+          cpu: 500m
+          memory: 500Mi
     identity:
       ## @param orchestration.migration.identity.enabled if true, the migration of Management Identity data to the orchestration clusters Identity occurs
       enabled: false
@@ -2646,7 +2668,7 @@ orchestration:
           ## @param orchestration.migration.identity.waitContainer.image.repository defines which image repository to use
           repository: curlimages/curl
           ## @param orchestration.migration.identity.waitContainer.image.tag can be set to overwrite the global tag, which should be used in that chart
-          tag: 8.19.0
+          tag: 8.20.0
           ## @param orchestration.migration.identity.waitContainer.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
           digest: ""
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
@@ -2673,6 +2695,18 @@ orchestration:
       extraVolumes: []
       ## @param orchestration.migration.identity.extraVolumeMounts can be used to mount extra volumes for the migration identity job pod
       extraVolumeMounts: []
+      ## @extra orchestration.migration.identity.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+      ## @param orchestration.migration.identity.resources.requests.cpu
+      ## @param orchestration.migration.identity.resources.requests.memory
+      ## @param orchestration.migration.identity.resources.limits.cpu
+      ## @param orchestration.migration.identity.resources.limits.memory
+      resources:
+        limits:
+          cpu: 500m
+          memory: 500Mi
+        requests:
+          cpu: 500m
+          memory: 500Mi
     ## @extra orchestration.migration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
     # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
     # It uses a hard requirement for scheduling and works based on the pod labels
@@ -2801,6 +2835,8 @@ orchestration:
     name: ""
     ## @param orchestration.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
+    ## @param orchestration.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -3090,6 +3126,8 @@ orchestration:
   dnsPolicy: ""
   ## @param orchestration.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param orchestration.hostNetwork if true, the orchestration pods will use the host network namespace. When enabled, dnsPolicy defaults to `ClusterFirstWithHostNet` unless explicitly overridden via `orchestration.dnsPolicy`. https://kubernetes.io/docs/concepts/configuration/overview/#services
+  hostNetwork: false
 
   ## @param orchestration.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
   extraVolumeClaimTemplates: []
@@ -3122,7 +3160,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.24
+    tag: 8.8.26
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3195,6 +3233,8 @@ optimize:
     name: ""
     ## @param optimize.serviceAccount.annotations can be used to set the annotations of the Optimize service account
     annotations: {}
+    ## @param optimize.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 

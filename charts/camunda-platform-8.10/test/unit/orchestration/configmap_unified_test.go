@@ -130,7 +130,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			Values: map[string]string{
 				"global.noSecondaryStorage":                    "true",
 				"global.elasticsearch.enabled":                 "false",
-				"elasticsearch.enabled":                        "false",
 				"orchestration.security.authentication.method": "oidc",
 			},
 			Expected: map[string]string{
@@ -252,19 +251,24 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			},
 		},
 		{
-			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerAndKeycloakEnabled",
+			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerAndExternalKeycloakUrl",
 			Values: map[string]string{
 				"identity.enabled":                                       "true",
-				"identityKeycloak.enabled":                               "true",
 				"global.identity.auth.enabled":                           "true",
 				"global.identity.auth.publicIssuerUrl":                   "https://public-issuer-url.com/realms/camunda",
+				"global.identity.keycloak.url.protocol":                  "https",
+				"global.identity.keycloak.url.host":                      "keycloak.prod.svc.cluster.local",
+				"global.identity.keycloak.url.port":                      "8443",
+				"global.identity.keycloak.auth.adminUser":                "admin",
+				"global.identity.keycloak.auth.secret.existingSecret":    "kc-secret",
+				"global.identity.keycloak.auth.secret.existingSecretKey": "password",
 				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect.com/orchestration",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://public-issuer-url.com/realms/camunda/protocol/openid-connect/auth",
-				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs",
-				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://keycloak.prod.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://keycloak.prod.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/token",
 				"configmapApplication.camunda.security.authentication.oidc.redirect-uri":      "https://redirect.com/orchestration/sso-callback",
 			},
 		},
@@ -272,7 +276,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlAndKeycloakDisabled",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
-				"identityKeycloak.enabled":                               "false",
 				"global.identity.auth.enabled":                           "false",
 				"global.identity.auth.issuer":                            "https://public-issuer-url.com/realms/camunda",
 				"orchestration.security.authentication.method":           "oidc",
@@ -286,7 +289,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlUnUsedAndKeycloakDisabled",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
-				"identityKeycloak.enabled":                               "false",
 				"global.identity.auth.enabled":                           "false",
 				"global.identity.auth.issuer":                            "",
 				"global.identity.auth.authUrl":                           "https://public-issuer-url.com/auth",
@@ -306,7 +308,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			Name: "TestApplicationYamlShouldRenderTemplatedAuthUrls",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
-				"identityKeycloak.enabled":                               "false",
 				"global.identity.auth.enabled":                           "false",
 				"global.identity.auth.issuer":                            "",
 				"global.identity.auth.authUrl":                           "https://{{ .Release.Name }}.example.com/auth",
@@ -325,7 +326,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlUnUsedAndKeycloakExternal",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
-				"identityKeycloak.enabled":                               "false",
 				"global.identity.auth.enabled":                           "false",
 				"global.identity.auth.publicIssuerUrl":                   "https://my-keycloak.com:8080/authz/realms/camunda-platform",
 				"global.identity.keycloak.contextPath":                   "/authz",
@@ -492,6 +492,106 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestLegacyESExporterAbsentWhenRdbmsAndOptimizeButNoElasticsearch",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+				"optimize.database.opensearch.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms+optimize without elasticsearch must not render legacy ES exporter")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeAndGlobalElasticsearch",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms+optimize with global.elasticsearch.enabled must render legacy ES exporter")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeDatabaseElasticsearchOnly",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+				"optimize.database.elasticsearch.enabled":                       "true",
+				"optimize.database.elasticsearch.external":                      "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms+optimize with optimize.database.elasticsearch.enabled must render legacy ES exporter")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterAbsentForSupport32901CustomerConfig",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.exporters.zeebe.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+				"optimize.database.opensearch.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"SUPPORT-32901: rdbms+optimize+zeebe with OpenSearch must not render legacy ES exporter")
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
+					"SUPPORT-32901: OS exporter must still render to feed Optimize")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterAbsentWhenOnlyRdbmsNoOptimize",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms without optimize must not render legacy ES exporter")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
 func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {

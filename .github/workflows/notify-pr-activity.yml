@@ -6,16 +6,15 @@
 # Sends a message to #team-distribution-github (via distro-bot) when:
 #   - A PR is opened or converted from draft to ready for review
 #   - A PR is merged
-#   - A PR is closed without merge
 #
-# Draft PRs are skipped entirely.
+# Draft PRs and closed-without-merge PRs are skipped entirely.
+# Bot-authored PRs are suppressed unless labelled upgrade:major (renovate major bumps).
 #
 # Can be called from other repos via workflow_call — pass all pr_* inputs explicitly.
 #
 # Message format:
-#   ↗️ [helm] PR opened · by @author · review: @rev1 · +42/-7 — #123 feat: add support for X
-#   🎉 [helm] PR merged after 1d 4h · by @author · merged by @merger — #123 feat: add support for X
-#   ❌ [helm] PR closed without merge · by @author — #123 feat: add support for X
+#   ↗ [helm] #123 feat: add support for X — review: @rev1
+#   ✅ [helm] #123 merged after 1d 4h
 #
 # Notification logic is implemented in scripts/notify-pr-activity (Go).
 #
@@ -108,7 +107,8 @@ on:
 
 jobs:
   notify-slack:
-    # Skip draft PRs; only run for opened, ready_for_review, closed+merged, or closed+unmerged events.
+    # Skip draft PRs; only run for opened, ready_for_review, or closed (merged) events.
+    # Closed-without-merge suppression and bot filtering are handled in the Go script.
     # When called via workflow_call, the caller controls filtering via the pr_draft input.
     if: |
       (github.event_name == 'workflow_call' && inputs.pr_draft != 'true') ||
@@ -125,7 +125,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           sparse-checkout: scripts/notify-pr-activity
           sparse-checkout-cone-mode: true
@@ -136,7 +136,7 @@ jobs:
           go-version-file: scripts/notify-pr-activity/go.mod
 
       - name: Import Vault secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b  # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}

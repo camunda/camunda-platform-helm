@@ -50,7 +50,7 @@
                     "properties": {
                         "requestBodySize": {
                             "type": "string",
-                            "description": "defines applications request body size which used for upload files.",
+                            "description": "defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.",
                             "default": "10MB"
                         }
                     }
@@ -139,24 +139,29 @@
                 "gateway": {
                     "type": "object",
                     "properties": {
-                        "createGatewayResource": {
-                            "type": "boolean",
-                            "description": "if true, the Gateway resource is created. This is dependent on whether you have a separate network administrator installing your Gateway or if you are installing it as part of the helm chart.",
-                            "default": false
-                        },
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, a gateway resource is deployed. Only useful if a gateway controller is available, like Ingress-NGINX or Gateway API.",
+                            "description": "if true, enables the Kubernetes Gateway API integration. Requires Gateway API CRDs and a Gateway controller (for example, NGINX Gateway Fabric) to be installed in the cluster.",
+                            "default": false
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "name of the Gateway resource that Routes attach to. Defaults to the Helm release fullname when unset, which is correct for Scenario A (chart-managed Gateway in the same namespace). Set this when referencing a pre-existing Gateway whose name differs from the release name, for example a shared Gateway in another namespace (Scenario B).",
+                            "default": ""
+                        },
+                        "createGatewayResource": {
+                            "type": "boolean",
+                            "description": "if true, the chart creates the Gateway CustomResource in the release namespace. Set to false when a Gateway already exists (either in the same namespace or in a shared namespace referenced via global.gateway.namespace).",
                             "default": false
                         },
                         "external": {
                             "type": "boolean",
-                            "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
+                            "description": "if true, no Gateway API resources are created by this chart (no Gateway, HTTPRoutes, GRPCRoute, or ReferenceGrant). Use this when you manage all networking resources yourself.",
                             "default": false
                         },
                         "className": {
                             "type": "string",
-                            "description": "Gateway.className defines the class or configuration of gateway which should be used by the controller",
+                            "description": "name of the GatewayClass resource that tells the cluster which Gateway controller manages this Gateway.",
                             "default": "nginx"
                         },
                         "tls": {
@@ -164,19 +169,24 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then tls is configured on the gateway resource. If enabled the Ingress.host need to be defined.",
+                                    "description": "if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.",
                                     "default": false
                                 },
                                 "secretName": {
                                     "type": "string",
-                                    "description": "defines the secret name which contains the TLS private key and certificate",
+                                    "description": "name of the Kubernetes Secret containing the TLS certificate and private key.",
                                     "default": "camunda-platform"
                                 }
                             }
                         },
                         "controllerNamespace": {
                             "type": "string",
-                            "description": "defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.",
+                            "description": "answers \"where do Routes that point AT my Services come from?\". When an external controller or operator creates Routes in its own namespace that route traffic to Camunda services, set this to that namespace. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.",
+                            "default": ""
+                        },
+                        "namespace": {
+                            "type": "string",
+                            "description": "answers \"where is the Gateway my Routes point TO?\". When the Gateway lives in a different namespace than the Camunda components (for example, a shared Gateway in an infrastructure namespace), set this to that namespace. The chart adds namespace: <value> to the parentRefs of every Route so Kubernetes can locate the cross-namespace Gateway. When unset, Kubernetes assumes the Gateway is in the same namespace as the Route. Also set global.gateway.createGatewayResource=false when the Gateway is managed outside this chart.",
                             "default": ""
                         }
                     }
@@ -258,17 +268,17 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the jks password.",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the existing secret object.",
                                                     "default": ""
                                                 },
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "description": "(DEPRECATED in chart 15.x — only meaningful for the legacy JKS truststore path; switch to global.tls.caBundle.secret with a PEM CA bundle. The chart-built truststore uses a fixed password set by the helper, so no per-deployment password is needed in the new path.) can be used to provide the jks password as a plain-text value for non-production usage.",
                                                     "default": ""
                                                 }
                                             }
@@ -393,17 +403,17 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the jks password.",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the existing secret object.",
                                                     "default": ""
                                                 },
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "description": "(DEPRECATED in chart 15.x — only meaningful for the legacy JKS truststore path; switch to global.tls.caBundle.secret with a PEM CA bundle. The chart-built truststore uses a fixed password set by the helper, so no per-deployment password is needed in the new path.) can be used to provide the jks password as a plain-text value for non-production usage.",
                                                     "default": ""
                                                 }
                                             }
@@ -494,6 +504,101 @@
                     "description": "ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
                     "default": "{{ .Release.Name }}-zeebe"
                 },
+                "tls": {
+                    "type": "object",
+                    "properties": {
+                        "caBundle": {
+                            "type": "object",
+                            "properties": {
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                            "default": "ca.crt"
+                                        }
+                                    }
+                                },
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "opt-in automatic pod rollout on CA rotation. When true, the chart stamps a checksum/ca-bundle pod annotation derived from the CA Secret so the next `helm upgrade` rolls the Java components when the CA changes. OFF by default: it uses Helm's `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace — without it, `helm upgrade` fails to render — and (b) is inert under GitOps tools that render with `helm template` (no cluster access). When off (or in those cases), rotate the CA with `kubectl rollout restart` (see the TLS guide). Trust itself never depends on this flag.",
+                                    "default": false
+                                },
+                                "image": {
+                                    "type": "string",
+                                    "description": "OPTIONAL override for the truststore init-container image. Empty (default) reuses each component's OWN image: it already ships keytool, it is already mirrored in your registry (so this adds no new image dependency in air-gapped installs), and copying its cacerts preserves any CAs baked into a custom build. Set this only if a component image lacks keytool — the value is used verbatim (NOT prefixed with global.image.registry), so include your registry/mirror path if needed.",
+                                    "default": ""
+                                },
+                                "imagePullPolicy": {
+                                    "type": "string",
+                                    "description": "pull policy for the init-container image. Empty (default) inherits global.image.pullPolicy.",
+                                    "default": ""
+                                },
+                                "containerSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "runAsUser": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "runAsGroup": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": false
+                                        },
+                                        "readOnlyRootFilesystem": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "capabilities": {
+                                            "type": "object",
+                                            "properties": {
+                                                "drop": {
+                                                    "type": "array",
+                                                    "description": "",
+                                                    "default": [
+                                                        "ALL"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "identity": {
                     "type": "object",
                     "properties": {
@@ -517,8 +622,6 @@
                                 },
                                 "url": {
                                     "type": "object",
-                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
-                                    "default": {},
                                     "properties": {
                                         "protocol": {
                                             "type": "string",
@@ -538,12 +641,14 @@
                                             "description": "defines the port for Keycloak (e.g., 443).",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "description": "configures the URL to reach an external Keycloak. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": {}
                                 },
                                 "contextPath": {
                                     "type": "string",
-                                    "description": "In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.",
-                                    "default": "/auth"
+                                    "description": "defines the Keycloak base path. In Keycloak v16.x.x it's hard-coded as '/auth/', but in v19.x.x it's configurable (commonly '/').",
+                                    "default": "/auth/"
                                 },
                                 "realm": {
                                     "type": "string",
@@ -622,8 +727,8 @@
                                 },
                                 "publicIssuerUrl": {
                                     "type": "string",
-                                    "description": "Can be overwritten if ingress is in use and an external IP is available.",
-                                    "default": "http://localhost:18080/auth/realms/camunda-platform"
+                                    "description": "defines the publicly-reachable token issuer URL.",
+                                    "default": ""
                                 },
                                 "admin": {
                                     "type": "object",
@@ -1024,6 +1129,29 @@
                     "type": "boolean",
                     "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
                     "default": false
+                },
+                "multiregion": {
+                    "type": "object",
+                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "default": {},
+                    "properties": {
+                        "regions": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "default": 1
+                        },
+                        "regionId": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "default": 0
+                        }
+                    }
                 }
             }
         },
@@ -1123,7 +1251,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha1"
+                            "default": "8.10.0-alpha2"
                         },
                         "digest": {
                             "type": "string",
@@ -1510,8 +1638,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -1560,6 +1763,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the identity service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
@@ -1682,585 +1890,6 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
-                        }
-                    }
-                }
-            }
-        },
-        "identityPostgresql": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "description": "(DEPRECATED) Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.",
-                    "default": false
-                },
-                "global": {
-                    "type": "object",
-                    "properties": {
-                        "compatibility": {
-                            "type": "object",
-                            "properties": {
-                                "openshift": {
-                                    "type": "object",
-                                    "properties": {
-                                        "adaptSecurityContext": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
-                                            "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "repository": {
-                            "type": "string",
-                            "description": "(DEPRECATED) PostgreSQL repo",
-                            "default": "bitnamilegacy/postgresql"
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "(DEPRECATED) PostgreSQL image tag",
-                            "default": "15.10.0-debian-12-r2"
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
-                        }
-                    }
-                },
-                "nameOverride": {
-                    "type": "string",
-                    "description": "(DEPRECATED) the name used for Management Identity PostgreSQL.",
-                    "default": "identity-postgresql"
-                },
-                "auth": {
-                    "type": "object",
-                    "properties": {
-                        "username": {
-                            "type": "string",
-                            "description": "(DEPRECATED) Non-root username",
-                            "default": "identity"
-                        },
-                        "database": {
-                            "type": "string",
-                            "description": "(DEPRECATED) The database name",
-                            "default": "identity"
-                        },
-                        "password": {
-                            "type": "string",
-                            "description": "(DEPRECATED) Password for the non-root username",
-                            "default": ""
-                        },
-                        "existingSecret": {
-                            "type": "string",
-                            "description": "(DEPRECATED) Name of an existing secret resource containing the database credentials",
-                            "default": ""
-                        },
-                        "secretKeys": {
-                            "type": "object",
-                            "properties": {
-                                "adminPasswordKey": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.",
-                                    "default": "identity-postgresql-admin-password"
-                                },
-                                "userPasswordKey": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
-                                    "default": "identity-postgresql-user-password"
-                                }
-                            }
-                        }
-                    }
-                },
-                "volumePermissions": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "bitnamilegacy/os-shell"
-                                }
-                            }
-                        }
-                    }
-                },
-                "metrics": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "bitnamilegacy/postgres-exporter"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "identityKeycloak": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "description": "(DEPRECATED) Enable Management Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
-                    "default": false
-                },
-                "global": {
-                    "type": "object",
-                    "properties": {
-                        "compatibility": {
-                            "type": "object",
-                            "properties": {
-                                "openshift": {
-                                    "type": "object",
-                                    "properties": {
-                                        "adaptSecurityContext": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
-                                            "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "security": {
-                            "type": "object",
-                            "properties": {
-                                "allowInsecureImages": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED) Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)",
-                                    "default": true
-                                }
-                            }
-                        }
-                    }
-                },
-                "nameOverride": {
-                    "type": "string",
-                    "description": "(DEPRECATED) the name used for Keycloak.",
-                    "default": "keycloak"
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "repository": {
-                            "type": "string",
-                            "description": "(DEPRECATED) image repo",
-                            "default": "camunda/keycloak"
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "(DEPRECATED) image tag",
-                            "default": "26.3.3"
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
-                        }
-                    }
-                },
-                "resources": {
-                    "type": "object",
-                    "properties": {
-                        "requests": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "1000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "1Gi"
-                                }
-                            }
-                        },
-                        "limits": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "2000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "2Gi"
-                                }
-                            }
-                        }
-                    }
-                },
-                "postgresql": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) image repo",
-                                    "default": "bitnamilegacy/postgresql"
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) image tag",
-                                    "default": "15.10.0-debian-12-r2"
-                                },
-                                "digest": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                                    "default": ""
-                                }
-                            }
-                        },
-                        "auth": {
-                            "type": "object",
-                            "properties": {
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) defines the existing secret resource containing the database credentials",
-                                    "default": "camunda-credentials"
-                                },
-                                "secretKeys": {
-                                    "type": "object",
-                                    "properties": {
-                                        "adminPasswordKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.",
-                                            "default": "identity-keycloak-postgresql-admin-password"
-                                        },
-                                        "userPasswordKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
-                                            "default": "identity-keycloak-postgresql-user-password"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "primary": {
-                            "type": "object",
-                            "properties": {
-                                "containerSecurityContext": {
-                                    "type": "object",
-                                    "properties": {
-                                        "enabled": {
-                                            "type": "boolean",
-                                            "description": "(DEPRECATED)",
-                                            "default": true
-                                        },
-                                        "privileged": {
-                                            "type": "boolean",
-                                            "description": "(DEPRECATED)",
-                                            "default": false
-                                        },
-                                        "readOnlyRootFilesystem": {
-                                            "type": "boolean",
-                                            "description": "(DEPRECATED)",
-                                            "default": true
-                                        },
-                                        "allowPrivilegeEscalation": {
-                                            "type": "boolean",
-                                            "description": "(DEPRECATED)",
-                                            "default": false
-                                        },
-                                        "runAsNonRoot": {
-                                            "type": "boolean",
-                                            "description": "(DEPRECATED)",
-                                            "default": true
-                                        },
-                                        "runAsUser": {
-                                            "type": "number",
-                                            "description": "(DEPRECATED)",
-                                            "default": 1001
-                                        },
-                                        "capabilities": {
-                                            "type": "object",
-                                            "properties": {
-                                                "drop": {
-                                                    "type": "array",
-                                                    "description": "(DEPRECATED)",
-                                                    "default": [
-                                                        "ALL"
-                                                    ],
-                                                    "items": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        "seccompProfile": {
-                                            "type": "object",
-                                            "properties": {
-                                                "type": {
-                                                    "type": "string",
-                                                    "description": "(DEPRECATED)",
-                                                    "default": "RuntimeDefault"
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "podSecurityContext": {
-                                    "type": "object",
-                                    "properties": {
-                                        "enabled": {
-                                            "type": "boolean",
-                                            "description": "(DEPRECATED)",
-                                            "default": true
-                                        },
-                                        "runAsNonRoot": {
-                                            "type": "boolean",
-                                            "description": "(DEPRECATED)",
-                                            "default": true
-                                        },
-                                        "fsGroup": {
-                                            "type": "number",
-                                            "description": "(DEPRECATED)",
-                                            "default": 1001
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "volumePermissions": {
-                            "type": "object",
-                            "properties": {
-                                "image": {
-                                    "type": "object",
-                                    "properties": {
-                                        "repository": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED)",
-                                            "default": "bitnamilegacy/os-shell"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "metrics": {
-                            "type": "object",
-                            "properties": {
-                                "image": {
-                                    "type": "object",
-                                    "properties": {
-                                        "repository": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED)",
-                                            "default": "bitnamilegacy/postgres-exporter"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "proxy": {
-                    "type": "string",
-                    "description": "(DEPRECATED) keycloak proxy",
-                    "default": "edge"
-                },
-                "tls": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED) enabling tls",
-                            "default": false
-                        }
-                    }
-                },
-                "extraVolumeMounts": {
-                    "type": "array",
-                    "description": "(DEPRECATED)",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "(DEPRECATED)"
-                            },
-                            "mountPath": {
-                                "type": "string",
-                                "description": "(DEPRECATED)"
-                            }
-                        }
-                    }
-                },
-                "containerSecurityContext": {
-                    "type": "object",
-                    "properties": {
-                        "privileged": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": false
-                        },
-                        "readOnlyRootFilesystem": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": true
-                        },
-                        "allowPrivilegeEscalation": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": false
-                        },
-                        "runAsNonRoot": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": true
-                        },
-                        "runAsUser": {
-                            "type": "number",
-                            "description": "(DEPRECATED)",
-                            "default": 1001
-                        },
-                        "capabilities": {
-                            "type": "object",
-                            "properties": {
-                                "drop": {
-                                    "type": "array",
-                                    "description": "(DEPRECATED)",
-                                    "default": [
-                                        "ALL"
-                                    ],
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "seccompProfile": {
-                            "type": "object",
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "RuntimeDefault"
-                                }
-                            }
-                        }
-                    }
-                },
-                "podSecurityContext": {
-                    "type": "object",
-                    "properties": {
-                        "runAsNonRoot": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": true
-                        },
-                        "fsGroup": {
-                            "type": "number",
-                            "description": "(DEPRECATED)",
-                            "default": 1001
-                        }
-                    }
-                },
-                "httpRelativePath": {
-                    "type": "string",
-                    "description": "(DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
-                    "default": "/auth/"
-                },
-                "extraEnvVars": {
-                    "type": "array",
-                    "description": "(DEPRECATED) can be used set extra environment variables to be set on Keycloak container.",
-                    "default": [],
-                    "items": {}
-                },
-                "ingress": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED) can be used enable ingress record generation for Keycloak.",
-                            "default": false
-                        },
-                        "tls": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED) can be used to enable TLS configuration for the host defined at ingress.hostname parameter.",
-                            "default": false
-                        },
-                        "extraTls": {
-                            "type": "array",
-                            "description": "(DEPRECATED) configuration for additional hostnames to be covered with this ingress record.",
-                            "default": [],
-                            "items": {}
-                        },
-                        "labels": {
-                            "type": "object",
-                            "description": "(DEPRECATED) [object] can be used to define labels which will be applied to the Keycloak ingress resource",
-                            "default": {}
-                        },
-                        "pathType": {
-                            "type": "string",
-                            "description": "(DEPRECATED) defines Ingress path type.",
-                            "default": "Prefix"
-                        }
-                    }
-                },
-                "service": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be set to change the service type.",
-                            "default": "ClusterIP"
-                        }
-                    }
-                },
-                "auth": {
-                    "type": "object",
-                    "properties": {
-                        "adminUser": {
-                            "type": "string",
-                            "description": "(DEPRECATED) defines the keycloak administrator user",
-                            "default": "admin"
-                        },
-                        "existingSecret": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be used to reuse an existing secret containing authentication information.",
-                            "default": "camunda-credentials"
-                        },
-                        "passwordSecretKey": {
-                            "type": "string",
-                            "description": "(DEPRECATED) defines the key within the existing secret object.",
-                            "default": "identity-keycloak-admin-password"
-                        }
-                    }
-                },
-                "keycloakConfigCli": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "bitnamilegacy/keycloak-config-cli"
-                                }
-                            }
                         }
                     }
                 }
@@ -2429,6 +2058,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -2439,6 +2073,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -2472,8 +2111,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -2669,6 +2383,11 @@
                             "description": "can be used to set the annotations of the service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -2776,6 +2495,23 @@
                     "type": "boolean",
                     "description": "if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.",
                     "default": false
+                },
+                "webModeler": {
+                    "properties": {
+                        "persistence": {
+                            "properties": {
+                                "deploymentStrategy": {
+                                    "type": "string",
+                                    "enum": [
+                                        "RollingUpdate",
+                                        "Recreate"
+                                    ],
+                                    "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate (zero-downtime), which only works when the PVC supports concurrent attach (RWX storage, or accessModes including ReadWriteMany). For chart-managed PVCs on RWO storage, set to \"Recreate\" to avoid Multi-Attach deadlocks during helm upgrade (introduces brief downtime per upgrade).",
+                                    "default": "RollingUpdate"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -3784,6 +3520,11 @@
                             "description": "can be used to set the annotations of the WebModeler service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -3833,6 +3574,15 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        },
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate (zero-downtime), which only works when the PVC supports concurrent attach (RWX storage, or accessModes including ReadWriteMany). For chart-managed PVCs on RWO storage, set to \"Recreate\" to avoid Multi-Attach deadlocks during helm upgrade (introduces brief downtime per upgrade).",
+                            "default": "RollingUpdate",
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
                         }
                     }
                 }
@@ -3861,8 +3611,83 @@
                                     "nullable": true
                                 },
                                 "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
                                 }
                             },
                             "required": [
@@ -3897,194 +3722,89 @@
                                     "nullable": true
                                 },
                                 "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
                                 }
                             },
                             "required": [
                                 "name"
                             ],
                             "additionalProperties": false
-                        }
-                    }
-                }
-            }
-        },
-        "webModelerPostgresql": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "description": "(DEPRECATED) if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart",
-                    "default": false
-                },
-                "global": {
-                    "type": "object",
-                    "properties": {
-                        "compatibility": {
-                            "type": "object",
-                            "properties": {
-                                "openshift": {
-                                    "type": "object",
-                                    "properties": {
-                                        "adaptSecurityContext": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
-                                            "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "nameOverride": {
-                    "type": "string",
-                    "description": "(DEPRECATED) defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters",
-                    "default": "postgresql-web-modeler"
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "repository": {
-                            "type": "string",
-                            "description": "(DEPRECATED) PostgreSQL repo",
-                            "default": "bitnamilegacy/postgresql"
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "(DEPRECATED) PostgreSQL image tag",
-                            "default": "14.18.0-debian-12-r0"
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
-                        }
-                    }
-                },
-                "auth": {
-                    "type": "object",
-                    "properties": {
-                        "username": {
-                            "type": "string",
-                            "description": "(DEPRECATED) defines the name of the database user to be created for WebModeler",
-                            "default": "web-modeler"
-                        },
-                        "password": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be used to provide the database user's password; a random password will be generated if left empty / ignored if `postgresql.auth.existingSecret` is set",
-                            "default": ""
-                        },
-                        "database": {
-                            "type": "string",
-                            "description": "(DEPRECATED) defines the name of the database to be created for WebModeler",
-                            "default": "web-modeler"
-                        },
-                        "existingSecret": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be used to provide the name of an existing secret resource containing the database password",
-                            "default": ""
-                        },
-                        "secretKeys": {
-                            "type": "object",
-                            "properties": {
-                                "adminPasswordKey": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.",
-                                    "default": "web-modeler-postgresql-admin-password"
-                                },
-                                "userPasswordKey": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
-                                    "default": "web-modeler-postgresql-user-password"
-                                }
-                            }
-                        }
-                    }
-                },
-                "primary": {
-                    "type": "object",
-                    "properties": {
-                        "containerSecurityContext": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": true
-                                },
-                                "allowPrivilegeEscalation": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": false
-                                },
-                                "privileged": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": false
-                                },
-                                "readOnlyRootFilesystem": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": true
-                                },
-                                "runAsNonRoot": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": true
-                                },
-                                "runAsUser": {
-                                    "type": "number",
-                                    "description": "(DEPRECATED)",
-                                    "default": 1001
-                                },
-                                "capabilities": {
-                                    "type": "object",
-                                    "properties": {
-                                        "drop": {
-                                            "type": "array",
-                                            "description": "(DEPRECATED)",
-                                            "default": [
-                                                "ALL"
-                                            ],
-                                            "items": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                },
-                                "seccompProfile": {
-                                    "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED)",
-                                            "default": "RuntimeDefault"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "podSecurityContext": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": true
-                                },
-                                "runAsNonRoot": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": true
-                                },
-                                "fsGroup": {
-                                    "type": "number",
-                                    "description": "(DEPRECATED)",
-                                    "default": 1001
-                                }
-                            }
                         }
                     }
                 }
@@ -4164,7 +3884,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha1"
+                            "default": "8.10.0-alpha2"
                         },
                         "digest": {
                             "type": "string",
@@ -4242,6 +3962,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4252,6 +3977,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4285,8 +4015,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -4480,6 +4285,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
@@ -4891,7 +4701,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha1"
+                            "default": "8.10.0-alpha2"
                         },
                         "digest": {
                             "type": "string",
@@ -4976,8 +4786,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -5142,6 +5027,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the broker service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
@@ -5456,12 +5346,12 @@
                                                     "properties": {
                                                         "existingSecret": {
                                                             "type": "string",
-                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the TLS trust store",
                                                             "default": ""
                                                         },
                                                         "existingSecretKey": {
                                                             "type": "string",
-                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) defines the key within the existing Kubernetes Secret for TLS trust store",
                                                             "default": ""
                                                         }
                                                     }
@@ -5526,12 +5416,12 @@
                                                     "properties": {
                                                         "existingSecret": {
                                                             "type": "string",
-                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the TLS trust store",
                                                             "default": ""
                                                         },
                                                         "existingSecretKey": {
                                                             "type": "string",
-                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) defines the key within the existing Kubernetes Secret for TLS trust store",
                                                             "default": ""
                                                         }
                                                     }
@@ -6010,6 +5900,11 @@
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
                 },
+                "hostNetwork": {
+                    "type": "boolean",
+                    "description": "if true, the orchestration pods will use the host network namespace. When enabled, dnsPolicy defaults to `ClusterFirstWithHostNet` unless explicitly overridden via `orchestration.dnsPolicy`. https://kubernetes.io/docs/concepts/configuration/overview/#services",
+                    "default": false
+                },
                 "extraVolumeClaimTemplates": {
                     "type": "array",
                     "description": "can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!",
@@ -6052,7 +5947,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha1"
+                            "default": "8.10.0-alpha2"
                         },
                         "digest": {
                             "type": "string",
@@ -6096,12 +5991,12 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the secret containing the certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                                     "default": "externaldb.jks"
                                                 }
                                             }
@@ -6196,12 +6091,12 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the secret containing the certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                                     "default": "externaldb.jks"
                                                 }
                                             }
@@ -6393,8 +6288,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -6449,6 +6419,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the Optimize service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
@@ -6875,241 +6850,89 @@
                                     "nullable": true
                                 },
                                 "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
                                 }
                             },
                             "required": [
                                 "name"
                             ],
                             "additionalProperties": false
-                        }
-                    }
-                }
-            }
-        },
-        "elasticsearch": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "description": "(DEPRECATED)",
-                    "default": false
-                },
-                "global": {
-                    "type": "object",
-                    "properties": {
-                        "compatibility": {
-                            "type": "object",
-                            "properties": {
-                                "openshift": {
-                                    "type": "object",
-                                    "properties": {
-                                        "adaptSecurityContext": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
-                                            "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "repository": {
-                            "type": "string",
-                            "description": "(DEPRECATED)",
-                            "default": "bitnamilegacy/elasticsearch"
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "(DEPRECATED)",
-                            "default": "8.18.0"
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
-                        }
-                    }
-                },
-                "master": {
-                    "type": "object",
-                    "properties": {
-                        "replicaCount": {
-                            "type": "number",
-                            "description": "(DEPRECATED) defines number of master-elegible replicas to deploy",
-                            "default": 3
-                        },
-                        "podAntiAffinityPreset": {
-                            "type": "string",
-                            "description": "(DEPRECATED) defines Pod anti-affinity preset. Ignored if master.affinity is set",
-                            "default": "hard"
-                        },
-                        "containerSecurityContext": {
-                            "type": "object",
-                            "properties": {
-                                "readOnlyRootFilesystem": {
-                                    "type": "boolean",
-                                    "description": "(DEPRECATED)",
-                                    "default": true
-                                }
-                            }
-                        },
-                        "masterOnly": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": false
-                        },
-                        "heapSize": {
-                            "type": "string",
-                            "description": "(DEPRECATED)",
-                            "default": "1024m"
-                        },
-                        "persistence": {
-                            "type": "object",
-                            "properties": {
-                                "size": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "64Gi"
-                                }
-                            }
-                        },
-                        "resources": {
-                            "type": "object",
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "properties": {
-                                        "memory": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) request",
-                                            "default": "2Gi"
-                                        }
-                                    }
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "properties": {
-                                        "memory": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED) memory limit",
-                                            "default": "2Gi"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "extraEnvVars": {
-                            "type": "array",
-                            "description": "(DEPRECATED) env",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "description": "(DEPRECATED) env"
-                                    },
-                                    "value": {
-                                        "type": "string",
-                                        "description": "(DEPRECATED) env value"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "sysctlImage": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": true
-                        },
-                        "repository": {
-                            "type": "string",
-                            "description": "(DEPRECATED)",
-                            "default": "bitnamilegacy/os-shell"
-                        }
-                    }
-                },
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "replicaCount": {
-                            "type": "number",
-                            "description": "(DEPRECATED)",
-                            "default": 0
-                        }
-                    }
-                },
-                "coordinating": {
-                    "type": "object",
-                    "properties": {
-                        "replicaCount": {
-                            "type": "number",
-                            "description": "(DEPRECATED)",
-                            "default": 0
-                        }
-                    }
-                },
-                "ingest": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "(DEPRECATED)",
-                            "default": false
-                        }
-                    }
-                },
-                "metrics": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "bitnamilegacy/elasticsearch-exporter"
-                                }
-                            }
-                        }
-                    }
-                },
-                "volumePermissions": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "bitnamilegacy/os-shell"
-                                }
-                            }
-                        }
-                    }
-                },
-                "copyTlsCerts": {
-                    "type": "object",
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "properties": {
-                                "repository": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED)",
-                                    "default": "bitnamilegacy/os-shell"
-                                }
-                            }
                         }
                     }
                 }

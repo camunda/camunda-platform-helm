@@ -1,4 +1,11 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $deploymentStrategy := (or .Values.camundaHub.webModeler.persistence.deploymentStrategy .Values.webModeler.persistence.deploymentStrategy) | default "RollingUpdate" -}}
+{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
+{{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- end -}}
+{{- if and (eq $deploymentStrategy "Recreate") (not (or .Values.camundaHub.webModeler.persistence.enabled .Values.webModeler.persistence.enabled)) -}}
+{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true (it avoids a Multi-Attach deadlock on the chart-managed RWO PVC; without persistence it only adds upgrade downtime)" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +14,7 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   strategy:
-    type: RollingUpdate
+    type: {{ $deploymentStrategy }}
   replicas: {{ (or .Values.camundaHub.webModeler.restapi.replicas .Values.webModeler.restapi.replicas) }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
@@ -17,15 +24,23 @@ spec:
       {{- if (or .Values.camundaHub.webModeler.restapi.podLabels .Values.webModeler.restapi.podLabels) }}
       {{- tpl (toYaml (or .Values.camundaHub.webModeler.restapi.podLabels .Values.webModeler.restapi.podLabels)) $ | nindent 8 }}
       {{- end }}
-      {{- if (or .Values.camundaHub.webModeler.restapi.podAnnotations .Values.webModeler.restapi.podAnnotations) }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) (or .Values.camundaHub.webModeler.restapi.podAnnotations .Values.webModeler.restapi.podAnnotations) }}
       annotations:
-        {{- tpl (toYaml (or .Values.camundaHub.webModeler.restapi.podAnnotations .Values.webModeler.restapi.podAnnotations)) $ | nindent 8 }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (or .Values.camundaHub.webModeler.restapi.podAnnotations .Values.webModeler.restapi.podAnnotations) }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((or .Values.camundaHub.webModeler.restapi.initContainers .Values.webModeler.restapi.initContainers) | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "webModeler.restapi.image" $)) | nindent 8 }}
+        {{- end }}
+        {{- with (or .Values.camundaHub.webModeler.restapi.initContainers .Values.webModeler.restapi.initContainers) }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: {{ include "webModeler.name" . }}-restapi
           image: {{ include "webModeler.restapi.image" . | quote }}
@@ -40,18 +55,10 @@ spec:
             ) | nindent 12 }}
             - name: JAVA_OPTIONS
               value: {{ (or .Values.camundaHub.webModeler.restapi.javaOpts .Values.webModeler.restapi.javaOpts) | default "-XX:MaxRAMPercentage=80.0" | quote }}
-            {{- if not .Values.webModelerPostgresql.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "SPRING_DATASOURCE_PASSWORD"
                 "config" (or .Values.camundaHub.webModeler.restapi.externalDatabase .Values.webModeler.restapi.externalDatabase)
             ) | nindent 12 }}
-            {{- else }}
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.webModelerPostgresql.auth.existingSecret }}
-                  key: {{ .Values.webModelerPostgresql.auth.secretKeys.userPasswordKey }}
-            {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_MAIL_PASSWORD"
                 "config" (or .Values.camundaHub.webModeler.restapi.mail .Values.webModeler.restapi.mail)
@@ -63,13 +70,13 @@ spec:
                   key: pusher-app-id
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_PUSHER_KEY"
-                "config" (or .Values.camundaHub.webModeler.restapi.pusher.client .Values.webModeler.restapi.pusher.client)
+                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher.client) .Values.camundaHub.webModeler.restapi.pusher.client)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-key"
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_PUSHER_SECRET"
-                "config" (or .Values.camundaHub.webModeler.restapi.pusher .Values.webModeler.restapi.pusher)
+                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) .Values.camundaHub.webModeler.restapi.pusher)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
@@ -91,6 +98,10 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
+          {{- end }}
           {{- with (or .Values.camundaHub.webModeler.restapi.env .Values.webModeler.restapi.env) }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -162,6 +173,10 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
             {{- if (or .Values.camundaHub.webModeler.restapi.extraVolumeMounts .Values.webModeler.restapi.extraVolumeMounts) }}
             {{- (or .Values.camundaHub.webModeler.restapi.extraVolumeMounts .Values.webModeler.restapi.extraVolumeMounts) | toYaml | nindent 12 }}
             {{- end }}
@@ -188,6 +203,10 @@ spec:
             "config" .Values.global.documentStore.type.gcp
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if (or .Values.camundaHub.webModeler.restapi.extraVolumes .Values.webModeler.restapi.extraVolumes) }}
         {{- (or .Values.camundaHub.webModeler.restapi.extraVolumes .Values.webModeler.restapi.extraVolumes) | toYaml | nindent 8 }}

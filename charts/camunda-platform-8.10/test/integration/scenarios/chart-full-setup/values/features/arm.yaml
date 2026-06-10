@@ -11,13 +11,3 @@ identity:
 
 orchestration:
   pvcStorageClassName: hyperdisk-balanced
-
-identityPostgresql:
-  primary:
-    persistence:
-      storageClass: hyperdisk-balanced
-
-webModelerPostgresql:
-  primary:
-    persistence:
-      storageClass: hyperdisk-balanced

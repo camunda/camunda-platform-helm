@@ -1,0 +1,43 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+spec:
+  # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
+  version: 8.19.15
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  nodeSets:
+    - name: masters
+      count: 1
+      config:
+        node.store.allow_mmap: "false"
+        logger.org.elasticsearch.deprecation: "OFF"
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              env:
+                - name: ELASTICSEARCH_ENABLE_REST_TLS
+                  value: "false"
+                - name: READINESS_PROBE_TIMEOUT
+                  value: "300"
+                - name: ES_JAVA_OPTS
+                  value: "-Xms512m -Xmx512m"
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 1Gi
+                limits:
+                  cpu: 1
+                  memory: 1Gi
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources:
+              requests:
+                storage: 4Gi

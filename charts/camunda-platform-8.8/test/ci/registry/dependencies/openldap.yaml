@@ -1,0 +1,3 @@
+chart: test/integration/companion-charts/openldap
+release-name: openldap
+values-file: test/integration/companion-values/openldap.yaml

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"scripts/camunda-core/pkg/versionmatrix"
 	"gopkg.in/yaml.v3"
+	"scripts/camunda-core/pkg/versionmatrix"
 
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/config"
@@ -395,7 +395,7 @@ func TestFilter(t *testing.T) {
 	// --- Tier filter tests ---
 	tieredEntries := []Entry{
 		{Version: "8.9", Scenario: "elasticsearch", Shortname: "eske", Flow: "install", Tier: 1, Enabled: true},
-		{Version: "8.9", Scenario: "opensearch-external", Shortname: "osex", Flow: "install", Tier: 1, Enabled: true},
+		{Version: "8.9", Scenario: "opensearch", Shortname: "oske", Flow: "install", Tier: 1, Enabled: true},
 		{Version: "8.9", Scenario: "keycloak-mt", Shortname: "kemt", Flow: "install", Tier: 2, Enabled: true},
 		{Version: "8.9", Scenario: "keycloak-rba", Shortname: "kerba", Flow: "install", Tier: 2, Enabled: true},
 		{Version: "8.9", Scenario: "no-tier-set", Shortname: "notier", Flow: "install", Tier: 0, Enabled: true},
@@ -658,20 +658,6 @@ func TestLoadPermittedFlows(t *testing.T) {
 	}
 	if len(pf.Rules) == 0 {
 		t.Error("LoadPermittedFlows: no rules")
-	}
-}
-
-func TestLoadCITestConfig(t *testing.T) {
-	repoRoot := findRepoRoot(t)
-
-	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.8")
-	cfg, err := LoadCITestConfig(chartDir)
-	if err != nil {
-		t.Fatalf("LoadCITestConfig: %v", err)
-	}
-
-	if len(cfg.Integration.Case.PR.Scenarios) == 0 {
-		t.Error("LoadCITestConfig: no PR scenarios")
 	}
 }
 
@@ -1134,7 +1120,112 @@ func TestResolveEnvFile(t *testing.T) {
 	}
 }
 
+func TestOCIImmutabilityDisablesImageOverrides(t *testing.T) {
+	chartPath := t.TempDir()
+	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
+		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	entry := Entry{Enterprise: true, ImageTags: true}
+	ociOpts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", UseLatest: true}
+	if got := effectiveImageTags(entry, ociOpts); got {
+		t.Fatalf("effectiveImageTags() = true, want false in OCI immutability mode")
+	}
+	if got := resolveChartRootOverlaysQuiet(chartPath, entry, ociOpts); len(got) != 0 {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want no overlays in OCI immutability mode", got)
+	}
+
+	forcedOpts := RunOptions{ChartRef: ociOpts.ChartRef, ForceImageOverrides: true, UseLatest: true}
+	if got := effectiveImageTags(entry, forcedOpts); !got {
+		t.Fatalf("effectiveImageTags() = false, want true when OCI immutability bypass is enabled")
+	}
+	if got := resolveChartRootOverlaysQuiet(chartPath, entry, forcedOpts); strings.Join(got, ",") != "enterprise" {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise] when bypass preserves image-tags", got)
+	}
+}
+
+func TestSanitizeEnvFileForOCIImmutability(t *testing.T) {
+	envFile := filepath.Join(t.TempDir(), "values.env")
+	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nOPERATE_INDEX_PREFIX=test-run\nTASKLIST_INDEX_PREFIX=test-tasklist\n"
+	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got == "" || got == envFile {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want sanitized temp file", got)
+	}
+
+	data, err := os.ReadFile(got)
+	if err != nil {
+		t.Fatalf("read sanitized env file: %v", err)
+	}
+	text := string(data)
+	if strings.Contains(text, "E2E_TESTS_OPTIMIZE_IMAGE_TAG") {
+		t.Fatalf("sanitized env file still contains image tag key: %s", text)
+	}
+	for _, key := range []string{"OPERATE_INDEX_PREFIX", "TASKLIST_INDEX_PREFIX"} {
+		if !strings.Contains(text, key+"=") {
+			t.Fatalf("sanitized env file missing %s: %s", key, text)
+		}
+	}
+}
+
 // --- resolveUseVaultBackedSecrets tests ---
+
+func TestOCIImmutabilityForceOverridesRestoresDigest(t *testing.T) {
+	chartPath := t.TempDir()
+	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
+		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	// ForceImageOverrides: true + ImageTags: false -> digest overlay should be restored
+	entry := Entry{Enterprise: true, ImageTags: false}
+	opts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", ForceImageOverrides: true}
+	got := resolveChartRootOverlaysQuiet(chartPath, entry, opts)
+	expected := "enterprise,digest"
+	if strings.Join(got, ",") != expected {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise, digest] when force-overrides restores non-image-tags path", got)
+	}
+}
+
+func TestSanitizeEnvFileAllImageTags(t *testing.T) {
+	// All keys are IMAGE_TAG -> result should be empty path (no temp file needed)
+	envFile := filepath.Join(t.TempDir(), "values.env")
+	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nE2E_TESTS_OPERATE_IMAGE_TAG=8.8-SNAPSHOT\n"
+	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got != "" {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty path when all keys are image tags", got)
+	}
+}
+
+func TestSanitizeEnvFileNoEnvFile(t *testing.T) {
+	// OCI mode with no env file -> should short-circuit cleanly
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability("", RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got != "" {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty string for no env file", got)
+	}
+}
 
 func TestResolveUseVaultBackedSecrets(t *testing.T) {
 	tests := []struct {
@@ -1797,6 +1888,26 @@ func TestExtractBitnamiPGPasswords_MappingConsistency(t *testing.T) {
 			}
 			allPaths[hp] = secretKey
 		}
+	}
+}
+
+func TestShouldExtractBitnamiPGPasswords(t *testing.T) {
+	tests := []struct {
+		name          string
+		targetVersion string
+		want          bool
+	}{
+		{name: "8.9 still uses Bitnami subcharts", targetVersion: "8.9", want: true},
+		{name: "8.10 removed Bitnami subcharts", targetVersion: "8.10", want: false},
+		{name: "newer versions keep Bitnami removed", targetVersion: "8.11", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldExtractBitnamiPGPasswords(tt.targetVersion); got != tt.want {
+				t.Errorf("shouldExtractBitnamiPGPasswords(%q) = %v, want %v", tt.targetVersion, got, tt.want)
+			}
+		})
 	}
 }
 

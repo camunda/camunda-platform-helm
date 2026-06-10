@@ -43,10 +43,16 @@ func TestGoldenDefaultsTemplateConsole(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/console/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"console.enabled":                "true",
-				"identity.enabled":               "true",
-				"identityKeycloak.enabled":       "true",
-				"console.serviceAccount.enabled": "true",
+				"console.enabled":                                       "true",
+				"identity.enabled":                                      "true",
+				"console.serviceAccount.enabled":                        "true",
+				"global.identity.auth.enabled":                          "true",
+				"global.identity.keycloak.url.protocol":                 "https",
+				"global.identity.keycloak.url.host":                     "keycloak.example.com",
+				"global.identity.keycloak.url.port":                     "8443",
+				"global.identity.keycloak.auth.adminUser":               "admin",
+				"global.identity.keycloak.auth.secret.existingSecret":   "kc-secret",
+				"global.identity.keycloak.auth.secret.existingSecretKey": "password",
 			},
 			IgnoredLines: []string{
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.

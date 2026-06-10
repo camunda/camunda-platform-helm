@@ -60,6 +60,11 @@ type Entry struct {
 	// HelmVersion, when non-empty, tells the integration workflow to install
 	// this Helm version via azure/setup-helm (overriding the pre-baked binary).
 	HelmVersion string `json:"helmVersion,omitempty"`
+
+	// PrefixKey overrides the scenario name for index prefix derivation.
+	// When set, generateScenarioContext uses this instead of Entry.Scenario
+	// to compute orchestration/optimize/tasklist/operate index prefixes.
+	PrefixKey string `json:"prefixKey,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -129,12 +134,12 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	for _, version := range versions {
 		chartDir := filepath.Join(repoRoot, "charts", fmt.Sprintf("camunda-platform-%s", version))
 
-		cfg, err := LoadCITestConfig(chartDir)
+		cfg, err := LoadRegistry(chartDir)
 		if err != nil {
 			logging.Logger.Warn().
 				Str("version", version).
 				Err(err).
-				Msg("Skipping version — failed to load ci-test-config.yaml")
+				Msg("Skipping version — failed to load CI test config")
 			continue
 		}
 
@@ -208,11 +213,12 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						Enterprise:   scenario.Enterprise,
 						SkipE2E:      scenario.SkipE2E,
 						SkipIT:       scenario.SkipIT,
-						Dependencies: scenario.Dependencies,
+						Dependencies: append([]ChartDependency(nil), scenario.Dependencies...),
 						PreInstall:   scenario.PreInstall,
 						PostDeploy:   scenario.PostDeploy,
 						PreUpgrade:   preUpgrade,
-						HelmVersion: scenario.HelmVersion,
+						HelmVersion:  scenario.HelmVersion,
+						PrefixKey:    scenario.PrefixKey,
 					})
 				}
 			}

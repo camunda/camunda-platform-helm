@@ -93,3 +93,6 @@
 | 89 | [Integrate Azure Blob Storage as a document handling backend in the Helm chart](0089-integrate-azure-blob-storage-as-a-document-handling-backend.md) |
 | 90 | [Adopt Docusaurus as the dedicated documentation platform for Helm chart project knowledge](0090-adopt-docusaurus-as-the-dedicated-documentation-platform.md) |
 | 91 | [Standardize `<component>.extraConfiguration` as the Application Configuration Mechanism](0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md) |
+| 92 | [Allow opt-in deployment strategy for components with chart-managed RWO persistence](0092-allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence.md) |
+| 93 | [Adopt a composable CI scenario registry for the per-version integration test matrix](0093-adopt-composable-ci-scenario-registry-for-per-version-test-matrix.md) |
+| 94 | [Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts](0094-remove-bundled-bitnami-subcharts-from-the-8-10-chart.md) |

@@ -112,14 +112,6 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		logging.Logger.Debug().Msg("using vault-backed external secrets")
 	}
 
-	// Apply infra secrets
-	infraSecretFile := fmt.Sprintf("external-secret-infra%s.yaml", vaultSuffix)
-	if err := applyManifestIfExists(ctx, client, namespace,
-		filepath.Join(externalSecretDir, infraSecretFile),
-		"infra-secrets external-secret"); err != nil {
-		return fmt.Errorf("apply infra secrets: %w", err)
-	}
-
 	// Apply credentials secrets
 	credentialsSecretFile := fmt.Sprintf("external-secret-credentials%s.yaml", vaultSuffix)
 	if err := applyManifestIfExists(ctx, client, namespace,

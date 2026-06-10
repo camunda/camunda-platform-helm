@@ -62,6 +62,7 @@ Options:
   --opensearch                                Run the opensearch tests
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
+  --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
@@ -90,6 +91,7 @@ RUN_SMOKE_TESTS=false
 IS_OPENSEARCH=false
 IS_RBA=false
 IS_MT=false
+IS_AUTH0=false
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
 TRACE_MODE=""
@@ -147,6 +149,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --mt)
       IS_MT=true
+      shift
+      ;;
+    --auth0)
+      IS_AUTH0=true
       shift
       ;;
     --playwright-debug)
@@ -210,6 +216,7 @@ log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 [[ "$IS_OPENSEARCH" == "true" ]] && log "IS_OPENSEARCH is set to true"
 [[ "$IS_RBA" == "true" ]] && log "IS_RBA is set to true"
 [[ "$IS_MT" == "true" ]] && log "IS_MT is set to true"
+[[ "$IS_AUTH0" == "true" ]] && log "IS_AUTH0 is set to true (auth0-smoke Playwright project)"
 
 # ── Namespace-scoped .env to avoid collisions during parallel matrix runs ──
 # When multiple matrix entries target the same chart version, they share the
@@ -220,7 +227,7 @@ log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
 trap 'rm -f "$ENV_FILE"' EXIT
 
-render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
+render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"
 
 # Export every variable from the namespace-scoped .env into the shell so that
 # the npx playwright subprocess inherits them without needing the .env file.
@@ -254,11 +261,12 @@ RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PAT
 [[ "$IS_OPENSEARCH" == "true" ]] && RERUN_CMD+=" --opensearch"
 [[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
 [[ "$IS_MT" == "true" ]] && RERUN_CMD+=" --mt"
+[[ "$IS_AUTH0" == "true" ]] && RERUN_CMD+=" --auth0"
 [[ -n "$VIDEO_MODE" ]] && RERUN_CMD+=" --video ${VIDEO_MODE}"
 [[ -n "$TRACE_MODE" ]] && RERUN_CMD+=" --trace ${TRACE_MODE}"
 [[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
 [[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
 
 log "DEBUG: E2E tests completed"

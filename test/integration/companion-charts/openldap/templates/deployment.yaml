@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: openldap
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openldap
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openldap
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: openldap
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--copy-service"
+            - "--loglevel"
+            - "debug"
+          ports:
+            - name: ldap
+              containerPort: 389
+              protocol: TCP
+          env:
+            - name: LDAP_ORGANISATION
+              value: {{ .Values.organisation | quote }}
+            - name: LDAP_DOMAIN
+              value: {{ .Values.domain | quote }}
+            - name: LDAP_ADMIN_PASSWORD
+              value: {{ .Values.adminPassword | quote }}
+            - name: LDAP_CONFIG_PASSWORD
+              value: {{ .Values.configPassword | quote }}
+            - name: LDAP_REMOVE_CONFIG_AFTER_SETUP
+              value: "false"
+          volumeMounts:
+            # Config-level LDIF: memberOf overlay setup (subPath avoids K8s symlink issues)
+            - name: config-ldif
+              mountPath: /container/service/slapd/assets/config/bootstrap/ldif/03-memberOf.ldif
+              subPath: 03-memberOf.ldif
+            # Data LDIF: seed users and groups (subPath avoids K8s symlink issues)
+            - name: seed-ldif
+              mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom/seed.ldif
+              subPath: seed.ldif
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: 389
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 389
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: config-ldif
+          configMap:
+            name: {{ .Release.Name }}-config-ldif
+        - name: seed-ldif
+          configMap:
+            name: {{ .Release.Name }}-seed-ldif

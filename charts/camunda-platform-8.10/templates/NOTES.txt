@@ -52,9 +52,6 @@
     {{- if .Values.identity.image.tag }}
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag }}
     {{- end }}
-  {{- if .Values.identityKeycloak.enabled }}
-  - Keycloak: {{ .Values.identityKeycloak.image.repository }}:{{ .Values.identityKeycloak.image.tag }}
-  {{- end }}
   {{- end }}
 - Web Modeler:
   - Enabled: {{ eq (include "camundaHub.webModelerEnabled" .) "true" }}
@@ -62,11 +59,6 @@
   - Docker images used for Web Modeler:
     - {{ include "webModeler.restapi.image" . }}
     - {{ include "webModeler.websockets.image" . }}
-  {{- end }}
-- Elasticsearch:
-  - Enabled: {{ .Values.elasticsearch.enabled }}
-  {{- if .Values.elasticsearch.enabled }}
-  - Docker Image used for Elasticsearch: {{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}
   {{- end }}
 
 ### Orchestration (Zeebe, Operate, Tasklist, and Identity)
@@ -111,12 +103,7 @@ Console:
 
 If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URLs for Keycloak.
 
-Authentication via Identity/Keycloak is enabled. To login into one of the services please port-forward to Keycloak
-as well, otherwise, a login will not be possible. Make sure you use `18080` as a port.
-
-{{ if .Values.identityKeycloak.enabled -}}
-> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identityKeycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
-{{- end }}
+Authentication via Identity/Keycloak is enabled. Ensure your external Keycloak is reachable at the configured URL (see `global.identity.keycloak.url`).
 {{- end }}
 
 Now you can point your browser to one of the service's login pages.
@@ -134,9 +121,6 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- if .Values.global.ingress.enabled }}
 ## Combined Ingress
 
-{{ if .Values.identityKeycloak.enabled -}}
-- Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
-{{- end }}
 {{- if or (.Values.identity.enabled) (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - Web Applications:
   {{ if eq (include "camundaHub.consoleEnabled" .) "true" -}}

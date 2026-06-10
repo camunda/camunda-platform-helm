@@ -1,0 +1,7 @@
+script: pre-install-elasticsearch-self-signed-upgrade.sh
+description: |
+  Generates a self-signed CA plus node certificate via openssl,
+  packages them into JKS keystore + truststore via keytool, and
+  creates the elasticsearch-tls-certs, elasticsearch-tls-passwords,
+  and elasticsearch-jks Secrets consumed by the Elasticsearch
+  StatefulSet's TLS config.

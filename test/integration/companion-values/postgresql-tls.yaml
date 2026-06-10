@@ -1,0 +1,30 @@
+# Companion values for internal-postgresql — TLS / self-signed variant.
+# Replaces the CloudNativePG `postgresql-cluster-tls.yaml` fixture for the
+# `rdbms-self-signed` scenario. The chart generates a self-signed CA + server
+# cert at install time and starts PostgreSQL with `ssl=on`; the CA is published
+# in the `postgresql-tls` Secret under `ca.crt` for `sslmode=verify-full`.
+# Provides the `orchestration` database for RDBMS secondary storage alongside
+# the Identity and Web Modeler databases.
+
+fullnameOverride: postgresql
+
+tls:
+  enabled: true
+
+auth:
+  username: "$RDBMS_POSTGRESQL_USERNAME"
+  password: "$RDBMS_POSTGRESQL_PASSWORD"
+  database: identity
+
+databases:
+  - identity
+  - webmodeler
+  - orchestration
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

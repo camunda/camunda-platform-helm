@@ -15,52 +15,6 @@ identity:
                 values:
                   - t-core-16-unstable
 
-identityKeycloak:
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
-  postgresql:
-    primary:
-      tolerations:
-        - key: t-core-16-unstable
-          operator: Exists
-          effect: NoSchedule
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nodegroup
-                    operator: In
-                    values:
-                      - t-core-16-unstable
-
-identityPostgresql:
-  primary:
-    tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
-
 camundaHub:
   console:
     tolerations:
@@ -105,22 +59,6 @@ camundaHub:
                     operator: In
                     values:
                       - t-core-16-unstable
-
-webModelerPostgresql:
-  primary:
-    tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
 
 orchestration:
   tolerations:
@@ -167,18 +105,3 @@ connectors:
                 values:
                     - t-core-16-unstable
 
-elasticsearch:
-  master:
-    tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable

@@ -1,0 +1,158 @@
+# LDAP multi-group-mapper feature configuration for 8.8
+# Layer 4: Feature - LDAP federation with multiple group mappers
+#
+# Purpose: Reproduce Keycloak #45256 regression where multiple LDAP group
+# mappers using GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE strategy only show
+# groups from one mapper on users/tokens after Keycloak 26.2.6+.
+#
+# Reproduction result (Keycloak 26.3.3 on GKE):
+#   - mode: LDAP_ONLY  -> testuser gets 2/4 groups (REGRESSION)
+#   - mode: READ_ONLY  -> testuser gets 4/4 groups (correct)
+#
+# Root cause: In LDAP_ONLY mode, each mapper's sync resolves group memberships
+# scoped to its own groups.dn. With dropNonExistingGroupsDuringSync=true,
+# mapper A removes groups from mapper B's scope (they appear "non-existing"
+# from A's perspective), and vice versa. The last mapper to sync wins.
+#
+# Trigger conditions (ALL required):
+#   1. Multiple LDAP group mappers with different groups.dn
+#   2. mode: LDAP_ONLY (READ_ONLY is unaffected)
+#   3. drop.non.existing.groups.during.sync: true
+#   4. user.roles.retrieve.strategy: GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE
+#
+# Customer workaround: Switch mode from LDAP_ONLY to READ_ONLY.
+#
+# Requires: OpenLDAP companion chart deployed in the same namespace
+# (release name "openldap", service "openldap:389").
+#
+# Ref: SUPPORT-32686, https://github.com/keycloak/keycloak/issues/45256
+
+identityKeycloak:
+  keycloakConfigCli:
+    enabled: true
+    configuration:
+      ldap-federation.json: |
+        {
+          "realm": "camunda-platform",
+          "components": {
+            "org.keycloak.storage.UserStorageProvider": [
+              {
+                "name": "openldap-federation",
+                "providerId": "ldap",
+                "config": {
+                  "vendor": ["other"],
+                  "connectionUrl": ["ldap://openldap:389"],
+                  "bindDn": ["cn=admin,dc=test,dc=local"],
+                  "bindCredential": ["adminpassword"],
+                  "usersDn": ["ou=Users,dc=test,dc=local"],
+                  "usernameLDAPAttribute": ["uid"],
+                  "rdnLDAPAttribute": ["cn"],
+                  "uuidLDAPAttribute": ["entryUUID"],
+                  "userObjectClasses": ["inetOrgPerson"],
+                  "editMode": ["READ_ONLY"],
+                  "searchScope": ["1"],
+                  "pagination": ["false"],
+                  "importEnabled": ["true"],
+                  "syncRegistrations": ["false"],
+                  "trustEmail": ["true"],
+                  "enabled": ["true"],
+                  "priority": ["0"],
+                  "cachePolicy": ["DEFAULT"],
+                  "batchSizeForSync": ["1000"],
+                  "fullSyncPeriod": ["-1"],
+                  "changedSyncPeriod": ["-1"]
+                },
+                "subComponents": {
+                  "org.keycloak.storage.ldap.mappers.LDAPStorageMapper": [
+                    {
+                      "name": "username",
+                      "providerId": "user-attribute-ldap-mapper",
+                      "config": {
+                        "ldap.attribute": ["uid"],
+                        "user.model.attribute": ["username"],
+                        "read.only": ["true"],
+                        "always.read.value.from.ldap": ["true"],
+                        "is.mandatory.in.ldap": ["true"]
+                      }
+                    },
+                    {
+                      "name": "email",
+                      "providerId": "user-attribute-ldap-mapper",
+                      "config": {
+                        "ldap.attribute": ["mail"],
+                        "user.model.attribute": ["email"],
+                        "read.only": ["true"],
+                        "always.read.value.from.ldap": ["true"],
+                        "is.mandatory.in.ldap": ["false"]
+                      }
+                    },
+                    {
+                      "name": "first name",
+                      "providerId": "user-attribute-ldap-mapper",
+                      "config": {
+                        "ldap.attribute": ["givenName"],
+                        "user.model.attribute": ["firstName"],
+                        "read.only": ["true"],
+                        "always.read.value.from.ldap": ["true"],
+                        "is.mandatory.in.ldap": ["true"]
+                      }
+                    },
+                    {
+                      "name": "last name",
+                      "providerId": "user-attribute-ldap-mapper",
+                      "config": {
+                        "ldap.attribute": ["sn"],
+                        "user.model.attribute": ["lastName"],
+                        "read.only": ["true"],
+                        "always.read.value.from.ldap": ["true"],
+                        "is.mandatory.in.ldap": ["true"]
+                      }
+                    },
+                    {
+                      "name": "app-groups-mapper",
+                      "providerId": "group-ldap-mapper",
+                      "config": {
+                        "groups.dn": ["ou=AppGroups,dc=test,dc=local"],
+                        "group.name.ldap.attribute": ["cn"],
+                        "group.object.classes": ["groupOfNames"],
+                        "preserve.group.inheritance": ["false"],
+                        "ignore.missing.groups": ["false"],
+                        "membership.ldap.attribute": ["member"],
+                        "membership.attribute.type": ["DN"],
+                        "membership.user.ldap.attribute": ["cn"],
+                        "groups.ldap.filter": [],
+                        "mode": ["READ_ONLY"],
+                        "user.roles.retrieve.strategy": ["GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE"],
+                        "memberof.ldap.attribute": ["memberOf"],
+                        "mapped.group.attributes": [],
+                        "drop.non.existing.groups.during.sync": ["true"],
+                        "groups.path": ["/app-groups"]
+                      }
+                    },
+                    {
+                      "name": "infra-groups-mapper",
+                      "providerId": "group-ldap-mapper",
+                      "config": {
+                        "groups.dn": ["ou=InfraGroups,dc=test,dc=local"],
+                        "group.name.ldap.attribute": ["cn"],
+                        "group.object.classes": ["groupOfNames"],
+                        "preserve.group.inheritance": ["false"],
+                        "ignore.missing.groups": ["false"],
+                        "membership.ldap.attribute": ["member"],
+                        "membership.attribute.type": ["DN"],
+                        "membership.user.ldap.attribute": ["cn"],
+                        "groups.ldap.filter": [],
+                        "mode": ["READ_ONLY"],
+                        "user.roles.retrieve.strategy": ["GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE"],
+                        "memberof.ldap.attribute": ["memberOf"],
+                        "mapped.group.attributes": [],
+                        "drop.non.existing.groups.during.sync": ["true"],
+                        "groups.path": ["/infra-groups"]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }

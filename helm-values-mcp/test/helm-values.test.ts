@@ -90,7 +90,7 @@ describe('Data Layer', () => {
       expect(versions).toContain('8.9');
       expect(versions).toContain('8.8');
       // Versions are sorted descending
-      expect(versions[0]).toBe('8.9');
+      expect(versions[0]).toBe('8.10');
     });
 
     it('should load chart data with metadata and configs', () => {
@@ -167,7 +167,7 @@ describe('Data Layer', () => {
       
       expect(store.chartPath).toBe(CHART_PATH);
       expect(store.charts.size).toBeGreaterThan(0);
-      expect(store.latestVersion).toBe('8.9');
+      expect(store.latestVersion).toBe('8.10');
     });
 
     it('should get config by path', () => {
@@ -201,7 +201,7 @@ describe('MCP Tools', () => {
     it('should return versions with chart metadata', () => {
       const result = listVersions();
       
-      expect(result.latest).toBe('8.9');
+      expect(result.latest).toBe('8.10');
       
       const v89 = result.versions.find(v => v.version === '8.9');
       expect(v89?.chartVersion).not.toBe('unknown');
@@ -214,7 +214,7 @@ describe('MCP Tools', () => {
     it('should return components with descriptions and dependency info', () => {
       const result = listComponents({});
       
-      expect(result.version).toBe('8.9');
+      expect(result.version).toBe('8.10');
       
       // Check descriptions are derived
       const global = result.components.find(c => c.name === 'global');
@@ -224,7 +224,7 @@ describe('MCP Tools', () => {
       // Check dependency info for chart dependencies
       const elasticsearch = result.components.find(c => c.name === 'elasticsearch');
       expect(elasticsearch?.dependency?.chart).toBe('elasticsearch');
-      expect(elasticsearch?.dependency?.source).toBe('external');
+      expect(elasticsearch?.dependency?.source).toBe('local');
       expect(elasticsearch?.dependency?.enableCondition).toBe('elasticsearch.enabled');
       
       // Check local vs external
@@ -265,7 +265,7 @@ describe('MCP Tools', () => {
     });
 
     it('should detect deprecated configs', () => {
-      const result = getConfigInfo({ path: 'global.license.key' });
+      const result = getConfigInfo({ path: 'global.elasticsearch.enabled' });
       expect(result.deprecated).toBe(true);
     });
 

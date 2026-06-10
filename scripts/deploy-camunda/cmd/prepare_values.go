@@ -53,8 +53,8 @@ type prepareValuesFlags struct {
 //
 //	deploy-camunda prepare-values \
 //	  --scenario-path /path/to/chart-full-setup \
-//	  --identity keycloak-external \
-//	  --persistence elasticsearch-external \
+//	  --identity keycloak \
+//	  --persistence elasticsearch \
 //	  --features multitenancy \
 //	  --output-dir /tmp/values
 func newPrepareValuesCommand() *cobra.Command {
@@ -88,8 +88,8 @@ All diagnostic output goes to stderr via the logger.`,
 	f.StringVar(&pv.scenarioPath, "scenario-path", "", "Path to the scenario directory (e.g., chart-full-setup)")
 	f.StringVar(&pv.chartPath, "chart-path", "", "Path to the Camunda chart directory (used to derive scenario-path if not set)")
 	f.StringVar(&pv.scenario, "scenario", "chart-full-setup", "Scenario name (used to derive defaults from naming conventions)")
-	f.StringVar(&pv.identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-external, elasticsearch-self-signed, elasticsearch-external-self-signed, opensearch, opensearch-embedded, opensearch-external, rdbms, rdbms-oracle")
+	f.StringVar(&pv.identity, "identity", "", "Identity selection: keycloak, oidc, basic, hybrid")
+	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-self-signed, no-elasticsearch, opensearch, opensearch-embedded, opensearch-self-signed, opensearch-self-signed-os-trust, rdbms, rdbms-external, rdbms-oracle, rdbms-self-signed")
 	f.StringVar(&pv.testPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
 	f.StringVar(&pv.platform, "platform", "gke", "Deploy platform: gke, rosa, eks (fallback for --test-platform)")
 	f.StringSliceVar(&pv.features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
@@ -107,10 +107,10 @@ All diagnostic output goes to stderr via the logger.`,
 
 	// Register completions for selection flags
 	_ = cmd.RegisterFlagCompletionFunc("identity", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"elasticsearch", "elasticsearch-external", "elasticsearch-self-signed", "elasticsearch-external-self-signed", "opensearch", "opensearch-embedded", "opensearch-external", "rdbms", "rdbms-external", "rdbms-oracle"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"elasticsearch", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return config.TestPlatforms, cobra.ShellCompDirectiveNoFileComp

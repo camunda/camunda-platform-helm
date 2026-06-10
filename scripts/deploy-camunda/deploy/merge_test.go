@@ -75,11 +75,11 @@ func findEnvByName(envs []map[string]any, name string) (map[string]any, bool) {
 }
 
 // TestMergeYAMLFiles_EnvArrayMerge tests the core use case: merging operate.env
-// and tasklist.env arrays from elasticsearch-external.yaml and rba.yaml layers.
+// and tasklist.env arrays from the Elasticsearch persistence and rba.yaml layers.
 func TestMergeYAMLFiles_EnvArrayMerge(t *testing.T) {
 	dir := t.TempDir()
 
-	// Layer 1: elasticsearch-external.yaml (persistence layer)
+	// Layer 1: Elasticsearch persistence layer
 	esExternal := `
 operate:
   env:
@@ -414,13 +414,13 @@ func TestMergeLayeredValues_ShortCircuit(t *testing.T) {
 	}
 }
 
-// TestMergeYAMLFiles_RealWorldScenario uses the exact YAML structures from
-// the actual elasticsearch-external.yaml and rba.yaml files to verify the
-// fix works for the real-world bug.
+// TestMergeYAMLFiles_RealWorldScenario uses representative YAML structures from
+// an external-Elasticsearch persistence layer and the rba.yaml feature layer to
+// verify the fix works for the real-world bug.
 func TestMergeYAMLFiles_RealWorldScenario(t *testing.T) {
 	dir := t.TempDir()
 
-	// Exact structure from charts/camunda-platform-8.7/.../elasticsearch-external.yaml
+	// Representative external-Elasticsearch persistence structure
 	// with env vars already substituted (as they would be after values.Process)
 	esExternal := `
 global:
@@ -430,11 +430,11 @@ global:
     prefix: orch-keycloak-rba-jnsrqgb9-install
     auth:
       username: elastic
-      existingSecret: infra-credentials
+      existingSecret: elasticsearch-credentials
       existingSecretKey: elasticsearch-password
     url:
       protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+      host: elasticsearch.example.com
       port: 443
 operate:
   env:

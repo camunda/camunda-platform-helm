@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.0.0-alpha1
+version: 15.0.0-alpha2
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -26,28 +26,6 @@ keywords:
   - workflow
   - workflow-engine
 dependencies:
-  # Identity Dependencies.
-  - name: keycloak
-    alias: identityKeycloak
-    repository: "file://../keycloak-24"
-    version: 24.x.x
-    condition: "identityKeycloak.enabled"
-  - name: postgresql
-    alias: identityPostgresql
-    repository: "file://../identity-postgresql-16"
-    version: 16.x.x
-    condition: "identityPostgresql.enabled"
-  # WebModeler Dependencies.
-  - name: web-modeler-postgresql
-    alias: webModelerPostgresql
-    repository: "file://../web-modeler-postgresql-15"
-    version: 15.x.x
-    condition: "webModelerPostgresql.enabled"
-  # Shared Dependencies.
-  - name: elasticsearch
-    repository: "file://../elasticsearch-21"
-    version: 21.6.3
-    condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
     repository: "file://../common-2"
@@ -63,7 +41,7 @@ maintainers:
     email: jesse.simpson@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.20.2"
+  camunda.io/helmCLIVersion: "4.1.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -74,56 +52,40 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Add tpl rendering for global identity auth URL values"
+      description: "Fail early when Helm CLI < v4 is used with chart 15.x"
     - kind: added
-      description: "Add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10"
+      description: "Add orchestration.hostNetwork value"
     - kind: added
-      description: "Add springImport flag to extraConfiguration entries"
+      description: "[TLS B1] add global.tls.caBundle helper for OS-level CA injection part 1 of helm#3498"
     - kind: added
-      description: "Add MCP feature scenario for 8.10 integration tests"
+      description: "[TLS B2] add init-container truststore import — closes helm#3498 for JVM clients"
     - kind: added
-      description: "Update Admin webapp URL"
+      description: "[TLS D] add values-tls.yaml customer overlay + quickstart doc"
     - kind: added
-      description: "Consolidate webModeler and console into camundaHub for 8.10"
+      description: "[TLS F] deprecate legacy per-component JKS truststore fields"
     - kind: added
-      description: "Add companion chart deployment support to deploy-camunda"
+      description: "Add global.gateway.namespace to support cross-namespace Gateway parentRefs"
+    - kind: added
+      description: "Added service account labels"
     - kind: changed
-      description: "Migrate web-modeler pusher secret to existingSecretsMustBeSet"
+      description: "Drop camundaPlatform.toYamlPretty helm v3 compat wrapper"
     - kind: changed
-      description: "Drop global.image.tag option"
+      description: "Migrate console and webModeler values under camundaHub namespace [1/6]"
     - kind: changed
-      description: "Remove integration tests"
+      description: "Drop bundled Bitnami subcharts"
+    - kind: changed
+      description: "Drop orphan helpers and guard keycloak release info"
     - kind: fixed
-      description: "Add tpl support for global.identity.auth.issuer"
+      description: "Update image tags to 8.10.0-alpha1"
     - kind: fixed
-      description: "Restore backward compatibility for 3rd party e2e callers and fix 8.9 documentstore corruption"
+      description: "Expose cpu keys in connectors/console resources schema"
     - kind: fixed
-      description: "Use dedicated liveness endpoint for orchestration app"
+      description: "Allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets"
     - kind: fixed
-      description: "Add env vars to web-modeler restapi deployment for Spring Boot 4.0.4 compatibility"
+      description: "Allow Recreate strategy for Web Modeler persistence"
     - kind: fixed
-      description: "Optimize prefix defaults to empty so global.elasticsearch.prefix is respected"
+      description: "Guard legacy ES exporter on global.elasticsearch.enabled"
     - kind: fixed
-      description: "Reference bitnami subcharts internally rather than relying on external repositories"
+      description: "Align camunda hub service account gating"
     - kind: fixed
-      description: "Fix links in helpers 8.9+ to upgrade docs"
-    - kind: fixed
-      description: "Set basic.allow-unauthenticated-api-access on unprotectedApi"
-    - kind: fixed
-      description: "Skip initial-contact-points generation for multi-region deployments in 8.9 and 8.10"
-    - kind: fixed
-      description: "Consolidated-auth should be disabled"
-    - kind: fixed
-      description: "Remove importer from 8.9 and 8.10"
-    - kind: fixed
-      description: "Add aws-enabled property to secondary-storage config"
-    - kind: fixed
-      description: "Use internal cluster url for connectors in console release info"
-    - kind: fixed
-      description: "Keep persistence enabled in web modeler postgresql"
-    - kind: fixed
-      description: "Add missing properties and annotations to values.schema.json"
-    - kind: fixed
-      description: "Update 8.10 chart image tags from stale alpha to stable 8.9 releases"
-    - kind: fixed
-      description: "Resolve SM nightly upgrade scenario failures for groups 2-4"
+      description: "Align upload size with Zeebe message limits"

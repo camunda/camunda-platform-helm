@@ -38,21 +38,9 @@ func TestConstraintsTemplate(t *testing.T) {
 func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Skip: true,
-			Name: "TestIdentityKeycloakConstraintFailure",
-			Values: map[string]string{
-				"identity.enabled":         "false",
-				"identityKeycloak.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-
-				require.Error(t, err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
-			},
-		}, {
-			Name: "TestIdentityKeycloakConstraintSuccess",
+			Name: "TestExternalKeycloakRendersSuccessfully",
 			Values: map[string]string{
 				"identity.enabled":                      "true",
-				"identityKeycloak.enabled":              "false",
 				"global.identity.keycloak.url.protocol": "https",
 				"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
 				"global.identity.keycloak.url.port":     "8443",
@@ -60,14 +48,12 @@ func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				require.NoError(t, err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
+				require.NoError(t, err)
 			},
 		}, {
 			Name: "TestKeycloakAuthNewSecretPatternRendersSuccessfully",
 			Values: map[string]string{
 				"identity.enabled":                                       "true",
-				"identityKeycloak.enabled":                               "false",
 				"global.identity.keycloak.url.protocol":                  "https",
 				"global.identity.keycloak.url.host":                      "keycloak.prod.svc.cluster.local",
 				"global.identity.keycloak.url.port":                      "8443",
@@ -82,7 +68,6 @@ func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestKeycloakAuthAdminUserWithoutSecretFails",
 			Values: map[string]string{
 				"identity.enabled":                        "true",
-				"identityKeycloak.enabled":                "false",
 				"global.identity.keycloak.url.protocol":   "https",
 				"global.identity.keycloak.url.host":       "keycloak.prod.svc.cluster.local",
 				"global.identity.keycloak.url.port":       "8443",
@@ -96,7 +81,6 @@ func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestKeycloakAuthInlineSecretRendersSuccessfully",
 			Values: map[string]string{
 				"identity.enabled":                                  "true",
-				"identityKeycloak.enabled":                          "false",
 				"global.identity.keycloak.url.protocol":             "https",
 				"global.identity.keycloak.url.host":                 "keycloak.prod.svc.cluster.local",
 				"global.identity.keycloak.url.port":                 "8443",

@@ -81,17 +81,6 @@ camundaHub:
       - name: CAMUNDA_IDENTITY_JWKS_URL
         value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
 
-identityPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
-    secretKeys:
-      adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
-      userPasswordKey: identity-keycloak-postgresql-user-password
-
-identityKeycloak:
-  enabled: false
-
 connectors:
   security:
     authentication:

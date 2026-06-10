@@ -1,0 +1,676 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          shortname: eske
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+        - name: enterprise-values
+          enabled: false
+          shortname: entv
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - enterprise
+          helmVersion: 3.20.2
+        - name: upgrade-migration
+          enabled: false
+          shortname: eske-upgm
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - migrator
+          helmVersion: 3.20.2
+        - name: elasticsearch-basic
+          enabled: false
+          shortname: esba
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+        - name: oidc
+          enabled: true
+          shortname: esoi
+          auth: oidc
+          flow: install,upgrade-minor
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+          skip-it: true
+        - name: keycloak-mt
+          enabled: false
+          shortname: kemt
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: keycloak-rba
+          enabled: false
+          shortname: kerba
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - rba
+          helmVersion: 3.20.2
+        - name: elasticsearch-self-signed-upgrade
+          enabled: false
+          shortname: esss
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-self-signed
+          features:
+            - migrator
+          pre-install:
+            script: pre-install-elasticsearch-self-signed-upgrade.sh
+            description: |
+              Generates a self-signed CA plus node certificate via openssl,
+              packages them into JKS keystore + truststore via keytool, and
+              creates the elasticsearch-tls-certs, elasticsearch-tls-passwords,
+              and elasticsearch-jks Secrets consumed by the Elasticsearch
+              StatefulSet's TLS config.
+        - name: keycloak-original
+          enabled: false
+          shortname: keyc
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+        - name: elasticsearch
+          enabled: false
+          shortname: eshy
+          auth: hybrid
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          infra-type:
+            gke: distroci
+          identity: hybrid
+          persistence: elasticsearch
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: elasticsearch-arm
+          enabled: true
+          shortname: esarm
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: arm
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - arm
+          helmVersion: 3.20.2
+          skip-e2e: true
+        - name: opensearch
+          enabled: true
+          shortname: oske
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-embedded
+          helmVersion: 3.20.2
+          dependencies:
+            - chart: opensearch/opensearch
+              version: 2.31.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: documentstore
+          enabled: true
+          shortname: docstr
+          auth: keycloak
+          flow: ""
+          platforms:
+            - eks
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - documentstore
+          helmVersion: 3.20.2
+        - name: component-persistence
+          enabled: true
+          shortname: cprst
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - persistence
+            - migrator
+          helmVersion: 3.20.2
+        - name: keycloak-ldap
+          enabled: false
+          shortname: keldp
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - ldap
+          dependencies:
+            - chart: test/integration/companion-charts/openldap
+              release-name: openldap
+              values-file: test/integration/companion-values/openldap.yaml
+        - name: keycloak-original
+          enabled: true
+          shortname: keyco
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+        - name: alwaysgreen
+          enabled: false
+          shortname: agrn
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: alwaysgreen
+          identity: keycloak
+          persistence: elasticsearch
+        - name: keycloak-original
+          enabled: false
+          shortname: kcor
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+        - name: elasticsearch
+          enabled: false
+          shortname: es
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+        - name: qa-elasticsearch
+          enabled: false
+          shortname: qael
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          image-tags: true
+        - name: qa-opensearch
+          enabled: false
+          shortname: qaos
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: opensearch/opensearch
+              version: 2.31.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: qa-elasticsearch-rba
+          enabled: false
+          shortname: qaelrba
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - rba
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-mt
+          enabled: false
+          shortname: qaelmt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - multitenancy
+          qa: true
+          image-tags: true
+        - name: qa-license
+          enabled: false
+          shortname: lic
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - license
+          qa: true
+          image-tags: true
+        - name: qa-entra
+          enabled: false
+          shortname: qaen
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: oidc
+          persistence: elasticsearch
+          qa: true
+          image-tags: true
+        - name: qa-document-store
+          enabled: false
+          shortname: qadoc
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - documentstore
+          qa: true
+          image-tags: true
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - documentstore
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-tasklist-v1
+          enabled: false
+          shortname: qaeltlv1
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - tasklist-v1
+          qa: true
+          image-tags: true
+        - name: qa-opensearch-tasklist-v1
+          enabled: false
+          shortname: qaosupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          features:
+            - tasklist-v1
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: opensearch/opensearch
+              version: 2.31.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          prefix-key: qa-opensearch-upg
+        - name: qa-elasticsearch-rba-tasklist-v1
+          enabled: false
+          shortname: qaelrbaupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - rba
+            - tasklist-v1
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-mt-tasklist-v1
+          enabled: false
+          shortname: qaelmtupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - multitenancy
+            - tasklist-v1
+          qa: true
+          image-tags: true
+        - name: qa-license-tasklist-v1
+          enabled: false
+          shortname: licupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - license
+            - tasklist-v1
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - migrator
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-document-upg
+          enabled: false
+          shortname: qaeldocupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - documentstore
+          qa: true
+          image-tags: true
+        - name: qa-opensearch-upg
+          enabled: false
+          shortname: qaosupg2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: opensearch/opensearch
+              version: 2.31.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: qa-elasticsearch-rba-upg
+          enabled: false
+          shortname: qaelrbaup2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - rba
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          shortname: qaelmtup2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - multitenancy
+          qa: true
+          image-tags: true
+        - name: qa-license-upg
+          enabled: false
+          shortname: licup2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - license
+          qa: true
+          image-tags: true
+    nightly:
+      scenario: []
+  flows:
+    modular-upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade-minor.sh
+        description: |
+          Deletes the postgresql and postgresql-web-modeler StatefulSets to
+          handle immutable spec diffs across the 8.7→8.8 minor upgrade.
+          Helm recreates them with the new spec while keeping PVC data.
+    upgrade-minor:
+      pre-upgrade:
+        script: pre-upgrade-minor.sh
+        description: |
+          Deletes the postgresql and postgresql-web-modeler StatefulSets to
+          handle immutable spec diffs across the 8.7→8.8 minor upgrade.
+          Helm recreates them with the new spec while keeping PVC data.
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the 8.7→8.8 patch upgrade. PostgreSQL 15→14
+          rollback requires fresh statefulset spec.

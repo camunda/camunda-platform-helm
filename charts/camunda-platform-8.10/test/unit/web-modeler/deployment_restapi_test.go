@@ -59,7 +59,6 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
 				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
-				"webModelerPostgresql.enabled":                                 "false",
 				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
 				"webModeler.restapi.externalDatabase.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
@@ -88,7 +87,6 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
 				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
-				"webModelerPostgresql.enabled":                                 "false",
 				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
 				"webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
@@ -117,7 +115,6 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
 				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
-				"webModelerPostgresql.enabled":                                 "false",
 				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
 				"webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
@@ -146,7 +143,6 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                             "true",
 				"webModeler.enabled":                                           "true",
 				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
-				"webModelerPostgresql.enabled":                                 "false",
 				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 				"webModeler.restapi.externalDatabase.username":                 "modeler-user",
 				"webModeler.restapi.externalDatabase.secret.existingSecret":    "camunda-platform-test-web-modeler-restapi",
@@ -166,59 +162,6 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-web-modeler-restapi"},
 								Key:                  "database-password",
-							},
-						},
-					})
-			},
-		}, {
-			Name: "TestContainerInternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey",
-			Values: map[string]string{
-				"identity.enabled":                         "true",
-				"webModeler.enabled":                       "true",
-				"webModeler.restapi.mail.fromAddress":      "example@example.com",
-				"webModelerPostgresql.enabled":             "true",
-				"webModelerPostgresql.auth.existingSecret": "my-secret",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// then
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "SPRING_DATASOURCE_PASSWORD",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
-								Key:                  "web-modeler-postgresql-user-password",
-							},
-						},
-					})
-			},
-		}, {
-			Name: "TestContainerInternalDatabasePasswordSecretRefForExistingSecretAndCustomKey",
-			Values: map[string]string{
-				"identity.enabled":                                     "true",
-				"webModeler.enabled":                                   "true",
-				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
-				"webModelerPostgresql.enabled":                         "true",
-				"webModelerPostgresql.auth.existingSecret":             "my-secret",
-				"webModelerPostgresql.auth.secretKeys.userPasswordKey": "my-database-password-key",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// then
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "SPRING_DATASOURCE_PASSWORD",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
-								Key:                  "my-database-password-key",
 							},
 						},
 					})

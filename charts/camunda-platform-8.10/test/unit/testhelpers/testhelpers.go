@@ -86,12 +86,9 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 	if values == nil {
 		values = make(map[string]string)
 	}
-	// Add default Elasticsearch flags if not already present
+	// Add default Elasticsearch flag if not already present
 	if _, hasGlobalES := values["global.elasticsearch.enabled"]; !hasGlobalES {
 		values["global.elasticsearch.enabled"] = "true"
-	}
-	if _, hasES := values["elasticsearch.enabled"]; !hasES {
-		values["elasticsearch.enabled"] = "true"
 	}
 
 	options := &helm.Options{

@@ -181,6 +181,7 @@ func newMatrixRunCommand() *cobra.Command {
 		ensureDockerHub          bool
 		useLatest                bool
 		useQA                    bool
+		forceImageOverrides      bool
 		yes                      bool
 		logDir                   string
 		extraHelmArgs            []string
@@ -398,6 +399,12 @@ This command calls deploy.Execute() for each matrix entry.`,
 				return nil
 			}
 
+			// An external --chart-ref artifact corresponds to a single Camunda
+			// version, so it must not be applied across a multi-version matrix.
+			if err := validateChartRefVersionSpan(chartRef, entries); err != nil {
+				return err
+			}
+
 			// Block e2e runs with many entries — Playwright spawns a browser per test
 			// which can exhaust machine resources fast.
 			const e2eWarnThreshold = 5
@@ -499,6 +506,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				EnsureDockerHub:       ensureDockerHub,
 				UseLatest:             useLatest,
 				UseQA:                 useQA,
+				ForceImageOverrides:   forceImageOverrides,
 				ExtraHelmArgs:         extraHelmArgs,
 				ExtraHelmSets:         extraHelmSets,
 				NamespaceOverride:     namespaceOverride,
@@ -588,7 +596,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&useVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets for all platforms (overridden by --use-vault-backed-secrets-gke/--use-vault-backed-secrets-eks)")
 	f.BoolVar(&useVaultBackedSecretsGKE, "use-vault-backed-secrets-gke", false, "Use vault-backed external secrets for GKE entries")
 	f.BoolVar(&useVaultBackedSecretsEKS, "use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
-	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host (defaults to "+config.DefaultKeycloakHost+")")
+	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host")
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
 	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
@@ -600,6 +608,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
 	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
 	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
+	f.BoolVar(&forceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: allow Go-layer image overlays (base-image-tags, chart-root overlays) even when --chart-ref is set. Note: env-file IMAGE_TAG keys stripped at the workflow layer are not restored by this flag.")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
 	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
@@ -758,6 +767,33 @@ func validateChartRefFlags(chartRef, chartRefVersion string) error {
 		return fmt.Errorf("--chart-version is required when --chart-ref is an OCI reference")
 	}
 
+	return nil
+}
+
+// validateChartRefVersionSpan rejects a --chart-ref override that would span
+// more than one chart version. An external chart artifact (OCI ref or .tgz)
+// corresponds to a single Camunda version, so applying it across multiple
+// resolved matrix versions would install the wrong chart on every entry but the
+// matching one. Multiple entries that share one version (scenarios/flows) are
+// allowed — that is the normal RC-validation workflow.
+func validateChartRefVersionSpan(chartRef string, entries []matrix.Entry) error {
+	if chartRef == "" {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	order := []string{}
+	for _, e := range entries {
+		if _, ok := seen[e.Version]; !ok {
+			seen[e.Version] = struct{}{}
+			order = append(order, e.Version)
+		}
+	}
+	if len(order) > 1 {
+		return fmt.Errorf(
+			"--chart-ref applies a single external chart artifact, but the resolved matrix spans %d versions (%s); "+
+				"narrow the run to one version with --versions (e.g. --versions %s)",
+			len(order), strings.Join(order, ", "), order[0])
+	}
 	return nil
 }
 

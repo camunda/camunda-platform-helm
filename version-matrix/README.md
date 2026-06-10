@@ -13,17 +13,22 @@ For the best experience, please remember:
 
   ```helm search repo camunda/camunda-platform --versions```
 
-- Always use the `Helm CLI` version that's used with the Helm chart. It's mentioned in the matrix for all charts or under chart annotation `camunda.io/helmCLIVersion` for newer charts.
+- Always use the supported `Helm CLI` versions used with the Helm chart. They're mentioned in the matrix for all charts or under chart annotation `camunda.io/helmCLIVersion` for newer charts.
+
+- Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.
 
 - During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/).
 
 
 ## [Camunda 8.10](./camunda-8.10)
 
+### [Helm chart 15.0.0-alpha2](./camunda-8.10/#helm-chart-1500-alpha2)
 ### [Helm chart 15.0.0-alpha1](./camunda-8.10/#helm-chart-1500-alpha1)
 
 ## [Camunda 8.9](./camunda-8.9)
 
+### [Helm chart 14.4.0](./camunda-8.9/#helm-chart-1440)
+### [Helm chart 14.3.0](./camunda-8.9/#helm-chart-1430)
 ### [Helm chart 14.2.0](./camunda-8.9/#helm-chart-1420)
 ### [Helm chart 14.1.0](./camunda-8.9/#helm-chart-1410)
 ### [Helm chart 14.0.1](./camunda-8.9/#helm-chart-1401)
@@ -36,6 +41,10 @@ For the best experience, please remember:
 
 ## [Camunda 8.8](./camunda-8.8)
 
+### [Helm chart 13.10.1](./camunda-8.8/#helm-chart-13101)
+### [Helm chart 13.10.0](./camunda-8.8/#helm-chart-13100)
+### [Helm chart 13.9.1](./camunda-8.8/#helm-chart-1391)
+### [Helm chart 13.9.0](./camunda-8.8/#helm-chart-1390)
 ### [Helm chart 13.8.0](./camunda-8.8/#helm-chart-1380)
 ### [Helm chart 13.7.2](./camunda-8.8/#helm-chart-1372)
 ### [Helm chart 13.7.1](./camunda-8.8/#helm-chart-1371)

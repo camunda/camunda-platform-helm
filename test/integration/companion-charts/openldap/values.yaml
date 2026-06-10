@@ -1,0 +1,30 @@
+# OpenLDAP companion chart values for CI testing.
+# Deploys a single-replica OpenLDAP with memberOf overlay enabled,
+# pre-seeded with test users and groups for multi-mapper regression testing.
+
+image:
+  repository: osixia/openldap
+  tag: "1.5.0"
+  pullPolicy: IfNotPresent
+
+# LDAP admin credentials
+adminPassword: "adminpassword"
+# Config admin password (cn=admin,cn=config)
+configPassword: "configpassword"
+
+# Base DN for the directory
+baseDN: "dc=test,dc=local"
+organisation: "Test"
+domain: "test.local"
+
+# Service configuration
+service:
+  port: 389
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"

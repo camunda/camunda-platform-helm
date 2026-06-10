@@ -24,32 +24,17 @@ Read the [contribution guide](https://github.com/camunda/camunda-platform-helm/b
 
 ### 1. ADR-first: Align before you implement
 
-For **any new feature, architectural change, directional shift, or larger change**, team alignment is required *before* writing code or opening a PR.
+For any architectural change, new component, cross-team impact, or feature
+with architectural footprint, an ADR is required *before* writing code or
+opening a PR.
 
-**Process:**
+The authoritative process — required-table, MADR format, announce/approve/
+implement sequence, and PDP/kickoff guidance — lives in the
+**[Maintainer Guide → Architecture Decision Records](./maintainer-guide.md#architecture-decision-records-adrs)**.
+Read it before drafting an ADR. App-team contributors follow the same process
+as maintainers.
 
-1. **Open an Architecture Decision Record (ADR)** in [`docs/adr/`](https://github.com/camunda/camunda-platform-helm/tree/main/docs/adr) using the [MADR format](https://adr.github.io/madr/).
-2. **Announce in the relevant Slack channel** so the team can review async.
-3. **Wait for majority approval** — from the Distribution team and any other affected stakeholders.
-4. Once approved: **implement**, then open a PR referencing the ADR.
-
-> ℹ️ ADRs live in `docs/adr/` and are automatically detected by [`crev`](https://github.com/camunda/crev) during AI-assisted reviews. A well-written ADR directly improves the quality of automated review feedback.
-
-**When is an ADR required?**
-
-| Change type | ADR required? |
-|---|---|
-| New feature / new component | Yes |
-| Architectural or structural change | Yes |
-| Directional / cross-team impact | Yes |
-| Bug fix / documentation update | No |
-| Small config addition | No |
-
-### 2. Initiate discussion (PDP/kickoff)
-
-For major changes, the ADR discussion may be complemented by a design discussion (PDP or kickoff meeting) to define scope, clarify responsibilities, and ensure alignment with existing Helm and Kubernetes design.
-
-### 3. Determine ownership
+### 2. Determine ownership
 
 Depending on the nature of the change, either:
 
@@ -58,7 +43,7 @@ Depending on the nature of the change, either:
 
 The Distro team remains the **final reviewer and approval authority** for all Helm chart modifications.
 
-### 4. Propose an issue
+### 3. Propose an issue
 
 Each contribution begins with a GitHub issue describing:
 
@@ -68,7 +53,7 @@ Each contribution begins with a GitHub issue describing:
 - Linked documentation or references (if available).
 - Link to the relevant ADR (if applicable).
 
-### 5. AI-assisted review with `crev`, then PR
+### 4. AI-assisted review with `crev`, then PR
 
 Once the ADR is approved and the implementation is ready, use the following PR workflow:
 
@@ -159,7 +144,7 @@ PRs are automatically reviewed by [`crev`](https://github.com/camunda/crev), an 
 - A **commit status** (`crev/escalation`) indicating whether human review is required.
 - A **label** (`human-review-required` or `ai-review-sufficient`) based on the escalation score.
 
-The escalation decision is governed by the [escalation policy](/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. Routine additive changes by familiar authors may be approved with AI review alone.
+The escalation decision is governed by the [escalation policy](https://github.com/camunda/camunda-platform-helm/blob/main/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. Routine additive changes by familiar authors may be approved with AI review alone.
 
 Contributors should treat the `human-review-required` label as a signal that the Distro team must approve before merge.
 

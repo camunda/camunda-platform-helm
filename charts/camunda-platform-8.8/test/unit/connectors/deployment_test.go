@@ -627,12 +627,12 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			// Test hybrid auth: connectors use basic auth, so no OIDC secret needed even if orchestration uses OIDC
 			Name: "TestHybridAuthConnectorsBasicNoOidcSecret",
 			Values: map[string]string{
-				"connectors.enabled":                            "true",
-				"identity.enabled":                              "true",
-				"identityKeycloak.enabled":                      "true",
-				"global.identity.auth.enabled":                  "true",
-				"orchestration.security.authentication.method":  "oidc",
-				"connectors.security.authentication.method":     "basic",
+				"connectors.enabled":                           "true",
+				"identity.enabled":                             "true",
+				"identityKeycloak.enabled":                     "true",
+				"global.identity.auth.enabled":                 "true",
+				"orchestration.security.authentication.method": "oidc",
+				"connectors.security.authentication.method":    "basic",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

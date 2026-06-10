@@ -35,14 +35,14 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- if .Values.identity.enabled }}
-          {{- if or .Values.identityKeycloak.enabled .Values.global.identity.keycloak.internal }}
+          {{- if .Values.global.identity.keycloak.internal }}
           - backend:
               service:
                 name: {{ include "identity.keycloak.service" . }}
                 port:
                   number: {{ include "identity.keycloak.port" . }}
             path: {{ include "identity.keycloak.contextPath" . | trimSuffix "/" }}/
-            pathType: {{ .Values.identityKeycloak.ingress.pathType | default .Values.global.ingress.pathType }}
+            pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
           {{- if .Values.identity.contextPath }}

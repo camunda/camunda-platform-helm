@@ -16,7 +16,7 @@ jobs:
           echo "now=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
 
       - name: Import Vault secrets for Harbor
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-harbor
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -55,7 +55,7 @@ jobs:
       - name: Add issue to Quality Board
         # https://github.com/orgs/camunda/projects/187/views/15
         id: add-bug-to-quality-board
-        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@28e9ac0ffb3c71c7a1aaa989d5abdad0738c0436 # main
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@b4808875a583e71eff5b3dd07bb50dafb92694a6 # main
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           project-number: "187"

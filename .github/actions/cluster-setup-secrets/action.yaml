@@ -48,16 +48,43 @@ runs:
           done
         }
 
+        wait_for_secret_keys() {
+          local namespace="$1"
+          local secret_name="$2"
+          local expected_keys missing_keys
+          expected_keys="$(kubectl get externalsecret -n "$namespace" -o json | jq -r --arg secret "$secret_name" '.items[] | select(.spec.target.name == $secret) | .spec.data[]?.secretKey')"
+          test -n "$expected_keys" || { echo "❌ No ExternalSecret found for target Secret $secret_name"; return 1; }
+          for _ in {1..60}; do
+            missing_keys="$(while IFS= read -r key; do kubectl get secret "$secret_name" -n "$namespace" -o json 2>/dev/null | jq -e --arg key "$key" '.data[$key] // empty' >/dev/null || printf '%s\n' "$key"; done <<< "$expected_keys")"
+            test -n "$missing_keys" || { echo "✅ Secret $secret_name contains all expected ExternalSecret keys"; return 0; }
+            echo "⏳ Waiting for Secret $secret_name keys: $(tr '\n' ' ' <<< "$missing_keys")"
+            sleep 10
+          done
+          echo "❌ Secret $secret_name is missing expected keys: $(tr '\n' ' ' <<< "$missing_keys")"
+          return 1
+        }
+
         if [[ "$DISTRO_PLATFORM" == "gke" || "$DISTRO_PLATFORM" == "rosa" ]]; then
           echo "🔧 Applying external secret certificates for $DISTRO_PLATFORM"
           apply_external_secret_with_retry \
             ".github/config/external-secret/external-secret-certificates.yaml" \
             "$TEST_NAMESPACE"
 
+          # Remove any ExternalSecrets targeting integration-test-credentials that were
+          # applied by a previous chart version. Two Orphan ExternalSecrets targeting the
+          # same Secret cause ESO to overwrite each other's keys on reconcile, making the
+          # wait below time out in upgrade flows (e.g. 8.7 ES wipes 8.8 keys and vice-versa).
+          stale_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
+            jq -r '.items[] | select(.spec.target.name == "integration-test-credentials") | .metadata.name')"
+          if [[ -n "$stale_es" ]]; then
+            echo "🧹 Removing stale ExternalSecrets targeting integration-test-credentials: $(tr '\n' ' ' <<< "$stale_es")"
+            echo "$stale_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
+          fi
+
           # Apply external secret configuration for integration tests
           # Check for chart-specific external secret first (better approach)
           CHART_SPECIFIC_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials.yaml"
-          
+
           if [[ -f "$CHART_SPECIFIC_FILE" ]]; then
             echo "✅ Applying chart-specific external secret for integration tests: $CHART_SPECIFIC_FILE"
             apply_external_secret_with_retry "$CHART_SPECIFIC_FILE" "$TEST_NAMESPACE"
@@ -74,6 +101,7 @@ runs:
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
             kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
+          wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
 
         else
           echo "🔧 Running in EKS mode — using vault-backed ExternalSecrets"
@@ -83,17 +111,20 @@ runs:
             ".github/config/external-secret/external-secret-certificates-vault.yaml" \
             "$TEST_NAMESPACE"
 
-          # Apply infra secrets (creates infra-credentials secret)
-          apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-infra-vault.yaml" \
-            "$TEST_NAMESPACE"
-
           # Apply credentials secrets (creates integration-test secret, for backward compat)
           apply_external_secret_with_retry \
             ".github/config/external-secret/external-secret-credentials-vault.yaml" \
             "$TEST_NAMESPACE"
 
           # Apply integration test credentials (creates integration-test-credentials secret)
+          # Remove stale ExternalSecrets from previous chart versions first (same race fix as GKE).
+          stale_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
+            jq -r '.items[] | select(.spec.target.name == "integration-test-credentials") | .metadata.name')"
+          if [[ -n "$stale_es" ]]; then
+            echo "🧹 Removing stale ExternalSecrets targeting integration-test-credentials: $(tr '\n' ' ' <<< "$stale_es")"
+            echo "$stale_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
+          fi
+
           # Check for chart-specific vault external secret first
           CHART_SPECIFIC_VAULT_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials-vault.yaml"
 
@@ -113,16 +144,7 @@ runs:
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
             kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
-        fi
-
-        if [[ "$DISTRO_PLATFORM" == "eks" ]]; then
-          echo "✅ Infra secrets already applied via vault-backed ExternalSecrets above"
-        else
-          echo "🔧 Applying external secret infra configuration"
-          apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-infra.yaml" \
-            "$TEST_NAMESPACE"
+          wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
         fi
 
         echo "✅ TLS Certificates/Secrets configuration completed."
-

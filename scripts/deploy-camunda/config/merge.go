@@ -122,7 +122,7 @@ type TestFlags struct {
 
 // SelectionFlags holds selection + composition model flags.
 type SelectionFlags struct {
-	Identity     string   // Identity selection: keycloak, keycloak-external, oidc, basic, hybrid
+	Identity     string   // Identity selection: keycloak, oidc, basic, hybrid
 	Persistence  string   // Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle
 	TestPlatform string   // Test platform selection: gke, eks, openshift
 	Features     []string // Feature selections: multitenancy, rba, documentstore
@@ -179,16 +179,6 @@ type RuntimeFlags struct {
 	LogLevel    string
 	EnvFile     string
 	Interactive bool
-
-	// ESPoolIndex specifies which Elasticsearch pool to target (e.g., "0", "1", "2", or "3").
-	// When set, this value is used directly for $ES_POOL_INDEX substitution in values files.
-	// When empty, prepareScenarioValues falls back to the ES_POOL_INDEX env var, then "0".
-	ESPoolIndex string
-
-	// OSPoolIndex specifies which OpenSearch pool to target (e.g., "0", "1", "2", or "3").
-	// When set, this value is used directly for $OS_POOL_INDEX substitution in values files.
-	// When empty, prepareScenarioValues falls back to the OS_POOL_INDEX env var, then "0".
-	OSPoolIndex string
 
 	// ChangedFlags tracks which CLI flags were explicitly set by the user.
 	// When populated, merge functions will not overwrite these flags with
@@ -251,6 +241,10 @@ type CompanionChart struct {
 	ReleaseName string
 	// ValuesFile is the absolute path to a values file. Empty means use chart defaults.
 	ValuesFile string
+	// EnvVars is the explicit allowlist of environment variable names to
+	// substitute in ValuesFile before deploying. Only these names are expanded;
+	// all other $-tokens are left intact. Empty means no substitution.
+	EnvVars []string
 	// RepoName is the Helm repository name to register before installing
 	// (e.g., "opensearch"). Empty means no repo registration is needed.
 	RepoName string

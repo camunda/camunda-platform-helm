@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.2.0
+version: 14.4.0
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,7 +62,9 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.20.2"
+  # Comma-separated list of supported Helm CLI versions; first entry is the minimum.
+  # 8.9 is the last chart minor that supports Helm v3 — listed alongside v4.
+  camunda.io/helmCLIVersion: "3.20.2,4.1.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -71,5 +73,20 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
-
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Add orchestration.hostNetwork value"
+    - kind: added
+      description: "Added service account labels"
+    - kind: changed
+      description: "Drop bundled Bitnami subcharts"
+    - kind: fixed
+      description: "Expose cpu keys in connectors/console resources schema"
+    - kind: fixed
+      description: "Allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets"
+    - kind: fixed
+      description: "Allow Recreate strategy for Web Modeler persistence"
+    - kind: fixed
+      description: "Guard legacy ES exporter on global.elasticsearch.enabled"
+    - kind: fixed
+      description: "Align upload size with Zeebe message limits"

@@ -42,13 +42,13 @@ type TemplateGoldenTest struct {
 func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	if s.SetValues == nil {
 		s.SetValues = map[string]string{
-			"connectors.security.authentication.oidc.secret.existingSecret":    "camunda-credentials",
-			"connectors.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			"connectors.security.authentication.oidc.secret.existingSecret":       "camunda-credentials",
+			"connectors.security.authentication.oidc.secret.existingSecretKey":    "client-secret",
 			"orchestration.security.authentication.oidc.secret.existingSecret":    "camunda-credentials",
 			"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
-			"global.identity.auth.console.existingSecret.name":                   "camunda-credentials",
-			"global.identity.auth.optimize.secret.existingSecret":                "camunda-credentials",
-			"global.identity.auth.optimize.secret.existingSecretKey":             "identity-optimize-client-token",
+			"global.identity.auth.console.existingSecret.name":                    "camunda-credentials",
+			"global.identity.auth.optimize.secret.existingSecret":                 "camunda-credentials",
+			"global.identity.auth.optimize.secret.existingSecretKey":              "identity-optimize-client-token",
 		}
 	}
 	values := s.SetValues

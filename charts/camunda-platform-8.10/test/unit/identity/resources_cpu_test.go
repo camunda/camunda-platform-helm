@@ -56,7 +56,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"identity.enabled":                   "true",
-			"elasticsearch.enabled":              "true",
 			"global.elasticsearch.enabled":       "true",
 			"identity.resources.requests.cpu":    "200m",
 			"identity.resources.limits.cpu":      "1.5",
@@ -96,7 +95,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"identity.enabled":                   "true",
-			"elasticsearch.enabled":              "true",
 			"global.elasticsearch.enabled":       "true",
 			"identity.resources.requests.cpu":    "600m",
 			"identity.resources.limits.cpu":      "2000m",

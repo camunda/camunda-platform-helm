@@ -1,0 +1,75 @@
+# CI values for the embedded Elasticsearch companion chart (elastic/elasticsearch).
+# QA variant: inherits all settings from elasticsearch.yaml and adds qa-workloads
+# nodeSelector and tolerations so pods schedule on the dedicated QA node pool.
+#
+# Referenced from ci-test-config.yaml qa-* scenario dependencies.
+
+clusterName: "elasticsearch"
+
+replicas: 1
+minimumMasterNodes: 1
+
+protocol: http
+
+imageTag: "8.18.0"
+
+createCert: false
+
+secret:
+  enabled: true
+
+esConfig:
+  elasticsearch.yml: |
+    cluster.name: elasticsearch
+    network.host: 0.0.0.0
+    xpack.security.enabled: false
+    xpack.security.http.ssl.enabled: false
+    xpack.security.transport.ssl.enabled: false
+
+extraEnvs:
+  - name: ES_JAVA_OPTS
+    value: "-Xms512m -Xmx512m"
+
+lifecycle:
+  postStart:
+    exec:
+      command:
+        - bash
+        - -c
+        - |
+          max=60
+          n=0
+          until curl -fsS --connect-timeout 5 "http://localhost:9200/_cluster/health" >/dev/null 2>&1; do
+            n=$((n + 1))
+            if [ "$n" -ge "$max" ]; then
+              echo "elasticsearch not reachable after $max attempts" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          curl -fsS --connect-timeout 5 -X PUT "http://localhost:9200/_index_template/camunda-ci-auto-expand-replicas" \
+            -H 'Content-Type: application/json' \
+            -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*","op-*","opt-*","orch-*"],"priority":1,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 4Gi
+
+# QA-specific: schedule on qa-workloads nodes (tainted with NoSchedule).
+nodeSelector:
+  workload: qa-workloads
+tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads

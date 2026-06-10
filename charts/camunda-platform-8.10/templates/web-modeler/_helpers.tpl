@@ -37,7 +37,8 @@ Create a fully qualified name for the websockets objects.
 {{- end -}}
 
 {{- define "webModeler.extraLabels" -}}
-    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "web-modeler" "componentValuesKey" "webModeler" "context" $) -}}
+app.kubernetes.io/component: web-modeler
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) .Values.camundaHub.webModeler) "chart" .Chart) | quote }}
 {{- end -}}
 
 {{/*
@@ -97,7 +98,7 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the image pull secrets.
 */}}
 {{- define "webModeler.imagePullSecrets" -}}
-  {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" (or .Values.camundaHub.webModeler.image .Values.webModeler.image))) }}
+  {{- include "camundaPlatform.componentImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" (or .Values.camundaHub.webModeler.image .Values.webModeler.image))) }}
 {{- end }}
 
 {{/*
@@ -118,22 +119,19 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Create the name of the service account to use
 */}}
 {{- define "webModeler.serviceAccountName" -}}
-    {{- include "camundaPlatform.serviceAccountName" (dict
-        "component" "webModeler"
-        "context" $
-    ) -}}
+    {{- $saName := (or .Values.camundaHub.webModeler.serviceAccount.name .Values.webModeler.serviceAccount.name) -}}
+    {{- if (or .Values.camundaHub.webModeler.serviceAccount.enabled .Values.webModeler.serviceAccount.enabled) -}}
+        {{- $saName | default (include "webModeler.fullname" .) -}}
+    {{- else -}}
+        {{- $saName | default "default" -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*
-[web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
+[web-modeler] Get the database JDBC url for the external PostgreSQL.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-  {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- printf "jdbc:postgresql://%s:5432/%s"
-        (include "webModeler.postgresql.fullname" .)
-        (.Values.webModelerPostgresql.auth.database)
-      -}}
-  {{- else if (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
+  {{- if (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
     {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
   {{- else if (or .Values.camundaHub.webModeler.restapi.externalDatabase.host .Values.webModeler.restapi.externalDatabase.host) -}}
     {{- printf "jdbc:postgresql://%s:%s/%s"
@@ -145,14 +143,10 @@ app.kubernetes.io/component: {{ .componentName }}
 {{- end -}}
 
 {{/*
-[web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
+[web-modeler] Get the database user.
 */}}
 {{- define "webModeler.restapi.databaseUser" -}}
-  {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- .Values.webModelerPostgresql.auth.username -}}
-  {{- else -}}
-    {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.username .Values.webModeler.restapi.externalDatabase.username) -}}
-  {{- end -}}
+  {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.username .Values.webModeler.restapi.externalDatabase.username) -}}
 {{- end -}}
 
 {{/*
@@ -166,13 +160,6 @@ app.kubernetes.io/component: {{ .componentName }}
     {{- end }}
   {{- end }}
   {{- $authEnabled -}}
-{{- end -}}
-
-{{/*
-[web-modeler] Get the full name of the Kubernetes objects from the postgresql dependency chart
-*/}}
-{{- define "webModeler.postgresql.fullname" -}}
-  {{- include "common.names.dependency.fullname" (dict "chartName" "webModelerPostgresql" "chartValues" .Values.webModelerPostgresql "context" $) -}}
 {{- end -}}
 
 {{/*

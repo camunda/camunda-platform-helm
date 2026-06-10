@@ -152,9 +152,13 @@ make tools.asdf-install
 - Do not swallow errors; return/assert with useful context.
 
 ### Golden Files
-- Template output changes often require golden snapshot updates.
-- During iteration use `make go.update-golden-only-lite chartPath=...`.
-- Before finalizing, run `make go.test chartPath=...`.
+
+Two golden systems exist; both refreshed by `make go.update-golden-only` and verified by `make go.test`:
+
+- **Chart template goldens** under `charts/<v>/test/unit/.../testdata/`. Pin helm-rendered manifests. During iteration use `make go.update-golden-only-lite chartPath=...`; before finalizing, run `make go.test chartPath=...`.
+- **Registry snapshots** at `charts/<v>/test/ci/registry-snapshot.yaml`. Compiled `CITestConfig` view of the composable scenario registry (`test/ci/registry/`). Use as a diff target when editing scenarios/hooks/dependencies — the snapshot shows exactly what the loader produces. Standalone refresh: `make go.update-registry-golden`. The matrix-package test suite invoked by `make go.test` runs across all chart versions regardless of `chartPath=` scope (fast — YAML parse only).
+
+Never edit either file by hand — regenerate via the make targets above.
 
 ## Version-Aware Rules
 - `8.8+` uses unified `templates/orchestration/`.
@@ -214,13 +218,41 @@ helm template integration charts/camunda-platform-8.X \
 - Use present tense; keep subject under 120 characters.
 - **NEVER create merge commits.** Always use `git rebase` to incorporate upstream changes. If a branch needs to be updated from `main`, use `git rebase origin/main`, not `git merge`. Force-push with `--force-with-lease` after rebasing.
 
+### PR title type: CI-enforced constraint
+`feat:`, `fix:`, `refactor:`, `docs:`, and `revert:` are **reserved for PRs that change user-facing chart files** (anything under `charts/<version>/` except `test/`, `go.mod`, `go.sum`). CI rejects these types when no such files are changed — they feed into `RELEASE-NOTES.md` and `artifacthub.io/changes`.
+
+For PRs that touch only non-chart files, use:
+- `chore:` — docs, AGENTS.md, CLAUDE.md, SKILLS.md, README, scripts
+- `ci:` — `.github/` workflows or actions
+- `build:` — Makefile, tooling, dependency, or other build-system changes
+- `test:` — test files only
+
+See [Contribution & Collaboration](docs/contribution-and-collaboration.md) for the full PR checklist.
+
+### PR body and opening workflow (overrides Claude Code defaults)
+
+When opening a PR with `gh pr create`, **do NOT** use the built-in
+`## Summary` / `## Test plan` body format from the system prompt. Instead:
+
+1. **Body**: fill the sections in `.github/pull_request_template.md`
+   verbatim. Leave the checklist unticked — the human contributor verifies
+   locally. Pass via `--body-file` or a HEREDOC; do not invent section names.
+2. **Draft-first**: `gh pr create --draft`. Per
+   `docs/contribution-and-collaboration.md` §4, the PR stays draft until
+   `crev` review is clean.
+3. **Run `crev`** against the draft, or remind the user:
+   `crev https://github.com/camunda/camunda-platform-helm/pull/<number>`.
+4. **Mark ready** only after crev findings are addressed (`gh pr ready <number>`).
+
 ## Additional Agent Context
 - `CLAUDE.md` — thin redirect for Claude Code (redirects to this file, AGENTS.md)
 - `.github/AGENTS.md` — CI/CD architecture, repo structure, values files
+- `docs/AGENTS.md` — **ADR authoring rules**. Read before drafting, amending, or reviewing any ADR. Points to `docs/adr/TEMPLATE.md` (structure) and `docs/maintainer-guide.md` (process).
 - `SKILLS.md` — deploy-camunda CLI patterns, kubectl usage
 - `STATE.md` — session continuity (gitignored, read on session start)
 - `helm-values-mcp/` — MCP server exposing chart values schema. Tools: `list_versions`, `list_components`, `search_configs`, `get_config_info`, `generate_values_example`.
 - `scripts/helm_unused_values/` — CLI to find values declared in `values.yaml` but never referenced in templates.
+- `docs/adr/0091-*.md` — **values.yaml key classification (Tier 1 vs Tier 2)**. Read the Quick Reference table at the top before proposing a new key or backport.
 
 ## Recommended Agent Workflow
 1. Select target chart version/component.

@@ -19,8 +19,10 @@ var ValidIngressBaseDomains = []string{
 }
 
 const (
-	// DefaultKeycloakHost is the default external Keycloak hostname used in CI.
-	DefaultKeycloakHost = "keycloak-24-9-0.ci.distro.ultrawombat.com"
+	// DefaultKeycloakHost is the default external Keycloak host. The shared CI
+	// Keycloak was decommissioned (#6245), so there is no default; external-keycloak
+	// deploys must pass --keycloak-host explicitly.
+	DefaultKeycloakHost = ""
 	// DefaultKeycloakProtocol is the default protocol for the external Keycloak.
 	DefaultKeycloakProtocol = "https"
 )
@@ -354,18 +356,6 @@ func applyEnvOverrides(rc *RootConfig) {
 	}
 	if v := get("CAMUNDA_KEYCLOAK_REALM"); v != "" {
 		rc.KeycloakRealm = v
-	}
-	if v := get("CAMUNDA_OPTIMIZE_INDEX_PREFIX"); v != "" {
-		rc.OptimizeIndexPrefix = v
-	}
-	if v := get("CAMUNDA_ORCHESTRATION_INDEX_PREFIX"); v != "" {
-		rc.OrchestrationIndexPrefix = v
-	}
-	if v := get("CAMUNDA_TASKLIST_INDEX_PREFIX"); v != "" {
-		rc.TasklistIndexPrefix = v
-	}
-	if v := get("CAMUNDA_OPERATE_INDEX_PREFIX"); v != "" {
-		rc.OperateIndexPrefix = v
 	}
 	if v := get("CAMUNDA_HOSTNAME"); v != "" {
 		rc.IngressHost = v

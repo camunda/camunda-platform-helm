@@ -1,0 +1,19 @@
+name: qa-document-store-upg
+auth: keycloak
+flows:
+  - modular-upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+features:
+  - postgresql-companion
+  - documentstore
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true
+dependencies:
+  - postgresql-qa
+  - keycloak-qa
+  - elasticsearch-qa

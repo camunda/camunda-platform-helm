@@ -56,7 +56,7 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret
@@ -72,8 +72,8 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                               "true",
 				"webModeler.enabled":                             "true",
-				"webModeler.restapi.mail.fromAddress":            "example@example.com",
-				"webModeler.restapi.pusher.secret.inlineSecret":  "my-inline-secret",
+				"camundaHub.webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.secret.inlineSecret":  "my-inline-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret
@@ -89,8 +89,8 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                         "true",
 				"webModeler.enabled":                                       "true",
-				"webModeler.restapi.mail.fromAddress":                      "example@example.com",
-				"webModeler.restapi.pusher.client.secret.inlineSecret":     "my-inline-app-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                      "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.client.secret.inlineSecret":     "my-inline-app-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret
@@ -106,9 +106,9 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                    "true",
 				"webModeler.enabled":                                  "true",
-				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":     "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":  "my-pusher-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                 "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecret":     "my-custom-secret",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecretKey":  "my-pusher-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret
@@ -124,9 +124,9 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                          "true",
 				"webModeler.enabled":                                        "true",
-				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
-				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
-				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret
@@ -142,13 +142,30 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                          "true",
 				"webModeler.enabled":                                        "true",
-				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":           "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":        "my-pusher-key",
-				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
-				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecret":           "my-custom-secret",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecretKey":        "my-pusher-key",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "could not find template")
+			},
+		},
+		{
+			Name: "TestLegacyPusherSecretSuppressesAutoGeneration",
+			Values: map[string]string{
+				"identity.enabled":                                        "true",
+				"webModeler.enabled":                                      "true",
+				"camundaHub.webModeler.restapi.mail.fromAddress":          "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":         "my-legacy-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":      "pusher-key",
+				"webModeler.restapi.pusher.client.secret.existingSecret":  "my-legacy-client-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// When legacy pusher secrets are configured, the shared secret should NOT be rendered
 				s.Require().Error(err)
 				s.Require().Contains(err.Error(), "could not find template")
 			},

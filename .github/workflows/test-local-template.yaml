@@ -31,12 +31,12 @@ jobs:
     env:
       TEST_NAMESPACE: camunda-platform
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: "${{ inputs.camunda-helm-git-ref }}"
       - name: Import Vault secrets
         id: test-credentials-secret
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -47,7 +47,7 @@ jobs:
             secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
           exportEnv: true
       - name: Install common software tooling
-        uses: camunda/infra-global-github-actions/common-tooling@28e9ac0ffb3c71c7a1aaa989d5abdad0738c0436 # main
+        uses: camunda/infra-global-github-actions/common-tooling@b4808875a583e71eff5b3dd07bb50dafb92694a6 # main
         with:
           overwrite: "false"
           build-essential-enabled: "true"
@@ -94,6 +94,21 @@ jobs:
               --docker-password "${TEST_DOCKER_PASSWORD}" \
               --dry-run=client -o yaml | kubectl apply -f -
           fi
+      - name: Install ECK operator + Elasticsearch (8.10+)
+        if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.10' }}
+        run: |
+          # renovate: datasource=github-releases depName=elastic/cloud-on-k8s
+          ECK_VERSION="3.3.2"
+          kubectl apply --server-side -f \
+            "https://download.elastic.co/downloads/eck/${ECK_VERSION}/crds.yaml"
+          kubectl apply --server-side -f \
+            "https://download.elastic.co/downloads/eck/${ECK_VERSION}/operator.yaml"
+          kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 \
+            --timeout=300s statefulset/elastic-operator -n elastic-system
+          kubectl apply -n ${{ env.TEST_NAMESPACE }} -f \
+            "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/kind/elasticsearch-cluster.yaml"
+          kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=600s \
+            elasticsearch/elasticsearch -n ${{ env.TEST_NAMESPACE }}
       - name: Prepare Camunda Helm chart installation
         run: |
           make helm.repos-add

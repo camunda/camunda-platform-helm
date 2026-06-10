@@ -1,0 +1,15 @@
+name: qa-elasticsearch
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+platforms:
+  - gke
+  - eks
+infra-type:
+  eks: preemptible
+  gke: qa-workloads
+qa: true
+image-tags: true
+post-deploy: keycloak-token-lifespan-2

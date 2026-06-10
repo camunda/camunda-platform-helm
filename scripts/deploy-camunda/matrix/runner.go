@@ -17,180 +17,17 @@ import (
 	"github.com/jwalton/gchalk"
 
 	"scripts/camunda-core/pkg/docker"
-	"scripts/camunda-core/pkg/executil"
-	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/camunda-deployer/pkg/deployer"
+	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/entra"
 	"scripts/prepare-helm-values/pkg/env"
 )
-
-// numESPools is the number of Elasticsearch pools across which matrix entries
-// are distributed via round-robin. This matches the 4-cluster pool infra.
-const numESPools = 4
-
-// numOSPools is the number of OpenSearch pools across which matrix entries
-// are distributed via round-robin. This matches the 4-cluster pool infra.
-const numOSPools = 4
-
-// RunOptions controls matrix execution.
-type RunOptions struct {
-	// DryRun logs what would be done without executing.
-	DryRun bool
-	// StopOnFailure stops the run on the first failure.
-	// In parallel mode, this cancels in-flight entries and prevents new ones from starting.
-	StopOnFailure bool
-	// Cleanup deletes each entry's namespace immediately after its deployment
-	// and tests complete (regardless of success or failure). This frees cluster
-	// resources as early as possible rather than waiting for the entire run to finish.
-	Cleanup bool
-	// KubeContexts maps platform names to Kubernetes contexts, e.g.,
-	// {"gke": "gke_my-project_us-east1_cluster", "eks": "arn:aws:eks:..."}
-	// When an entry's platform matches a key, that context is used for deployment and cleanup.
-	KubeContexts map[string]string
-	// KubeContext is a fallback Kubernetes context used when no platform-specific
-	// context is configured. If both KubeContexts and KubeContext are set, the
-	// platform-specific context takes priority.
-	KubeContext string
-	// NamespacePrefix is prepended to generated namespaces.
-	NamespacePrefix string
-	// Platform overrides the platform for all entries.
-	Platform string
-	// MaxParallel controls how many entries run concurrently.
-	// 0 or 1 means sequential execution (default). Values > 1 enable parallel execution
-	// with at most MaxParallel entries running simultaneously.
-	MaxParallel int
-	// TestIT runs integration tests after each deployment.
-	TestIT bool
-	// TestE2E runs e2e tests after each deployment.
-	TestE2E bool
-	// TestAll runs both integration and e2e tests after each deployment.
-	TestAll bool
-	// RepoRoot is the repository root path.
-	RepoRoot string
-	// EnvFiles maps chart versions to .env file paths, e.g.,
-	// {"8.9": ".env.89", "8.8": ".env.88"}
-	// When an entry's version matches a key, that .env file is loaded before deployment.
-	EnvFiles map[string]string
-	// EnvFile is a fallback .env file used when no version-specific file is configured.
-	// If both EnvFiles and EnvFile are set, the version-specific file takes priority.
-	EnvFile string
-	// KeycloakHost is the external Keycloak hostname.
-	// Defaults to config.DefaultKeycloakHost when empty.
-	KeycloakHost string
-	// KeycloakProtocol is the protocol for the external Keycloak (e.g., "https").
-	// Defaults to config.DefaultKeycloakProtocol when empty.
-	KeycloakProtocol string
-	// IngressBaseDomains maps platform names to ingress base domains, e.g.,
-	// {"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}
-	// When an entry's platform matches a key, that domain is used for ingress hostname construction.
-	IngressBaseDomains map[string]string
-	// IngressBaseDomain is a fallback base domain for ingress hosts used when no
-	// platform-specific domain is configured. If both IngressBaseDomains and
-	// IngressBaseDomain are set, the platform-specific domain takes priority.
-	// Valid values: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
-	IngressBaseDomain string
-	// LogLevel controls the log verbosity for each entry's deployment.
-	// Valid values: debug, info, warn, error. Defaults to "info" if empty.
-	LogLevel string
-	// SkipDependencyUpdate skips running "helm dependency update" before deploying.
-	// Default is false, meaning dependency update runs for every entry.
-	SkipDependencyUpdate bool
-	// VaultBackedSecrets maps platform names to whether vault-backed secrets should be used, e.g.,
-	// {"eks": true, "gke": false}
-	// When an entry's platform matches a key, the corresponding value controls whether
-	// the vault-backend ClusterSecretStore and -vault.yaml manifest variants are selected.
-	VaultBackedSecrets map[string]bool
-	// UseVaultBackedSecrets is a fallback for platforms not in VaultBackedSecrets.
-	// If both VaultBackedSecrets and UseVaultBackedSecrets are set, the platform-specific
-	// value takes priority.
-	UseVaultBackedSecrets bool
-	// DeleteNamespaceFirst deletes the namespace before deploying each matrix entry.
-	// This ensures a clean-slate deployment by removing any existing resources in the namespace.
-	DeleteNamespaceFirst bool
-	// Coverage produces a layer-breakdown report showing what IS tested in the matrix.
-	// Behaves like DryRun (no deployment), but outputs a focused table showing each
-	// scenario's resolved layers (identity, persistence, platform, infra-type, features, flow).
-	Coverage bool
-	// UpgradeFromVersion overrides the auto-resolved "from" chart version for upgrade flows.
-	// When set, this version is used instead of resolving from version-matrix JSON files.
-	// Only applies to entries with upgrade flows (upgrade-patch, upgrade-minor, modular-upgrade-minor).
-	UpgradeFromVersion string
-	// HelmTimeout is the timeout in minutes for each Helm deployment.
-	// Applies uniformly to all matrix entries (install, upgrade Step 1, upgrade Step 2).
-	// When <= 0, deploy.Execute defaults to 5 minutes.
-	HelmTimeout int
-	// DockerUsername is the Harbor registry username for pulling images.
-	// When empty, the deployer falls back to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env vars.
-	DockerUsername string
-	// DockerPassword is the Harbor registry password for pulling images.
-	// When empty, the deployer falls back to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env vars.
-	DockerPassword string
-	// EnsureDockerRegistry creates a Harbor registry secret in each entry's namespace.
-	// When true, the deployer performs docker login and creates a registry-camunda-cloud
-	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
-	EnsureDockerRegistry bool
-	// DockerHubUsername is the Docker Hub registry username.
-	// When empty, the deployer falls back to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env vars.
-	DockerHubUsername string
-	// DockerHubPassword is the Docker Hub registry password.
-	// When empty, the deployer falls back to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env vars.
-	DockerHubPassword string
-	// EnsureDockerHub creates a Docker Hub pull secret (index-docker-io) in each entry's namespace.
-	// When true, the deployer performs docker login and creates an index-docker-io
-	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
-	EnsureDockerHub bool
-	// UseLatest applies values-latest.yaml from each chart root instead of values-digest.yaml.
-	// This overrides the default digest-based image pinning with the latest available tags.
-	UseLatest bool
-	// UseQA forces the base-qa layer to be included for all entries, regardless of each
-	// entry's per-scenario qa setting in ci-test-config.yaml.
-	UseQA bool
-	// OnEntryStart is called when a matrix entry begins execution.
-	// The callback receives the entry and its resolved namespace.
-	// Nil disables the callback (zero overhead for existing CLI behavior).
-	OnEntryStart func(entry Entry, namespace string)
-	// OnEntryComplete is called when a matrix entry finishes execution.
-	// The callback receives the entry and its full result (including error and duration).
-	// Nil disables the callback (zero overhead for existing CLI behavior).
-	OnEntryComplete func(entry Entry, result RunResult)
-	// OnPhaseChange is called when a matrix entry transitions to a new phase
-	// (e.g., "preparing", "deploying", "step-1", "step-2", "testing", "cleanup").
-	// Nil disables the callback.
-	OnPhaseChange func(entry Entry, phase string)
-	// LogDir is the directory for per-entry log files. When set, test script
-	// output (IT/e2e) is redirected to per-entry files instead of the terminal.
-	LogDir string
-	// ExtraHelmArgs are appended to every helm command for every entry. CI uses
-	// this to inject license-key --set-file flags whose values would otherwise be
-	// shell-escaped incorrectly via --set.
-	ExtraHelmArgs []string
-	// ExtraHelmSets are key=value strings applied as extra --set pairs for every
-	// entry. CI uses this for invariant flags like
-	// orchestration.upgrade.allowPreReleaseImages=true.
-	ExtraHelmSets []string
-	// NamespaceOverride, when non-empty, replaces the computed namespace for
-	// every entry. Used by per-scenario CI workflows that pre-create the
-	// namespace (with vault secrets, TLS certs, docker pull-secrets) before
-	// invoking matrix run, so the install lands in the same namespace.
-	// Only meaningful when filters narrow the run to a single entry.
-	NamespaceOverride string
-	// ChartRef, when non-empty, overrides the chart source for helm install/upgrade.
-	// This can be an OCI reference (e.g., "oci://registry.camunda.cloud/team-distribution/camunda-platform")
-	// or a path to a local .tgz file. When set, the matrix runner uses this as the
-	// chart argument for `helm upgrade --install` instead of the local chart directory.
-	// The local chart directory (entry.ChartPath) is still used for values file resolution
-	// (scenario layers, chart-root overlays). SkipDependencyUpdate is forced to true.
-	ChartRef string
-	// ChartRefVersion is the chart version to install from ChartRef (e.g., "13-rc-latest").
-	// Only meaningful when ChartRef is set. Passed as --version to helm.
-	ChartRefVersion string
-}
 
 // applyChartRefOverride mutates chart to point at opts.ChartRef (an OCI reference
 // or a local .tgz path) when set, and forces SkipDependencyUpdate so helm does
@@ -213,6 +50,93 @@ func applyChartRefOverride(chart *config.ChartFlags, opts RunOptions) bool {
 	return true
 }
 
+func ociImmutabilityMode(opts RunOptions) bool {
+	return opts.ChartRef != "" && !opts.ForceImageOverrides
+}
+
+func effectiveImageTags(entry Entry, opts RunOptions) bool {
+	if ociImmutabilityMode(opts) {
+		return false
+	}
+	return entry.ImageTags
+}
+
+func resolveChartRootOverlays(entry Entry, opts RunOptions) []string {
+	if ociImmutabilityMode(opts) {
+		// OCI artifacts bake all image versions; skip overlays that would
+		// override them (includes enterprise sub-chart image pins).
+		return nil
+	}
+
+	var overlays []string
+	if entry.Enterprise {
+		overlays = append(overlays, "enterprise")
+	}
+	if !effectiveImageTags(entry, opts) {
+		if opts.UseLatest {
+			overlays = append(overlays, "latest")
+		} else {
+			overlays = append(overlays, "digest")
+		}
+	}
+	return overlays
+}
+
+func sanitizeEnvFileForOCIImmutability(envFile string, opts RunOptions) (string, func(), error) {
+	cleanup := func() {}
+	if !ociImmutabilityMode(opts) || envFile == "" {
+		return envFile, cleanup, nil
+	}
+
+	values, err := env.ReadFile(envFile)
+	if err != nil {
+		return "", cleanup, fmt.Errorf("read env file for OCI immutability guard: %w", err)
+	}
+
+	filtered := make(map[string]string, len(values))
+	removed := make([]string, 0)
+	for key, value := range values {
+		if strings.HasSuffix(key, "_IMAGE_TAG") {
+			removed = append(removed, key)
+			continue
+		}
+		filtered[key] = value
+	}
+	if len(removed) == 0 {
+		return envFile, cleanup, nil
+	}
+
+	sort.Strings(removed)
+	logging.Logger.Warn().
+		Str("chartRef", opts.ChartRef).
+		Strs("removedKeys", removed).
+		Msg("OCI immutability mode: removing image tag env overrides")
+
+	if len(filtered) == 0 {
+		return "", cleanup, nil
+	}
+
+	file, err := os.CreateTemp("", "deploy-camunda-oci-env-*.env")
+	if err != nil {
+		return "", cleanup, fmt.Errorf("create sanitized env file for OCI immutability guard: %w", err)
+	}
+	defer file.Close()
+
+	keys := make([]string, 0, len(filtered))
+	for key := range filtered {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if _, err := fmt.Fprintf(file, "%s=%s\n", key, strconv.Quote(filtered[key])); err != nil {
+			_ = os.Remove(file.Name())
+			return "", cleanup, fmt.Errorf("write sanitized env file for OCI immutability guard: %w", err)
+		}
+	}
+
+	return file.Name(), func() { _ = os.Remove(file.Name()) }, nil
+}
+
 // RunResult holds the result of a single matrix entry execution.
 type RunResult struct {
 	Entry       Entry
@@ -226,6 +150,11 @@ type RunResult struct {
 	// Populated only when the entry uses OIDC authentication. Used during cleanup to
 	// delete the corresponding Entra app registration.
 	venomOpts *entra.Options
+
+	// auth0Opts stores the Auth0 options used to provision per-component clients
+	// for Auth0 entries. Populated only when entry.Identity == "auth0". Used
+	// during cleanup to delete the corresponding Auth0 clients.
+	auth0Opts *auth0.Options
 }
 
 // Run executes the matrix entries, building RuntimeFlags for each and calling deploy.Execute().
@@ -383,7 +312,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry, opts),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -425,7 +354,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				preUpgradeScript:     resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
 				upgradeOnly:          versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
 				step1ValuesFrom:      resolveStep1ValuesFromQuiet(entry),
-				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts.UseLatest),
+				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -504,26 +433,22 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 
 // resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
 // This is a dry-run helper — best-effort, silently filters to existing files only.
-// enterprise is composable (changes registry/repo, not tags).
+// enterprise adds registry/repo config and sub-chart image pins (Keycloak, PostgreSQL).
 // digest, latest, and image-tags are mutually exclusive for image version resolution:
 //   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
 //   - useLatest selects values-latest.yaml instead of values-digest.yaml
+//   - OCI immutability mode selects no chart-root overlays
 //   - digest is the CI default when neither image-tags nor useLatest is active
-func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, useLatest bool) []string {
+func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, opts RunOptions) []string {
 	if chartPath == "" {
 		return nil
 	}
-	var overlays []string
-	if entry.Enterprise {
-		overlays = append(overlays, "enterprise")
+	if ociImmutabilityMode(opts) {
+		logging.Logger.Warn().
+			Str("chartRef", opts.ChartRef).
+			Msg("OCI immutability mode: skipping chart-root image overlays (dry-run)")
 	}
-	if !entry.ImageTags {
-		if useLatest {
-			overlays = append(overlays, "latest")
-		} else {
-			overlays = append(overlays, "digest")
-		}
-	}
+	overlays := resolveChartRootOverlays(entry, opts)
 	// Filter to only overlays whose files exist on disk.
 	var existing []string
 	for _, name := range overlays {
@@ -711,7 +636,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
 				QA:          entry.QA || opts.UseQA,
-				ImageTags:   entry.ImageTags,
+				ImageTags:   effectiveImageTags(entry, opts),
 				Upgrade:     entry.Upgrade,
 			})
 			if buildErr != nil {
@@ -884,8 +809,6 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 	var results []RunResult
 	versions := VersionOrder(entries)
 	groups := GroupByVersion(entries)
-
-	globalIndex := 0
 	for _, version := range versions {
 		versionEntries := groups[version]
 
@@ -895,8 +818,7 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 			Msg("Processing version")
 
 		for _, entry := range versionEntries {
-			result := executeEntry(ctx, entry, opts, globalIndex)
-			globalIndex++
+			result := executeEntry(ctx, entry, opts)
 			results = append(results, result)
 
 			if result.Error != nil {
@@ -976,7 +898,7 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 				return
 			}
 
-			result := executeEntry(runCtx, e, opts, idx)
+			result := executeEntry(runCtx, e, opts)
 			results[idx] = result
 
 			if result.Error != nil {
@@ -1424,6 +1346,14 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 		entra.CleanupVenomApp(ctx, *result.venomOpts)
 	}
 
+	// Clean up Auth0 clients for Auth0 entries (best-effort, before namespace deletion).
+	if result.auth0Opts != nil {
+		logging.Logger.Info().
+			Str("namespace", result.Namespace).
+			Msg("Cleaning up Auth0 clients")
+		auth0.CleanupClients(ctx, *result.auth0Opts)
+	}
+
 	// Delete the namespace.
 	if result.Namespace != "" {
 		logging.Logger.Info().
@@ -1446,455 +1376,6 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 				Msg("Namespace deleted successfully")
 		}
 	}
-}
-
-// executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
-// The entryIndex is used for round-robin ES pool distribution across the 4-cluster pool infra.
-// The flow determines the execution strategy:
-//   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
-//   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
-//   - Install (default): Single-step fresh install.
-func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex int) RunResult {
-	start := time.Now()
-	namespace := resolveNamespace(opts, entry)
-	baseNamespace := buildBaseNamespace(entry)
-	// When the caller overrides the namespace (per-scenario CI workflow), feed
-	// the override directly into RuntimeFlags and clear the prefix so
-	// EffectiveNamespace() resolves to the override verbatim.
-	flagsNamespace := baseNamespace
-	flagsNamespacePrefix := opts.NamespacePrefix
-	if opts.NamespaceOverride != "" {
-		flagsNamespace = opts.NamespaceOverride
-		flagsNamespacePrefix = ""
-	}
-
-	if opts.OnEntryStart != nil {
-		opts.OnEntryStart(entry, namespace)
-	}
-
-	// Fire "preparing" phase and wire flags.OnPhase so deploy/test callbacks
-	// propagate back to the status display.
-	if opts.OnPhaseChange != nil {
-		opts.OnPhaseChange(entry, "preparing")
-	}
-
-	// Determine platform and kube context
-	platform := resolvePlatform(opts, entry)
-	kubeCtx := resolveKubeContext(opts, platform)
-	envFile := resolveEnvFile(opts, entry.Version)
-	useVault := resolveUseVaultBackedSecrets(opts, platform)
-
-	// Compute the scenario directory. deploy.Execute uses this to resolve
-	// values files — both layered and legacy formats are handled there.
-	scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
-
-	// Build the test exclude string from entry excludes (goroutine-safe via RuntimeFlags,
-	// avoids using os.Setenv which is process-global and unsafe for concurrent execution).
-	testExclude := ""
-	if len(entry.Exclude) > 0 {
-		testExclude = strings.Join(entry.Exclude, "|")
-	}
-
-	// Default log level to "info" if not set.
-	logLevel := opts.LogLevel
-	if logLevel == "" {
-		logLevel = "info"
-	}
-
-	// Default Keycloak host/protocol if not set.
-	keycloakHost := config.FirstNonEmpty(opts.KeycloakHost, config.DefaultKeycloakHost)
-	keycloakProtocol := config.FirstNonEmpty(opts.KeycloakProtocol, config.DefaultKeycloakProtocol)
-
-	// Build the base flags (used for single-step install or as Step 2 for upgrades).
-	flags := &config.RuntimeFlags{
-		LogLevel:    logLevel,
-		Interactive: false,
-		EnvFile:     envFile,
-		Chart: config.ChartFlags{
-			ChartPath:            entry.ChartPath,
-			SkipDependencyUpdate: opts.SkipDependencyUpdate,
-			RepoRoot:             opts.RepoRoot,
-			// Build chart-root overlays.
-			// enterprise is composable (changes registry/repo, not tags).
-			// digest, latest, and image-tags are mutually exclusive for image version resolution:
-			//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-			//   - useLatest selects values-latest.yaml instead of values-digest.yaml
-			//   - digest is the CI default when neither image-tags nor useLatest is active
-			ChartRootOverlays: func() []string {
-				var overlays []string
-				if entry.Enterprise {
-					overlays = append(overlays, "enterprise")
-				}
-				if !entry.ImageTags {
-					if opts.UseLatest {
-						overlays = append(overlays, "latest")
-					} else {
-						overlays = append(overlays, "digest")
-					}
-				}
-				return overlays
-			}(),
-		},
-		Deployment: config.DeploymentFlags{
-			Namespace:            flagsNamespace,
-			NamespacePrefix:      flagsNamespacePrefix,
-			Release:              "integration",
-			Scenario:             entry.Scenario,
-			Scenarios:            []string{entry.Scenario},
-			ScenarioPath:         scenarioDir,
-			Platform:             platform,
-			Flow:                 entry.Flow,
-			Timeout:              opts.HelmTimeout,
-			DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
-			ExtraHelmArgs:        append([]string(nil), opts.ExtraHelmArgs...),
-			// Always include allowPreReleaseImages=true for CI deployments —
-			// matches the legacy Taskfile install/upgrade behaviour. User-supplied
-			// --extra-helm-set values are merged on top and take precedence.
-			ExtraHelmSets: mergeHelmSets(
-				map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
-				parseHelmSetPairs(opts.ExtraHelmSets),
-			),
-		},
-		Ingress: config.IngressFlags{
-			// Ingress: use the namespace as subdomain so each entry gets a unique hostname.
-			// e.g., namespace "matrix-89-eske-inst" + base "ci.distro.ultrawombat.com"
-			//     → hostname "matrix-89-eske-inst.ci.distro.ultrawombat.com"
-			// The base domain is resolved per-platform (GKE/EKS may have different domains).
-			IngressSubdomain:  ingressSubdomain(resolveIngressBaseDomain(opts, platform), namespace),
-			IngressBaseDomain: resolveIngressBaseDomain(opts, platform),
-		},
-		Auth: config.AuthFlags{
-			Auth:             entry.Auth,
-			KeycloakHost:     keycloakHost,
-			KeycloakProtocol: keycloakProtocol,
-		},
-		Docker: config.DockerFlags{
-			DockerUsername:       opts.DockerUsername,
-			DockerPassword:       opts.DockerPassword,
-			EnsureDockerRegistry: opts.EnsureDockerRegistry,
-			DockerHubUsername:    opts.DockerHubUsername,
-			DockerHubPassword:    opts.DockerHubPassword,
-			EnsureDockerHub:      opts.EnsureDockerHub,
-			// Docker login is performed once in Run() before parallel dispatch.
-			// Each entry only creates per-namespace K8s pull secrets.
-			SkipDockerLogin: true,
-		},
-		Secrets: config.SecretsFlags{
-			// When the caller pre-creates the namespace (--namespace-override) it
-			// also pre-applies platform secrets/TLS via cluster-setup-secrets. Skip
-			// the runner's ExternalSecrets path in that case — re-running it on
-			// EKS would try to read aws-camunda-cloud-tls from the global "certs"
-			// namespace, which CI service accounts don't have RBAC for.
-			ExternalSecrets:       opts.NamespaceOverride == "",
-			AutoGenerateSecrets:   true,
-			UseVaultBackedSecrets: useVault,
-		},
-		Test: config.TestFlags{
-			KubeContext:         kubeCtx,
-			TestExclude:         testExclude,
-			RunIntegrationTests: (opts.TestIT || opts.TestAll) && !entry.SkipIT,
-			RunE2ETests:         (opts.TestE2E || opts.TestAll) && !entry.SkipE2E,
-			// Do NOT propagate RunAllTests here — RunE2ETests/RunIntegrationTests already
-			// encode the full decision (including skip-e2e/skip-it from ci-test-config.yaml).
-			// Setting RunAllTests would bypass the skip logic in deploy/test.go which ORs
-			// RunAllTests with each individual flag.
-			RunAllTests: false,
-		},
-		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.
-		// When set, these override MapScenarioToConfig name-based derivation in deploy.go.
-		Selection: config.SelectionFlags{
-			Identity:    entry.Identity,
-			Persistence: entry.Persistence,
-			Features:    entry.Features,
-			InfraType:   entry.InfraType,
-			QA:          entry.QA || opts.UseQA,
-			ImageTags:   entry.ImageTags,
-			UpgradeFlow: entry.Upgrade,
-		},
-	}
-
-	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
-	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
-
-	// Wire companion chart dependencies from ci-test-config.yaml.
-	// Values file paths are resolved relative to the repo root.
-	// Chart references are resolved to absolute paths when they point to an
-	// existing local directory under the repo root; otherwise they are passed
-	// through as-is as remote repo/chart names.
-	if len(entry.Dependencies) > 0 {
-		for _, dep := range entry.Dependencies {
-			chartRef := dep.Chart
-			version := dep.Version
-			localChartPath := filepath.Join(opts.RepoRoot, dep.Chart)
-			if info, err := os.Stat(localChartPath); err == nil && info.IsDir() {
-				chartRef = localChartPath
-				version = "" // --version is only meaningful for remote charts
-			}
-			cc := config.CompanionChart{
-				ChartRef:    chartRef,
-				Version:     version,
-				ReleaseName: dep.ReleaseName,
-				RepoName:    dep.RepoName,
-				RepoURL:     dep.RepoURL,
-			}
-			if dep.ValuesFile != "" {
-				cc.ValuesFile = filepath.Join(opts.RepoRoot, dep.ValuesFile)
-			}
-			flags.CompanionCharts = append(flags.CompanionCharts, cc)
-		}
-	}
-
-	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
-	// which we forward to the matrix-level OnPhaseChange callback.
-	if opts.OnPhaseChange != nil {
-		flags.OnPhase = func(phase string) {
-			opts.OnPhaseChange(entry, phase)
-		}
-	}
-
-	// Redirect test script output and deploy logs to per-entry files when logDir is set.
-	// This keeps output out of the terminal so the status table stays clean.
-	if opts.LogDir != "" {
-		baseName := entryLogFileName(entry)
-		if itFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".it.log")); err != nil {
-			logging.Logger.Warn().Err(err).Msg("Failed to create IT log file, output will go to terminal")
-		} else {
-			defer itFile.Close()
-			flags.ITOutputWriter = itFile
-		}
-		if e2eFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".e2e.log")); err != nil {
-			logging.Logger.Warn().Err(err).Msg("Failed to create e2e log file, output will go to terminal")
-		} else {
-			defer e2eFile.Close()
-			flags.E2EOutputWriter = e2eFile
-		}
-
-		// Per-entry deploy log: captures all subprocess output (helm, kubectl, etc.)
-		// plus lifecycle events, giving a complete timeline for this entry.
-		deployLogPath := filepath.Join(opts.LogDir, baseName+".deploy.log")
-		if deployLog, err := os.Create(deployLogPath); err != nil {
-			logging.Logger.Warn().Err(err).Msg("Failed to create deploy log file")
-		} else {
-			defer deployLog.Close()
-			writeEntryLog := func(level, msg string) {
-				if !logging.ShouldLog(logLevel, level) {
-					return
-				}
-				ts := time.Now().Format("15:04:05")
-				fmt.Fprintf(deployLog, "[%s] %s: %s\n", ts, strings.ToUpper(level), msg)
-			}
-			writeEntryLog("info", fmt.Sprintf("entry=%s namespace=%s platform=%s flow=%s", entryID(entry), namespace, platform, entry.Flow))
-
-			// Intercept all subprocess output (helm, kubectl) via executil buffer callback.
-			// The callback tees lines to both the per-entry file and the normal logger.
-			ctx = executil.ContextWithBuffer(ctx, func(level, line string) {
-				writeEntryLog(level, line)
-				prefix := logging.BuildPrefix(logging.FieldsFromContext(ctx), "")
-				switch strings.ToLower(level) {
-				case "trace":
-					logging.Logger.Trace().Msg(prefix + line)
-				case "debug":
-					logging.Logger.Debug().Msg(prefix + line)
-				case "warn", "warning":
-					logging.Logger.Warn().Msg(prefix + line)
-				case "error":
-					logging.Logger.Error().Msg(prefix + line)
-				default:
-					logging.Logger.Info().Msg(prefix + line)
-				}
-			})
-		}
-	}
-
-	// OIDC hook: provision a venom Entra app registration before deployment.
-	// The entra package is the canonical implementation for OIDC app provisioning,
-	// used by both this matrix runner and the "deploy-camunda entra" CLI subcommand.
-	//
-	// Two-phase approach: Phase 1 (Entra API provisioning + env vars) runs now,
-	// before deploy.Execute(). Phase 2 (K8s secret creation) is deferred to a
-	// PreInstallHook because deploy.Execute() may delete and recreate the
-	// namespace (via DeleteNamespaceFirst), which would wipe any secret created
-	// before namespace setup.
-	var venomOpts *entra.Options
-	if entra.IsOIDCEntry(entry.Auth, entry.Identity) {
-		entraOpts := entra.Options{
-			Namespace:     namespace,
-			KubeContext:   kubeCtx,
-			SkipK8sSecret: true, // Phase 2 is deferred to PreInstallHook.
-		}
-
-		// Populate Entra credentials from the version-specific env file.
-		// resolveOpts in entra.go falls back to os.Getenv, but the version-specific
-		// env file (e.g., --env-file-89) is only stored in flags.EnvFile for later
-		// use by buildScenarioEnv — it is NOT loaded into the process environment.
-		// Read it explicitly and inject the values into Options to avoid the lookup
-		// miss (and to stay safe for parallel execution without os.Setenv races).
-		if envFile != "" {
-			envMap, err := env.ReadFile(envFile)
-			if err != nil {
-				logging.Logger.Warn().Err(err).Str("envFile", envFile).Msg("Could not read env file for Entra credentials")
-			} else {
-				if v, ok := envMap["ENTRA_APP_DIRECTORY_ID"]; ok && v != "" {
-					entraOpts.DirectoryID = v
-				}
-				if v, ok := envMap["ENTRA_APP_CLIENT_ID"]; ok && v != "" {
-					entraOpts.ClientID = v
-				}
-				if v, ok := envMap["ENTRA_APP_CLIENT_SECRET"]; ok && v != "" {
-					entraOpts.ClientSecret = v
-				}
-			}
-		}
-
-		logging.Logger.Info().
-			Str("namespace", namespace).
-			Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")
-
-		venomApp, err := entra.EnsureVenomApp(ctx, entraOpts)
-		if err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("entra: provision venom app: %w", err)}
-		}
-		venomOpts = &entraOpts
-
-		// Inject VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID via per-entry ExtraEnv
-		// so that buildScenarioEnv merges them into the isolated env map for
-		// values.Process(), avoiding process-global os.Setenv races when multiple
-		// OIDC entries execute concurrently (each has a distinct venom app registration).
-		audience := entraOpts.ClientID
-		if audience == "" {
-			audience = os.Getenv("ENTRA_APP_CLIENT_ID")
-		}
-		if flags.ExtraEnv == nil {
-			flags.ExtraEnv = make(map[string]string)
-		}
-		flags.ExtraEnv["VENOM_CLIENT_ID"] = venomApp.AppID
-		flags.ExtraEnv["CONNECTORS_CLIENT_ID"] = audience
-
-		// Phase 2: register a PreInstallHook that creates the K8s secret after
-		// the namespace exists and before helm install.
-		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
-			logging.Logger.Info().
-				Str("namespace", namespace).
-				Msg("OIDC Phase 2 — creating venom-entra-credentials K8s secret (PreInstallHook)")
-			return entra.CreateVenomK8sSecret(hookCtx, kubeCtx, namespace, venomApp, audience)
-		})
-	}
-
-	logging.Logger.Info().
-		Str("version", entry.Version).
-		Str("scenario", entry.Scenario).
-		Str("shortname", entry.Shortname).
-		Str("auth", entry.Auth).
-		Str("flow", entry.Flow).
-		Str("namespace", namespace).
-		Str("platform", platform).
-		Str("infraType", entry.InfraType).
-		Str("kubeContext", kubeCtx).
-		Str("envFile", envFile).
-		Str("chartPath", entry.ChartPath).
-		Str("ingressHost", flags.ResolveIngressHostname()).
-		Str("identity", entry.Identity).
-		Str("persistence", entry.Persistence).
-		Strs("features", entry.Features).
-		Bool("vaultBackedSecrets", useVault).
-		Str("esPoolIndex", flags.ESPoolIndex).
-		Str("osPoolIndex", flags.OSPoolIndex).
-		Msg("Deploying matrix entry")
-
-	// --- Lifecycle hook registration (single-step flows) ---
-	// Two-step upgrade flows register pre-install against step1Flags and
-	// post-deploy against step2Flags inside executeTwoStepUpgrade.
-	// Upgrade-only flows skip pre-install entirely (no install step). We
-	// append to flags.{PreInstall,PostDeploy}Hooks rather than overwriting
-	// because earlier code (e.g. the OIDC venom-secret PreInstallHook
-	// registered at line 1738) may have populated those slots already.
-	isTwoStepUpgrade := versionmatrix.IsTwoStepUpgradeFlow(entry.Flow)
-	isUpgradeOnly := versionmatrix.IsUpgradeOnlyFlow(entry.Flow)
-	if !isTwoStepUpgrade && !isUpgradeOnly {
-		if err := registerDeclarativePreInstallHook(flags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, Error: err}
-		}
-	}
-	if !isTwoStepUpgrade {
-		if err := registerDeclarativePostDeployHook(flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, Error: err}
-		}
-	}
-
-	// Execute the deployment (deploy + tests run inside deploy.Execute).
-	// All code paths converge into a single result so cleanup runs exactly once.
-	var deployErr error
-	var diag string
-
-	// Override chart source when --chart-ref is set (OCI install path).
-	// See applyChartRefOverride for details.
-	applyChartRefOverride(&flags.Chart, opts)
-
-	// Two-step upgrade flow: install old version first, then upgrade to current.
-	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
-		deployErr = executeTwoStepUpgrade(ctx, entry, flags, opts)
-	} else if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
-		// Upgrade-only flow (modular-upgrade-minor): upgrade an already-running deployment.
-		// No Step 1 install — the prior "install" flow must have already deployed the old version.
-		deployErr = executeUpgradeOnly(ctx, entry, flags, opts)
-	} else {
-		// Single-step install (default flow).
-		deployErr = deploy.Execute(ctx, flags)
-	}
-
-	// Collect diagnostics on failure (before cleanup deletes the namespace).
-	if deployErr != nil {
-		diag = collectDiagnostics(namespace, kubeCtx)
-		diag = appendTestOutputToDiagnostics(deployErr, namespace, diag)
-	}
-
-	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts}
-
-	// Per-entry cleanup: delete namespace and Entra app after deployment + tests complete.
-	// This runs regardless of success/failure, after diagnostics have been collected.
-	if opts.Cleanup {
-		if opts.OnPhaseChange != nil {
-			opts.OnPhaseChange(entry, "cleanup")
-		}
-		cleanupEntry(ctx, result, opts)
-	}
-
-	if opts.OnEntryComplete != nil {
-		opts.OnEntryComplete(entry, result)
-	}
-
-	return result
-}
-
-// executeTwoStepUpgrade performs a two-step upgrade deployment:
-//
-//	Step 1: Install the previously released chart version from the Helm repository.
-//	Step 2: Upgrade to the current on-disk chart (the branch version) with
-//	        upgrade-specific flags (allowPreReleaseImages).
-//
-// Values file resolution for Step 1 depends on the flow:
-//   - upgrade-patch: uses the CURRENT chart's values files (same app version, older release).
-//   - upgrade-minor: uses the PREVIOUS app version's chart values files (e.g., 8.7 for an 8.8 entry).
-//     This matches CI behavior where test-type-vars sets CHART_PATH to the previous version's
-//     chart directory for upgrade-minor.
-//
-// The "from" chart version is resolved from version-matrix JSON files:
-//   - upgrade-patch: latest stable chart for the SAME app version
-//   - upgrade-minor: latest stable chart for the PREVIOUS app version
-
-// bitnamiPGPasswordMapping maps Kubernetes Secret keys (from the "integration-test-credentials"
-// secret) to Helm value paths that satisfy Bitnami PostgreSQL's password validation during upgrades.
-//
-// Bitnami's common.secrets.passwords.manage function does a `lookup` of the existing Secret. If the
-// lookup returns nil during a render (transient mid-upgrade state), it triggers a fail() unless an
-// explicit password is provided via `providedValues`. By extracting passwords from the cluster
-// secret and passing them as --set overrides, we satisfy the `honorProvidedValues` check and bypass
-// the lookup/fail path entirely.
-var bitnamiPGPasswordMapping = map[string][]string{
-	"identity-keycloak-postgresql-user-password":  {"identityKeycloak.postgresql.auth.password", "identityPostgresql.auth.password"},
-	"identity-keycloak-postgresql-admin-password": {"identityKeycloak.postgresql.auth.postgresPassword", "identityPostgresql.auth.postgresPassword"},
-	"webmodeler-postgresql-user-password":         {"webModelerPostgresql.auth.password"},
-	"webmodeler-postgresql-admin-password":        {"webModelerPostgresql.auth.postgresPassword"},
 }
 
 // mergeHelmSets returns a new map containing all entries from base, with entries
@@ -1932,320 +1413,6 @@ func parseHelmSetPairs(pairs []string) map[string]string {
 		return nil
 	}
 	return out
-}
-
-// extractBitnamiPGPasswords reads the "integration-test-credentials" Kubernetes Secret from the
-// given namespace and returns a map of Helm --set key=value pairs that provide Bitnami PostgreSQL
-// passwords explicitly. This prevents the PASSWORDS ERROR that occurs when Bitnami's template
-// lookup returns nil for a temporarily-absent Secret during an upgrade render.
-//
-// The function is intentionally lenient: if the secret doesn't exist, or individual keys are missing,
-// it logs warnings and returns whatever it could extract. Callers should merge the result into
-// ExtraHelmSets.
-func extractBitnamiPGPasswords(ctx context.Context, namespace, kubeContext string) map[string]string {
-	const secretName = "integration-test-credentials"
-
-	kubeClient, err := kube.NewClient("", kubeContext)
-	if err != nil {
-		logging.Logger.Warn().Err(err).
-			Str("namespace", namespace).
-			Msg("Failed to create kube client for Bitnami PG password extraction; upgrade may fail with PASSWORDS ERROR")
-		return nil
-	}
-
-	secretData, err := kubeClient.GetSecretData(ctx, namespace, secretName)
-	if err != nil {
-		logging.Logger.Warn().Err(err).
-			Str("namespace", namespace).
-			Str("secret", secretName).
-			Msg("Failed to read secret for Bitnami PG password extraction; upgrade may fail with PASSWORDS ERROR")
-		return nil
-	}
-	if secretData == nil {
-		logging.Logger.Warn().
-			Str("namespace", namespace).
-			Str("secret", secretName).
-			Msg("Secret not found for Bitnami PG password extraction; upgrade may fail with PASSWORDS ERROR")
-		return nil
-	}
-
-	helmSets := make(map[string]string)
-	for secretKey, helmPaths := range bitnamiPGPasswordMapping {
-		value, ok := secretData[secretKey]
-		if !ok || value == "" {
-			logging.Logger.Warn().
-				Str("namespace", namespace).
-				Str("secret", secretName).
-				Str("key", secretKey).
-				Msg("Secret key missing or empty; corresponding Bitnami PG password override skipped")
-			continue
-		}
-		for _, helmPath := range helmPaths {
-			helmSets[helmPath] = value
-		}
-	}
-
-	if len(helmSets) > 0 {
-		logging.Logger.Info().
-			Str("namespace", namespace).
-			Int("overrides", len(helmSets)).
-			Msg("Extracted Bitnami PG passwords from cluster secret for upgrade --set overrides")
-	}
-
-	return helmSets
-}
-
-func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.RuntimeFlags, opts RunOptions) error {
-	// Resolve the "from" chart version for the upgrade.
-	// If UpgradeFromVersion is set via CLI flag, use it directly; otherwise auto-resolve.
-	var fromVersion string
-	if opts.UpgradeFromVersion != "" {
-		fromVersion = opts.UpgradeFromVersion
-		logging.Logger.Info().
-			Str("flow", entry.Flow).
-			Str("fromVersion", fromVersion).
-			Str("source", "cli-override").
-			Msg("Two-step upgrade: using CLI-provided from-version")
-	} else {
-		var err error
-		fromVersion, err = versionmatrix.ResolveUpgradeFromVersion(opts.RepoRoot, entry.Version, entry.Flow)
-		if err != nil {
-			return fmt.Errorf("resolve upgrade-from version for %s/%s: %w", entry.Version, entry.Flow, err)
-		}
-	}
-
-	logging.Logger.Info().
-		Str("flow", entry.Flow).
-		Str("fromVersion", fromVersion).
-		Str("toChart", entry.ChartPath).
-		Str("version", entry.Version).
-		Msg("Two-step upgrade: resolved from-version")
-
-	// Pin index prefixes and Keycloak realm so that Step 1 and Step 2 share the
-	// same values. Without this, each call to deploy.Execute() generates a new
-	// random suffix, causing the upgraded components to look for indices/realm
-	// that don't match what Step 1 created.
-	if err := deploy.PinScenarioPrefixes(entry.Scenario, flags); err != nil {
-		return fmt.Errorf("pin scenario prefixes for upgrade: %w", err)
-	}
-	logging.Logger.Info().
-		Str("realm", flags.Auth.KeycloakRealm).
-		Str("orchPrefix", flags.Index.OrchestrationIndexPrefix).
-		Str("optPrefix", flags.Index.OptimizeIndexPrefix).
-		Msg("Two-step upgrade: pinned index prefixes and realm for both steps")
-
-	// --- Step 1: Install old version from Helm repo ---
-	if flags.OnPhase != nil {
-		flags.OnPhase("step-1")
-	}
-	logging.Logger.Info().
-		Str("step", "1/2").
-		Str("action", "install").
-		Str("chart", versionmatrix.DefaultHelmChartRef).
-		Str("version", fromVersion).
-		Msg("Step 1: Installing previous chart version from Helm repo")
-
-	// Ensure the Camunda Helm repo is registered and up-to-date.
-	if err := helm.RepoAdd(ctx, versionmatrix.DefaultHelmRepoName, versionmatrix.DefaultHelmRepoURL); err != nil {
-		return fmt.Errorf("step 1: helm repo add: %w", err)
-	}
-	if err := helm.RepoUpdate(ctx); err != nil {
-		return fmt.Errorf("step 1: helm repo update: %w", err)
-	}
-
-	// Clone flags for Step 1: deploy from repo instead of local chart path.
-	// Detach hook slices: a plain `*flags` copy shares the backing arrays with
-	// the parent, so a subsequent append (when cap > len) would mutate flags
-	// and leak Step 1-only hooks into Step 2's later shallow copy.
-	step1Flags := *flags
-	step1Flags.PreInstallHooks = append([]func(context.Context) error(nil), flags.PreInstallHooks...)
-	step1Flags.PostDeployHooks = append([]func(context.Context) error(nil), flags.PostDeployHooks...)
-	step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
-	step1Flags.Chart.ChartVersion = fromVersion
-	step1Flags.Chart.ChartPath = "" // Use repo chart, not local path.
-	step1Flags.Deployment.Flow = "install"
-	step1Flags.Selection.UpgradeFlow = false     // Step 1 is a fresh install, no base-upgrade.yaml.
-	step1Flags.Chart.ChartRootOverlays = nil     // Step 1 installs old version from repo — no chart-root overlays.
-	step1Flags.Chart.SkipDependencyUpdate = true // Repo charts don't need local dep update.
-	step1Flags.Test.RunIntegrationTests = false  // Don't run tests after Step 1.
-	step1Flags.Test.RunE2ETests = false
-	step1Flags.Test.RunAllTests = false
-	step1Flags.Deployment.DeleteNamespaceFirst = flags.Deployment.DeleteNamespaceFirst // Only delete on Step 1.
-
-	// For upgrade-minor, Step 1 uses the PREVIOUS app version's values files.
-	// In CI, test-type-vars sets CHART_PATH to charts/camunda-platform-<previous> for
-	// the install step of upgrade-minor, so values files come from the older chart.
-	// For upgrade-patch, Step 1 uses the current chart's values (same app version).
-	step1AppVersion := entry.Version
-	if entry.Flow == "upgrade-minor" {
-		prevVersion, err := versionmatrix.PreviousAppVersion(entry.Version)
-		if err != nil {
-			return fmt.Errorf("step 1: resolve previous app version for %s: %w", entry.Version, err)
-		}
-		step1AppVersion = prevVersion
-		prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
-		prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
-		step1Flags.Deployment.ScenarioPath = prevScenarioDir
-
-		logging.Logger.Info().
-			Str("flow", entry.Flow).
-			Str("previousVersion", prevVersion).
-			Str("scenarioDir", prevScenarioDir).
-			Msg("Step 1: using previous app version's values files (matching CI behavior)")
-	}
-
-	// --- Pre-install lifecycle hook (Step 1 of two-step upgrade) ---
-	// Hook is registered against step1Flags so it fires before the Step 1 helm install.
-	// The app version being installed in Step 1 scopes script/fixture lookup
-	// (previous version for upgrade-minor, current for upgrade-patch).
-	// Append (do not nil-then-append): upstream hooks like the OIDC venom-secret
-	// hook were registered against flags before the *flags shallow copy and must
-	// fire in Step 1 too (helm install needs the secret already in the namespace).
-	if err := registerDeclarativePreInstallHook(&step1Flags, entry.PreInstall, opts.RepoRoot, step1AppVersion, entry.Scenario); err != nil {
-		return err
-	}
-
-	if err := deploy.Execute(ctx, &step1Flags); err != nil {
-		return fmt.Errorf("step 1: install %s@%s failed: %w", versionmatrix.DefaultHelmChartRef, fromVersion, err)
-	}
-
-	logging.Logger.Info().
-		Str("step", "1/2").
-		Str("version", fromVersion).
-		Msg("Step 1 complete: previous version installed successfully")
-
-	// --- Pre-upgrade lifecycle hook ---
-	// Runs the declarative pre-upgrade hook (integration.flows.<flow>.pre-upgrade)
-	// resolved at matrix-generation time onto entry.PreUpgrade. Scoped to the
-	// target version (entry.Version is the version being upgraded to).
-	if err := runDeclarativePreUpgradeHook(ctx, flags, entry.PreUpgrade, opts.RepoRoot, entry.Version, entry.Flow); err != nil {
-		return err
-	}
-
-	// --- Step 2: Upgrade to current on-disk chart (or external chart-ref when set) ---
-	if flags.OnPhase != nil {
-		flags.OnPhase("step-2")
-	}
-	step2Log := logging.Logger.Info().
-		Str("step", "2/2").
-		Str("action", "upgrade")
-	if opts.ChartRef != "" {
-		step2Log.
-			Str("chartRef", opts.ChartRef).
-			Str("chartVersion", opts.ChartRefVersion).
-			Msg("Step 2: Upgrading to chart from --chart-ref")
-	} else {
-		step2Log.
-			Str("chartPath", entry.ChartPath).
-			Msg("Step 2: Upgrading to current chart version")
-	}
-
-	// Clone flags for Step 2: upgrade from installed state to local chart.
-	// Detach hook slices for the same reason as Step 1 — keep declarative
-	// post-deploy registrations isolated to this step.
-	step2Flags := *flags
-	step2Flags.PreInstallHooks = append([]func(context.Context) error(nil), flags.PreInstallHooks...)
-	step2Flags.PostDeployHooks = append([]func(context.Context) error(nil), flags.PostDeployHooks...)
-	step2Flags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
-	step2Flags.Deployment.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
-	step2Flags.Deployment.Flow = "install"             // Must match Step 1's Flow so $FLOW in index prefixes resolves identically.
-	step2Flags.Deployment.ExtraHelmSets = mergeHelmSets(
-		flags.Deployment.ExtraHelmSets,
-		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
-	)
-
-	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
-	// Defensive: prevents the PASSWORDS ERROR that Bitnami's secrets.yaml can trigger when the
-	// Secret lookup returns nil during upgrades (e.g. when a Secret is being patched mid-render).
-	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-		for k, v := range pgPasswords {
-			step2Flags.Deployment.ExtraHelmSets[k] = v
-		}
-	}
-
-	// --- Post-deploy lifecycle hook (Step 2 of two-step upgrade) ---
-	// Registered against step2Flags so it fires after the upgrade succeeds.
-	if err := registerDeclarativePostDeployHook(&step2Flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
-		return err
-	}
-	step2Flags.Deployment.ExtraHelmArgs = flags.Deployment.ExtraHelmArgs
-
-	if err := deploy.Execute(ctx, &step2Flags); err != nil {
-		if opts.ChartRef != "" {
-			target := opts.ChartRef
-			if opts.ChartRefVersion != "" {
-				target += "@" + opts.ChartRefVersion
-			}
-			return fmt.Errorf("step 2: upgrade to %s failed: %w", target, err)
-		}
-		return fmt.Errorf("step 2: upgrade to local chart failed: %w", err)
-	}
-
-	logging.Logger.Info().
-		Str("step", "2/2").
-		Msg("Step 2 complete: upgrade to current version succeeded")
-
-	return nil
-}
-
-// executeUpgradeOnly performs a single-step upgrade against an already-running deployment.
-// This is used for "modular-upgrade-minor" which, in CI, skips the install job entirely
-// and only runs the upgrade job against the namespace of a prior "install" flow.
-//
-// The sequence is:
-//  1. Run pre-upgrade script (if it exists on disk).
-//  2. Helm upgrade to the current on-disk chart with upgrade-specific flags.
-//
-// Unlike executeTwoStepUpgrade, there is NO Step 1 install from the Helm repo.
-// The previous version must already be deployed (by a prior "install" flow entry).
-func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeFlags, opts RunOptions) error {
-	if flags.OnPhase != nil {
-		flags.OnPhase("upgrading")
-	}
-	logging.Logger.Info().
-		Str("flow", entry.Flow).
-		Str("namespace", flags.EffectiveNamespace()).
-		Str("chartPath", entry.ChartPath).
-		Msg("Upgrade-only flow: upgrading existing deployment (no install step)")
-
-	// --- Pre-upgrade lifecycle hook ---
-	if err := runDeclarativePreUpgradeHook(ctx, flags, entry.PreUpgrade, opts.RepoRoot, entry.Version, entry.Flow); err != nil {
-		return err
-	}
-
-	// --- Upgrade to current on-disk chart ---
-	logging.Logger.Info().
-		Str("action", "upgrade").
-		Str("chartPath", entry.ChartPath).
-		Msg("Upgrading to current chart version")
-
-	upgradeFlags := *flags
-	upgradeFlags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
-	upgradeFlags.Deployment.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
-	upgradeFlags.Deployment.Flow = "install"             // Must match the prior install's Flow so $FLOW in index prefixes resolves identically.
-	upgradeFlags.Deployment.ExtraHelmSets = mergeHelmSets(
-		flags.Deployment.ExtraHelmSets,
-		map[string]string{"orchestration.upgrade.allowPreReleaseImages": "true"},
-	)
-
-	// Extract Bitnami PostgreSQL passwords from the cluster secret and merge into --set overrides.
-	// Defensive: prevents the PASSWORDS ERROR that Bitnami's secrets.yaml can trigger when the
-	// Secret lookup returns nil during upgrades (e.g. when a Secret is being patched mid-render).
-	if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-		for k, v := range pgPasswords {
-			upgradeFlags.Deployment.ExtraHelmSets[k] = v
-		}
-	}
-
-	if err := deploy.Execute(ctx, &upgradeFlags); err != nil {
-		return fmt.Errorf("upgrade-only: upgrade to local chart failed: %w", err)
-	}
-
-	logging.Logger.Info().
-		Str("flow", entry.Flow).
-		Msg("Upgrade-only flow completed successfully")
-
-	return nil
 }
 
 // PrintRunSummary outputs a summary of all run results including per-entry timings.

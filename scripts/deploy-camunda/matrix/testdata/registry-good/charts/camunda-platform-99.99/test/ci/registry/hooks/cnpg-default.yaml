@@ -1,0 +1,4 @@
+fixtures:
+  - postgresql-cluster.yaml
+description: |
+  Synthetic CloudNativePG hook fixture for the registry-good test.

@@ -500,10 +500,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestRestapiPusherKeyUsesInlineSecret",
 			Values: map[string]string{
-				"identity.enabled":                                       "true",
-				"webModeler.enabled":                                     "true",
-				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
-				"webModeler.restapi.pusher.client.secret.inlineSecret":   "my-inline-app-key-value",
+				"identity.enabled":                                     "true",
+				"webModeler.enabled":                                   "true",
+				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"webModeler.restapi.pusher.client.secret.inlineSecret": "my-inline-app-key-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

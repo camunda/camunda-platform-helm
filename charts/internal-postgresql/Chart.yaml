@@ -1,0 +1,9 @@
+apiVersion: v2
+name: internal-postgresql
+description: Minimal PostgreSQL chart for Camunda CI integration tests. Not for production use.
+type: application
+version: 0.2.0
+appVersion: "16"
+maintainers:
+  - name: Camunda Services GmbH
+    url: https://camunda.com

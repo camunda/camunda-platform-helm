@@ -56,7 +56,6 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 				"global.noSecondaryStorage":                    "true",
 				"global.elasticsearch.enabled":                 "false",
 				"global.opensearch.enabled":                    "false",
-				"elasticsearch.enabled":                        "false",
 				"orchestration.security.authentication.method": "oidc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

@@ -1,0 +1,13 @@
+name: documentstore
+auth: keycloak
+flows:
+  - ""
+identity: keycloak
+persistence: elasticsearch
+features:
+  - documentstore
+platforms:
+  - eks
+infra-type:
+  eks: preemptible
+helmVersion: 3.20.2

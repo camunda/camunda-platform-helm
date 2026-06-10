@@ -1,0 +1,112 @@
+name: "Chart - Validate All Documentation Links"
+
+# Lychee-based replacement for the bash composite at
+# .github/actions/validate-docs-links/. Tracked by issue #6218.
+#
+# This runs alongside the existing chart-validate-docs-links.yaml during the
+# migration window (see #6218 plan). On pull_request the lychee step is
+# soft-failing so PRs that touch unrelated Markdown are not blocked while we
+# clean up false positives; the scheduled run still hard-fails and opens a
+# tracking issue.
+#
+# Once the cron is green for a couple of cycles, drop the soft-fail and the
+# legacy chart-validate-docs-links.yaml workflow.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"  # Daily at 6 AM UTC.
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "scripts/templates/**"
+      - "lychee-links.toml"
+      - ".github/workflows/global-links.yaml"
+
+# Cancel superseded PR runs (force-pushes), but let scheduled / dispatch runs
+# complete in order — they share a group keyed on github.ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Top-level least-privilege default. The optional `open-issue` job below
+# elevates only what it needs.
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: links-check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      lychee-outcome: ${{ steps.lychee.outcome }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 1
+
+      - name: Compute today's cache key
+        run: echo "DATEOFDAY=$(date +%Y-%m-%d)" >> "$GITHUB_ENV"
+
+      - name: Lychee cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ env.DATEOFDAY }}
+          restore-keys: |
+            cache-lychee-
+
+      - name: Run lychee
+        id: lychee
+        # On pull_request, do not fail the job on broken links — surface them
+        # in the run summary instead. See file header for rationale.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
+        with:
+          fail: true
+          args: >-
+            -c ./lychee-links.toml
+            --cache --max-cache-age 1d
+            --verbose --no-progress
+            '*.md'
+            './**/*.md'
+            './**/*.tpl'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload lychee report (for scheduled failures)
+        if: github.event_name == 'schedule' && steps.lychee.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: lychee-report
+          path: ./lychee/out.md
+          if-no-files-found: error
+          retention-days: 14
+
+  # Issue creation lives in a dedicated job so `issues: write` is granted only
+  # on scheduled runs, never on pull_request runs. Addresses the Copilot
+  # review comment on PR #6219.
+  open-issue:
+    name: open-tracking-issue
+    needs: [lint]
+    if: github.event_name == 'schedule' && needs.lint.outputs.lychee-outcome == 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Download lychee report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: lychee-report
+          path: ./lychee
+
+      - name: Open tracking issue
+        uses: peter-evans/create-issue-from-file@fca9117c27cdc29c6c4db3b86c48e4115a786710 # v6
+        with:
+          title: "CI: scheduled link check found broken links"
+          content-filepath: ./lychee/out.md
+          labels: kind/chore,kind/docs

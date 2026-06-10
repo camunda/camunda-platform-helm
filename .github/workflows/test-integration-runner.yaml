@@ -109,7 +109,7 @@ on:
       # and features instead of relying on scenario name parsing.
       # =============================================================================
       test-identity:
-        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        description: "Identity selection: keycloak, oidc, basic, hybrid"
         required: false
         type: string
       test-persistence:
@@ -237,6 +237,11 @@ on:
         required: false
         default: false
         type: boolean
+      force-image-overrides:
+        description: '⚠️ DANGER: Bypass OCI artifact immutability guard and allow image version overrides even when helmChartVersion is set. Only use if you know what you are doing.'
+        required: false
+        default: false
+        type: boolean
       helm-version:
         description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
         required: false
@@ -323,7 +328,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -534,21 +539,16 @@ jobs:
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
 
-          # Configure OpenSearch values when running the opensearch scenario
-          # (legacy substitution; only applies to the opensearch scenario name).
-          if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME:-}" ]] && [[ -n "${OPENSEARCH_PASSWORD:-}" ]]; then
-            values_file="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario }}.yaml"
-            if [[ -f "$values_file" ]]; then
-              envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
-            fi
-          fi
-
       - name: Helm - OCI Registry Login
         if: inputs.helmChartVersion != ''
         run: |
-          printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
-            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
-            --password-stdin
+          export HARBOR_REGISTRY_HOST=registry.camunda.cloud
+          export HARBOR_REGISTRY_USER="${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
+          export HARBOR_REGISTRY_PASSWORD="${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+          export HARBOR_RETRY_DELAY=15
+
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
           echo "TEST_CHART_VERSION=${{ inputs.helmChartVersion }}" >> "$GITHUB_ENV"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
@@ -577,6 +577,7 @@ jobs:
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
+          FORCE_IMAGE_OVERRIDES: ${{ inputs.force-image-overrides }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
@@ -617,13 +618,37 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
-          # The .env file is loaded by buildScenarioEnv() and provides values for
-          # $E2E_TESTS_*_IMAGE_TAG placeholders in base-image-tags.yaml.
+          FORCE_IMAGE_OVERRIDE_ARGS=()
+          if [[ "${FORCE_IMAGE_OVERRIDES}" == "true" ]]; then
+            echo "::warning::Bypassing OCI artifact immutability guard; image version overrides may be applied to helmChartVersion=${HELM_CHART_VERSION:-<none>}"
+            FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
+          fi
+
+          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
+          # strip image tag keys so the released chart artifact remains the
+          # source of truth while non-image test config (index prefixes, etc.) stays available.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
+              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
+            else
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
+            fi
+            if [[ -s /tmp/values-config.env ]]; then
+              ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            fi
+          fi
+
+          # Apply workflow-supplied extra values (e.g. the run-built image tag) last
+          # so they override chart defaults. The "Pre-install scenario tweaks" step
+          # above tees the workflow's extra-values input to /tmp/extra-values-file.yaml.
+          # `matrix run` does not yet natively consume that file (see #6312), so
+          # forward it to every helm command via --extra-helm-arg=--values. Skip when
+          # empty/whitespace-only. Safe here because the install flow is single-step;
+          # the upgrade flow deliberately omits this (see the note in its deploy step).
+          if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
+            EXTRA_HELM_ARGS+=(--extra-helm-arg=--values=/tmp/extra-values-file.yaml)
           fi
 
           cd ./scripts/deploy-camunda
@@ -640,6 +665,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
@@ -732,7 +758,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -862,9 +888,13 @@ jobs:
       - name: Helm - OCI Registry Login (Upgrade)
         if: inputs.helmChartVersion != ''
         run: |
-          printf '%s' "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" | helm registry login registry.camunda.cloud \
-            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
-            --password-stdin
+          export HARBOR_REGISTRY_HOST=registry.camunda.cloud
+          export HARBOR_REGISTRY_USER="${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
+          export HARBOR_REGISTRY_PASSWORD="${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+          export HARBOR_RETRY_DELAY=15
+
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         env:
@@ -883,6 +913,7 @@ jobs:
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
+          FORCE_IMAGE_OVERRIDES: ${{ inputs.force-image-overrides }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
@@ -919,12 +950,35 @@ jobs:
             CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file for image tag substitution.
+          FORCE_IMAGE_OVERRIDE_ARGS=()
+          if [[ "${FORCE_IMAGE_OVERRIDES}" == "true" ]]; then
+            echo "::warning::Bypassing OCI artifact immutability guard; image version overrides may be applied to helmChartVersion=${HELM_CHART_VERSION:-<none>}"
+            FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
+          fi
+
+          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
+          # strip image tag keys so the released chart artifact remains the source of truth.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
+              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
+            else
+              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
+            fi
+            if [[ -s /tmp/values-config.env ]]; then
+              ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
+            fi
           fi
+
+          # NOTE: extra-values (e.g. the run-built image tag) are intentionally NOT
+          # forwarded for upgrade flows. `matrix run` runs upgrade as a two-step
+          # orchestration — Step 1 installs the previous released version, Step 2
+          # upgrades to the current chart — and --extra-helm-arg fans out to BOTH
+          # steps, which would inject the new image tag into the previous-version
+          # install and break the upgrade-from-stable baseline. Step-2-only / per-
+          # scenario injection is tracked in #6312. (The install flow, being single-
+          # step, forwards the file safely; see that step.)
 
           cd ./scripts/deploy-camunda
           go run . matrix run \
@@ -940,6 +994,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
@@ -989,14 +1044,14 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
       - name: Import Vault secrets
         if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -1039,6 +1094,83 @@ jobs:
           shard-index: ${{ matrix.shardIndex }}
           scenario: ${{ inputs.scenario }}
 
+  # Shadow job: runs the full E2E suite for the dedicated 'shadow-e2e' scenario.
+  # Tier 2 (merge queue only). Non-blocking during observation period.
+  shadow-e2e-full-suite:
+    name: "[shadow] Full e2e - ${{ inputs.shortname }}"
+    needs: [install]
+    runs-on: gcp-core-32-longrunning-big-ssd
+    container:
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
+    if: ${{ inputs.test-enabled && inputs.scenario == 'shadow-e2e' }}
+    continue-on-error: true
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+          exportEnv: true
+
+      - name: Run full E2E suite (shadow)
+        uses: ./.github/actions/playwright-e2e-tests
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
+          PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS: "1"
+        with:
+          camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+          camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
+          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          flow: ${{ inputs.flow }}
+          distro-platform: ${{ inputs.distro-platform }}
+          infra-type: ${{ inputs.infra-type }}
+          identifier: ${{ inputs.identifier }}
+          namespace-prefix: ${{ inputs.namespace-prefix }}
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          auth: ${{ inputs.auth }}
+          auth-data: ${{ inputs.auth-data }}
+          exclude: ${{ inputs.exclude }}
+          test-stage: after-install
+          shard-index: "1"
+          scenario: ${{ inputs.scenario }}
+          run-smoke-tests: "false"
+
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
@@ -1066,7 +1198,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1074,7 +1206,7 @@ jobs:
       - name: Import Vault secrets
         if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -1124,7 +1256,7 @@ jobs:
     needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1220,13 +1352,13 @@ jobs:
       statuses: write
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
       - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: scripts/ci-result-cache/go.mod
           cache: true
@@ -1248,7 +1380,7 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [merge-e2e-reports]
+    needs: [merge-e2e-reports, shadow-e2e-full-suite]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
@@ -1271,7 +1403,7 @@ jobs:
         uses: ./.github/actions/failed-pods-info
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -1304,7 +1436,7 @@ jobs:
       - name: Import Vault secrets
         if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -1317,6 +1449,13 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
+            secret/data/products/distribution/ci AUTH0_DOMAIN;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_ID;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
           exportEnv: true
 
       - name: CI Setup - Authenticate to cluster
@@ -1356,6 +1495,23 @@ jobs:
             --namespace "$TEST_NAMESPACE" \
             --log-level info
 
+      - name: CI Cleanup - Delete Auth0 OIDC clients
+        # Mirrors the Entra cleanup above. The auth0 scenario provisions
+        # per-component first-party clients in the tenant via
+        # `auth0 ensure-clients`; namespace deletion does not touch the
+        # tenant, so without this step orphans accumulate across PR runs.
+        # AUTH0_DOMAIN / AUTH0_MGMT_CLIENT_ID / AUTH0_MGMT_CLIENT_SECRET
+        # are already exported to $GITHUB_ENV by the integration-test-setup
+        # action's vault mapping.
+        if: always() && inputs.scenario == 'auth0'
+        continue-on-error: true
+        run: |
+          cd ./scripts/deploy-camunda
+          go run . auth0 cleanup-clients \
+            --namespace "$TEST_NAMESPACE" \
+            --domain "$AUTH0_DOMAIN" \
+            --log-level info
+
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace
         run: |
@@ -1365,7 +1521,6 @@ jobs:
           if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
-            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}-pool-${ES_POOL_INDEX}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}-pool-${ES_POOL_INDEX}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
             scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
@@ -1374,103 +1529,9 @@ jobs:
             else
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true || true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
-              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}-pool-${ES_POOL_INDEX}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}-pool-${ES_POOL_INDEX}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
               scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
             fi
           fi
-
-      - name: CI Cleanup - Delete Elasticsearch templates for this CI run
-        if: always()
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-
-          ES_URL="https://${INFRA_ES_HOST}-pool-${ES_POOL_INDEX}"
-          ES_NS="${INFRA_ES_NAMESPACE}-pool-${ES_POOL_INDEX}"
-
-          # Extract the 6-char hex suffix from the namespace.
-          # Namespace patterns:
-          #   camunda-pr-XXXX-intg-X-X-gke-XXXXX-{hex}
-          #   {prefix}-{hex}-upgm
-          HEX_PREFIX="${TEST_NAMESPACE##*-}"
-          # For upgrade namespaces ending in -upgm, the hex is the second-to-last segment.
-          if [[ "$HEX_PREFIX" == "upgm" ]]; then
-            HEX_PREFIX="$(echo "$TEST_NAMESPACE" | sed 's/-upgm$//' | sed 's/.*-//')"
-          fi
-
-          # Validate it looks like a 6-char hex string.
-          if ! [[ "$HEX_PREFIX" =~ ^[0-9a-f]{6}$ ]]; then
-            echo "Warning: Could not extract a valid 6-char hex prefix from namespace '${TEST_NAMESPACE}' (got '${HEX_PREFIX}'). Skipping ES template cleanup."
-            exit 0
-          fi
-
-          echo "Cleaning up ES templates with hex prefix: ${HEX_PREFIX}"
-
-          # Get ES password from K8s secret.
-          ES_PASS="$(scripts/get-credientials-from-cluster.sh --namespace "$ES_NS")" || {
-            echo "Warning: Failed to retrieve ES credentials. Skipping ES template cleanup."
-            exit 0
-          }
-
-          CURL_AUTH=(-u "elastic:${ES_PASS}")
-          CURL_OPTS=(--silent --show-error --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 2 --retry-connrefused)
-
-          deleted_index=0
-          deleted_component=0
-          deleted_legacy=0
-          failed=0
-
-          # --- Delete V2 (composable) index templates matching the hex prefix ---
-          v2_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_index_template" | jq -r --arg pfx "$HEX_PREFIX" '.index_templates[]?.name // empty | select(startswith($pfx + "-"))') || true
-          if [[ -n "$v2_templates" ]]; then
-            echo "Found $(echo "$v2_templates" | wc -l | tr -d ' ') V2 index templates to delete"
-            # ES DELETE _index_template does not support comma-separated names, but supports wildcards.
-            # Delete using the hex prefix wildcard which matches all templates for this CI run.
-            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_index_template/${HEX_PREFIX}-*") || true
-            if [[ "$http_code" =~ ^2 ]]; then
-              deleted_index=$(echo "$v2_templates" | wc -l | tr -d ' ')
-              echo "Deleted ${deleted_index} V2 index templates"
-            else
-              echo "Warning: Failed to delete V2 index templates (HTTP ${http_code})"
-              ((failed++)) || true
-            fi
-          else
-            echo "No V2 index templates found for prefix ${HEX_PREFIX}"
-          fi
-
-          # --- Delete component templates matching the hex prefix ---
-          comp_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_component_template" | jq -r --arg pfx "$HEX_PREFIX" '.component_templates[]?.name // empty | select(startswith($pfx + "-"))') || true
-          if [[ -n "$comp_templates" ]]; then
-            echo "Found $(echo "$comp_templates" | wc -l | tr -d ' ') component templates to delete"
-            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_component_template/${HEX_PREFIX}-*") || true
-            if [[ "$http_code" =~ ^2 ]]; then
-              deleted_component=$(echo "$comp_templates" | wc -l | tr -d ' ')
-              echo "Deleted ${deleted_component} component templates"
-            else
-              echo "Warning: Failed to delete component templates (HTTP ${http_code})"
-              ((failed++)) || true
-            fi
-          else
-            echo "No component templates found for prefix ${HEX_PREFIX}"
-          fi
-
-          # --- Delete legacy (v1) templates matching the hex prefix ---
-          legacy_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_template" | jq -r --arg pfx "$HEX_PREFIX" 'keys[] | select(startswith($pfx + "-"))') || true
-          if [[ -n "$legacy_templates" ]]; then
-            echo "Found $(echo "$legacy_templates" | wc -l | tr -d ' ') legacy templates to delete"
-            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_template/${HEX_PREFIX}-*") || true
-            if [[ "$http_code" =~ ^2 ]]; then
-              deleted_legacy=$(echo "$legacy_templates" | wc -l | tr -d ' ')
-              echo "Deleted ${deleted_legacy} legacy templates"
-            else
-              echo "Warning: Failed to delete legacy templates (HTTP ${http_code})"
-              ((failed++)) || true
-            fi
-          else
-            echo "No legacy templates found for prefix ${HEX_PREFIX}"
-          fi
-
-          echo "ES template cleanup complete: v2_index=${deleted_index} component=${deleted_component} legacy=${deleted_legacy} failures=${failed}"
 
       - name: CI Cleanup - Delete OpenSearch templates for this CI run
         if: always()

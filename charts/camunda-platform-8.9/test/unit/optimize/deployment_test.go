@@ -1482,8 +1482,8 @@ func (s *DeploymentTemplateTest) TestOptimizeJKSWithModernTlsSecretPattern() {
 		{
 			Name: "Optimize OpenSearch via tls.secret.existingSecret + jks.secret.existingSecret",
 			Values: map[string]string{
-				"identity.enabled":                                   "true",
-				"optimize.enabled":                                   "true",
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
 				"global.opensearch.tls.secret.existingSecret":        "os-tls-modern",
 				"global.opensearch.tls.secret.existingSecretKey":     "externaldb.jks",
 				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
@@ -1501,8 +1501,8 @@ func (s *DeploymentTemplateTest) TestOptimizeJKSWithModernTlsSecretPattern() {
 		{
 			Name: "Optimize Elasticsearch via tls.secret.existingSecret + jks.secret.inlineSecret",
 			Values: map[string]string{
-				"identity.enabled":                                  "true",
-				"optimize.enabled":                                  "true",
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
 				"global.elasticsearch.tls.secret.existingSecret":    "es-tls-modern",
 				"global.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
 				"global.elasticsearch.tls.jks.secret.inlineSecret":  "changeit",

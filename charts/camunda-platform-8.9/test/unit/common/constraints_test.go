@@ -165,11 +165,10 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-
 func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
+			Name:   "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
 			Values: map[string]string{
 				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
 			},
@@ -191,9 +190,9 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithAllSubcharts",
 			Values: map[string]string{
 				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
-				"identityPostgresql.enabled": "true",
-				"identityKeycloak.enabled":   "true",
-				"identity.enabled":           "true",
+				"identityPostgresql.enabled":   "true",
+				"identityKeycloak.enabled":     "true",
+				"identity.enabled":             "true",
 				"webModelerPostgresql.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

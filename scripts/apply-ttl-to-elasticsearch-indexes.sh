@@ -31,7 +31,6 @@ Options:
   --url       Elasticsearch base URL (default: http://localhost:9200)
   --user      Username for basic auth
   --pass      Password for basic auth
-  --elasticsearch-namespace Kubernetes namespace to fetch password using scripts/get-credientials-from-cluster.sh (used if --pass not given)
   --dry-run   Show what would be deleted, but do not delete
   --debug     Verbose debug logging
   -h, --help  Show this help and exit
@@ -84,7 +83,6 @@ TTL=""
 ES_URL="http://localhost:9200"
 ES_USER=""
 ES_PASS=""
-ELASTICSEARCH_NAMESPACE=""
 NAMESPACE=""
 DRY_RUN=0
 
@@ -109,10 +107,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --pass)
       ES_PASS="$2"
-      shift 2
-      ;;
-    --elasticsearch-namespace)
-      ELASTICSEARCH_NAMESPACE="$2"
       shift 2
       ;;
     --dry-run)
@@ -145,15 +139,6 @@ require_cmd curl
 require_cmd jq
 
 # ---- helpers ----
-if [[ -z "$ES_PASS" && -n "$ELASTICSEARCH_NAMESPACE" ]]; then
-  if [[ -x "scripts/get-credientials-from-cluster.sh" ]]; then
-    ES_PASS="$(scripts/get-credientials-from-cluster.sh --namespace "$ELASTICSEARCH_NAMESPACE")"
-  else
-    log "❌ scripts/get-credientials-from-cluster.sh not found or not executable"
-    exit 1
-  fi
-fi
-
 auth_args=()
 [[ -n "$ES_USER" && -n "$ES_PASS" ]] && auth_args=(-u "${ES_USER}:${ES_PASS}")
 

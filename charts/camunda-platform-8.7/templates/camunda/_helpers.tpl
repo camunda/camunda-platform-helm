@@ -742,3 +742,105 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.zeebe.metrics.prometheus }}
   {{- end }}
 {{- end -}}
+
+{{/*
+camunda.java_tool_options_tls_env
+
+Emits JAVA_TOOL_OPTIONS with truststore flags and (optionally) emits
+TRUSTSTORE_PASSWORD when JKS password is configured.
+
+Usage in a Deployment/StatefulSet env: block:
+  {{ include "camunda.java_tool_options_tls_env" (dict
+    "Values" .Values
+    "component" "operate"                                                            # values key for javaOpts
+    "truststorePath" "/usr/local/operate/certificates/externaldb.jks"                # full path
+    "javaOptsFirst" false                                                            # optional, default false (truststore-first)
+  ) | nindent 12 }}
+
+Caller is expected to gate this block behind:
+  {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+
+Parameter "javaOptsFirst": preserves the historic per-component arg ordering. The pre-port
+templates rendered:
+  - operate / tasklist / optimize: -Djavax.net.ssl.trustStore=<path> <javaOpts>   (default — javaOptsFirst=false)
+  - zeebe:                         <javaOpts> -Djavax.net.ssl.trustStore=<path>  (javaOptsFirst=true)
+Keeping this ordering means existing snapshots, alerts, and grep patterns over JAVA_TOOL_OPTIONS
+do not shift on upgrade.
+
+Behavior:
+- If global.<engine>.tls.jks.secret has a configured value (existingSecret/existingSecretKey
+  or inlineSecret), emits a TRUSTSTORE_PASSWORD env var and appends
+  -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD) to JAVA_TOOL_OPTIONS.
+- Otherwise emits only the truststore path (backward-compatible behavior).
+
+Reserved env var name: when this helper fires it owns the env var name TRUSTSTORE_PASSWORD.
+Do not set TRUSTSTORE_PASSWORD via <component>.env / extraEnv when using this feature —
+duplicate env names are rejected by some Kubernetes API servers (e.g. AKS).
+
+Migration note: customers who previously worked around the missing password support by setting
+"-Djavax.net.ssl.trustStorePassword=..." via <component>.javaOpts should remove that flag once
+they adopt global.<engine>.tls.jks.secret.* — otherwise both flags are present and the JVM uses
+the last one, which becomes confusing to debug.
+*/}}
+
+{{- /* Internal: pick the JKS config for the active TLS engine */ -}}
+{{- define "camunda._resolve_tls_jks_config" -}}
+{{- $cfg := dict -}}
+{{- if .Values.global.elasticsearch.tls.existingSecret -}}
+{{-   $cfg = (.Values.global.elasticsearch.tls.jks | default dict) -}}
+{{- else if .Values.global.opensearch.tls.existingSecret -}}
+{{-   $cfg = (.Values.global.opensearch.tls.jks | default dict) -}}
+{{- end -}}
+{{- toYaml $cfg -}}
+{{- end -}}
+
+{{- /* Internal: returns "true" if the resolved JKS config carries a usable secret reference */ -}}
+{{- define "camunda._has_jks_secret" -}}
+{{- $jks := ((include "camunda._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
+{{- $sec := ($jks.secret | default dict) -}}
+{{- if or (and $sec.existingSecret $sec.existingSecretKey) $sec.inlineSecret -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{- define "camunda.java_tool_options_tls_env" -}}
+{{- $vals := .Values -}}
+{{- $comp := required "camunda.java_tool_options_tls_env: parameter 'component' is required" .component -}}
+{{- $compVals := (get $vals $comp) | default dict -}}
+{{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
+{{- $truststorePath := required "camunda.java_tool_options_tls_env: parameter 'truststorePath' is required" .truststorePath -}}
+{{- $javaOptsFirst := .javaOptsFirst | default false -}}
+{{- $jks := ((include "camunda._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
+{{- $sec := ($jks.secret | default dict) -}}
+{{- $hasJks := (eq (include "camunda._has_jks_secret" .) "true") -}}
+{{- $trustArg := printf "-Djavax.net.ssl.trustStore=%s" $truststorePath -}}
+{{- if $hasJks -}}
+{{-   $trustArg = printf "%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $trustArg -}}
+{{- end -}}
+{{- $rendered := "" -}}
+{{- if $javaOpts -}}
+{{-   if $javaOptsFirst -}}
+{{-     $rendered = printf "%s\n%s" $javaOpts $trustArg -}}
+{{-   else -}}
+{{-     $rendered = printf "%s\n%s" $trustArg $javaOpts -}}
+{{-   end -}}
+{{- else -}}
+{{-   $rendered = $trustArg -}}
+{{- end -}}
+{{- if $hasJks -}}
+- name: TRUSTSTORE_PASSWORD
+{{- if and $sec.existingSecret $sec.existingSecretKey }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $sec.existingSecret | quote }}
+      key: {{ $sec.existingSecretKey | quote }}
+{{- else }}
+  value: {{ $sec.inlineSecret | quote }}
+{{- end }}
+{{ end -}}
+- name: JAVA_TOOL_OPTIONS
+  value: >-
+    {{- $rendered | nindent 4 }}
+{{- end -}}

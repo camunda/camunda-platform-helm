@@ -1,0 +1,12 @@
+name: gamma
+auth: keycloak
+flows:
+  - install
+  - upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+platforms: [gke]
+infra-type:
+  gke: distroci
+dependencies:
+  - keycloak-26

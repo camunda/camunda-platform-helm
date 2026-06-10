@@ -29,7 +29,7 @@ jobs:
       id-token: write
     steps:
       - name: Import Vault secrets for Harbor
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-harbor
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -49,7 +49,7 @@ jobs:
         with:
           app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           token: '${{ steps.generate-github-token.outputs.token }}'
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -84,9 +84,19 @@ jobs:
       #
       # Post Upgrade Tasks.
       #
+      # SUPPORTED_CHANGED = CHANGED_CHARTS minus out-of-support chart versions.
+      # The exclusion list is derived dynamically from charts/chart-versions.yaml
+      # (supportExtended + endOfLife), so updating that file is the only thing
+      # needed when a version transitions to end-of-support — no changes here.
       - name: Set vars
         run: |
-          echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
+          CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')
+          echo "CHANGED_CHARTS=${CHANGED_CHARTS}" | tee -a $GITHUB_ENV
+          # Build exclude pattern from supportExtended + endOfLife in charts/chart-versions.yaml.
+          # Dots are escaped (8\.6 not 8.6) so the regex matches literal version strings only.
+          EXCLUDED_VERSIONS=$(yq '.camundaVersions.supportExtended + .camundaVersions.endOfLife | map(. | sub("\.", "\\.")) | join("|")' charts/chart-versions.yaml)
+          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev "camunda-platform-(${EXCLUDED_VERSIONS})([^0-9]|$)" | tr '\n' ' ' | xargs || true)
+          echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a $GITHUB_ENV
       - name: Run go mod tidy
         run: |
           set -euo pipefail
@@ -102,27 +112,24 @@ jobs:
           echo "✅ 'go mod tidy' completed successfully"
       - name: Update golden files
         run: |
-          if [ -n "${CHANGED_CHARTS}" ]; then
-            chartPath="${CHANGED_CHARTS}" \
-              make go.update-golden-only
+          if [ -n "${SUPPORTED_CHANGED}" ]; then
+            chartPath="${SUPPORTED_CHANGED}" make go.update-golden-only
           else
-            make go.update-golden-only
+            echo "No supported chart changes, skipping golden file update."
           fi
       - name: Update README
         run: |
-          if [ -n "${CHANGED_CHARTS}" ]; then
-            chartPath="${CHANGED_CHARTS}" \
-              make helm.readme-update
+          if [ -n "${SUPPORTED_CHANGED}" ]; then
+            chartPath="${SUPPORTED_CHANGED}" make helm.readme-update
           else
-            make helm.readme-update
+            echo "No supported chart changes, skipping README update."
           fi
       - name: Update Schema
         run: |
-          if [ -n "${CHANGED_CHARTS}" ]; then
-            chartPath="${CHANGED_CHARTS}" \
-              make helm.schema-update
+          if [ -n "${SUPPORTED_CHANGED}" ]; then
+            chartPath="${SUPPORTED_CHANGED}" make helm.schema-update
           else
-            make helm.schema-update
+            echo "No supported chart changes, skipping schema update."
           fi
       - name: Git pull
         run: git pull --rebase --autostash .

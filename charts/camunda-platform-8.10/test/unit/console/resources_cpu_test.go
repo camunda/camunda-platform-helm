@@ -57,12 +57,11 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		SetValues: map[string]string{
 			"console.enabled":                   "true",
 			"identity.enabled":                  "true",
-			"elasticsearch.enabled":             "true",
 			"global.elasticsearch.enabled":      "true",
-			"console.resources.requests.cpu":    "200m",
-			"console.resources.limits.cpu":      "1.5",
-			"console.resources.requests.memory": "256Mi",
-			"console.resources.limits.memory":   "512Mi",
+			"camundaHub.console.resources.requests.cpu":    "200m",
+			"camundaHub.console.resources.limits.cpu":      "1.5",
+			"camundaHub.console.resources.requests.memory": "256Mi",
+			"camundaHub.console.resources.limits.memory":   "512Mi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -97,12 +96,11 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 		SetValues: map[string]string{
 			"console.enabled":                   "true",
 			"identity.enabled":                  "true",
-			"elasticsearch.enabled":             "true",
 			"global.elasticsearch.enabled":      "true",
-			"console.resources.requests.cpu":    "600m",
-			"console.resources.limits.cpu":      "2000m",
-			"console.resources.requests.memory": "400Mi",
-			"console.resources.limits.memory":   "2Gi",
+			"camundaHub.console.resources.requests.cpu":    "600m",
+			"camundaHub.console.resources.limits.cpu":      "2000m",
+			"camundaHub.console.resources.requests.memory": "400Mi",
+			"camundaHub.console.resources.limits.memory":   "2Gi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

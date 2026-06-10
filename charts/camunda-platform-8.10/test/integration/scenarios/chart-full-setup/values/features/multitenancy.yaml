@@ -1,4 +1,4 @@
-# Multi-tenancy feature configuration for 8.9
+# Multi-tenancy feature configuration for 8.10
 # Layer 4: Feature - Multi-tenancy
 
 global:
@@ -23,22 +23,10 @@ orchestration:
           claimName: "tenant"
           claimValue: "tenant-b"
 
-identityPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
-    secretKeys:
-      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
-      userPasswordKey: "identity-keycloak-postgresql-user-password"
-
-identity:
-  externalDatabase:
-    enabled: false
-
 optimize:
   caches:
     cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
+      minFetchIntervalSeconds: 120
 
 connectors:
   env:

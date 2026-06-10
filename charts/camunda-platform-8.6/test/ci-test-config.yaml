@@ -34,18 +34,6 @@ integration:
             gke: distroci
             eks: preemptible
           platforms: [gke,eks]
-        - name: opensearch-external
-          enabled: true
-          shortname: osex
-          exclude: []
-          auth: keycloak
-          skip-e2e: true
-          identity: keycloak
-          persistence: opensearch-external
-          flow: install
-          infra-type:
-            gke: distroci
-          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
@@ -54,11 +42,11 @@ integration:
           shortname: es
           auth: keycloak
         - name: multitenancy
-          enabled: true
+          enabled: false
           exclude: []
           shortname: mt
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch
           features: [multitenancy]
         - name: opensearch

@@ -17,9 +17,12 @@ spec:
       {{- if (or .Values.camundaHub.webModeler.websockets.podLabels .Values.webModeler.websockets.podLabels) }}
       {{- tpl (toYaml (or .Values.camundaHub.webModeler.websockets.podLabels .Values.webModeler.websockets.podLabels)) $ | nindent 8 }}
       {{- end }}
-      {{- if (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
       annotations:
-        {{- tpl (toYaml (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations)) $ | nindent 8 }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -47,13 +50,13 @@ spec:
                   key: pusher-app-id
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "PUSHER_APP_KEY"
-                "config" (or .Values.camundaHub.webModeler.restapi.pusher.client .Values.webModeler.restapi.pusher.client)
+                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher.client) .Values.camundaHub.webModeler.restapi.pusher.client)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-key"
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "PUSHER_APP_SECRET"
-                "config" (or .Values.camundaHub.webModeler.restapi.pusher .Values.webModeler.restapi.pusher)
+                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) .Values.camundaHub.webModeler.restapi.pusher)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
@@ -61,6 +64,9 @@ spec:
             - name: PUSHER_APP_PATH
               value: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+          {{- end }}
           {{- with (or .Values.camundaHub.webModeler.websockets.env .Values.webModeler.websockets.env) }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -120,6 +126,9 @@ spec:
           {{- with (or .Values.camundaHub.webModeler.websockets.extraConfiguration .Values.webModeler.websockets.extraConfiguration) }}
           {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
           {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+          {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+          {{- end }}
           {{- if (or .Values.camundaHub.webModeler.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) }}
           {{- (or .Values.camundaHub.webModeler.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) | toYaml | nindent 12 }}
           {{- end }}
@@ -130,6 +139,9 @@ spec:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-websockets-configuration
+      {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+      {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+      {{- end }}
       {{- if (or .Values.camundaHub.webModeler.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) }}
       {{- (or .Values.camundaHub.webModeler.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) | toYaml | nindent 8 }}
       {{- end }}

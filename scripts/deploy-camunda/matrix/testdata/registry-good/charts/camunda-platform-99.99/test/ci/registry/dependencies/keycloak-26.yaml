@@ -1,0 +1,3 @@
+chart: charts/internal-keycloak-26
+release-name: keycloak
+values-file: test/integration/companion-values/keycloak.yaml

@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 )
 
@@ -60,6 +61,7 @@ type PreparedScenario struct {
 	ValuesFiles         []string
 	LayeredFiles        []string // Source values files resolved from layers (pre-processing)
 	VaultSecretPath     string
+	CompanionCharts     []config.CompanionChart
 	TempDir             string
 	RealmName           string
 	OptimizePrefix      string
@@ -196,7 +198,7 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 }
 
 // keycloakVersionSuffix extracts a version suffix from a Keycloak hostname.
-// For example, "keycloak-24-9-0.ci.distro.ultrawombat.com" → "24_9_0".
+// For example, "keycloak-25-0-0.example.com" → "25_0_0".
 // The hostname is expected to have the form "keycloak-<version>.<domain>",
 // where <version> uses hyphens that are replaced with underscores.
 // If the hostname does not match this pattern, the full hostname (with
@@ -211,6 +213,25 @@ func keycloakVersionSuffix(host string) string {
 	version := strings.TrimPrefix(subdomain, "keycloak-")
 	// Replace hyphens with underscores for env var safety.
 	return strings.ReplaceAll(version, "-", "_")
+}
+
+// ComputeExpectedOrchestrationPrefix returns the orchestration index prefix that
+// will be used when deploy.Execute() runs for the given scenario and flags. This
+// allows callers to validate the prefix against external state (e.g., a live Helm
+// release) before executing the deployment.
+func ComputeExpectedOrchestrationPrefix(scenario string, flags *config.RuntimeFlags) string {
+	if flags.Index.OrchestrationIndexPrefix != "" {
+		return flags.Index.OrchestrationIndexPrefix
+	}
+	normalizedScenario := normalizeIdentifierPart(scenario)
+	suffix := namespaceDerivedSuffix(flags.EffectiveNamespace())
+	return orchestrationPrefix(normalizedScenario, suffix)
+}
+
+// orchestrationPrefix returns the canonical orchestration index prefix for a
+// given normalized scenario name and namespace-derived suffix.
+func orchestrationPrefix(normalizedScenario, suffix string) string {
+	return fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
 }
 
 // PinScenarioPrefixes derives a deterministic suffix from the namespace and writes
@@ -235,7 +256,7 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 		flags.Index.OptimizeIndexPrefix = fmt.Sprintf("opt-%s-%s", normalizedScenario, suffix)
 	}
 	if flags.Index.OrchestrationIndexPrefix == "" {
-		flags.Index.OrchestrationIndexPrefix = fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
+		flags.Index.OrchestrationIndexPrefix = orchestrationPrefix(normalizedScenario, suffix)
 	}
 	if flags.Index.TasklistIndexPrefix == "" {
 		flags.Index.TasklistIndexPrefix = fmt.Sprintf("task-%s-%s", normalizedScenario, suffix)
@@ -252,6 +273,16 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 			suffix,
 		)
 	}
+
+	logging.Logger.Info().
+		Str("scenario", scenario).
+		Str("namespace", effectiveNs).
+		Str("orchestrationPrefix", flags.Index.OrchestrationIndexPrefix).
+		Str("operatePrefix", flags.Index.OperateIndexPrefix).
+		Str("optimizePrefix", flags.Index.OptimizeIndexPrefix).
+		Str("tasklistPrefix", flags.Index.TasklistIndexPrefix).
+		Str("keycloakRealm", flags.Auth.KeycloakRealm).
+		Msg("Pinned scenario prefixes")
 
 	return nil
 }

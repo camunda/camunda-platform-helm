@@ -133,7 +133,8 @@ type Options struct {
 // Watch polls the cluster on a fixed interval, hands each snapshot to the
 // agent CLI, and returns the final decision and the last verdict it acted
 // on. The function returns when:
-//   - The snapshot shows every pod Ready (DecisionContinue, last verdict).
+//   - The snapshot shows the Helm release deployed and every pod Ready
+//     (DecisionContinue, last verdict).
 //   - The agent recommends abort with sufficient confidence (DecisionAbort).
 //   - MaxTicks is reached (DecisionContinue, last verdict).
 //   - MaxDuration elapses (DecisionContinue, last verdict, ctx.DeadlineExceeded).
@@ -214,8 +215,8 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 			continue
 		}
 
-		if snapshot.AllPodsReady() {
-			logging.Logger.Info().Msg("agentwatch: all pods Ready; exiting watch loop")
+		if snapshot.InstallComplete() {
+			logging.Logger.Info().Msg("agentwatch: Helm release deployed and all pods Ready; exiting watch loop")
 			return DecisionContinue, lastVerdict, nil
 		}
 

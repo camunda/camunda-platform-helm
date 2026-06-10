@@ -3,20 +3,6 @@ name: "Test - Chart Version"
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/chart-validate-template.yaml"
-      - ".github/workflows/test-unit-template.yaml"
-      - ".github/workflows/test-integration-runner.yaml"
-      - ".github/workflows/test-integration-template.yaml"
-      - ".github/workflows/test-chart-version-template.yaml"
-      - ".github/workflows/test-chart-version.yaml"
-      - ".github/config/external-secret/**"
-      - "scripts/**"
-      - ".tool-versions"
-      - "charts/camunda-platform-8*/**"
-      - "!charts/camunda-platform-8*/*.md"
-      - "!charts/camunda-platform-8*/*.MD"
-      - "!charts/camunda-platform-8*/*.txt"
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
@@ -111,6 +97,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
   id-token: write
   deployments: write
   packages: read
@@ -121,14 +108,49 @@ jobs:
     name: Generate chart matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.annotate-cache.outputs.matrix || steps.generate-chart-versions.outputs.matrix }}
-      camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
+      matrix: ${{ steps.annotate-cache.outputs.matrix || steps.generate-chart-versions.outputs.matrix || steps.empty-matrix.outputs.matrix }}
+      camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions || steps.empty-matrix.outputs.camunda-versions }}
       workspace: ${{ github.workspace }}
       pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      # Detect whether any chart/CI-relevant files changed. On non-PR events
+      # (merge_group, workflow_dispatch) we always consider changes present.
+      - name: Detect relevant file changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            charts:
+              - '.github/workflows/chart-validate-template.yaml'
+              - '.github/workflows/test-unit-template.yaml'
+              - '.github/workflows/test-integration-runner.yaml'
+              - '.github/workflows/test-integration-template.yaml'
+              - '.github/workflows/test-chart-version-template.yaml'
+              - '.github/workflows/test-chart-version.yaml'
+              - '.github/config/external-secret/**'
+              - 'scripts/**'
+              - '.tool-versions'
+              - 'charts/camunda-platform-8*/**'
+              - '!charts/camunda-platform-8*/*.md'
+              - '!charts/camunda-platform-8*/*.MD'
+              - '!charts/camunda-platform-8*/*.txt'
+
+      # Short-circuit: if no relevant files changed, emit empty matrix and skip
+      # all downstream jobs. CI Gate (if: always()) still reports success.
+      - name: Emit empty matrix (no relevant changes)
+        id: empty-matrix
+        if: github.event_name == 'pull_request' && steps.changes.outputs.charts != 'true'
+        run: |
+          echo "No chart/CI files changed — emitting empty matrix."
+          echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+          echo 'camunda-versions=[]' >> "$GITHUB_OUTPUT"
+
       - name: Generate chart versions
         id: generate-chart-versions
+        if: github.event_name != 'pull_request' || steps.changes.outputs.charts == 'true'
         uses: ./.github/actions/generate-chart-matrix
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
@@ -164,7 +186,7 @@ jobs:
       # and will be routed to a fast-path job, skipping the full GKE deploy+test cycle.
       - name: Setup Go for cache annotation
         if: github.event_name == 'merge_group' && steps.resolve-pr-sha.outputs.pr-head-sha != ''
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: scripts/ci-result-cache/go.mod
           cache: true
@@ -232,6 +254,8 @@ jobs:
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
     # validated by AlwaysGreen before publishing. Only golden file updates are needed.
+    # Also skip on empty matrix; without this gate the matrix produces zero jobs and
+    # report-cla-status.needs.integration-tests resolves as a failed dependency on merge_group.
     if: >-
       ${{
         needs.init.outputs.camunda-versions != '[]' &&

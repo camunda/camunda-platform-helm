@@ -60,7 +60,6 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	values["global.identity.auth.optimize.secret.existingSecret"] = "camunda-credentials"
 	values["global.identity.auth.optimize.secret.existingSecretKey"] = "identity-optimize-client-token"
 	values["global.elasticsearch.enabled"] = "true"
-	values["elasticsearch.enabled"] = "true"
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
 		SetValues:      values,

@@ -2,6 +2,14 @@
 A template to handle constraints.
 */}}
 
+{{/*
+Fail with a message if the Helm CLI version is less than v4.
+Chart 15.x (Camunda 8.10) requires Helm v4 or later.
+*/}}
+{{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) -}}
+{{- fail (printf "[camunda][error] Camunda chart 15.x (8.10) requires Helm CLI v4 or later. Detected Helm CLI version: %s. Please upgrade to Helm v4: https://helm.sh/docs/topics/v4_migration/" .Capabilities.HelmVersion.Version) -}}
+{{- end -}}
+
 {{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 
@@ -13,13 +21,12 @@ Fail with a message if Multi-Tenancy is enabled and its requirements are not met
 Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/multi-tenancy/
 */}}
 {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
-  {{- $identityDatabaseEnabled := (or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled) }}
+  {{- $identityDatabaseEnabled := .Values.identity.externalDatabase.enabled }}
   {{- if has false (list $identityAuthEnabled $identityDatabaseEnabled) }}
-    {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
+    {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "The Multi-Tenancy feature \"identity.multitenancy\" requires Identity enabled and configured with database."
         "Ensure that \"identity.enabled: true\" and \"global.identity.auth.enabled: true\""
-        "and Identity database is configured built-in PostgreSQL chart via \"identityPostgresql\""
-        "or configure an external database via \"identity.externalDatabase\"."
+        "and configure an external database via \"identity.externalDatabase\"."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
@@ -36,12 +43,11 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}
-  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled .Values.elasticsearch.enabled }}
-    {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
+  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+    {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "When \"global.noSecondaryStorage\" is enabled, both Elasticsearch and OpenSearch must be disabled."
-        "Please ensure that \"global.elasticsearch.enabled: false\", \"global.opensearch.enabled: false\", and \"elasticsearch.enabled: false\""
+        "Please ensure that \"global.elasticsearch.enabled: false\" and \"global.opensearch.enabled: false\""
         "are set when using \"global.noSecondaryStorage: true\"."
-        "Secondary storage components cannot be enabled when noSecondaryStorage is true."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
@@ -85,17 +91,6 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{- if not (has .Values.global.compatibility.openshift.adaptSecurityContext (list "force" "disabled")) }}
   {{- $errorMessage := "[camunda][error] Invalid value for adaptSecurityContext. The value must be either 'force' or 'disabled'." -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-{{- end }}
-
-{{/*
-Fail with a message if Identity is disabled and identityKeycloak is enabled.
-*/}}
-{{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
-  {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Identity is disabled but identityKeycloak is enabled."
-      "Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
-  -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
 {{/*
@@ -153,39 +148,10 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
 
   {{/* External Keycloak auth secret must be explicitly configured when using external Keycloak */}}
   {{ if and (.Values.identity.enabled)
-            (not .Values.identityKeycloak.enabled)
             (.Values.global.identity.keycloak.auth.adminUser)
             (not .Values.global.identity.keycloak.auth.secret.existingSecret) }}
     {{- $existingSecretsNotConfigured = append
         $existingSecretsNotConfigured "global.identity.keycloak.auth.secret.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.identityKeycloak.enabled)
-            (not .Values.identityKeycloak.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "identityKeycloak.auth.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.identityKeycloak.postgresql.enabled)
-            (not .Values.identityKeycloak.postgresql.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "identityKeycloak.postgresql.auth.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.webModelerPostgresql.enabled)
-            (not .Values.webModelerPostgresql.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "webModelerPostgresql.auth.existingSecret"
-    }}
-  {{- end }}
-
-  {{ if and (.Values.identityPostgresql.enabled)
-            (not .Values.identityPostgresql.auth.existingSecret) }}
-    {{- $existingSecretsNotConfigured = append
-        $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret"
     }}
   {{- end }}
 
@@ -269,44 +235,43 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
-  {{/* Bitnami subchart deprecation warnings */}}
-  {{- $bitnamiSubchartsEnabled := list -}}
-  {{- if .Values.identityPostgresql.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityPostgresql" -}}
-  {{- end -}}
-  {{- if .Values.identityKeycloak.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityKeycloak" -}}
-  {{- end -}}
-  {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "webModelerPostgresql" -}}
-  {{- end -}}
-  {{- if .Values.elasticsearch.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "elasticsearch" -}}
-  {{- end -}}
-  {{- if $bitnamiSubchartsEnabled }}
-    {{- $warningMessage := printf "%s %s %s %s %s"
-        "[camunda][warning]"
-        "DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10:"
-        (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
-        "Please migrate to externally managed services before upgrading to 8.10."
-        "For more details: https://docs.camunda.io/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{/* global.elasticsearch and global.opensearch config warnings */}}
+  {{/* Legacy per-component JKS truststore deprecation
+       (in favour of `global.tls.caBundle.secret.*` PEM bundle, which the
+       chart converts to a PKCS12 truststore at pod start via the caBundle
+       init container — see helm#3498). */}}
+  {{- /* hasSecretConfig (via normalizeSecretConfiguration) checks
+         $config.secret.existingSecret / .inlineSecret — so each "config"
+         binding is the PARENT of the .secret block, not the .secret leaf
+         itself. The pre-existing pair on this list (the two
+         `global.<engine>.tls.secret` paths) had the same bug and never
+         fired in production; this fix enables them as well. */ -}}
   {{- $deprecatedDatabaseTlsOptions := list
-  (dict "path" "global.elasticsearch.tls.secret" "config" .Values.global.elasticsearch.tls.secret)
-  (dict "path" "global.opensearch.tls.secret" "config" .Values.global.opensearch.tls.secret)
+  (dict "path" "global.elasticsearch.tls.secret" "config" .Values.global.elasticsearch.tls)
+  (dict "path" "global.opensearch.tls.secret" "config" .Values.global.opensearch.tls)
+  (dict "path" "global.elasticsearch.tls.jks.secret" "config" .Values.global.elasticsearch.tls.jks)
+  (dict "path" "global.opensearch.tls.jks.secret" "config" .Values.global.opensearch.tls.jks)
+  (dict "path" "orchestration.data.secondaryStorage.elasticsearch.tls.secret" "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)
+  (dict "path" "orchestration.data.secondaryStorage.opensearch.tls.secret" "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)
+  (dict "path" "optimize.database.elasticsearch.tls.secret" "config" .Values.optimize.database.elasticsearch.tls)
+  (dict "path" "optimize.database.opensearch.tls.secret" "config" .Values.optimize.database.opensearch.tls)
   }}
+  {{- /* Direct existingSecret / inlineSecret check rather than going via
+         camundaPlatform.hasSecretConfig — that helper requires BOTH
+         existingSecret AND existingSecretKey to be truthy (because it
+         normalizes for actual secret-ref injection). For a deprecation
+         warning we want to fire when the user has opted into the legacy
+         path AT ALL, including the natural minimal config of setting only
+         existingSecret (existingSecretKey defaults to "" on the
+         secondaryStorage / database paths). */ -}}
   {{- range $deprecatedDatabaseTlsOptions }}
-    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true") }}
+    {{- $secret := (.config).secret -}}
+    {{- if and $secret (or $secret.existingSecret $secret.inlineSecret) }}
         {{- $warningMessage := printf "%s %s %s %s %s"
             "[camunda][warning]"
-            (printf "DEPRECATION: values.yaml is using legacy option '%s'." .path)
-            "This option is deprecated and will be removed in a future version."
-            (printf "Please migrate to the new option: 'orchestration.data.secondaryStorage.(elasticsearch|opensearch).tls.secret.existingSecret'")
-            (printf "or for optimize: 'optimize.database.(elasticsearch|opensearch).tls.secret.existingSecret'")
+            (printf "DEPRECATION: values.yaml is using legacy JKS truststore option '%s'." .path)
+            "This option is deprecated as of chart 15.x and will be removed in a future major release."
+            "Please migrate to 'global.tls.caBundle.secret.{existingSecret,existingSecretKey}', supplying a PEM-encoded CA bundle."
+            "The chart will build the JVM truststore at pod start (no offline keytool needed). Migration: supply a PEM CA bundle to global.tls.caBundle.secret.existingSecret and remove the legacy tls.secret.existingSecret entries plus any -Djavax.net.ssl.trustStore* flags from javaOpts."
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
@@ -327,6 +292,86 @@ The following values inside your values.yaml need to be set but were not:
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
+  {{- end }}
+
+  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
+       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+
+    {{/* (1) A per-component JKS truststore silently wins over caBundle for that
+           component — the init container still builds a truststore the JVM never uses. */}}
+    {{- $jksOverrides := list
+        (dict "comp" "orchestration secondaryStorage.elasticsearch" "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)
+        (dict "comp" "orchestration secondaryStorage.opensearch" "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)
+        (dict "comp" "optimize database.elasticsearch" "config" .Values.optimize.database.elasticsearch.tls)
+        (dict "comp" "optimize database.opensearch" "config" .Values.optimize.database.opensearch.tls)
+        (dict "comp" "global.elasticsearch" "config" .Values.global.elasticsearch.tls)
+        (dict "comp" "global.opensearch" "config" .Values.global.opensearch.tls)
+    }}
+    {{- range $jksOverrides }}
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true" }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but %s also configures a per-component JKS truststore (tls.secret)." .comp)
+            "The JKS takes precedence for that component, so the caBundle is NOT used there (its init container still builds an unused truststore). Remove the per-component tls.secret to switch to the caBundle, or ignore this if the JKS is intentional."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (2) caBundle provides CA trust, not encryption. A plaintext datastore URL
+           means traffic is still unencrypted despite the bundle being set.
+           Orchestration secondaryStorage URLs are full scheme strings;
+           Optimize database URLs are split into a separate .protocol field. */}}
+    {{- range $url := (list .Values.orchestration.data.secondaryStorage.opensearch.url .Values.orchestration.data.secondaryStorage.elasticsearch.url) }}
+      {{- if and $url (hasPrefix "http://" (lower $url)) }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but the secondary-storage URL '%s' is plaintext http://." $url)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the URL to https:// to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+    {{- range $db := (list "opensearch" "elasticsearch") }}
+      {{- $u := index $.Values.optimize.database $db "url" }}
+      {{- if and $u $u.protocol (eq (lower $u.protocol) "http") }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but optimize.database.%s.url.protocol is plaintext 'http'." $db)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the protocol to https to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (3) A component-level JAVA_TOOL_OPTIONS env entry overrides (last-wins) the
+           chart's truststore flags, silently breaking JVM trust. */}}
+    {{/* webModeler.restapi env uses `or` to mirror deployment-restapi.yaml's own
+         env coalescing (camundaHub takes precedence; only that one list is
+         applied). We check exactly the list the deployment uses, so we never warn
+         about a JAVA_TOOL_OPTIONS in the ignored list — that would be a false
+         alarm since it is not applied. */}}
+    {{- $envComponents := list
+        (dict "comp" "orchestration" "env" .Values.orchestration.env)
+        (dict "comp" "optimize" "env" .Values.optimize.env)
+        (dict "comp" "connectors" "env" .Values.connectors.env)
+        (dict "comp" "identity" "env" .Values.identity.env)
+        (dict "comp" "webModeler.restapi" "env" (or .Values.camundaHub.webModeler.restapi.env .Values.webModeler.restapi.env))
+    }}
+    {{- range $c := $envComponents }}
+      {{- range $e := $c.env }}
+        {{- if eq $e.name "JAVA_TOOL_OPTIONS" }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "global.tls.caBundle is set, but %s.env sets JAVA_TOOL_OPTIONS directly." $c.comp)
+              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Components that expose a 'javaOpts' value (orchestration, optimize, web-modeler restapi) can set that instead — the chart appends its truststore flags to it."
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
@@ -425,6 +470,19 @@ Usage:
   {{- end }}
 {{- end -}}
 
+
+{{/*
+*******************************************************************************
+Gateway namespace and createGatewayResource are mutually exclusive.
+*******************************************************************************
+*/}}
+{{- if and .Values.global.gateway.enabled .Values.global.gateway.namespace .Values.global.gateway.createGatewayResource }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "global.gateway.namespace and global.gateway.createGatewayResource=true cannot be set together."
+      "When using a shared Gateway in another namespace, set \"global.gateway.createGatewayResource: false\"."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
 
 {{/*
 *******************************************************************************
@@ -836,3 +894,29 @@ Web Modeler
 ) }}
 
 {{- end }}
+
+{{/*
+*******************************************************************************
+Bundled Bitnami subcharts (removed in 8.10)
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "identityKeycloak")
+  "oldName" "identityKeycloak"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "identityPostgresql")
+  "oldName" "identityPostgresql"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "webModelerPostgresql")
+  "oldName" "webModelerPostgresql"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values "elasticsearch")
+  "oldName" "elasticsearch"
+) }}

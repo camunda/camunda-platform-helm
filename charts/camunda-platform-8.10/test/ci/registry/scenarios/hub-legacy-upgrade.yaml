@@ -1,0 +1,17 @@
+name: hub-legacy
+auth: keycloak
+flows:
+  - upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+features:
+  - hub-legacy
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

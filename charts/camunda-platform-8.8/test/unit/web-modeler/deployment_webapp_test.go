@@ -251,11 +251,11 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPusherSecretUsesExistingSecret",
 			Values: map[string]string{
-				"identity.enabled":                                    "true",
-				"webModeler.enabled":                                  "true",
-				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":     "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":  "my-pusher-key",
+				"identity.enabled":                                   "true",
+				"webModeler.enabled":                                 "true",
+				"webModeler.restapi.mail.fromAddress":                "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":    "my-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey": "my-pusher-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -280,10 +280,10 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPusherSecretUsesInlineSecret",
 			Values: map[string]string{
-				"identity.enabled":                               "true",
-				"webModeler.enabled":                             "true",
-				"webModeler.restapi.mail.fromAddress":            "example@example.com",
-				"webModeler.restapi.pusher.secret.inlineSecret":  "my-inline-secret-value",
+				"identity.enabled":                              "true",
+				"webModeler.enabled":                            "true",
+				"webModeler.restapi.mail.fromAddress":           "example@example.com",
+				"webModeler.restapi.pusher.secret.inlineSecret": "my-inline-secret-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

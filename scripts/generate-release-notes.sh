@@ -27,16 +27,48 @@ main () {
 
     #
     # Set Helm CLI version.
-    helm_cli_version="$(grep "helm " .tool-versions | cut -d " " -f2)" \
+    # Source is the `.tool-versions` helm pin at release-cut time, with overrides
+    # for transitional minors where the pin may have crossed the v3→v4 migration:
+    #   - 8.0–8.8: v3-only minors. If the pin is v4, clamp to 3.20.2.
+    #   - 8.9: transitional minor (supports both v3 and v4). If the pin is v4,
+    #     prefix 3.20.2 so the annotation lists both.
+    #   - 8.10+: use the pin as-is.
+    tool_versions_helm="$(grep "helm " .tool-versions | cut -d " " -f2)"
+    case "${app_version}" in
+        8.[0-8])
+            if [[ "${tool_versions_helm}" == 4* ]]; then
+                helm_cli_version="3.20.2"
+            else
+                helm_cli_version="${tool_versions_helm}"
+            fi
+            ;;
+        8.9)
+            if [[ "${tool_versions_helm}" == 4* ]]; then
+                helm_cli_version="3.20.2,${tool_versions_helm}"
+            else
+                helm_cli_version="${tool_versions_helm}"
+            fi
+            ;;
+        *)
+            helm_cli_version="${tool_versions_helm}"
+            ;;
+    esac
+    helm_cli_version="${helm_cli_version}" \
         yq -i '.annotations."camunda.io/helmCLIVersion" = env(helm_cli_version)' "${chart_file}"
 
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
+    # Exclude paths that are .helmignored or otherwise not shipped to end users
+    # (chart-author tests, Go toolchain) so commits touching only those paths
+    # are dropped from the changelog regardless of their conventional type.
     git-cliff ${latest_chart_tag_hash}..            \
         --tag-pattern="camunda-platform-${app_version}"'.*' \
         --config "${cliff_config_file}"             \
         --output "${chart_dir}/RELEASE-NOTES.md"    \
         --include-path "${chart_dir}/**"            \
+        --exclude-path "${chart_dir}/test/**"       \
+        --exclude-path "${chart_dir}/go.mod"        \
+        --exclude-path "${chart_dir}/go.sum"        \
         --tag "${chart_tag}"
 
     cat "${chart_dir}/RELEASE-NOTES.md"
@@ -50,7 +82,7 @@ main () {
             tr -d '[:punct:]' | tr -d '[:digit:]'
     }
 
-    # 
+    #
     declare -A kac_map
     kac_map+=(
         ["Features"]=added

@@ -2,8 +2,6 @@ global:
   elasticsearch:
     enabled: true
 
-elasticsearch:
-  enabled: true
 
 orchestration:
   data:

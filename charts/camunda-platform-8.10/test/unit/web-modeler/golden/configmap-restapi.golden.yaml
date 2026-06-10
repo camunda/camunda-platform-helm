@@ -19,8 +19,8 @@ data:
     camunda:
       identity:
         base-url: "http://camunda-platform-test-identity:80"
-        issuer: "http://localhost:18080/auth/realms/camunda-platform"
-        issuerBackendUrl: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
+        issuer: ""
+        issuerBackendUrl: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
         type: "KEYCLOAK"
 
       modeler:
@@ -37,7 +37,7 @@ data:
         security:
           jwt:
             issuer:
-              backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
+              backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
             audience:
               internal-api: "web-modeler-api"
               public-api: "web-modeler-public-api"
@@ -57,7 +57,7 @@ data:
         clusters:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
-            version: "8.10.0-alpha1"
+            version: "8.10.0-alpha2"
             authentication: "BASIC"
             authorizations:
               enabled: true
@@ -68,8 +68,8 @@ data:
 
     spring:
       datasource:
-        url: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"
-        username: "web-modeler"
+        url: "jdbc:postgresql://postgres.example.com:5432/web-modeler"
+        username: "modeler"
 
       mail:
         host: ""
@@ -83,8 +83,8 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
-              jwk-set-uri: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+              issuer-uri: ""
+              jwk-set-uri: "https://keycloak.example.com:8443/auth/realms/camunda-platform/protocol/openid-connect/certs"
 
       servlet:
         multipart:

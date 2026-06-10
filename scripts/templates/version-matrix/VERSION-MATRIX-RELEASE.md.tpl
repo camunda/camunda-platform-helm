@@ -21,14 +21,23 @@
   "chart_images_camunda" (chartImagesCamunda $chartDir $chartVersion | strings.Trim "\n")
   "chart_images_non_camunda" (chartImagesNonCamunda $chartDir $chartVersion | strings.Trim "\n")
   "chart_images_enterprise" (chartImagesEnterprise $chartDir $chartVersion | strings.Trim "\n")
-  "helm_cli_version" (helmCLIVersion $gitRef | strings.Trim " ")
+  "helm_cli_versions_raw" (helmCLIVersions $gitRef $release.app | strings.Trim "\n")
 }}
 
-{{- $helmCLIVersion := ternary
-  "N/A"
-  (printf "[%s](https://github.com/helm/helm/releases/tag/v%s)" $vars.helm_cli_version $vars.helm_cli_version)
-  (eq $vars.helm_cli_version "")
-}}
+{{- $helmCLIVersions := "" -}}
+{{- if eq $vars.helm_cli_versions_raw "" -}}
+  {{- $helmCLIVersions = "N/A" -}}
+{{- else -}}
+  {{- range $i, $v := strings.Split "\n" $vars.helm_cli_versions_raw -}}
+    {{- $trimmed := strings.Trim " " $v -}}
+    {{- if ne $trimmed "" -}}
+      {{- if ne $helmCLIVersions "" -}}
+        {{- $helmCLIVersions = printf "%s, " $helmCLIVersions -}}
+      {{- end -}}
+      {{- $helmCLIVersions = printf "%s[%s](https://github.com/helm/helm/releases/tag/v%s)" $helmCLIVersions $trimmed $trimmed -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
 
 {{- if $releaseHeader -}}
 {{ "\n" }}
@@ -42,7 +51,7 @@ Supported versions:
 - Camunda applications: [{{ .app_version }}](https://github.com/camunda/camunda/releases?q=tag%3A{{ .app_version }}&expanded=true)
 - Camunda version matrix: [{{ .app_version }}](https://helm.camunda.io/camunda-platform/version-matrix/camunda-{{ .app_version }})
 - Helm values: [{{ .chart_version }}](https://artifacthub.io/packages/helm/camunda/camunda-platform/{{ .chart_version }}#parameters)
-- Helm CLI: {{ $helmCLIVersion }}
+- Helm CLI: {{ $helmCLIVersions }}
 
 Camunda images:
 
