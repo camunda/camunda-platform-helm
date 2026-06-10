@@ -92,5 +92,15 @@ spec:
     - name: {{ template "identity.fullname" . }}
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.identity.service.port }}
+  {{- if .Values.identity.contextPath }}
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin
+    backendRefs:
+    - name: {{ template "identity.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.identity.service.port }}
+  {{- end }}
 {{- end }}
 {{- end }}

@@ -125,6 +125,31 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestIdentityHTTPRouteAdminRouteAddedWithContextPath",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+				"identity.enabled":       "true",
+				"identity.contextPath":   "/identity",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "value: /admin")
+			},
+		},
+		{
+			Name: "TestIdentityHTTPRouteAdminRouteAbsentWithoutContextPath",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+				"identity.enabled":       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "value: /admin")
+			},
+		},
+		{
 			Name: "TestKeycloakHTTPRouteUsesSameNamespaceService",
 			Values: map[string]string{
 				"global.gateway.enabled":                "true",
