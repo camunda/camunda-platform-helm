@@ -1,5 +1,18 @@
 # Changelog
 
+## [14.4.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.4.0...camunda-platform-8.9-14.4.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* support Orchestration gRPC TLS endpoints ([#6280](https://github.com/camunda/camunda-platform-helm/issues/6280)) ([faa57dd](https://github.com/camunda/camunda-platform-helm/commit/faa57dd935ddc382655a52f52a4fba790db1dcc0))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6154](https://github.com/camunda/camunda-platform-helm/issues/6154)) ([2598594](https://github.com/camunda/camunda-platform-helm/commit/2598594cff5b3936e3f4478c679d4f8b4087235a))
+* update patch-updates (patch) ([#6289](https://github.com/camunda/camunda-platform-helm/issues/6289)) ([2164f17](https://github.com/camunda/camunda-platform-helm/commit/2164f176bc967536bb9c9b1f279d9201f0711f50))
+
 ## [14.4.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.3.0...camunda-platform-8.9-14.4.0) (2026-06-04)
 
 
