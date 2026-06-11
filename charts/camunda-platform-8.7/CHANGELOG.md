@@ -1,6 +1,6 @@
 # Changelog
 
-## [12.11.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.10.0...camunda-platform-8.7-12.11.0) (2026-06-11)
+## [12.11.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.10.0...camunda-platform-8.7-12.11.0) (2026-06-05)
 
 
 ### Features
