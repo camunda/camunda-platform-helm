@@ -72,9 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Drop bundled Bitnami subcharts"
     - kind: fixed
-      description: "Allow Recreate strategy for Web Modeler persistence"
-    - kind: fixed
-      description: "Align upload size with Zeebe message limits"
+      description: "Support Orchestration gRPC TLS endpoints"
