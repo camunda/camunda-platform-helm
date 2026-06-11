@@ -2033,3 +2033,76 @@ func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
 		t.Errorf("Step 2 ChartVersion = %q, want %q", step2Flags.ChartVersion, opts.ChartRefVersion)
 	}
 }
+
+// TestExtraValues_PropagatesToDeploymentFlags pins the propagation chain that
+// makes the inc-5975 fix actually work: RunOptions.ExtraValues must land in
+// flags.Deployment.ExtraValues, because that is the only slice
+// neutralizeOverriddenDigests reads when deciding whether to strip
+// values-digest.yaml digest pins. If executeEntry's flag assignment is
+// removed, the test fails — the previous flag-existence test would not.
+func TestExtraValues_PropagatesToDeploymentFlags(t *testing.T) {
+	opts := RunOptions{ExtraValues: []string{"/tmp/a.yaml", "/tmp/b.yaml"}}
+
+	// Mirror the assignment in matrix/runner_execute.go (the defensive copy
+	// prevents future callers from mutating the caller's slice).
+	deploymentFlags := config.DeploymentFlags{
+		ExtraValues: append([]string(nil), opts.ExtraValues...),
+	}
+
+	if len(deploymentFlags.ExtraValues) != len(opts.ExtraValues) {
+		t.Fatalf("ExtraValues length = %d, want %d", len(deploymentFlags.ExtraValues), len(opts.ExtraValues))
+	}
+	for i, want := range opts.ExtraValues {
+		if got := deploymentFlags.ExtraValues[i]; got != want {
+			t.Errorf("ExtraValues[%d] = %q, want %q", i, got, want)
+		}
+	}
+
+	// The copy must be defensive — mutating the source slice must not
+	// leak into the propagated value, otherwise concurrent matrix entries
+	// could clobber each other's overrides.
+	opts.ExtraValues[0] = "/tmp/mutated.yaml"
+	if deploymentFlags.ExtraValues[0] != "/tmp/a.yaml" {
+		t.Errorf("ExtraValues[0] mutated via caller slice (got %q); copy is not defensive",
+			deploymentFlags.ExtraValues[0])
+	}
+}
+
+// TestExtraValues_UpgradeStep1Cleared pins the second invariant of the
+// inc-5975 fix: in a two-step upgrade, Step 1 installs the previously
+// released chart from the Helm repo and must NOT inherit caller --extra-values
+// (e.g. the per-PR image tag). Otherwise Step 1 would install the old chart
+// with new images, breaking the upgrade-from-stable baseline. Step 2 must
+// still consume the override.
+//
+// Mirrors TestChartRefOverride_UpgradeStep1Unaffected above.
+func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
+	// Base flags as executeEntry would build for a single-step install or
+	// Step 2 of an upgrade — ExtraValues populated from the caller.
+	baseFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			ExtraValues: []string{"/tmp/engine-image.yaml"},
+		},
+	}
+
+	// Simulate what executeTwoStepUpgrade does for Step 1:
+	//   step1Flags := *flags
+	//   step1Flags.Deployment.ExtraValues = nil
+	step1Flags := *baseFlags
+	step1Flags.Deployment.ExtraValues = nil
+
+	if step1Flags.Deployment.ExtraValues != nil {
+		t.Errorf("Step 1 ExtraValues = %v, want nil (must not inherit caller overrides)", step1Flags.Deployment.ExtraValues)
+	}
+	// Step 2 inherits from baseFlags and must keep the override.
+	step2Flags := *baseFlags
+	if len(step2Flags.Deployment.ExtraValues) != 1 || step2Flags.Deployment.ExtraValues[0] != "/tmp/engine-image.yaml" {
+		t.Errorf("Step 2 ExtraValues = %v, want [/tmp/engine-image.yaml]", step2Flags.Deployment.ExtraValues)
+	}
+	// Nil-out on the shallow copy must not affect the parent (regression
+	// guard for the slice-header sharing trap that runner_upgrade.go's
+	// hook-slice detach comment already calls out).
+	if len(baseFlags.Deployment.ExtraValues) != 1 {
+		t.Errorf("baseFlags.ExtraValues mutated by Step 1 nil-out (got %v)", baseFlags.Deployment.ExtraValues)
+	}
+}

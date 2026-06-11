@@ -136,6 +136,10 @@ type RunOptions struct {
 	// entry. CI uses this for invariant flags like
 	// orchestration.upgrade.allowPreReleaseImages=true.
 	ExtraHelmSets []string
+	// ExtraValues are values files plumbed into flags.Deployment.ExtraValues so
+	// neutralizeOverriddenDigests can see them. Forwarding via ExtraHelmArgs as
+	// --values=... bypasses that strip (#6312).
+	ExtraValues []string
 	// NamespaceOverride, when non-empty, replaces the computed namespace for
 	// every entry. Used by per-scenario CI workflows that pre-create the
 	// namespace (with vault secrets, TLS certs, docker pull-secrets) before

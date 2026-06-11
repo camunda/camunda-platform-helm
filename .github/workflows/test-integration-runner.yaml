@@ -640,15 +640,13 @@ jobs:
             fi
           fi
 
-          # Apply workflow-supplied extra values (e.g. the run-built image tag) last
-          # so they override chart defaults. The "Pre-install scenario tweaks" step
-          # above tees the workflow's extra-values input to /tmp/extra-values-file.yaml.
-          # `matrix run` does not yet natively consume that file (see #6312), so
-          # forward it to every helm command via --extra-helm-arg=--values. Skip when
-          # empty/whitespace-only. Safe here because the install flow is single-step;
-          # the upgrade flow deliberately omits this (see the note in its deploy step).
+          # Forward workflow extra-values via --extra-values (NOT
+          # --extra-helm-arg=--values=…): only this path lands in
+          # flags.Deployment.ExtraValues, which engages the digest-overlay strip.
+          # Upgrade flow omits this; runner_upgrade.go also nils Step 1's copy.
+          EXTRA_VALUES_ARGS=()
           if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
-            EXTRA_HELM_ARGS+=(--extra-helm-arg=--values=/tmp/extra-values-file.yaml)
+            EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
           fi
 
           cd ./scripts/deploy-camunda
@@ -669,6 +667,7 @@ jobs:
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
+            ${EXTRA_VALUES_ARGS[@]+"${EXTRA_VALUES_ARGS[@]}"} \
             --log-level info
 
       - name: Display Docker Image Git Commits
