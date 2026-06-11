@@ -215,6 +215,13 @@ type CIScenario struct {
 	// (pre-install-<scenario>.sh) with an explicit, reviewable reference.
 	PreInstall *LifecycleHook `yaml:"pre-install,omitempty"`
 
+	// PostInfra declares a fixture or script to run after the scenario's
+	// companion charts (external infrastructure) are deployed and ready, but
+	// before the main Camunda chart is installed/upgraded. Used to act on
+	// freshly-provisioned infrastructure — e.g. migrating data from a prior
+	// release's bundled backends onto the companion services.
+	PostInfra *LifecycleHook `yaml:"post-infra,omitempty"`
+
 	// PostDeploy declares a fixture or script to run after helm install
 	// completes successfully. Used for resources whose CRDs are only
 	// installed by the chart itself (e.g., the Gateway API

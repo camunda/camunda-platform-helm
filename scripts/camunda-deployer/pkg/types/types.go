@@ -80,6 +80,13 @@ type Options struct {
 	// deployed with helm upgrade --install --wait to ensure it is ready
 	// before the main chart deployment begins.
 	CompanionCharts []CompanionChart
+
+	// PostInfraHooks are functions called after all CompanionCharts are
+	// deployed and ready, but before the main Camunda chart is
+	// installed/upgraded. Used to act on freshly-provisioned infrastructure —
+	// e.g. migrating data from a prior release's bundled backends onto the
+	// companion services before the chart switches over to them.
+	PostInfraHooks []func(ctx context.Context) error
 }
 
 // CompanionChart represents a Helm chart that should be deployed as a

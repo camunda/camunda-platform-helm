@@ -282,6 +282,13 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		}
 	}
 
+	// --- Post-infra lifecycle hook (Step 2 of two-step upgrade) ---
+	// Registered against step2Flags so it fires after Step 2's companion charts
+	// are deployed but before the target chart upgrade.
+	if err := registerDeclarativePostInfraHook(&step2Flags, entry.PostInfra, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+		return err
+	}
+
 	// --- Post-deploy lifecycle hook (Step 2 of two-step upgrade) ---
 	// Registered against step2Flags so it fires after the upgrade succeeds.
 	if err := registerDeclarativePostDeployHook(&step2Flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
@@ -380,6 +387,13 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 	// Upgrade-only flows reuse an existing namespace, but scenario pre-install
 	// fixtures may still be required before the target chart can start.
 	if err := registerDeclarativePreInstallHook(&upgradeFlags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+		return err
+	}
+	// Post-infra hook: runs after the upgrade's companion charts are deployed
+	// but before the target chart upgrade. This is where a Bitnami→companion
+	// data migration runs, so the upgraded chart finds its data on the
+	// companion services.
+	if err := registerDeclarativePostInfraHook(&upgradeFlags, entry.PostInfra, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 		return err
 	}
 

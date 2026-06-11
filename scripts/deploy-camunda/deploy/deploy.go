@@ -313,6 +313,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		SetPairs:              flags.Deployment.ExtraHelmSets,
 		PreInstallHooks:       flags.PreInstallHooks,
 		CompanionCharts:       toDeployerCompanionCharts(prepared.CompanionCharts),
+		PostInfraHooks:        flags.PostInfraHooks,
 	}
 
 	// Log deployment options (redact sensitive fields)

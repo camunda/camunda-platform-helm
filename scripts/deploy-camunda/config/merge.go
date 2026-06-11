@@ -193,6 +193,14 @@ type RuntimeFlags struct {
 	// may not yet exist or may be recreated by DeleteNamespaceFirst.
 	PreInstallHooks []func(ctx context.Context) error
 
+	// PostInfraHooks are functions called by the deployer after companion
+	// charts (the external infrastructure: PostgreSQL, Elasticsearch, Keycloak,
+	// …) are deployed and ready, but before the main Camunda chart is
+	// installed/upgraded. Used to act on freshly-provisioned infrastructure —
+	// e.g. migrating data from a prior release's bundled backends onto the
+	// companion services before the chart switches over to them.
+	PostInfraHooks []func(ctx context.Context) error
+
 	// PostDeployHooks are functions called by the deployer after helm
 	// upgrade/install completes successfully but before the deployment result
 	// is returned. Used to apply scenario-specific resources whose CRDs are

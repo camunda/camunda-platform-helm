@@ -12,6 +12,7 @@ infra-type:
   gke: qa-workloads
 qa: true
 image-tags: true
+post-infra: post-infra-bitnami-migration
 dependencies:
   - postgresql-qa
   - keycloak-qa
