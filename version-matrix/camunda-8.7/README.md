@@ -52,13 +52,13 @@ Camunda images:
 - docker.io/camunda/connectors-bundle:8.7.21
 - docker.io/camunda/console:8.7.105
 - docker.io/camunda/identity:8.7.20
-- docker.io/camunda/operate:8.7.32
+- docker.io/camunda/operate:8.7.30
 - docker.io/camunda/optimize:8.7.22
-- docker.io/camunda/tasklist:8.7.32
+- docker.io/camunda/tasklist:8.7.30
 - docker.io/camunda/web-modeler-restapi:8.7.22
 - docker.io/camunda/web-modeler-webapp:8.7.22
 - docker.io/camunda/web-modeler-websockets:8.7.22
-- docker.io/camunda/zeebe:8.7.32
+- docker.io/camunda/zeebe:8.7.30
 - registry.camunda.cloud/camunda/keycloak:26.3.3
 
 Non-Camunda images:
@@ -71,8 +71,8 @@ Non-Camunda images:
 
 Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
-- registry.camunda.cloud/keycloak-ee/keycloak:26.6.1
-- registry.camunda.cloud/vendor-ee/elasticsearch:8.19.16
+- registry.camunda.cloud/keycloak-ee/keycloak:26.4.0
+- registry.camunda.cloud/vendor-ee/elasticsearch:8.19.15
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
