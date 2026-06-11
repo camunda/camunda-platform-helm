@@ -1,5 +1,20 @@
 # Changelog
 
+## [12.12.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.11.0...camunda-platform-8.7-12.12.0) (2026-06-11)
+
+
+### Features
+
+* **8.7:** support password field for jks ([#5995](https://github.com/camunda/camunda-platform-helm/issues/5995)) ([c52c6f0](https://github.com/camunda/camunda-platform-helm/commit/c52c6f06feaee0e8ff311898b8e2963e7aa5bf5f))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6154](https://github.com/camunda/camunda-platform-helm/issues/6154)) ([2598594](https://github.com/camunda/camunda-platform-helm/commit/2598594cff5b3936e3f4478c679d4f8b4087235a))
+* update camunda-platform-images (patch) ([#6367](https://github.com/camunda/camunda-platform-helm/issues/6367)) ([0973851](https://github.com/camunda/camunda-platform-helm/commit/0973851ba691c0d87f2fc0c0d49caac47dacf667))
+* update minor-updates (minor) ([#6112](https://github.com/camunda/camunda-platform-helm/issues/6112)) ([02a27f3](https://github.com/camunda/camunda-platform-helm/commit/02a27f3da084312a971cdeac3699a661d28071c8))
+* update patch-updates (patch) ([#6289](https://github.com/camunda/camunda-platform-helm/issues/6289)) ([2164f17](https://github.com/camunda/camunda-platform-helm/commit/2164f176bc967536bb9c9b1f279d9201f0711f50))
+
 ## [12.11.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.10.0...camunda-platform-8.7-12.11.0) (2026-06-05)
 
 
