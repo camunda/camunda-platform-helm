@@ -73,14 +73,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Added service account labels"
-    - kind: added
       description: "Support password field for jks"
-    - kind: changed
-      description: "Drop bundled Bitnami subcharts"
-    - kind: fixed
-      description: "Bump enterprise Keycloak image to 26.3.4"
-    - kind: fixed
-      description: "Align upload size with Zeebe message limits"
-    - kind: fixed
-      description: "Correct enterprise Elasticsearch image tag to existing 8.19.15"
