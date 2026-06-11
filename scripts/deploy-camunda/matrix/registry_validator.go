@@ -136,6 +136,7 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	for _, scn := range cfg.Integration.Case.PR.Scenarios {
 		label := fmt.Sprintf("scenario %q (shortname %q, flow %q)", scn.Name, scn.Shortname, scn.Flow)
 		checkHook(label+" pre-install", scn.PreInstall)
+		checkHook(label+" post-infra", scn.PostInfra)
 		checkHook(label+" post-deploy", scn.PostDeploy)
 		for _, feat := range scn.Features {
 			checkFeature(label, feat)
@@ -176,6 +177,7 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	for _, scn := range cfg.Integration.Case.Nightly.Scenarios {
 		label := fmt.Sprintf("nightly scenario %q (shortname %q, flow %q)", scn.Name, scn.Shortname, scn.Flow)
 		checkHook(label+" pre-install", scn.PreInstall)
+		checkHook(label+" post-infra", scn.PostInfra)
 		checkHook(label+" post-deploy", scn.PostDeploy)
 	}
 

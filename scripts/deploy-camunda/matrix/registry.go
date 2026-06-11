@@ -66,6 +66,7 @@ type registryScenario struct {
 	PrefixKey   string            `yaml:"prefix-key,omitempty"`
 
 	PreInstallID  string   `yaml:"pre-install,omitempty"`
+	PostInfraID   string   `yaml:"post-infra,omitempty"`
 	PostDeployID  string   `yaml:"post-deploy,omitempty"`
 	DependencyIDs []string `yaml:"dependencies,omitempty"`
 }
@@ -170,6 +171,10 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		postInfra, err := loadHook(rscn.PostInfraID, entry.ID)
+		if err != nil {
+			return nil, err
+		}
 		postDeploy, err := loadHook(rscn.PostDeployID, entry.ID)
 		if err != nil {
 			return nil, err
@@ -216,6 +221,7 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 				Dependencies: append([]ChartDependency(nil), deps...),
 				PrefixKey:    rscn.PrefixKey,
 				PreInstall:   preInstall,
+				PostInfra:    postInfra,
 				PostDeploy:   postDeploy,
 			})
 		}
