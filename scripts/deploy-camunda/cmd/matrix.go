@@ -186,6 +186,7 @@ func newMatrixRunCommand() *cobra.Command {
 		logDir                   string
 		extraHelmArgs            []string
 		extraHelmSets            []string
+		extraValues              []string
 		namespaceOverride        string
 		shortnameExact           bool
 		tier                     int
@@ -509,6 +510,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				ForceImageOverrides:   forceImageOverrides,
 				ExtraHelmArgs:         extraHelmArgs,
 				ExtraHelmSets:         extraHelmSets,
+				ExtraValues:           extraValues,
 				NamespaceOverride:     namespaceOverride,
 				ChartRef:              chartRef,
 				ChartRefVersion:       chartRefVersion,
@@ -613,6 +615,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
 	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
 	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
+	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; NOT comma-split, unlike `deploy --extra-values` — use the flag multiple times for multiple files). Use this, not --extra-helm-arg=--values=…, for image overrides; only this path triggers the digest-overlay strip. In two-step upgrade flows the file is applied to Step 2 only — Step 1 installs the previously released chart and intentionally ignores --extra-values.")
 	f.StringVar(&namespaceOverride, "namespace-override", "", "Override the computed namespace for every entry. Use only with filters that narrow the run to a single entry (typically called from per-scenario CI workflows that pre-create the namespace).")
 	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
 	f.StringVar(&chartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")

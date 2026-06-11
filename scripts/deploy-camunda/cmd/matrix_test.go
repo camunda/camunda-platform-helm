@@ -7,6 +7,27 @@ import (
 	"scripts/deploy-camunda/matrix"
 )
 
+// Pins inc-5975: --extra-values must exist on `matrix run` so that
+// flags.Deployment.ExtraValues — the only input to the digest-overlay strip —
+// gets populated. StringArray (not StringSlice) so paths aren't comma-split.
+func TestMatrixRunExtraValuesFlag(t *testing.T) {
+	flag := newMatrixRunCommand().Flags().Lookup("extra-values")
+	if flag == nil {
+		t.Fatal("--extra-values flag missing")
+	}
+	if got := flag.Value.Type(); got != "stringArray" {
+		t.Fatalf("flag type = %q, want stringArray", got)
+	}
+	for _, v := range []string{"/tmp/a.yaml", "/tmp/b.yaml"} {
+		if err := flag.Value.Set(v); err != nil {
+			t.Fatalf("set %s: %v", v, err)
+		}
+	}
+	if got := flag.Value.String(); !strings.Contains(got, "/tmp/a.yaml") || !strings.Contains(got, "/tmp/b.yaml") {
+		t.Errorf("aggregated value %q missing entries", got)
+	}
+}
+
 func TestValidateChartRefFlags(t *testing.T) {
 	tests := []struct {
 		name            string

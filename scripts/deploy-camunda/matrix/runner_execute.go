@@ -115,6 +115,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			Timeout:              opts.HelmTimeout,
 			DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
 			ExtraHelmArgs:        append([]string(nil), opts.ExtraHelmArgs...),
+			ExtraValues:          append([]string(nil), opts.ExtraValues...),
 			// Always include allowPreReleaseImages=true for CI deployments —
 			// matches the legacy Taskfile install/upgrade behaviour. User-supplied
 			// --extra-helm-set values are merged on top and take precedence.
