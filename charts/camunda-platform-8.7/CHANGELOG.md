@@ -1,5 +1,42 @@
 # Changelog
 
+## [12.11.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.10.0...camunda-platform-8.7-12.11.0) (2026-06-11)
+
+
+### Features
+
+* **8.7:** add component-persistence CI scenario for issue 4767 ([#6007](https://github.com/camunda/camunda-platform-helm/issues/6007)) ([7e5a385](https://github.com/camunda/camunda-platform-helm/commit/7e5a385b81e48886da16b2b1312db728e7990fce))
+* **8.7:** support password field for jks ([#5995](https://github.com/camunda/camunda-platform-helm/issues/5995)) ([c52c6f0](https://github.com/camunda/camunda-platform-helm/commit/c52c6f06feaee0e8ff311898b8e2963e7aa5bf5f))
+* added service account labels ([#5877](https://github.com/camunda/camunda-platform-helm/issues/5877)) ([a616db5](https://github.com/camunda/camunda-platform-helm/commit/a616db54ef09b5f45ca1db868bc7918b05b18c7c))
+
+
+### Bug Fixes
+
+* **8.7:** bump enterprise Keycloak image to 26.3.4 ([#6213](https://github.com/camunda/camunda-platform-helm/issues/6213)) ([7e8c77b](https://github.com/camunda/camunda-platform-helm/commit/7e8c77bcd999378e9f5d48899024eec0d3cbfaaf))
+* align upload size with Zeebe message limits ([#6279](https://github.com/camunda/camunda-platform-helm/issues/6279)) ([f61f37c](https://github.com/camunda/camunda-platform-helm/commit/f61f37c7cecdb073d4330a6a15f0c57fec0f1f78))
+* correct enterprise Elasticsearch image tag to existing 8.19.15 ([#6307](https://github.com/camunda/camunda-platform-helm/issues/6307)) ([1efbd25](https://github.com/camunda/camunda-platform-helm/commit/1efbd25424e9f91591c652f9dd9e5591d0ee2e4a))
+
+
+### Documentation
+
+* **version-matrix:** add helm CLI versions per chart minor ([#6155](https://github.com/camunda/camunda-platform-helm/issues/6155)) ([20faed1](https://github.com/camunda/camunda-platform-helm/commit/20faed1e517e7581a903057c51fa131c790b44db))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6154](https://github.com/camunda/camunda-platform-helm/issues/6154)) ([2598594](https://github.com/camunda/camunda-platform-helm/commit/2598594cff5b3936e3f4478c679d4f8b4087235a))
+* update camunda-platform-images (patch) ([#6367](https://github.com/camunda/camunda-platform-helm/issues/6367)) ([0973851](https://github.com/camunda/camunda-platform-helm/commit/0973851ba691c0d87f2fc0c0d49caac47dacf667))
+* update hashicorp/vault-action action to v4 ([#6176](https://github.com/camunda/camunda-platform-helm/issues/6176)) ([5c4f611](https://github.com/camunda/camunda-platform-helm/commit/5c4f611acff4d3bcdea89ae8e6e5706078fb06fb))
+* update minor-updates (minor) ([#6112](https://github.com/camunda/camunda-platform-helm/issues/6112)) ([02a27f3](https://github.com/camunda/camunda-platform-helm/commit/02a27f3da084312a971cdeac3699a661d28071c8))
+* update module github.com/jackc/pgx/v5 to v5.9.2 [security] ([#5843](https://github.com/camunda/camunda-platform-helm/issues/5843)) ([b37bb34](https://github.com/camunda/camunda-platform-helm/commit/b37bb34c7b90ed6187598c92f6a0069801a810dc))
+* update patch-updates (patch) ([#5837](https://github.com/camunda/camunda-platform-helm/issues/5837)) ([baee40a](https://github.com/camunda/camunda-platform-helm/commit/baee40afccd73d91a8943f2723017ee80116bc41))
+* update patch-updates (patch) ([#6289](https://github.com/camunda/camunda-platform-helm/issues/6289)) ([2164f17](https://github.com/camunda/camunda-platform-helm/commit/2164f176bc967536bb9c9b1f279d9201f0711f50))
+
+
+### Refactors
+
+* **8.10:** drop bundled Bitnami subcharts ([#6146](https://github.com/camunda/camunda-platform-helm/issues/6146)) ([4374cff](https://github.com/camunda/camunda-platform-helm/commit/4374cff37d2e3b7cfaa2e661b0893705e5fbc14e))
+
 ## [12.10.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.9.0...camunda-platform-8.7-12.10.0) (2026-05-19)
 
 
