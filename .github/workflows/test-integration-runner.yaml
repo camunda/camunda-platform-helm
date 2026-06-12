@@ -835,6 +835,35 @@ jobs:
       ##########################################################################################################
       # Upgrade
       ##########################################################################################################
+      - name: Cluster Setup - Upgrade - Configure the namespace
+        if: inputs.flow == 'modular-upgrade-minor'
+        run: |
+          echo $TEST_NAMESPACE
+          # Modular upgrade flows skip the install job, so the upgrade job must
+          # create the namespace before applying ExternalSecrets into it.
+          if kubectl get ns $TEST_NAMESPACE &>/dev/null; then
+            EXISTING_RUN_ID=$(kubectl get ns $TEST_NAMESPACE -o jsonpath='{.metadata.labels.github-run-id}' 2>/dev/null || echo "")
+            if [[ "$EXISTING_RUN_ID" == "$GITHUB_WORKFLOW_RUN_ID" ]]; then
+              echo "Namespace exists and was created by this run, deleting and recreating..."
+              kubectl delete ns $TEST_NAMESPACE
+            else
+              echo "Namespace exists but was created by a different run (run-id: $EXISTING_RUN_ID), cleaning up stale release..."
+              helm uninstall integration --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
+            fi
+          fi
+          kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.setup.outputs.identifier }} --overwrite
+          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite
+          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID --overwrite
+          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID --overwrite
+          kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY) --overwrite
+          kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY) --overwrite
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true --overwrite
+          kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID --overwrite
+          kubectl get ns $TEST_NAMESPACE -o yaml
+
       - name: Helm - Upgrade - Configure Helm with Entra Values
         if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
