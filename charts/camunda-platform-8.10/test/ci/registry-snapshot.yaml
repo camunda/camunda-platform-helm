@@ -668,7 +668,7 @@ integration:
           enabled: true
           shortname: hublu
           auth: keycloak
-          flow: modular-upgrade-minor
+          flow: upgrade-minor
           platforms:
             - gke
           exclude: []
@@ -710,7 +710,7 @@ integration:
           enabled: true
           shortname: hubmu
           auth: keycloak
-          flow: modular-upgrade-minor
+          flow: upgrade-minor
           platforms:
             - gke
           exclude: []

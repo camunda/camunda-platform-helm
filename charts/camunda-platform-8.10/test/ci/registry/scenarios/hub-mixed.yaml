@@ -1,7 +1,7 @@
 name: hub-mixed
 auth: keycloak
 flows:
-  - modular-upgrade-minor
+  - upgrade-minor
 identity: keycloak
 persistence: elasticsearch
 features:
