@@ -39,7 +39,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13
