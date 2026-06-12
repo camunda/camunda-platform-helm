@@ -9,6 +9,10 @@ on:
       - '**/.release-please-config.json'
       - '**/.release-please-manifest.json'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
