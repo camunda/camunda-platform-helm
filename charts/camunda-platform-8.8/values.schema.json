@@ -6238,6 +6238,41 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "resources": {
+                                            "type": "object",
+                                            "properties": {
+                                                "requests": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "cpu": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "50m"
+                                                        },
+                                                        "memory": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "64Mi"
+                                                        }
+                                                    }
+                                                },
+                                                "limits": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "cpu": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "50m"
+                                                        },
+                                                        "memory": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "64Mi"
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 },

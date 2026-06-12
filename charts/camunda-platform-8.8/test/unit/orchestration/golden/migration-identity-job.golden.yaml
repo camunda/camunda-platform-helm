@@ -47,6 +47,13 @@ spec:
             runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
           image: curlimages/curl:8.20.0
           command:
             - sh
