@@ -1,7 +1,7 @@
 name: hub-legacy
 auth: keycloak
 flows:
-  - upgrade-minor
+  - modular-upgrade-minor
 identity: keycloak
 persistence: elasticsearch
 features:
@@ -11,6 +11,7 @@ platforms:
 infra-type:
   eks: preemptible
   gke: distroci
+post-infra: post-infra-bitnami-migration
 dependencies:
   - keycloak
   - elasticsearch
