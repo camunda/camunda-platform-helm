@@ -267,7 +267,7 @@ jobs:
             --current-version "${CURRENT_VERSION}" \
             --chart-version "${{ matrix.chart.version }}" \
             --chart-versions-file "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml" \
-            --chart-dir "${{ matrix.chart.directory }}" \
+            --chart "${{ matrix.chart.directory }}" \
             --short-sha "${SHORT_SHA}" \
             --trace-file release-please-trace.log \
             --fail-if-released=${{ github.event_name == 'workflow_dispatch' }}

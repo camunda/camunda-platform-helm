@@ -42,7 +42,7 @@ func runReleaseVersion(args []string) error {
 	fs.StringVar(&currentVersion, "current-version", "", "Chart.yaml .version")
 	fs.StringVar(&chartVersion, "chart-version", "", "chart minor (matrix.chart.version), for the still-alpha check")
 	fs.StringVar(&chartVersionsFile, "chart-versions-file", "", "path to charts/chart-versions.yaml")
-	fs.StringVar(&chartDir, "chart-dir", "", "chart directory (matrix.chart.directory), for the trace fallback")
+	fs.StringVar(&chartDir, "chart", "", "chart directory (matrix.chart.directory), for the trace fallback")
 	fs.StringVar(&shortSHA, "short-sha", "", "dev commit short SHA")
 	fs.StringVar(&traceFile, "trace-file", "", "release-please --dry-run --trace log (stable releases scrape this)")
 	fs.BoolVar(&failIfReleased, "fail-if-released", false, "hard-fail if the computed version already has a release git tag (set for workflow_dispatch builds)")
