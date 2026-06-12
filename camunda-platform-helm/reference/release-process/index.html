@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Release Process | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/reference/release-process"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Helm Charts"><meta data-rh="true" name="description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><meta data-rh="true" property="og:description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><link data-rh="true" rel="icon" href="/camunda-platform-helm/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://helm.camunda.io/camunda-platform-helm/reference/release-process"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/assets/js/runtime~main.511a9ed6.js" defer="defer"></script>
-<script src="/camunda-platform-helm/assets/js/main.dca7e4ba.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/runtime~main.2d0c23f5.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/main.1284ba9b.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -26,7 +26,7 @@
 <li class="">Builds dev packages for all <strong>active</strong> chart versions (alpha + standard support).</li>
 <li class="">Computes the release version using <code>release-please --dry-run</code>.</li>
 <li class="">Applies release transformations (removes dev comments, badges).</li>
-<li class="">Generates release notes using <code>generate-release-notes.sh</code> (included in the package).</li>
+<li class="">Generates release notes using the <code>release-tools release-notes</code> command.</li>
 <li class="">Packages the chart with the <strong>final release version</strong> in <code>Chart.yaml</code>.</li>
 <li class="">Pushes to Harbor with dev tags.</li>
 <li class="">Signs with Cosign.</li>
