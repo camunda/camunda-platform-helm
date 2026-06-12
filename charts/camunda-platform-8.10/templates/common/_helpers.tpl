@@ -1259,24 +1259,6 @@ Usage (inside an env: list):
 {{- end -}}
 
 {{/*
-caBundleSslCertFileEnv
-SSL_CERT_FILE only — for components that already manage their own
-NODE_EXTRA_CA_CERTS via component-specific values (Console pins the env
-var to its own server cert path; injecting another NODE_EXTRA_CA_CERTS
-from this helper would emit a duplicate env name with last-wins
-behavior). Use this variant on those components.
-
-Usage (inside an env: list):
-  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-  {{- include "camundaPlatform.caBundleSslCertFileEnv" . | nindent 12 }}
-  {{- end }}
-*/}}
-{{- define "camundaPlatform.caBundleSslCertFileEnv" -}}
-- name: SSL_CERT_FILE
-  value: /etc/camunda/tls/ca.crt
-{{- end -}}
-
-{{/*
 caBundleInitContainer
 Emits an init container that builds a Java truststore (PKCS12-format JKS)
 combining the system $JAVA_HOME/lib/security/cacerts with the user CA
@@ -1366,7 +1348,10 @@ restricted SCC assign a namespace-range UID.
       # /var/camunda — readOnlyRootFilesystem is set on this container.
       WORK=/var/camunda/tls-truststore/work
       mkdir -p "$WORK"
+      # Strip trailing CR first so a CRLF (Windows-authored) PEM still matches
+      # the BEGIN/END markers and the split cert files stay LF-clean for keytool.
       awk 'BEGIN{n=0; out=""}
+           { sub(/\r$/, "") }
            /-----BEGIN CERTIFICATE-----/ {n++; out=sprintf("'"$WORK"'/cert-%02d.pem", n)}
            out!="" {print > out}
            /-----END CERTIFICATE-----/ {close(out); out=""}' \

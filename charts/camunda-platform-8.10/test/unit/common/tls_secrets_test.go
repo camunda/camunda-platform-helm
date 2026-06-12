@@ -572,6 +572,27 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *tlsSecretsTest) TestCaBundleConsole() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "caBundle injects SSL_CERT_FILE + NODE_EXTRA_CA_CERTS into Console (Node.js trusts custom CA via NODE_EXTRA_CA_CERTS)",
+			Template: "templates/console/deployment.yaml",
+			Values: map[string]string{
+				"console.enabled":                           "true",
+				"identity.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":         "my-ca-bundle",
+				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":       "/etc/camunda/tls/ca.crt",
+				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/etc/camunda/tls/ca.crt",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func TestTLSSecretsTestSuite(t *testing.T) {
 	suite.Run(t, new(tlsSecretsTest))
 }
