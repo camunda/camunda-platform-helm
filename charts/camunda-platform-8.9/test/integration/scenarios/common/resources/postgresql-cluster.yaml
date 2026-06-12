@@ -15,9 +15,15 @@ metadata:
   namespace: $NAMESPACE
 spec:
   instances: 1
+  # The login role derives from $RDBMS_POSTGRESQL_USERNAME so it stays
+  # self-consistent with the JDBC user the chart connects as (rdbms values +
+  # the psql-create-db job both use $RDBMS_POSTGRESQL_USERNAME). Previously the
+  # role was hardcoded `app`, so any value other than `app` failed with
+  # "password authentication failed for user ...". In CI the var is `app`, so
+  # this renders identically.
   managed:
     roles:
-      - name: app
+      - name: $RDBMS_POSTGRESQL_USERNAME
         ensure: present
         superuser: true
         login: true
