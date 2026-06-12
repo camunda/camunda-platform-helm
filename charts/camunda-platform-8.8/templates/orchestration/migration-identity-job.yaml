@@ -33,6 +33,9 @@ spec:
               until curl -sf http://{{ include "orchestration.serviceName" . }}:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
                 echo "Waiting for Orchestration Cluster"; sleep 5;
               done
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.orchestration))) | nindent 8 }}
+        {{- end }}
       containers:
         - name: camunda-migration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
@@ -47,6 +50,10 @@ spec:
                 "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
                 "config" .Values.orchestration.migration.identity
             ) | nindent 12 }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
+            {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -66,6 +73,10 @@ spec:
               name: tmp
             - mountPath: /usr/local/camunda/logs
               name: logs
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
             {{- if .Values.orchestration.migration.identity.extraVolumeMounts }}
             {{- .Values.orchestration.migration.identity.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -89,6 +100,10 @@ spec:
           emptyDir: {}
         - name: logs
           emptyDir: {}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+        {{- end }}
         {{- if .Values.orchestration.migration.identity.extraVolumes }}
         {{- .Values.orchestration.migration.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

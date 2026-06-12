@@ -20,6 +20,7 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.identity.podAnnotations }}
         {{- tpl (toYaml .Values.identity.podAnnotations) $ | nindent 8 }}
       {{- end }}
@@ -27,7 +28,12 @@ spec:
       imagePullSecrets:
         {{- include "identity.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.identity.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.identity))) | nindent 8 }}
+        {{- end }}
+        {{- with .Values.identity.initContainers }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
@@ -156,6 +162,10 @@ spec:
             {{- end }}
             {{- end }}
           {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
+          {{- end }}
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -232,6 +242,10 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
           {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+          {{- end }}
           {{- if .Values.identity.extraVolumeMounts}}
               {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -260,6 +274,10 @@ spec:
             "legacyKeyField" "credentialsKey"
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.identity.extraVolumes}}
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}

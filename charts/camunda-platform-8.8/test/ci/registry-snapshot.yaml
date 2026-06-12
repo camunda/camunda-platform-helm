@@ -167,6 +167,28 @@ integration:
               creates the elasticsearch-tls-certs, elasticsearch-tls-passwords,
               and elasticsearch-jks Secrets consumed by the Elasticsearch
               StatefulSet's TLS config.
+        - name: elasticsearch-self-signed-os-trust
+          enabled: true
+          shortname: esot
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-self-signed-os-trust
+          pre-install:
+            script: pre-install-elasticsearch-self-signed-os-trust.sh
+            description: |
+              openssl-only (no keytool/JDK on the runner): generates a self-signed CA plus
+              an ES node cert/key as PEM and creates the elasticsearch-tls-pem Secret
+              (tls.crt, tls.key, ca.crt). The bundled Elasticsearch runs in PEM mode
+              (usePemCerts), and the same ca.crt feeds global.tls.caBundle. Validates the
+              backported caBundle path: Camunda — including the importer and data-migration
+              workloads — trusts the self-signed ES endpoint solely via the chart-built JVM
+              truststore, with NO legacy JKS tls.secret configured.
         - name: keycloak-original
           enabled: false
           shortname: keyc
