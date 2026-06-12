@@ -55,7 +55,6 @@ jobs:
           tools: |
             git-cliff
             golang
-            gomplate
             helm
             helm-ct
             yq
@@ -112,14 +111,19 @@ jobs:
         run: git pull --rebase --autostash .
       - name: Generate version matrix
         run: |
-          make helm.repos-add
-          for chartPath in "${CHANGED_CHARTS}"; do
-            # Extract app version (e.g., 8.8 from charts/camunda-platform-8.8)
-            appVersion=$(echo "$chartPath" | sed 's|charts/camunda-platform-||')
-            CAMUNDA_VERSION=$appVersion make -e release.generate-version-matrix-released
-            chartPath=$chartPath make -e release.generate-version-matrix-index
-            chartPath=$chartPath make -e release.generate-version-matrix-unreleased
+          set -euo pipefail
+          make install.release-tools
+          make helm.dependency-update chartPath="${CHANGED_CHARTS}"
+          for chartPath in ${CHANGED_CHARTS}; do
+            app="${chartPath#charts/camunda-platform-}"
+            chartVersion="$(yq .version "$chartPath/Chart.yaml")"
+            release-tools update-matrix \
+              --chart-dir "$chartPath" \
+              --chart-version "$chartVersion" \
+              --matrix-file "version-matrix/camunda-$app/version-matrix.json"
+            release-tools version-matrix --readme "$app" --chart-version "$chartVersion"
           done
+          release-tools version-matrix --index
       # We use git-chglog to generate the release notes and release-please
       # doesn't have an option to disable the generation of CHANGELOG.md files.
       # https://github.com/googleapis/release-please/issues/2007

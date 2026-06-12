@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+---
+name: "Test - Release Tooling"
+
+# Gates the Go that the release pipelines depend on (scripts/camunda-core +
+# scripts/release-tools). Deliberately UNFILTERED: the tooling's behavior is
+# coupled to inputs that live outside scripts/ (charts/**/values*.yaml,
+# charts/chart-versions.yaml, the committed version-matrix, the release-please
+# trace + Harbor API shapes), so a chart-only PR must still run these tests.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Go test + vet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+
+      # TestImageSetRealChartContract reads each chart's vendored subcharts
+      # (keycloak/ES/PG for 8.7-8.9), so they must be present before `go test`.
+      # dependency-update downloads the subcharts; it does not render templates.
+      - name: Vendor subcharts for the real-chart contract tests
+        run: |
+          make helm.repos-add
+          for v in 8.7 8.8 8.9 8.10; do
+            make helm.dependency-update chartPath="charts/camunda-platform-$v"
+          done
+
+      - name: camunda-core — vet + test
+        working-directory: scripts/camunda-core
+        run: |
+          go vet ./pkg/...
+          go test ./pkg/...
+
+      - name: release-tools — vet + test
+        working-directory: scripts/release-tools
+        run: |
+          go vet ./...
+          go test ./...

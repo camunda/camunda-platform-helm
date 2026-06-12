@@ -74,8 +74,8 @@ jobs:
           # feat/fix/refactor/docs/revert titles propagate to RELEASE-NOTES.md
           # and artifacthub.io/changes via git-cliff (see cliff.toml
           # commit_parsers). Reject them when the PR touches no user-facing
-          # chart files. Mirrors the path filter in
-          # scripts/generate-release-notes.sh so both layers stay in sync.
+          # chart files. Mirrors the git-cliff exclude-paths in the
+          # release-tools `release-notes` command so both layers stay in sync.
           if printf '%s' "$PR_TITLE" | grep -qE '^(feat|fix|refactor|docs|revert)(\(.+\))?(!)?:'; then
             user_facing=$(git diff --name-only "origin/${BASE_REF}...HEAD" \
               | grep '^charts/' \

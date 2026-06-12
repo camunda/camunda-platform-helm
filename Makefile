@@ -55,12 +55,21 @@ build.ci-result-cache:
 install.ci-result-cache:
 	cd scripts/ci-result-cache && go mod tidy && go install .
 
+.PHONY: build.release-tools
+build.release-tools:
+	cd scripts/release-tools && go mod tidy && go build .
+
+.PHONY: install.release-tools
+install.release-tools:
+	cd scripts/release-tools && go mod tidy && go install .
+
 .PHONY: build.dx-tooling
 build.dx-tooling:
 	make build.deployer
 	make build.prepare-helm-values
 	make build.deploy-camunda
 	make build.vault-secret-mapper
+	make build.release-tools
 
 .PHONY: install.dx-tooling
 install.dx-tooling:
@@ -68,6 +77,7 @@ install.dx-tooling:
 	make install.prepare-helm-values
 	make install.deploy-camunda
 	make install.vault-secret-mapper
+	make install.release-tools
 	@if command -v asdf >/dev/null 2>&1; then \
 		echo "asdf detected, reshimming..."; \
 		asdf reshim golang; \
@@ -312,17 +322,17 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
 .PHONY: release.generate-notes
-release.generate-notes:
+release.generate-notes: install.release-tools
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		bash scripts/generate-release-notes.sh --main "$${chart_dir}";\
+		release-tools release-notes --main "$${chart_dir}";\
 	done
 
 .PHONY: release.generate-notes-footer
-release.generate-notes-footer:
+release.generate-notes-footer: install.release-tools helm.dependency-update
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		bash scripts/generate-release-notes.sh --footer "$${chart_dir}";\
+		release-tools release-notes --footer "$${chart_dir}";\
 	done
 
 .PHONY: release.generate-and-commit
@@ -333,21 +343,6 @@ release.generate-and-commit: release.generate-notes
 .PHONY: release.verify-components-version
 release.verify-components-version:
 	@bash scripts/verify-components-version.sh
-
-.PHONY: release.generate-version-matrix-index
-release.generate-version-matrix-index:
-	@bash scripts/generate-version-matrix.sh --init
-	@CHART_DIR=$(chartPath) bash scripts/generate-version-matrix.sh --index
-
-.PHONY: release.generate-version-matrix-released
-release.generate-version-matrix-released:
-	@bash scripts/generate-version-matrix.sh --init
-	@bash scripts/generate-version-matrix.sh --released
-
-.PHONY: release.generate-version-matrix-unreleased
-release.generate-version-matrix-unreleased:
-	@bash scripts/generate-version-matrix.sh --init
-	@CHART_DIR=$(chartPath) bash scripts/generate-version-matrix.sh --unreleased
 
 .PHONY: release.set-prs-version-label
 release.set-prs-version-label:

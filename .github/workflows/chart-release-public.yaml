@@ -64,6 +64,20 @@ jobs:
           app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
+      # "Parse RC tag" runs before the main checkout, so build release-tools here.
+      # The binary in /tmp survives the later checkout.
+      - name: Checkout for tooling
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install tools for tooling
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+
+      - name: Build release-tools
+        run: cd scripts/release-tools && go build -o /tmp/release-tools .
+
       - name: Parse RC tag
         id: parse
         env:
@@ -71,64 +85,27 @@ jobs:
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
           input_tag="${{ inputs.rc-tag }}"
-          
-          # Check if it's a rolling tag format: {major}-rc-latest
+
+          # Fetch the artifact's tag list. All of an artifact's tags (rc/dev/
+          # rolling) live on the one artifact, so a single GET resolves both the
+          # concrete RC tag and (for traceability) the source dev tag.
           if [[ "$input_tag" =~ ^[0-9]+-rc-latest$ ]]; then
             echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual RC tag..."
-            
-            # Query Harbor API to get all tags for this artifact
-            tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
+            # Rolling resolution needs the tag list — fatal on failure.
+            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
               -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              --retry 3 --retry-delay 5 --retry-all-errors)
-            
-            if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
-              echo "::error::Rolling tag ${input_tag} not found in Harbor"
-              exit 1
-            fi
-            
-            # Find the actual RC tag (format: {version}-rc)
-            rc_tag=$(echo "$tags_response" | jq -r '.[].name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?-rc$"))' | head -1)
-            
-            if [[ -z "$rc_tag" ]]; then
-              echo "::error::Could not find actual RC tag for rolling tag ${input_tag}"
-              exit 1
-            fi
-            
-            echo "::notice::Resolved rolling tag ${input_tag} to: ${rc_tag}"
+              --retry 3 --retry-delay 5 --retry-all-errors > /tmp/rc-tags.json
           else
-            rc_tag="$input_tag"
+            # Concrete input: the tag list is only needed for best-effort dev-tag
+            # traceability, so tolerate a failed fetch (empty list → no dev tag).
+            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              --retry 3 --retry-delay 5 --retry-all-errors > /tmp/rc-tags.json 2>/dev/null || echo "[]" > /tmp/rc-tags.json
           fi
-          
-          echo "resolved_tag=${rc_tag}" | tee -a $GITHUB_OUTPUT
-          
-          # Validate format: {version}-rc or {version}-{prerelease}-rc
-          if [[ ! "$rc_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-rc$ ]]; then
-            echo "::error::Invalid RC tag format. Expected: {version}-rc (e.g., 13.4.0-rc or 14.0.0-alpha2-rc)"
-            exit 1
-          fi
-          
-          # Extract version (everything before -rc)
-          version="${rc_tag%-rc}"
-          echo "version=${version}" | tee -a $GITHUB_OUTPUT
 
-          # Find the dev tag associated with this RC for traceability
-          # Query all tags on this artifact to find the dev tag (format: {version}-dev-{sha})
-          all_tags=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${rc_tag}/tags" \
-            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            --retry 3 --retry-delay 5 --retry-all-errors | jq -r '.[].name' 2>/dev/null || echo "")
-          
-          dev_tag=$(echo "${all_tags}" | grep -E "^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$" | head -1 || echo "")
-          if [[ -n "${dev_tag}" ]]; then
-            echo "dev_tag=${dev_tag}" | tee -a $GITHUB_OUTPUT
-            # Extract commit SHA from dev tag (everything after -dev-)
-            commit_sha="${dev_tag##*-dev-}"
-            echo "commit_sha=${commit_sha}" | tee -a $GITHUB_OUTPUT
-            echo "::notice::Found source dev tag: ${dev_tag} (commit: ${commit_sha})"
-          else
-            echo "::warning::Could not find associated dev tag for traceability"
-            echo "dev_tag=" >> $GITHUB_OUTPUT
-            echo "commit_sha=" >> $GITHUB_OUTPUT
-          fi
+          # Resolve + validate the RC tag; emit resolved_tag/version and
+          # (best-effort) dev_tag/commit_sha to $GITHUB_OUTPUT.
+          /tmp/release-tools resolve-tag --kind rc --input-tag "$input_tag" --tags-file /tmp/rc-tags.json
 
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -141,7 +118,6 @@ jobs:
           tools: |
             helm
             helm-cr
-            yq
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -152,11 +128,10 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Login to Harbor
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
-        with:
-          registry: ${{ env.HARBOR_REGISTRY }}
-          username: ${{ env.HARBOR_REGISTRY_USER }}
-          password: ${{ env.HARBOR_REGISTRY_PASSWORD }}
+        run: |
+          # Retrying registry login; harbor_helm_pull below also re-auths on 401.
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
 
       - name: Pull RC package from Harbor
         run: |
@@ -190,42 +165,14 @@ jobs:
           package_name=$(basename "${package_file}")
           echo "package_file=${package_name}" | tee -a $GITHUB_OUTPUT
           
-          # Extract Chart.yaml from package
+          # Extract version, app_version (appVersion, .x-stripped), prerelease,
+          # is_latest_stable (vs chart-versions.yaml supportStandard[0]),
+          # chart_dir_id, release_tag, the cosign file names and the
+          # component-image-versions annotation from the package's Chart.yaml.
           tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
-          
-          version=$(yq '.version' /tmp/Chart.yaml)
-          app_version=$(yq '.appVersion' /tmp/Chart.yaml | sed 's/.x//')
-          prerelease=$(yq '.annotations."artifacthub.io/prerelease" // "false"' /tmp/Chart.yaml)
-          
-          echo "version=${version}" | tee -a $GITHUB_OUTPUT
-          echo "app_version=${app_version}" | tee -a $GITHUB_OUTPUT
-          echo "prerelease=${prerelease}" | tee -a $GITHUB_OUTPUT
-
-          latest_app_version="$(yq '.camundaVersions.supportStandard.[0]' $(git rev-parse --show-toplevel)/charts/chart-versions.yaml)"
-          is_latest_stable="false"
-          if [[ "${app_version}" == "${latest_app_version}" ]]; then
-            is_latest_stable="true"
-          fi
-          echo "is_latest_stable=${is_latest_stable}" | tee -a $GITHUB_OUTPUT
-          
-          # Chart dir ID is the app version (e.g., 8.8)
-          echo "chart_dir_id=${app_version}" | tee -a $GITHUB_OUTPUT
-          
-          # Release tag format matches current: camunda-platform-{appVersion}-{version}
-          release_tag="camunda-platform-${app_version}-${version}"
-          echo "release_tag=${release_tag}" | tee -a $GITHUB_OUTPUT
-          
-          # Cosign file names (match current workflow naming)
-          echo "cosign_bundle=camunda-platform-${version}-cosign-bundle.json" | tee -a $GITHUB_OUTPUT
-          echo "cosign_verify=camunda-platform-${version}-cosign-verify.sh" | tee -a $GITHUB_OUTPUT
-
-          # Extract component image versions from annotation (added by dev build)
-          image_versions=$(yq '.annotations."camunda.io/component-image-versions" // ""' /tmp/Chart.yaml)
-          if [[ -n "${image_versions}" ]]; then
-            echo "image_versions<<EOF" >> $GITHUB_OUTPUT
-            echo "${image_versions}" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          fi
+          /tmp/release-tools chart-metadata \
+            --chart-yaml /tmp/Chart.yaml \
+            --chart-versions "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml"
 
       - name: Check if release already exists
         env:
@@ -413,7 +360,6 @@ jobs:
         with:
           tools: |
             git-cliff
-            gomplate
             helm
             helm-ct
             yq

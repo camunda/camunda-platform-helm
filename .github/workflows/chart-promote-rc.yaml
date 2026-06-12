@@ -74,6 +74,20 @@ jobs:
           app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
+      # "Parse dev tag" runs before the commit SHA is known, so build release-tools
+      # here. The binary in /tmp survives the later checkout-at-SHA.
+      - name: Checkout for tooling
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install tools for tooling
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+
+      - name: Build release-tools
+        run: cd scripts/release-tools && go build -o /tmp/release-tools .
+
       - name: Parse dev tag
         id: parse
         env:
@@ -81,50 +95,24 @@ jobs:
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
           input_tag="${{ inputs.dev-tag }}"
-          
-          # Check if it's a rolling tag format: {major}-dev-latest
+
+          # A rolling tag ({major}-dev-latest) needs the artifact's tag list to
+          # resolve to a concrete {version}-dev-{sha}; fetch it for resolve-tag.
+          tags_args=()
           if [[ "$input_tag" =~ ^[0-9]+-dev-latest$ ]]; then
             echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual dev tag..."
-            
-            # Query Harbor API to get all tags for this artifact
-            tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
+            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
               -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              --retry 3 --retry-delay 5 --retry-all-errors)
-            
-            if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
-              echo "::error::Rolling tag ${input_tag} not found in Harbor"
-              exit 1
-            fi
-            
-            # Find the actual dev tag (format: {version}-dev-{sha})
-            dev_tag=$(echo "$tags_response" | jq -r '.[].name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$"))' | head -1)
-            
-            if [[ -z "$dev_tag" ]]; then
-              echo "::error::Could not find actual dev tag for rolling tag ${input_tag}"
-              exit 1
-            fi
-            
-            echo "::notice::Resolved rolling tag ${input_tag} to: ${dev_tag}"
-          else
-            dev_tag="$input_tag"
+              --retry 3 --retry-delay 5 --retry-all-errors > /tmp/dev-tags.json
+            tags_args=(--tags-file /tmp/dev-tags.json)
           fi
-          
-          echo "resolved_tag=${dev_tag}" | tee -a $GITHUB_OUTPUT
-          
-          # Validate format: {version}-dev-{sha}
-          if [[ ! "$dev_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$ ]]; then
-            echo "::error::Invalid dev tag format. Expected: {version}-dev-{sha} (e.g., 13.4.0-dev-abc1234)"
-            exit 1
-          fi
-          
-          # Extract version (everything before -dev-)
-          version="${dev_tag%-dev-*}"
-          echo "version=${version}" | tee -a $GITHUB_OUTPUT
-          
-          # Extract SHA (everything after -dev-)
-          sha="${dev_tag##*-dev-}"
 
-          # Resolve short SHA to full 40-char commit SHA.
+          # Resolve + validate the dev tag; emit resolved_tag/version/chart_major/
+          # rc_tag/rc_latest_tag to $GITHUB_OUTPUT. The short commit SHA is printed
+          # to stdout and expanded to the full SHA below.
+          sha=$(/tmp/release-tools resolve-tag --kind dev --input-tag "$input_tag" "${tags_args[@]}")
+
+          # Resolve short SHA to full 40-char commit SHA (GitHub API stays glue).
           # actions/checkout treats short SHAs as branch/tag names and fails.
           if [[ ${#sha} -lt 40 ]]; then
             echo "::notice::Short SHA detected (${sha}); resolving via GitHub API..."
@@ -142,14 +130,6 @@ jobs:
           fi
 
           echo "sha=${sha}" | tee -a $GITHUB_OUTPUT
-          
-          # Extract chart major (first number of version)
-          chart_major="${version%%.*}"
-          echo "chart_major=${chart_major}" | tee -a $GITHUB_OUTPUT
-          
-          # RC tag format
-          echo "rc_tag=${version}-rc" | tee -a $GITHUB_OUTPUT
-          echo "rc_latest_tag=${chart_major}-rc-latest" | tee -a $GITHUB_OUTPUT
 
       - name: Checkout at commit SHA
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -165,18 +145,16 @@ jobs:
           fi
 
       - name: Login to Harbor
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
-        with:
-          registry: ${{ env.HARBOR_REGISTRY }}
-          username: ${{ env.HARBOR_REGISTRY_USER }}
-          password: ${{ env.HARBOR_REGISTRY_PASSWORD }}
+        run: |
+          # Retrying registry login; harbor_helm_pull below also re-auths on 401.
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
             helm
-            yq
 
       - name: Pull and validate dev package
         id: package
@@ -200,28 +178,11 @@ jobs:
           echo "✅ Dev package exists: ${package_file}"
           echo "package_file=${package_file}" | tee -a $GITHUB_OUTPUT
           
-          # Extract Camunda version from Chart.yaml inside the package
+          # Extract camunda_version (appVersion, .x-stripped), chart_dir_id, the
+          # component-image-versions annotation and has_image_overrides from the
+          # package's Chart.yaml → $GITHUB_OUTPUT.
           tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
-          camunda_version=$(yq '.appVersion' /tmp/Chart.yaml | sed 's/.x//')
-          
-          echo "camunda_version=${camunda_version}" | tee -a $GITHUB_OUTPUT
-          echo "chart_dir_id=${camunda_version}" | tee -a $GITHUB_OUTPUT
-
-          # Extract component image versions from annotation (added by dev build)
-          image_versions=$(yq '.annotations."camunda.io/component-image-versions" // ""' /tmp/Chart.yaml)
-          if [[ -n "${image_versions}" ]]; then
-            echo "image_versions<<EOF" >> $GITHUB_OUTPUT
-            echo "${image_versions}" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          fi
-
-          # Check if image overrides were used during dev build
-          image_overrides=$(yq '.annotations."camunda.io/imageOverrides" // ""' /tmp/Chart.yaml)
-          if [[ -n "${image_overrides}" ]]; then
-            echo "has_image_overrides=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_image_overrides=false" >> $GITHUB_OUTPUT
-          fi
+          /tmp/release-tools chart-metadata --chart-yaml /tmp/Chart.yaml
 
       - name: Install release-please
         run: npm i release-please -g
@@ -276,58 +237,25 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
           set -euo pipefail
-          
+
           chart_version="${{ steps.parse.outputs.version }}"
           app_version="${{ steps.package.outputs.camunda_version }}"
           head_ref="${{ steps.release-please.outputs.head_ref }}"
-          package_file="${{ steps.package.outputs.package_file }}"
-          chart_path="charts/camunda-platform-${app_version}"
-          
-          echo "Extracting images from dev package for version-matrix.json"
-          
-          # Extract the chart from the package
-          mkdir -p /tmp/rc-chart
-          tar -xzf "${package_file}" -C /tmp/rc-chart
-          
-          # Build layered values args (same approach as generate-version-matrix.sh)
-          scenario_dir="${chart_path}/test/integration/scenarios/chart-full-setup"
-          helm_values_args=""
-          for layer_file in \
-            "${scenario_dir}/values/base.yaml" \
-            "${scenario_dir}/values/identity/keycloak.yaml" \
-            "${scenario_dir}/values/persistence/elasticsearch.yaml"; do
-            if [[ -f "${layer_file}" ]]; then
-              helm_values_args="${helm_values_args} --values ${layer_file}"
-            fi
-          done
 
-          # Get images using helm template on the extracted package
-          chart_images=$(
-            helm template --skip-tests camunda /tmp/rc-chart/camunda-platform \
-              ${helm_values_args} 2>/dev/null |
-            tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
-            sort | uniq
-          )
-          chart_images_json=$(echo -e "$chart_images" | jq -R | jq -sc)
-          
-          # Checkout release-please branch to update version-matrix.json
+          # Update version-matrix.json on the release-please branch.
           git fetch origin "${head_ref}"
           git checkout "${head_ref}"
-          
-          # Update version-matrix.json
+
           version_matrix_file="version-matrix/camunda-${app_version}/version-matrix.json"
-          mkdir -p "$(dirname "${version_matrix_file}")"
-          test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
-          
-          # Remove existing entry for this version if present, then add new one
-          updated_json=$(cat "${version_matrix_file}" | \
-            jq --arg ver "${chart_version}" 'map(select(.chart_version != $ver))' | \
-            jq --arg ver "${chart_version}" --argjson imgs "${chart_images_json}" \
-              '. + [{"chart_version": $ver, "chart_images": $imgs}]')
-          
-          echo "${updated_json}" > "${version_matrix_file}"
-          
-          # Check if there are changes to commit
+
+          # Write the matrix entry from the camunda.io/chart-images annotation in
+          # the package's Chart.yaml (extracted to /tmp/Chart.yaml above).
+          /tmp/release-tools update-matrix \
+            --chart-yaml /tmp/Chart.yaml \
+            --chart-version "${chart_version}" \
+            --matrix-file "${version_matrix_file}"
+
+          # Commit + push if changed.
           if git diff --quiet "${version_matrix_file}"; then
             echo "::notice::No changes to version-matrix.json"
           else
@@ -338,10 +266,9 @@ jobs:
             git push origin "${head_ref}"
             echo "::notice::Updated version-matrix.json on release-please branch"
           fi
-          
-          # Switch back to original checkout
+
+          # Switch back to original checkout.
           git checkout "${{ steps.parse.outputs.sha }}"
-          rm -rf /tmp/rc-chart
 
       - name: Add RC tags to Harbor package
         env:
@@ -349,79 +276,26 @@ jobs:
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
           set -euo pipefail
-          # harbor_curl bakes in auth + --retry 3 --retry-delay 5 --retry-all-errors
-          # with -sf, so HTTP 4xx/5xx (incl. transient 401) trigger retries.
-          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          # Point {version}-rc and {major}-rc-latest at the dev artifact's digest,
+          # idempotently (no-op if already there, else move). Untagging uses the
+          # deleteTag endpoint (DELETE .../tags/{tag}) so only the tag is removed,
+          # never the shared artifact. Auth is HARBOR_REGISTRY_USER/PASSWORD (env).
+          api="${HARBOR_API}"
+          repo="${HARBOR_REPO}"
 
-          # Get artifact digest from dev tag
-          echo "Getting digest for dev tag: ${{ steps.parse.outputs.resolved_tag }}"
-          digest=$(harbor_curl "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ steps.parse.outputs.resolved_tag }}" \
-            | jq -r '.digest')
-
-          if [[ -z "$digest" || "$digest" == "null" ]]; then
-            echo "::error::Failed to get digest for dev tag"
-            exit 1
-          fi
+          # Digest of the dev artifact the RC tags should point at.
+          digest=$(/tmp/release-tools harbor-tag digest --api "$api" --repo "$repo" \
+            --ref "${{ steps.parse.outputs.resolved_tag }}")
           echo "Digest: ${digest}"
 
-          # Helpers for idempotent tagging.
-          tag_digest() {
-            local tag_name="$1"
-            harbor_curl "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
-              | jq -r '.digest // empty' || true
-          }
+          # RC version tag — reruns safe (overwrite if it points elsewhere).
+          /tmp/release-tools harbor-tag ensure --api "$api" --repo "$repo" \
+            --digest "${digest}" --tag "${{ steps.parse.outputs.rc_tag }}"
 
-          delete_tag_if_exists() {
-            local tag_name="$1"
-            echo "Removing existing tag if present: ${tag_name}"
-            harbor_curl -X DELETE "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" || true
-          }
+          # RC rolling latest tag — always move to the selected digest.
+          /tmp/release-tools harbor-tag ensure --api "$api" --repo "$repo" \
+            --digest "${digest}" --tag "${{ steps.parse.outputs.rc_latest_tag }}" --move
 
-          add_or_update_tag() {
-            local tag_name="$1"
-            local must_move="$2" # true for rolling tags
-
-            existing_digest="$(tag_digest "${tag_name}")"
-            if [[ -n "${existing_digest}" ]]; then
-              if [[ "${existing_digest}" == "${digest}" ]]; then
-                echo "✅ Tag already present and up-to-date: ${tag_name} -> ${digest}"
-                return 0
-              fi
-
-              if [[ "${must_move}" == "true" ]]; then
-                echo "ℹ️ Tag exists but points elsewhere; will move: ${tag_name} (${existing_digest} -> ${digest})"
-              else
-                echo "ℹ️ Tag exists but points elsewhere; will overwrite: ${tag_name} (${existing_digest} -> ${digest})"
-              fi
-              delete_tag_if_exists "${tag_name}"
-            fi
-
-            echo "Adding tag: ${tag_name}"
-            http_code="$(harbor_curl -o /tmp/harbor-tag.json -w "%{http_code}" \
-              -X POST "${HARBOR_API}/${HARBOR_REPO}/artifacts/${digest}/tags" \
-              -H "Content-Type: application/json" \
-              -d "{\"name\": \"${tag_name}\"}" || true)"
-
-            if [[ "${http_code}" != "201" && "${http_code}" != "200" && "${http_code}" != "409" ]]; then
-              echo "::error::Failed to add tag: ${tag_name} (HTTP ${http_code})"
-              exit 1
-            fi
-
-            # If Harbor returned conflict (409), verify whether the tag now exists and points to the desired digest.
-            final_digest="$(tag_digest "${tag_name}")"
-            if [[ "${final_digest}" != "${digest}" ]]; then
-              echo "::error::Tag '${tag_name}' does not point to expected digest after update."
-              echo "::error::Expected: ${digest}; got: ${final_digest:-<missing>}"
-              exit 1
-            fi
-          }
-          
-          # Add RC version tag (make reruns safe: overwrite if already exists)
-          add_or_update_tag "${{ steps.parse.outputs.rc_tag }}" "false"
-          
-          # Add RC rolling latest tag (always move to the selected digest)
-          add_or_update_tag "${{ steps.parse.outputs.rc_latest_tag }}" "true"
-          
           echo "✅ RC tags added successfully"
 
       - name: Summary

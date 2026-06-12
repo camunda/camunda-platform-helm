@@ -62,7 +62,7 @@ scripts/
   prepare-helm-values/       # Values preparation/merging
   vault-secret-mapper/       # Vault-to-K8s secret mapping
   camunda-core/              # Shared Go packages (scenario resolution, kube client)
-  values-injector/           # Values injection utility
+  release-tools/             # Release-pipeline CLI (image set, Harbor tags, release notes, values injection)
 
 test/
   integration/scenarios/     # Cross-version integration test scenarios

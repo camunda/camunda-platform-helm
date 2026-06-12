@@ -43,8 +43,9 @@ func HasPreSetupScript(repoRoot, appVersion, filename string) bool {
 
 // ChartEntry represents a single entry in a version-matrix.json file.
 type ChartEntry struct {
-	ChartVersion string   `json:"chart_version"`
-	ChartImages  []string `json:"chart_images"`
+	ChartVersion          string   `json:"chart_version"`
+	ChartImages           []string `json:"chart_images"`
+	ChartEnterpriseImages []string `json:"chart_enterprise_images,omitempty"`
 }
 
 // LoadVersionMatrix reads and parses the version-matrix.json for the given app version.
