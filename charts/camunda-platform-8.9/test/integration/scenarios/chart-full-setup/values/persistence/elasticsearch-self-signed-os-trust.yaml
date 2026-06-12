@@ -61,11 +61,13 @@ orchestration:
 optimize:
   # No -Djavax.net.ssl.trustStoreType=jks here: the caBundle truststore is
   # PKCS12, and the chart appends its truststore flags to optimize.javaOpts.
+  #
+  # Only the password is supplied here. The 8.9 optimize template already emits
+  # CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME (from global.elasticsearch.auth.username)
+  # and CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED (from the https URL) natively;
+  # repeating them in optimize.env produced duplicate env keys that server-side
+  # apply rejects.
   env:
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-      value: "elastic"
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
-      value: "true"
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
       value: "camunda-ci-es-password"
 
