@@ -59,7 +59,7 @@ func TestUpdateMatrixRequiresInputMode(t *testing.T) {
 		"neither": {"--chart-version", "15.0.0", "--matrix-file", matrixFile},
 		"both": {
 			"--chart-yaml", filepath.Join(dir, "Chart.yaml"),
-			"--chart", dir,
+			"--chart-dir", dir,
 			"--chart-version", "15.0.0",
 			"--matrix-file", matrixFile,
 		},
@@ -70,7 +70,7 @@ func TestUpdateMatrixRequiresInputMode(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
-			if !strings.Contains(err.Error(), "--chart-yaml") || !strings.Contains(err.Error(), "--chart") {
+			if !strings.Contains(err.Error(), "--chart-yaml") || !strings.Contains(err.Error(), "--chart-dir") {
 				t.Errorf("error should reference both flags, got: %v", err)
 			}
 		})

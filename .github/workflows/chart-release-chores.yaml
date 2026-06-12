@@ -118,7 +118,7 @@ jobs:
             app="${chartPath#charts/camunda-platform-}"
             chartVersion="$(yq .version "$chartPath/Chart.yaml")"
             release-tools update-matrix \
-              --chart "$chartPath" \
+              --chart-dir "$chartPath" \
               --chart-version "$chartVersion" \
               --matrix-file "version-matrix/camunda-$app/version-matrix.json"
             release-tools version-matrix --readme "$app" --chart-version "$chartVersion"

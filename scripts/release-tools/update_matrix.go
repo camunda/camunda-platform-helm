@@ -34,7 +34,7 @@ const enterpriseRegistryPrefix = "registry.camunda.cloud/"
 //
 //	--chart-yaml <Chart.yaml>  read the recorded camunda.io/chart-images annotation
 //	                           (Promote-RC: the artifact's baked-in image set).
-//	--chart <chart-dir>        derive the image set from the chart's values
+//	--chart-dir <chart-dir>    derive the image set from the chart's values
 //	                           (chores/source-sync). chart_enterprise_images is
 //	                           derived automatically when values-enterprise.yaml
 //	                           exists (its registry.camunda.cloud images).
@@ -50,7 +50,7 @@ func runUpdateMatrix(args []string) error {
 		dryRun       bool
 	)
 	fs.StringVar(&chartYAML, "chart-yaml", "", "path to a pulled package's Chart.yaml (reads the camunda.io/chart-images annotation)")
-	fs.StringVar(&chartDir, "chart", "", "chart directory to derive the image set from (alternative to --chart-yaml)")
+	fs.StringVar(&chartDir, "chart-dir", "", "chart directory to derive the image set from (alternative to --chart-yaml)")
 	fs.StringVar(&chartVersion, "chart-version", "", "chart version key for the matrix entry (e.g. 13.4.0)")
 	fs.StringVar(&matrixFile, "matrix-file", "", "path to version-matrix.json to update")
 	fs.BoolVar(&dryRun, "dry-run", false, "print the updated version-matrix.json to stdout instead of writing it")
@@ -61,7 +61,7 @@ func runUpdateMatrix(args []string) error {
 		return fmt.Errorf("--chart-version and --matrix-file are required")
 	}
 	if (chartYAML == "") == (chartDir == "") {
-		return fmt.Errorf("exactly one of --chart-yaml or --chart is required")
+		return fmt.Errorf("exactly one of --chart-yaml or --chart-dir is required")
 	}
 
 	var images, enterpriseImages []string

@@ -25,7 +25,7 @@ import (
 // runComponentImageVersions builds the component-image-versions annotation block
 // from the chart's values.yaml and prints it to stdout, e.g.:
 //
-//	release-tools component-image-versions --chart "$dir" --camunda-version 8.10 > /tmp/image-versions.yaml
+//	release-tools component-image-versions --chart-dir "$dir" --camunda-version 8.10 > /tmp/image-versions.yaml
 //	yq -i '.annotations."camunda.io/component-image-versions" = load_str("/tmp/image-versions.yaml")' Chart.yaml
 //
 // The component set is version-gated (8.8+ orchestration vs 8.6–8.7 classic).
@@ -35,13 +35,13 @@ func runComponentImageVersions(args []string) error {
 		chartDir       string
 		camundaVersion string
 	)
-	fs.StringVar(&chartDir, "chart", "", "chart directory (e.g. charts/camunda-platform-<v>)")
+	fs.StringVar(&chartDir, "chart-dir", "", "chart directory (e.g. charts/camunda-platform-<v>)")
 	fs.StringVar(&camundaVersion, "camunda-version", "", "Camunda minor line, e.g. 8.10")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if chartDir == "" || camundaVersion == "" {
-		return fmt.Errorf("--chart and --camunda-version are required")
+		return fmt.Errorf("--chart-dir and --camunda-version are required")
 	}
 
 	block, err := chartmeta.ComponentImageVersions(chartDir, camundaVersion)

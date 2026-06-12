@@ -27,7 +27,7 @@ import (
 // (plus the chart-full-setup scenario layers) and prints it one fully-qualified
 // reference per line, e.g. to record as the camunda.io/chart-images annotation:
 //
-//	release-tools chart-images --chart "$chart_dir" > /tmp/chart-images.txt
+//	release-tools chart-images --chart-dir "$chart_dir" > /tmp/chart-images.txt
 //	yq -i '.annotations."camunda.io/chart-images" = load_str("/tmp/chart-images.txt")' "$chart_dir/Chart.yaml"
 //
 // It fails loud on an empty result rather than recording an empty set: a valid
@@ -35,12 +35,12 @@ import (
 func runChartImages(args []string) error {
 	fs := flag.NewFlagSet("chart-images", flag.ContinueOnError)
 	var chartDir string
-	fs.StringVar(&chartDir, "chart", "", "chart directory (the finalized chart, e.g. charts/camunda-platform-<v>)")
+	fs.StringVar(&chartDir, "chart-dir", "", "chart directory (the finalized chart, e.g. charts/camunda-platform-<v>)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if chartDir == "" {
-		return fmt.Errorf("--chart is required")
+		return fmt.Errorf("--chart-dir is required")
 	}
 
 	images, err := chartmeta.ImageSet(chartDir)

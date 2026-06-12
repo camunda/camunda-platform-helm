@@ -267,7 +267,7 @@ jobs:
             --current-version "${CURRENT_VERSION}" \
             --chart-version "${{ matrix.chart.version }}" \
             --chart-versions-file "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml" \
-            --chart "${{ matrix.chart.directory }}" \
+            --chart-dir "${{ matrix.chart.directory }}" \
             --short-sha "${SHORT_SHA}" \
             --trace-file release-please-trace.log \
             --fail-if-released=${{ github.event_name == 'workflow_dispatch' }}
@@ -358,7 +358,7 @@ jobs:
           # camunda.io/component-image-versions Chart.yaml annotation. The
           # component set differs by version (8.8+ orchestration vs 8.6-8.7 classic).
           /tmp/release-tools component-image-versions \
-            --chart "$(pwd)" --camunda-version "${{ env.CAMUNDA_VERSION }}" \
+            --chart-dir "$(pwd)" --camunda-version "${{ env.CAMUNDA_VERSION }}" \
             > /tmp/image-versions.yaml
           yq -i '.annotations."camunda.io/component-image-versions" = load_str("/tmp/image-versions.yaml")' Chart.yaml
 
@@ -430,7 +430,7 @@ jobs:
           # Record the full image set (components + bundled subcharts), read from
           # values.yaml, as the camunda.io/chart-images annotation. Runs after the
           # dependency update so the vendored subchart values are present to read.
-          /tmp/release-tools chart-images --chart "$(pwd)" > /tmp/chart-images.txt
+          /tmp/release-tools chart-images --chart-dir "$(pwd)" > /tmp/chart-images.txt
           yq -i '.annotations."camunda.io/chart-images" = load_str("/tmp/chart-images.txt")' Chart.yaml
           echo "Added camunda.io/chart-images annotation:"
           yq '.annotations."camunda.io/chart-images"' Chart.yaml
