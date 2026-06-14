@@ -128,15 +128,18 @@ on:
         description: "Enable QA configuration"
         required: false
         default: false
+        type: boolean
       test-upgrade:
         description: "Enable upgrade flow configuration"
         required: false
         default: false
         type: boolean
+      skip-e2e:
         description: "Skip E2E (Playwright smoke) tests for this scenario (declared in ci-test-config.yaml)"
         required: false
         default: false
         type: boolean
+      skip-it:
         description: "Skip integration (Playwright IT) tests for this scenario (declared in ci-test-config.yaml)"
         required: false
         default: false
