@@ -1,5 +1,19 @@
 # Changelog
 
+## [13.11.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.10.2...camunda-platform-8.8-13.11.0) (2026-06-12)
+
+
+### Features
+
+* **8.8:** backport global.tls.caBundle CA-trust support ([#6366](https://github.com/camunda/camunda-platform-helm/issues/6366)) ([bbc7f2b](https://github.com/camunda/camunda-platform-helm/commit/bbc7f2b228c6da6c8f19ae2d9af4c0ca14330084))
+* configurable resources for migration identity wait-for-orchestration init container ([#6363](https://github.com/camunda/camunda-platform-helm/issues/6363)) ([2954bf9](https://github.com/camunda/camunda-platform-helm/commit/2954bf98341c1558072a8289ec88851bb90bfa86))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6367](https://github.com/camunda/camunda-platform-helm/issues/6367)) ([0973851](https://github.com/camunda/camunda-platform-helm/commit/0973851ba691c0d87f2fc0c0d49caac47dacf667))
+* update patch-updates (patch) ([#6369](https://github.com/camunda/camunda-platform-helm/issues/6369)) ([d174237](https://github.com/camunda/camunda-platform-helm/commit/d174237c317a8c9ebf2cd8f79e39ece8c8f1536d))
+
 ## [13.10.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.10.1...camunda-platform-8.8-13.10.2) (2026-06-11)
 
 
