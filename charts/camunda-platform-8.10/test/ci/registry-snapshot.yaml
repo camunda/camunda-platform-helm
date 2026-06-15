@@ -726,6 +726,39 @@ integration:
               env-vars:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-webmodeler-only
+          enabled: true
+          shortname: hubwo
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-webmodeler-only
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
         - name: hub-external-db
           enabled: true
           shortname: hubdb
