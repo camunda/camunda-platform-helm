@@ -2,10 +2,10 @@
 <html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart" data-has-hydrated="false">
 <head>
 <meta charset="UTF-8">
-<meta name="generator" content="Docusaurus v3.10.0">
+<meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6196/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6196/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6196/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6196/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6196/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6196/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6196/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6196/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6196/assets/js/runtime~main.1b6b4da6.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6196/assets/js/main.4eba56bf.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6196/assets/js/runtime~main.b3c80289.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6196/assets/js/main.d3627765.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -69,6 +69,18 @@ extraction off for ≥8.10. Bundled-only unit suites and golden snapshots
 (<code>keycloak-statefulset</code>, <code>elasticsearch-statefulset</code>) and the external/self-signed scenario
 value files are deleted. The migration guide and toolkit are not re-authored; they are linked
 from the chart README and the upgrade documentation.</p>
+<blockquote>
+<p><strong>Amendment (2026-06-05, <a href="https://github.com/camunda/camunda-platform-helm/pull/6339" target="_blank" rel="noopener noreferrer" class="">#6339</a>):</strong>
+The CNPG cluster pre-install fixture for the <code>rdbms</code> and <code>rdbms-self-signed</code>
+scenarios was superseded by <code>internal-postgresql</code> companion-chart profiles
+(<code>postgresql-rdbms</code> and a TLS-enabled <code>postgresql-tls</code>) because the CloudNativePG
+operator on the shared CI cluster intermittently stops reconciling, failing every
+dependent scenario (<a href="https://github.com/camunda/camunda-platform-helm/issues/6338" target="_blank" rel="noopener noreferrer" class="">#6338</a>).
+This narrows CI&#x27;s reliance on per-run operator reconciliation; it does not change
+the ADR&#x27;s decision to remove the bundled Bitnami subcharts. The <code>cnpg</code>
+dependency-profile is retained as an opt-in escape hatch for scenarios that
+explicitly want an operator-managed cluster, but no scenario references it by default.</p>
+</blockquote>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
 <ul>
 <li class="">The chart no longer ships unmaintained third-party infrastructure; the recurring Bitnami CVE surface is eliminated.</li>
