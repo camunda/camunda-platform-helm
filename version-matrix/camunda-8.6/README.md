@@ -70,7 +70,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13
@@ -109,7 +109,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -148,7 +148,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -187,7 +187,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -226,7 +226,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -265,7 +265,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -304,7 +304,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -343,7 +343,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -382,7 +382,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -421,7 +421,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -460,7 +460,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -499,7 +499,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -538,7 +538,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -577,7 +577,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -616,7 +616,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -655,7 +655,7 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -694,7 +694,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -733,7 +733,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -772,7 +772,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -811,7 +811,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -850,7 +850,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -889,7 +889,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.17.0-debian-12-r9
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -928,7 +928,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.17.0-debian-12-r6
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -967,7 +967,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.17.0-debian-12-r3
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1006,7 +1006,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r14
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1045,7 +1045,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r12
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1084,7 +1084,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r8
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1123,7 +1123,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r2
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1162,7 +1162,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0-debian-12-r22
 - docker.io/bitnami/postgresql:15.8.0-debian-12-r23
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1201,7 +1201,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1240,7 +1240,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1279,7 +1279,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
@@ -1318,7 +1318,7 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://unsupported.docs.camunda.io/8.6/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:25.0.6
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12
