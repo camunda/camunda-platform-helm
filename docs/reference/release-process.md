@@ -116,8 +116,11 @@ The charts are built, linted, and tested on every push to the main branch. The r
 
 **After public release:**
 
-1. Merge the `release-please` PR to sync `main` with the released artifact.
-2. This triggers `chart-public-files.yaml` to update:
+1. The workflow enables auto-merge on the `release-please` PR, then shepherds it through the merge
+   queue (re-enabling auto-merge after evictions). If it still does not merge within the timeout, a
+   distinct Slack alert pings the distribution release manager to merge it manually — the release
+   itself is not treated as failed.
+2. Merging the `release-please` PR syncs `main` with the released artifact and triggers `chart-public-files.yaml` to update:
    - [Version matrix](https://helm.camunda.io/camunda-platform/version-matrix/) (component versions for each chart release).
    - Public values files at `helm.camunda.io/camunda-platform/values/`.
 
@@ -149,7 +152,7 @@ Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, char
 
 5. **Trigger public release** — Manually trigger [`chart-release-public.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml) with the RC tag. This publishes the corrected chart to GitHub Releases and updates the Helm repo index.
 
-6. **Make sure the release-please PR is merged** — Auto-merge is attempted but best-effort; confirm the release-please PR was merged with the correct released version, and merge it manually if needed.
+6. **Make sure the release-please PR is merged** — The workflow shepherds the release-please PR through the merge queue and re-enables auto-merge after evictions. If it still does not merge within the timeout, a Slack alert pings the distribution release manager; merge it manually with the correct released version. The daily PR reminder also flags any published-but-unmerged release PR as a backstop.
 
 7. **Notify support** — Post a message in `#ask-support` using the support template below.
 
