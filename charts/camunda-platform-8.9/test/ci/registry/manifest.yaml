@@ -131,7 +131,7 @@ integration:
       enabled: false
     - id: qa-opensearch-upg-modular
       shortname: qaosupg
-      enabled: false
+      enabled: true
     - id: qa-elasticsearch-rba-upg
       shortname: qaelrbaup2
       enabled: false
@@ -149,7 +149,7 @@ integration:
       enabled: false
     - id: qa-document-store-upg-modular
       shortname: qadocupg
-      enabled: false
+      enabled: true
     - id: keycloak-original-install
       shortname: kcor
       enabled: false

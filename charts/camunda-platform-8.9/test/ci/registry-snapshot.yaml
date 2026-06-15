@@ -578,7 +578,7 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
         - name: qa-opensearch-upg
-          enabled: false
+          enabled: true
           shortname: qaosupg
           auth: keycloak
           flow: modular-upgrade-minor
@@ -682,7 +682,7 @@ integration:
           qa: true
           image-tags: true
         - name: qa-document-store-upg
-          enabled: false
+          enabled: true
           shortname: qadocupg
           auth: keycloak
           flow: modular-upgrade-minor

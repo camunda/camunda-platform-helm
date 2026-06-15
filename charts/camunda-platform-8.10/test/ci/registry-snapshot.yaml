@@ -993,7 +993,7 @@ integration:
               repo-url: https://opensearch-project.github.io/helm-charts/
           prefix-key: qa-opensearch-upg
         - name: qa-opensearch-upg
-          enabled: false
+          enabled: true
           shortname: qaosupg
           auth: keycloak
           flow: modular-upgrade-minor
@@ -1092,7 +1092,7 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-elasticsearch-mt-upg
-          enabled: false
+          enabled: true
           shortname: qaelmtupg
           auth: keycloak
           flow: modular-upgrade-minor
@@ -1290,7 +1290,7 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store-upg
-          enabled: false
+          enabled: true
           shortname: qadocupg
           auth: keycloak
           flow: modular-upgrade-minor
@@ -1323,7 +1323,7 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store-upg
-          enabled: false
+          enabled: true
           shortname: qadocupg
           auth: keycloak
           flow: modular-upgrade-minor

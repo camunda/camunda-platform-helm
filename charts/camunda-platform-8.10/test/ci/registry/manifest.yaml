@@ -125,7 +125,7 @@ integration:
       enabled: false
     - id: qa-opensearch-upg-modular
       shortname: qaosupg
-      enabled: false
+      enabled: true
     - id: qa-elasticsearch-mt
       shortname: qaelmt
       enabled: false
@@ -134,7 +134,7 @@ integration:
       enabled: false
     - id: qa-elasticsearch-mt-upg-modular
       shortname: qaelmtupg
-      enabled: false
+      enabled: true
     - id: qa-elasticsearch-rba
       shortname: qaelrba
       enabled: false
@@ -152,10 +152,10 @@ integration:
       enabled: false
     - id: qa-document-store-upg-modular-gke
       shortname: qadocupg
-      enabled: false
+      enabled: true
     - id: qa-document-store-upg-modular-eks
       shortname: qadocupg
-      enabled: false
+      enabled: true
     - id: qa-license
       shortname: lic
       enabled: false
