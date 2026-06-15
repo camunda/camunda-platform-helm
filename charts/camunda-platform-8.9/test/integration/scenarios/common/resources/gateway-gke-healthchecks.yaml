@@ -1,0 +1,45 @@
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: $RELEASE_NAME-identity
+  namespace: $NAMESPACE
+spec:
+  default:
+    checkIntervalSec: 15
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    logConfig:
+      enabled: false
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: 8082
+        requestPath: /actuator/health/readiness
+  targetRef:
+    group: ""
+    kind: Service
+    name: $RELEASE_NAME-identity
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: $RELEASE_NAME-zeebe-gateway
+  namespace: $NAMESPACE
+spec:
+  default:
+    checkIntervalSec: 15
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    logConfig:
+      enabled: false
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: 9600
+        requestPath: /actuator/health/readiness
+  targetRef:
+    group: ""
+    kind: Service
+    name: $RELEASE_NAME-zeebe-gateway
