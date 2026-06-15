@@ -33,6 +33,7 @@ Looking for end-user installation docs? See the [official Camunda docs](https://
 | [Code Style](./reference/code-style.md) | Helm, Go, and YAML style conventions |
 | [Testing](./reference/testing.md) | Unit tests, golden files, property tests, license headers |
 | [GitHub Actions Workflows](./reference/github-actions-workflows.md) | Overview of every CI/CD workflow |
+| [CI Scenario Matrix and Index-Prefix Coverage](./ci-scenario-matrix.md) | Nightly E2E scenario coverage and upgrade prefix compatibility |
 
 ## Skills & Runbooks
 

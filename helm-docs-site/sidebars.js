@@ -90,6 +90,11 @@ const sidebars = {
           id: 'reference/github-actions-workflows',
           label: 'GitHub Actions Workflows',
         },
+        {
+          type: 'doc',
+          id: 'ci-scenario-matrix',
+          label: 'CI Scenario Matrix',
+        },
       ],
     },
 

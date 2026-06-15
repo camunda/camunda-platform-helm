@@ -13,6 +13,8 @@ title: "Skill: Integration Test Scenario Resolution"
 How the Go CLI (`deploy-camunda`) resolves Helm values files for each integration
 test scenario, from the CI config entry to the final `helm install -f` arguments.
 
+> See also: [CI Scenario Matrix and Index-Prefix Coverage](../ci-scenario-matrix.md) — feature matrix of which scenarios run in PR CI / nightly E2E per chart version, and index-prefix coverage per persistence layer.
+
 ---
 
 ## Table of Contents

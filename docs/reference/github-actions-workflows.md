@@ -4,6 +4,8 @@ title: GitHub Actions Workflows
 
 This repo has many [GitHub Actions workflows](https://github.com/camunda/camunda-platform-helm/tree/main/.github/workflows) for different aspects of the CI pipelines.
 
+> See also: [CI Scenario Matrix and Index-Prefix Coverage](../ci-scenario-matrix.md) — which registry scenarios are wired to which nightly E2E workflow, plus the index-prefix coverage matrix per chart version.
+
 - [Camunda Helm chart deployment](#camunda-helm-chart-deployment)
   - [Getting started](#getting-started)
   - [Workflow inputs](#workflow-inputs)
