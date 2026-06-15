@@ -716,6 +716,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 			ImageTags:    flags.Selection.ImageTags,
 			Upgrade:      flags.Selection.UpgradeFlow,
 			ChartVersion: flags.Chart.ChartVersion,
+			ChartDir:     effectiveScenarioDir,
 		})
 		if err != nil {
 			os.RemoveAll(tempDir)

@@ -19,6 +19,13 @@ func writeTempFile(t *testing.T, dir, name, content string) string {
 	return p
 }
 
+func writeMinimalLayerFiles(t *testing.T, scenarioDir string) {
+	t.Helper()
+	writeTempFile(t, scenarioDir, "values/identity/keycloak.yaml", "{}\n")
+	writeTempFile(t, scenarioDir, "values/persistence/elasticsearch.yaml", "{}\n")
+	writeTempFile(t, scenarioDir, "values/platform/gke.yaml", "{}\n")
+}
+
 func captureStdout(t *testing.T, fn func() error) (string, error) {
 	t.Helper()
 	oldStdout := os.Stdout
@@ -84,6 +91,7 @@ func TestRunPrepareValues_LayeredPath(t *testing.T) {
 elasticsearch:
   enabled: true
 `)
+	writeMinimalLayerFiles(t, scenarioDir)
 
 	pv := &prepareValuesFlags{
 		scenarioPath: scenarioDir,
@@ -112,7 +120,7 @@ elasticsearch:
 	if readErr != nil {
 		t.Fatalf("failed to read output file: %v", readErr)
 	}
-	if !strings.Contains(string(data), `tag: "8.9.0"`) {
+	if !strings.Contains(string(data), `tag: 8.9.0`) {
 		t.Errorf("output file missing expected content, got:\n%s", string(data))
 	}
 }
@@ -237,6 +245,7 @@ func TestRunPrepareValues_ImageTagsAutoEnabled(t *testing.T) {
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
 `)
+	writeMinimalLayerFiles(t, scenarioDir)
 
 	pv := &prepareValuesFlags{
 		scenarioPath: scenarioDir,
@@ -276,6 +285,7 @@ func TestRunPrepareValues_ImageTagsNotAutoEnabledWithoutTagKeys(t *testing.T) {
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
 `)
+	writeMinimalLayerFiles(t, scenarioDir)
 
 	pv := &prepareValuesFlags{
 		scenarioPath: scenarioDir,

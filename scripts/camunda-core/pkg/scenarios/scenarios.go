@@ -433,6 +433,15 @@ type BuilderOverrides struct {
 	Upgrade      bool
 	ChartVersion string
 	ValuesConfig string // JSON config string; if it contains *_IMAGE_TAG keys, ImageTags is auto-enabled (only when ImageTagsSet is false)
+
+	// ChartDir, when non-empty, points at the chart's chart-full-setup directory.
+	// Setting it enables version-aware validation: BuildDeploymentConfig will run
+	// ValidateForChart, which verifies that every referenced layer (identity,
+	// persistence, features) has a YAML file on disk for that specific chart
+	// version. Callers that already validated layer existence elsewhere (or that
+	// are intentionally constructing configs for a different version's layout)
+	// can leave it empty and get the legacy behaviour.
+	ChartDir string
 }
 
 // BuildDeploymentConfig is the single canonical constructor for DeploymentConfig.
@@ -487,7 +496,56 @@ func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentCon
 		return nil, fmt.Errorf("deployment config validation failed for scenario %q: %w", scenario, err)
 	}
 
+	if ov.ChartDir != "" {
+		if err := cfg.ValidateForChart(ov.ChartDir); err != nil {
+			return nil, fmt.Errorf("deployment config validation failed for scenario %q: %w", scenario, err)
+		}
+	}
+
 	return cfg, nil
+}
+
+// ValidateForChart verifies that every layer referenced by this config has a
+// YAML file on disk under chartFullSetupDir/values/. The plain Validate() only
+// checks that selections are members of the static allow-lists, but those
+// allow-lists are not version-aware: e.g. "elasticsearch-external-self-signed"
+// is accepted by Validate() but only exists as a file on chart 8.8 today.
+// Without this check, a typo or version-mismatched selection passes validation
+// and then fails much later inside helm template with a vaguer error.
+//
+// This is opt-in via BuilderOverrides.ChartDir to avoid changing behaviour for
+// existing callers that do not pass a chart directory.
+func (c *DeploymentConfig) ValidateForChart(chartFullSetupDir string) error {
+	valuesDir := filepath.Join(chartFullSetupDir, ValuesDir)
+	if _, err := os.Stat(valuesDir); err != nil {
+		return fmt.Errorf("values directory not found under chart-full-setup: %s", valuesDir)
+	}
+
+	checks := []struct {
+		dir   string
+		name  string
+		label string
+	}{
+		{IdentityDir, c.Identity, "identity"},
+		{PersistenceDir, c.Persistence, "persistence"},
+		{PlatformDir, c.Platform, "platform"},
+	}
+	for _, ck := range checks {
+		if ck.name == "" {
+			continue
+		}
+		p := filepath.Join(valuesDir, ck.dir, ck.name+".yaml")
+		if _, err := os.Stat(p); err != nil {
+			return fmt.Errorf("%s %q has no values file at %s (chart version may not support this selection)", ck.label, ck.name, p)
+		}
+	}
+	for _, f := range c.Features {
+		p := filepath.Join(valuesDir, FeaturesDir, f+".yaml")
+		if _, err := os.Stat(p); err != nil {
+			return fmt.Errorf("feature %q has no values file at %s (chart version may not support this feature)", f, p)
+		}
+	}
+	return nil
 }
 
 func valuesConfigHasImageTags(valuesConfig string) bool {
