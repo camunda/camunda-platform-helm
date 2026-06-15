@@ -108,6 +108,38 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar-service-annotation", service.ObjectMeta.Annotations["foo"])
 			},
+		}, {
+			Name: "TestGrpcAppProtocolWhenSet",
+			Values: map[string]string{
+				"orchestration.service.grpcAppProtocol": "kubernetes.io/h2c",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				var found bool
+				for _, port := range service.Spec.Ports {
+					if port.Name == "grpc" {
+						s.Require().NotNil(port.AppProtocol, "expected appProtocol to be set on grpc port")
+						s.Require().Equal("kubernetes.io/h2c", *port.AppProtocol)
+						found = true
+					}
+				}
+				s.Require().True(found, "grpc port not found in service")
+			},
+		}, {
+			Name: "TestGrpcAppProtocolNotSetByDefault",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				for _, port := range service.Spec.Ports {
+					if port.Name == "grpc" {
+						s.Require().Nil(port.AppProtocol, "appProtocol should not be set by default")
+					}
+				}
+			},
 		},
 	}
 

@@ -2640,6 +2640,10 @@ orchestration:
     grpcName: "grpc"
     ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
     grpcPort: 26500
+    ## @param orchestration.service.grpcAppProtocol defines the appProtocol for the gRPC service port.
+    ## Set to "kubernetes.io/h2c" when using GKE Gateway API so NEGs use HTTP/2 to the backend.
+    ## Leave empty (default) for all other ingress controllers.
+    grpcAppProtocol: ""
     ## @param orchestration.service.commandName defines the name of the command API endpoint, where the broker commands are sent to
     commandName: "command"
     ## @param orchestration.service.commandPort defines the port of the command API endpoint, where the broker commands are sent to
