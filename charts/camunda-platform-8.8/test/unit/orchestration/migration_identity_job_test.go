@@ -206,7 +206,7 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetInitContainerResources",
 			Values: map[string]string{
-				"orchestration.migration.identity.enabled":                                  "true",
+				"orchestration.migration.identity.enabled":                                 "true",
 				"orchestration.migration.identity.secret.inlineSecret":                     "s",
 				"orchestration.migration.identity.waitContainer.resources.requests.cpu":    "25m",
 				"orchestration.migration.identity.waitContainer.resources.requests.memory": "32Mi",
