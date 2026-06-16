@@ -10,7 +10,7 @@ unit:
   enabled: true
   matrix:
     - name: Management
-      packages: identity common console
+      packages: identity common
     - name: Orchestration
       packages: orchestration connectors optimize
     - name: Design
