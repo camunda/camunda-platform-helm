@@ -28,7 +28,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
-          exportEnv: true
+          exportEnv: false
       - name: Get chart versions
         id: get-chart-versions
         uses: ./.github/actions/get-chart-versions
@@ -136,7 +136,7 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
-          webhook: ${{ env.SLACK_DISTRO_BOT_WEBHOOK }}
+          webhook: ${{ steps.test-credentials-secret.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
             blocks:

@@ -67,11 +67,14 @@ permissions:
 
 ### 2. Vault Secrets Import
 
-All secrets come from Vault. Use `hashicorp/vault-action` **before** any step that needs them:
+All secrets come from Vault. Use `hashicorp/vault-action` **before** any step that needs them.
+Always set `exportEnv: false` so the values are **not** written to the job-wide `$GITHUB_ENV`.
+Give the step an `id:` and pass each secret only into the specific step that consumes it, via
+`${{ steps.<id>.outputs.<NAME> }}`:
 
 ```yaml
 - name: Import Vault secrets
-  uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+  uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
   id: vault
   with:
     url: ${{ secrets.VAULT_ADDR }}
@@ -81,11 +84,31 @@ All secrets come from Vault. Use `hashicorp/vault-action` **before** any step th
     secrets: |
       secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
       secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
-    exportEnv: true
+    exportEnv: false
+
+# Consume in a GitHub Action via its `with:` inputs — no env var needed:
+- name: Generate GitHub token
+  uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+  with:
+    app_id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
+    private_key: ${{ steps.vault.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+# Consume in a shell `run:` step via a step-scoped `env:` block:
+- name: Use a secret in a script
+  env:
+    GH_APP_ID_DISTRO_CI: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
+  run: |
+    echo "app id is ${GH_APP_ID_DISTRO_CI}"
 ```
 
-Reference exported env vars in subsequent steps as `${{ env.GH_APP_ID_DISTRO_CI }}` or
-directly in `run:` scripts (they are exported as shell env vars via `exportEnv: true`).
+Why `exportEnv: false`: the action default (`true`) injects every imported secret into
+`$GITHUB_ENV`, making it readable by **all** subsequent steps in the job — including
+third-party actions that have no need for it. Scoping each secret to its consumer keeps the
+blast radius minimal.
+
+For composite actions: secrets cannot be handed to the calling job via `$GITHUB_ENV` without
+leaking them job-wide. Expose them as the composite's `outputs:` and let the caller wire each
+consuming step's `env:` from `${{ steps.<setup-id>.outputs.<NAME> }}`.
 
 ### 3. Reusable Template Workflow Structure
 
@@ -257,6 +280,11 @@ jobs:
 
 9. **Skipping debug output** — add an info step (`echo "output: ${{ steps.id.outputs.val }}"`)
    after complex composite actions so failures are easier to diagnose.
+
+10. **`exportEnv: true` on `vault-action`** — the default injects every imported secret into
+    job-wide `$GITHUB_ENV`, exposing it to all subsequent steps (and any third-party action)
+    in the job. Always set `exportEnv: false` and consume via `${{ steps.<id>.outputs.<NAME> }}`
+    in the consuming step's `with:` input or a step-scoped `env:` block (see Pattern 2).
 
 ---
 

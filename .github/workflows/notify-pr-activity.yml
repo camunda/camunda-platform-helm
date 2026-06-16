@@ -145,12 +145,12 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_GH;
-          exportEnv: true
+          exportEnv: false
 
       - name: Send Slack notification
         continue-on-error: true
         env:
-          SLACK_WEBHOOK: ${{ env.SLACK_DISTRO_BOT_WEBHOOK_GH }}
+          SLACK_WEBHOOK: ${{ steps.vault-secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK_GH }}
           # Resolve from workflow_call inputs first, fall back to pull_request_target event
           GH_ACTION:        ${{ inputs.action        || github.event.action }}
           PR_REPO:          ${{ inputs.pr_repo        || github.event.repository.name }}
