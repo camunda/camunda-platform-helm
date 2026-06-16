@@ -56,8 +56,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
-				"identity.enabled":      "true",
-				"console.enabled":       "true",
+				"identity.enabled":                 "true",
+				"console.enabled":                  "true",
 				"camundaHub.console.podLabels.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -70,8 +70,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
-				"identity.enabled":           "true",
-				"console.enabled":            "true",
+				"identity.enabled":                      "true",
+				"console.enabled":                       "true",
 				"camundaHub.console.podAnnotations.foo": "bar",
 				"camundaHub.console.podAnnotations.foz": "baz",
 			},
@@ -111,9 +111,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
-				"identity.enabled":         "true",
-				"console.enabled":          "true",
-				"global.image.registry":    "global.custom.registry.io",
+				"identity.enabled":                    "true",
+				"console.enabled":                     "true",
+				"global.image.registry":               "global.custom.registry.io",
 				"camundaHub.console.image.registry":   "subchart.custom.registry.io",
 				"camundaHub.console.image.repository": "camunda/console-test",
 				"camundaHub.console.image.tag":        "snapshot",
@@ -143,9 +143,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
-				"identity.enabled":                  "true",
-				"console.enabled":                   "true",
-				"global.image.pullSecrets[0].name":  "SecretName",
+				"identity.enabled":                             "true",
+				"console.enabled":                              "true",
+				"global.image.pullSecrets[0].name":             "SecretName",
 				"camundaHub.console.image.pullSecrets[0].name": "SecretNameSubChart",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -158,8 +158,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTag",
 			Values: map[string]string{
-				"identity.enabled":  "true",
-				"console.enabled":   "true",
+				"identity.enabled":             "true",
+				"console.enabled":              "true",
 				"camundaHub.console.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -175,8 +175,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerOverwriteImageTagWithChartDirectSetting",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":  "true",
-				"console.enabled":   "true",
+				"identity.enabled":             "true",
+				"console.enabled":              "true",
 				"camundaHub.console.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -193,8 +193,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetContainerCommand",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"console.enabled":    "true",
+				"identity.enabled":              "true",
+				"console.enabled":               "true",
 				"camundaHub.console.command[0]": "printenv",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -211,8 +211,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumes",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"console.enabled":                               "true",
+				"identity.enabled":                                         "true",
+				"console.enabled":                                          "true",
 				"camundaHub.console.extraVolumes[0].name":                  "extraVolume",
 				"camundaHub.console.extraVolumes[0].configMap.name":        "otherConfigMap",
 				"camundaHub.console.extraVolumes[0].configMap.defaultMode": "744",
@@ -249,8 +249,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumeMounts",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                       "true",
-				"console.enabled":                        "true",
+				"identity.enabled": "true",
+				"console.enabled":  "true",
 				"camundaHub.console.extraVolumeMounts[0].name":      "otherConfigMap",
 				"camundaHub.console.extraVolumeMounts[0].mountPath": "/usr/local/config",
 			},
@@ -286,8 +286,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumesAndMounts",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"console.enabled":                               "true",
+				"identity.enabled": "true",
+				"console.enabled":  "true",
 				"camundaHub.console.extraVolumeMounts[0].name":             "otherConfigMap",
 				"camundaHub.console.extraVolumeMounts[0].mountPath":        "/usr/local/config",
 				"camundaHub.console.extraVolumes[0].name":                  "extraVolume",
@@ -337,8 +337,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetServiceAccountName",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":            "true",
-				"console.enabled":             "true",
+				"identity.enabled":                       "true",
+				"console.enabled":                        "true",
 				"camundaHub.console.serviceAccount.name": "accName",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -352,8 +352,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
-				"identity.enabled":                     "true",
-				"console.enabled":                      "true",
+				"identity.enabled": "true",
+				"console.enabled":  "true",
 				"camundaHub.console.podSecurityContext.runAsUser": "1000",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -383,8 +383,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 			Name: "TestContainerSetNodeSelector",
 			Values: map[string]string{
-				"identity.enabled":              "true",
-				"console.enabled":               "true",
+				"identity.enabled":                         "true",
+				"console.enabled":                          "true",
 				"camundaHub.console.nodeSelector.disktype": "ssd",
 				"camundaHub.console.nodeSelector.cputype":  "arm",
 			},
@@ -463,8 +463,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//  effect: "NoSchedule"
 			Name: "TestContainerSetTolerations",
 			Values: map[string]string{
-				"identity.enabled":                "true",
-				"console.enabled":                 "true",
+				"identity.enabled":                           "true",
+				"console.enabled":                            "true",
 				"camundaHub.console.tolerations[0].key":      "key1",
 				"camundaHub.console.tolerations[0].operator": "Equal",
 				"camundaHub.console.tolerations[0].value":    "Value1",
@@ -507,8 +507,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerStartupProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                         "true",
-				"console.enabled":                          "true",
+				"identity.enabled":                                    "true",
+				"console.enabled":                                     "true",
 				"camundaHub.console.startupProbe.enabled":             "true",
 				"camundaHub.console.startupProbe.probePath":           "/healthz",
 				"camundaHub.console.startupProbe.initialDelaySeconds": "5",
@@ -535,8 +535,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerLivenessProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                          "true",
-				"console.enabled":                           "true",
+				"identity.enabled":                                     "true",
+				"console.enabled":                                      "true",
 				"camundaHub.console.livenessProbe.enabled":             "true",
 				"camundaHub.console.livenessProbe.probePath":           "/healthz",
 				"camundaHub.console.livenessProbe.initialDelaySeconds": "5",
@@ -562,8 +562,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
-				"identity.enabled":                           "true",
-				"console.enabled":                            "true",
+				"identity.enabled":                                      "true",
+				"console.enabled":                                       "true",
 				"camundaHub.console.sidecars[0].name":                   "nginx",
 				"camundaHub.console.sidecars[0].image":                  "nginx:latest",
 				"camundaHub.console.sidecars[0].ports[0].containerPort": "80",
@@ -589,8 +589,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestInitContainers",
 			Values: map[string]string{
-				"identity.enabled":                                 "true",
-				"console.enabled":                                  "true",
+				"identity.enabled":                                            "true",
+				"console.enabled":                                             "true",
 				"camundaHub.console.initContainers[0].name":                   "nginx",
 				"camundaHub.console.initContainers[0].image":                  "nginx:latest",
 				"camundaHub.console.initContainers[0].ports[0].containerPort": "80",
@@ -616,8 +616,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestSetDnsPolicyAndDnsConfig",
 			Values: map[string]string{
-				"identity.enabled":                 "true",
-				"console.enabled":                  "true",
+				"identity.enabled":                            "true",
+				"console.enabled":                             "true",
 				"camundaHub.console.dnsPolicy":                "ClusterFirst",
 				"camundaHub.console.dnsConfig.nameservers[0]": "8.8.8.8",
 				"camundaHub.console.dnsConfig.searches[0]":    "example.com",

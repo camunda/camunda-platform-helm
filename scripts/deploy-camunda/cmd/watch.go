@@ -186,9 +186,9 @@ Typical use:
 // confidence threshold.
 func newWatchReplayCommand() *cobra.Command {
 	var (
-		strict      bool
-		logLevel    string
-		replayCLI   string
+		strict    bool
+		logLevel  string
+		replayCLI string
 	)
 	cmd := &cobra.Command{
 		Use:   "replay <corpus-dir>",

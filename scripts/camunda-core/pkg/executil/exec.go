@@ -153,7 +153,7 @@ func RunCommandWithStdin(ctx context.Context, name string, args []string, env []
 		defer stdinPipe.Close()
 		_, _ = stdinPipe.Write(stdin)
 	}()
-	
+
 	bufferCB := getBufferFromContext(ctx)
 	if bufferCB != nil {
 		// Buffered mode: capture output and send to callback
@@ -176,7 +176,7 @@ func RunCommandWithStdin(ctx context.Context, name string, args []string, env []
 		wg.Wait()
 		return cmd.Wait()
 	}
-	
+
 	// Normal mode: stream output
 	baseLogger := logging.Logger
 	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
@@ -242,7 +242,7 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 	var stderrLines []string
 	var wg sync.WaitGroup
 	wg.Add(2)
-	
+
 	go func() {
 		defer wg.Done()
 		sc := bufio.NewScanner(stdout)
@@ -250,7 +250,7 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 			stdoutLines = append(stdoutLines, sc.Text())
 		}
 	}()
-	
+
 	go func() {
 		defer wg.Done()
 		sc := bufio.NewScanner(stderr)
@@ -261,7 +261,7 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 
 	wg.Wait()
 	err = cmd.Wait()
-	
+
 	return &BufferedOutput{
 		Stdout: stdoutLines,
 		Stderr: stderrLines,
@@ -276,5 +276,3 @@ func FieldsNoEmpty(s string) []string {
 	}
 	return ff
 }
-
-

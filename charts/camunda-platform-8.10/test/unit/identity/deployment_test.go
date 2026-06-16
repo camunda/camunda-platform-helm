@@ -532,8 +532,8 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldSetCorrectSecret",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.identity.auth.enabled":            "true",
-				"identity.enabled":                        "true",
+				"global.identity.auth.enabled": "true",
+				"identity.enabled":             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

@@ -114,8 +114,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
-				"global.image.registry": "global.custom.registry.io",
-				"global.image.tag":      "8.x.x",
+				"global.image.registry":          "global.custom.registry.io",
+				"global.image.tag":               "8.x.x",
 				"orchestration.image.registry":   "subchart.custom.registry.io",
 				"orchestration.image.repository": "camunda/camunda-test",
 				"orchestration.image.tag":        "snapshot",
@@ -143,8 +143,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
-				"global.image.pullSecrets[0].name": "SecretNameGlobal",
-				"orchestration.image.pullSecrets[0].name":   "SecretNameSubChart",
+				"global.image.pullSecrets[0].name":        "SecretNameGlobal",
+				"orchestration.image.pullSecrets[0].name": "SecretNameSubChart",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -210,8 +210,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
-				"global.image.tag": "a.b.c",
-				"orchestration.image.tag":   "",
+				"global.image.tag":        "a.b.c",
+				"orchestration.image.tag": "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -226,8 +226,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
-				"global.image.tag": "x.y.z",
-				"orchestration.image.tag":   "a.b.c",
+				"global.image.tag":        "x.y.z",
+				"orchestration.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -788,10 +788,10 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			// Test hybrid auth: orchestration uses basic auth, so no OIDC secret needed
 			Name: "TestHybridAuthOrchestrationBasicNoOidcSecret",
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"identityKeycloak.enabled":                      "true",
-				"global.identity.auth.enabled":                  "true",
-				"orchestration.security.authentication.method":  "basic",
+				"identity.enabled":                             "true",
+				"identityKeycloak.enabled":                     "true",
+				"global.identity.auth.enabled":                 "true",
+				"orchestration.security.authentication.method": "basic",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -845,10 +845,10 @@ func (s *StatefulSetTest) TestWithJKSSecretReference() {
 		{
 			Name: "TLS with JKS secret reference emits password env and flag",
 			Values: map[string]string{
-				"orchestration.enabled":                                        "true",
-				"global.opensearch.tls.existingSecret":                         "os-tls-secret",
-				"global.opensearch.tls.jks.secret.existingSecret":              "truststore-secret",
-				"global.opensearch.tls.jks.secret.existingSecretKey":           "truststore-password",
+				"orchestration.enabled":                              "true",
+				"global.opensearch.tls.existingSecret":               "os-tls-secret",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -873,9 +873,9 @@ func (s *StatefulSetTest) TestWithJKSInlineSecret() {
 		{
 			Name: "TLS with JKS inline secret emits password env with value and flag",
 			Values: map[string]string{
-				"orchestration.enabled":                              "true",
-				"global.opensearch.tls.existingSecret":               "os-tls-secret",
-				"global.opensearch.tls.jks.secret.inlineSecret":      "changeit",
+				"orchestration.enabled":                         "true",
+				"global.opensearch.tls.existingSecret":          "os-tls-secret",
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -973,10 +973,10 @@ func (s *StatefulSetTest) TestWithJKSSecretReference_Elasticsearch() {
 		{
 			Name: "Elasticsearch TLS with JKS secret reference emits password env and flag",
 			Values: map[string]string{
-				"orchestration.enabled":                                         "true",
-				"global.elasticsearch.tls.existingSecret":                       "es-tls-secret",
-				"global.elasticsearch.tls.jks.secret.existingSecret":            "truststore-secret",
-				"global.elasticsearch.tls.jks.secret.existingSecretKey":         "truststore-password",
+				"orchestration.enabled":                                 "true",
+				"global.elasticsearch.tls.existingSecret":               "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -999,9 +999,9 @@ func (s *StatefulSetTest) TestWithJKSInlineSecret_Elasticsearch() {
 		{
 			Name: "Elasticsearch TLS with JKS inline secret emits password env with value and flag",
 			Values: map[string]string{
-				"orchestration.enabled":                                "true",
-				"global.elasticsearch.tls.existingSecret":              "es-tls-secret",
-				"global.elasticsearch.tls.jks.secret.inlineSecret":     "changeit",
+				"orchestration.enabled":                            "true",
+				"global.elasticsearch.tls.existingSecret":          "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1022,7 +1022,7 @@ func (s *StatefulSetTest) TestWithoutJKSConfig_Elasticsearch() {
 		{
 			Name: "Elasticsearch TLS without JKS omits password flag and env var",
 			Values: map[string]string{
-				"orchestration.enabled":                  "true",
+				"orchestration.enabled":                   "true",
 				"global.elasticsearch.tls.existingSecret": "es-tls-secret",
 				// No global.elasticsearch.tls.jks provided
 			},
@@ -1044,8 +1044,8 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_NoJKS_Elasticsearch() {
 		{
 			Name: "Elasticsearch: Component javaOpts preserved with trustStore path only when no JKS",
 			Values: map[string]string{
-				"orchestration.enabled":                  "true",
-				"orchestration.javaOpts":                 "-Xmx512m -Xms256m",
+				"orchestration.enabled":                   "true",
+				"orchestration.javaOpts":                  "-Xmx512m -Xms256m",
 				"global.elasticsearch.tls.existingSecret": "es-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1066,10 +1066,10 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_WithJKS_Elasticsearch() 
 		{
 			Name: "Elasticsearch: Component javaOpts preserved with trustStore path and password when JKS provided",
 			Values: map[string]string{
-				"orchestration.enabled":                                "true",
-				"orchestration.javaOpts":                               "-Xmx1g -Xms512m",
-				"global.elasticsearch.tls.existingSecret":              "es-tls-secret",
-				"global.elasticsearch.tls.jks.secret.existingSecret":   "truststore-secret",
+				"orchestration.enabled":                                 "true",
+				"orchestration.javaOpts":                                "-Xmx1g -Xms512m",
+				"global.elasticsearch.tls.existingSecret":               "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1084,5 +1084,3 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_WithJKS_Elasticsearch() 
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
-
-

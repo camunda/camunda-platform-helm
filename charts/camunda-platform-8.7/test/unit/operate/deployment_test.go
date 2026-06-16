@@ -1061,7 +1061,7 @@ func (s *deploymentTemplateTest) TestOperateJKSPasswordFromSecret() {
 func (s *deploymentTemplateTest) TestOperateJKSPasswordInline() {
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.elasticsearch.tls.existingSecret":       "es-tls",
+			"global.elasticsearch.tls.existingSecret":          "es-tls",
 			"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),

@@ -12,7 +12,7 @@ func TestResolveScenarioFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	chartPath := filepath.Join(tmpDir, "test-chart")
 	scenarioBase := filepath.Join(chartPath, "test", "integration", "scenarios", "chart-full-setup")
-	
+
 	if err := os.MkdirAll(scenarioBase, 0755); err != nil {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestResolveScenarioFiles(t *testing.T) {
 func TestResolveScenarioFiles_ErrorMessage(t *testing.T) {
 	tmpDir := t.TempDir()
 	scenarioDir := filepath.Join(tmpDir, "scenarios")
-	
+
 	if err := os.MkdirAll(scenarioDir, 0755); err != nil {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
@@ -157,9 +157,9 @@ func TestResolveScenarioFiles_ErrorMessage(t *testing.T) {
 
 // Helper function
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && 
-		(s[0:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
-		anySubstring(s, substr)))
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
+		(s[0:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
+			anySubstring(s, substr)))
 }
 
 func anySubstring(s, substr string) bool {
@@ -170,4 +170,3 @@ func anySubstring(s, substr string) bool {
 	}
 	return false
 }
-
