@@ -65,16 +65,7 @@ data:
           {{- if (or .Values.camundaHub.webModeler.restapi.clusters .Values.webModeler.restapi.clusters) }}
             {{- (or .Values.camundaHub.webModeler.restapi.clusters .Values.webModeler.restapi.clusters) | toYaml | nindent 10 }}
           {{- else}}
-          - id: "default-cluster"
-            name: {{ tpl .Values.global.zeebeClusterName . | quote }}
-            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
-            authentication: {{ include "webModeler.authConfigValue" . | quote }}
-            authorizations:
-              enabled: {{ .Values.orchestration.security.authorizations.enabled }}
-            url:
-              grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
-              rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
-              web-app: {{ include "camundaPlatform.orchestrationExternalURL" . | quote }}
+            {{- include "camundaPlatform.defaultWebModelerCluster" . | nindent 10 }}
           {{- end }}
         {{- end }}
 
