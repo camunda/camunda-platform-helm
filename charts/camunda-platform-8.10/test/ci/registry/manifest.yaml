@@ -96,7 +96,8 @@ integration:
       enabled: false
     - id: hub-mixed
       shortname: hubmu
-      enabled: false
+      tier: 2
+      enabled: true
     - id: hub-webmodeler-only
       shortname: hubwo
       tier: 2
