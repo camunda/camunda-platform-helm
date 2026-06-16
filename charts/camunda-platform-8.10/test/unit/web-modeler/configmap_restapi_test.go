@@ -477,9 +477,15 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("8.8.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
-			s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
-			s.Require().Equal("https://example.com/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
+			var orchestrationComp ComponentYAML
+			for _, c := range configmapApplication.Camunda.Modeler.Clusters[0].Components {
+				if c.Type == "orchestration" {
+					orchestrationComp = c
+					break
+				}
+			}
+			s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
 		})
 	}
 }
@@ -513,8 +519,15 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOr
 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	require.NoError(s.T(), err)
 
-	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
+	var orchestrationComp ComponentYAML
+	for _, c := range configmapApplication.Camunda.Modeler.Clusters[0].Components {
+		if c.Type == "orchestration" {
+			orchestrationComp = c
+			break
+		}
+	}
+	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {

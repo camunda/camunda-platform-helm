@@ -829,6 +829,92 @@ Release templates.
 {{- end -}}
 
 {{/*
+********************************************************************************
+Generate the default WebModeler cluster config using the new components[] schema.
+Mirrors camundaPlatform.releaseInfo component gating but outputs the new format
+required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
+********************************************************************************
+*/}}
+{{- define "camundaPlatform.defaultWebModelerCluster" -}}
+- id: "default-cluster"
+  name: {{ tpl .Values.global.zeebeClusterName . | quote }}
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+  authentication: {{ include "webModeler.authConfigValue" . | quote }}
+  authorizations:
+    enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+  components:
+  {{- if .Values.identity.enabled }}
+  {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
+  - name: Identity
+    type: identity
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.identityExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath | quote }}
+  {{- end }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- $proto := (lower (or .Values.camundaHub.webModeler.restapi.readinessProbe.scheme .Values.webModeler.restapi.readinessProbe.scheme)) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (or .Values.camundaHub.webModeler.restapi.service.managementPort .Values.webModeler.restapi.service.managementPort) }}
+  - name: WebModeler
+    type: webModelerWebApp
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict))) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.webModelerExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.webModeler.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}
+  {{- end }}
+  {{- if .Values.optimize.enabled }}
+  {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
+  - name: Optimize
+    type: optimize
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.optimizeExternalURL" . | quote }}
+      readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) | quote }}
+  {{- end }}
+  {{- if .Values.connectors.enabled }}
+  {{- $proto := (lower .Values.connectors.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
+  - name: Connectors
+    type: connectors
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) | quote }}
+    urls:
+      rest: {{ include "camundaPlatform.connectorsExternalURL" . | quote }}
+      readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) | quote }}
+  {{- end }}
+  {{- if .Values.orchestration.enabled }}
+  {{- $proto := (lower .Values.orchestration.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "orchestration.fullname" . | trimAll "\"") .Release.Namespace .Values.orchestration.service.managementPort }}
+  - name: Operate
+    type: operate
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.operateExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Tasklist
+    type: tasklist
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.tasklistExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Orchestration Admin
+    type: orchestrationIdentity
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.orchestrationIdentityExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Orchestration Cluster
+    type: orchestration
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
+      rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  {{- end }}
+{{- end -}}
+
+{{/*
 normalizeSecretConfiguration
 Resolves secret configuration to a standardized output format.
 Returns a dict with "ref" and "plaintext" keys.

@@ -17,10 +17,8 @@ package web_modeler
 import (
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -44,7 +42,7 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 		suite.Run(t, &utils.TemplateGoldenTest{
 			ChartPath:      chartPath,
 			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+			Namespace:      "camunda-platform",
 			GoldenFileName: name,
 			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
 			SetValues: map[string]string{
