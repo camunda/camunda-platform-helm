@@ -12,13 +12,6 @@
 
 ## Installed Services:
 
-- Console:
-  - Enabled: {{ eq (include "camundaHub.consoleEnabled" .) "true" }}
-  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-    {{- if .Values.console.image.tag }}
-  - Docker Image used for Console: {{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}
-    {{- end }}
-  {{- end }}
 - Orchestration:
   - Enabled: {{ .Values.orchestration.enabled }}
   {{- if .Values.orchestration.enabled }}
@@ -94,11 +87,6 @@ Web Modeler:
 Connectors:
 > kubectl port-forward svc/{{ .Release.Name }}-connectors 8086:8080
 {{- end }}
-{{ if eq (include "camundaHub.consoleEnabled" .) "true" -}}
-Console:
-> kubectl port-forward svc/{{ .Release.Name }}-console 8087:80
-{{- end }}
-
 {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
 
 If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URLs for Keycloak.
@@ -123,9 +111,6 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 
 {{- if or (.Values.identity.enabled) (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - Web Applications:
-  {{ if eq (include "camundaHub.consoleEnabled" .) "true" -}}
-  - Console: {{ include "camundaPlatform.consoleExternalURL" . }}
-  {{- end }}
   {{ if .Values.identity.enabled -}}
   - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
