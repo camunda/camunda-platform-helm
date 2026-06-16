@@ -12,3 +12,14 @@ global:
 elasticsearch:
   enabled: true
   maxUnavailable: 0
+  # Single ES node for CI: integration scenarios don't test ES HA, so 1 master-
+  # eligible data node (vs the chart-default 3) drops 2 JVMs + cluster-formation
+  # quorum wait from the deploy floor. 8.10 already uses a single-node companion ES.
+  master:
+    replicaCount: 1
+    # Single-node ES is up and serving in ~35-40s, but the subchart default
+    # readinessProbe.initialDelaySeconds:90 blocks readiness detection until 90s
+    # (~50s of dead wait on the deploy critical path — everything downstream waits
+    # on ES). Lower the floor so readiness is detected within a period of ES being up.
+    readinessProbe:
+      initialDelaySeconds: 20

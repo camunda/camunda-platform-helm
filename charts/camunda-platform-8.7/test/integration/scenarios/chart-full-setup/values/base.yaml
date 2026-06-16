@@ -126,6 +126,9 @@ operate:
 
 optimize:
   contextPath: "/optimize"
+  # Must match zeebe.partitionCount (1) — Optimize imports per Zeebe partition
+  # and would otherwise block waiting for partitions 2 and 3.
+  partitionCount: "1"
   # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
   resources:
     requests:
@@ -190,23 +193,40 @@ connectors:
     limits:
       cpu: 1000m
       memory: 1400Mi
+  # timeoutSeconds: 5 matches optimize. The connectors
+  # /actuator/health/readiness endpoint aggregates downstream checks
+  # (processDefinitionImport + zeebeClient) with show-details:always, so a 1s
+  # timeout spuriously fires under CI CPU limits during the ~37s JVM startup +
+  # job-worker registration spike — observed as probe "context deadline exceeded"
+  # and, on the liveness probe, healthy-container restarts. periodSeconds: 5
+  # matches the 5s import retry cadence; startup failureThreshold raised to 60 to
+  # keep the same 300s total budget (5s*60) for slow upgrade-minor scenarios.
   startupProbe:
     enabled: true
+    # probePath uses /liveness (app-up), NOT the default /readiness. Connectors'
+    # readiness aggregates downstream checks (zeebeClient topology + a successful
+    # processDefinitionImport), so a /readiness startup probe stays 503 for the
+    # entire time Zeebe takes to become healthy. If that exceeds the startup
+    # budget (period*failureThreshold), the kubelet KILLS and restarts a healthy
+    # container ("needs a restart to become ready"). /liveness succeeds once the
+    # process is up (~37s); the readinessProbe below still gates Ready on Zeebe,
+    # but readiness failures never restart the pod.
+    probePath: /actuator/health/liveness
     initialDelaySeconds: 10
-    periodSeconds: 10
-    failureThreshold: 30
-    timeoutSeconds: 1
+    periodSeconds: 5
+    failureThreshold: 60
+    timeoutSeconds: 5
   readinessProbe:
     initialDelaySeconds: 10
-    periodSeconds: 10
+    periodSeconds: 5
     failureThreshold: 5
-    timeoutSeconds: 1
+    timeoutSeconds: 5
   livenessProbe:
     enabled: true
     initialDelaySeconds: 30
     periodSeconds: 10
     failureThreshold: 5
-    timeoutSeconds: 1
+    timeoutSeconds: 5
 
 webModeler:
   enabled: true
@@ -313,6 +333,13 @@ postgresql:
 
 # Zeebe (Broker)
 zeebe:
+  # Single-broker CI topology. No integration scenario tests HA/failover, so a
+  # 1-broker / 1-partition / RF-1 cluster removes raft leader election, partition
+  # replication, and the 3-JVM CPU contention on shared CI nodes — the dominant
+  # avoidable cost in Zeebe readiness (the deploy floor).
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
   # JVM startup optimizations: TieredStopAtLevel=1 skips C2 compiler for ~30-50% faster startup,
   # pre-sized heap avoids resizing overhead, G1GC with string deduplication for efficiency.
   # Right-sized for CI: CPU P99 378m (from 2000m), memory P99 1361Mi (from 2000Mi).
@@ -323,9 +350,11 @@ zeebe:
     limits:
       cpu: 2000m
       memory: 3000Mi
+  # initialDelaySeconds lowered 30->10: single broker is health-ready well
+  # before 30s, so the floor only delays readiness detection.
   startupProbe:
     enabled: true
-    initialDelaySeconds: 30
+    initialDelaySeconds: 10
     periodSeconds: 10
     failureThreshold: 30
     timeoutSeconds: 5
