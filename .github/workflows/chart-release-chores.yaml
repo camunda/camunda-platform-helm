@@ -58,6 +58,8 @@ jobs:
             helm
             helm-ct
             yq
+      - name: Add Go bin directory to PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Install readme-generator-for-helm
         run: |
           # renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
