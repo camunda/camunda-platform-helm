@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Release Process | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/reference/release-process"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Helm Charts"><meta data-rh="true" name="description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><meta data-rh="true" property="og:description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><link data-rh="true" rel="icon" href="/camunda-platform-helm/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://helm.camunda.io/camunda-platform-helm/reference/release-process"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/assets/js/runtime~main.2d0c23f5.js" defer="defer"></script>
-<script src="/camunda-platform-helm/assets/js/main.1284ba9b.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/runtime~main.bd84a76a.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/main.5bd4aac7.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -87,8 +87,11 @@
 <p><strong>Release tag format:</strong> <code>camunda-platform-{appVersion}-{version}</code> (e.g. <code>camunda-platform-8.8-13.4.0</code>).</p>
 <p><strong>After public release:</strong></p>
 <ol>
-<li class="">Merge the <code>release-please</code> PR to sync <code>main</code> with the released artifact.</li>
-<li class="">This triggers <code>chart-public-files.yaml</code> to update:<!-- -->
+<li class="">The workflow enables auto-merge on the <code>release-please</code> PR, then shepherds it through the merge
+queue (re-enabling auto-merge after evictions). If it still does not merge within the timeout, a
+distinct Slack alert pings the distribution release manager to merge it manually — the release
+itself is not treated as failed.</li>
+<li class="">Merging the <code>release-please</code> PR syncs <code>main</code> with the released artifact and triggers <code>chart-public-files.yaml</code> to update:<!-- -->
 <ul>
 <li class=""><a href="https://helm.camunda.io/camunda-platform/version-matrix/" target="_blank" rel="noopener noreferrer" class="">Version matrix</a> (component versions for each chart release).</li>
 <li class="">Public values files at <code>helm.camunda.io/camunda-platform/values/</code>.</li>
@@ -129,7 +132,7 @@
 <p><strong>Trigger public release</strong> — Manually trigger <a href="https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml" target="_blank" rel="noopener noreferrer" class=""><code>chart-release-public.yaml</code></a> with the RC tag. This publishes the corrected chart to GitHub Releases and updates the Helm repo index.</p>
 </li>
 <li class="">
-<p><strong>Make sure the release-please PR is merged</strong> — Auto-merge is attempted but best-effort; confirm the release-please PR was merged with the correct released version, and merge it manually if needed.</p>
+<p><strong>Make sure the release-please PR is merged</strong> — The workflow shepherds the release-please PR through the merge queue and re-enables auto-merge after evictions. If it still does not merge within the timeout, a Slack alert pings the distribution release manager; merge it manually with the correct released version. The daily PR reminder also flags any published-but-unmerged release PR as a backstop.</p>
 </li>
 <li class="">
 <p><strong>Notify support</strong> — Post a message in <code>#ask-support</code> using the support template below.</p>
