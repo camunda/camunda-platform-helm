@@ -6,11 +6,13 @@ identity: keycloak
 persistence: elasticsearch
 features:
   - hub-pinned-images
+  - postgresql-companion
 platforms:
   - gke
 infra-type:
   eks: preemptible
   gke: distroci
+post-infra: post-infra-bitnami-migration
 dependencies:
   - keycloak
   - elasticsearch
