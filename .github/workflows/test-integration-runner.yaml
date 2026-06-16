@@ -597,6 +597,9 @@ jobs:
           TEST_DOCKER_USERNAME: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME }}
           TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
           ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
           AUTH0_DOMAIN: ${{ steps.setup.outputs.AUTH0_DOMAIN }}
           AUTH0_AUDIENCE: ${{ steps.setup.outputs.AUTH0_AUDIENCE }}
           AUTH0_MGMT_CLIENT_ID: ${{ steps.setup.outputs.AUTH0_MGMT_CLIENT_ID }}
@@ -953,6 +956,9 @@ jobs:
           TEST_DOCKER_USERNAME: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME }}
           TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
           ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
           AUTH0_DOMAIN: ${{ steps.setup.outputs.AUTH0_DOMAIN }}
           AUTH0_AUDIENCE: ${{ steps.setup.outputs.AUTH0_AUDIENCE }}
           AUTH0_MGMT_CLIENT_ID: ${{ steps.setup.outputs.AUTH0_MGMT_CLIENT_ID }}

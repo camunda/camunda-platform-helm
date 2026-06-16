@@ -130,12 +130,18 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Login to Harbor
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           # Retrying registry login; harbor_helm_pull below also re-auths on 401.
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           harbor_login
 
       - name: Pull RC package from Harbor
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           mkdir -p .cr-release-packages
