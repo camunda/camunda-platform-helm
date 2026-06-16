@@ -397,7 +397,6 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" 
       {{- $portMapping := (dict
       "identity" "8080"
       "optimize" "8083"
-      "console" "8087"
       "connectors" "8086"
       ) -}}
       {{- printf "http://localhost:%s" (get $portMapping .component) -}}
@@ -575,25 +574,6 @@ Identity Auth.
 {{- end -}}
 
 
-{{/*
-********************************************************************************
-Console templates.
-********************************************************************************
-*/}}
-{{/*
-[camunda-platform] Console external URL.
-*/}}
-{{- define "camundaPlatform.consoleExternalURL" }}
-  {{- if eq (include "camundaHub.consoleEnabled" .) "true" -}}
-    {{- if .Values.global.ingress.enabled -}}
-      {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto (tpl .Values.global.host .) (or .Values.camundaHub.console.contextPath .Values.console.contextPath) -}}
-    {{- else -}}
-      {{- printf "http://localhost:8087" -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-
 
 {{/*
 ********************************************************************************
@@ -607,19 +587,6 @@ their individual .enabled flags. The camundaHub.console.* and
 camundaHub.webModeler.* overrides take precedence over the legacy keys.
 ********************************************************************************
 */}}
-
-{{/*
-[camunda-hub] Check if the Console sub-component should be enabled.
-Returns "true" if camundaHub.enabled OR console.enabled.
-Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-*/}}
-{{- define "camundaHub.consoleEnabled" -}}
-  {{- if or .Values.camundaHub.enabled .Values.console.enabled -}}
-    true
-  {{- else -}}
-    false
-  {{- end -}}
-{{- end -}}
 
 {{/*
 [camunda-hub] Check if the WebModeler sub-component should be enabled.
@@ -736,16 +703,6 @@ Release templates.
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
-  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-  {{-  $proto := (lower (or .Values.camundaHub.console.readinessProbe.scheme .Values.console.readinessProbe.scheme)) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace (or .Values.camundaHub.console.service.managementPort .Values.console.service.managementPort) }}
-  - name: Console
-    id: console
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict))) }}
-    url: {{ include "camundaPlatform.consoleExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.readinessProbe.probePath .Values.console.readinessProbe.probePath) }}
-    metrics: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.metrics.prometheus .Values.console.metrics.prometheus) }}
-  {{- end }}
   {{- if .Values.identity.enabled }}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}

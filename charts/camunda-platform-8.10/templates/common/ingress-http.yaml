@@ -25,15 +25,6 @@ spec:
     {{- end }}
         paths:
         {{- /* Management Group */ -}}
-          {{- if and (eq (include "camundaHub.consoleEnabled" .) "true") (or .Values.camundaHub.console.contextPath .Values.console.contextPath) }}
-          - backend:
-              service:
-                name: {{ template "console.fullname" . }}
-                port:
-                  number: {{ (or .Values.camundaHub.console.service.port .Values.console.service.port) }}
-            path: {{ (or .Values.camundaHub.console.contextPath .Values.console.contextPath) }}
-            pathType: {{ .Values.global.ingress.pathType }}
-          {{- end }}
           {{- if .Values.identity.enabled }}
           {{- if .Values.global.identity.keycloak.internal }}
           - backend:
