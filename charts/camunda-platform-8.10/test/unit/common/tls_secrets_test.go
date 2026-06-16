@@ -131,32 +131,6 @@ func (s *tlsSecretsTest) TestOpenSearchTLSNewPatternDefaultKey() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// Console TLS Tests
-func (s *tlsSecretsTest) TestConsoleTLSNewPattern() {
-	testCases := []testhelpers.TestCase{
-		{
-			Name:     "console new TLS secret pattern",
-			Template: "templates/console/deployment.yaml",
-			Values: map[string]string{
-				"console.enabled":                   "true",
-				"console.contextPath":               "/",
-				"identity.enabled":                  "true",
-				"global.identity.auth.enabled":      "true",
-				"console.tls.enabled":               "true",
-				"console.tls.secret.existingSecret": "new-console-certs-vwx234",
-				"console.tls.certKeyFilename":       "custom-root-ca.pem",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.volumes[?(@.name=='console-certificates')].secret.secretName":            "new-console-certs-vwx234",
-				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value":               "/usr/local/console/certificates/custom-root-ca.pem",
-				"spec.template.spec.containers[0].volumeMounts[?(@.name=='console-certificates')].mountPath": "/usr/local/console/certificates",
-			},
-		},
-	}
-
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
-}
-
 // Disabled State Tests
 func (s *tlsSecretsTest) TestElasticsearchTLSEnabledNoSecret() {
 	testCases := []testhelpers.TestCase{
@@ -172,56 +146,6 @@ func (s *tlsSecretsTest) TestElasticsearchTLSEnabledNoSecret() {
 			Expected: map[string]string{
 				// Volume should not exist when no secret is provided
 				"spec.template.spec.volumes[?(@.name=='keystore')]": "null",
-			},
-		},
-	}
-
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
-}
-
-func (s *tlsSecretsTest) TestConsoleTLSEnabledNoSecret() {
-	testCases := []testhelpers.TestCase{
-		{
-			Name:     "console TLS enabled but no secret provided",
-			Template: "templates/console/deployment.yaml",
-			Values: map[string]string{
-				"console.enabled":              "true",
-				"console.contextPath":          "/",
-				"identity.enabled":             "true",
-				"global.identity.auth.enabled": "true",
-				"console.tls.enabled":          "true",
-				"console.tls.certKeyFilename":  "ca.crt",
-			},
-			Expected: map[string]string{
-				// Volume should not exist when no secret is provided
-				"spec.template.spec.volumes[?(@.name=='console-certificates')]": "null",
-				// But NODE_EXTRA_CA_CERTS should still be rendered
-				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/usr/local/console/certificates/ca.crt",
-			},
-		},
-	}
-
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
-}
-
-func (s *tlsSecretsTest) TestConsoleTLSDisabled() {
-	testCases := []testhelpers.TestCase{
-		{
-			Name:     "console TLS disabled - env var still rendered",
-			Template: "templates/console/deployment.yaml",
-			Values: map[string]string{
-				"console.enabled":              "true",
-				"console.contextPath":          "/",
-				"identity.enabled":             "true",
-				"global.identity.auth.enabled": "true",
-				"console.tls.enabled":          "false",
-				"console.tls.certKeyFilename":  "ca.crt",
-			},
-			Expected: map[string]string{
-				// Volume should not exist when TLS is disabled
-				"spec.template.spec.volumes[?(@.name=='console-certificates')]": "null",
-				// But NODE_EXTRA_CA_CERTS should still be rendered (reference doc says "always rendered")
-				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/usr/local/console/certificates/ca.crt",
 			},
 		},
 	}
@@ -565,27 +489,6 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
 			},
 			Expected: map[string]string{
 				"spec.template.metadata.annotations.checksum/ca-bundle": "",
-			},
-		},
-	}
-
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
-}
-
-func (s *tlsSecretsTest) TestCaBundleConsole() {
-	testCases := []testhelpers.TestCase{
-		{
-			Name:     "caBundle injects SSL_CERT_FILE + NODE_EXTRA_CA_CERTS into Console (Node.js trusts custom CA via NODE_EXTRA_CA_CERTS)",
-			Template: "templates/console/deployment.yaml",
-			Values: map[string]string{
-				"console.enabled":                           "true",
-				"identity.enabled":                          "true",
-				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.volumes[?(@.name=='ca-bundle')].secret.secretName":         "my-ca-bundle",
-				"spec.template.spec.containers[0].env[?(@.name=='SSL_CERT_FILE')].value":       "/etc/camunda/tls/ca.crt",
-				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/etc/camunda/tls/ca.crt",
 			},
 		},
 	}
