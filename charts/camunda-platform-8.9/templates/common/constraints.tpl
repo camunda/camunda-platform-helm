@@ -266,19 +266,43 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
-  {{/* global.elasticsearch and global.opensearch config warnings */}}
+  {{/* Legacy per-component JKS truststore deprecation
+       (in favour of `global.tls.caBundle.secret.*` PEM bundle, which the
+       chart converts to a PKCS12 truststore at pod start via the caBundle
+       init container — see helm#3498). */}}
+  {{- /* hasSecretConfig (via normalizeSecretConfiguration) checks
+         $config.secret.existingSecret / .inlineSecret — so each "config"
+         binding is the PARENT of the .secret block, not the .secret leaf
+         itself. The pre-existing pair on this list (the two
+         `global.<engine>.tls.secret` paths) had the same bug and never
+         fired in production; this fix enables them as well. */ -}}
   {{- $deprecatedDatabaseTlsOptions := list
-  (dict "path" "global.elasticsearch.tls.secret" "config" .Values.global.elasticsearch.tls.secret)
-  (dict "path" "global.opensearch.tls.secret" "config" .Values.global.opensearch.tls.secret)
+  (dict "path" "global.elasticsearch.tls.secret" "config" .Values.global.elasticsearch.tls)
+  (dict "path" "global.opensearch.tls.secret" "config" .Values.global.opensearch.tls)
+  (dict "path" "global.elasticsearch.tls.jks.secret" "config" .Values.global.elasticsearch.tls.jks)
+  (dict "path" "global.opensearch.tls.jks.secret" "config" .Values.global.opensearch.tls.jks)
+  (dict "path" "orchestration.data.secondaryStorage.elasticsearch.tls.secret" "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)
+  (dict "path" "orchestration.data.secondaryStorage.opensearch.tls.secret" "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)
+  (dict "path" "optimize.database.elasticsearch.tls.secret" "config" .Values.optimize.database.elasticsearch.tls)
+  (dict "path" "optimize.database.opensearch.tls.secret" "config" .Values.optimize.database.opensearch.tls)
   }}
+  {{- /* Direct existingSecret / inlineSecret check rather than going via
+         camundaPlatform.hasSecretConfig — that helper requires BOTH
+         existingSecret AND existingSecretKey to be truthy (because it
+         normalizes for actual secret-ref injection). For a deprecation
+         warning we want to fire when the user has opted into the legacy
+         path AT ALL, including the natural minimal config of setting only
+         existingSecret (existingSecretKey defaults to "" on the
+         secondaryStorage / database paths). */ -}}
   {{- range $deprecatedDatabaseTlsOptions }}
-    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true") }}
+    {{- $secret := (.config).secret -}}
+    {{- if and $secret (or $secret.existingSecret $secret.inlineSecret) }}
         {{- $warningMessage := printf "%s %s %s %s %s"
             "[camunda][warning]"
-            (printf "DEPRECATION: values.yaml is using legacy option '%s'." .path)
-            "This option is deprecated and will be removed in a future version."
-            (printf "Please migrate to the new option: 'orchestration.data.secondaryStorage.(elasticsearch|opensearch).tls.secret.existingSecret'")
-            (printf "or for optimize: 'optimize.database.(elasticsearch|opensearch).tls.secret.existingSecret'")
+            (printf "DEPRECATION: values.yaml is using legacy JKS truststore option '%s'." .path)
+            "This option is deprecated as of chart 14.x and will be removed in a future major release."
+            "Please migrate to 'global.tls.caBundle.secret.{existingSecret,existingSecretKey}', supplying a PEM-encoded CA bundle."
+            "The chart will build the JVM truststore at pod start (no offline keytool needed). Migration: supply a PEM CA bundle to global.tls.caBundle.secret.existingSecret and remove the legacy tls.secret.existingSecret entries plus any -Djavax.net.ssl.trustStore* flags from javaOpts."
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
@@ -299,6 +323,94 @@ The following values inside your values.yaml need to be set but were not:
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
+  {{- end }}
+
+  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
+       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+
+    {{/* (1) A per-component JKS truststore silently wins over caBundle for that
+           component — the init container still builds a truststore the JVM never uses. */}}
+    {{- $jksOverrides := list
+        (dict "comp" "orchestration secondaryStorage.elasticsearch" "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)
+        (dict "comp" "orchestration secondaryStorage.opensearch" "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)
+        (dict "comp" "optimize database.elasticsearch" "config" .Values.optimize.database.elasticsearch.tls)
+        (dict "comp" "optimize database.opensearch" "config" .Values.optimize.database.opensearch.tls)
+        (dict "comp" "global.elasticsearch" "config" .Values.global.elasticsearch.tls)
+        (dict "comp" "global.opensearch" "config" .Values.global.opensearch.tls)
+    }}
+    {{- range $jksOverrides }}
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true" }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but %s also configures a per-component JKS truststore (tls.secret)." .comp)
+            "The JKS takes precedence for that component, so the caBundle is NOT used there (its init container still builds an unused truststore). Remove the per-component tls.secret to switch to the caBundle, or ignore this if the JKS is intentional."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (2) caBundle provides CA trust, not encryption. A plaintext datastore URL
+           means traffic is still unencrypted despite the bundle being set.
+           Orchestration secondaryStorage URLs are full scheme strings;
+           Optimize database URLs are split into a separate .protocol field. */}}
+    {{- range $url := (list .Values.orchestration.data.secondaryStorage.opensearch.url .Values.orchestration.data.secondaryStorage.elasticsearch.url) }}
+      {{- if and $url (hasPrefix "http://" (lower $url)) }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but the secondary-storage URL '%s' is plaintext http://." $url)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the URL to https:// to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+    {{- range $db := (list "opensearch" "elasticsearch") }}
+      {{- $u := index $.Values.optimize.database $db "url" }}
+      {{- if and $u $u.protocol (eq (lower $u.protocol) "http") }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.tls.caBundle is set, but optimize.database.%s.url.protocol is plaintext 'http'." $db)
+            "caBundle provides CA TRUST, not encryption — it does not enable TLS by itself. Set the protocol to https to actually encrypt the connection."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (3) A component-level JAVA_TOOL_OPTIONS env entry overrides (last-wins) the
+           chart's truststore flags, silently breaking JVM trust. */}}
+    {{- $envComponents := list
+        (dict "comp" "orchestration" "env" .Values.orchestration.env)
+        (dict "comp" "optimize" "env" .Values.optimize.env)
+        (dict "comp" "connectors" "env" .Values.connectors.env)
+        (dict "comp" "identity" "env" .Values.identity.env)
+        (dict "comp" "webModeler.restapi" "env" .Values.webModeler.restapi.env)
+    }}
+    {{- range $c := $envComponents }}
+      {{- range $e := $c.env }}
+        {{- if eq $e.name "JAVA_TOOL_OPTIONS" }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "global.tls.caBundle is set, but %s.env sets JAVA_TOOL_OPTIONS directly." $c.comp)
+              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Components that compose JAVA_TOOL_OPTIONS from a 'javaOpts' value (orchestration, optimize) can set that instead — the chart appends its truststore flags to it. (web-modeler restapi's javaOpts feeds JAVA_OPTIONS, a separate variable, so the chart's truststore JAVA_TOOL_OPTIONS is not composed there; don't put trustStore flags in restapi.javaOpts.)"
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (4) Console (Node.js) pins NODE_EXTRA_CA_CERTS to its own
+           console.tls.certKeyFilename when caBundle is unset; once caBundle is
+           set, NODE_EXTRA_CA_CERTS points at the bundle instead, so a configured
+           certKeyFilename no longer contributes trust. */}}
+    {{- if and .Values.console.enabled .Values.console.tls.certKeyFilename }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "global.tls.caBundle is set, so Console's NODE_EXTRA_CA_CERTS now points at the CA bundle and console.tls.certKeyFilename is no longer used for trust."
+          "If that cert's CA must still be trusted, include it in the global.tls.caBundle bundle."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}

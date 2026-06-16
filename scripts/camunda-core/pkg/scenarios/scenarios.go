@@ -69,14 +69,13 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate persistence values.
-	// Note: this list is global across chart versions. Some values resolve to
-	// values files that exist only in 8.10+ — `elasticsearch-self-signed`,
-	// `opensearch-self-signed`, `opensearch-self-signed-os-trust`,
-	// `rdbms-self-signed`. Selecting one of
-	// these against an older chart version passes Validate() but produces no
-	// persistence layer (ResolvePaths skips missing files), so the deploy
-	// proceeds with no TLS wiring. Treated as an 8.10-only scope intentionally;
-	// when 8.10 becomes the only supported series this comment can be removed.
+	// Note: this list is global across chart versions and is version-dependent —
+	// a given values file may exist only in some chart series. For example
+	// `elasticsearch-self-signed-os-trust` exists in 8.8/8.9/8.10, while the
+	// `opensearch-self-signed*` variants exist only in 8.10+. Selecting a value
+	// against a chart version that lacks its values file passes Validate() but
+	// produces no persistence layer (ResolvePaths skips missing files), so the
+	// deploy proceeds with no TLS wiring.
 	validPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "elasticsearch-self-signed-os-trust", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))

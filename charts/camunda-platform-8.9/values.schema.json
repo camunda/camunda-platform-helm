@@ -509,6 +509,101 @@
                     "description": "ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
                     "default": "{{ .Release.Name }}-zeebe"
                 },
+                "tls": {
+                    "type": "object",
+                    "properties": {
+                        "caBundle": {
+                            "type": "object",
+                            "properties": {
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                            "default": "ca.crt"
+                                        }
+                                    }
+                                },
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "opt-in automatic pod rollout on CA rotation. When true, the chart stamps a checksum/ca-bundle pod annotation derived from the CA Secret so the next `helm upgrade` rolls the Java components when the CA changes. OFF by default: it uses Helm's `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace — without it, `helm upgrade` fails to render — and (b) is inert under GitOps tools that render with `helm template` (no cluster access). When off (or in those cases), rotate the CA with `kubectl rollout restart` (see the TLS guide). Trust itself never depends on this flag.",
+                                    "default": false
+                                },
+                                "image": {
+                                    "type": "string",
+                                    "description": "OPTIONAL override for the truststore init-container image. Empty (default) reuses each component's OWN image: it already ships keytool, it is already mirrored in your registry (so this adds no new image dependency in air-gapped installs), and copying its cacerts preserves any CAs baked into a custom build. Set this only if a component image lacks keytool — the value is used verbatim (NOT prefixed with global.image.registry), so include your registry/mirror path if needed.",
+                                    "default": ""
+                                },
+                                "imagePullPolicy": {
+                                    "type": "string",
+                                    "description": "pull policy for the init-container image. Empty (default) inherits global.image.pullPolicy.",
+                                    "default": ""
+                                },
+                                "containerSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "runAsUser": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "runAsGroup": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": false
+                                        },
+                                        "readOnlyRootFilesystem": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "capabilities": {
+                                            "type": "object",
+                                            "properties": {
+                                                "drop": {
+                                                    "type": "array",
+                                                    "description": "",
+                                                    "default": [
+                                                        "ALL"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "identity": {
                     "type": "object",
                     "properties": {
