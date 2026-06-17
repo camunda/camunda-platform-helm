@@ -60,6 +60,8 @@ jobs:
             yq
       - name: Add Go bin directory to PATH
         run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Install release-tools
+        run: make install.release-tools
       - name: Install readme-generator-for-helm
         run: |
           # renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
@@ -114,7 +116,6 @@ jobs:
       - name: Generate version matrix
         run: |
           set -euo pipefail
-          make install.release-tools
           make helm.dependency-update chartPath="${CHANGED_CHARTS}"
           for chartPath in ${CHANGED_CHARTS}; do
             app="${chartPath#charts/camunda-platform-}"
