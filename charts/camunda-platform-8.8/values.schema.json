@@ -2718,6 +2718,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -2728,6 +2733,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -5295,6 +5305,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -5305,6 +5320,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
