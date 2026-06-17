@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -62,6 +63,27 @@ type ChartYAML struct {
 // chartVersionPattern extracts the chart version number (e.g., "8.9") from a matchFileName path
 // like "charts/camunda-platform-8.9/Chart.yaml".
 var chartVersionPattern = regexp.MustCompile(`charts/camunda-platform-(\d+\.\d+)/`)
+
+// minSupportedMinor is the oldest 8.x chart minor still covered by the
+// camunda-platform-images Renovate rules. Charts at minor 8.6 and below are EOL
+// and were dropped from those rules in #6284, so they are exempt from the
+// coverage check in TestGAChartsHavePatchUpdatesEnabled.
+const minSupportedMinor = 7
+
+// isSupportedChart reports whether a chart version like "8.9" is within the
+// supported window (8.7+). Unrecognized forms return true so they are checked
+// rather than silently skipped.
+func isSupportedChart(version string) bool {
+	parts := strings.SplitN(version, ".", 2)
+	if len(parts) != 2 {
+		return true
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return true
+	}
+	return minor >= minSupportedMinor
+}
 
 // TestAlphaVersioningConsistency validates that Renovate alpha versioning rules
 // only reference chart versions that are actually still in alpha.
@@ -153,8 +175,11 @@ func TestGAChartsHavePatchUpdatesEnabled(t *testing.T) {
 		}
 	}
 
-	// For each GA chart, verify its values-latest.yaml is referenced in at least one rule
+	// For each supported GA chart, verify its values-latest.yaml is referenced in at least one rule
 	for _, cv := range gaCharts {
+		if !isSupportedChart(cv) {
+			continue
+		}
 		valuesLatestPath := fmt.Sprintf("charts/camunda-platform-%s/values-latest.yaml", cv)
 		found := false
 		for _, f := range patchRuleFileNames {
