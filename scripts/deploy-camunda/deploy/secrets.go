@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
@@ -26,19 +27,24 @@ import (
 //
 // The returned map also contains `vault_secret_mapping` so the caller can feed
 // it into mapper.Generate without touching the process environment.
-func generateTestSecrets(envFile string, existingEnv map[string]string) (map[string]string, error) {
-	text := func() (string, error) {
-		const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-		result := make([]byte, 32)
-		for i := range result {
-			num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
-			if err != nil {
-				return "", fmt.Errorf("crypto/rand failed: %w", err)
-			}
-			result[i] = chars[num.Int64()]
+// RandomSecret returns a cryptographically-random 32-character alphanumeric
+// string, suitable for scaffolding local dev credentials (e.g. the `config init`
+// wizard's Postgres password). Shared with generateTestSecrets.
+func RandomSecret() (string, error) {
+	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	result := make([]byte, 32)
+	for i := range result {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			return "", fmt.Errorf("crypto/rand failed: %w", err)
 		}
-		return string(result), nil
+		result[i] = chars[num.Int64()]
 	}
+	return string(result), nil
+}
+
+func generateTestSecrets(envFile string, existingEnv map[string]string) (map[string]string, error) {
+	text := RandomSecret
 
 	firstUserPwd, err := text()
 	if err != nil {
@@ -71,30 +77,13 @@ func generateTestSecrets(envFile string, existingEnv map[string]string) (map[str
 		}
 	}
 
-	// Add vault secret mapping.
-	secrets["vault_secret_mapping"] = "" +
-		"ci/path DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;" +
-		"ci/path DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;" +
-		"ci/path DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;" +
-		"ci/path DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;" +
-		"ci/path IDP_AWS_ACCESSKEY;" +
-		"ci/path IDP_AWS_BUCKET_NAME;" +
-		"ci/path IDP_AWS_REGION;" +
-		"ci/path IDP_AWS_SECRETKEY;" +
-		"ci/path IDP_GCP_SERVICE_ACCOUNT;" +
-		"ci/path IDP_GCP_VERTEX_BUCKET_NAME;" +
-		"ci/path IDP_GCP_VERTEX_PROJECT_ID;" +
-		"ci/path IDP_GCP_DOCUMENT_AI_PROJECT_ID;" +
-		"ci/path IDP_GCP_DOCUMENT_AI_PROCESSOR_ID;" +
-		"ci/path IDP_GCP_DOCUMENT_AI_REGION;" +
-		"ci/path IDP_GCP_VERTEX_REGION;" +
-		"ci/path IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY;" +
-		"ci/path IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;" +
-		"ci/path IDP_AZURE_AI_FOUNDRY_ENDPOINT;" +
-		"ci/path IDP_AZURE_AI_FOUNDRY_KEY;" +
-		"ci/path IDP_AZURE_OPEN_AI_ENDPOINT;" +
-		"ci/path IDP_AZURE_OPEN_AI_KEY;" +
-		"ci/path OPENAI_API_KEY;"
+	// Add vault secret mapping (loaded from the embedded data file so the var
+	// list is editable as data instead of a recompiled string literal).
+	mapping, err := embeddedTestSecretMapping()
+	if err != nil {
+		return nil, err
+	}
+	secrets["vault_secret_mapping"] = mapping
 
 	// Persist to .env file
 	targetEnvFile := envFile
@@ -118,6 +107,35 @@ func generateTestSecrets(envFile string, existingEnv map[string]string) (map[str
 	}
 
 	return secrets, nil
+}
+
+// ScaffoldTestSecrets generates the random test secrets (identity user
+// passwords + Keycloak client secret) and persists them to envFile, preserving
+// any values that already exist. It is the exported entry point used by the
+// `config init` wizard so first-time setup yields a working .env without the
+// caller having to run a full deploy with --auto-generate-secrets. Returns the
+// names of the secret keys now present in the file.
+func ScaffoldTestSecrets(envFile string) ([]string, error) {
+	if envFile == "" {
+		envFile = ".env"
+	}
+	existing, err := env.ReadFile(envFile)
+	if err != nil {
+		return nil, err
+	}
+	secrets, err := generateTestSecrets(envFile, existing)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(secrets))
+	for k := range secrets {
+		if k == "vault_secret_mapping" {
+			continue
+		}
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
 // renderTestEnvFile generates the E2E test .env file by calling render-e2e-env.sh.

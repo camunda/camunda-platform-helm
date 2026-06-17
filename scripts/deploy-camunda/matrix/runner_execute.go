@@ -18,6 +18,41 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 )
 
+// companionChartsForEntry builds the companion chart list for a matrix entry
+// from its ci-test-config dependencies. Values file paths are resolved relative
+// to the repo root; chart references are resolved to absolute paths when they
+// point at an existing local directory, otherwise passed through as remote
+// repo/chart names. Shared by the deploy path (executeEntry) and the dry-run
+// preflight so both see the same companion env-var requirements.
+func companionChartsForEntry(entry Entry, repoRoot string) []config.CompanionChart {
+	if len(entry.Dependencies) == 0 {
+		return nil
+	}
+	charts := make([]config.CompanionChart, 0, len(entry.Dependencies))
+	for _, dep := range entry.Dependencies {
+		chartRef := dep.Chart
+		version := dep.Version
+		localChartPath := filepath.Join(repoRoot, dep.Chart)
+		if info, err := os.Stat(localChartPath); err == nil && info.IsDir() {
+			chartRef = localChartPath
+			version = "" // --version is only meaningful for remote charts
+		}
+		cc := config.CompanionChart{
+			ChartRef:    chartRef,
+			Version:     version,
+			ReleaseName: dep.ReleaseName,
+			EnvVars:     dep.EnvVars,
+			RepoName:    dep.RepoName,
+			RepoURL:     dep.RepoURL,
+		}
+		if dep.ValuesFile != "" {
+			cc.ValuesFile = filepath.Join(repoRoot, dep.ValuesFile)
+		}
+		charts = append(charts, cc)
+	}
+	return charts
+}
+
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
 // The flow determines the execution strategy:
 //   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
@@ -84,6 +119,13 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		LogLevel:    logLevel,
 		Interactive: false,
 		EnvFile:     envFile,
+		// Leave SkipPreflight false so deploy.Execute's fail-fast preflight runs
+		// per entry. By this point flags.CompanionCharts is populated from the
+		// entry's dependencies, so the preflight catches missing companion vars
+		// (e.g. RDBMS_POSTGRESQL_*) and any unset scenario placeholders up front —
+		// with a clear remediation — instead of failing deep in value prep. The
+		// kube reachability probe is skipped in that path, so this adds no network
+		// round-trip on top of the runner's existing docker login + context warmup.
 		Chart: config.ChartFlags{
 			ChartPath:            entry.ChartPath,
 			SkipDependencyUpdate: opts.SkipDependencyUpdate,
@@ -183,33 +225,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	}
 
 	// Wire companion chart dependencies from ci-test-config.yaml.
-	// Values file paths are resolved relative to the repo root.
-	// Chart references are resolved to absolute paths when they point to an
-	// existing local directory under the repo root; otherwise they are passed
-	// through as-is as remote repo/chart names.
-	if len(entry.Dependencies) > 0 {
-		for _, dep := range entry.Dependencies {
-			chartRef := dep.Chart
-			version := dep.Version
-			localChartPath := filepath.Join(opts.RepoRoot, dep.Chart)
-			if info, err := os.Stat(localChartPath); err == nil && info.IsDir() {
-				chartRef = localChartPath
-				version = "" // --version is only meaningful for remote charts
-			}
-			cc := config.CompanionChart{
-				ChartRef:    chartRef,
-				Version:     version,
-				ReleaseName: dep.ReleaseName,
-				EnvVars:     dep.EnvVars,
-				RepoName:    dep.RepoName,
-				RepoURL:     dep.RepoURL,
-			}
-			if dep.ValuesFile != "" {
-				cc.ValuesFile = filepath.Join(opts.RepoRoot, dep.ValuesFile)
-			}
-			flags.CompanionCharts = append(flags.CompanionCharts, cc)
-		}
-	}
+	flags.CompanionCharts = append(flags.CompanionCharts, companionChartsForEntry(entry, opts.RepoRoot)...)
 
 	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
 	// which we forward to the matrix-level OnPhaseChange callback.

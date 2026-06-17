@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -362,7 +363,81 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 
 	// Print clean dry-run output.
 	fmt.Fprintln(os.Stdout, formatDryRunOutput(resolved, versions, opts))
+
+	// Run the secrets/env preflight per entry so `--dry-run` can confirm a real
+	// run would pass before anything is deployed. Reuses the same engine and
+	// companion-chart wiring as the live path, so the result matches reality.
+	printDryRunPreflight(resolved, opts)
 	return results
+}
+
+// printDryRunPreflight runs deploy.Preflight for each resolved dry-run entry and
+// prints a per-entry ✓/✗ checklist. The cluster reachability probe is skipped
+// (dry-run shouldn't hit the network); everything else matches what the live
+// deploy would validate.
+func printDryRunPreflight(resolved []dryRunEntry, opts RunOptions) {
+	if len(resolved) == 0 {
+		return
+	}
+	configPath, configFound := "", false
+	if cfgRes, err := config.ResolvePath(""); err == nil && cfgRes != nil {
+		configPath, configFound = cfgRes.Path, cfgRes.Found
+	}
+
+	fmt.Fprintln(os.Stdout, "\n=== Preflight (secrets/env validation) ===")
+	for _, dre := range resolved {
+		flags := &config.RuntimeFlags{
+			EnvFile: dre.envFile,
+			Chart: config.ChartFlags{
+				ChartPath: dre.entry.ChartPath,
+				RepoRoot:  opts.RepoRoot,
+			},
+			Deployment: config.DeploymentFlags{
+				Scenario:     dre.entry.Scenario,
+				Scenarios:    []string{dre.entry.Scenario},
+				ScenarioPath: filepath.Join(dre.entry.ChartPath, "test/integration/scenarios/chart-full-setup"),
+				Platform:     dre.platform,
+				Flow:         dre.entry.Flow,
+			},
+			Ingress: config.IngressFlags{IngressHostname: dre.ingressHost},
+			Auth:    config.AuthFlags{Auth: dre.entry.Auth},
+			Test:    config.TestFlags{KubeContext: dre.kubeCtx},
+			// Selection drives the layered values resolution so the scenario-env
+			// check scans the same persistence/identity/feature layers the deploy
+			// composes (where placeholders like $VENOM_CLIENT_ID live).
+			Selection: config.SelectionFlags{
+				Identity:     dre.identity,
+				Persistence:  dre.persistence,
+				TestPlatform: dre.platform,
+				Features:     dre.features,
+				InfraType:    dre.infraType,
+			},
+			Docker: config.DockerFlags{
+				DockerUsername:       opts.DockerUsername,
+				DockerPassword:       opts.DockerPassword,
+				EnsureDockerRegistry: dre.ensureDockerRegistry,
+				DockerHubUsername:    opts.DockerHubUsername,
+				DockerHubPassword:    opts.DockerHubPassword,
+				EnsureDockerHub:      dre.ensureDockerHub,
+			},
+			CompanionCharts: companionChartsForEntry(dre.entry, opts.RepoRoot),
+		}
+
+		report := deploy.Preflight(context.Background(), flags, deploy.PreflightOptions{
+			ConfigPath:           configPath,
+			ConfigFound:          configFound,
+			SkipKubeReachability: true,
+		})
+
+		status := "OK"
+		if !report.OK() {
+			status = "NEEDS ATTENTION"
+		}
+		fmt.Fprintf(os.Stdout, "\n%s (%s) — %s\n", dre.entry.Scenario, dre.namespace, status)
+		var buf bytes.Buffer
+		report.Render(&buf)
+		fmt.Fprint(os.Stdout, buf.String())
+	}
 }
 
 // Style helpers for dry-run output. These wrap logging.Emphasize so colors

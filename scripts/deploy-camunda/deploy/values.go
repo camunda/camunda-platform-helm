@@ -373,8 +373,21 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
 // overrides. The returned map is used as values.Options.EnvOverrides so that
 // parallel calls to values.Process never touch (or race on) the real process env.
 func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (map[string]string, error) {
+	// 0. Seed mapping-rule client ID defaults for Keycloak. These mirror the
+	// workflow-level env defaults in .github/workflows/test-integration-runner.yaml
+	// ("VENOM_CLIENT_ID: venom" / "CONNECTORS_CLIENT_ID: connectors"), which make
+	// keycloak scenarios deploy in CI without anyone supplying these. Local
+	// deploy-camunda runs otherwise lack them and fail in prepareScenarioValues
+	// on the $VENOM_CLIENT_ID/$CONNECTORS_CLIENT_ID placeholders in the
+	// persistence/identity layers. Seeded at the lowest precedence: the process
+	// environment and .env (steps 1–2) override them, and OIDC/Entra entries
+	// override with the real app GUIDs via flags.ExtraEnv (step 4).
+	envMap := map[string]string{
+		"VENOM_CLIENT_ID":      "venom",
+		"CONNECTORS_CLIENT_ID": "connectors",
+	}
+
 	// 1. Snapshot the current process environment as the baseline.
-	envMap := make(map[string]string)
 	for _, entry := range os.Environ() {
 		if k, v, ok := strings.Cut(entry, "="); ok {
 			envMap[k] = v
@@ -834,7 +847,11 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if mapping == "" {
 			mapping = envMap["vault_secret_mapping"]
 		}
-		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
+		generate := mapper.Generate
+		if flags.Secrets.StrictSecrets {
+			generate = mapper.GenerateStrict
+		}
+		if err := generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
 			os.RemoveAll(tempDir) // Cleanup on error
 			return nil, fmt.Errorf("failed to generate vault secrets: %w", err)
 		}

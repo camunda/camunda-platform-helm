@@ -23,10 +23,25 @@ type Metadata struct {
 	Labels map[string]string `yaml:"labels"`
 }
 
+// Generate renders a Kubernetes Secret from the mapping. Environment variables
+// that are unset or empty are skipped with a warning (the resulting Secret
+// simply omits those keys). Use GenerateStrict to fail instead.
 func Generate(mapping, secretName, outputPath string, envOverrides ...map[string]string) error {
+	return generate(mapping, secretName, outputPath, false, envOverrides...)
+}
+
+// GenerateStrict behaves like Generate but returns an error if any variable
+// referenced by the mapping is unset or empty, so CI can refuse to ship an
+// incomplete Secret rather than discovering the gap when a pod crashes.
+func GenerateStrict(mapping, secretName, outputPath string, envOverrides ...map[string]string) error {
+	return generate(mapping, secretName, outputPath, true, envOverrides...)
+}
+
+func generate(mapping, secretName, outputPath string, strict bool, envOverrides ...map[string]string) error {
 	logging.Logger.Debug().
 		Str("secretName", secretName).
 		Str("outputPath", outputPath).
+		Bool("strict", strict).
 		Msg("Generating secret from mapping")
 
 	// Parse the mapping and derive env var names to include in the Secret
@@ -53,19 +68,25 @@ func Generate(mapping, secretName, outputPath string, envOverrides ...map[string
 
 	// Collect non-empty env vars
 	stringData := make(map[string]string)
+	var missing []string
 	for _, name := range envVarNames {
 		if name == "" {
 			continue
 		}
 		val := lookupEnv(name)
 		if val == "" {
-			// Skip empty values to avoid creating empty keys
-			logging.Logger.Debug().Str("var", name).Msg("Environment variable empty or missing, skipping")
+			// The Secret would silently omit this key — warn so it isn't
+			// discovered later as a missing env var inside a crashing pod.
+			missing = append(missing, name)
+			logging.Logger.Warn().Str("var", name).Msg("Environment variable empty or missing, omitting from secret")
 			continue
 		}
 		stringData[name] = val
 	}
-	logging.Logger.Info().Int("mappedCount", len(stringData)).Msg("Mapped environment variables to secret")
+	if len(missing) > 0 && strict {
+		return fmt.Errorf("strict mode: %d mapped variable(s) unset or empty: %s", len(missing), strings.Join(missing, ", "))
+	}
+	logging.Logger.Info().Int("mappedCount", len(stringData)).Int("missing", len(missing)).Msg("Mapped environment variables to secret")
 
 	// Build Labels
 	labels := map[string]string{
@@ -98,6 +119,15 @@ func Generate(mapping, secretName, outputPath string, envOverrides ...map[string
 	}
 
 	return nil
+}
+
+// RequiredEnvVars returns the de-duplicated list of environment variable names
+// referenced by the given vault-secret mapping, in declaration order. This is
+// exactly the set that Generate attempts to read from the environment, exposed
+// so that preflight tooling can validate their presence before a deployment
+// rather than discovering an incomplete Secret at runtime.
+func RequiredEnvVars(mapping string) []string {
+	return dedupePreserveOrder(parseMapping(mapping))
 }
 
 // parseMapping extracts the env var names from the provided mapping.
