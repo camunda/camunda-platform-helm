@@ -347,3 +347,30 @@ jobs:
             -f description="Contributor License Agreement is signed." \
             -f target_url="https://cla-assistant.io/${{ github.repository }}"
 
+  # Report release-chores status for non-release PRs and merge queue events.
+  # For release-please PRs, chart-release-chores.yaml owns this status.
+  # For all other PRs, chores are not applicable — report success immediately.
+  # For merge queue commits, chores were verified on the PR — re-report success.
+  report-release-chores-skip:
+    name: "Report release-chores status (skip)"
+    if: >-
+      ${{
+        github.event_name == 'merge_group' ||
+        (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--'))
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report release-chores as not applicable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            desc="Merge queue: release-chores verified on PR before queuing."
+          else
+            desc="Not a release PR — release-chores not required."
+          fi
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state="success" \
+            -f context="release-chores" \
+            -f description="$desc"
+
