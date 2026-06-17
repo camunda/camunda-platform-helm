@@ -183,6 +183,12 @@ type RuntimeFlags struct {
 	EnvFile     string
 	Interactive bool
 
+	// ConfigPath is the config file path resolved during flag merging (honoring
+	// --config); ConfigFound reports whether it exists on disk. Consumed by the
+	// fail-fast preflight's config-file check.
+	ConfigPath  string
+	ConfigFound bool
+
 	// SkipPreflight disables the fail-fast secrets/env preflight that
 	// deploy.Execute runs before any cluster mutation. The matrix runner sets
 	// this true because it performs its own pre-dispatch docker login and

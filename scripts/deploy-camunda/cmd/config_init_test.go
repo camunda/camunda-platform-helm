@@ -72,6 +72,13 @@ func TestConfigInitWizard(t *testing.T) {
 	if profile["repoRoot"] != "/tmp/repo" {
 		t.Errorf("repoRoot = %v, want /tmp/repo", profile["repoRoot"])
 	}
+
+	// The doctor-after-init checklist must reach the cobra output writer (not
+	// bare os.Stdout), otherwise it is invisible to callers capturing output.
+	// The "config file" check line is rendered by report.Render into `out`.
+	if got := out.String(); !strings.Contains(got, "config file") {
+		t.Errorf("doctor checklist not captured in command output; got:\n%s", got)
+	}
 }
 
 func TestConfigInitScaffoldsRDBMS(t *testing.T) {

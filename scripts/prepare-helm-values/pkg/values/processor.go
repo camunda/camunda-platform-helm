@@ -264,9 +264,13 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 // IsSecretName reports whether an environment variable name looks like it holds
 // a secret value (key, secret, password, or token), so callers can mask it in
 // human-facing output. The heuristic is intentionally simple and case-insensitive.
+// The "KEYCLOAK" token is stripped before the "KEY" check so KEYCLOAK_* hostnames
+// and realms (not secrets) are not masked; KEYCLOAK_*_SECRET/_PASSWORD still match
+// the other checks.
 func IsSecretName(name string) bool {
 	upper := strings.ToUpper(name)
-	return strings.Contains(upper, "KEY") ||
+	deKeycloaked := strings.ReplaceAll(upper, "KEYCLOAK", "")
+	return strings.Contains(deKeycloaked, "KEY") ||
 		strings.Contains(upper, "SECRET") ||
 		strings.Contains(upper, "PASSWORD") ||
 		strings.Contains(upper, "TOKEN")

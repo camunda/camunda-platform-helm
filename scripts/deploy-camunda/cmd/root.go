@@ -114,6 +114,11 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// Hand the resolved config path to the preflight via flags.
+			if cfgRes != nil {
+				flags.ConfigPath = cfgRes.Path
+				flags.ConfigFound = cfgRes.Found
+			}
 
 			// Auto-detect repoRoot from CWD if not set by CLI or config.
 			// Soft fallback — repoRoot is optional for deploy, so errors are non-fatal.

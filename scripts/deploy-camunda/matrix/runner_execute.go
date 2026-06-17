@@ -227,6 +227,16 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// Wire companion chart dependencies from ci-test-config.yaml.
 	flags.CompanionCharts = append(flags.CompanionCharts, companionChartsForEntry(entry, opts.RepoRoot)...)
 
+	// Populate the vault secret mapping up front so the fail-fast preflight sees
+	// it; prepareScenarioValues otherwise resolves it only after preflight runs.
+	if flags.Secrets.AutoGenerateSecrets {
+		if mapping, err := deploy.TestSecretMapping(); err == nil {
+			flags.Secrets.VaultSecretMapping = mapping
+		} else {
+			logging.Logger.Warn().Err(err).Msg("Could not load embedded vault secret mapping for preflight validation")
+		}
+	}
+
 	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
 	// which we forward to the matrix-level OnPhaseChange callback.
 	if opts.OnPhaseChange != nil {

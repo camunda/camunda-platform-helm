@@ -135,17 +135,28 @@ func effectiveEnv(flags *config.RuntimeFlags) map[string]string {
 func scenarioDeployEnv(flags *config.RuntimeFlags, baseEnv map[string]string) map[string]string {
 	scenario := firstScenario(flags)
 	if scenario == "" || flags.Chart.ChartPath == "" {
-		return baseEnv
+		return withScenarioSeeds(baseEnv)
 	}
 	scenarioCtx, err := generateScenarioContext(scenario, flags)
 	if err != nil || scenarioCtx == nil {
-		return baseEnv
+		return withScenarioSeeds(baseEnv)
 	}
 	env, err := buildScenarioEnv(scenarioCtx, flags)
 	if err != nil || env == nil {
-		return baseEnv
+		return withScenarioSeeds(baseEnv)
 	}
 	return env
+}
+
+// withScenarioSeeds returns a new map of baseEnv overlaid on scenarioEnvSeeds(),
+// so a fallback env carries the same low-precedence seeds buildScenarioEnv adds
+// at step 0. baseEnv is not mutated.
+func withScenarioSeeds(baseEnv map[string]string) map[string]string {
+	merged := scenarioEnvSeeds()
+	for k, v := range baseEnv {
+		merged[k] = v
+	}
+	return merged
 }
 
 // firstScenario returns the first scenario name from flags, honoring both the
@@ -283,11 +294,20 @@ func checkVaultMapping(flags *config.RuntimeFlags, envMap map[string]string) Che
 	if len(missing) == 0 {
 		return Check{Name: "vault secret mapping", Status: StatusOK, Detail: fmt.Sprintf("all %d mapped vars set", len(present))}
 	}
+	// Severity mirrors the deploy: --strict-secrets (mapper.GenerateStrict)
+	// hard-fails on unset mapped vars; the default mapper.Generate omits them
+	// with a warning.
+	status := StatusWarn
+	remediation := "set the listed vars in your .env or environment (the generated Secret silently drops unset keys)"
+	if flags.Secrets.StrictSecrets {
+		status = StatusFail
+		remediation = "set the listed vars — --strict-secrets makes any unset mapped var a hard error"
+	}
 	return Check{
 		Name:        "vault secret mapping",
-		Status:      StatusFail,
+		Status:      status,
 		Detail:      fmt.Sprintf("%d/%d vars unset: %s", len(missing), len(required), strings.Join(missing, ", ")),
-		Remediation: "set the listed vars in your .env or environment (the generated Secret silently drops unset keys)",
+		Remediation: remediation,
 		Missing:     missing,
 	}
 }

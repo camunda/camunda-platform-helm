@@ -22,6 +22,13 @@ type testSecretMappingDoc struct {
 // is emitted as one comma-keyed entry ("<path> VAR1,VAR2,...") rather than
 // repeating the path per variable. The result is consumed by
 // vault-secret-mapper, whose parser accepts comma-separated keys.
+// TestSecretMapping exposes the embedded vault_secret_mapping string to callers
+// outside this package (the matrix runner). It returns the same mapping
+// prepareScenarioValues resolves at deploy time.
+func TestSecretMapping() (string, error) {
+	return embeddedTestSecretMapping()
+}
+
 func embeddedTestSecretMapping() (string, error) {
 	var doc testSecretMappingDoc
 	if err := yaml.Unmarshal(testSecretMappingYAML, &doc); err != nil {

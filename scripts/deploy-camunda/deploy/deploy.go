@@ -27,9 +27,13 @@ func runFailFastPreflight(ctx context.Context, flags *config.RuntimeFlags) error
 	if flags.SkipPreflight {
 		return nil
 	}
-	configPath, found := "", false
-	if cfgRes, err := config.ResolvePath(""); err == nil && cfgRes != nil {
-		configPath, found = cfgRes.Path, cfgRes.Found
+	// Prefer the path resolved by the root command; fall back to auto-discovery
+	// for callers that don't populate it (e.g. tests).
+	configPath, found := flags.ConfigPath, flags.ConfigFound
+	if configPath == "" {
+		if cfgRes, err := config.ResolvePath(""); err == nil && cfgRes != nil {
+			configPath, found = cfgRes.Path, cfgRes.Found
+		}
 	}
 	report := Preflight(ctx, flags, PreflightOptions{
 		ConfigPath:           configPath,

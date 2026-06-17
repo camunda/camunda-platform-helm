@@ -64,7 +64,7 @@ checklist without prompting.`,
 					return fmt.Errorf("no config file found at %s; run `deploy-camunda config init` interactively to create one", cfgRes.Path)
 				}
 				fmt.Fprintf(out, "Using config: %s\n", cfgRes.Path)
-				return runDoctorAfterInit(ctx, cfgRes)
+				return runDoctorAfterInit(ctx, out, cfgRes)
 			}
 
 			reader := bufio.NewReader(cmd.InOrStdin())
@@ -181,7 +181,7 @@ checklist without prompting.`,
 
 			// 4. Finish with the doctor checklist.
 			fmt.Fprintln(out, "Running doctor preflight…")
-			return runDoctorAfterInit(ctx, cfgRes)
+			return runDoctorAfterInit(ctx, out, cfgRes)
 		},
 	}
 
@@ -193,7 +193,7 @@ checklist without prompting.`,
 // runDoctorAfterInit loads the freshly-written config and prints a preflight
 // checklist, reusing the same Preflight engine as the doctor command. It never
 // returns an error for failing checks — init is advisory — but surfaces them.
-func runDoctorAfterInit(ctx context.Context, cfgRes *config.ConfigResolution) error {
+func runDoctorAfterInit(ctx context.Context, out io.Writer, cfgRes *config.ConfigResolution) error {
 	var f config.RuntimeFlags
 	if _, _, err := config.LoadAndMerge(configFile, true, &f); err != nil {
 		return err
@@ -205,11 +205,11 @@ func runDoctorAfterInit(ctx context.Context, cfgRes *config.ConfigResolution) er
 	})
 	var buf bytes.Buffer
 	report.Render(&buf)
-	fmt.Print(buf.String())
+	fmt.Fprint(out, buf.String())
 	if !report.OK() {
-		fmt.Println("\nSome checks need attention — re-run `deploy-camunda doctor` after fixing them.")
+		fmt.Fprintln(out, "\nSome checks need attention — re-run `deploy-camunda doctor` after fixing them.")
 	} else {
-		fmt.Println("\nAll checks passed — you're ready to deploy.")
+		fmt.Fprintln(out, "\nAll checks passed — you're ready to deploy.")
 	}
 	return nil
 }
@@ -280,6 +280,10 @@ func readLineCtx(ctx context.Context, r *bufio.Reader) (string, error) {
 		line string
 		err  error
 	}
+	// Buffered so this goroutine's send never blocks: on ctx cancellation the
+	// ReadString stays parked (bufio reads aren't context-aware) until stdin
+	// yields a newline/EOF or the process exits — an accepted leak for this
+	// single-run CLI.
 	ch := make(chan res, 1)
 	go func() {
 		line, err := r.ReadString('\n')

@@ -38,18 +38,25 @@ func TestCheckVaultMapping(t *testing.T) {
 	tests := []struct {
 		name    string
 		mapping string
+		strict  bool
 		envMap  map[string]string
 		want    CheckStatus
 		missing int
 	}{
-		{"no mapping", "", nil, StatusOK, 0},
-		{"all set", "ci/path A;ci/path B;", map[string]string{"A": "1", "B": "2"}, StatusOK, 0},
-		{"some missing", "ci/path A;ci/path B;", map[string]string{"A": "1"}, StatusFail, 1},
+		{"no mapping", "", false, nil, StatusOK, 0},
+		{"all set", "ci/path A;ci/path B;", false, map[string]string{"A": "1", "B": "2"}, StatusOK, 0},
+		// Non-strict: the mapper omits unset vars from the Secret, so a missing
+		// var is a warning, not a deploy-blocker.
+		{"some missing non-strict warns", "ci/path A;ci/path B;", false, map[string]string{"A": "1"}, StatusWarn, 1},
+		// Strict: mapper.GenerateStrict hard-fails on unset vars, so the preflight
+		// must too.
+		{"some missing strict fails", "ci/path A;ci/path B;", true, map[string]string{"A": "1"}, StatusFail, 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			flags := &config.RuntimeFlags{}
 			flags.Secrets.VaultSecretMapping = tt.mapping
+			flags.Secrets.StrictSecrets = tt.strict
 			c := checkVaultMapping(flags, tt.envMap)
 			if c.Status != tt.want {
 				t.Errorf("status = %q, want %q (detail: %s)", c.Status, tt.want, c.Detail)
@@ -336,11 +343,13 @@ func TestReportOKAndMissingEnv(t *testing.T) {
 }
 
 func TestRunFailFastPreflight(t *testing.T) {
-	// A vault mapping with an unset var makes the preflight fail.
+	// A strict vault mapping with an unset var makes the preflight hard-fail
+	// (non-strict would only warn — see TestCheckVaultMapping).
 	failing := func() *config.RuntimeFlags {
 		f := &config.RuntimeFlags{}
 		f.Test.KubeContext = "test-ctx" // OK without reachability probe
 		f.Secrets.VaultSecretMapping = "ci/path DEFINITELY_UNSET_VAR_XYZ;"
+		f.Secrets.StrictSecrets = true
 		return f
 	}
 
