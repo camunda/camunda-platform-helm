@@ -14,7 +14,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.11.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.0#parameters)
+- Helm values: [13.11.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.1#parameters)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -31,13 +31,12 @@ Camunda images:
 
 Non-Camunda images:
 
-- busybox:1.36
 - docker.io/bitnamilegacy/elasticsearch:8.18.0
 - docker.io/bitnamilegacy/os-shell:12-debian-12-r43
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-managed/deployment/helm/configure/registry-and-images/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:26.6.1
 - registry.camunda.cloud/vendor-ee/elasticsearch:8.19.16
@@ -50,10 +49,10 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 For quick verification of the Helm chart integrity using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-13.11.0.tgz \
-  --bundle "camunda-platform-13.11.0-cosign-bundle.json" \
+cosign verify-blob camunda-platform-13.11.1.tgz \
+  --bundle "camunda-platform-13.11.1-cosign-bundle.json" \
   --certificate-identity-regexp "https://github.com/camunda/camunda-platform-helm" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
-For detailed verification instructions, check the steps in the `camunda-platform-13.11.0-cosign-verify.sh` file.
+For detailed verification instructions, check the steps in the `camunda-platform-13.11.1-cosign-verify.sh` file.

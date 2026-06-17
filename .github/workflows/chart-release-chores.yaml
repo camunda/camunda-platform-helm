@@ -64,7 +64,9 @@ jobs:
             helm-ct
             yq
       - name: Add Go bin directory to PATH
-        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+        run: |
+          echo "GOBIN=$HOME/go/bin" >> "$GITHUB_ENV"
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
       - name: Install release-tools
         run: make install.release-tools
       - name: Install readme-generator-for-helm

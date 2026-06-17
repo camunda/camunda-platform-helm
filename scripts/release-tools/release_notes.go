@@ -225,12 +225,17 @@ func releaseNotesFooter(_ context.Context, chartDir string) error {
 		"```\n\n" +
 		"For detailed verification instructions, check the steps in the `" + chartReleaseName + "-cosign-verify.sh` file.\n"
 
-	f, err := os.OpenFile(filepath.Join(chartDir, "RELEASE-NOTES.md"), os.O_APPEND|os.O_WRONLY, 0o644)
+	notesPath := filepath.Join(chartDir, "RELEASE-NOTES.md")
+	existing, err := os.ReadFile(notesPath)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	if _, err := f.WriteString(footer); err != nil {
+	// Cut from the first footer marker so re-runs replace rather than stack.
+	body := string(existing)
+	if i := strings.Index(body, "### Release Info"); i >= 0 {
+		body = body[:i]
+	}
+	if err := os.WriteFile(notesPath, []byte(body+footer), 0o644); err != nil {
 		return err
 	}
 	fmt.Print(footer)
