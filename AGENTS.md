@@ -8,7 +8,7 @@ Use this file as the practical guide. For architecture and CI context, also read
 - NEVER assume templates are identical across chart versions — always check the target version first.
 - NEVER edit golden files by hand — use `make go.update-golden-only chartPath=...`.
 - NEVER implement CI logic (>20 lines) in bash — use Go scripts in `scripts/` with unit tests.
-- NEVER write reasoning/"why"/narration comments — comments explain only non-obvious HOW. Rationale and decisions belong in an ADR under `docs/adr/`, human-authored; agents NEVER create or edit ADRs automatically or unprompted. Keep only required structured comments: Apache license headers, `## @param`/`## @extra`, the `{{- /* NOTE */ -}}` helper convention, and lint/build pragmas (`//nolint`, `//go:build`, `# yamllint disable`).
+- NEVER write reasoning/"why"/narration comments — comments explain only non-obvious HOW. Architectural rationale belongs in an ADR under `docs/adr/`, human-authored; tactical rationale (bug-fix defaults, timeouts, label choices) goes in the PR body or commit message. Agents NEVER create or edit ADRs proactively. Keep only required structured comments: Apache license headers, `## @param`/`## @extra`, the `{{- /* NOTE */ -}}` helper convention, and lint/build pragmas (`//nolint`, `//go:build`, `# yamllint disable`, `# yamllint disable-line`, `# shellcheck disable`).
 - ALWAYS run `make helm.dependency-update chartPath=...` before testing/linting a chart.
 - ALWAYS keep diffs small and version-scoped.
 - ALWAYS preserve existing patterns before introducing new abstractions.
