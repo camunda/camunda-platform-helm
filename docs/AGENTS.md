@@ -22,6 +22,9 @@ Applies on top of root `AGENTS.md`. Active when working inside `docs/`.
 If a user requests an ADR for a change that clearly does not warrant one (per
 the maintainer-guide table), ask before drafting.
 
+Never author or amend an ADR proactively — only when a human explicitly asks.
+If you notice rationale that would otherwise become a "why" code comment, surface it to the human as a candidate ADR; only draft/amend the ADR if explicitly asked.
+
 ## PR title for ADR changes
 
 Follow root `AGENTS.md` → "PR title type: CI-enforced constraint".
