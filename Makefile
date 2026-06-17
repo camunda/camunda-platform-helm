@@ -300,6 +300,38 @@ helm.schema-update:
 			&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
 	done
 
+# helm.schema-validate-values: verify chart values files only use keys described by the schema.
+# Self-contained: regenerates the schema from values.yaml + values.schema.extra.json into a
+# temp file (does NOT trust or mutate the committed values.schema.json) and validates against
+# it. Verification gate only — never adds additionalProperties:false to the shipped schema (#4564).
+.PHONY: helm.schema-validate-values
+helm.schema-validate-values:
+	root="$$(git rev-parse --show-toplevel)"; \
+	for chart_dir in $(chartPath); do \
+		if [ ! -f "$${chart_dir}/values.schema.json" ]; then \
+			echo "\n[$@] $${chart_dir}: no values.schema.json, skipping"; \
+			continue; \
+		fi; \
+		echo "\n[$@] Chart dir: $${chart_dir}"; \
+		abs="$${root}/$${chart_dir}"; \
+		tmp_schema="$$(mktemp)"; \
+		readme-generator --values "$${abs}/values.yaml" --schema "$${tmp_schema}" || { rm -f "$${tmp_schema}"; exit 1; }; \
+		if [ -f "$${abs}/values.schema.extra.json" ]; then \
+			jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
+				"$${tmp_schema}" "$${abs}/values.schema.extra.json" > "$${tmp_schema}.merged" \
+				&& mv "$${tmp_schema}.merged" "$${tmp_schema}" || { rm -f "$${tmp_schema}" "$${tmp_schema}.merged"; exit 1; }; \
+		fi; \
+		files=""; \
+		for f in values.yaml values-local.yaml values-enterprise.yaml values-bitnami-legacy.yaml; do \
+			[ -f "$${abs}/$$f" ] && files="$${files} $${abs}/$$f"; \
+		done; \
+		( cd "$${root}/scripts/validate-values-schema" && \
+			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} ); \
+		status=$$?; \
+		rm -f "$${tmp_schema}"; \
+		[ $$status -eq 0 ] || exit $$status; \
+	done
+
 # helm.get-images: list all images in the chart.
 .PHONY: helm.get-images
 helm.get-images:
