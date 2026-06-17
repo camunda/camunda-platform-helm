@@ -285,6 +285,9 @@ jobs:
     job-wide `$GITHUB_ENV`, exposing it to all subsequent steps (and any third-party action)
     in the job. Always set `exportEnv: false` and consume via `${{ steps.<id>.outputs.<NAME> }}`
     in the consuming step's `with:` input or a step-scoped `env:` block (see Pattern 2).
+    **Exception:** the per-scenario mapping step in `integration-test-setup` keeps
+    `exportEnv: true` because the following `vault-secret-mapper` `go run` resolves the mapped
+    secrets through `os.Getenv`; `exportEnv: false` there would yield an empty Secret manifest.
 
 ---
 
