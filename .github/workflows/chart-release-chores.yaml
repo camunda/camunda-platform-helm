@@ -9,9 +9,14 @@ on:
       - '**/.release-please-config.json'
       - '**/.release-please-manifest.json'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
+  statuses: write
 
 jobs:
   chores:
@@ -60,6 +65,8 @@ jobs:
             yq
       - name: Add Go bin directory to PATH
         run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Install release-tools
+        run: make install.release-tools
       - name: Install readme-generator-for-helm
         run: |
           # renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
@@ -114,7 +121,6 @@ jobs:
       - name: Generate version matrix
         run: |
           set -euo pipefail
-          make install.release-tools
           make helm.dependency-update chartPath="${CHANGED_CHARTS}"
           for chartPath in ${CHANGED_CHARTS}; do
             app="${chartPath#charts/camunda-platform-}"
@@ -144,3 +150,33 @@ jobs:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
           message: "chore(release): update chart files + version matrix"
+
+  report-status:
+    name: "Report release-chores status"
+    if: always()
+    needs: [chores]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+      - name: Get HEAD SHA after chores commit
+        id: head
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Post release-chores status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          result="${{ needs.chores.result }}"
+          if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+            state="success"
+            desc="Release chores completed (release notes, version matrix updated)."
+          else
+            state="failure"
+            desc="Release chores failed — release notes or version matrix may not be updated. Re-run the workflow."
+          fi
+          gh api "repos/${{ github.repository }}/statuses/${{ steps.head.outputs.sha }}" \
+            -f state="$state" \
+            -f context="release-chores" \
+            -f description="$desc"
