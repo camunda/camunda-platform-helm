@@ -87,8 +87,6 @@ identity:
 optimize:
   enabled: true
   contextPath: "/optimize"
-  # Must match orchestration.partitionCount (1) — Optimize imports per Zeebe
-  # partition and would otherwise block waiting for partitions 2 and 3.
   partitionCount: "1"
   # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
   resources:
@@ -126,24 +124,8 @@ connectors:
     limits:
       cpu: 1000m
       memory: 1400Mi
-  # timeoutSeconds: 5 matches orchestration/optimize above. The connectors
-  # /actuator/health/readiness endpoint aggregates downstream checks
-  # (processDefinitionImport + zeebeClient) with show-details:always, so a 1s
-  # timeout spuriously fires under CI CPU limits during the ~37s JVM startup +
-  # job-worker registration spike — observed as probe "context deadline exceeded"
-  # and, on the liveness probe, healthy-container restarts. periodSeconds: 5
-  # matches the 5s import retry cadence; startup failureThreshold raised to 60 to
-  # keep the same 300s total budget (5s*60) for slow upgrade-minor scenarios.
   startupProbe:
     enabled: true
-    # probePath uses /liveness (app-up), NOT the default /readiness. Connectors'
-    # readiness aggregates downstream checks (zeebeClient topology + a successful
-    # processDefinitionImport), so a /readiness startup probe stays 503 for the
-    # entire time Zeebe takes to become healthy. If that exceeds the startup
-    # budget (period*failureThreshold), the kubelet KILLS and restarts a healthy
-    # container ("needs a restart to become ready"). /liveness succeeds once the
-    # process is up (~37s); the readinessProbe below still gates Ready on Zeebe,
-    # but readiness failures never restart the pod.
     probePath: /actuator/health/liveness
     initialDelaySeconds: 10
     periodSeconds: 5
@@ -256,10 +238,6 @@ orchestration:
     secondaryStorage:
       type: elasticsearch
   contextPath: "/orchestration"
-  # Single-broker CI topology. No integration scenario tests HA/failover, so a
-  # 1-broker / 1-partition / RF-1 cluster removes raft leader election, partition
-  # replication, and the 3-JVM CPU contention on shared CI nodes — the dominant
-  # avoidable cost in Zeebe readiness (the deploy floor).
   clusterSize: "1"
   partitionCount: "1"
   replicationFactor: "1"
@@ -273,8 +251,6 @@ orchestration:
     limits:
       cpu: 2000m
       memory: 2000Mi
-  # initialDelaySeconds lowered 30->10: single broker is health-ready well
-  # before 30s, so the floor only delays readiness detection.
   startupProbe:
     enabled: true
     initialDelaySeconds: 10

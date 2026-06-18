@@ -70,10 +70,6 @@ runs:
             ".github/config/external-secret/external-secret-certificates.yaml" \
             "$TEST_NAMESPACE"
 
-          # Remove any ExternalSecrets targeting integration-test-credentials that were
-          # applied by a previous chart version. Two Orphan ExternalSecrets targeting the
-          # same Secret cause ESO to overwrite each other's keys on reconcile, making the
-          # wait below time out in upgrade flows (e.g. 8.7 ES wipes 8.8 keys and vice-versa).
           stale_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
             jq -r '.items[] | select(.spec.target.name == "integration-test-credentials") | .metadata.name')"
           if [[ -n "$stale_es" ]]; then
@@ -81,8 +77,6 @@ runs:
             echo "$stale_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
           fi
 
-          # Apply external secret configuration for integration tests
-          # Check for chart-specific external secret first (better approach)
           CHART_SPECIFIC_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials.yaml"
 
           if [[ -f "$CHART_SPECIFIC_FILE" ]]; then
@@ -117,7 +111,6 @@ runs:
             "$TEST_NAMESPACE"
 
           # Apply integration test credentials (creates integration-test-credentials secret)
-          # Remove stale ExternalSecrets from previous chart versions first (same race fix as GKE).
           stale_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
             jq -r '.items[] | select(.spec.target.name == "integration-test-credentials") | .metadata.name')"
           if [[ -n "$stale_es" ]]; then
