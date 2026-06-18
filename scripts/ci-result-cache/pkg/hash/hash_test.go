@@ -158,6 +158,45 @@ func TestCompute_WorkflowFilesIncluded(t *testing.T) {
 	}
 }
 
+func TestCompute_DeployerAndCorePackagesIncluded(t *testing.T) {
+	for _, pkg := range []string{
+		filepath.Join("scripts", "camunda-deployer"),
+		filepath.Join("scripts", "camunda-core"),
+	} {
+		t.Run(pkg, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			chartDir := filepath.Join(tmpDir, "charts", "camunda-platform-8.9")
+			if err := os.MkdirAll(chartDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, filepath.Join(chartDir, "Chart.yaml"), "name: test\n")
+
+			pkgDir := filepath.Join(tmpDir, pkg, "pkg", "deployer")
+			if err := os.MkdirAll(pkgDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, filepath.Join(pkgDir, "helm.go"), "package deployer\n")
+
+			hash1, err := Compute(tmpDir, "8.9")
+			if err != nil {
+				t.Fatalf("first Compute: %v", err)
+			}
+
+			// Modify a file in the shared Go package.
+			writeFile(t, filepath.Join(pkgDir, "helm.go"), "package deployer\n// changed\n")
+
+			hash2, err := Compute(tmpDir, "8.9")
+			if err != nil {
+				t.Fatalf("second Compute: %v", err)
+			}
+
+			if hash1 == hash2 {
+				t.Errorf("expected hash to change when a file under %s changes", pkg)
+			}
+		})
+	}
+}
+
 func TestCompute_MissingChartDirNoError(t *testing.T) {
 	tmpDir := t.TempDir()
 

@@ -181,11 +181,13 @@ jobs:
             fi
           fi
 
-      # Annotate matrix with cache status (merge_group only).
+      # Annotate matrix with cache status (pull_request and merge_group).
       # Scenarios that already passed for the same content hash are marked cached=true
       # and will be routed to a fast-path job, skipping the full GKE deploy+test cycle.
+      # The gate is pr-head-sha != '' (set by resolve-pr-sha only for pull_request and
+      # merge_group), so push/schedule/dispatch runs still execute the full matrix.
       - name: Setup Go for cache annotation
-        if: github.event_name == 'merge_group' && steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: scripts/ci-result-cache/go.mod
@@ -194,7 +196,7 @@ jobs:
 
       - name: Annotate matrix with cache status
         id: annotate-cache
-        if: github.event_name == 'merge_group' && steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

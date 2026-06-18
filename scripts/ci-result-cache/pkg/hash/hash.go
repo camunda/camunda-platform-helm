@@ -4,6 +4,8 @@
 // of an integration test scenario. It covers:
 //   - The chart directory (charts/camunda-platform-{version}/)
 //   - The deploy-camunda scripts (scripts/deploy-camunda/)
+//   - The deployer/core packages that deploy-camunda depends on
+//     (scripts/camunda-deployer/, scripts/camunda-core/)
 //   - Specific workflow files used in the integration test path
 //
 // If any of these files change, the hash changes, invalidating cached results.
@@ -43,6 +45,8 @@ func Compute(repoRoot, version string) (string, error) {
 	paths := []string{
 		filepath.Join("charts", fmt.Sprintf("camunda-platform-%s", version)),
 		filepath.Join("scripts", "deploy-camunda"),
+		filepath.Join("scripts", "camunda-deployer"),
+		filepath.Join("scripts", "camunda-core"),
 	}
 
 	for _, relPath := range paths {
