@@ -1,5 +1,25 @@
 # Changelog
 
+## [14.5.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.4.1...camunda-platform-8.9-14.5.0) (2026-06-17)
+
+
+### Features
+
+* **8.9:** backport global.tls.caBundle CA-trust support ([#6365](https://github.com/camunda/camunda-platform-helm/issues/6365)) ([a6f38df](https://github.com/camunda/camunda-platform-helm/commit/a6f38dffb12476369236cc364c45642b77524e33))
+
+
+### Documentation
+
+* **version-matrix:** fix and version Bitnami Enterprise guide URL ([#6216](https://github.com/camunda/camunda-platform-helm/issues/6216)) ([c7b738f](https://github.com/camunda/camunda-platform-helm/commit/c7b738fcd3b91d875a2907970d5a382e489a2806))
+
+
+### Dependencies
+
+* update camunda-platform-images (minor) ([#6256](https://github.com/camunda/camunda-platform-helm/issues/6256)) ([f24e25a](https://github.com/camunda/camunda-platform-helm/commit/f24e25a2b368e2631771016434822d541b4c8f77))
+* update camunda-platform-images (patch) ([#6367](https://github.com/camunda/camunda-platform-helm/issues/6367)) ([0973851](https://github.com/camunda/camunda-platform-helm/commit/0973851ba691c0d87f2fc0c0d49caac47dacf667))
+* update patch-updates (patch) ([#6369](https://github.com/camunda/camunda-platform-helm/issues/6369)) ([d174237](https://github.com/camunda/camunda-platform-helm/commit/d174237c317a8c9ebf2cd8f79e39ece8c8f1536d))
+* update patch-updates (patch) ([#6381](https://github.com/camunda/camunda-platform-helm/issues/6381)) ([aeb9da1](https://github.com/camunda/camunda-platform-helm/commit/aeb9da1bdc96923a0bdd1bffc33538c243b97d46))
+
 ## [14.4.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.4.0...camunda-platform-8.9-14.4.1) (2026-06-11)
 
 
