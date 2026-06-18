@@ -76,17 +76,6 @@ runs:
       echo "CLUSTER_NAME=${INFRA_CLUSTER_NAME}" | tee -a $GITHUB_ENV
       echo "AWS_PROFILE=${INFRA_AWS_PROFILE}" | tee -a $GITHUB_ENV
 
-      # OpenSearch (AWS) — also set consumer-facing env vars for existing workflow references.
-      INFRA_OPENSEARCH_AWS_HOST=$(yq '.opensearch.aws.host' "$INFRA_CONFIG")
-      INFRA_OPENSEARCH_AWS_PROTOCOL=$(yq '.opensearch.aws.protocol' "$INFRA_CONFIG")
-      INFRA_OPENSEARCH_AWS_PORT=$(yq '.opensearch.aws.port' "$INFRA_CONFIG")
-      echo "INFRA_OPENSEARCH_AWS_HOST=${INFRA_OPENSEARCH_AWS_HOST}" | tee -a $GITHUB_ENV
-      echo "INFRA_OPENSEARCH_AWS_PROTOCOL=${INFRA_OPENSEARCH_AWS_PROTOCOL}" | tee -a $GITHUB_ENV
-      echo "INFRA_OPENSEARCH_AWS_PORT=${INFRA_OPENSEARCH_AWS_PORT}" | tee -a $GITHUB_ENV
-      echo "OPENSEARCH_HOST=${INFRA_OPENSEARCH_AWS_HOST}" | tee -a $GITHUB_ENV
-      echo "OPENSEARCH_PROTOCOL=${INFRA_OPENSEARCH_AWS_PROTOCOL}" | tee -a $GITHUB_ENV
-      echo "OPENSEARCH_PORT=${INFRA_OPENSEARCH_AWS_PORT}" | tee -a $GITHUB_ENV
-
       # PostgreSQL — also set consumer-facing env var.
       INFRA_PG_HOST=$(yq '.postgresql.jdbc-host' "$INFRA_CONFIG")
       INFRA_PG_PORT=$(yq '.postgresql.jdbc-port' "$INFRA_CONFIG")

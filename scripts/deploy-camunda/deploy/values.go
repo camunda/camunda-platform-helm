@@ -532,7 +532,7 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 
 		fmt.Fprintf(&helpMsg, "Hint: Use the new flags directly. Examples:\n")
 		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke\n")
-		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence opensearch --test-platform gke --features multitenancy\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence opensearch-embedded --test-platform gke --features multitenancy\n")
 		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke --qa --image-tags\n")
 	} else {
 		// Legacy single-file structure

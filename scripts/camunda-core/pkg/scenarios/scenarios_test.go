@@ -96,10 +96,10 @@ func TestMapScenarioToConfig(t *testing.T) {
 
 		// Persistence derivation
 		{
-			name:            "opensearch maps to opensearch persistence",
+			name:            "opensearch maps to opensearch-embedded persistence",
 			scenario:        "opensearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch",
+			wantPersistence: "opensearch-embedded",
 			wantPlatform:    "gke",
 		},
 		{
@@ -257,7 +257,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "combined qa + opensearch + eks",
 			scenario:        "qa-opensearch-eks",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch",
+			wantPersistence: "opensearch-embedded",
 			wantPlatform:    "eks",
 			wantQA:          true,
 		},
@@ -357,10 +357,10 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "opensearch-external rejected (shared CI infra decommissioned)",
+			name: "opensearch rejected (shared CI infra decommissioned)",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
-				Persistence: "opensearch-external",
+				Persistence: "opensearch",
 				Platform:    "gke",
 			},
 			wantErr: true,
@@ -413,10 +413,10 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "mcp with opensearch is valid",
+			name: "mcp with opensearch-embedded is valid",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
-				Persistence: "opensearch",
+				Persistence: "opensearch-embedded",
 				Platform:    "gke",
 				Features:    []string{"mcp"},
 			},
@@ -467,7 +467,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		filepath.Join(tmpDir, "values", "base-qa.yaml"),
 		filepath.Join(tmpDir, "values", "identity", "keycloak.yaml"),
 		filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"),
-		filepath.Join(tmpDir, "values", "persistence", "opensearch.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "opensearch-embedded.yaml"),
 		filepath.Join(tmpDir, "values", "platform", "gke.yaml"),
 		filepath.Join(tmpDir, "values", "platform", "eks.yaml"),
 		filepath.Join(tmpDir, "values", "features", "multitenancy.yaml"),
@@ -587,7 +587,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch.yaml, eks.yaml
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch-embedded.yaml, eks.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
@@ -596,7 +596,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			"values/base.yaml",
 			"values/base-qa.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/opensearch.yaml",
+			"values/persistence/opensearch-embedded.yaml",
 			"values/platform/eks.yaml",
 		}
 		for i, suffix := range expectedSuffixes {

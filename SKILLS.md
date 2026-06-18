@@ -82,7 +82,7 @@ deploy-camunda \
   --namespace $NS --release $RELEASE \
   --scenario chart-full-setup \
   --identity keycloak \
-  --persistence opensearch \
+  --persistence opensearch-embedded \
   --features multitenancy,documentstore \
   --qa
 ```
@@ -679,7 +679,7 @@ deploy-camunda --chart-path ./charts/camunda-platform-8.9 \
 
 deploy-camunda --chart-path ./charts/camunda-platform-8.9 \
   --namespace test-os --release camunda --ingress-subdomain test-os \
-  --identity keycloak --persistence opensearch
+  --identity keycloak --persistence opensearch-embedded
 
 # Run e2e against each in parallel
 c8e2e test --target SM-8.9 --endpoint https://test-es.ci.distro.ultrawombat.com --feature-flags smoke --follow &
