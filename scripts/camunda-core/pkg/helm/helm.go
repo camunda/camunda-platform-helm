@@ -14,6 +14,39 @@ func Run(ctx context.Context, args []string, workDir string) error {
 	return executil.RunCommand(ctx, "helm", args, nil, workDir)
 }
 
+// RunCaptureStderr runs a helm command like Run but also returns the accumulated
+// stderr output so callers can classify transient errors for retry decisions.
+func RunCaptureStderr(ctx context.Context, args []string, workDir string) (string, error) {
+	return executil.RunCommandCaptureStderr(ctx, "helm", args, nil, workDir)
+}
+
+// IsTransientHelmError reports whether the stderr text from a failed helm command
+// indicates a transient infrastructure error that is safe to retry.
+func IsTransientHelmError(stderr string) bool {
+	if stderr == "" {
+		return false
+	}
+	lower := strings.ToLower(stderr)
+	transientHints := []string{
+		"internal server error",
+		"server is currently unable to handle the request",
+		"connection reset by peer",
+		"i/o timeout",
+		"tls handshake timeout",
+		"service unavailable",
+		"too many requests",
+		"etcdserver: request timed out",
+		"net/http: request canceled",
+		"eof",
+	}
+	for _, hint := range transientHints {
+		if strings.Contains(lower, hint) {
+			return true
+		}
+	}
+	return false
+}
+
 var (
 	waitFlagOnce  sync.Once
 	waitFlagValue string

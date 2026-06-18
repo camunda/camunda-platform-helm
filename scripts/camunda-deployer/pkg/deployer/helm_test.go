@@ -85,18 +85,25 @@ func TestShortenPaths_NoAbsolutePaths(t *testing.T) {
 // and returns a restore function that must be called (typically via defer) to
 // reset the originals. The wait-flag detector is pinned to "--wait" so tests
 // don't depend on the local Helm CLI version.
+//
+// helmRunCapturing is stubbed as a wrapper around runFn that returns empty stderr,
+// so existing tests that verify error propagation are unaffected. To test retry
+// behaviour, override helmRunCapturing directly after calling stubHelm.
 func stubHelm(
 	runFn func(ctx context.Context, args []string, workDir string) error,
 	repoAddFn func(ctx context.Context, name, url string) error,
 	repoUpdateFn func(ctx context.Context) error,
 ) func() {
-	origRun, origAdd, origUpdate, origWait := helmRun, helmRepoAdd, helmRepoUpdate, helmWaitFlag
+	origRun, origCapturing, origAdd, origUpdate, origWait := helmRun, helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag
 	helmRun = runFn
+	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+		return "", runFn(ctx, args, workDir)
+	}
 	helmRepoAdd = repoAddFn
 	helmRepoUpdate = repoUpdateFn
 	helmWaitFlag = func(context.Context) string { return "--wait" }
 	return func() {
-		helmRun, helmRepoAdd, helmRepoUpdate, helmWaitFlag = origRun, origAdd, origUpdate, origWait
+		helmRun, helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag = origRun, origCapturing, origAdd, origUpdate, origWait
 	}
 }
 
@@ -432,5 +439,70 @@ func TestDeployCompanionChart_HelmErrorType(t *testing.T) {
 	}
 	if !strings.Contains(helmErr.Command, "helm upgrade --install") {
 		t.Errorf("HelmError.Command = %q, want it to contain full command", helmErr.Command)
+	}
+}
+
+func TestUpgradeInstall_TransientRetry(t *testing.T) {
+	// First call returns a transient API-server 500; second call succeeds.
+	// helmUpgradeRetryDelay is patched to zero so the test doesn't actually sleep.
+	origDelay := helmUpgradeRetryDelay
+	helmUpgradeRetryDelay = 0
+	defer func() { helmUpgradeRetryDelay = origDelay }()
+
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error { return nil },
+		func(ctx context.Context, name, url string) error { return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	attempts := 0
+	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+		attempts++
+		if attempts == 1 {
+			return "Error: unable to continue with install: Internal Server Error", fmt.Errorf("exit status 1")
+		}
+		return "", nil
+	}
+
+	err := upgradeInstall(context.Background(), types.Options{
+		ReleaseName: "integration",
+		ChartPath:   "/charts/camunda-platform-8.9",
+		Namespace:   "ns",
+	})
+
+	if err != nil {
+		t.Fatalf("expected success after retry, got: %v", err)
+	}
+	if attempts != 2 {
+		t.Errorf("expected 2 helm invocations (1 transient + 1 retry), got %d", attempts)
+	}
+}
+
+func TestUpgradeInstall_NoRetryOnNonTransient(t *testing.T) {
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error { return nil },
+		func(ctx context.Context, name, url string) error { return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	attempts := 0
+	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+		attempts++
+		return "Error: render error in \"camunda/templates/foo.yaml\": template: undefined variable", fmt.Errorf("exit status 1")
+	}
+
+	err := upgradeInstall(context.Background(), types.Options{
+		ReleaseName: "integration",
+		ChartPath:   "/charts/camunda-platform-8.9",
+		Namespace:   "ns",
+	})
+
+	if err == nil {
+		t.Fatal("expected error for non-transient failure, got nil")
+	}
+	if attempts != 1 {
+		t.Errorf("expected exactly 1 helm invocation for non-transient error, got %d", attempts)
 	}
 }

@@ -268,6 +268,71 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 	}, err
 }
 
+// RunCommandCaptureStderr runs a command like RunCommand (logging stdout as info and
+// stderr as warnings) but also returns the accumulated stderr text so callers can
+// inspect it for transient error classification without re-running the command.
+func RunCommandCaptureStderr(ctx context.Context, name string, args []string, env []string, workingDir string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	if workingDir != "" {
+		cmd.Dir = workingDir
+	}
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", err
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return "", err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+
+	baseLogger := logging.Logger
+	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
+		b := baseLogger.With()
+		for k, v := range fields {
+			b = b.Str(k, v)
+		}
+		baseLogger = b.Logger()
+	}
+
+	var stderrBuf strings.Builder
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		sc := bufio.NewScanner(stdout)
+		for sc.Scan() {
+			prefix := logging.PrefixFromContext(ctx, name)
+			baseLogger.Info().Msg(prefix + sc.Text())
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		sc := bufio.NewScanner(stderrPipe)
+		for sc.Scan() {
+			line := sc.Text()
+			prefix := logging.PrefixFromContext(ctx, name)
+			baseLogger.Warn().Msg(prefix + line)
+			mu.Lock()
+			stderrBuf.WriteString(line)
+			stderrBuf.WriteByte('\n')
+			mu.Unlock()
+		}
+	}()
+
+	wg.Wait()
+	return stderrBuf.String(), cmd.Wait()
+}
+
 // FieldsNoEmpty splits on whitespace and removes empty entries.
 func FieldsNoEmpty(s string) []string {
 	ff := strings.Fields(s)

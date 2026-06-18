@@ -5,19 +5,53 @@ import (
 	"fmt"
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
+	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-deployer/pkg/types"
 	"strings"
+	"time"
 )
 
 // Package-level function variables for helm operations. These default to the
 // real implementations but can be swapped in tests to avoid shelling out to
 // the helm binary.
 var (
-	helmRun        = helm.Run
-	helmRepoAdd    = helm.RepoAdd
-	helmRepoUpdate = helm.RepoUpdate
-	helmWaitFlag   = helm.WaitFlag
+	helmRun          = helm.Run
+	helmRunCapturing = helm.RunCaptureStderr
+	helmRepoAdd      = helm.RepoAdd
+	helmRepoUpdate   = helm.RepoUpdate
+	helmWaitFlag     = helm.WaitFlag
 )
+
+// helmUpgradeRetryDelay is the wait between retry attempts for transient API-server errors.
+// Exposed as a var so tests can set it to zero without sleeping.
+var helmUpgradeRetryDelay = 10 * time.Second
+
+// helmRunWithRetry calls helmRunCapturing and retries once when helm reports a transient
+// Kubernetes API-server error (e.g. 500 during pre-flight resource lookup).
+// helm upgrade --install is idempotent, so retrying is always safe. We only retry on
+// transient stderr patterns to avoid doubling the helm --timeout on genuine failures.
+func helmRunWithRetry(ctx context.Context, args []string) (string, error) {
+	for attempt := 1; attempt <= 2; attempt++ {
+		stderr, err := helmRunCapturing(ctx, args, "")
+		if err == nil {
+			return stderr, nil
+		}
+		if attempt == 1 && helm.IsTransientHelmError(stderr) {
+			logging.Logger.Warn().
+				Err(err).
+				Msg("helm upgrade --install hit a transient error, retrying in 10s")
+			select {
+			case <-ctx.Done():
+				return stderr, err
+			case <-time.After(helmUpgradeRetryDelay):
+			}
+			continue
+		}
+		return stderr, err
+	}
+	// unreachable
+	return "", nil
+}
 
 // HelmError is a structured error for helm command failures that separates
 // the high-level failure reason from the full command details. This allows
@@ -138,13 +172,12 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 		args = append(args, o.ExtraArgs...)
 	}
 
-	// Execute via thin helm wrapper
-	err := helmRun(ctx, args, "")
-	if err != nil {
+	_, runErr := helmRunWithRetry(ctx, args)
+	if runErr != nil {
 		return &HelmError{
 			Reason:  "helm upgrade --install failed",
 			Command: "helm " + formatArgs(args),
-			Cause:   err,
+			Cause:   runErr,
 		}
 	}
 	return nil
@@ -217,13 +250,13 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		args = append(args, "-f", cc.ValuesFile)
 	}
 
-	err := helmRun(ctx, args, "")
-	if err != nil {
-		return &HelmError{
-			Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
-			Command: "helm " + formatArgs(args),
-			Cause:   err,
-		}
+	_, runErr := helmRunWithRetry(ctx, args)
+	if runErr == nil {
+		return nil
 	}
-	return nil
+	return &HelmError{
+		Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
+		Command: "helm " + formatArgs(args),
+		Cause:   runErr,
+	}
 }
