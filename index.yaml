@@ -7120,6 +7120,113 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-13.0.0-alpha2/camunda-platform-13.0.0-alpha2.tgz
     version: 13.0.0-alpha2
   - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/bitnamilegacy/elasticsearch:8.17.4
+        docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+        docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+        docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+        docker.io/camunda/connectors-bundle:8.7.21
+        docker.io/camunda/console:8.7.105
+        docker.io/camunda/identity:8.7.20
+        docker.io/camunda/operate:8.7.33
+        docker.io/camunda/optimize:8.7.22
+        docker.io/camunda/tasklist:8.7.33
+        docker.io/camunda/web-modeler-restapi:8.7.22
+        docker.io/camunda/web-modeler-webapp:8.7.22
+        docker.io/camunda/web-modeler-websockets:8.7.22
+        docker.io/camunda/zeebe:8.7.33
+        registry.camunda.cloud/camunda/keycloak:26.3.3
+      camunda.io/component-image-versions: |
+        zeebe: 8.7.33
+        operate: 8.7.33
+        tasklist: 8.7.33
+        identity: 8.7.20
+        optimize: 8.7.22
+        webModeler: 8.7.22
+        connectors: 8.7.21
+        console: 8.7.105
+      camunda.io/helmCLIVersion: 3.20.2
+      camunda.io/imageOverrides: |
+        zeebe: 8.7.33
+        operate: 8.7.33
+        tasklist: 8.7.33
+        console: 8.7.105
+        modeler: 8.7.22
+        connectors: 8.7.21
+        optimize: 8.7.22
+        identity: 8.7.20
+    apiVersion: v2
+    appVersion: 8.7.x
+    created: "2026-06-18T08:21:40.425746734Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 426e1fa4aaaa729150fc1e238efc2b16f9007d189e9658d024da0897c135a688
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.7-12.12.1/camunda-platform-12.12.1.tgz
+    version: 12.12.1
+  - annotations:
       artifacthub.io/changes: |
         - kind: added
           description: "Support password field for jks"
@@ -29273,4 +29380,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-06-18T07:14:38.099377219Z"
+generated: "2026-06-18T08:21:40.426615557Z"
