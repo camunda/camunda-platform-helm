@@ -94,8 +94,7 @@ func stubHelm(
 	repoAddFn func(ctx context.Context, name, url string) error,
 	repoUpdateFn func(ctx context.Context) error,
 ) func() {
-	origRun, origCapturing, origAdd, origUpdate, origWait := helmRun, helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag
-	helmRun = runFn
+	origCapturing, origAdd, origUpdate, origWait := helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag
 	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
 		return "", runFn(ctx, args, workDir)
 	}
@@ -103,7 +102,7 @@ func stubHelm(
 	helmRepoUpdate = repoUpdateFn
 	helmWaitFlag = func(context.Context) string { return "--wait" }
 	return func() {
-		helmRun, helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag = origRun, origCapturing, origAdd, origUpdate, origWait
+		helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag = origCapturing, origAdd, origUpdate, origWait
 	}
 }
 

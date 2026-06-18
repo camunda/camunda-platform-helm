@@ -268,9 +268,10 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 	}, err
 }
 
-// RunCommandCaptureStderr runs a command like RunCommand (logging stdout as info and
-// stderr as warnings) but also returns the accumulated stderr text so callers can
-// inspect it for transient error classification without re-running the command.
+// RunCommandCaptureStderr behaves exactly like RunCommand — honoring the buffer
+// callback in context when present, otherwise logging stdout as info and stderr as
+// warnings — but additionally returns the accumulated stderr text so callers can
+// classify transient errors for retry decisions without re-running the command.
 func RunCommandCaptureStderr(ctx context.Context, name string, args []string, env []string, workingDir string) (string, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	if workingDir != "" {
@@ -293,6 +294,34 @@ func RunCommandCaptureStderr(ctx context.Context, name string, args []string, en
 		return "", err
 	}
 
+	// Only the stderr goroutine writes to stderrBuf, so no locking is needed.
+	var stderrBuf strings.Builder
+
+	bufferCB := getBufferFromContext(ctx)
+	if bufferCB != nil {
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			sc := bufio.NewScanner(stdout)
+			for sc.Scan() {
+				bufferCB("info", sc.Text())
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			sc := bufio.NewScanner(stderrPipe)
+			for sc.Scan() {
+				line := sc.Text()
+				bufferCB("warn", line)
+				stderrBuf.WriteString(line)
+				stderrBuf.WriteByte('\n')
+			}
+		}()
+		wg.Wait()
+		return stderrBuf.String(), cmd.Wait()
+	}
+
 	baseLogger := logging.Logger
 	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
 		b := baseLogger.With()
@@ -302,11 +331,8 @@ func RunCommandCaptureStderr(ctx context.Context, name string, args []string, en
 		baseLogger = b.Logger()
 	}
 
-	var stderrBuf strings.Builder
-	var mu sync.Mutex
 	var wg sync.WaitGroup
 	wg.Add(2)
-
 	go func() {
 		defer wg.Done()
 		sc := bufio.NewScanner(stdout)
@@ -322,10 +348,8 @@ func RunCommandCaptureStderr(ctx context.Context, name string, args []string, en
 			line := sc.Text()
 			prefix := logging.PrefixFromContext(ctx, name)
 			baseLogger.Warn().Msg(prefix + line)
-			mu.Lock()
 			stderrBuf.WriteString(line)
 			stderrBuf.WriteByte('\n')
-			mu.Unlock()
 		}
 	}()
 

@@ -15,7 +15,6 @@ import (
 // real implementations but can be swapped in tests to avoid shelling out to
 // the helm binary.
 var (
-	helmRun          = helm.Run
 	helmRunCapturing = helm.RunCaptureStderr
 	helmRepoAdd      = helm.RepoAdd
 	helmRepoUpdate   = helm.RepoUpdate
@@ -39,7 +38,8 @@ func helmRunWithRetry(ctx context.Context, args []string) (string, error) {
 		if attempt == 1 && helm.IsTransientHelmError(stderr) {
 			logging.Logger.Warn().
 				Err(err).
-				Msg("helm upgrade --install hit a transient error, retrying in 10s")
+				Dur("retryDelay", helmUpgradeRetryDelay).
+				Msg("helm upgrade --install hit a transient error, retrying")
 			select {
 			case <-ctx.Done():
 				return stderr, err
