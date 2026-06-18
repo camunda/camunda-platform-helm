@@ -83,6 +83,10 @@ integration:
       shortname: rdbms
       tier: 2
       enabled: true
+    - id: component-persistence
+      shortname: cprst
+      tier: 2
+      enabled: true
     - id: hub-legacy-install
       shortname: huble
       tier: 2
