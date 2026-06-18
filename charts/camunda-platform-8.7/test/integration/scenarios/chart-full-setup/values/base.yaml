@@ -203,12 +203,12 @@ connectors:
     periodSeconds: 5
     failureThreshold: 5
     timeoutSeconds: 5
+  # Liveness stays disabled (matching the chart default). The connectors liveness
+  # endpoint is broker-dependent, so enabling it would restart connectors whenever
+  # the broker is briefly unavailable — e.g. during a single-broker upgrade roll —
+  # turning a transient outage into a crash-loop. Customers run with this off.
   livenessProbe:
-    enabled: true
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    failureThreshold: 5
-    timeoutSeconds: 5
+    enabled: false
 
 webModeler:
   enabled: true
@@ -367,12 +367,14 @@ zeebeGateway:
     periodSeconds: 10
     failureThreshold: 5
     timeoutSeconds: 1
+  # Liveness stays disabled (matching the chart default). The standalone gateway's
+  # liveness endpoint is broker-aware (cluster/partition-leader awareness, 5m grace),
+  # so enabling it restarts the gateway when the broker is briefly unavailable —
+  # e.g. during a single-broker upgrade roll — driving a crash-loop storm that
+  # saturates the node and stalls the broker's volume reattach. Customers run with
+  # this off, so a plain `helm upgrade` is zero-touch.
   livenessProbe:
-    enabled: true
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    failureThreshold: 5
-    timeoutSeconds: 1
+    enabled: false
   ingress:
     grpc:
       enabled: true
