@@ -107,9 +107,12 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 
 				// then
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
-				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "should use PVC when persistence is enabled")
+				s.Require().NotNil(tmpVolume.Ephemeral, "should use a per-pod ephemeral volume when persistence is enabled")
 				s.Require().Nil(tmpVolume.EmptyDir, "should not use emptyDir when persistence is enabled")
-				s.Require().Equal("camunda-platform-test-webmodeler-data", tmpVolume.PersistentVolumeClaim.ClaimName)
+				s.Require().Nil(tmpVolume.PersistentVolumeClaim, "should not reference a shared PVC when persistence is enabled")
+				spec := tmpVolume.Ephemeral.VolumeClaimTemplate.Spec
+				s.Require().Equal("5Gi", spec.Resources.Requests.Storage().String())
+				s.Require().Equal(corev1.ReadWriteOnce, spec.AccessModes[0])
 			},
 		},
 		{
@@ -178,39 +181,10 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 	}
 }
 
-func TestPVCManifestCreated(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	testCase := testhelpers.TestCase{
-		Name: "TestPVCManifestCreated",
-		Values: map[string]string{
-			"identity.enabled":                      "true",
-			"webModeler.enabled":                    "true",
-			"webModeler.restapi.mail.fromAddress":   "test@test.com",
-			"webModeler.persistence.enabled":        "true",
-			"webModeler.persistence.size":           "5Gi",
-			"webModeler.persistence.accessModes[0]": "ReadWriteOnce",
-		},
-		Verifier: func(t *testing.T, output string, err error) {
-			var pvc corev1.PersistentVolumeClaim
-			helm.UnmarshalK8SYaml(t, output, &pvc)
-			require.Equal(t, "camunda-platform-test-webmodeler-data", pvc.Name)
-			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
-			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
-		},
-	}
-
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/persistentvolumeclaim-restapi.yaml"}, []testhelpers.TestCase{testCase})
-}
-
 // TestDeploymentStrategyDefaultsToRollingUpdate asserts the default strategy
-// is RollingUpdate (preserves zero-downtime upgrade for users with RWX/
-// existingClaim setups). Users with chart-managed RWO PVCs hit a Multi-Attach
-// deadlock with RollingUpdate and must opt into "Recreate" — see
-// TestDeploymentStrategyRecreateOptIn.
+// is RollingUpdate. The restapi /tmp volume is a per-pod ephemeral volume, so
+// rollouts never contend for a shared RWO volume and zero-downtime RollingUpdate
+// is always safe.
 func TestDeploymentStrategyDefaultsToRollingUpdate(t *testing.T) {
 	t.Parallel()
 	chartPath, err := filepath.Abs("../../../")
