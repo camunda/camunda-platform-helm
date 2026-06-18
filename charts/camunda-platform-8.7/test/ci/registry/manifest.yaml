@@ -3,6 +3,18 @@ integration:
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../..
+  flows:
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes the single-broker Zeebe StatefulSet (component=zeebe-broker)
+          before the patch upgrade, keeping its PVC. The image bump would
+          otherwise force an in-place StatefulSet roll whose ReadWriteOnce PD
+          reattach can stall under CI node contention, leaving the lone broker
+          absent past the helm --wait timeout. Recreating fresh moves the
+          detach out of the helm window; every other version uses an
+          equivalent hook.
   scenarios:
     - id: elasticsearch
       shortname: eske
