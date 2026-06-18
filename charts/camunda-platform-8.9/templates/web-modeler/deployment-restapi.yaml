@@ -4,7 +4,7 @@
 {{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
 {{- end -}}
 {{- if and (eq $deploymentStrategy "Recreate") (not .Values.webModeler.persistence.enabled) -}}
-{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true (it avoids a Multi-Attach deadlock on the chart-managed RWO PVC; without persistence it only adds upgrade downtime)" -}}
+{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true. The default chart-managed path uses a per-pod ephemeral volume with no Multi-Attach contention, so Recreate is only useful when existingClaim points to a ReadWriteOnce volume; without persistence it only adds upgrade downtime" -}}
 {{- end -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -197,8 +197,23 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.webModeler.persistence.existingClaim }}
           {{- else if .Values.webModeler.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-webmodeler-data
+          ephemeral:
+            volumeClaimTemplate:
+              {{- with .Values.webModeler.persistence.annotations }}
+              metadata:
+                annotations: {{- toYaml . | nindent 18 }}
+              {{- end }}
+              spec:
+                accessModes: {{ .Values.webModeler.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 18 }}
+                {{- with .Values.webModeler.persistence.storageClassName }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+                {{- with .Values.webModeler.persistence.selector }}
+                selector: {{- toYaml . | nindent 18 }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ .Values.webModeler.persistence.size | default "1Gi" | quote }}
           {{- else }}
           emptyDir: {}
           {{- end }}
