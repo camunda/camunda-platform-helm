@@ -1,5 +1,12 @@
 # Changelog
 
+## [12.12.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.12.0...camunda-platform-8.7-12.12.1) (2026-06-17)
+
+
+### Documentation
+
+* **version-matrix:** fix and version Bitnami Enterprise guide URL ([#6216](https://github.com/camunda/camunda-platform-helm/issues/6216)) ([c7b738f](https://github.com/camunda/camunda-platform-helm/commit/c7b738fcd3b91d875a2907970d5a382e489a2806))
+
 ## [12.12.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.11.0...camunda-platform-8.7-12.12.0) (2026-06-11)
 
 
