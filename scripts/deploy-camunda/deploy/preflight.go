@@ -1,10 +1,5 @@
-// Package deploy preflight.go implements a self-diagnosing check of the
-// secrets/environment setup a deployment needs, mirroring tools like
-// `flyctl doctor` and `gh auth status`. The same checks back both the
-// standalone `deploy-camunda doctor` command and the fail-fast guard that runs
-// before any cluster mutation, so a missing credential surfaces up front with a
-// remediation hint instead of mid-deploy as an ImagePullBackOff or a
-// `kubectl apply` parse error.
+// Package deploy preflight.go runs the secrets/environment checks that back
+// both `deploy-camunda doctor` and the fail-fast guard in deploy.Execute.
 package deploy
 
 import (
@@ -101,10 +96,16 @@ func Preflight(ctx context.Context, flags *config.RuntimeFlags, opts PreflightOp
 	// and companion placeholder checks don't false-positive on values the deploy
 	// supplies itself. Vault-mapping and docker checks use baseEnv — those vars are
 	// never deploy-computed.
+	// Resolve the chart path first: doctor skips root.go's PersistentPreRunE, so
+	// the check both validates the path and rewrites flags.Chart.ChartPath to the
+	// resolved directory the scenario checks below depend on.
+	chartCheck := checkChartPath(flags)
+
 	baseEnv := effectiveEnv(flags)
 	deployEnv := scenarioDeployEnv(flags, baseEnv)
 
 	r.Checks = append(r.Checks, checkConfigFile(opts))
+	r.Checks = append(r.Checks, chartCheck)
 	r.Checks = append(r.Checks, checkKubeContext(ctx, flags, opts))
 	r.Checks = append(r.Checks, checkDockerCredentials(flags, baseEnv)...)
 	r.Checks = append(r.Checks, checkVaultMapping(flags, baseEnv))
@@ -310,6 +311,36 @@ func checkVaultMapping(flags *config.RuntimeFlags, envMap map[string]string) Che
 		Remediation: remediation,
 		Missing:     missing,
 	}
+}
+
+// checkChartPath resolves the configured chart path the same way root.go's
+// PersistentPreRunE does — a relative path is joined against repoRoot — and
+// fails when it does not resolve to a directory. On success it rewrites
+// flags.Chart.ChartPath to the resolved path so the scenario/companion checks
+// scan the same directory a deploy would.
+func checkChartPath(flags *config.RuntimeFlags) Check {
+	path := strings.TrimSpace(flags.Chart.ChartPath)
+	if path == "" {
+		return Check{Name: "chart path", Status: StatusOK, Detail: "no chart configured"}
+	}
+	if !filepath.IsAbs(path) && flags.Chart.RepoRoot != "" {
+		if _, err := os.Stat(path); err != nil {
+			resolved := filepath.Join(flags.Chart.RepoRoot, path)
+			if fi, err := os.Stat(resolved); err == nil && fi.IsDir() {
+				path = resolved
+			}
+		}
+	}
+	if fi, err := os.Stat(path); err != nil || !fi.IsDir() {
+		return Check{
+			Name:        "chart path",
+			Status:      StatusFail,
+			Detail:      fmt.Sprintf("%q does not exist or is not a directory", path),
+			Remediation: "set --repo-root/--chart/--version or --chart-path to a valid chart directory",
+		}
+	}
+	flags.Chart.ChartPath = path
+	return Check{Name: "chart path", Status: StatusOK, Detail: path}
 }
 
 // checkScenarioEnv scans the values file(s) for the selected scenario(s) and

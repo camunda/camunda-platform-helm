@@ -204,6 +204,10 @@ func TestCheckScenarioEnvScansLayeredFiles(t *testing.T) {
 // scenarios fail locally on the $VENOM_CLIENT_ID/$CONNECTORS_CLIENT_ID
 // placeholders. flags.ExtraEnv (used by OIDC/Entra) must still override.
 func TestBuildScenarioEnvSeedsKeycloakClientIDs(t *testing.T) {
+	// Isolate from any real .env in the checkout: buildScenarioEnv now defaults
+	// EnvFile to ".env" in CWD, which would otherwise leak local values over the
+	// seed-override assertions below.
+	t.Chdir(t.TempDir())
 	ctx := &ScenarioContext{}
 	t.Run("seeds keycloak defaults", func(t *testing.T) {
 		env, err := buildScenarioEnv(ctx, &config.RuntimeFlags{})
@@ -226,6 +230,41 @@ func TestBuildScenarioEnvSeedsKeycloakClientIDs(t *testing.T) {
 		}
 		if env["VENOM_CLIENT_ID"] != "entra-guid" {
 			t.Errorf("VENOM_CLIENT_ID = %q, want entra-guid (ExtraEnv must win)", env["VENOM_CLIENT_ID"])
+		}
+	})
+}
+
+func TestCheckChartPath(t *testing.T) {
+	dir := t.TempDir()
+
+	t.Run("no chart configured is OK", func(t *testing.T) {
+		if c := checkChartPath(&config.RuntimeFlags{}); c.Status != StatusOK {
+			t.Errorf("status = %q, want ok", c.Status)
+		}
+	})
+
+	t.Run("nonexistent path fails red", func(t *testing.T) {
+		f := &config.RuntimeFlags{}
+		f.Chart.ChartPath = filepath.Join(dir, "does-not-exist")
+		if c := checkChartPath(f); c.Status != StatusFail {
+			t.Errorf("status = %q, want fail", c.Status)
+		}
+	})
+
+	t.Run("relative path resolves against repoRoot", func(t *testing.T) {
+		chart := filepath.Join(dir, "charts", "camunda-platform-8.10")
+		if err := os.MkdirAll(chart, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		f := &config.RuntimeFlags{}
+		f.Chart.RepoRoot = dir
+		f.Chart.ChartPath = filepath.Join("charts", "camunda-platform-8.10")
+		c := checkChartPath(f)
+		if c.Status != StatusOK {
+			t.Fatalf("status = %q, want ok", c.Status)
+		}
+		if f.Chart.ChartPath != chart {
+			t.Errorf("ChartPath = %q, want resolved %q", f.Chart.ChartPath, chart)
 		}
 	})
 }

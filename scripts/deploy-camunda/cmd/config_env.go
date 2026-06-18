@@ -12,8 +12,9 @@ import (
 )
 
 // newEnvCommand creates `config env`: prints the effective environment a deploy
-// would see and which layer each value came from, with secret values masked.
-// Mirrors `git config --show-origin`.
+// would see, with secret values masked. Default output is two machine-parseable
+// columns (NAME, VALUE); --show-origin adds an ORIGIN column, mirroring
+// `git config` (plain by default, origin column only when asked).
 func newEnvCommand() *cobra.Command {
 	var showOrigin bool
 	var unmask bool
@@ -55,7 +56,7 @@ unless --unmask is passed.`,
 		},
 	}
 
-	cmd.Flags().BoolVar(&showOrigin, "show-origin", true, "Show which layer each value came from")
+	cmd.Flags().BoolVar(&showOrigin, "show-origin", false, "Add an ORIGIN column showing which layer each value came from")
 	cmd.Flags().BoolVar(&unmask, "unmask", false, "Show secret values in clear text (key/secret/password/token)")
 	return cmd
 }

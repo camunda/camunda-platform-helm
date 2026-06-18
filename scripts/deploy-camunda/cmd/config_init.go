@@ -19,6 +19,7 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // newInitCommand creates the `config init` wizard: an interactive first-run
@@ -77,7 +78,7 @@ checklist without prompting.`,
 			}
 			if err := config.CreateDeployment(cfgRes.Path, name); err != nil {
 				// Already-exists is fine — we'll update it in place.
-				if !strings.Contains(err.Error(), "already exists") {
+				if !errors.Is(err, config.ErrDeploymentExists) {
 					return err
 				}
 				fmt.Fprintf(out, "  profile %q already exists — updating it\n", name)
@@ -246,14 +247,45 @@ func promptLine(ctx context.Context, out io.Writer, r *bufio.Reader, label, def 
 }
 
 func promptSecret(ctx context.Context, out io.Writer, r *bufio.Reader, label string) (string, error) {
-	// Note: input is not hidden (matches existing env.Prompt behavior); we simply
-	// never echo the value back afterwards.
 	fmt.Fprintf(out, "%s: ", label)
+	// On a real terminal, read with echo disabled so the secret never appears on
+	// screen or in scrollback. Piped/redirected input (tests, scripts) has
+	// nothing to hide and falls back to the buffered line reader.
+	stdinFd := int(os.Stdin.Fd())
+	if r.Buffered() == 0 && term.IsTerminal(stdinFd) {
+		secret, err := readSecretCtx(ctx, stdinFd)
+		fmt.Fprintln(out)
+		return secret, err
+	}
 	line, err := readLineCtx(ctx, r)
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(line), nil
+}
+
+// readSecretCtx reads an echo-suppressed line from the terminal fd, aborting if
+// ctx is cancelled. Like readLineCtx, the parked term.ReadPassword goroutine is
+// an accepted leak for this single-run CLI.
+func readSecretCtx(ctx context.Context, fd int) (string, error) {
+	type res struct {
+		b   []byte
+		err error
+	}
+	ch := make(chan res, 1)
+	go func() {
+		b, err := term.ReadPassword(fd)
+		ch <- res{b, err}
+	}()
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case rr := <-ch:
+		if rr.err != nil && !errors.Is(rr.err, io.EOF) {
+			return "", rr.err
+		}
+		return strings.TrimSpace(string(rr.b)), nil
+	}
 }
 
 func promptYesNo(ctx context.Context, out io.Writer, r *bufio.Reader, label string, def bool) (bool, error) {

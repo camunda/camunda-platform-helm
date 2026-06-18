@@ -190,10 +190,9 @@ type RuntimeFlags struct {
 	ConfigFound bool
 
 	// SkipPreflight disables the fail-fast secrets/env preflight that
-	// deploy.Execute runs before any cluster mutation. The matrix runner sets
-	// this true because it performs its own pre-dispatch docker login and
-	// kube-context warmup; direct deploys leave it false so missing inputs
-	// surface up front rather than mid-deploy.
+	// deploy.Execute runs before any cluster mutation. Set via --skip-preflight
+	// as an escape hatch; both direct deploys and matrix entries leave it false
+	// so missing inputs surface up front rather than mid-deploy.
 	SkipPreflight bool
 
 	// ChangedFlags tracks which CLI flags were explicitly set by the user.

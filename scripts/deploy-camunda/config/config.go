@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -629,6 +630,10 @@ func GetValue(cfgPath, key string) (string, error) {
 	return formatValue(val), nil
 }
 
+// ErrDeploymentExists is returned by CreateDeployment when the named deployment
+// is already present. Callers match it with errors.Is to take an update path.
+var ErrDeploymentExists = errors.New("deployment already exists")
+
 // CreateDeployment creates a new empty deployment configuration.
 func CreateDeployment(cfgPath, name string) error {
 	content, err := os.ReadFile(cfgPath)
@@ -655,7 +660,7 @@ func CreateDeployment(cfgPath, name string) error {
 
 	// Check if deployment already exists
 	if _, exists := deployments[name]; exists {
-		return fmt.Errorf("deployment %q already exists", name)
+		return fmt.Errorf("deployment %q: %w", name, ErrDeploymentExists)
 	}
 
 	// Create empty deployment
