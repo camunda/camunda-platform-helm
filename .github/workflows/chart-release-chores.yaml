@@ -152,6 +152,7 @@ jobs:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
           message: "chore(release): update chart files + version matrix"
+          push_options: '--force-with-lease'
 
   report-status:
     name: "Report release-chores status"
