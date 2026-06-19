@@ -399,10 +399,10 @@ _wait_for_ingress_ready() {
     while IFS= read -r path; do
       [[ -z "$path" ]] && continue
       local http_code
-      http_code=$(curl -sk -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 "${resolve_flag[@]}" "https://${hostname}${path}" 2>/dev/null || echo "000")
+      http_code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 "${resolve_flag[@]}" "https://${hostname}${path}" 2>/dev/null || echo "000")
       status_summary+=" ${path}=${http_code}"
 
-      # 502, 503, 504, 000 (connection failure) mean the LB is not ready
+      # 502, 503, 504, 000 (connection failure or TLS error) mean not ready
       if [[ "$http_code" == "502" || "$http_code" == "503" || "$http_code" == "504" || "$http_code" == "000" ]]; then
         all_ready=false
       fi
@@ -419,6 +419,29 @@ _wait_for_ingress_ready() {
   done
 
   info "${COLOR_RED}ERROR:${COLOR_RESET} Ingress readiness timed out after ${timeout}s on ${hostname}"
+  return 1
+}
+
+# Args: hostname, [timeout_seconds=300]
+_wait_for_oidc_endpoint() {
+  local hostname="$1"
+  local timeout="${2:-300}"
+  local path="/orchestration/oauth2/authorization/oidc"
+  local elapsed=0
+  info "Waiting for OIDC endpoint to be ready on ${hostname}${path} (timeout ${timeout}s)..."
+  while [[ $elapsed -lt $timeout ]]; do
+    local http_code
+    http_code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 \
+      --max-redirs 0 "https://${hostname}${path}" 2>/dev/null || echo "000")
+    if [[ "$http_code" != "502" && "$http_code" != "503" && "$http_code" != "504" && "$http_code" != "000" ]]; then
+      info "OIDC endpoint ready (${elapsed}s): ${path}=${http_code}"
+      return 0
+    fi
+    info "  OIDC not ready yet (${elapsed}s/${timeout}s): ${path}=${http_code}"
+    sleep 10
+    elapsed=$((elapsed + 10))
+  done
+  info "${COLOR_RED}ERROR:${COLOR_RESET} OIDC endpoint not ready after ${timeout}s on ${hostname}${path}"
   return 1
 }
 

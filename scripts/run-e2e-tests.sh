@@ -203,7 +203,11 @@ if [[ "$IS_CI" != "true" ]]; then
   _wait_for_dns_resolution "$hostname" || exit 1
 fi
 
-_wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
+_wait_for_ingress_ready "$hostname" "$NAMESPACE" 300 "$KUBE_CONTEXT" || exit 1
+
+if [[ "$IS_AUTH0" == "true" ]]; then
+  _wait_for_oidc_endpoint "$hostname" 300 || exit 1
+fi
 
 if [[ "$IS_CI" != "true" ]] && [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
   _enable_dns_fallback "$hostname" "$_RESOLVED_IP"
