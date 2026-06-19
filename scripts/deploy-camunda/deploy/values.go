@@ -372,24 +372,48 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
 // the process environment, loading the .env file, and applying scenario-specific
 // overrides. The returned map is used as values.Options.EnvOverrides so that
 // parallel calls to values.Process never touch (or race on) the real process env.
+// scenarioEnvSeeds returns the lowest-precedence client-ID defaults seeded into
+// the scenario env (see buildScenarioEnv step 0). Both buildScenarioEnv and the
+// preflight fallback (scenarioDeployEnv) read from here.
+func scenarioEnvSeeds() map[string]string {
+	return map[string]string{
+		"VENOM_CLIENT_ID":      "venom",
+		"CONNECTORS_CLIENT_ID": "connectors",
+	}
+}
+
 func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (map[string]string, error) {
+	// 0. Seed mapping-rule client ID defaults for Keycloak. These mirror the
+	// workflow-level env defaults in .github/workflows/test-integration-runner.yaml
+	// ("VENOM_CLIENT_ID: venom" / "CONNECTORS_CLIENT_ID: connectors"), which make
+	// keycloak scenarios deploy in CI without anyone supplying these. Local
+	// deploy-camunda runs otherwise lack them and fail in prepareScenarioValues
+	// on the $VENOM_CLIENT_ID/$CONNECTORS_CLIENT_ID placeholders in the
+	// persistence/identity layers. Seeded at the lowest precedence: the process
+	// environment and .env (steps 1–2) override them, and OIDC/Entra entries
+	// override with the real app GUIDs via flags.ExtraEnv (step 4).
+	envMap := scenarioEnvSeeds()
+
 	// 1. Snapshot the current process environment as the baseline.
-	envMap := make(map[string]string)
 	for _, entry := range os.Environ() {
 		if k, v, ok := strings.Cut(entry, "="); ok {
 			envMap[k] = v
 		}
 	}
 
-	// 2. Overlay .env file values (without modifying the process environment).
-	if flags.EnvFile != "" {
-		dotenvMap, err := env.ReadFile(flags.EnvFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read env file %q: %w", flags.EnvFile, err)
-		}
-		for k, v := range dotenvMap {
-			envMap[k] = v
-		}
+	// 2. Overlay .env file values (without modifying the process environment),
+	// defaulting to ".env" when unset to match EnvProvenance and the root.go
+	// loader. env.ReadFile returns an empty map (not an error) for an absent file.
+	envFile := flags.EnvFile
+	if envFile == "" {
+		envFile = ".env"
+	}
+	dotenvMap, err := env.ReadFile(envFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read env file %q: %w", envFile, err)
+	}
+	for k, v := range dotenvMap {
+		envMap[k] = v
 	}
 
 	// 3. Apply scenario-specific overrides.
@@ -834,7 +858,11 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if mapping == "" {
 			mapping = envMap["vault_secret_mapping"]
 		}
-		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
+		generate := mapper.Generate
+		if flags.Secrets.StrictSecrets {
+			generate = mapper.GenerateStrict
+		}
+		if err := generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
 			os.RemoveAll(tempDir) // Cleanup on error
 			return nil, fmt.Errorf("failed to generate vault secrets: %w", err)
 		}

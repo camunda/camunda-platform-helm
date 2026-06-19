@@ -79,6 +79,12 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "auth0" || (cmd.Parent() != nil && cmd.Parent().Name() == "auth0") {
 					return nil
 				}
+				// doctor runs its own config load + preflight; skip the deploy
+				// PersistentPreRunE so its strict Validate doesn't reject a
+				// diagnostic run with no chart/namespace/release set.
+				if cmd.Name() == "doctor" {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -107,6 +113,11 @@ func NewRootCommand() *cobra.Command {
 			_, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
 			if err != nil {
 				return err
+			}
+			// Hand the resolved config path to the preflight via flags.
+			if cfgRes != nil {
+				flags.ConfigPath = cfgRes.Path
+				flags.ConfigFound = cfgRes.Found
 			}
 
 			// Auto-detect repoRoot from CWD if not set by CLI or config.
@@ -215,8 +226,10 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Deployment.Flow, "flow", "install", "Flow type")
 	f.StringVar(&flags.EnvFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
 	f.BoolVar(&flags.Interactive, "interactive", true, "Enable interactive prompts for missing variables")
+	f.BoolVar(&flags.SkipPreflight, "skip-preflight", false, "Skip the fail-fast secrets/env preflight run before deploying")
 	f.StringVar(&flags.Secrets.VaultSecretMapping, "vault-secret-mapping", "", "Vault secret mapping content")
 	f.BoolVar(&flags.Secrets.AutoGenerateSecrets, "auto-generate-secrets", false, "Auto-generate certain secrets for testing purposes")
+	f.BoolVar(&flags.Secrets.StrictSecrets, "strict-secrets", false, "Fail if any env var in the vault secret mapping is unset (instead of silently omitting it)")
 	f.BoolVar(&flags.Deployment.DeleteNamespaceFirst, "delete-namespace", false, "Delete the namespace first, then deploy")
 	f.StringVar(&flags.Docker.DockerUsername, "docker-username", "", "Harbor registry username")
 	f.StringVar(&flags.Docker.DockerPassword, "docker-password", "", "Harbor registry password")
@@ -538,6 +551,7 @@ func Execute() error {
 	rootCmd.AddCommand(newEntraCommand())
 	rootCmd.AddCommand(newWatchCommand())
 	rootCmd.AddCommand(newAuth0Command())
+	rootCmd.AddCommand(newDoctorCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {

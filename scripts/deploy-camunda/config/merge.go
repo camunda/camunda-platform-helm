@@ -100,6 +100,9 @@ type SecretsFlags struct {
 	VaultSecretMapping    string
 	AutoGenerateSecrets   bool
 	UseVaultBackedSecrets bool
+	// StrictSecrets makes vault-secret generation fail if any mapped env var is
+	// unset, instead of silently omitting it from the rendered Secret.
+	StrictSecrets bool
 }
 
 // DebugFlags holds JVM debug configuration.
@@ -179,6 +182,18 @@ type RuntimeFlags struct {
 	LogLevel    string
 	EnvFile     string
 	Interactive bool
+
+	// ConfigPath is the config file path resolved during flag merging (honoring
+	// --config); ConfigFound reports whether it exists on disk. Consumed by the
+	// fail-fast preflight's config-file check.
+	ConfigPath  string
+	ConfigFound bool
+
+	// SkipPreflight disables the fail-fast secrets/env preflight that
+	// deploy.Execute runs before any cluster mutation. Set via --skip-preflight
+	// as an escape hatch; both direct deploys and matrix entries leave it false
+	// so missing inputs surface up front rather than mid-deploy.
+	SkipPreflight bool
 
 	// ChangedFlags tracks which CLI flags were explicitly set by the user.
 	// When populated, merge functions will not overwrite these flags with

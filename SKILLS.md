@@ -26,6 +26,17 @@ cd scripts/deploy-camunda && go build -o deploy-camunda . && mv deploy-camunda $
 
 ### Pre-Flight Checklist
 
+> **Shortcut:** `deploy-camunda doctor` runs the checks below automatically and prints a
+> ✓/✗ checklist (config resolved, kube-context reachable, docker creds present, every var
+> in the vault mapping, the scenario's values, and companion charts set). It only flags
+> vars you must supply — deploy-computed ones like `CAMUNDA_HOSTNAME`/`KEYCLOAK_REALM` are
+> recognized as satisfied. `deploy-camunda doctor --fix` prompts for anything missing and
+> writes it to `.env`. First-time setup? `deploy-camunda config init` scaffolds config +
+> `.env` (including Postgres/RDBMS dev creds) and ends with the same checklist. See
+> `scripts/deploy-camunda/README.md` for the full secrets/env model. A direct
+> `deploy-camunda` run also fails fast on missing inputs before touching the cluster
+> (bypass with `--skip-preflight`); matrix entries do too.
+
 Before deploying, verify these requirements. Skipping any of these is the most common source
 of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
 

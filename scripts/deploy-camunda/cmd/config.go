@@ -18,6 +18,8 @@ func newConfigCommand() *cobra.Command {
 		Short: "Manage deploy-camunda configuration and active deployment",
 	}
 
+	configCmd.AddCommand(newInitCommand())
+	configCmd.AddCommand(newEnvCommand())
 	configCmd.AddCommand(newListCommand())
 	configCmd.AddCommand(newShowCommand())
 	configCmd.AddCommand(newUseCommand())
