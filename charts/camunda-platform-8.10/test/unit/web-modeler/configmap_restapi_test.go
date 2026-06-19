@@ -470,15 +470,31 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				s.Fail("Failed to unmarshal yaml. error=", err)
 			}
 
-			// then
-			s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
-			s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
-			s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-			s.Require().Equal("8.8.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
-			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
-			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
+			// then — two clusters: management-cluster (Identity + WebModeler) followed by default-cluster (Orchestration)
+			s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
+
+			mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+			s.Require().Equal("management-cluster", mgmtCluster.Id)
+			s.Require().Equal("management", mgmtCluster.Name)
+			s.Require().Equal(false, mgmtCluster.Authorizations.Enabled)
+			s.Require().Equal(tc.expectedAuthentication, mgmtCluster.Authentication)
+			var identityComp ComponentYAML
+			for _, c := range mgmtCluster.Components {
+				if c.Type == "identity" {
+					identityComp = c
+					break
+				}
+			}
+			s.Require().Equal("identity", identityComp.Type)
+
+			defaultCluster := configmapApplication.Camunda.Modeler.Clusters[1]
+			s.Require().Equal("default-cluster", defaultCluster.Id)
+			s.Require().Equal("test-zeebe", defaultCluster.Name)
+			s.Require().Equal("8.8.x-alpha1", defaultCluster.Version)
+			s.Require().Equal(tc.expectedAuthentication, defaultCluster.Authentication)
+			s.Require().Equal(false, defaultCluster.Authorizations.Enabled)
 			var orchestrationComp ComponentYAML
-			for _, c := range configmapApplication.Camunda.Modeler.Clusters[0].Components {
+			for _, c := range defaultCluster.Components {
 				if c.Type == "orchestration" {
 					orchestrationComp = c
 					break
@@ -520,9 +536,14 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOr
 	require.NoError(s.T(), err)
 
 	var orchestrationComp ComponentYAML
-	for _, c := range configmapApplication.Camunda.Modeler.Clusters[0].Components {
-		if c.Type == "orchestration" {
-			orchestrationComp = c
+	for _, cluster := range configmapApplication.Camunda.Modeler.Clusters {
+		for _, c := range cluster.Components {
+			if c.Type == "orchestration" {
+				orchestrationComp = c
+				break
+			}
+		}
+		if orchestrationComp.Type != "" {
 			break
 		}
 	}
