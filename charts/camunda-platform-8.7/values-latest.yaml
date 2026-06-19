@@ -49,13 +49,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.7.32
+    tag: 8.7.33
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.7.32
+    tag: 8.7.33
 
 #
 # Identity
