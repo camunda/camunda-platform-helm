@@ -1,0 +1,26 @@
+# Auto-enables GitHub's native auto-merge on every non-draft PR. Once required
+# reviews are approved and required status checks are green (i.e. the
+# "Required Check" aggregator passes), the PR merges itself with no manual
+# click. Major Renovate updates set `automerge: false` in renovate.json5 and
+# do NOT use this path - they merge through Renovate-side rules anyway.
+name: "PR - Enable Auto-Merge"
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-automerge:
+    name: Enable auto-merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
