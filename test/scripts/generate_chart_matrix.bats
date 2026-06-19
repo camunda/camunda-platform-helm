@@ -72,11 +72,11 @@ get_first_version() {
 
 @test "scripts/ change triggers all chart versions" {
   # Regression for #6108: a top-level scripts/ change is invoked by chart tests
-  # (e.g. apply-ttl-to-elasticsearch-indexes.sh) and must rebuild every version.
+  # (e.g. render-e2e-env.sh) and must rebuild every version.
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
     --manual-trigger none \
     --active-versions "$AV" \
-    --all-modified-files "scripts/apply-ttl-to-elasticsearch-indexes.sh"
+    --all-modified-files "scripts/render-e2e-env.sh"
   assert_success
   run bash -c 'yq -o=json ".matrix | [.[] | .version] | unique | sort" matrix_versions.txt | jq -c'
   assert_success

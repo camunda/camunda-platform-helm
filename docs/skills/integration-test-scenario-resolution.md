@@ -205,7 +205,7 @@ scenario name is parsed by `MapScenarioToConfig()` using substring matching:
 |------------------------|----------------------|
 | `keycloak-original` (exact) | `elasticsearch` (early return) |
 | `elasticsearch` (exact) | `elasticsearch` (early return) |
-| `opensearch` | `opensearch` |
+| `opensearch` | `opensearch-embedded` |
 | `rdbms` + `oracle` | `rdbms-oracle` |
 | `rdbms` | `rdbms` |
 | _(default)_ | `elasticsearch` |
@@ -288,7 +288,7 @@ Versions 8.2–8.5 use the legacy (non-layered) values system and do not have a
 | `identity/hybrid.yaml` | &#x2717; | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
 | **Persistence** | | | | | |
 | `persistence/elasticsearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `persistence/opensearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `persistence/opensearch.yaml` | &#x2713; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | `persistence/rdbms.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
 | `persistence/rdbms-oracle.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
 | **Platform** | | | | | |
@@ -365,7 +365,7 @@ identity, persistence, platform, and features subdirectories.
 | PR | `elasticsearch` | es | keycloak | install, upgrade-patch | gke, eks | identity=`keycloak`, persistence=`elasticsearch`, platform=per-entry |
 | Nightly | `elasticsearch` | es | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak`, persistence=`elasticsearch`, platform=`gke` |
 | Nightly | `multitenancy` | mt | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak`, persistence=`elasticsearch`, platform=`gke`, features=`[multitenancy]` |
-| Nightly | `opensearch` | os | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak`, persistence=`opensearch`, platform=`gke` |
+| Nightly | `opensearch` | os | keycloak | _(all)_ | _(default=gke)_ | identity=`keycloak`, persistence=`opensearch-embedded`, platform=`gke` |
 
 None of these scenarios have explicit `identity`/`persistence`/`features` fields,
 so name parsing is the sole source of config.
@@ -401,7 +401,7 @@ values/features/multitenancy.yaml
 ```
 values/base.yaml
 values/identity/keycloak.yaml
-values/persistence/opensearch.yaml
+values/persistence/opensearch-embedded.yaml
 values/platform/gke.yaml
 ```
 
@@ -428,7 +428,7 @@ and upgrade support.
 | Nightly | `elasticsearch` | es | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch` |
 | Nightly | `multitenancy` | mt | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch`, features=`[multitenancy]` |
 | Nightly | `oidc` | oi | keycloak | _(all)_ | _(gke)_ | — | identity=`oidc`, persistence=`elasticsearch` |
-| Nightly | `opensearch` | os | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`opensearch` |
+| Nightly | `opensearch` | os | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`opensearch-embedded` |
 | Nightly | `elasticsearch` (enterprise) | — | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch` |
 | Nightly | `documentstore` | docstr | keycloak | _(all)_ | _(gke)_ | — | identity=`keycloak`, persistence=`elasticsearch`, features=`[documentstore]` |
 
@@ -473,7 +473,7 @@ values/platform/gke.yaml
 ```
 values/base.yaml
 values/identity/keycloak.yaml
-values/persistence/opensearch.yaml
+values/persistence/opensearch-embedded.yaml
 values/platform/gke.yaml
 ```
 
@@ -526,8 +526,8 @@ Major restructuring: zeebe, operate, and tasklist are unified into a single
 | Nightly | `elasticsearch-basic` | esba | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `elasticsearch-oidc` | esoi | oidc | _(all)_ | _(gke)_ | — | `oidc` | `elasticsearch` | — |
 | Nightly | `multitenancy` | mtke | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[multitenancy]` |
-| Nightly | `opensearch` (keycloak) | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch` | — |
-| Nightly | `opensearch` (basic) | osba | basic | _(all)_ | _(gke)_ | — | `basic` | `opensearch` | — |
+| Nightly | `opensearch` (keycloak) | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch-embedded` | — |
+| Nightly | `opensearch` (basic) | osba | basic | _(all)_ | _(gke)_ | — | `basic` | `opensearch-embedded` | — |
 | Nightly | `identity-migration` | idmike | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | Nightly | `elasticsearch` (enterprise) | elbae | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `documentstore` | docstr | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[documentstore]` |
@@ -599,7 +599,7 @@ values/platform/gke.yaml
 ```
 values/base.yaml
 values/identity/basic.yaml
-values/persistence/opensearch.yaml
+values/persistence/opensearch-embedded.yaml
 values/platform/gke.yaml
 ```
 
@@ -639,7 +639,7 @@ Adds RDBMS persistence backends and a second `keycloak-original` entry.
 | Tier | Scenario | Shortname | Auth | Flow | Platforms | Explicit Fields | Resolved Identity | Resolved Persistence | Resolved Features |
 |------|----------|-----------|------|------|-----------|-----------------|-------------------|----------------------|-------------------|
 | PR | `elasticsearch` | eske | keycloak | _(all)_ | gke, eks | — | `keycloak` | `elasticsearch` | — |
-| PR | `opensearch` | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch` | — |
+| PR | `opensearch` | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch-embedded` | — |
 | PR | `upgrade-migration` | eske-upgm | keycloak | upgrade-minor | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | PR | `elasticsearch-basic` | esba | basic | install | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | PR | `oidc` | esoi | oidc | upgrade-minor | _(gke)_ | — | `oidc` | `elasticsearch` | — |
@@ -652,8 +652,8 @@ Adds RDBMS persistence backends and a second `keycloak-original` entry.
 | Nightly | `elasticsearch-basic` | esba | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `elasticsearch-oidc` | esoi | oidc | _(all)_ | _(gke)_ | — | `oidc` | `elasticsearch` | — |
 | Nightly | `multitenancy` | mtke | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[multitenancy]` |
-| Nightly | `opensearch` (keycloak) | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch` | — |
-| Nightly | `opensearch` (basic) | osba | basic | _(all)_ | _(gke)_ | — | `basic` | `opensearch` | — |
+| Nightly | `opensearch` (keycloak) | oske | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `opensearch-embedded` | — |
+| Nightly | `opensearch` (basic) | osba | basic | _(all)_ | _(gke)_ | — | `basic` | `opensearch-embedded` | — |
 | Nightly | `identity-migration` | idmike | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | — |
 | Nightly | `elasticsearch` (enterprise) | elbae | basic | _(all)_ | _(gke)_ | — | `basic` | `elasticsearch` | — |
 | Nightly | `documentstore` | docstr | keycloak | _(all)_ | _(gke)_ | — | `keycloak` | `elasticsearch` | `[documentstore]` |
@@ -669,7 +669,7 @@ All resolutions from 8.8 apply identically, plus:
 ```
 values/base.yaml
 values/identity/keycloak.yaml
-values/persistence/opensearch.yaml
+values/persistence/opensearch-embedded.yaml
 values/platform/gke.yaml
 ```
 

@@ -76,7 +76,7 @@ func (c *DeploymentConfig) Validate() error {
 	// against a chart version that lacks its values file passes Validate() but
 	// produces no persistence layer (ResolvePaths skips missing files), so the
 	// deploy proceeds with no TLS wiring.
-	validPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "elasticsearch-self-signed-os-trust", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "elasticsearch-self-signed-os-trust", "no-elasticsearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -357,7 +357,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive persistence.
 	// Specific opensearch variants must precede the generic "opensearch" arm
 	// since Go's switch evaluates in order and all contain the substring
-	// "opensearch".
+	// "opensearch". The generic arm resolves to opensearch-embedded.
 	switch {
 	case strings.Contains(s, "opensearch-self-signed-os-trust"):
 		config.Persistence = "opensearch-self-signed-os-trust"
@@ -366,7 +366,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "opensearch-embedded"):
 		config.Persistence = "opensearch-embedded"
 	case strings.Contains(s, "opensearch"):
-		config.Persistence = "opensearch"
+		config.Persistence = "opensearch-embedded"
 	case strings.Contains(s, "rdbms-self-signed"):
 		config.Persistence = "rdbms-self-signed"
 	case strings.Contains(s, "rdbms-external"):

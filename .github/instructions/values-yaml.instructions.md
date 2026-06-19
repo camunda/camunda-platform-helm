@@ -220,7 +220,7 @@ Layers live in `test/integration/scenarios/chart-full-setup/values/<chart-versio
 
 **Available identity layers:** `keycloak`, `oidc` (8.7+), `basic` (8.8+), `hybrid` (8.8+)
 
-**Available persistence layers:** `elasticsearch`, `opensearch`, `rdbms` (8.9+), `rdbms-oracle` (8.9+)
+**Available persistence layers:** `elasticsearch`, `opensearch-embedded`, `rdbms` (8.9+), `rdbms-oracle` (8.9+)
 
 **Available feature layers:** `multitenancy`, `rba`, `documentstore` (8.7+), `mcp` (8.10+)
 
@@ -233,7 +233,7 @@ Layers live in `test/integration/scenarios/chart-full-setup/values/<chart-versio
 | `oidc`, `entra` | `oidc` | `elasticsearch` | — |
 | `basic` | `basic` | `elasticsearch` | — |
 | `hybrid` | `hybrid` | `elasticsearch` | — |
-| `opensearch` | `keycloak` | `opensearch` | — |
+| `opensearch` | `keycloak` | `opensearch-embedded` | — |
 | `rdbms` + `oracle` | `keycloak` | `rdbms-oracle` | — |
 | `rdbms` | `keycloak` | `rdbms` | — |
 | _(default)_ | `keycloak` | `elasticsearch` | — |
