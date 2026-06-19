@@ -348,6 +348,10 @@ zeebe:
 
 zeebeGateway:
   contextPath: "/zeebe"
+  # Single gateway replica for CI (chart default is 2). CI does not test gateway
+  # HA/failover, so the second replica only adds a JVM contending for CPU on shared
+  # nodes; one replica matches the single-broker topology and lowers the deploy floor.
+  replicas: 1
   # Right-sized for CI: CPU P99 236m (from 400m default), memory P99 364Mi (from 800Mi default).
   resources:
     requests:
