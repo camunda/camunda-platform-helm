@@ -1,0 +1,91 @@
+# type: Automation
+# owner: @camunda/distribution-team
+---
+# Renovate Merge Shepherd
+#
+# Finds open Renovate PRs labelled `automerge` that are mergeable but no longer
+# have GitHub auto-merge enabled (e.g. after a merge-queue eviction), and drives
+# each back through the merge queue — re-enabling auto-merge and re-queuing after
+# evictions. Reuses the same in-house action the release pipeline uses for the
+# release-please PR (see chart-release-public.yaml).
+name: Renovate - Merge Shepherd
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"  # Every 30 minutes.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  discover:
+    name: Discover stranded Renovate PRs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      prs: ${{ steps.list.outputs.prs }}
+    steps:
+      - name: List mergeable Renovate PRs without auto-merge
+        id: list
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          prs=$(gh pr list \
+            --author "app/renovate" \
+            --label automerge \
+            --state open \
+            --json number,mergeStateStatus,autoMergeRequest \
+            --jq '[.[] | select(.autoMergeRequest == null) | select(.mergeStateStatus == "CLEAN" or .mergeStateStatus == "UNSTABLE") | .number]')
+          echo "Eligible PRs: ${prs}"
+          echo "prs=${prs}" >> "$GITHUB_OUTPUT"
+
+  shepherd:
+    name: Shepherd PR #${{ matrix.pr }}
+    needs: discover
+    if: ${{ needs.discover.outputs.prs != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    permissions:
+      contents: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: ${{ fromJson(needs.discover.outputs.prs) }}
+    concurrency:
+      group: renovate-shepherd-${{ matrix.pr }}
+      cancel-in-progress: false
+    steps:
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: true
+
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        with:
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Shepherd PR through merge queue
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@aef5579dd1bf60ea2e8ccfabeb9aaa46fdeaecf8 # main
+        with:
+          pr-number: ${{ matrix.pr }}
+          app-token: ${{ steps.generate-github-token.outputs.token }}
+          repository-owner: ${{ github.repository_owner }}
+          repository-name: ${{ github.event.repository.name }}
+          merge-method: squash
+          timeout-minutes: "90"
+          max-evictions: "3"
