@@ -111,7 +111,7 @@ harbor_helm_pull() {
     fi
 
     # Auth error -> retry with re-auth; anything else -> return failure immediately
-    if grep -qiE '401|unauthorized|unauthenticated' "${pull_stderr}"; then
+    if grep -qiE 'unauthorized|unauthenticated|status code 401' "${pull_stderr}"; then
       echo "::warning::helm pull auth error on attempt ${attempt}/${max_retries}"
       cat "${pull_stderr}" >&2
       if [[ ${attempt} -lt ${max_retries} ]]; then
