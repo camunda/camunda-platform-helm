@@ -210,7 +210,7 @@ runs:
           SMOKE_FLAG=""
         fi
 
-        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${SMOKE_FLAG} --verbose ${EXTRA_FLAGS}
+        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${SMOKE_FLAG} --trace retain-on-failure --verbose ${EXTRA_FLAGS}
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
@@ -233,4 +233,15 @@ runs:
         name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
         if-no-files-found: warn
+        retention-days: 5
+
+    - name: Upload Playwright traces for failed tests
+      if: ${{ failure() && !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        path: |
+          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/trace.zip
+          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/*.png
+        if-no-files-found: ignore
         retention-days: 5

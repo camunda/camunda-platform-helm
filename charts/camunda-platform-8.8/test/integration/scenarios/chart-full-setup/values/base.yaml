@@ -90,6 +90,7 @@ identityPostgresql:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  partitionCount: "1"
   # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
   resources:
     requests:
@@ -128,21 +129,22 @@ connectors:
       memory: 1400Mi
   startupProbe:
     enabled: true
+    probePath: /actuator/health/liveness
     initialDelaySeconds: 10
-    periodSeconds: 10
-    failureThreshold: 30
-    timeoutSeconds: 1
+    periodSeconds: 5
+    failureThreshold: 60
+    timeoutSeconds: 5
   readinessProbe:
     initialDelaySeconds: 10
-    periodSeconds: 10
+    periodSeconds: 5
     failureThreshold: 5
-    timeoutSeconds: 1
+    timeoutSeconds: 5
   livenessProbe:
     enabled: true
     initialDelaySeconds: 30
     periodSeconds: 10
     failureThreshold: 5
-    timeoutSeconds: 1
+    timeoutSeconds: 5
 
 webModeler:
   enabled: true
@@ -248,6 +250,9 @@ webModelerPostgresql:
 
 orchestration:
   contextPath: "/orchestration"
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
   # Right-sized for CI: CPU P99 481m (from 2000m), memory P99 1012Mi (from 2000Mi).
   resources:
     requests:
@@ -262,7 +267,7 @@ orchestration:
     # reuses orchestration probe settings but doesn't register the "startup" health
     # group (only broker profile does). /readiness works on both StatefulSet and importer.
     probePath: /actuator/health/readiness
-    initialDelaySeconds: 30
+    initialDelaySeconds: 10
     periodSeconds: 10
     failureThreshold: 30
     timeoutSeconds: 5

@@ -87,6 +87,7 @@ identity:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  partitionCount: "1"
   # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
   resources:
     requests:
@@ -125,21 +126,22 @@ connectors:
       memory: 1400Mi
   startupProbe:
     enabled: true
+    probePath: /actuator/health/liveness
     initialDelaySeconds: 10
-    periodSeconds: 10
-    failureThreshold: 30
-    timeoutSeconds: 1
+    periodSeconds: 5
+    failureThreshold: 60
+    timeoutSeconds: 5
   readinessProbe:
     initialDelaySeconds: 10
-    periodSeconds: 10
+    periodSeconds: 5
     failureThreshold: 5
-    timeoutSeconds: 1
+    timeoutSeconds: 5
   livenessProbe:
     enabled: true
     initialDelaySeconds: 30
     periodSeconds: 10
     failureThreshold: 5
-    timeoutSeconds: 1
+    timeoutSeconds: 5
 
 webModeler:
   enabled: true
@@ -236,6 +238,9 @@ orchestration:
     secondaryStorage:
       type: elasticsearch
   contextPath: "/orchestration"
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
   # JVM startup optimizations: TieredStopAtLevel=1 skips C2 compiler for ~30-50% faster startup,
   # pre-sized heap avoids resizing overhead, G1GC with string deduplication for efficiency.
   # Right-sized for CI: CPU P99 481m (from 2000m), memory P99 1012Mi (from 2000Mi).
@@ -248,7 +253,7 @@ orchestration:
       memory: 2000Mi
   startupProbe:
     enabled: true
-    initialDelaySeconds: 30
+    initialDelaySeconds: 10
     periodSeconds: 10
     failureThreshold: 30
     timeoutSeconds: 5
