@@ -323,9 +323,7 @@
         'automation/renovatebot',
         'kind/chore',
       ],
-      // Use Renovate's automerge (not GitHub's platformAutomerge)
-      // Renovate waits for all status checks by default, which works with dynamic checks per chart version
-      platformAutomerge: false,
+      platformAutomerge: true,
       automerge: true,
       automergeType: 'pr', // Merge via PR to respect GitHub settings
       ignoreTests: false, // Wait for all status checks to pass
