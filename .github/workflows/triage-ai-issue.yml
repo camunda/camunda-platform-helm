@@ -80,14 +80,14 @@ jobs:
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
             secret/data/products/distribution/ci GLEAN_API_TOKEN;
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_GH;
-          exportEnv: true
+          exportEnv: false
 
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a  # v2
         id: generate-github-token
         with:
-          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app_id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Set GitHub token
         run: |
@@ -169,6 +169,9 @@ jobs:
 
       - name: Triage issues
         if: steps.fetch_issues.outputs.has_issues == 'true'
+        env:
+          GLEAN_API_TOKEN: ${{ steps.vault-secrets.outputs.GLEAN_API_TOKEN }}
+          SLACK_DISTRO_BOT_WEBHOOK_GH: ${{ steps.vault-secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK_GH }}
         run: |
           set -euo pipefail
 

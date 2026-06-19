@@ -55,14 +55,14 @@ jobs:
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
-          exportEnv: true
+          exportEnv: false
 
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
-          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app_id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       # "Parse RC tag" runs before the main checkout, so build release-tools here.
       # The binary in /tmp survives the later checkout.
@@ -83,6 +83,8 @@ jobs:
         env:
           HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
+          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           input_tag="${{ inputs.rc-tag }}"
 
@@ -128,12 +130,18 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Login to Harbor
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           # Retrying registry login; harbor_helm_pull below also re-auths on 401.
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           harbor_login
 
       - name: Pull RC package from Harbor
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           mkdir -p .cr-release-packages
@@ -343,14 +351,14 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
-          exportEnv: true
+          exportEnv: false
 
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
-          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app_id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -513,14 +521,14 @@ jobs:
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
-          exportEnv: true
+          exportEnv: false
 
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
-          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app_id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Shepherd release-please PR through merge queue
         id: merge-queue

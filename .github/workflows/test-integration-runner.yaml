@@ -476,8 +476,10 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           fi
         env:
-          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
-          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || steps.setup.outputs.NEXUS_USERNAME }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || steps.setup.outputs.NEXUS_PASSWORD }}
+          TEST_DOCKER_USERNAME: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -511,6 +513,10 @@ jobs:
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             ${{ steps.setup.outputs.legacy-ingress-arg }}
             --set global.host=${{ steps.setup.outputs.ingress-host }}
+          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
@@ -541,6 +547,9 @@ jobs:
 
       - name: Helm - OCI Registry Login
         if: inputs.helmChartVersion != ''
+        env:
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
         run: |
           export HARBOR_REGISTRY_HOST=registry.camunda.cloud
           export HARBOR_REGISTRY_USER="${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
@@ -581,6 +590,23 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
+          NEXUS_USERNAME: ${{ steps.setup.outputs.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ steps.setup.outputs.NEXUS_PASSWORD }}
+          TEST_DOCKER_USERNAME: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
+          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
+          AUTH0_DOMAIN: ${{ steps.setup.outputs.AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ steps.setup.outputs.AUTH0_AUDIENCE }}
+          AUTH0_MGMT_CLIENT_ID: ${{ steps.setup.outputs.AUTH0_MGMT_CLIENT_ID }}
+          AUTH0_MGMT_CLIENT_SECRET: ${{ steps.setup.outputs.AUTH0_MGMT_CLIENT_SECRET }}
+          AUTH0_INITIAL_ADMIN_EMAIL: ${{ steps.setup.outputs.AUTH0_INITIAL_ADMIN_EMAIL }}
+          RDBMS_POSTGRESQL_USERNAME: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_USERNAME }}
+          RDBMS_POSTGRESQL_PASSWORD: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_PASSWORD }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -854,6 +880,10 @@ jobs:
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             ${{ steps.setup.outputs.legacy-ingress-arg }}
             --set global.host=${{ steps.setup.outputs.ingress-host }}
+          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
@@ -886,6 +916,9 @@ jobs:
 
       - name: Helm - OCI Registry Login (Upgrade)
         if: inputs.helmChartVersion != ''
+        env:
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
         run: |
           export HARBOR_REGISTRY_HOST=registry.camunda.cloud
           export HARBOR_REGISTRY_USER="${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
@@ -916,6 +949,23 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           VALUES_CONFIG: ${{ inputs.values-config }}
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
+          NEXUS_USERNAME: ${{ steps.setup.outputs.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ steps.setup.outputs.NEXUS_PASSWORD }}
+          TEST_DOCKER_USERNAME: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
+          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
+          AUTH0_DOMAIN: ${{ steps.setup.outputs.AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ steps.setup.outputs.AUTH0_AUDIENCE }}
+          AUTH0_MGMT_CLIENT_ID: ${{ steps.setup.outputs.AUTH0_MGMT_CLIENT_ID }}
+          AUTH0_MGMT_CLIENT_SECRET: ${{ steps.setup.outputs.AUTH0_MGMT_CLIENT_SECRET }}
+          AUTH0_INITIAL_ADMIN_EMAIL: ${{ steps.setup.outputs.AUTH0_INITIAL_ADMIN_EMAIL }}
+          RDBMS_POSTGRESQL_USERNAME: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_USERNAME }}
+          RDBMS_POSTGRESQL_PASSWORD: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_PASSWORD }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -1061,17 +1111,17 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
             secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-          exportEnv: true
+          exportEnv: false
 
       - name: Run Playwright E2E Tests
         uses: ./.github/actions/playwright-e2e-tests
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
@@ -1136,17 +1186,17 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
             secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-          exportEnv: true
+          exportEnv: false
 
       - name: Run full E2E suite (shadow)
         uses: ./.github/actions/playwright-e2e-tests
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
@@ -1216,17 +1266,17 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
             secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-          exportEnv: true
+          exportEnv: false
 
       - name: Run Playwright E2E Tests
         uses: ./.github/actions/playwright-e2e-tests
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
@@ -1455,7 +1505,7 @@ jobs:
             secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
             secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
             secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
-          exportEnv: true
+          exportEnv: false
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -1466,10 +1516,10 @@ jobs:
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
@@ -1488,6 +1538,11 @@ jobs:
       - name: CI Cleanup - Delete venom Entra app registration
         if: always() && (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc')
         continue-on-error: true
+        env:
+          ENTRA_APP_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           cd ./scripts/deploy-camunda
           go run . entra cleanup-venom-app \
@@ -1499,11 +1554,12 @@ jobs:
         # per-component first-party clients in the tenant via
         # `auth0 ensure-clients`; namespace deletion does not touch the
         # tenant, so without this step orphans accumulate across PR runs.
-        # AUTH0_DOMAIN / AUTH0_MGMT_CLIENT_ID / AUTH0_MGMT_CLIENT_SECRET
-        # are already exported to $GITHUB_ENV by the integration-test-setup
-        # action's vault mapping.
         if: always() && inputs.scenario == 'auth0'
         continue-on-error: true
+        env:
+          AUTH0_DOMAIN: ${{ steps.test-credentials-secret.outputs.AUTH0_DOMAIN }}
+          AUTH0_MGMT_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_ID }}
+          AUTH0_MGMT_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_SECRET }}
         run: |
           cd ./scripts/deploy-camunda
           go run . auth0 cleanup-clients \
@@ -1513,6 +1569,9 @@ jobs:
 
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace
+        env:
+          OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
+          OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
         run: |
           kubectl annotate ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite || true
           kubectl annotate ns $TEST_NAMESPACE build-failed=true --overwrite || true
@@ -1535,6 +1594,9 @@ jobs:
       - name: CI Cleanup - Delete OpenSearch templates for this CI run
         if: always()
         continue-on-error: true
+        env:
+          OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
+          OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
         run: |
           set -euo pipefail
 

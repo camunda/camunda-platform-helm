@@ -45,7 +45,7 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
             secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
-          exportEnv: true
+          exportEnv: false
       - name: Install common software tooling
         uses: camunda/infra-global-github-actions/common-tooling@b4808875a583e71eff5b3dd07bb50dafb92694a6 # main
         with:
@@ -67,6 +67,9 @@ jobs:
             kubectl
             task
       - name: Docker Hub login
+        env:
+          TEST_DOCKER_USERNAME: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_PASSWORD }}
         run: |
           echo "${TEST_DOCKER_PASSWORD}" | docker login -u "${TEST_DOCKER_USERNAME}" --password-stdin
       - name: CI Setup - Set test type vars
@@ -83,6 +86,8 @@ jobs:
       - name: Create Docker login secret
         env:
           TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
+          TEST_DOCKER_USERNAME: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_PASSWORD }}
         run: |
           kubectl create namespace ${{ env.TEST_NAMESPACE }}
           # Docker Hub pull secret (replaces legacy `task docker-login --taskfile lib/init-seed-taskfile.yaml`).

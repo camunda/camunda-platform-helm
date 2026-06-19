@@ -172,7 +172,7 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
-          exportEnv: true
+          exportEnv: false
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -210,6 +210,9 @@ jobs:
           /tmp/release-tools inject-values
 
       - name: Login to Harbor registry
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           harbor_login
@@ -294,6 +297,9 @@ jobs:
 
       - name: Check if artifact already exists
         id: check-artifact
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
 
@@ -488,6 +494,8 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"

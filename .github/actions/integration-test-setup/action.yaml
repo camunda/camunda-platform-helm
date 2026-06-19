@@ -88,6 +88,57 @@ outputs:
   legacy-ingress-arg:
     description: --set global.ingress.host=... for charts older than 8.10, empty otherwise
     value: ${{ steps.legacy-ingress.outputs.arg }}
+  NEXUS_USERNAME:
+    description: Nexus username (docker registry fallback)
+    value: ${{ steps.test-credentials-secret.outputs.NEXUS_USERNAME }}
+  NEXUS_PASSWORD:
+    description: Nexus password (docker registry fallback)
+    value: ${{ steps.test-credentials-secret.outputs.NEXUS_PASSWORD }}
+  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD:
+    description: Harbor (registry.camunda.cloud) username
+    value: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
+  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD:
+    description: Harbor (registry.camunda.cloud) password
+    value: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
+  TEST_DOCKER_USERNAME:
+    description: Docker Hub username
+    value: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_USERNAME }}
+  TEST_DOCKER_PASSWORD:
+    description: Docker Hub password
+    value: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_PASSWORD }}
+  ENTRA_APP_CLIENT_ID:
+    description: Entra app client id (OIDC scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+  ENTRA_APP_CLIENT_SECRET:
+    description: Entra app client secret (OIDC scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+  ENTRA_APP_OBJECT_ID:
+    description: Entra app object id (OIDC scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_OBJECT_ID }}
+  ENTRA_APP_DIRECTORY_ID:
+    description: Entra app directory id (OIDC scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
+  AUTH0_DOMAIN:
+    description: Auth0 domain (auth0 scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.AUTH0_DOMAIN }}
+  AUTH0_AUDIENCE:
+    description: Auth0 audience (auth0 scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.AUTH0_AUDIENCE }}
+  AUTH0_MGMT_CLIENT_ID:
+    description: Auth0 management API client id (auth0 scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_ID }}
+  AUTH0_MGMT_CLIENT_SECRET:
+    description: Auth0 management API client secret (auth0 scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_SECRET }}
+  AUTH0_INITIAL_ADMIN_EMAIL:
+    description: Auth0 initial admin email (auth0 scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.AUTH0_INITIAL_ADMIN_EMAIL }}
+  RDBMS_POSTGRESQL_USERNAME:
+    description: RDBMS PostgreSQL username (rdbms scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.RDBMS_POSTGRESQL_USERNAME }}
+  RDBMS_POSTGRESQL_PASSWORD:
+    description: RDBMS PostgreSQL password (rdbms scenarios)
+    value: ${{ steps.test-credentials-secret.outputs.RDBMS_POSTGRESQL_PASSWORD }}
 
 # Secrets cannot be referenced directly inside a composite action.
 # Callers must forward the required secrets as environment variables using `env:` on the step.
@@ -179,7 +230,7 @@ runs:
           secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
           secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
           secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-        exportEnv: true
+        exportEnv: false
 
     # ------------------------------------------------------------------
     # Cluster authentication
@@ -193,10 +244,10 @@ runs:
       env:
         GH_APP_ID:        ${{ env.GH_APP_ID }}
         GH_APP_KEY:       ${{ env.GH_APP_KEY }}
-        GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-        GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-        GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-        GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+        GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+        GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+        GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
         ROSA_URL:         ${{ env.ROSA_URL }}
         ROSA_USER:        ${{ env.ROSA_USER }}
         ROSA_PASS:        ${{ env.ROSA_PASS }}
@@ -238,8 +289,8 @@ runs:
     - name: CI Setup - Login to Docker Hub
       shell: bash
       env:
-        TEST_DOCKER_USERNAME: ${{ env.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || env.TEST_DOCKER_USERNAME }}
-        TEST_DOCKER_PASSWORD: ${{ env.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || env.TEST_DOCKER_PASSWORD }}
+        TEST_DOCKER_USERNAME: ${{ env.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || steps.test-credentials-secret.outputs.TEST_DOCKER_USERNAME }}
+        TEST_DOCKER_PASSWORD: ${{ env.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || steps.test-credentials-secret.outputs.TEST_DOCKER_PASSWORD }}
       run: |
         echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
 
