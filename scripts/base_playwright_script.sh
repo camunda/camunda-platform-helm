@@ -345,11 +345,15 @@ _wait_for_dns_resolution() {
 # ingress context path until the LB routes traffic end-to-end.
 # Uses _RESOLVED_IP (set by _wait_for_dns_resolution) to add a curl --resolve
 # flag when the system resolver cannot resolve the hostname (stale NXDOMAIN).
-# Args: hostname, namespace, [timeout_seconds=120], [kube_context]
+# This is a probe, not a gate: on timeout it warns and returns 0 so the e2e
+# run still proceeds and surfaces a precise Playwright failure rather than a
+# generic ingress-timeout exit. EKS ALB target-group registration for
+# Connectors regularly needs >2 min on cold-start; default raised to 300s.
+# Args: hostname, namespace, [timeout_seconds=300], [kube_context]
 _wait_for_ingress_ready() {
   local hostname="$1"
   local namespace="$2"
-  local timeout="${3:-120}"
+  local timeout="${3:-300}"
   local kube_context="${4:-}"
   local kubectl_cmd="kubectl"
 
@@ -418,8 +422,8 @@ _wait_for_ingress_ready() {
     elapsed=$((elapsed + 5))
   done
 
-  info "${COLOR_RED}ERROR:${COLOR_RESET} Ingress readiness timed out after ${timeout}s on ${hostname}"
-  return 1
+  info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Ingress readiness timed out after ${timeout}s on ${hostname}; continuing so Playwright surfaces the precise failure"
+  return 0
 }
 
 # ==============================================================================

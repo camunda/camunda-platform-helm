@@ -6,6 +6,7 @@ identity: keycloak
 persistence: elasticsearch-self-signed
 features:
   - migrator
+  - zeebe-tls
 platforms:
   - gke
 infra-type:

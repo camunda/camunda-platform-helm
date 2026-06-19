@@ -29,10 +29,16 @@ package matrix
 //	create-elasticsearch-tls-secrets.sh — helper sourced by
 //	                                 pre-install-elasticsearch-self-signed*.sh
 //	                                 (8.7-8.9 only; removed from 8.10.)
+//	pre-install-elasticsearch-self-signed-upgrade.sh — 8.7 Step 1 hook referenced
+//	                                 by 8.8 upgrade registry.
+//	create-zeebe-tls-secret.sh       — helper sourced by
+//	                                 pre-install-elasticsearch-self-signed-upgrade.sh.
 var preSetupScriptAllowlist = map[string]bool{
-	"pre-install-upgrade.sh":              true,
-	"create-elasticsearch-tls-secrets.sh": true,
-	"create-opensearch-tls-secrets.sh":    true,
+	"pre-install-upgrade.sh":                           true,
+	"create-elasticsearch-tls-secrets.sh":              true,
+	"create-opensearch-tls-secrets.sh":                 true,
+	"pre-install-elasticsearch-self-signed-upgrade.sh": true,
+	"create-zeebe-tls-secret.sh":                       true,
 }
 
 // commonResourcesAllowlist names files inside common/resources/ that are
