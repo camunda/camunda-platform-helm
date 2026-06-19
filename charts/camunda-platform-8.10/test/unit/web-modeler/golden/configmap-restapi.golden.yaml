@@ -55,12 +55,13 @@ data:
           url: "http://localhost:8070"
           https-only: "false"
         clusters:
-          - id: "default-cluster"
-            name: "camunda-platform-test-zeebe"
-            version: "8.10.0-alpha2"
+          
+          - id: "management-cluster"
+            name: "management"
+            version: "8.10.0-alpha1-rc1"
             authentication: "BASIC"
             authorizations:
-              enabled: true
+              enabled: false
             components:
             - name: Identity
               type: identity
@@ -74,6 +75,13 @@ data:
               urls:
                 webapp: "http://localhost:8070"
                 readiness: "http://camunda-platform-test-web-modeler-restapi.camunda-platform:8091/health/readiness"
+          - id: "default-cluster"
+            name: "camunda-platform-test-zeebe"
+            version: "8.10.0-alpha2"
+            authentication: "BASIC"
+            authorizations:
+              enabled: true
+            components:
             - name: Connectors
               type: connectors
               version: "8.10.0-alpha2"

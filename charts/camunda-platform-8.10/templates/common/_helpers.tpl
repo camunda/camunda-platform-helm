@@ -793,12 +793,13 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 ********************************************************************************
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
-- id: "default-cluster"
-  name: {{ tpl .Values.global.zeebeClusterName . | quote }}
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+{{- if or .Values.identity.enabled (eq (include "camundaHub.webModelerEnabled" .) "true") }}
+- id: "management-cluster"
+  name: "management"
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict))) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
-    enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+    enabled: false
   components:
   {{- if .Values.identity.enabled }}
   {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
@@ -820,6 +821,14 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       webapp: {{ include "camundaPlatform.webModelerExternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.webModeler.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}
   {{- end }}
+{{- end }}
+- id: "default-cluster"
+  name: {{ tpl .Values.global.zeebeClusterName . | quote }}
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+  authentication: {{ include "webModeler.authConfigValue" . | quote }}
+  authorizations:
+    enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+  components:
   {{- if .Values.optimize.enabled }}
   {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
