@@ -25,17 +25,17 @@
                     "properties": {
                         "key": {
                             "type": "string",
-                            "description": "(DEPRECATED - use global.license.secret instead) if set, it will be exposed as \"CAMUNDA_LICENSE_KEY\" in the apps.",
+                            "description": "(DEPRECATED - use global.license.secret.inlineSecret instead) if set, it will be exposed as \"CAMUNDA_LICENSE_KEY\" in the apps.",
                             "default": ""
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "(DEPRECATED - use global.license.secret instead) you can provide an existing secret name for Camunda license secret.",
+                            "description": "(DEPRECATED - use global.license.secret.existingSecret instead) you can provide an existing secret name for Camunda license secret.",
                             "default": ""
                         },
                         "existingSecretKey": {
                             "type": "string",
-                            "description": "(DEPRECATED - use global.license.secret instead) you can provide the key within the existing secret object for Camunda license key.",
+                            "description": "(DEPRECATED - use global.license.secret.existingSecretKey instead) you can provide the key within the existing secret object for Camunda license key.",
                             "default": ""
                         },
                         "secret": {
