@@ -103,7 +103,7 @@
 #
 # Or build directly:
 #   docker buildx build --platform linux/amd64 \
-#     --build-arg PLAYWRIGHT_VERSION=1.57.0 \
+#     --build-arg PLAYWRIGHT_VERSION=1.61.0 \
 #     -t playwright-runner:test .
 #
 # ==============================================================================
@@ -197,7 +197,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # Build arguments
 # ------------------------------------------------------------------------------
 ARG ZBCTL_VERSION=v8.6.0
-ARG PLAYWRIGHT_VERSION=1.58.0
+ARG PLAYWRIGHT_VERSION=1.61.0
 # Keep in sync with .tool-versions (golang).
 ARG GO_VERSION=1.26.2
 
@@ -311,7 +311,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 #    - chromium-XXXX/ (357 MB) - Full browser
 #    - chromium_headless_shell-XXXX/ (110 MB) - Headless-only
 #    - ffmpeg-XXXX/ (5 MB) - Video encoding
-# 3. Delete the full browser and ffmpeg (we only need headless shell)
+# 3. Delete the full browser (we only need headless shell; ffmpeg is kept — see NOTE below)
 #
 # WHY HEADLESS SHELL ONLY:
 # - Our tests run headless (no visible browser window)
@@ -360,6 +360,22 @@ ENV GOTOOLCHAIN=local
 ENV PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
 RUN mkdir -p "${GOPATH}/bin" "${GOCACHE}" "${GOMODCACHE}"
 
+# Layer 4c: Pre-built E2E test-suite node_modules.
+# `e2e-package.json` is staged into the build context by scripts/playwright-pin.
+# `@camunda/e2e-test-suite` is stripped before install — it is fetched at
+# runtime by scripts/base_playwright_script.sh.
+COPY e2e-package.json /opt/e2e-prebuilt/package.json
+
+RUN cd /opt/e2e-prebuilt \
+    && jq 'del(.devDependencies["@camunda/e2e-test-suite"], .dependencies["@camunda/e2e-test-suite"])' \
+        package.json > package.json.stripped \
+    && mv package.json.stripped package.json \
+    && npm install --no-audit --no-fund --omit=optional \
+    && node -e "require('@playwright/test')" \
+    && du -sh node_modules \
+    && npm cache clean --force \
+    && rm -rf /root/.npm /tmp/*
+
 # ==============================================================================
 # Layer 5: Configuration
 # ==============================================================================
@@ -398,6 +414,9 @@ RUN echo "=== Verifying tool installations ===" \
     && go version \
     && echo "=== Checking browser installation ===" \
     && ls -la /ms-playwright/ \
+    && echo "=== Checking prebuilt e2e node_modules ===" \
+    && test -d /opt/e2e-prebuilt/node_modules/@playwright/test \
+    && test ! -d /opt/e2e-prebuilt/node_modules/@camunda/e2e-test-suite \
     && echo "=== All tools verified successfully ==="
 
 # Run as root by default (CI typically runs as root)

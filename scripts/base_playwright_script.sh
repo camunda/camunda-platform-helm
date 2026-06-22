@@ -574,11 +574,21 @@ _log_e2e_suite_version() {
   info "E2E test suite version: ${version}"
 }
 
+# Path to a node_modules tree pre-built into the playwright-runner image
+# (see .github/docker/playwright-runner/Dockerfile). Contains every pinned dep
+# from charts/<v>/test/e2e/package.json EXCEPT @camunda/e2e-test-suite, which
+# is intentionally fetched fresh on every run.
+PREBUILT_E2E_NODE_MODULES="${PREBUILT_E2E_NODE_MODULES:-/opt/e2e-prebuilt/node_modules}"
+
 # Setup playwright environment: change directory, install dependencies, create test-results dir
 # Uses double-checked locking to prevent concurrent npm install corruption.
-# Before installing, updates @camunda/e2e-test-suite to the latest version from
-# the registry so that the "latest" tag in package.json is actually resolved
-# (npm install alone never upgrades past the version pinned in package-lock.json).
+#
+# Fast path (CI in playwright-runner image): seed node_modules from the
+# prebuilt tree baked into the image, then `npm install @camunda/e2e-test-suite@latest`
+# on top — one network round-trip instead of a full dependency tree install.
+#
+# Slow path (local dev / image without prebuilt tree): full `npm install` after
+# an `npm update @camunda/e2e-test-suite` to chase the floating "latest" tag.
 #
 # When PLAYWRIGHT_E2E_LOCAL_TEST_SUITE is set, symlinks the local checkout into
 # node_modules instead of using the npm-published package. This allows iterating
@@ -597,10 +607,42 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Acquire the lock first — npm update and npm install both modify
-  # node_modules and package-lock.json, so they must be serialized.
+  # Serialize npm install across concurrent shards.
   local got_lock=true
   _acquire_npm_lock "$test_suite_path" 120 || got_lock=false
+
+  # Seed node_modules from the prebuilt tree baked into the runner image.
+  # `cp -al` hardlinks when src and dst share a filesystem; falls back to
+  # recursive copy when they don't.
+  if [[ ! -d "node_modules" ]] && [[ -d "$PREBUILT_E2E_NODE_MODULES" ]]; then
+    info "Seeding node_modules from prebuilt tree at $PREBUILT_E2E_NODE_MODULES"
+    if ! cp -al "$PREBUILT_E2E_NODE_MODULES" node_modules 2>/dev/null; then
+      log "Hardlink copy not supported, falling back to recursive copy"
+      cp -a "$PREBUILT_E2E_NODE_MODULES" node_modules
+    fi
+  fi
+
+  # Fetch the moving-target @camunda/e2e-test-suite on top of the prebuilt tree.
+  if [[ -d "node_modules" ]] && [[ -f "package.json" ]] \
+      && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
+    info "Fetching latest @camunda/e2e-test-suite..."
+    # shellcheck disable=SC2086
+    if npm install @camunda/e2e-test-suite@latest --no-save --prefer-online $npm_flags; then
+      [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
+      if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
+        _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
+      fi
+      local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+      mkdir -p "$results_dir"
+      return 0
+    fi
+    # Targeted install failed — fall through to a full install below as a
+    # safety net (e.g., transitive dep mismatch after an upstream package.json bump).
+    info "Targeted @camunda/e2e-test-suite install failed — falling back to full npm install"
+    rm -rf node_modules
+  fi
+
+  # ---------- Slow path: no prebuilt tree available (local dev) ----------
 
   # Update @camunda/e2e-test-suite to the latest version from the registry.
   # npm install respects package-lock.json and never upgrades past the pinned
@@ -659,42 +701,18 @@ _setup_playwright_environment() {
   mkdir -p "$results_dir"
 }
 
-# Install Playwright browsers (with deps on Linux)
-# Skips installation if browsers are already present (e.g., in pre-built container image)
+# Install Playwright browsers.
+# Only installs chromium-headless-shell — the browser used by all CI smoke and
+# full-suite runs. Firefox and WebKit are not needed.
+#
+# `npx playwright install chromium-headless-shell` is version-aware: it checks
+# whether the expected revision directory already exists under
+# PLAYWRIGHT_BROWSERS_PATH (/ms-playwright). When the playwright-runner image
+# is built with a matching PLAYWRIGHT_VERSION, the revision directory is already
+# present and the download is skipped entirely (~85 s saved per job).
 _install_playwright_browsers() {
-  # Check if we're running in a container with pre-installed browsers
-  # The official Playwright Docker image sets PLAYWRIGHT_BROWSERS_PATH
-  # TODO: fix if statement proper conditional.
-  # if [[ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]] && [[ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]]; then
-  #   local browser_count
-  #   browser_count=$(find "${PLAYWRIGHT_BROWSERS_PATH}" -maxdepth 1 -type d | wc -l)
-  #   if [[ "$browser_count" -gt 1 ]]; then
-  #     log "Playwright browsers already installed at ${PLAYWRIGHT_BROWSERS_PATH}, skipping installation"
-  #     return 0
-  #   fi
-  # fi
-
-  # Also check common Playwright browser locations
-  # TODO: fix if statement proper conditional.
-  # local ms_playwright_path="/ms-playwright"
-  # if [[ -d "$ms_playwright_path" ]]; then
-  #   local browser_count
-  #   browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
-  #   if [[ "$browser_count" -gt 1 ]]; then
-  #     log "Playwright browsers already installed at ${ms_playwright_path}, skipping installation"
-  #     return 0
-  #   fi
-  # fi
-
   info "Installing Playwright browsers..."
-  if [[ "$(uname -s)" == "Linux" ]]; then
-    npm install @playwright/test
-    npx playwright install-deps || exit 1
-    npx playwright install --with-deps || exit 1
-  else
-    npm install @playwright/test
-    npx playwright install || exit 1
-  fi
+  npx playwright install chromium-headless-shell || exit 1
 }
 
 # Handle playwright test result and exit appropriately
