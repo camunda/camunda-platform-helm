@@ -607,6 +607,31 @@
                                             "type": "boolean",
                                             "description": "enable REST TLS — sets `SERVER_SSL_ENABLED=true` on the Orchestration container, switches the `/orchestration` ingress backend-protocol to HTTPS, and derives `https://` for Web Modeler / Connectors REST endpoints.",
                                             "default": false
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "name of an existing Kubernetes secret containing the REST PKCS12 keystore. Empty disables the chart-managed wiring; the operator can still hand-wire via `orchestration.extraVolumes` and `orchestration.env`.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "key within the secret that holds the PKCS12 keystore file.",
+                                                    "default": "keystore.p12"
+                                                },
+                                                "existingSecretPasswordKey": {
+                                                    "type": "string",
+                                                    "description": "key within the same secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`).",
+                                                    "default": "keystore-password"
+                                                },
+                                                "keyAlias": {
+                                                    "type": "string",
+                                                    "description": "optional certificate alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias.",
+                                                    "default": ""
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -617,6 +642,26 @@
                                             "type": "boolean",
                                             "description": "enable gRPC TLS — sets `CAMUNDA_API_GRPC_SSL_ENABLED=true` on the Orchestration container, annotates the public gRPC ingress with `backend-protocol: GRPCS`, and derives `grpcs://` for Web Modeler and `https://` for Connectors gRPC endpoints.",
                                             "default": false
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "name of an existing Kubernetes secret containing the gRPC PEM cert and key. Empty disables the chart-managed wiring.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "key within the secret that holds the PEM certificate.",
+                                                    "default": "tls.crt"
+                                                },
+                                                "existingSecretPrivateKeyKey": {
+                                                    "type": "string",
+                                                    "description": "key within the same secret that holds the PEM private key.",
+                                                    "default": "tls.key"
+                                                }
+                                            }
                                         }
                                     }
                                 }
