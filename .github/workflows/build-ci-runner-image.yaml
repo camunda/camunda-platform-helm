@@ -211,38 +211,17 @@ jobs:
       - build-playwright-runner
     permissions:
       contents: read
+      packages: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-
-      - name: Import Vault secrets for Harbor
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        id: vault-harbor
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
-            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
-          exportEnv: false
-
-      - name: Generate GitHub App token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-github-token
-        with:
-          app_id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-          repositories: '["team-distribution"]'
-          permissions: '{"packages": "read"}'
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           registry: ${{ env.REGISTRY }}
-          username: x-access-token
-          password: ${{ steps.generate-github-token.outputs.token }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify CI Runner image
         run: |
