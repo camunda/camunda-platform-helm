@@ -2106,3 +2106,40 @@ func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
 		t.Errorf("baseFlags.ExtraValues mutated by Step 1 nil-out (got %v)", baseFlags.Deployment.ExtraValues)
 	}
 }
+
+// TestAppendScenarioExtraValues pins the #6312 per-scenario precedence: a
+// scenario's declared extra-values are appended AFTER any global --extra-values
+// (so the per-scenario file wins within the chain's `extra` slot), and relative
+// paths resolve against the scenario dir while absolute paths pass through.
+func TestAppendScenarioExtraValues(t *testing.T) {
+	scenarioDir := "/repo/charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup"
+	global := []string{"/tmp/global-image.yaml"}
+	entry := Entry{ExtraValues: []string{"values/extra/image.yaml", "/abs/override.yaml"}}
+
+	got := appendScenarioExtraValues(append([]string(nil), global...), entry, scenarioDir)
+
+	want := []string{
+		"/tmp/global-image.yaml",
+		filepath.Join(scenarioDir, "values/extra/image.yaml"),
+		"/abs/override.yaml",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d files %v, want %d %v", len(got), got, len(want), want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("file[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	// Global override must come before per-scenario so the per-scenario file
+	// is last-wins in helm's -f merge within the extra slot.
+	if got[0] != global[0] {
+		t.Errorf("global --extra-values must come first, got %q", got[0])
+	}
+
+	// Nil per-scenario list leaves the global slice untouched.
+	if out := appendScenarioExtraValues([]string{"/tmp/g.yaml"}, Entry{}, scenarioDir); len(out) != 1 || out[0] != "/tmp/g.yaml" {
+		t.Errorf("empty ExtraValues should pass global through unchanged, got %v", out)
+	}
+}

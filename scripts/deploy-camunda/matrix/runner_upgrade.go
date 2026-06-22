@@ -180,8 +180,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	step1Flags.Selection.UpgradeFlow = false     // Step 1 is a fresh install, no base-upgrade.yaml.
 	step1Flags.Chart.ChartRootOverlays = nil     // Step 1 installs old version from repo — no chart-root overlays.
 	step1Flags.Chart.SkipDependencyUpdate = true // Repo charts don't need local dep update.
-	// Step 1 installs the previously released chart; caller --extra-values
-	// (e.g. per-PR image tag) belongs to Step 2 only.
+	// Step 1 installs the previously released chart; both global --extra-values
+	// (e.g. per-PR image tag) and scenario-declared extra-values belong to Step 2
+	// only — they are combined in flags.Deployment.ExtraValues, which this nils.
 	step1Flags.Deployment.ExtraValues = nil
 	step1Flags.Test.RunE2ETests = false // Don't run tests after Step 1.
 	step1Flags.Test.RunAllTests = false

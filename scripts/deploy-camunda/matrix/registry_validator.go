@@ -53,7 +53,8 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	scenariosDir := filepath.Join(v.ChartDir, "test", "integration", "scenarios")
 	resourcesDir := filepath.Join(scenariosDir, "common", "resources")
 	scriptsDir := filepath.Join(scenariosDir, "pre-setup-scripts")
-	featuresDir := filepath.Join(scenariosDir, "chart-full-setup", "values", "features")
+	chartFullSetupDir := filepath.Join(scenariosDir, "chart-full-setup")
+	featuresDir := filepath.Join(chartFullSetupDir, "values", "features")
 
 	// Referenced-set tracking — feeds the orphan walks below. Populated as a
 	// side effect of checkHook so every hook iteration path (PR/Nightly/
@@ -91,6 +92,18 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		fPath := filepath.Join(featuresDir, feature+".yaml")
 		if info, err := os.Stat(fPath); err != nil || info.IsDir() {
 			problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", ctx, feature, fPath))
+		}
+	}
+	// Per-scenario extra-values resolution: relative paths resolve against the
+	// scenario's chart-full-setup dir (matching appendScenarioExtraValues in
+	// runner_execute.go); absolute paths are runtime-supplied and not validated.
+	checkExtraValues := func(ctx, ev string) {
+		if filepath.IsAbs(ev) {
+			return
+		}
+		path := filepath.Join(chartFullSetupDir, ev)
+		if info, err := os.Stat(path); err != nil || info.IsDir() {
+			problems = append(problems, fmt.Sprintf("%s: extra-values %q: missing values file at %s", ctx, ev, path))
 		}
 	}
 	checkDep := func(ctx string, dep ChartDependency) {
@@ -141,6 +154,9 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		for _, feat := range scn.Features {
 			checkFeature(label, feat)
 		}
+		for _, ev := range scn.ExtraValues {
+			checkExtraValues(label, ev)
+		}
 		for _, dep := range scn.Dependencies {
 			checkDep(label, dep)
 		}
@@ -179,6 +195,9 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		checkHook(label+" pre-install", scn.PreInstall)
 		checkHook(label+" post-infra", scn.PostInfra)
 		checkHook(label+" post-deploy", scn.PostDeploy)
+		for _, ev := range scn.ExtraValues {
+			checkExtraValues(label, ev)
+		}
 	}
 
 	// Dependency-profile pre-install hooks: validate even profiles that no
