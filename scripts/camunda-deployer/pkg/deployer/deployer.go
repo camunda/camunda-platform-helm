@@ -114,19 +114,13 @@ func Deploy(ctx context.Context, o types.Options) error {
 		}
 	}
 
-	// Deploy companion charts (e.g., OpenSearch) as separate Helm releases
-	// in the same namespace. Each chart is deployed with --wait to ensure
-	// it is ready before the main Camunda chart deployment begins.
-	for i, cc := range o.CompanionCharts {
-		logging.Logger.Info().
-			Str("chart", cc.ChartRef).
-			Str("version", cc.Version).
-			Str("release", cc.ReleaseName).
-			Str("namespace", o.Namespace).
-			Msg("Deploying companion chart")
-		if err := deployCompanionChart(ctx, cc, o); err != nil {
-			return fmt.Errorf("companion chart [%d] %q failed: %w", i, cc.ReleaseName, err)
-		}
+	// Deploy companion charts (e.g., OpenSearch) as separate Helm releases in
+	// the same namespace, concurrently — they are independent of each other and
+	// each is deployed with --wait. deployCompanionCharts blocks until all are
+	// ready, which keeps them ordered before the post-infra hooks and the main
+	// Camunda chart below.
+	if err := deployCompanionCharts(ctx, o); err != nil {
+		return err
 	}
 
 	// Run post-infra hooks after the companion charts (external infrastructure)
