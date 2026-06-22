@@ -607,26 +607,22 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Acquire the lock first — npm install modifies node_modules and may rewrite
-  # package-lock.json, so concurrent shards must serialize.
+  # Serialize npm install across concurrent shards.
   local got_lock=true
   _acquire_npm_lock "$test_suite_path" 120 || got_lock=false
 
-  # ---------- Fast path: prebuilt node_modules from the runner image ----------
+  # Seed node_modules from the prebuilt tree baked into the runner image.
+  # `cp -al` hardlinks when src and dst share a filesystem; falls back to
+  # recursive copy when they don't.
   if [[ ! -d "node_modules" ]] && [[ -d "$PREBUILT_E2E_NODE_MODULES" ]]; then
     info "Seeding node_modules from prebuilt tree at $PREBUILT_E2E_NODE_MODULES"
-    # cp -al uses hardlinks where possible (same filesystem) so this is near-free.
     if ! cp -al "$PREBUILT_E2E_NODE_MODULES" node_modules 2>/dev/null; then
       log "Hardlink copy not supported, falling back to recursive copy"
       cp -a "$PREBUILT_E2E_NODE_MODULES" node_modules
     fi
   fi
 
-  # If we have a node_modules tree (either prebuilt or from a previous run), we
-  # only need to ensure @camunda/e2e-test-suite itself is at the latest version.
-  # `npm install <pkg>@latest --no-save` overwrites just that one package and
-  # its transitive deps without rewriting package-lock.json or touching unrelated
-  # packages — drastically faster than `npm install` of the whole tree.
+  # Fetch the moving-target @camunda/e2e-test-suite on top of the prebuilt tree.
   if [[ -d "node_modules" ]] && [[ -f "package.json" ]] \
       && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
     info "Fetching latest @camunda/e2e-test-suite..."

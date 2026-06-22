@@ -381,37 +381,15 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     echo "Copying .tool-versions to docker context..."
     cp "$REPO_ROOT/.tool-versions" "$REPO_ROOT/.github/docker/playwright-runner/.tool-versions"
 
-    # Copy the highest-version chart e2e package.json into the docker context
-    # so the image can pre-install pinned e2e deps (everything except
-    # @camunda/e2e-test-suite, which stays a moving target at runtime).
-    # All chart versions must pin @playwright/test to the same exact version
-    # so the image's baked browser revision matches what npm install resolves
-    # at runtime; mismatch causes browsers to be re-downloaded every job.
-    echo "Validating @playwright/test pins across chart versions..."
-    PW_PINS=()
-    for f in "$REPO_ROOT"/charts/camunda-platform-*/test/e2e/package.json; do
-        v=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"] // empty' "$f")
-        if [[ -z "$v" ]]; then
-            echo "ERROR: $f does not declare @playwright/test" >&2
-            exit 1
-        fi
-        if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "ERROR: $f pins @playwright/test as '$v'; must be an exact version (e.g. 1.61.0)." >&2
-            exit 1
-        fi
-        PW_PINS+=("$v")
-    done
-    PW_UNIQ=$(printf '%s\n' "${PW_PINS[@]}" | sort -u)
-    if [[ $(echo "$PW_UNIQ" | wc -l) -ne 1 ]]; then
-        echo "ERROR: chart versions disagree on @playwright/test pin:" >&2
-        printf '  %s\n' "${PW_PINS[@]}" >&2
+    echo "Resolving @playwright/test pin and staging e2e-package.json..."
+    PW_PIN_OUT=$(cd "$REPO_ROOT/scripts/playwright-pin" && go run . \
+        --repo-root "$REPO_ROOT" \
+        --copy-to "$REPO_ROOT/.github/docker/playwright-runner/e2e-package.json")
+    PW_VERSION=$(echo "$PW_PIN_OUT" | awk -F= '/^playwright-version=/ {print $2}')
+    if [[ -z "$PW_VERSION" ]]; then
+        echo "ERROR: playwright-pin produced no playwright-version" >&2
         exit 1
     fi
-    PW_VERSION="$PW_UNIQ"
-    echo "Copying chart e2e package.json to docker context (pinned @playwright/test=$PW_VERSION)..."
-    E2E_PKG_SRC=$(ls -d "$REPO_ROOT"/charts/camunda-platform-*/test/e2e/package.json \
-        | sort -V | tail -n1)
-    cp "$E2E_PKG_SRC" "$REPO_ROOT/.github/docker/playwright-runner/e2e-package.json"
     PW_BUILD_ARGS="$PW_BUILD_ARGS --build-arg PLAYWRIGHT_VERSION=${PW_VERSION}"
 
     # Determine image tags based on whether we're testing

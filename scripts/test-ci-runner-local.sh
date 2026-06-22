@@ -28,7 +28,7 @@ for arg in "$@"; do
     case "$arg" in
         --ci-runner) TEST_CI=true ;;
         --playwright-runner) TEST_PLAYWRIGHT=true ;;
-        --both|--all) TEST_CI=true; TEST_PLAYWRIGHT=true ;;
+        --both) TEST_CI=true; TEST_PLAYWRIGHT=true ;;
         --local) USE_LOCAL=true ;;
         --help|-h)
             echo "Usage: $0 [--ci-runner | --playwright-runner | --both] [--local]"

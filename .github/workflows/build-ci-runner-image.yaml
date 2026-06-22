@@ -39,6 +39,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-ci-runner:
     name: Build CI Runner Image
@@ -141,40 +145,20 @@ jobs:
         run: |
           cp .tool-versions .github/docker/playwright-runner/.tool-versions
 
-      - name: Copy chart e2e package.json for Playwright Runner build
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: scripts/playwright-pin/go.mod
+          cache-dependency-path: scripts/playwright-pin/go.sum
+
+      - name: Resolve @playwright/test pin and stage e2e-package.json
         id: e2e-pkg
+        working-directory: scripts/playwright-pin
         run: |
-          # Pre-installs all pinned e2e deps (except the moving-target
-          # @camunda/e2e-test-suite) into /opt/e2e-prebuilt/node_modules.
-          # All chart versions must pin @playwright/test to the same exact
-          # version: the image bakes browsers for ONE playwright version, and
-          # any chart with a different pin would re-download browsers at
-          # runtime, undoing this optimization.
-          pins=()
-          for f in charts/camunda-platform-*/test/e2e/package.json; do
-            v=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"] // empty' "$f")
-            if [[ -z "$v" ]]; then
-              echo "ERROR: $f does not declare @playwright/test"
-              exit 1
-            fi
-            if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "ERROR: $f pins @playwright/test as '$v'; must be an exact version (e.g. 1.61.0) so the playwright-runner image's baked browser revision matches what npm install resolves at runtime."
-              exit 1
-            fi
-            pins+=("$f=$v")
-          done
-          uniq_versions=$(printf '%s\n' "${pins[@]}" | awk -F= '{print $2}' | sort -u)
-          if [[ $(echo "$uniq_versions" | wc -l) -ne 1 ]]; then
-            echo "ERROR: chart versions disagree on @playwright/test pin:"
-            printf '  %s\n' "${pins[@]}"
-            exit 1
-          fi
-          pw_version="$uniq_versions"
-          src=$(ls -d charts/camunda-platform-*/test/e2e/package.json \
-                | sort -V | tail -n1)
-          echo "Using $src as e2e-package.json source (pinned @playwright/test=$pw_version)"
-          cp "$src" .github/docker/playwright-runner/e2e-package.json
-          echo "playwright-version=$pw_version" >> "$GITHUB_OUTPUT"
+          go run . \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --copy-to "${GITHUB_WORKSPACE}/.github/docker/playwright-runner/e2e-package.json" \
+            >> "$GITHUB_OUTPUT"
 
       - name: Build and push Playwright Runner image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7

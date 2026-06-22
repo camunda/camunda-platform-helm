@@ -360,24 +360,10 @@ ENV GOTOOLCHAIN=local
 ENV PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
 RUN mkdir -p "${GOPATH}/bin" "${GOCACHE}" "${GOMODCACHE}"
 
-# ==============================================================================
-# Layer 4c: Pre-built E2E test-suite node_modules
-# ==============================================================================
-# At test time, scripts/base_playwright_script.sh runs `npm install` inside
-# charts/<v>/test/e2e/, which pulls hundreds of pinned packages every job
-# (containers start with an empty filesystem). To make this fast while still
-# always running against the latest published `@camunda/e2e-test-suite`, we
-# pre-install every OTHER dependency here at image build time, then the runtime
-# script only fetches `@camunda/e2e-test-suite@latest` on top.
-#
-# Inputs:
-#   - e2e-package.json: a copy of charts/camunda-platform-<latest>/test/e2e/
-#     package.json, placed into the build context by the workflow / local build
-#     script. Required.
-#
-# We strip `@camunda/e2e-test-suite` from the package.json before installing so
-# the moving-target dep is not baked in.
-# ==============================================================================
+# Layer 4c: Pre-built E2E test-suite node_modules.
+# `e2e-package.json` is staged into the build context by scripts/playwright-pin.
+# `@camunda/e2e-test-suite` is stripped before install — it is fetched at
+# runtime by scripts/base_playwright_script.sh.
 COPY e2e-package.json /opt/e2e-prebuilt/package.json
 
 RUN cd /opt/e2e-prebuilt \
@@ -386,7 +372,7 @@ RUN cd /opt/e2e-prebuilt \
     && mv package.json.stripped package.json \
     && npm install --no-audit --no-fund --omit=optional \
     && node -e "require('@playwright/test')" \
-    && echo "Prebuilt node_modules size:" && du -sh node_modules \
+    && du -sh node_modules \
     && npm cache clean --force \
     && rm -rf /root/.npm /tmp/*
 
