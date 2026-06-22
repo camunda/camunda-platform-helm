@@ -165,6 +165,56 @@ on startup. Fail loudly at render time instead.
 {{- end }}
 
 {{/*
+global.tls.optimize footgun: enabling Optimize TLS without providing
+the server cert material (either via the chart-managed `cert.secret.existingSecret`
+or via an explicit cert path in `optimize.env`) causes Spring Boot to crash
+on startup. Fail loudly at render time instead. This block governs the
+SERVER-side identity surface and is independent of the client-side
+`global.elasticsearch.tls.existingSecret` truststore.
+*/}}
+{{- if .Values.optimize.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.optimize.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
+    {{- if not .Values.global.tls.optimize.cert.secret.existingSecret }}
+      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
+        {{- $errorMessage := printf "%s %s %s"
+            "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
+            "Set global.tls.optimize.cert.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.global.tls.optimize.proxyVerify.enabled }}
+    {{- if ne (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.optimize.proxyVerify.enabled is true but Optimize server TLS is not enabled."
+          "Upstream verification only makes sense against a TLS backend; set global.tls.optimize.enabled: true (or wire SERVER_SSL_ENABLED=true via optimize.env, or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+    {{- if not .Values.global.tls.optimize.proxyVerify.caSecret.secret.existingSecret }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.optimize.proxyVerify.enabled is true but caSecret.secret.existingSecret is empty."
+          "Provide a Secret holding the CA bundle that the ingress should use to validate the Optimize server cert."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") .Values.global.tls.optimize.cert.secret.existingSecret }}
+    {{- $t := .Values.global.tls.optimize.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.optimize.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}
