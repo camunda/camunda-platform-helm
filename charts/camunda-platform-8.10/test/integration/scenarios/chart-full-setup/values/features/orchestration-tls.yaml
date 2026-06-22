@@ -1,7 +1,11 @@
+global:
+  tls:
+    orchestration:
+      grpc:
+        enabled: true
+
 orchestration:
   env:
-    - name: CAMUNDA_API_GRPC_SSL_ENABLED
-      value: "true"
     - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
       value: /usr/local/camunda/certificates/orchestration/tls.crt
     - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
