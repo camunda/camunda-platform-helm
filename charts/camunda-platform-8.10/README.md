@@ -612,10 +612,10 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 
 ### CamundaHub Parameters
 
-| Name                 | Description                                                                               | Value   |
-| -------------------- | ----------------------------------------------------------------------------------------- | ------- |
-| `camundaHub`         | configuration for Camunda Hub (WebModeler).                                               |         |
-| `camundaHub.enabled` | if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components. | `false` |
+| Name                 | Description                                                                             | Value   |
+| -------------------- | --------------------------------------------------------------------------------------- | ------- |
+| `camundaHub`         | configuration for Camunda Hub (WebModeler + Console).                                   |         |
+| `camundaHub.enabled` | if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI. | `false` |
 
 ### WebModeler Parameters
 

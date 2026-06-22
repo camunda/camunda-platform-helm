@@ -1078,13 +1078,15 @@ identity:
 #  #####  #    # #    #  ####  #    # #####  #    #   #     #  ####  #####
 ###############################################################################
 ## @section CamundaHub Parameters
-## @extra camundaHub configuration for Camunda Hub (WebModeler).
-## When camundaHub.enabled is true, WebModeler is deployed as a sub-component
-## of Camunda Hub. The legacy top-level webModeler.* keys still work for
-## backward compatibility but emit deprecation warnings when camundaHub is also enabled.
+## @extra camundaHub configuration for Camunda Hub (WebModeler + Console).
+## When camundaHub.enabled is true, the Web Modeler component is deployed and
+## the Console UI is enabled as a feature of the hub-restapi pod (Console is
+## no longer a separate deployment in 8.10).
+## The legacy top-level webModeler.* and console.* keys still work for
+## backward compatibility but emit deprecation warnings when set alongside camundaHub.
 camundaHub:
-  ## @param camundaHub.enabled if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.
-  ## When enabled, this takes precedence over the individual webModeler.enabled flag.
+  ## @param camundaHub.enabled if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.
+  ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
   enabled: false
 
   ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
