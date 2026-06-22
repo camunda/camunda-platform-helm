@@ -264,7 +264,7 @@ jobs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # This is needed if the workflow is triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -400,7 +400,7 @@ jobs:
       namespace: ${{ needs.runner.outputs.namespace }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm

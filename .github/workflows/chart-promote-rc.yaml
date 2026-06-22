@@ -77,7 +77,7 @@ jobs:
       # "Parse dev tag" runs before the commit SHA is known, so build release-tools
       # here. The binary in /tmp survives the later checkout-at-SHA.
       - name: Checkout for tooling
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Install tools for tooling
         uses: ./.github/actions/install-tool-versions
@@ -134,7 +134,7 @@ jobs:
           echo "sha=${sha}" | tee -a $GITHUB_OUTPUT
 
       - name: Checkout at commit SHA
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           ref: ${{ steps.parse.outputs.sha }}
           fetch-depth: 0
