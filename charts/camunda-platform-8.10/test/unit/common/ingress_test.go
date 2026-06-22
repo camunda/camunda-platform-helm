@@ -336,6 +336,43 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				require.Equal(t, "/orchestration", ingress.Spec.Rules[0].HTTP.Paths[0].Path)
 			},
 		},
+		{
+			Name: "TestOrchestrationHttpIngressEmitsProxyVerifyAnnotationsWhenEnabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                                            "true",
+				"global.host":                                                       "camunda.example.com",
+				"orchestration.enabled":                                             "true",
+				"orchestration.contextPath":                                         "/orchestration",
+				"global.tls.orchestration.rest.enabled":                             "true",
+				"global.tls.orchestration.rest.secret.existingSecret":               "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                 "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret": "upstream-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
+				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"], "/upstream-ca")
+				require.NotContains(t, ingress.Annotations, "nginx.ingress.kubernetes.io/proxy-ssl-name", "sniHost was unset; proxy-ssl-name should not be emitted")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressProxyVerifyFailsWithoutCaSecret",
+			Values: map[string]string{
+				"global.ingress.enabled":                              "true",
+				"global.host":                                         "camunda.example.com",
+				"orchestration.enabled":                               "true",
+				"orchestration.contextPath":                           "/orchestration",
+				"global.tls.orchestration.rest.enabled":               "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":   "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "proxyVerify.enabled is true but caSecret.existingSecret is empty")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -508,6 +545,28 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &ingress)
 
 				s.Require().NotEqual("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressEmitsProxyVerifyAnnotationsWhenEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                                              "true",
+				"orchestration.ingress.grpc.enabled":                                 "true",
+				"global.tls.orchestration.grpc.enabled":                              "true",
+				"global.tls.orchestration.grpc.secret.existingSecret":                "grpc-pem",
+				"global.tls.orchestration.grpc.proxyVerify.enabled":                  "true",
+				"global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret":  "upstream-ca",
+				"global.tls.orchestration.grpc.proxyVerify.sniHost":                  "orchestration.svc.cluster.local",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				s.Require().Equal("on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
+				s.Require().Contains(ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"], "/upstream-ca")
+				s.Require().Equal("orchestration.svc.cluster.local", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"])
+				s.Require().Equal("on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-server-name"])
 			},
 		},
 	}
