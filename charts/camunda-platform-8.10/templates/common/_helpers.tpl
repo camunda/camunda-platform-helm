@@ -771,7 +771,7 @@ Zeebe templates.
   {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
     {{-
       printf "%s://%s%s"
-        (ternary "https" "http" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true"))
+        (ternary "https" "http" (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true"))
         (include "orchestration.serviceNameHTTP" .)
         (.Values.orchestration.contextPath | default "" | trimSuffix "/")
     -}}
@@ -785,9 +785,39 @@ Zeebe templates.
   {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
     {{-
       printf "%s://%s"
-        (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true"))
+        (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true"))
         (include "orchestration.serviceNameGRPC" .)
     -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Orchestration REST TLS is enabled via
+global.tls.orchestration.rest.enabled or via an explicit SERVER_SSL_ENABLED=true
+entry in orchestration.env.
+*/}}
+{{- define "camundaPlatform.orchestrationRESTTLSEnabled" -}}
+  {{- if .Values.global.tls.orchestration.rest.enabled -}}
+    true
+  {{- else if eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Orchestration gRPC TLS is enabled via
+global.tls.orchestration.grpc.enabled or via an explicit
+CAMUNDA_API_GRPC_SSL_ENABLED=true entry in orchestration.env.
+*/}}
+{{- define "camundaPlatform.orchestrationGRPCTLSEnabled" -}}
+  {{- if .Values.global.tls.orchestration.grpc.enabled -}}
+    true
+  {{- else if eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true" -}}
+    true
+  {{- else -}}
+    false
   {{- end -}}
 {{- end -}}
 
