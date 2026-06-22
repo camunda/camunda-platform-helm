@@ -12,10 +12,12 @@ metadata:
       "context" .
     ) | nindent 4 }}
   annotations:
+    {{- $restProxyVerify := include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "rest") | fromYaml }}
     {{- include "common.tplvalues.merge-overwrite" (dict
       "values" (list
         .Values.global.ingress.annotations
         (dict "nginx.ingress.kubernetes.io/backend-protocol" "HTTPS")
+        ($restProxyVerify | default (dict))
       )
       "context" .
     ) | nindent 4 }}
