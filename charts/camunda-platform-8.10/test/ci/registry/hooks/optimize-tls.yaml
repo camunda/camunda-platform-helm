@@ -1,0 +1,5 @@
+script: pre-install-optimize-tls.sh
+description: |
+  Generates a self-signed certificate/key pair for the Optimize HTTP
+  endpoint and packages it as a PKCS12 keystore in a `optimize-tls-keystore`
+  Secret consumed by `global.tls.optimize.secret.existingSecret`.
