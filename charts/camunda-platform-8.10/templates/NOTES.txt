@@ -162,7 +162,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 - NGINX upstream verify (gRPC): on (CA: {{ .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret }})
 {{- end }}
 {{- if .Values.global.tls.orchestration.autoRollout }}
-- autoRollout: on (cert Secret changes will roll Orchestration on next helm upgrade)
+- autoRollout: on (cert content changes will roll Orchestration on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
 {{- else }}
 - autoRollout: off (rotate manually with: kubectl rollout restart statefulset/{{ include "orchestration.fullname" . }})
 {{- end }}

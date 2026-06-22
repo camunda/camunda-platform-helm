@@ -1255,15 +1255,10 @@ nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
 
 {{/*
 orchestrationTLSChecksumAnnotations
-Emits `checksum/orchestration-tls-{rest,grpc}` pod annotations derived from
-the Orchestration REST and gRPC TLS Secrets when global.tls.orchestration.autoRollout
-is true. Same opt-in gating and lookup-during-template caveats as
-caBundleChecksumAnnotation (see its docstring). Without these annotations,
-rotating the server cert Secret has no effect until the operator manually
-runs `kubectl rollout restart`.
-
-Hashes only the configured keys of each Secret to avoid spurious rollouts
-from unrelated metadata churn or co-located keys.
+Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert
+content of the Orchestration TLS Secrets when global.tls.orchestration.autoRollout
+is true. Opt-in shape and lookup-during-template caveats match
+camundaPlatform.caBundleChecksumAnnotation.
 
 Usage (inside the Orchestration pod template's metadata.annotations):
   {{- include "camundaPlatform.orchestrationTLSChecksumAnnotations" . | nindent 8 }}
@@ -1274,21 +1269,14 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- if and $rest.enabled $rest.secret.existingSecret -}}
 {{- $s := lookup "v1" "Secret" .Release.Namespace $rest.secret.existingSecret -}}
 {{- $data := ($s | default dict).data | default dict -}}
-{{- $type := $rest.secret.type | default "pkcs12" -}}
-{{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . -}}
-{{- $payload := "" -}}
-{{- if eq $type "pem" -}}
-  {{- $payload = printf "%s|%s" (get $data $certKey) (get $data $rest.secret.existingSecretPrivateKeyKey) -}}
-{{- else -}}
-  {{- $payload = printf "%s|%s" (get $data $certKey) (get $data $rest.secret.existingSecretPasswordKey) -}}
-{{- end }}
-checksum/orchestration-tls-rest: {{ $payload | sha256sum }}
+{{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
+checksum/orchestration-tls-rest: {{ get $data $certKey | sha256sum }}
 {{- end -}}
 {{- $grpc := .Values.global.tls.orchestration.grpc -}}
 {{- if and $grpc.enabled $grpc.secret.existingSecret }}
 {{- $s := lookup "v1" "Secret" .Release.Namespace $grpc.secret.existingSecret -}}
 {{- $data := ($s | default dict).data | default dict }}
-checksum/orchestration-tls-grpc: {{ printf "%s|%s" (get $data $grpc.secret.existingSecretKey) (get $data $grpc.secret.existingSecretPrivateKeyKey) | sha256sum }}
+checksum/orchestration-tls-grpc: {{ get $data $grpc.secret.existingSecretKey | sha256sum }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
