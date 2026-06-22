@@ -81,8 +81,6 @@ identity:
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*
-        - resourceServerId: console-api
-          definition: write:*
 
 optimize:
   enabled: true
