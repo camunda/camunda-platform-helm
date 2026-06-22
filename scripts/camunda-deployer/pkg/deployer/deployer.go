@@ -114,11 +114,8 @@ func Deploy(ctx context.Context, o types.Options) error {
 		}
 	}
 
-	// Deploy companion charts (e.g., OpenSearch) as separate Helm releases in
-	// the same namespace, concurrently — they are independent of each other and
-	// each is deployed with --wait. deployCompanionCharts blocks until all are
-	// ready, which keeps them ordered before the post-infra hooks and the main
-	// Camunda chart below.
+	// Deploy companion charts before the post-infra hooks and main chart.
+	// deployCompanionCharts blocks until all companions are ready.
 	if err := deployCompanionCharts(ctx, o); err != nil {
 		return err
 	}

@@ -212,19 +212,13 @@ func formatArgs(args []string) string {
 	return strings.Join(parts, " ")
 }
 
-// companionRepoMu serializes helm repo add/update across concurrent companion
-// deployments — those commands rewrite the shared repositories.yaml, so
-// concurrent writers would race. No current scenario pairs two remote-repo
-// companions, so contention is effectively zero; this guards future ones.
+// companionRepoMu serializes helm repo add/update — those commands rewrite the
+// shared repositories.yaml and must not run concurrently.
 var companionRepoMu sync.Mutex
 
-// deployCompanionCharts deploys all configured companion charts concurrently as
-// separate Helm releases in the same namespace. Companions are independent of
-// each other (only the main chart depends on them), so they install in
-// parallel. The call blocks until every companion is ready; on the first
-// failure the shared context is cancelled, terminating in-flight siblings, and
-// the first error is returned. A single companion behaves identically to a
-// serial deploy.
+// deployCompanionCharts deploys all configured companion charts concurrently,
+// blocking until every companion is ready or the first failure cancels the rest.
+// Returns the first error encountered; nil means all companions are up.
 func deployCompanionCharts(ctx context.Context, o types.Options) error {
 	g, gCtx := errgroup.WithContext(ctx)
 	for i, cc := range o.CompanionCharts {
