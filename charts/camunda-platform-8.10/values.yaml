@@ -456,6 +456,65 @@ global:
             ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
             namespace: ""
 
+    ## @extra global.tls.connectors configuration of TLS for the Connectors HTTP server.
+    connectors:
+      ## @param global.tls.connectors.autoRollout opt-in automatic pod rollout on Connectors cert rotation. When true, the chart stamps a `checksum/connectors-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Connectors when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @param global.tls.connectors.enabled if true, TLS is terminated at the Connectors HTTP server.
+      enabled: false
+      ## @param global.tls.connectors.type defines the secret format. One of: pkcs12, pem.
+      type: pkcs12
+      ## @param global.tls.connectors.keyAlias can be used to specify the cert alias within a PKCS12 keystore.
+      keyAlias: ""
+      ## @extra global.tls.connectors.cert configuration to provide the server certificate (PKCS12 keystore or PEM cert).
+      cert:
+        ## @extra global.tls.connectors.cert.secret configuration to provide the cert secret.
+        secret:
+          ## @param global.tls.connectors.cert.secret.inlineSecret can be used to provide the cert as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.tls.connectors.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via connectors.extraVolumes and connectors.env.
+          existingSecret: ""
+          ## @param global.tls.connectors.cert.secret.existingSecretKey defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.
+          existingSecretKey: ""
+      ## @extra global.tls.connectors.privateKey configuration to provide the PEM private key (PEM mode only).
+      privateKey:
+        ## @extra global.tls.connectors.privateKey.secret configuration to provide the private key secret.
+        secret:
+          ## @param global.tls.connectors.privateKey.secret.inlineSecret can be used to provide the private key as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.tls.connectors.privateKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.
+          existingSecret: ""
+          ## @param global.tls.connectors.privateKey.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "tls.key"
+      ## @extra global.tls.connectors.keystorePassword configuration to provide the PKCS12 keystore password (PKCS12 mode only).
+      keystorePassword:
+        ## @extra global.tls.connectors.keystorePassword.secret configuration to provide the keystore password secret.
+        secret:
+          ## @param global.tls.connectors.keystorePassword.secret.inlineSecret can be used to provide the keystore password as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.tls.connectors.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
+          existingSecret: ""
+          ## @param global.tls.connectors.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "keystore-password"
+      ## @extra global.tls.connectors.proxyVerify configuration of NGINX upstream cert verification. NOTE: Connectors in 8.10 is exposed via Gateway API HTTPRoute, not via an NGINX ingress; this block is reserved for parity / future NGINX users and is currently inert.
+      proxyVerify:
+        ## @param global.tls.connectors.proxyVerify.enabled if true, NGINX verifies the upstream server cert against the CA bundle. Currently inert under the Gateway API HTTPRoute used in 8.10.
+        enabled: false
+        ## @param global.tls.connectors.proxyVerify.sniHost can be used to set the SNI hostname NGINX presents when verifying the upstream cert.
+        sniHost: ""
+        ## @extra global.tls.connectors.proxyVerify.caSecret configuration to provide the CA bundle Secret for upstream verification.
+        caSecret:
+          ## @extra global.tls.connectors.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
+          secret:
+            ## @param global.tls.connectors.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.connectors.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle.
+            existingSecret: ""
+            ## @param global.tls.connectors.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "ca.crt"
+          ## @param global.tls.connectors.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
+          namespace: ""
+
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #

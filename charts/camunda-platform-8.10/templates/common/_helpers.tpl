@@ -748,6 +748,36 @@ CAMUNDA_API_GRPC_SSL_ENABLED=true entry in orchestration.env.
   {{- $enabled -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Returns "true" when Connectors TLS is enabled via
+global.tls.connectors.enabled or via an explicit SERVER_SSL_ENABLED=true
+entry in connectors.env.
+*/}}
+{{- define "camundaPlatform.connectorsTLSEnabled" -}}
+  {{- if .Values.global.tls.connectors.enabled -}}
+    true
+  {{- else if eq (include "camundaPlatform.connectorsEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns true when the last connectors.env entry for name has value true.
+*/}}
+{{- define "camundaPlatform.connectorsEnvIsTrue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $enabled := false -}}
+  {{- range $env := $ctx.Values.connectors.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- $enabled = (eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true") -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $enabled -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -1254,6 +1284,37 @@ nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
 {{- end -}}
 
 {{/*
+tlsChecksumAnnotation
+Generic helper: emits a single `<annotation>: <sha256 of secret[key]>` line
+from a referenced Secret's data, suitable for embedding under a pod template's
+metadata.annotations block. Returns the empty string when secretName is empty
+or when the Secret/key is absent at template time (consistent with
+caBundleChecksumAnnotation's `lookup`-based contract).
+
+Args (dict):
+  context     — root . context (for Release.Namespace + lookup)
+  annotation  — annotation key to emit (e.g. checksum/connectors-tls)
+  secretName  — Secret name to read in the release namespace
+  certKey     — data key within the Secret whose bytes are hashed
+
+Usage:
+  {{- include "camundaPlatform.tlsChecksumAnnotation" (dict
+      "context" .
+      "annotation" "checksum/connectors-tls"
+      "secretName" $secretName
+      "certKey" $certKey) }}
+*/}}
+{{- define "camundaPlatform.tlsChecksumAnnotation" -}}
+{{- $ctx := .context -}}
+{{- $name := .secretName -}}
+{{- if $name -}}
+{{- $s := lookup "v1" "Secret" $ctx.Release.Namespace $name -}}
+{{- $data := ($s | default dict).data | default dict -}}
+{{ .annotation }}: {{ get $data .certKey | sha256sum }}
+{{ end -}}
+{{- end -}}
+
+{{/*
 orchestrationTLSChecksumAnnotations
 Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert
 content of the Orchestration TLS Secrets when global.tls.orchestration.autoRollout
@@ -1267,17 +1328,88 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- if .Values.global.tls.orchestration.autoRollout -}}
 {{- $rest := .Values.global.tls.orchestration.rest -}}
 {{- if and $rest.enabled $rest.cert.secret.existingSecret -}}
-{{- $s := lookup "v1" "Secret" .Release.Namespace $rest.cert.secret.existingSecret -}}
-{{- $data := ($s | default dict).data | default dict -}}
-{{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . -}}
-{{- printf "\nchecksum/orchestration-tls-rest: %s" (get $data $certKey | sha256sum) -}}
+{{- include "camundaPlatform.tlsChecksumAnnotation" (dict
+    "context" .
+    "annotation" "checksum/orchestration-tls-rest"
+    "secretName" $rest.cert.secret.existingSecret
+    "certKey" (include "camundaPlatform.orchestrationRESTSecretCertKey" .)) -}}
 {{- end -}}
 {{- $grpc := .Values.global.tls.orchestration.grpc -}}
 {{- if and $grpc.enabled $grpc.cert.secret.existingSecret -}}
-{{- $s := lookup "v1" "Secret" .Release.Namespace $grpc.cert.secret.existingSecret -}}
-{{- $data := ($s | default dict).data | default dict -}}
-{{- printf "\nchecksum/orchestration-tls-grpc: %s" (get $data $grpc.cert.secret.existingSecretKey | sha256sum) -}}
+{{- include "camundaPlatform.tlsChecksumAnnotation" (dict
+    "context" .
+    "annotation" "checksum/orchestration-tls-grpc"
+    "secretName" $grpc.cert.secret.existingSecret
+    "certKey" $grpc.cert.secret.existingSecretKey) -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+connectorsSecretCertKey
+Returns the Secret data key that holds the Connectors server certificate. When
+`secret.type` is `pem` and `existingSecretKey` is still the chart default
+(`keystore.p12`), substitutes `tls.crt` so cert-manager `kubernetes.io/tls`
+Secrets work out of the box. Any explicit `existingSecretKey` other than
+the PKCS12 default wins verbatim.
+*/}}
+{{- define "camundaPlatform.connectorsSecretCertKey" -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- $type := $c.type | default "pkcs12" -}}
+{{- $key := $c.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+connectorsTLSChecksumAnnotation
+Emits a checksum/connectors-tls pod annotation from the cert content of the
+Connectors TLS Secret when global.tls.connectors.autoRollout is true.
+Opt-in shape and lookup-during-template caveats match
+camundaPlatform.caBundleChecksumAnnotation.
+
+Usage (inside the Connectors pod template's metadata.annotations):
+  {{- include "camundaPlatform.connectorsTLSChecksumAnnotation" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.connectorsTLSChecksumAnnotation" -}}
+{{- if .Values.global.tls.connectors.autoRollout -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- if and $c.enabled $c.cert.secret.existingSecret -}}
+{{- include "camundaPlatform.tlsChecksumAnnotation" (dict
+    "context" .
+    "annotation" "checksum/connectors-tls"
+    "secretName" $c.cert.secret.existingSecret
+    "certKey" (include "camundaPlatform.connectorsSecretCertKey" .)) }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+connectorsProxyVerifyAnnotations
+Renders the NGINX upstream-TLS-verification annotations for the Connectors
+ingress based on global.tls.connectors.proxyVerify. Returns nothing when
+proxyVerify.enabled is false or caSecret.existingSecret is empty.
+
+Connectors in 8.10 is exposed via Gateway API `HTTPRoute`, not via an NGINX
+ingress, so this helper is reserved for parity / future NGINX users; today
+it has no caller. See the TLS modes guide for the Gateway API caveat.
+*/}}
+{{- define "camundaPlatform.connectorsProxyVerifyAnnotations" -}}
+{{- $ctx := .context | default . -}}
+{{- $pv := $ctx.Values.global.tls.connectors.proxyVerify -}}
+{{- if and $pv.enabled $pv.caSecret.secret.existingSecret -}}
+{{- $ns := $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
+nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ns $pv.caSecret.secret.existingSecret | quote }}
+{{- with $pv.sniHost }}
+nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+{{- end }}
 {{- end -}}
 {{- end -}}
 
