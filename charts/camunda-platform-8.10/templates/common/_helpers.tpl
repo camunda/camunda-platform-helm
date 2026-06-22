@@ -601,6 +601,20 @@ Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
   {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-hub] Check if the Console sub-component should be enabled.
+Returns "true" if camundaHub.enabled OR console.enabled (legacy 8.9 key).
+Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
+*/}}
+{{- define "camundaHub.consoleEnabled" -}}
+  {{- $console := default (dict) .Values.console -}}
+  {{- if or .Values.camundaHub.enabled $console.enabled -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************

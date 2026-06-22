@@ -78,9 +78,9 @@ spec:
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: "/tmp/zeebe_client_cache.txt"
             - name: CAMUNDA_MODELER_FEATURE_CONSOLE_ENABLED
-              value: "true"
+              value: "false"
             - name: CAMUNDA_MODELER_FEATURE_GLOBAL_NAVIGATION_V2_ENABLED
-              value: "true"
+              value: "false"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
