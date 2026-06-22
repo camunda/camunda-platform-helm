@@ -379,10 +379,12 @@ global:
         proxyVerify:
           ## @param global.tls.orchestration.rest.proxyVerify.enabled when true, sets `nginx.ingress.kubernetes.io/proxy-ssl-verify: on` plus `proxy-ssl-secret` on the `orchestration-http` split ingress.
           enabled: false
-          ## @extra global.tls.orchestration.rest.proxyVerify.caSecret reference to a Kubernetes secret holding the CA bundle that NGINX uses to verify the Orchestration REST cert. NGINX Ingress requires the secret to live in the same namespace as the Ingress resource.
+          ## @extra global.tls.orchestration.rest.proxyVerify.caSecret reference to a Kubernetes secret holding the CA bundle that NGINX uses to verify the Orchestration REST cert.
           caSecret:
             ## @param global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret name of an existing Kubernetes secret containing the CA bundle.
             existingSecret: ""
+            ## @param global.tls.orchestration.rest.proxyVerify.caSecret.namespace optional namespace of the CA bundle Secret. Defaults to the release namespace. Set when the trust bundle lives in a centralised cert namespace; the NGINX Ingress controller must be configured to watch that namespace.
+            namespace: ""
             ## @param global.tls.orchestration.rest.proxyVerify.caSecret.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
             existingSecretKey: "ca.crt"
           ## @param global.tls.orchestration.rest.proxyVerify.sniHost optional hostname to use for SNI and cert-name verification at the ingress. Required when the Orchestration server cert SAN does not match the in-cluster service name (common with cert-manager certs scoped to a public domain). When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.
@@ -407,6 +409,8 @@ global:
           caSecret:
             ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret name of an existing Kubernetes secret containing the CA bundle.
             existingSecret: ""
+            ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.namespace optional namespace of the CA bundle Secret. Defaults to the release namespace. Set when the trust bundle lives in a centralised cert namespace; the NGINX Ingress controller must be configured to watch that namespace.
+            namespace: ""
             ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
             existingSecretKey: "ca.crt"
           ## @param global.tls.orchestration.grpc.proxyVerify.sniHost optional hostname for SNI and cert-name verification at the gRPC ingress. When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.

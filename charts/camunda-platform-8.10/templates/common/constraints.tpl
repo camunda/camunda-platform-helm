@@ -75,6 +75,13 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- end }}
   {{- end }}
   {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
+    {{- if not .Values.global.tls.orchestration.rest.enabled }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but global.tls.orchestration.rest.enabled is false."
+          "NGINX upstream verification only makes sense against a TLS backend; set rest.enabled: true (or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
     {{- if not .Values.global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret }}
       {{- $errorMessage := printf "%s %s"
           "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but caSecret.existingSecret is empty."
@@ -84,11 +91,26 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- end }}
   {{- end }}
   {{- if .Values.global.tls.orchestration.grpc.proxyVerify.enabled }}
+    {{- if not .Values.global.tls.orchestration.grpc.enabled }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but global.tls.orchestration.grpc.enabled is false."
+          "NGINX upstream verification only makes sense against a TLS backend; set grpc.enabled: true (or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
     {{- if not .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret }}
       {{- $errorMessage := printf "%s %s"
           "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but caSecret.existingSecret is empty."
           "Provide a Secret holding the CA bundle that NGINX should use to validate the Orchestration gRPC server cert."
       -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- /* Validate rest.secret.type is one of pkcs12 / pem when a secret is referenced. */ -}}
+  {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.secret.existingSecret }}
+    {{- $t := .Values.global.tls.orchestration.rest.secret.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.orchestration.rest.secret.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
   {{- end }}

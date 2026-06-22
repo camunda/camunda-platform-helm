@@ -1,6 +1,13 @@
 #!/bin/bash
 # Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
 # under one or more contributor license agreements. Licensed under a proprietary license.
+#
+# TEST FIXTURE — DO NOT USE IN PRODUCTION
+# This script generates a self-signed RSA-4096 certificate, an unencrypted
+# PEM private key, and PKCS12 stores with the literal password "changeit".
+# It exists only to bootstrap the integration nightly TLS scenarios. Real
+# deployments should source certs from a managed CA (cert-manager, internal
+# PKI, public CA) and keep passwords in a sealed/external secret store.
 
 set -euo pipefail
 

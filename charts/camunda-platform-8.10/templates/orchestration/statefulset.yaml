@@ -360,11 +360,13 @@ spec:
         - name: orchestration-tls-rest
           secret:
             secretName: {{ .Values.global.tls.orchestration.rest.secret.existingSecret }}
+            defaultMode: 0400
         {{- end }}
         {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.secret.existingSecret }}
         - name: orchestration-tls-grpc
           secret:
             secretName: {{ .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+            defaultMode: 0400
         {{- end }}
         {{- if .Values.orchestration.extraVolumes }}
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}

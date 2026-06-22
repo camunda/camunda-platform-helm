@@ -1224,8 +1224,9 @@ Usage (inside an ingress template's annotations block, e.g. via merge-overwrite)
 {{- $proto := .proto -}}
 {{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
 {{- if and $pv.enabled $pv.caSecret.existingSecret -}}
+{{- $ns := $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
 nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
-nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ctx.Release.Namespace $pv.caSecret.existingSecret | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ns $pv.caSecret.existingSecret | quote }}
 {{- with $pv.sniHost }}
 nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
 nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
