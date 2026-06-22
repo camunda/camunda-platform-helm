@@ -849,8 +849,9 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 		{
 			Name: "REST TLS only via global.tls.orchestration.rest.enabled",
 			Values: map[string]string{
-				"orchestration.enabled":                 "true",
-				"global.tls.orchestration.rest.enabled": "true",
+				"orchestration.enabled":                               "true",
+				"global.tls.orchestration.rest.enabled":               "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -865,8 +866,9 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 		{
 			Name: "gRPC TLS only via global.tls.orchestration.grpc.enabled",
 			Values: map[string]string{
-				"orchestration.enabled":                 "true",
-				"global.tls.orchestration.grpc.enabled": "true",
+				"orchestration.enabled":                               "true",
+				"global.tls.orchestration.grpc.enabled":               "true",
+				"global.tls.orchestration.grpc.secret.existingSecret": "grpc-pem",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -881,9 +883,11 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 		{
 			Name: "Both TLS modes via global.tls.orchestration.*",
 			Values: map[string]string{
-				"orchestration.enabled":                 "true",
-				"global.tls.orchestration.rest.enabled": "true",
-				"global.tls.orchestration.grpc.enabled": "true",
+				"orchestration.enabled":                               "true",
+				"global.tls.orchestration.rest.enabled":               "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.grpc.enabled":               "true",
+				"global.tls.orchestration.grpc.secret.existingSecret": "grpc-pem",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -898,9 +902,10 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 		{
 			Name: "Explicit orchestration.env wins via Kubernetes last-wins",
 			Values: map[string]string{
-				"orchestration.enabled":                 "true",
-				"global.tls.orchestration.rest.enabled": "true",
-				"orchestration.env[0].name":             "SERVER_SSL_ENABLED",
+				"orchestration.enabled":                               "true",
+				"global.tls.orchestration.rest.enabled":               "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
+				"orchestration.env[0].name":                           "SERVER_SSL_ENABLED",
 			},
 			RenderTemplateExtraArgs: []string{
 				"--set-string", "orchestration.env[0].value=false",
@@ -1004,9 +1009,9 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 		{
 			Name: "Secret block is inert when the matching enabled flag is false",
 			Values: map[string]string{
-				"orchestration.enabled":                                "true",
-				"global.tls.orchestration.rest.secret.existingSecret":  "should-not-mount",
-				"global.tls.orchestration.grpc.secret.existingSecret":  "should-not-mount",
+				"orchestration.enabled":                               "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "should-not-mount",
+				"global.tls.orchestration.grpc.secret.existingSecret": "should-not-mount",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1014,6 +1019,50 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 				require.NotContains(t, output, "orchestration-tls-grpc")
 				require.NotContains(t, output, "SERVER_SSL_KEY_STORE")
 				require.NotContains(t, output, "CAMUNDA_API_GRPC_SSL_CERTIFICATE")
+			},
+		},
+		{
+			Name: "REST PEM mode emits Spring Boot certificate env vars",
+			Values: map[string]string{
+				"orchestration.enabled":                                            "true",
+				"global.tls.orchestration.rest.enabled":                            "true",
+				"global.tls.orchestration.rest.secret.existingSecret":              "rest-pem",
+				"global.tls.orchestration.rest.secret.type":                        "pem",
+				"global.tls.orchestration.rest.secret.existingSecretKey":           "tls.crt",
+				"global.tls.orchestration.rest.secret.existingSecretPrivateKeyKey": "tls.key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/orchestration/rest/tls.crt"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE_PRIVATE_KEY", Value: "/usr/local/camunda/certificates/orchestration/rest/tls.key"})
+				require.NotContains(t, output, "SERVER_SSL_KEY_STORE")
+			},
+		},
+		{
+			Name: "Constraint fails when REST enabled but no cert is configured",
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"global.tls.orchestration.rest.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "global.tls.orchestration.rest.enabled is true but no server cert is configured")
+			},
+		},
+		{
+			Name: "Constraint allows REST enabled when the operator hand-wires SERVER_SSL_KEY_STORE via orchestration.env",
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"global.tls.orchestration.rest.enabled": "true",
+				"orchestration.env[0].name":             "SERVER_SSL_KEY_STORE",
+				"orchestration.env[0].value":            "file:/custom/keystore.p12",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 			},
 		},
 	}

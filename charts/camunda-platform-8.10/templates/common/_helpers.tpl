@@ -1201,6 +1201,45 @@ docs/tls-values-quickstart.md). Emits nothing when caBundle is unset.
 Usage (inside a pod template's metadata.annotations):
   {{- include "camundaPlatform.caBundleChecksumAnnotation" . | nindent 8 }}
 */}}
+{{/*
+orchestrationTLSChecksumAnnotations
+Emits `checksum/orchestration-tls-{rest,grpc}` pod annotations derived from
+the Orchestration REST and gRPC TLS Secrets when global.tls.orchestration.autoRollout
+is true. Same opt-in gating and lookup-during-template caveats as
+caBundleChecksumAnnotation (see its docstring). Without these annotations,
+rotating the server cert Secret has no effect until the operator manually
+runs `kubectl rollout restart`.
+
+Hashes only the configured keys of each Secret to avoid spurious rollouts
+from unrelated metadata churn or co-located keys.
+
+Usage (inside the Orchestration pod template's metadata.annotations):
+  {{- include "camundaPlatform.orchestrationTLSChecksumAnnotations" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.orchestrationTLSChecksumAnnotations" -}}
+{{- if .Values.global.tls.orchestration.autoRollout -}}
+{{- $rest := .Values.global.tls.orchestration.rest -}}
+{{- if and $rest.enabled $rest.secret.existingSecret -}}
+{{- $s := lookup "v1" "Secret" .Release.Namespace $rest.secret.existingSecret -}}
+{{- $data := ($s | default dict).data | default dict -}}
+{{- $type := $rest.secret.type | default "pkcs12" -}}
+{{- $payload := "" -}}
+{{- if eq $type "pem" -}}
+  {{- $payload = printf "%s|%s" (get $data $rest.secret.existingSecretKey) (get $data $rest.secret.existingSecretPrivateKeyKey) -}}
+{{- else -}}
+  {{- $payload = printf "%s|%s" (get $data $rest.secret.existingSecretKey) (get $data $rest.secret.existingSecretPasswordKey) -}}
+{{- end }}
+checksum/orchestration-tls-rest: {{ $payload | sha256sum }}
+{{- end -}}
+{{- $grpc := .Values.global.tls.orchestration.grpc -}}
+{{- if and $grpc.enabled $grpc.secret.existingSecret }}
+{{- $s := lookup "v1" "Secret" .Release.Namespace $grpc.secret.existingSecret -}}
+{{- $data := ($s | default dict).data | default dict }}
+checksum/orchestration-tls-grpc: {{ printf "%s|%s" (get $data $grpc.secret.existingSecretKey) (get $data $grpc.secret.existingSecretPrivateKeyKey) | sha256sum }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "camundaPlatform.caBundleChecksumAnnotation" -}}
 {{- /* Gated on autoRollout (default off): the lookup below requires `get` on
        Secrets for the upgrading identity — a Forbidden error there is NOT

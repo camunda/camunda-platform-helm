@@ -40,6 +40,43 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 {{- end }}
 
 {{/*
+global.tls.orchestration footgun: enabling REST or gRPC TLS without providing
+the server cert material (either via the chart-managed `secret.existingSecret`
+or via an explicit cert path in `orchestration.env`) causes Spring Boot / the
+gRPC server to crash on startup. Fail loudly at render time instead.
+*/}}
+{{- if .Values.orchestration.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.orchestration.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- if .Values.global.tls.orchestration.rest.enabled }}
+    {{- if not .Values.global.tls.orchestration.rest.secret.existingSecret }}
+      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
+        {{- $errorMessage := printf "%s %s %s"
+            "[camunda][error] global.tls.orchestration.rest.enabled is true but no server cert is configured."
+            "Set global.tls.orchestration.rest.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "or hand-wire a SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE entry under orchestration.env."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.global.tls.orchestration.grpc.enabled }}
+    {{- if not .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+      {{- if not (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) }}
+        {{- $errorMessage := printf "%s %s %s"
+            "[camunda][error] global.tls.orchestration.grpc.enabled is true but no server cert is configured."
+            "Set global.tls.orchestration.grpc.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "or hand-wire a CAMUNDA_API_GRPC_SSL_CERTIFICATE entry under orchestration.env."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}

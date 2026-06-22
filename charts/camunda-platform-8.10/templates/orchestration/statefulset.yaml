@@ -28,6 +28,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (include "camundaPlatform.orchestrationTLSChecksumAnnotations" .) }}{{ . | nindent 8 }}{{- end }}
         {{- if .Values.orchestration.podAnnotations }}
         {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}
         {{- end }}
@@ -104,6 +105,12 @@ spec:
             - name: SERVER_SSL_ENABLED
               value: "true"
             {{- if .Values.global.tls.orchestration.rest.secret.existingSecret }}
+            {{- if eq (.Values.global.tls.orchestration.rest.secret.type | default "pkcs12") "pem" }}
+            - name: SERVER_SSL_CERTIFICATE
+              value: /usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretKey }}
+            - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
+              value: /usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretPrivateKeyKey }}
+            {{- else }}
             - name: SERVER_SSL_KEY_STORE
               value: file:/usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretKey }}
             - name: SERVER_SSL_KEY_STORE_TYPE
@@ -116,6 +123,7 @@ spec:
             {{- with .Values.global.tls.orchestration.rest.secret.keyAlias }}
             - name: SERVER_SSL_KEY_ALIAS
               value: {{ . | quote }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- end }}
