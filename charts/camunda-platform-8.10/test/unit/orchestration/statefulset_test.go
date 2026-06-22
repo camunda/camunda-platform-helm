@@ -1043,6 +1043,24 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 			},
 		},
 		{
+			Name: "REST PEM mode auto-substitutes tls.crt when existingSecretKey is left at PKCS12 default",
+			Values: map[string]string{
+				"orchestration.enabled":                               "true",
+				"global.tls.orchestration.rest.enabled":               "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "cert-manager-tls",
+				"global.tls.orchestration.rest.secret.type":           "pem",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/orchestration/rest/tls.crt"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE_PRIVATE_KEY", Value: "/usr/local/camunda/certificates/orchestration/rest/tls.key"})
+			},
+		},
+		{
 			Name: "Constraint fails when REST enabled but no cert is configured",
 			Values: map[string]string{
 				"orchestration.enabled":                 "true",

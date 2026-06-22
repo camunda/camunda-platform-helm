@@ -367,7 +367,7 @@ global:
           existingSecret: ""
           ## @param global.tls.orchestration.rest.secret.type one of `pkcs12` or `pem`. `pkcs12` emits `SERVER_SSL_KEY_STORE*` env vars; `pem` emits the Spring Boot `SERVER_SSL_CERTIFICATE` / `SERVER_SSL_CERTIFICATE_PRIVATE_KEY` env vars and is compatible with cert-manager `kubernetes.io/tls` Secrets out of the box.
           type: pkcs12
-          ## @param global.tls.orchestration.rest.secret.existingSecretKey for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate (set to `tls.crt` for cert-manager-issued secrets).
+          ## @param global.tls.orchestration.rest.secret.existingSecretKey for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate. When `type=pem` and this field is left at its PKCS12 default, the chart automatically substitutes `tls.crt` so cert-manager `kubernetes.io/tls` Secrets work out of the box.
           existingSecretKey: "keystore.p12"
           ## @param global.tls.orchestration.rest.secret.existingSecretPrivateKeyKey for `type=pem` only — key within the same secret that holds the PEM private key (set to `tls.key` for cert-manager-issued secrets). Ignored when `type=pkcs12`.
           existingSecretPrivateKeyKey: "tls.key"

@@ -1202,6 +1202,25 @@ Usage (inside a pod template's metadata.annotations):
   {{- include "camundaPlatform.caBundleChecksumAnnotation" . | nindent 8 }}
 */}}
 {{/*
+orchestrationRESTSecretCertKey
+Returns the Secret data key that holds the REST server certificate. When
+`secret.type` is `pem` and `existingSecretKey` is still the chart default
+(`keystore.p12`), substitutes `tls.crt` so cert-manager `kubernetes.io/tls`
+Secrets work out of the box. Any explicit `existingSecretKey` other than
+the PKCS12 default wins verbatim.
+*/}}
+{{- define "camundaPlatform.orchestrationRESTSecretCertKey" -}}
+{{- $r := .Values.global.tls.orchestration.rest -}}
+{{- $type := $r.secret.type | default "pkcs12" -}}
+{{- $key := $r.secret.existingSecretKey -}}
+{{- if and (eq $type "pem") (eq $key "keystore.p12") -}}
+tls.crt
+{{- else -}}
+{{ $key }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 orchestrationProxyVerifyAnnotations
 Renders the NGINX upstream-TLS-verification annotations for one of the
 Orchestration ingresses (REST or gRPC) based on the matching
@@ -1256,11 +1275,12 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- $s := lookup "v1" "Secret" .Release.Namespace $rest.secret.existingSecret -}}
 {{- $data := ($s | default dict).data | default dict -}}
 {{- $type := $rest.secret.type | default "pkcs12" -}}
+{{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . -}}
 {{- $payload := "" -}}
 {{- if eq $type "pem" -}}
-  {{- $payload = printf "%s|%s" (get $data $rest.secret.existingSecretKey) (get $data $rest.secret.existingSecretPrivateKeyKey) -}}
+  {{- $payload = printf "%s|%s" (get $data $certKey) (get $data $rest.secret.existingSecretPrivateKeyKey) -}}
 {{- else -}}
-  {{- $payload = printf "%s|%s" (get $data $rest.secret.existingSecretKey) (get $data $rest.secret.existingSecretPasswordKey) -}}
+  {{- $payload = printf "%s|%s" (get $data $certKey) (get $data $rest.secret.existingSecretPasswordKey) -}}
 {{- end }}
 checksum/orchestration-tls-rest: {{ $payload | sha256sum }}
 {{- end -}}

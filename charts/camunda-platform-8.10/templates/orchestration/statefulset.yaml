@@ -107,12 +107,12 @@ spec:
             {{- if .Values.global.tls.orchestration.rest.secret.existingSecret }}
             {{- if eq (.Values.global.tls.orchestration.rest.secret.type | default "pkcs12") "pem" }}
             - name: SERVER_SSL_CERTIFICATE
-              value: /usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretKey }}
+              value: /usr/local/camunda/certificates/orchestration/rest/{{ include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
             - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
               value: /usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretPrivateKeyKey }}
             {{- else }}
             - name: SERVER_SSL_KEY_STORE
-              value: file:/usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretKey }}
+              value: file:/usr/local/camunda/certificates/orchestration/rest/{{ include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
             - name: SERVER_SSL_KEY_STORE_TYPE
               value: PKCS12
             - name: SERVER_SSL_KEY_STORE_PASSWORD
@@ -360,13 +360,13 @@ spec:
         - name: orchestration-tls-rest
           secret:
             secretName: {{ .Values.global.tls.orchestration.rest.secret.existingSecret }}
-            defaultMode: 0400
+            defaultMode: 0440
         {{- end }}
         {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.secret.existingSecret }}
         - name: orchestration-tls-grpc
           secret:
             secretName: {{ .Values.global.tls.orchestration.grpc.secret.existingSecret }}
-            defaultMode: 0400
+            defaultMode: 0440
         {{- end }}
         {{- if .Values.orchestration.extraVolumes }}
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}
