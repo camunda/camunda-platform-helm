@@ -6344,6 +6344,117 @@
                     "default": "10s"
                 }
             }
+        },
+        "console": {
+            "properties": {
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                }
+            }
         }
     }
 }
