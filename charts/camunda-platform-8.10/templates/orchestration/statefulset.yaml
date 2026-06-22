@@ -100,6 +100,14 @@ spec:
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
+            {{- if .Values.global.tls.orchestration.rest.enabled }}
+            - name: SERVER_SSL_ENABLED
+              value: "true"
+            {{- end }}
+            {{- if .Values.global.tls.orchestration.grpc.enabled }}
+            - name: CAMUNDA_API_GRPC_SSL_ENABLED
+              value: "true"
+            {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

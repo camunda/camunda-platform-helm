@@ -844,6 +844,89 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "REST TLS only via global.tls.orchestration.rest.enabled",
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"global.tls.orchestration.rest.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_ENABLED", Value: "true"})
+				s.Require().NotContains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_ENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "gRPC TLS only via global.tls.orchestration.grpc.enabled",
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"global.tls.orchestration.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_ENABLED", Value: "true"})
+				s.Require().NotContains(env, corev1.EnvVar{Name: "SERVER_SSL_ENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "Both TLS modes via global.tls.orchestration.*",
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"global.tls.orchestration.rest.enabled": "true",
+				"global.tls.orchestration.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_ENABLED", Value: "true"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_ENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "Explicit orchestration.env wins via Kubernetes last-wins",
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"global.tls.orchestration.rest.enabled": "true",
+				"orchestration.env[0].name":             "SERVER_SSL_ENABLED",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.env[0].value=false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				var positions []int
+				for i, e := range env {
+					if e.Name == "SERVER_SSL_ENABLED" {
+						positions = append(positions, i)
+					}
+				}
+				s.Require().Len(positions, 2, "both entries should be rendered so the user-supplied one wins last")
+				s.Require().Equal("true", env[positions[0]].Value)
+				s.Require().Equal("false", env[positions[1]].Value)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *StatefulSetTest) TestWithJKSSecretReference() {
 	testCases := []testhelpers.TestCase{
 		{

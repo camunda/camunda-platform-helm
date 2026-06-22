@@ -353,6 +353,17 @@ global:
           ## @param global.tls.caBundle.containerSecurityContext.seccompProfile.type
           type: RuntimeDefault
 
+    ## @extra global.tls.orchestration first-class TLS modes for the Orchestration component. REST (`SERVER_SSL_ENABLED`) and gRPC (`CAMUNDA_API_GRPC_SSL_ENABLED`) are independent server settings; setting either flag here drives the Orchestration env var, the public NGINX ingress backend-protocol, and the in-cluster client schemes used by Web Modeler and Connectors. Explicit `orchestration.env` entries with the same name override these flags (last-wins). Customer-facing trust material still flows through `global.tls.caBundle`.
+    orchestration:
+      ## @extra global.tls.orchestration.rest REST TLS mode for the Orchestration HTTP server.
+      rest:
+        ## @param global.tls.orchestration.rest.enabled enable REST TLS — sets `SERVER_SSL_ENABLED=true` on the Orchestration container, switches the `/orchestration` ingress backend-protocol to HTTPS, and derives `https://` for Web Modeler / Connectors REST endpoints.
+        enabled: false
+      ## @extra global.tls.orchestration.grpc gRPC TLS mode for the Orchestration gRPC server.
+      grpc:
+        ## @param global.tls.orchestration.grpc.enabled enable gRPC TLS — sets `CAMUNDA_API_GRPC_SSL_ENABLED=true` on the Orchestration container, annotates the public gRPC ingress with `backend-protocol: GRPCS`, and derives `grpcs://` for Web Modeler and `https://` for Connectors gRPC endpoints.
+        enabled: false
+
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #

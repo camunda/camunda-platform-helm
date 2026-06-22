@@ -315,6 +315,26 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				require.NotContains(t, output, "name: camunda-platform-test-orchestration-http")
 			},
 		},
+		{
+			Name: "TestOrchestrationHttpIngressRenderedWhenGlobalTlsOrchestrationRestEnabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                "true",
+				"global.host":                           "camunda.example.com",
+				"orchestration.enabled":                 "true",
+				"orchestration.contextPath":             "/orchestration",
+				"global.tls.orchestration.rest.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				require.Equal(t, "camunda-platform-test-orchestration-http", ingress.Name)
+				require.Equal(t, "HTTPS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				require.Equal(t, "/orchestration", ingress.Spec.Rules[0].HTTP.Paths[0].Path)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -453,6 +473,39 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 
 				s.Require().Equal("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
 				s.Require().Equal("kept", ingress.Annotations["custom.io"])
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressUsesSecureBackendProtocolWhenGlobalTlsOrchestrationGrpcEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"orchestration.ingress.grpc.enabled":    "true",
+				"global.tls.orchestration.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressUsesPlaintextBackendProtocolByDefault",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":              "true",
+				"orchestration.ingress.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().NotEqual("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
 			},
 		},
 	}
