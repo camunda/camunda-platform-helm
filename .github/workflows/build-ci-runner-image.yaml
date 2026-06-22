@@ -120,15 +120,39 @@ jobs:
           cp .tool-versions .github/docker/playwright-runner/.tool-versions
 
       - name: Copy chart e2e package.json for Playwright Runner build
+        id: e2e-pkg
         run: |
           # Pre-installs all pinned e2e deps (except the moving-target
           # @camunda/e2e-test-suite) into /opt/e2e-prebuilt/node_modules.
-          # Pick the highest chart version so we track the most recent
-          # devDependency set; all current chart versions ship the same set.
+          # All chart versions must pin @playwright/test to the same exact
+          # version: the image bakes browsers for ONE playwright version, and
+          # any chart with a different pin would re-download browsers at
+          # runtime, undoing this optimization.
+          pins=()
+          for f in charts/camunda-platform-*/test/e2e/package.json; do
+            v=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"] // empty' "$f")
+            if [[ -z "$v" ]]; then
+              echo "ERROR: $f does not declare @playwright/test"
+              exit 1
+            fi
+            if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "ERROR: $f pins @playwright/test as '$v'; must be an exact version (e.g. 1.61.0) so the playwright-runner image's baked browser revision matches what npm install resolves at runtime."
+              exit 1
+            fi
+            pins+=("$f=$v")
+          done
+          uniq_versions=$(printf '%s\n' "${pins[@]}" | awk -F= '{print $2}' | sort -u)
+          if [[ $(echo "$uniq_versions" | wc -l) -ne 1 ]]; then
+            echo "ERROR: chart versions disagree on @playwright/test pin:"
+            printf '  %s\n' "${pins[@]}"
+            exit 1
+          fi
+          pw_version="$uniq_versions"
           src=$(ls -d charts/camunda-platform-*/test/e2e/package.json \
                 | sort -V | tail -n1)
-          echo "Using $src as e2e-package.json source"
+          echo "Using $src as e2e-package.json source (pinned @playwright/test=$pw_version)"
           cp "$src" .github/docker/playwright-runner/e2e-package.json
+          echo "playwright-version=$pw_version" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Playwright Runner image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
@@ -137,6 +161,8 @@ jobs:
           file: .github/docker/playwright-runner/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.playwright-tags }}
+          build-args: |
+            PLAYWRIGHT_VERSION=${{ steps.e2e-pkg.outputs.playwright-version }}
           no-cache: ${{ github.event_name == 'schedule' || inputs.force-rebuild == true }}
           cache-from: type=gha,scope=playwright-runner
           cache-to: type=gha,mode=max,scope=playwright-runner
