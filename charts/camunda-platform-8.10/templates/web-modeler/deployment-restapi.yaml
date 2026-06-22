@@ -82,6 +82,10 @@ spec:
             ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: {{ (or .Values.camundaHub.webModeler.restapi.zeebeClientConfigPath .Values.webModeler.restapi.zeebeClientConfigPath) | default "/tmp/zeebe_client_cache.txt" | quote }}
+            - name: CAMUNDA_MODELER_FEATURE_CONSOLE_ENABLED
+              value: "true"
+            - name: CAMUNDA_MODELER_FEATURE_GLOBAL_NAVIGATION_V2_ENABLED
+              value: "true"
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
