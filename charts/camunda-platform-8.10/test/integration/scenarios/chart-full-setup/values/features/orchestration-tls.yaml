@@ -3,21 +3,10 @@ global:
     orchestration:
       grpc:
         enabled: true
-
-orchestration:
-  env:
-    - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
-      value: /usr/local/camunda/certificates/orchestration/tls.crt
-    - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
-      value: /usr/local/camunda/certificates/orchestration/tls.key
-  extraVolumes:
-    - name: orchestration-tls
-      secret:
-        secretName: orchestration-tls
-  extraVolumeMounts:
-    - name: orchestration-tls
-      mountPath: /usr/local/camunda/certificates/orchestration
-      readOnly: true
+        secret:
+          existingSecret: orchestration-tls
+          existingSecretKey: tls.crt
+          existingSecretPrivateKeyKey: tls.key
 
 webModeler:
   restapi:
@@ -68,7 +57,7 @@ connectors:
         auth:
           issuer-url: "http://keycloak:80/auth/realms/camunda-platform"
           client-id: "connectors"
-          client-secret: "\u0024{VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}"
+          client-secret: "${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}"
           audience: "orchestration-api"
       connector:
         headless:
