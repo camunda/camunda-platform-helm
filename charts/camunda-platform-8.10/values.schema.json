@@ -1875,7 +1875,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.",
+                    "description": "if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.",
                     "default": false
                 },
                 "webModeler": {
