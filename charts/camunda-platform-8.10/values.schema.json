@@ -596,6 +596,31 @@
                                     }
                                 }
                             }
+                        },
+                        "orchestration": {
+                            "type": "object",
+                            "properties": {
+                                "rest": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "enable REST TLS — sets `SERVER_SSL_ENABLED=true` on the Orchestration container, switches the `/orchestration` ingress backend-protocol to HTTPS, and derives `https://` for Web Modeler / Connectors REST endpoints.",
+                                            "default": false
+                                        }
+                                    }
+                                },
+                                "grpc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "enable gRPC TLS — sets `CAMUNDA_API_GRPC_SSL_ENABLED=true` on the Orchestration container, annotates the public gRPC ingress with `backend-protocol: GRPCS`, and derives `grpcs://` for Web Modeler and `https://` for Connectors gRPC endpoints.",
+                                            "default": false
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
