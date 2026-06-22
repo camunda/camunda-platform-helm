@@ -615,7 +615,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | Name                 | Description                                                                               | Value   |
 | -------------------- | ----------------------------------------------------------------------------------------- | ------- |
 | `camundaHub`         | configuration for Camunda Hub (WebModeler).                                               |         |
-| `camundaHub.enabled` | if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components. | `false` |
+| `camundaHub.enabled` | if true, enables Camunda Hub which deploys WebModeler as a sub-component. | `false` |
 
 ### WebModeler Parameters
 

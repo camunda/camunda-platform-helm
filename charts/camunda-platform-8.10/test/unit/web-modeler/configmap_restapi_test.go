@@ -620,6 +620,51 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[2].Url.WebApp)
 }
 
+func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentityAndWebModelerComponents() {
+	// management-cluster must include both identity and webModelerWebApp so that WebModeler
+	// can reach Identity and register itself as a known component.
+	values := map[string]string{
+		"identity.enabled":                              "true",
+		"global.elasticsearch.enabled":                  "true",
+		"global.ingress.enabled":                        "true",
+		"global.host":                                   "example.com",
+		"orchestration.security.authorizations.enabled": "false",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then — management-cluster contains both identity and webModelerWebApp
+	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Modeler.Clusters), 1)
+	mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+	s.Require().Equal("management-cluster", mgmtCluster.Id)
+
+	var hasIdentity, hasWebModeler bool
+	for _, c := range mgmtCluster.Components {
+		if c.Type == "identity" {
+			hasIdentity = true
+		}
+		if c.Type == "webModelerWebApp" {
+			hasWebModeler = true
+		}
+	}
+	s.Require().True(hasIdentity, "management-cluster should contain an identity component")
+	s.Require().True(hasWebModeler, "management-cluster should contain a webModelerWebApp component")
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
 	// given
 	values := map[string]string{
