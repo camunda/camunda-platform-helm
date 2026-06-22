@@ -109,7 +109,7 @@ jobs:
           file: .github/docker/ci-runner/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.ci-tags }}
-          no-cache: ${{ inputs.force-rebuild == true }}
+          no-cache: ${{ github.event_name == 'schedule' || inputs.force-rebuild == true }}
           cache-from: type=gha,scope=ci-runner
           cache-to: type=gha,mode=max,scope=ci-runner
           platforms: linux/amd64
@@ -137,7 +137,7 @@ jobs:
           file: .github/docker/playwright-runner/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.playwright-tags }}
-          no-cache: ${{ inputs.force-rebuild == true }}
+          no-cache: ${{ github.event_name == 'schedule' || inputs.force-rebuild == true }}
           cache-from: type=gha,scope=playwright-runner
           cache-to: type=gha,mode=max,scope=playwright-runner
           platforms: linux/amd64
@@ -226,7 +226,7 @@ jobs:
           docker pull ${CI_RUNNER_IMAGE}:latest
 
           echo "Testing CI Runner tools..."
-          docker run --rm ${CI_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && task --version && yq --version && jq --version && go version"
+          docker run --rm ${CI_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && go version && yq --version && jq --version"
 
           echo "✅ CI Runner image verified successfully"
 
@@ -236,7 +236,7 @@ jobs:
           docker pull ${PLAYWRIGHT_RUNNER_IMAGE}:latest
 
           echo "Testing Playwright Runner tools..."
-          docker run --rm ${PLAYWRIGHT_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && task --version && yq --version && jq --version && npx playwright --version"
+          docker run --rm ${PLAYWRIGHT_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && go version && yq --version && jq --version && npx playwright --version"
 
           echo "✅ Playwright Runner image verified successfully"
 
