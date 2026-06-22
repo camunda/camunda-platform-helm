@@ -373,6 +373,57 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, err.Error(), "proxyVerify.enabled is true but caSecret.existingSecret is empty")
 			},
 		},
+		{
+			Name: "TestOrchestrationHttpIngressProxyVerifyFailsWhenRestDisabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                                            "true",
+				"global.host":                                                       "camunda.example.com",
+				"orchestration.enabled":                                             "true",
+				"orchestration.contextPath":                                         "/orchestration",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                 "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret": "upstream-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "proxyVerify.enabled is true but global.tls.orchestration.rest.enabled is false")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressRejectsInvalidSecretType",
+			Values: map[string]string{
+				"global.ingress.enabled":                              "true",
+				"global.host":                                         "camunda.example.com",
+				"orchestration.enabled":                               "true",
+				"orchestration.contextPath":                           "/orchestration",
+				"global.tls.orchestration.rest.enabled":               "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.secret.type":           "jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "is not supported. Use one of: pkcs12, pem")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressProxyVerifyHonoursCaSecretNamespaceOverride",
+			Values: map[string]string{
+				"global.ingress.enabled":                                            "true",
+				"global.host":                                                       "camunda.example.com",
+				"orchestration.enabled":                                             "true",
+				"orchestration.contextPath":                                         "/orchestration",
+				"global.tls.orchestration.rest.enabled":                             "true",
+				"global.tls.orchestration.rest.secret.existingSecret":               "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                 "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret": "upstream-ca",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.namespace":      "central-pki",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "central-pki/upstream-ca", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"])
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
