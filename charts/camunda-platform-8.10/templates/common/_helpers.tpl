@@ -822,6 +822,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.webModeler.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}
   {{- end }}
 {{- end }}
+{{- if or .Values.orchestration.enabled .Values.optimize.enabled .Values.connectors.enabled }}
 - id: "default-cluster"
   name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
@@ -878,6 +879,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
   {{- end }}
+{{- end }}
 {{- end -}}
 
 {{/*
