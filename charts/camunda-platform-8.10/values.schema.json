@@ -664,6 +664,11 @@
                                                             "description": "name of an existing Kubernetes secret containing the CA bundle.",
                                                             "default": ""
                                                         },
+                                                        "namespace": {
+                                                            "type": "string",
+                                                            "description": "optional namespace of the CA bundle Secret. Defaults to the release namespace. Set when the trust bundle lives in a centralised cert namespace; the NGINX Ingress controller must be configured to watch that namespace.",
+                                                            "default": ""
+                                                        },
                                                         "existingSecretKey": {
                                                             "type": "string",
                                                             "description": "key within the secret that holds the PEM-encoded CA bundle.",
@@ -722,6 +727,11 @@
                                                         "existingSecret": {
                                                             "type": "string",
                                                             "description": "name of an existing Kubernetes secret containing the CA bundle.",
+                                                            "default": ""
+                                                        },
+                                                        "namespace": {
+                                                            "type": "string",
+                                                            "description": "optional namespace of the CA bundle Secret. Defaults to the release namespace. Set when the trust bundle lives in a centralised cert namespace; the NGINX Ingress controller must be configured to watch that namespace.",
                                                             "default": ""
                                                         },
                                                         "existingSecretKey": {
