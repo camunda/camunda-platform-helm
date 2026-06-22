@@ -600,6 +600,11 @@
                         "orchestration": {
                             "type": "object",
                             "properties": {
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "opt-in automatic pod rollout on REST/gRPC cert rotation. When true, the chart stamps `checksum/orchestration-tls-{rest,grpc}` pod annotations derived from the configured Secrets so the next `helm upgrade` rolls Orchestration when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.",
+                                    "default": false
+                                },
                                 "rest": {
                                     "type": "object",
                                     "properties": {
@@ -613,22 +618,32 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "name of an existing Kubernetes secret containing the REST PKCS12 keystore. Empty disables the chart-managed wiring; the operator can still hand-wire via `orchestration.extraVolumes` and `orchestration.env`.",
+                                                    "description": "name of an existing Kubernetes secret containing the REST server cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via `orchestration.extraVolumes` and `orchestration.env`.",
                                                     "default": ""
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "one of `pkcs12` or `pem`. `pkcs12` emits `SERVER_SSL_KEY_STORE*` env vars; `pem` emits the Spring Boot `SERVER_SSL_CERTIFICATE` / `SERVER_SSL_CERTIFICATE_PRIVATE_KEY` env vars and is compatible with cert-manager `kubernetes.io/tls` Secrets out of the box.",
+                                                    "default": "pkcs12"
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "key within the secret that holds the PKCS12 keystore file.",
+                                                    "description": "for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate (set to `tls.crt` for cert-manager-issued secrets).",
                                                     "default": "keystore.p12"
+                                                },
+                                                "existingSecretPrivateKeyKey": {
+                                                    "type": "string",
+                                                    "description": "for `type=pem` only — key within the same secret that holds the PEM private key (set to `tls.key` for cert-manager-issued secrets). Ignored when `type=pkcs12`.",
+                                                    "default": "tls.key"
                                                 },
                                                 "existingSecretPasswordKey": {
                                                     "type": "string",
-                                                    "description": "key within the same secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`).",
+                                                    "description": "for `type=pkcs12` only — key in the same secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`). Ignored when `type=pem`.",
                                                     "default": "keystore-password"
                                                 },
                                                 "keyAlias": {
                                                     "type": "string",
-                                                    "description": "optional certificate alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias.",
+                                                    "description": "for `type=pkcs12` only — optional cert alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias. Ignored when `type=pem`.",
                                                     "default": ""
                                                 }
                                             }
