@@ -647,6 +647,36 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "proxyVerify": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "when true, sets `nginx.ingress.kubernetes.io/proxy-ssl-verify: on` plus `proxy-ssl-secret` on the `orchestration-http` split ingress.",
+                                                    "default": false
+                                                },
+                                                "caSecret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "name of an existing Kubernetes secret containing the CA bundle.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                                            "default": "ca.crt"
+                                                        }
+                                                    }
+                                                },
+                                                "sniHost": {
+                                                    "type": "string",
+                                                    "description": "optional hostname to use for SNI and cert-name verification at the ingress. Required when the Orchestration server cert SAN does not match the in-cluster service name (common with cert-manager certs scoped to a public domain). When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.",
+                                                    "default": ""
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -675,6 +705,36 @@
                                                     "type": "string",
                                                     "description": "key within the same secret that holds the PEM private key.",
                                                     "default": "tls.key"
+                                                }
+                                            }
+                                        },
+                                        "proxyVerify": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "when true, sets `nginx.ingress.kubernetes.io/proxy-ssl-verify: on` plus `proxy-ssl-secret` on the orchestration gRPC ingress.",
+                                                    "default": false
+                                                },
+                                                "caSecret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "name of an existing Kubernetes secret containing the CA bundle.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                                            "default": "ca.crt"
+                                                        }
+                                                    }
+                                                },
+                                                "sniHost": {
+                                                    "type": "string",
+                                                    "description": "optional hostname for SNI and cert-name verification at the gRPC ingress. When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.",
+                                                    "default": ""
                                                 }
                                             }
                                         }
