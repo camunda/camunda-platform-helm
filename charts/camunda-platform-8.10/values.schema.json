@@ -628,7 +628,7 @@
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate (set to `tls.crt` for cert-manager-issued secrets).",
+                                                    "description": "for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate. When `type=pem` and this field is left at its PKCS12 default, the chart automatically substitutes `tls.crt` so cert-manager `kubernetes.io/tls` Secrets work out of the box.",
                                                     "default": "keystore.p12"
                                                 },
                                                 "existingSecretPrivateKeyKey": {
