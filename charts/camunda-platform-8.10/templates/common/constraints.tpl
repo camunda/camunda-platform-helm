@@ -74,6 +74,24 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       {{- end }}
     {{- end }}
   {{- end }}
+  {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
+    {{- if not .Values.global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but caSecret.existingSecret is empty."
+          "Provide a Secret holding the CA bundle that NGINX should use to validate the Orchestration REST server cert."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.global.tls.orchestration.grpc.proxyVerify.enabled }}
+    {{- if not .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but caSecret.existingSecret is empty."
+          "Provide a Secret holding the CA bundle that NGINX should use to validate the Orchestration gRPC server cert."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
 {{- end }}
 
 {{/*

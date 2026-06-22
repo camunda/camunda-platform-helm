@@ -375,6 +375,18 @@ global:
           existingSecretPasswordKey: "keystore-password"
           ## @param global.tls.orchestration.rest.secret.keyAlias for `type=pkcs12` only — optional cert alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias. Ignored when `type=pem`.
           keyAlias: ""
+        ## @extra global.tls.orchestration.rest.proxyVerify NGINX upstream (proxy) TLS validation for the `/orchestration` REST ingress. When enabled, the ingress controller verifies the Orchestration REST server cert against the supplied CA bundle. Without this, NGINX talks TLS to the upstream but accepts any cert — a real risk in clusters with sidecar interception or Zero-Trust requirements. This is purely an NGINX-side annotation; it does NOT propagate to in-cluster Java truststores (use `global.tls.caBundle` for that).
+        proxyVerify:
+          ## @param global.tls.orchestration.rest.proxyVerify.enabled when true, sets `nginx.ingress.kubernetes.io/proxy-ssl-verify: on` plus `proxy-ssl-secret` on the `orchestration-http` split ingress.
+          enabled: false
+          ## @extra global.tls.orchestration.rest.proxyVerify.caSecret reference to a Kubernetes secret holding the CA bundle that NGINX uses to verify the Orchestration REST cert. NGINX Ingress requires the secret to live in the same namespace as the Ingress resource.
+          caSecret:
+            ## @param global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret name of an existing Kubernetes secret containing the CA bundle.
+            existingSecret: ""
+            ## @param global.tls.orchestration.rest.proxyVerify.caSecret.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
+            existingSecretKey: "ca.crt"
+          ## @param global.tls.orchestration.rest.proxyVerify.sniHost optional hostname to use for SNI and cert-name verification at the ingress. Required when the Orchestration server cert SAN does not match the in-cluster service name (common with cert-manager certs scoped to a public domain). When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.
+          sniHost: ""
       ## @extra global.tls.orchestration.grpc gRPC TLS mode for the Orchestration gRPC server.
       grpc:
         ## @param global.tls.orchestration.grpc.enabled enable gRPC TLS — sets `CAMUNDA_API_GRPC_SSL_ENABLED=true` on the Orchestration container, annotates the public gRPC ingress with `backend-protocol: GRPCS`, and derives `grpcs://` for Web Modeler and `https://` for Connectors gRPC endpoints.
@@ -387,6 +399,18 @@ global:
           existingSecretKey: "tls.crt"
           ## @param global.tls.orchestration.grpc.secret.existingSecretPrivateKeyKey key within the same secret that holds the PEM private key.
           existingSecretPrivateKeyKey: "tls.key"
+        ## @extra global.tls.orchestration.grpc.proxyVerify NGINX upstream (proxy) TLS validation for the public gRPC ingress. Same semantics and caveats as `global.tls.orchestration.rest.proxyVerify`.
+        proxyVerify:
+          ## @param global.tls.orchestration.grpc.proxyVerify.enabled when true, sets `nginx.ingress.kubernetes.io/proxy-ssl-verify: on` plus `proxy-ssl-secret` on the orchestration gRPC ingress.
+          enabled: false
+          ## @extra global.tls.orchestration.grpc.proxyVerify.caSecret reference to a Kubernetes secret holding the CA bundle that NGINX uses to verify the Orchestration gRPC cert.
+          caSecret:
+            ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret name of an existing Kubernetes secret containing the CA bundle.
+            existingSecret: ""
+            ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
+            existingSecretKey: "ca.crt"
+          ## @param global.tls.orchestration.grpc.proxyVerify.sniHost optional hostname for SNI and cert-name verification at the gRPC ingress. When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.
+          sniHost: ""
 
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes

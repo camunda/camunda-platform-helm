@@ -16,6 +16,10 @@ metadata:
 {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" -}}
 {{- $grpcAnnotations = mergeOverwrite (dict) $grpcAnnotations (dict "nginx.ingress.kubernetes.io/backend-protocol" "GRPCS") -}}
 {{- end -}}
+{{- $grpcProxyVerify := include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "grpc") | fromYaml -}}
+{{- if $grpcProxyVerify -}}
+{{- $grpcAnnotations = mergeOverwrite (dict) $grpcAnnotations $grpcProxyVerify -}}
+{{- end -}}
 {{- with $grpcAnnotations }}
   annotations:
   {{- tpl (toYaml .) $ | nindent 4 }}

@@ -1202,6 +1202,38 @@ Usage (inside a pod template's metadata.annotations):
   {{- include "camundaPlatform.caBundleChecksumAnnotation" . | nindent 8 }}
 */}}
 {{/*
+orchestrationProxyVerifyAnnotations
+Renders the NGINX upstream-TLS-verification annotations for one of the
+Orchestration ingresses (REST or gRPC) based on the matching
+global.tls.orchestration.{rest,grpc}.proxyVerify block.
+
+Returns nothing when proxyVerify.enabled is false or caSecret.existingSecret
+is empty. Otherwise emits a flat map of annotation key → value:
+  - nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+  - nginx.ingress.kubernetes.io/proxy-ssl-secret: "<namespace>/<existingSecret>"
+  - (if sniHost set) proxy-ssl-name + proxy-ssl-server-name: "on"
+
+The caller is responsible for merging the result into the ingress
+annotations block. Pass `proto` ("rest" or "grpc") to select the source.
+
+Usage (inside an ingress template's annotations block, e.g. via merge-overwrite):
+  (include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "grpc"))
+*/}}
+{{- define "camundaPlatform.orchestrationProxyVerifyAnnotations" -}}
+{{- $ctx := .context -}}
+{{- $proto := .proto -}}
+{{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
+{{- if and $pv.enabled $pv.caSecret.existingSecret -}}
+nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ctx.Release.Namespace $pv.caSecret.existingSecret | quote }}
+{{- with $pv.sniHost }}
+nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 orchestrationTLSChecksumAnnotations
 Emits `checksum/orchestration-tls-{rest,grpc}` pod annotations derived from
 the Orchestration REST and gRPC TLS Secrets when global.tls.orchestration.autoRollout
