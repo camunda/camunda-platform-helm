@@ -416,6 +416,41 @@ global:
           ## @param global.tls.orchestration.grpc.proxyVerify.sniHost optional hostname for SNI and cert-name verification at the gRPC ingress. When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.
           sniHost: ""
 
+    ## @extra global.tls.connectors first-class TLS mode for the Connectors HTTP server. Setting `enabled: true` flips `SERVER_SSL_ENABLED=true` on the Connectors container, switches container probes to HTTPS, and (when the optional `secret` sub-block is set) mounts the server cert material. Explicit `connectors.env` entries with the same name override these flags (last-wins). Client-side trust material still flows through `global.tls.caBundle`.
+    connectors:
+      ## @param global.tls.connectors.autoRollout opt-in automatic pod rollout on Connectors cert rotation. When true, the chart stamps a `checksum/connectors-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Connectors when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @param global.tls.connectors.enabled enable Connectors TLS — sets `SERVER_SSL_ENABLED=true` on the Connectors container and switches container probes to HTTPS.
+      enabled: false
+      ## @extra global.tls.connectors.secret reference to a Kubernetes secret holding the server cert material for the Connectors (Spring Boot) HTTP server. Supports two shapes via `type`: `pkcs12` (default — PKCS12 keystore) and `pem` (cert-manager / Let's Encrypt style PEM cert + key). When `existingSecret` is set, the chart mounts the secret into the Connectors container and emits the matching env vars; operators do not need to hand-wire `extraVolumes` or `connectors.env` for the cert path.
+      secret:
+        ## @param global.tls.connectors.secret.existingSecret name of an existing Kubernetes secret containing the Connectors server cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via `connectors.extraVolumes` and `connectors.env`.
+        existingSecret: ""
+        ## @param global.tls.connectors.secret.type one of `pkcs12` or `pem`. `pkcs12` emits `SERVER_SSL_KEY_STORE*` env vars; `pem` emits the Spring Boot `SERVER_SSL_CERTIFICATE` / `SERVER_SSL_CERTIFICATE_PRIVATE_KEY` env vars and is compatible with cert-manager `kubernetes.io/tls` Secrets out of the box.
+        type: pkcs12
+        ## @param global.tls.connectors.secret.existingSecretKey for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate. When `type=pem` and this field is left at its PKCS12 default, the chart automatically substitutes `tls.crt` so cert-manager `kubernetes.io/tls` Secrets work out of the box.
+        existingSecretKey: "keystore.p12"
+        ## @param global.tls.connectors.secret.existingSecretPrivateKeyKey for `type=pem` only — key within the same secret that holds the PEM private key (set to `tls.key` for cert-manager-issued secrets). Ignored when `type=pkcs12`.
+        existingSecretPrivateKeyKey: "tls.key"
+        ## @param global.tls.connectors.secret.existingSecretPasswordKey for `type=pkcs12` only — key in the same secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`). Ignored when `type=pem`.
+        existingSecretPasswordKey: "keystore-password"
+        ## @param global.tls.connectors.secret.keyAlias for `type=pkcs12` only — optional cert alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias. Ignored when `type=pem`.
+        keyAlias: ""
+      ## @extra global.tls.connectors.proxyVerify NGINX upstream (proxy) TLS validation for the Connectors ingress. When enabled, the ingress controller verifies the Connectors server cert against the supplied CA bundle. NOTE: Connectors in 8.10 is exposed via Gateway API `HTTPRoute`, not via an NGINX ingress; this block has no effect on Gateway API and is reserved for parity / future NGINX users. See the TLS modes guide for the Gateway API caveat.
+      proxyVerify:
+        ## @param global.tls.connectors.proxyVerify.enabled when true, the chart marks the Connectors backend as HTTPS-verified upstream. Currently inert under the Gateway API HTTPRoute used in 8.10 (see proxyVerify @extra docstring above).
+        enabled: false
+        ## @extra global.tls.connectors.proxyVerify.caSecret reference to a Kubernetes secret holding the CA bundle that the ingress uses to verify the Connectors cert.
+        caSecret:
+          ## @param global.tls.connectors.proxyVerify.caSecret.existingSecret name of an existing Kubernetes secret containing the CA bundle.
+          existingSecret: ""
+          ## @param global.tls.connectors.proxyVerify.caSecret.namespace optional namespace of the CA bundle Secret. Defaults to the release namespace.
+          namespace: ""
+          ## @param global.tls.connectors.proxyVerify.caSecret.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
+          existingSecretKey: "ca.crt"
+        ## @param global.tls.connectors.proxyVerify.sniHost optional hostname for SNI and cert-name verification at the ingress. When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.
+        sniHost: ""
+
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #

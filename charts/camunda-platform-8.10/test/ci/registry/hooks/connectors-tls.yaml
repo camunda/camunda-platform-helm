@@ -1,0 +1,5 @@
+script: pre-install-connectors-tls.sh
+description: |
+  Generates a self-signed certificate/key pair for the Connectors HTTP
+  endpoint and packages it as a PKCS12 keystore in a `connectors-tls-keystore`
+  Secret consumed by `global.tls.connectors.secret.existingSecret`.
