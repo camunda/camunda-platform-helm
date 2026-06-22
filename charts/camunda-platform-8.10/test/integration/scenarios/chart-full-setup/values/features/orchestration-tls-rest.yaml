@@ -1,0 +1,27 @@
+global:
+  tls:
+    orchestration:
+      rest:
+        enabled: true
+
+orchestration:
+  env:
+    - name: SERVER_SSL_KEY_STORE
+      value: file:/usr/local/camunda/certificates/orchestration-keystore/keystore.p12
+    - name: SERVER_SSL_KEY_STORE_TYPE
+      value: PKCS12
+    - name: SERVER_SSL_KEY_STORE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: orchestration-tls-keystore
+          key: keystore-password
+    - name: SERVER_SSL_KEY_ALIAS
+      value: orchestration-rest
+  extraVolumes:
+    - name: orchestration-tls-keystore
+      secret:
+        secretName: orchestration-tls-keystore
+  extraVolumeMounts:
+    - name: orchestration-tls-keystore
+      mountPath: /usr/local/camunda/certificates/orchestration-keystore
+      readOnly: true
