@@ -103,10 +103,31 @@ spec:
             {{- if .Values.global.tls.orchestration.rest.enabled }}
             - name: SERVER_SSL_ENABLED
               value: "true"
+            {{- if .Values.global.tls.orchestration.rest.secret.existingSecret }}
+            - name: SERVER_SSL_KEY_STORE
+              value: file:/usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretKey }}
+            - name: SERVER_SSL_KEY_STORE_TYPE
+              value: PKCS12
+            - name: SERVER_SSL_KEY_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.tls.orchestration.rest.secret.existingSecret }}
+                  key: {{ .Values.global.tls.orchestration.rest.secret.existingSecretPasswordKey }}
+            {{- with .Values.global.tls.orchestration.rest.secret.keyAlias }}
+            - name: SERVER_SSL_KEY_ALIAS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             {{- end }}
             {{- if .Values.global.tls.orchestration.grpc.enabled }}
             - name: CAMUNDA_API_GRPC_SSL_ENABLED
               value: "true"
+            {{- if .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+            - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
+              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.secret.existingSecretKey }}
+            - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
+              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.secret.existingSecretPrivateKeyKey }}
+            {{- end }}
             {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
@@ -265,6 +286,16 @@ spec:
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
+            {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.secret.existingSecret }}
+            - name: orchestration-tls-rest
+              mountPath: /usr/local/camunda/certificates/orchestration/rest
+              readOnly: true
+            {{- end }}
+            {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+            - name: orchestration-tls-grpc
+              mountPath: /usr/local/camunda/certificates/orchestration/grpc
+              readOnly: true
+            {{- end }}
             {{- if .Values.orchestration.extraVolumeMounts }}
             {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -316,6 +347,16 @@ spec:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.secret.existingSecret }}
+        - name: orchestration-tls-rest
+          secret:
+            secretName: {{ .Values.global.tls.orchestration.rest.secret.existingSecret }}
+        {{- end }}
+        {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+        - name: orchestration-tls-grpc
+          secret:
+            secretName: {{ .Values.global.tls.orchestration.grpc.secret.existingSecret }}
         {{- end }}
         {{- if .Values.orchestration.extraVolumes }}
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}

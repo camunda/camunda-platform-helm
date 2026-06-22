@@ -353,16 +353,34 @@ global:
           ## @param global.tls.caBundle.containerSecurityContext.seccompProfile.type
           type: RuntimeDefault
 
-    ## @extra global.tls.orchestration first-class TLS modes for the Orchestration component. REST (`SERVER_SSL_ENABLED`) and gRPC (`CAMUNDA_API_GRPC_SSL_ENABLED`) are independent server settings; setting either flag here drives the Orchestration env var, the public NGINX ingress backend-protocol, and the in-cluster client schemes used by Web Modeler and Connectors. Explicit `orchestration.env` entries with the same name override these flags (last-wins). Customer-facing trust material still flows through `global.tls.caBundle`.
+    ## @extra global.tls.orchestration first-class TLS modes for the Orchestration component. REST (`SERVER_SSL_ENABLED`) and gRPC (`CAMUNDA_API_GRPC_SSL_ENABLED`) are independent server settings; setting either flag here drives the Orchestration env var, the public NGINX ingress backend-protocol, and the in-cluster client schemes used by Web Modeler and Connectors. The optional `secret` sub-block additionally mounts the server cert material and points Orchestration at it. Explicit `orchestration.env` entries with the same name override these flags (last-wins). Client-side trust material still flows through `global.tls.caBundle`.
     orchestration:
       ## @extra global.tls.orchestration.rest REST TLS mode for the Orchestration HTTP server.
       rest:
         ## @param global.tls.orchestration.rest.enabled enable REST TLS — sets `SERVER_SSL_ENABLED=true` on the Orchestration container, switches the `/orchestration` ingress backend-protocol to HTTPS, and derives `https://` for Web Modeler / Connectors REST endpoints.
         enabled: false
+        ## @extra global.tls.orchestration.rest.secret reference to a Kubernetes secret containing a PKCS12 keystore for the Orchestration REST (Spring Boot) server. When `existingSecret` is set, the chart mounts the keystore into the Orchestration container and emits the matching `SERVER_SSL_KEY_STORE*` env vars; operators do not need to hand-wire `extraVolumes` or `orchestration.env` for the cert path.
+        secret:
+          ## @param global.tls.orchestration.rest.secret.existingSecret name of an existing Kubernetes secret containing the REST PKCS12 keystore. Empty disables the chart-managed wiring; the operator can still hand-wire via `orchestration.extraVolumes` and `orchestration.env`.
+          existingSecret: ""
+          ## @param global.tls.orchestration.rest.secret.existingSecretKey key within the secret that holds the PKCS12 keystore file.
+          existingSecretKey: "keystore.p12"
+          ## @param global.tls.orchestration.rest.secret.existingSecretPasswordKey key within the same secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`).
+          existingSecretPasswordKey: "keystore-password"
+          ## @param global.tls.orchestration.rest.secret.keyAlias optional certificate alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias.
+          keyAlias: ""
       ## @extra global.tls.orchestration.grpc gRPC TLS mode for the Orchestration gRPC server.
       grpc:
         ## @param global.tls.orchestration.grpc.enabled enable gRPC TLS — sets `CAMUNDA_API_GRPC_SSL_ENABLED=true` on the Orchestration container, annotates the public gRPC ingress with `backend-protocol: GRPCS`, and derives `grpcs://` for Web Modeler and `https://` for Connectors gRPC endpoints.
         enabled: false
+        ## @extra global.tls.orchestration.grpc.secret reference to a Kubernetes secret containing a PEM-encoded server certificate and private key for the Orchestration gRPC server. When `existingSecret` is set, the chart mounts the secret into the Orchestration container and emits the matching `CAMUNDA_API_GRPC_SSL_CERTIFICATE` / `CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY` env vars.
+        secret:
+          ## @param global.tls.orchestration.grpc.secret.existingSecret name of an existing Kubernetes secret containing the gRPC PEM cert and key. Empty disables the chart-managed wiring.
+          existingSecret: ""
+          ## @param global.tls.orchestration.grpc.secret.existingSecretKey key within the secret that holds the PEM certificate.
+          existingSecretKey: "tls.crt"
+          ## @param global.tls.orchestration.grpc.secret.existingSecretPrivateKeyKey key within the same secret that holds the PEM private key.
+          existingSecretPrivateKeyKey: "tls.key"
 
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes

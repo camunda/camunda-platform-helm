@@ -922,6 +922,100 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 				s.Require().Equal("false", env[positions[1]].Value)
 			},
 		},
+		{
+			Name: "REST secret block wires keystore env, mount and volume",
+			Values: map[string]string{
+				"orchestration.enabled":                                            "true",
+				"global.tls.orchestration.rest.enabled":                            "true",
+				"global.tls.orchestration.rest.secret.existingSecret":              "rest-keystore",
+				"global.tls.orchestration.rest.secret.existingSecretPasswordKey":   "ks-pw",
+				"global.tls.orchestration.rest.secret.keyAlias":                    "orchestration-rest",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE", Value: "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE_TYPE", Value: "PKCS12"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_KEY_ALIAS", Value: "orchestration-rest"})
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "SERVER_SSL_KEY_STORE_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "rest-keystore"},
+							Key:                  "ks-pw",
+						},
+					},
+				})
+
+				mounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+				var found bool
+				for _, m := range mounts {
+					if m.Name == "orchestration-tls-rest" {
+						found = true
+						s.Require().Equal("/usr/local/camunda/certificates/orchestration/rest", m.MountPath)
+						s.Require().True(m.ReadOnly)
+					}
+				}
+				s.Require().True(found, "expected orchestration-tls-rest volumeMount")
+
+				vols := statefulSet.Spec.Template.Spec.Volumes
+				found = false
+				for _, v := range vols {
+					if v.Name == "orchestration-tls-rest" {
+						found = true
+						s.Require().Equal("rest-keystore", v.Secret.SecretName)
+					}
+				}
+				s.Require().True(found, "expected orchestration-tls-rest volume")
+			},
+		},
+		{
+			Name: "gRPC secret block wires PEM env, mount and volume",
+			Values: map[string]string{
+				"orchestration.enabled":                                            "true",
+				"global.tls.orchestration.grpc.enabled":                            "true",
+				"global.tls.orchestration.grpc.secret.existingSecret":              "grpc-pem",
+				"global.tls.orchestration.grpc.secret.existingSecretKey":           "server.crt",
+				"global.tls.orchestration.grpc.secret.existingSecretPrivateKeyKey": "server.key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/orchestration/grpc/server.crt"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY", Value: "/usr/local/camunda/certificates/orchestration/grpc/server.key"})
+
+				vols := statefulSet.Spec.Template.Spec.Volumes
+				var found bool
+				for _, v := range vols {
+					if v.Name == "orchestration-tls-grpc" {
+						found = true
+						s.Require().Equal("grpc-pem", v.Secret.SecretName)
+					}
+				}
+				s.Require().True(found, "expected orchestration-tls-grpc volume")
+			},
+		},
+		{
+			Name: "Secret block is inert when the matching enabled flag is false",
+			Values: map[string]string{
+				"orchestration.enabled":                                "true",
+				"global.tls.orchestration.rest.secret.existingSecret":  "should-not-mount",
+				"global.tls.orchestration.grpc.secret.existingSecret":  "should-not-mount",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "orchestration-tls-rest")
+				require.NotContains(t, output, "orchestration-tls-grpc")
+				require.NotContains(t, output, "SERVER_SSL_KEY_STORE")
+				require.NotContains(t, output, "CAMUNDA_API_GRPC_SSL_CERTIFICATE")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
