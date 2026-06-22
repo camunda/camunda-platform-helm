@@ -49,6 +49,43 @@ func TestTestError_ErrorsAs_NotPresent(t *testing.T) {
 	}
 }
 
+func TestIsFullSuiteChart(t *testing.T) {
+	tests := []struct {
+		chartPath string
+		want      bool
+	}{
+		// 8.10+ should run the full suite
+		{"charts/camunda-platform-8.10", true},
+		{"charts/camunda-platform-8.11", true},
+		{"charts/camunda-platform-8.12", true},
+		{"/absolute/path/charts/camunda-platform-8.10", true},
+		{"charts/camunda-platform-8.10/", true}, // filepath.Base strips trailing slash
+
+		// Below 8.10 should NOT run the full suite
+		{"charts/camunda-platform-8.9", false},
+		{"charts/camunda-platform-8.8", false},
+		{"charts/camunda-platform-8.7", false},
+		{"charts/camunda-platform-8.0", false},
+
+		// Edge cases
+		{"", false},
+		{"charts/some-other-chart", false},
+		{"camunda-platform-8.", false},         // no minor version digits
+		{"camunda-platform-8.abc", false},      // non-numeric minor
+		{"camunda-platform-8.10-alpha1", true}, // suffix stripped, minor=10
+		{"camunda-platform-8.9-rc2", false},    // suffix stripped, minor=9
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.chartPath, func(t *testing.T) {
+			got := isFullSuiteChart(tt.chartPath)
+			if got != tt.want {
+				t.Errorf("isFullSuiteChart(%q) = %v, want %v", tt.chartPath, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIsChartVersion(t *testing.T) {
 	tests := []struct {
 		chartPath string

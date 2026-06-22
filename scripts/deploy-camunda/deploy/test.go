@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -163,7 +164,14 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 	args := []string{
 		"--absolute-chart-path", chartPath,
 		"--namespace", namespace,
-		"--run-smoke-tests",
+	}
+
+	// For chart versions < 8.10, run only the smoke-tests project.
+	// 8.10+ runs the full-suite project (the script's default) which
+	// exercises the full E2E suite with proper exclusions configured
+	// in the chart's playwright.config.ts.
+	if !isFullSuiteChart(chartPath) {
+		args = append(args, "--run-smoke-tests")
 	}
 
 	if kubeContext != "" {
@@ -177,6 +185,31 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 	}
 
 	return executeScript(ctx, scriptPath, args, "e2e", outputSink)
+}
+
+// isFullSuiteChart returns true if the chart path indicates version 8.10 or
+// later, which should run the full E2E suite instead of just smoke tests.
+// Chart directories follow the naming pattern "camunda-platform-8.<minor>".
+func isFullSuiteChart(chartPath string) bool {
+	base := filepath.Base(chartPath)
+	const prefix = "camunda-platform-8."
+	idx := strings.Index(base, prefix)
+	if idx < 0 {
+		return false
+	}
+	minorStr := base[idx+len(prefix):]
+	// Trim any non-digit suffix (e.g., "-alpha1")
+	for i, c := range minorStr {
+		if c < '0' || c > '9' {
+			minorStr = minorStr[:i]
+			break
+		}
+	}
+	minor, err := strconv.Atoi(minorStr)
+	if err != nil {
+		return false
+	}
+	return minor >= 10
 }
 
 // executeScript runs a shell script with the given arguments and returns the

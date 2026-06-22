@@ -181,7 +181,7 @@ runs:
       export INGRESS_HOSTNAME_BASE="${INFRA_INGRESS_HOSTNAME_BASE}"
 
       TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${INGRESS_HOSTNAME_BASE}"
-      if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
+      if [[ "${{ inputs.deployment-ttl }}" == "" ]]; then
         TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
       fi
       # The var is needed in some non-shell steps.
