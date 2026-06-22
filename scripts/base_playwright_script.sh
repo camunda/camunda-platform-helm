@@ -705,42 +705,18 @@ _setup_playwright_environment() {
   mkdir -p "$results_dir"
 }
 
-# Install Playwright browsers (with deps on Linux)
-# Skips installation if browsers are already present (e.g., in pre-built container image)
+# Install Playwright browsers.
+# Only installs chromium-headless-shell — the browser used by all CI smoke and
+# full-suite runs. Firefox and WebKit are not needed.
+#
+# `npx playwright install chromium-headless-shell` is version-aware: it checks
+# whether the expected revision directory already exists under
+# PLAYWRIGHT_BROWSERS_PATH (/ms-playwright). When the playwright-runner image
+# is built with a matching PLAYWRIGHT_VERSION, the revision directory is already
+# present and the download is skipped entirely (~85 s saved per job).
 _install_playwright_browsers() {
-  # Check if we're running in a container with pre-installed browsers
-  # The official Playwright Docker image sets PLAYWRIGHT_BROWSERS_PATH
-  # TODO: fix if statement proper conditional.
-  # if [[ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]] && [[ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]]; then
-  #   local browser_count
-  #   browser_count=$(find "${PLAYWRIGHT_BROWSERS_PATH}" -maxdepth 1 -type d | wc -l)
-  #   if [[ "$browser_count" -gt 1 ]]; then
-  #     log "Playwright browsers already installed at ${PLAYWRIGHT_BROWSERS_PATH}, skipping installation"
-  #     return 0
-  #   fi
-  # fi
-
-  # Also check common Playwright browser locations
-  # TODO: fix if statement proper conditional.
-  # local ms_playwright_path="/ms-playwright"
-  # if [[ -d "$ms_playwright_path" ]]; then
-  #   local browser_count
-  #   browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
-  #   if [[ "$browser_count" -gt 1 ]]; then
-  #     log "Playwright browsers already installed at ${ms_playwright_path}, skipping installation"
-  #     return 0
-  #   fi
-  # fi
-
   info "Installing Playwright browsers..."
-  if [[ "$(uname -s)" == "Linux" ]]; then
-    npm install @playwright/test
-    npx playwright install-deps || exit 1
-    npx playwright install --with-deps || exit 1
-  else
-    npm install @playwright/test
-    npx playwright install || exit 1
-  fi
+  npx playwright install chromium-headless-shell || exit 1
 }
 
 # Handle playwright test result and exit appropriately

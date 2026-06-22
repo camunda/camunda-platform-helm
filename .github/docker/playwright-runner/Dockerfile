@@ -103,7 +103,7 @@
 #
 # Or build directly:
 #   docker buildx build --platform linux/amd64 \
-#     --build-arg PLAYWRIGHT_VERSION=1.57.0 \
+#     --build-arg PLAYWRIGHT_VERSION=1.61.0 \
 #     -t playwright-runner:test .
 #
 # ==============================================================================
@@ -197,7 +197,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # Build arguments
 # ------------------------------------------------------------------------------
 ARG ZBCTL_VERSION=v8.6.0
-ARG PLAYWRIGHT_VERSION=1.58.0
+ARG PLAYWRIGHT_VERSION=1.61.0
 # Keep in sync with .tool-versions (golang).
 ARG GO_VERSION=1.26.2
 
