@@ -244,8 +244,9 @@ func deployCompanionCharts(ctx context.Context, o types.Options) error {
 func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.Options) error {
 	// Ensure the Helm repo is registered when a repo-style chart ref is used.
 	if cc.RepoName != "" && cc.RepoURL != "" {
-		companionRepoMu.Lock()
 		err := func() error {
+			companionRepoMu.Lock()
+			defer companionRepoMu.Unlock()
 			if err := helmRepoAdd(ctx, cc.RepoName, cc.RepoURL); err != nil {
 				return fmt.Errorf("companion chart %q: repo add failed: %w", cc.ReleaseName, err)
 			}
@@ -254,7 +255,6 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 			}
 			return nil
 		}()
-		companionRepoMu.Unlock()
 		if err != nil {
 			return err
 		}
