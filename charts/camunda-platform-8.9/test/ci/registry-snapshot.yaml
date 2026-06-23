@@ -326,6 +326,20 @@ integration:
             gke: alwaysgreen
           identity: keycloak
           persistence: elasticsearch
+        - name: shadow-e2e
+          enabled: true
+          shortname: shde2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          skip-e2e: true
         - name: qa-elasticsearch
           enabled: false
           shortname: qael

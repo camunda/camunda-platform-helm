@@ -84,6 +84,10 @@ integration:
     - id: alwaysgreen
       shortname: agrn
       enabled: false
+    - id: shadow-e2e
+      shortname: shde2
+      tier: 2
+      enabled: true
     - id: qa-elasticsearch
       shortname: qael
       enabled: false
