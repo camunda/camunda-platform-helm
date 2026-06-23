@@ -88,6 +88,13 @@ optimize:
   enabled: true
   contextPath: "/optimize"
   partitionCount: "1"
+  env:
+    - name: CAMUNDA_OPTIMIZE_IMPORT_HANDLER_BACKOFF_MAX
+      value: "1"
+    - name: CAMUNDA_OPTIMIZE_IMPORT_CURRENTTIMEBACKOFFMILLISECONDS
+      value: "1000"
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_MAXIMPORTPAGESIZE
+      value: "1000"
   # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
   resources:
     requests:
