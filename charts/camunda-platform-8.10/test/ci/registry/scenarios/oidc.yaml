@@ -16,7 +16,6 @@ infra-type:
   eks: preemptible
   gke: distroci
 skip-e2e: true
-skip-it: true
 dependencies:
   - postgresql
   - elasticsearch

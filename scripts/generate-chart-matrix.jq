@@ -86,7 +86,6 @@ def yaml_block($version; $version_prev):
     "    qa: \($e.qa // false)\n" +
     "    upgrade: \($e.upgrade // false)\n" +
     "    skipE2E: \($e.skipE2E // false)\n" +
-    "    skipIT: \($e.skipIT // false)\n" +
     "    helmVersion: \"\($e.helmVersion // "")\"";
 
 # Tag each input entry with its original CLI position so group_by can be

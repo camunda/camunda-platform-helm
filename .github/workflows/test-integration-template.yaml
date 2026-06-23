@@ -131,7 +131,11 @@ on:
         default: false
         type: boolean
       skip-it:
-        description: "Skip integration (Playwright IT) tests for this scenario"
+        # Deprecated no-op: kept so existing external callers (camunda/camunda,
+        # camunda/identity, camunda/connectors, …) don't fail on unknown-input.
+        # The integration test runner was removed; remove this input once
+        # downstream repos stop passing it.
+        description: "Deprecated — no-op. The --test-it runner was removed."
         required: false
         default: false
         type: boolean
@@ -374,7 +378,6 @@ jobs:
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
       skip-e2e: ${{ inputs.skip-e2e }}
-      skip-it: ${{ inputs.skip-it }}
       pr-head-sha: ${{ inputs.pr-head-sha }}
       camunda-version: ${{ inputs.camunda-version }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}

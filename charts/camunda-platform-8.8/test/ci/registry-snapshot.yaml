@@ -111,7 +111,6 @@ integration:
           persistence: elasticsearch
           helmVersion: 3.20.2
           skip-e2e: true
-          skip-it: true
         - name: keycloak-mt
           enabled: false
           shortname: kemt

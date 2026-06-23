@@ -38,7 +38,6 @@ type Entry struct {
 
 	// Test skip flags — declarative controls from ci-test-config.yaml.
 	SkipE2E bool `json:"skipE2E,omitempty"`
-	SkipIT  bool `json:"skipIT,omitempty"`
 
 	// Dependencies specifies companion charts to deploy before the main Camunda chart.
 	Dependencies []ChartDependency `json:"dependencies,omitempty"`
@@ -217,7 +216,6 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						Upgrade:      scenario.Upgrade,
 						Enterprise:   scenario.Enterprise,
 						SkipE2E:      scenario.SkipE2E,
-						SkipIT:       scenario.SkipIT,
 						Dependencies: append([]ChartDependency(nil), scenario.Dependencies...),
 						PreInstall:   scenario.PreInstall,
 						PostInfra:    scenario.PostInfra,

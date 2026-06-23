@@ -139,11 +139,6 @@ on:
         required: false
         default: false
         type: boolean
-      skip-it:
-        description: "Skip integration (Playwright IT) tests for this scenario (declared in ci-test-config.yaml)"
-        required: false
-        default: false
-        type: boolean
       pr-head-sha:
         description: "PR HEAD commit SHA for recording cache results"
         required: false
@@ -337,6 +332,16 @@ jobs:
       - name: CI Setup - Configure Git safe directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
+      - name: Download deploy-camunda binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: deploy-camunda-binary
+          path: ${{ runner.temp }}/bin
+      - name: Add deploy-camunda to PATH
+        run: |
+          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
 
@@ -520,11 +525,10 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          cd ./scripts/deploy-camunda
-          go run . entra update-redirect-uris \
+          deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          go run . entra ensure-venom-app \
+          deploy-camunda entra ensure-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info | tee /tmp/entra-output.txt
           # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
@@ -675,8 +679,7 @@ jobs:
             EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
           fi
 
-          cd ./scripts/deploy-camunda
-          go run . matrix run \
+          deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
             --scenario-filter "${{ inputs.scenario }}" \
@@ -792,6 +795,16 @@ jobs:
       - name: CI Setup - Configure Git safe directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
+      - name: Download deploy-camunda binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: deploy-camunda-binary
+          path: ${{ runner.temp }}/bin
+      - name: Add deploy-camunda to PATH
+        run: |
+          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
       # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
       # The per-scenario helm-version input below can override the pre-baked helm when set in ci-test-config.yaml.
@@ -887,11 +900,10 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          cd ./scripts/deploy-camunda
-          go run . entra update-redirect-uris \
+          deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          go run . entra ensure-venom-app \
+          deploy-camunda entra ensure-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info | tee /tmp/entra-output.txt
           # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
@@ -1029,8 +1041,7 @@ jobs:
           # scenario injection is tracked in #6312. (The install flow, being single-
           # step, forwards the file safely; see that step.)
 
-          cd ./scripts/deploy-camunda
-          go run . matrix run \
+          deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
             --scenario-filter "${{ inputs.scenario }}" \
@@ -1461,6 +1472,16 @@ jobs:
       - name: CI Setup - Configure Git safe directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
+      - name: Download deploy-camunda binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: deploy-camunda-binary
+          path: ${{ runner.temp }}/bin
+      - name: Add deploy-camunda to PATH
+        run: |
+          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
         uses: ./.github/actions/workflow-vars
@@ -1542,8 +1563,7 @@ jobs:
           ENTRA_APP_OBJECT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
-          cd ./scripts/deploy-camunda
-          go run . entra cleanup-venom-app \
+          deploy-camunda entra cleanup-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info
 
@@ -1559,8 +1579,7 @@ jobs:
           AUTH0_MGMT_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_ID }}
           AUTH0_MGMT_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_SECRET }}
         run: |
-          cd ./scripts/deploy-camunda
-          go run . auth0 cleanup-clients \
+          deploy-camunda auth0 cleanup-clients \
             --namespace "$TEST_NAMESPACE" \
             --domain "$AUTH0_DOMAIN" \
             --log-level info

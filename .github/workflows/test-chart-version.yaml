@@ -191,8 +191,11 @@ jobs:
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: scripts/ci-result-cache/go.mod
-          cache: true
-          cache-dependency-path: scripts/ci-result-cache/go.sum
+          # Cache disabled: the previous setup-go invocation (in the
+          # generate-chart-matrix composite) already populated GOMODCACHE
+          # with overlapping packages. Restoring a second cache on top of
+          # the first triggers tar "File exists" errors.
+          cache: false
 
       - name: Annotate matrix with cache status
         id: annotate-cache
@@ -299,7 +302,6 @@ jobs:
       test-qa: ${{ matrix.qa == 'true' }}
       test-upgrade: ${{ matrix.upgrade == 'true' }}
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
-      skip-it: ${{ matrix.skipIT == 'true' }}
       helm-version: ${{ matrix.helmVersion }}
       cached: ${{ matrix.cached == 'true' }}
       pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}

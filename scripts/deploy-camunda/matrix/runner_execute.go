@@ -201,14 +201,13 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			UseVaultBackedSecrets: useVault,
 		},
 		Test: config.TestFlags{
-			KubeContext:         kubeCtx,
-			TestExclude:         testExclude,
-			RunIntegrationTests: (opts.TestIT || opts.TestAll) && !entry.SkipIT,
-			RunE2ETests:         (opts.TestE2E || opts.TestAll) && !entry.SkipE2E,
-			// Do NOT propagate RunAllTests here — RunE2ETests/RunIntegrationTests already
-			// encode the full decision (including skip-e2e/skip-it from ci-test-config.yaml).
-			// Setting RunAllTests would bypass the skip logic in deploy/test.go which ORs
-			// RunAllTests with each individual flag.
+			KubeContext: kubeCtx,
+			TestExclude: testExclude,
+			RunE2ETests: (opts.TestE2E || opts.TestAll) && !entry.SkipE2E,
+			// Do NOT propagate RunAllTests here — RunE2ETests already encodes
+			// the full decision (including skip-e2e from ci-test-config.yaml).
+			// Setting RunAllTests would bypass the skip logic in deploy/test.go
+			// which ORs RunAllTests with RunE2ETests.
 			RunAllTests: false,
 		},
 		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.
@@ -249,12 +248,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// This keeps output out of the terminal so the status table stays clean.
 	if opts.LogDir != "" {
 		baseName := entryLogFileName(entry)
-		if itFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".it.log")); err != nil {
-			logging.Logger.Warn().Err(err).Msg("Failed to create IT log file, output will go to terminal")
-		} else {
-			defer itFile.Close()
-			flags.ITOutputWriter = itFile
-		}
 		if e2eFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".e2e.log")); err != nil {
 			logging.Logger.Warn().Err(err).Msg("Failed to create e2e log file, output will go to terminal")
 		} else {

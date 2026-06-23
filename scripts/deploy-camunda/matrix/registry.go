@@ -62,7 +62,6 @@ type registryScenario struct {
 	Enterprise  bool              `yaml:"enterprise,omitempty"`
 	HelmVersion string            `yaml:"helmVersion,omitempty"`
 	SkipE2E     bool              `yaml:"skip-e2e,omitempty"`
-	SkipIT      bool              `yaml:"skip-it,omitempty"`
 	PrefixKey   string            `yaml:"prefix-key,omitempty"`
 
 	PreInstallID  string   `yaml:"pre-install,omitempty"`
@@ -217,7 +216,6 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 				Enterprise:   rscn.Enterprise,
 				HelmVersion:  rscn.HelmVersion,
 				SkipE2E:      rscn.SkipE2E,
-				SkipIT:       rscn.SkipIT,
 				Dependencies: append([]ChartDependency(nil), deps...),
 				PrefixKey:    rscn.PrefixKey,
 				PreInstall:   preInstall,

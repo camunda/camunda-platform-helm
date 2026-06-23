@@ -10,7 +10,7 @@ func newMatrixRunFlags() (*MatrixRunFlags, *string, *string, *string, *string, *
 	var (
 		versions                                      []string
 		includeDisabled, dryRun, coverage, stopOnFail bool
-		cleanup, deleteNS, skipDep, testIT, testE2E   bool
+		cleanup, deleteNS, skipDep, testE2E           bool
 		testAll, useVault, ensureReg, ensureHub       bool
 		maxParallel, helmTimeout                      int
 		scenarioFilter, shortnameFilter, flowFilter   string
@@ -26,7 +26,7 @@ func newMatrixRunFlags() (*MatrixRunFlags, *string, *string, *string, *string, *
 		DryRun: &dryRun, Coverage: &coverage, StopOnFailure: &stopOnFail, Cleanup: &cleanup,
 		DeleteNamespace: &deleteNS, NamespacePrefix: &namespacePrefix, MaxParallel: &maxParallel,
 		LogLevel: &logLevel, SkipDependencyUpdate: &skipDep, HelmTimeout: &helmTimeout,
-		TestIT: &testIT, TestE2E: &testE2E, TestAll: &testAll,
+		TestE2E: &testE2E, TestAll: &testAll,
 		KubeContext: &kubeContext, KubeContextGKE: &kubeGKE, KubeContextEKS: &kubeEKS,
 		IngressBaseDomain: &ingress, IngressBaseDomainGKE: &ingressGKE, IngressBaseDomainEKS: &ingressEKS,
 		UseVaultBackedSecrets: &useVault,
