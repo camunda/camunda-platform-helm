@@ -130,6 +130,15 @@ on:
         required: false
         default: false
         type: boolean
+      skip-it:
+        # Deprecated no-op: kept so existing external callers (camunda/camunda,
+        # camunda/identity, camunda/connectors, …) don't fail on unknown-input.
+        # The integration test runner was removed; remove this input once
+        # downstream repos stop passing it.
+        description: "Deprecated — no-op. The --test-it runner was removed."
+        required: false
+        default: false
+        type: boolean
       pr-head-sha:
         description: "PR HEAD commit SHA for recording cache results"
         required: false
