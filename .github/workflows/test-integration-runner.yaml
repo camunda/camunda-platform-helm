@@ -528,8 +528,7 @@ jobs:
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -548,11 +547,10 @@ jobs:
         env:
           EXTRA_VALUES: ${{ inputs.extra-values }}
         run: |
-          # Persist user-supplied extra values for `deploy-camunda matrix run` to consume.
-          # The runner uses a fixed location (/tmp/extra-values-file.yaml) which is added to
-          # the helm values chain by deploy.Execute via flags.Deployment.ExtraValues.
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          # Persist user-supplied extra values for `deploy-camunda matrix run` to consume
+          # via --extra-values (flags.Deployment.ExtraValues → digest-overlay strip).
+          # Written without echoing to stdout to avoid leaking sensitive values into logs.
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
 
       - name: Helm - OCI Registry Login
         if: inputs.helmChartVersion != ''
@@ -904,8 +902,7 @@ jobs:
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -1043,10 +1040,9 @@ jobs:
           # `matrix run` runs upgrade as two steps and applies --extra-values to
           # Step 2 only (runner_upgrade.go nils Step 1's copy), so the run-built
           # image tag lands on the upgraded chart without contaminating the
-          # previous-version install. The tee runs here unconditionally so the file
-          # exists regardless of auth type (the OIDC configure step also tees it).
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          # previous-version install. Written without echoing to stdout to avoid
+          # leaking potentially sensitive values into workflow logs.
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
           EXTRA_VALUES_ARGS=()
           if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
             EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)

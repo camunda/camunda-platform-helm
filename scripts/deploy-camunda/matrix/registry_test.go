@@ -438,6 +438,22 @@ func TestRegistryValidatorRejectsMissingExtraValues(t *testing.T) {
 	}
 }
 
+// TestRegistryValidatorRejectsExtraValuesPathTraversal pins the traversal
+// guard in checkExtraValues: a relative path that escapes chart-full-setup
+// via `..` must be rejected even if the target file exists on disk.
+func TestRegistryValidatorRejectsExtraValuesPathTraversal(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].ExtraValues = []string{"../../etc/passwd"}
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "escapes chart-full-setup") {
+		t.Fatalf("want path-traversal rejection, got: %v", err)
+	}
+}
+
 // TestRegistryValidatorRejectsMissingDepValuesFile exercises checkDep.
 // values-file paths are repo-root-relative (matching runner.go:1742); a
 // dangling reference must be caught at validation, not at deploy time.

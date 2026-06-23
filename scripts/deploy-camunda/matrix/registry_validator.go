@@ -102,6 +102,12 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			return
 		}
 		path := filepath.Join(chartFullSetupDir, ev)
+		// Reject paths that escape chart-full-setup via `..` traversal.
+		rel, err := filepath.Rel(chartFullSetupDir, path)
+		if err != nil || strings.HasPrefix(rel, "..") {
+			problems = append(problems, fmt.Sprintf("%s: extra-values %q: path escapes chart-full-setup dir", ctx, ev))
+			return
+		}
 		if info, err := os.Stat(path); err != nil || info.IsDir() {
 			problems = append(problems, fmt.Sprintf("%s: extra-values %q: missing values file at %s", ctx, ev, path))
 		}
