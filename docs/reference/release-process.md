@@ -144,7 +144,7 @@ Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, char
 
 2. **Promote a new RC** — Manually trigger [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) with the dev tag produced in Step 1 (e.g. `{version}-dev-{sha}` or `{chart-major}-dev-latest`). This creates a new RC tag (e.g. `{chart-major}-rc-latest`).
 
-3. **Notify QA** — Ping `@qa-automated-release-manager` in `#c8-release-announcements` using the QA notification template below, requesting validation of the RC.
+3. **Notify QA** — Ping `@qa-automated-release-manager` in [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6) using the QA notification template below, requesting validation of the RC.
    - QA inputs: Branch = `main`, Directory = `camunda-platform-{CAMUNDA_VERSION}`.
    - Do not specify individual component versions — use the RC tag directly.
 
@@ -163,7 +163,7 @@ Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, char
 
 ### QA Notification Template
 
-Post in `#c8-release-announcements`:
+Post in [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6):
 
 ```
 @qa-automated-release-manager can you please trigger a Helm Chart release test against {CHART_MAJOR}-rc-latest?
@@ -315,7 +315,7 @@ Avoid surprises during releases by ensuring all release-affecting changes are co
 Requirements:
 
 - Communicate before the change goes live.
-- Announce in `#c8-release-announcements` and CC:
+- Announce in [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6) and CC:
   - `@monorepo-release-manager`
   - `@qa-release-manager`
   - Others if relevant
