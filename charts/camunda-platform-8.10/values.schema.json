@@ -940,27 +940,27 @@
                                         },
                                         "region": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) AWS region for the S3 bucket. (example: us-east-1)",
+                                            "description": "AWS region for the S3 bucket. (example: us-east-1)",
                                             "default": ""
                                         },
                                         "bucket": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Name of the AWS S3 bucket.",
+                                            "description": "Name of the AWS S3 bucket.",
                                             "default": "your-aws-bucket"
                                         },
                                         "bucketPath": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) (Optional) Path/prefix within the S3 bucket.",
+                                            "description": "(Optional) Path/prefix within the S3 bucket.",
                                             "default": ""
                                         },
                                         "bucketTtl": {
                                             "type": "number",
-                                            "description": "(DEPRECATED) (Optional) Time-to-live for documents in the S3 bucket (number in days).",
+                                            "description": "(Optional) Time-to-live for documents in the S3 bucket (number in days).",
                                             "default": 0
                                         },
                                         "class": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Fully qualified class name for the AWS document store provider.",
+                                            "description": "Fully qualified class name for the AWS document store provider.",
                                             "default": "io.camunda.document.store.aws.AwsDocumentStoreProvider"
                                         },
                                         "accessKeyId": {
@@ -1030,12 +1030,12 @@
                                         },
                                         "bucket": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Name of the GCP bucket.",
+                                            "description": "Name of the GCP bucket.",
                                             "default": "your-gcp-bucket"
                                         },
                                         "class": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Fully qualified class name for the GCP document store provider.",
+                                            "description": "Fully qualified class name for the GCP document store provider.",
                                             "default": "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
                                         },
                                         "mountPath": {
@@ -1080,7 +1080,7 @@
                                         },
                                         "class": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Fully qualified class name for the in-memory document store provider.",
+                                            "description": "Fully qualified class name for the in-memory document store provider.",
                                             "default": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
                                         }
                                     }
@@ -1178,27 +1178,27 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "(DEPRECATED) if true, Management Identity will seed the first user in Keycloak.",
+                            "description": "if true, Management Identity will seed the first user in Keycloak.",
                             "default": true
                         },
                         "username": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the username of the first user, needed to log in into the web applications",
+                            "description": "defines the username of the first user, needed to log in into the web applications",
                             "default": "demo"
                         },
                         "email": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the email address of the first user; a valid email address is required to use WebModeler",
+                            "description": "defines the email address of the first user; a valid email address is required to use WebModeler",
                             "default": "demo@example.org"
                         },
                         "firstName": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the first name of the first user; a name is required to use WebModeler",
+                            "description": "defines the first name of the first user; a name is required to use WebModeler",
                             "default": "Demo"
                         },
                         "lastName": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the last name of the first user; a name is required to use WebModeler",
+                            "description": "defines the last name of the first user; a name is required to use WebModeler",
                             "default": "User"
                         },
                         "secret": {
@@ -1225,13 +1225,13 @@
                 },
                 "users": {
                     "type": "array",
-                    "description": "(DEPRECATED) configuration to configure properties of the Management Identity users, which can be used to access web applications.",
+                    "description": "configuration to configure properties of the Management Identity users, which can be used to access web applications.",
                     "default": [],
                     "items": {}
                 },
                 "clients": {
                     "type": "array",
-                    "description": "(DEPRECATED) configuration to configure properties of the Management Idnetity custom clients.",
+                    "description": "configuration to configure properties of the Management Idnetity custom clients.",
                     "default": [],
                     "items": {}
                 },
@@ -1316,7 +1316,7 @@
                             "properties": {
                                 "ROOT": {
                                     "type": "string",
-                                    "description": "(DEPRECATED)",
+                                    "description": "",
                                     "default": "INFO"
                                 }
                             }
@@ -4730,7 +4730,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable multitenancy checks in all applicable components.",
+                                    "description": "(DEPRECATED) if true, then enable multitenancy checks in all applicable components.",
                                     "default": false
                                 }
                             }
@@ -4740,7 +4740,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable multitenancy API used for tenant management.",
+                                    "description": "(DEPRECATED) if true, then enable multitenancy API used for tenant management.",
                                     "default": true
                                 }
                             }
@@ -5750,7 +5750,7 @@
                                         "number",
                                         "null"
                                     ],
-                                    "description": "can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
+                                    "description": "(DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
                                     "default": null
                                 }
                             }
@@ -6808,7 +6808,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, enables multitenancy in Optimize",
+                            "description": "(DEPRECATED) if true, enables multitenancy in Optimize",
                             "default": false
                         }
                     }
