@@ -64,7 +64,9 @@
       format: 'plain',
     },
     // Bitnami Premium image tags published by camunda-deployment-references, one
-    // self-contained JSON per image whose releases carry {version, newDigest}.
+    // self-contained JSON per image. Only the 'version' field is used here; the
+    // feed also carries 'newDigest', but custom json datasources do not consume or
+    // maintain digest pins (these values pin tags, not digests).
     // Complete upstream tag list (incl. pre-Nov-2025 tags), no registry creds.
     // Opt in per image with a '# renovate: datasource=custom.bitnami-<x>-camunda'
     // annotation in values-enterprise.yaml (see customManagers).
@@ -433,7 +435,9 @@
     },
     // Bitnami Premium image tags sourced from the camunda-deployment-references
     // custom datasources (complete upstream list, credential-free). Opt in per
-    // image with '# renovate: datasource=custom.bitnami-<x>-camunda depName=<x> versioning=docker'.
+    // image with '# renovate: datasource=custom.bitnami-<x>-camunda depName=<x>
+    // versioning=regex:...'. Bitnami '<x.y.z>-debian-12-rN' tags require regex
+    // versioning; docker versioning does not order across the '-rN' build suffix.
     {
       customType: 'regex',
       fileMatch: [
