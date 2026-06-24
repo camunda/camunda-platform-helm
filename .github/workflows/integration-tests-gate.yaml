@@ -3,6 +3,10 @@
 # the underlying matrix, so a transient failure in any single matrix cell does
 # not evict the PR — the gate retries failed cells once and only reports its
 # own final conclusion.
+#
+# Retry semantics: ONE retry per gate invocation. Re-running the gate workflow
+# itself yields one additional retry, which lets humans recover from a
+# double-transient without pushing a new commit.
 name: Integration Tests Gate
 
 on:
@@ -28,7 +32,13 @@ jobs:
     # Matrix wall time has historically run to ~3h; size for two attempts.
     timeout-minutes: 420
     steps:
-      - name: Wait for matrix run and retry once on failure
+      - name: Show gh version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh --version
+
+      - name: Discover matrix run
+        id: discover
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -36,30 +46,29 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
-          POLL_SECONDS: "60"
-          DISCOVERY_ATTEMPTS: "120"
+          DISCOVERY_ATTEMPTS: "120"   # 120 × 10s = 20 minutes
         run: |
           set -euo pipefail
 
           # Pick the SHA the matrix workflow actually runs against.
-          # In merge_group events, github.sha is the merge commit (NOT what the
-          # matrix is keyed to); the matrix runs against merge_group.head_sha.
+          # In merge_group events, github.sha is the merge commit (NOT what
+          # the matrix is keyed to); the matrix runs against head_sha.
           case "$EVENT_NAME" in
-            pull_request)  HEAD_SHA="$PR_HEAD_SHA" ;;
-            merge_group)   HEAD_SHA="$MG_HEAD_SHA" ;;
+            pull_request|pull_request_target)
+              HEAD_SHA="$PR_HEAD_SHA" ;;
+            merge_group)
+              HEAD_SHA="$MG_HEAD_SHA" ;;
             *)
               echo "::error::Unsupported event: $EVENT_NAME"
               exit 1
               ;;
           esac
           if [ -z "$HEAD_SHA" ]; then
-            echo "::error::Could not determine head SHA for event $EVENT_NAME"
+            echo "::error::No head SHA for event $EVENT_NAME"
             exit 1
           fi
           echo "Gating event=$EVENT_NAME sha=$HEAD_SHA"
 
-          # Locate the matrix run for this SHA. Filter by event so a manual
-          # workflow_dispatch or stale rerun on the same SHA isn't picked up.
           RUN_ID=""
           for i in $(seq 1 "$DISCOVERY_ATTEMPTS"); do
             RUN_ID="$(gh run list \
@@ -73,7 +82,7 @@ jobs:
               echo "Found matrix run $RUN_ID"
               break
             fi
-            echo "Matrix run not yet visible ($i/$DISCOVERY_ATTEMPTS); sleeping"
+            echo "Matrix run not yet visible ($i/$DISCOVERY_ATTEMPTS)"
             sleep 10
           done
           if [ -z "$RUN_ID" ]; then
@@ -81,23 +90,42 @@ jobs:
             exit 1
           fi
 
-          RUN_URL="https://github.com/${GH_REPO}/actions/runs/${RUN_ID}"
+          RUN_URL="$(gh run view "$RUN_ID" \
+            --json url --jq '.url' 2>/dev/null || true)"
+          if [ -z "$RUN_URL" ]; then
+            RUN_URL="https://github.com/${GH_REPO}/actions/runs/${RUN_ID}"
+          fi
           echo "Matrix run: $RUN_URL"
 
-          # Sparse-poll until the run completes. Avoids `gh run watch`'s short
-          # poll cadence which burns API budget and runner minutes across the
-          # hours-long matrix wall time.
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "run_url=$RUN_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Watch with one-shot retry
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ steps.discover.outputs.run_id }}
+          RUN_URL: ${{ steps.discover.outputs.run_url }}
+          POLL_SECONDS: "60"
+        run: |
+          set -euo pipefail
+
+          poll_status() {
+            local attempt="$1"
+            gh run view "$RUN_ID" --attempt "$attempt" \
+              --json status --jq '.status' 2>/dev/null || true
+          }
+
           wait_for_completion() {
             local attempt="$1"
             while true; do
               local status
-              status="$(gh run view "$RUN_ID" --attempt "$attempt" \
-                --json status --jq '.status' 2>/dev/null || true)"
+              status="$(poll_status "$attempt")"
               if [ "$status" = "completed" ]; then
                 return 0
               fi
               if [ -z "$status" ]; then
-                echo "Status not yet available for attempt $attempt; retrying"
+                echo "Attempt $attempt not visible yet; retrying"
               else
                 echo "Attempt $attempt status=$status; sleep ${POLL_SECONDS}s"
               fi
@@ -105,49 +133,81 @@ jobs:
             done
           }
 
-          echo "Waiting for matrix attempt 1 to complete"
-          wait_for_completion 1
+          get_attempt() {
+            gh api "repos/${GH_REPO}/actions/runs/${RUN_ID}" \
+              --jq '.run_attempt' 2>/dev/null || echo "0"
+          }
 
-          CONCLUSION_1="$(gh run view "$RUN_ID" --attempt 1 \
+          rerun_failed_with_retry() {
+            local i
+            for i in 1 2 3; do
+              if gh run rerun "$RUN_ID" --failed; then
+                return 0
+              fi
+              echo "rerun --failed failed (try $i/3); sleeping 10s"
+              sleep 10
+            done
+            return 1
+          }
+
+          # Read the current attempt and watch that one. This lets a human
+          # re-run the gate after a manual matrix rerun: the gate will pick
+          # up whatever the latest attempt is and grant exactly one more
+          # retry from there.
+          CURRENT_ATTEMPT="$(get_attempt)"
+          CURRENT_ATTEMPT="${CURRENT_ATTEMPT:-0}"
+          if ! [ "$CURRENT_ATTEMPT" -ge 1 ] 2>/dev/null; then
+            echo "::error::Could not read run_attempt; got '$CURRENT_ATTEMPT'"
+            exit 1
+          fi
+          echo "Watching matrix attempt $CURRENT_ATTEMPT: $RUN_URL"
+          wait_for_completion "$CURRENT_ATTEMPT"
+
+          CONCLUSION="$(gh run view "$RUN_ID" --attempt "$CURRENT_ATTEMPT" \
             --json conclusion --jq '.conclusion')"
-          echo "Matrix attempt 1 conclusion: $CONCLUSION_1"
-          if [ "$CONCLUSION_1" = "success" ]; then
+          echo "Attempt $CURRENT_ATTEMPT conclusion: $CONCLUSION"
+          if [ "$CONCLUSION" = "success" ]; then
             exit 0
           fi
-          # Only retry on genuine failure. Cancelled / timed_out / skipped /
-          # action_required / neutral are intentionally NOT retried: they
-          # either indicate human intent (cancel) or a state `--failed` can't
-          # rerun anyway.
-          if [ "$CONCLUSION_1" != "failure" ]; then
-            echo "::error::Attempt 1 '$CONCLUSION_1' is not retryable"
+
+          # Only `failure` is retryable via `gh run rerun --failed`.
+          # cancelled / timed_out / action_required / neutral are not.
+          if [ "$CONCLUSION" != "failure" ]; then
+            echo "::error::'$CONCLUSION' is not retryable"
             exit 1
           fi
 
           echo "Triggering retry of failed jobs on $RUN_URL"
-          gh run rerun "$RUN_ID" --failed
+          if ! rerun_failed_with_retry; then
+            echo "::error::Could not trigger rerun --failed after 3 tries"
+            exit 1
+          fi
 
-          # Wait until GitHub registers the new attempt before polling status,
-          # otherwise the first read can return the now-stale attempt-1 state.
-          echo "Waiting for attempt 2 to be registered"
-          for i in $(seq 1 30); do
-            LATEST_ATTEMPT="$(gh api \
-              "repos/${GH_REPO}/actions/runs/${RUN_ID}" \
-              --jq '.run_attempt')"
-            if [ "$LATEST_ATTEMPT" -ge 2 ]; then
-              echo "Attempt 2 registered"
+          # Wait for the new attempt to be registered by the API before
+          # watching it. Otherwise the first read can return the now-stale
+          # previous-attempt state.
+          NEXT_ATTEMPT=$((CURRENT_ATTEMPT + 1))
+          echo "Waiting for attempt $NEXT_ATTEMPT to be registered"
+          for i in $(seq 1 60); do
+            LATEST="$(get_attempt)"
+            LATEST="${LATEST:-0}"
+            if [ "$LATEST" -ge "$NEXT_ATTEMPT" ] 2>/dev/null; then
+              echo "Attempt $NEXT_ATTEMPT registered"
               break
             fi
             sleep 5
           done
-          if [ "${LATEST_ATTEMPT:-1}" -lt 2 ]; then
-            echo "::error::rerun --failed did not produce a second attempt"
+          LATEST="$(get_attempt)"
+          LATEST="${LATEST:-0}"
+          if ! [ "$LATEST" -ge "$NEXT_ATTEMPT" ] 2>/dev/null; then
+            echo "::error::rerun did not produce attempt $NEXT_ATTEMPT"
             exit 1
           fi
 
-          echo "Waiting for matrix attempt 2 to complete: $RUN_URL/attempts/2"
-          wait_for_completion 2
+          echo "Watching attempt $NEXT_ATTEMPT: $RUN_URL/attempts/$NEXT_ATTEMPT"
+          wait_for_completion "$NEXT_ATTEMPT"
 
-          CONCLUSION_2="$(gh run view "$RUN_ID" --attempt 2 \
+          FINAL="$(gh run view "$RUN_ID" --attempt "$NEXT_ATTEMPT" \
             --json conclusion --jq '.conclusion')"
-          echo "Matrix attempt 2 conclusion: $CONCLUSION_2"
-          [ "$CONCLUSION_2" = "success" ]
+          echo "Attempt $NEXT_ATTEMPT conclusion: $FINAL"
+          [ "$FINAL" = "success" ]
