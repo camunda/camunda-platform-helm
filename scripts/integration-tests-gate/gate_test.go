@@ -142,10 +142,10 @@ func TestResolveDispatchOverride(t *testing.T) {
 		wantEvent, wantPR, wantMG  string
 	}{
 		{
-			name:    "no_override_passes_through",
-			event:   "pull_request",
-			prHead:  "abc",
-			mgHead:  "",
+			name:      "no_override_passes_through",
+			event:     "pull_request",
+			prHead:    "abc",
+			mgHead:    "",
 			wantEvent: "pull_request", wantPR: "abc", wantMG: "",
 		},
 		{
