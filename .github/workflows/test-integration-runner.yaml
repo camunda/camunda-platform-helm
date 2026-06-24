@@ -1218,6 +1218,7 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
           PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS: "1"
+          PLAYWRIGHT_E2E_RETRIES: "0"
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
