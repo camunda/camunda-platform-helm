@@ -3066,6 +3066,8 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
+      ## @param orchestration.exporters.zeebe.replicas can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.
+      replicas: ~
     appIntegrations:
       apiKey:
         secret:

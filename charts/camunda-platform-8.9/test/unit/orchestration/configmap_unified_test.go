@@ -617,6 +617,82 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ESExporterReplicasInheritIndexReplicasByDefault",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+				"global.elasticsearch.enabled":          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
+				require.Contains(t, output, "numberOfReplicas: \"1\"",
+					"legacy ES exporter replicas must default to orchestration.index.replicas (1)")
+			},
+		},
+		{
+			Name: "ESExporterReplicasInheritCustomIndexReplicas",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+				"global.elasticsearch.enabled":          "true",
+				"orchestration.index.replicas":          "3",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "numberOfReplicas: \"3\"",
+					"legacy ES exporter replicas must inherit a custom orchestration.index.replicas")
+			},
+		},
+		{
+			Name: "ESExporterReplicasIndependentOverride",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":  "true",
+				"global.elasticsearch.enabled":           "true",
+				"orchestration.index.replicas":           "3",
+				"orchestration.exporters.zeebe.replicas": "2",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "numberOfReplicas: \"2\"",
+					"orchestration.exporters.zeebe.replicas must override the inherited value")
+			},
+		},
+		{
+			Name: "ESExporterReplicasExplicitZero",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":  "true",
+				"global.elasticsearch.enabled":           "true",
+				"orchestration.exporters.zeebe.replicas": "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "numberOfReplicas: \"0\"",
+					"an explicit orchestration.exporters.zeebe.replicas of 0 must be honored")
+			},
+		},
+		{
+			Name: "OSExporterReplicas",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":  "true",
+				"global.elasticsearch.enabled":           "false",
+				"global.opensearch.enabled":              "true",
+				"global.opensearch.url.host":             "opensearch.example.com",
+				"orchestration.exporters.zeebe.replicas": "5",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+				require.Contains(t, output, "numberOfReplicas: \"5\"",
+					"legacy OS exporter must render orchestration.exporters.zeebe.replicas")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 	testCases := []testhelpers.TestCase{
 		{
