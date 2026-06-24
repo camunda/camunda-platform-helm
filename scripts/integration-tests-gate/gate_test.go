@@ -16,6 +16,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -564,6 +566,73 @@ func TestRun_FastAttempt2_NoSeenRunningGuard(t *testing.T) {
 	g := newTestGate(c)
 	if err := g.Run("pull_request", "sha", ""); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRun_RetryFailureEmitsWarningWithAttemptNumber(t *testing.T) {
+	c := &fakeClient{
+		t:             t,
+		findRunQueue:  []findRunResp{{id: "100"}},
+		runURL:        "url",
+		attemptsQueue: attemptList(1, 2),
+		statusByAttempt: map[int][]statusResp{
+			1: statusList("completed"),
+			2: statusList("completed"),
+		},
+		conclusionByAttempt: map[int]string{1: "failure", 2: "failure"},
+	}
+	var cmds []string
+	g := newTestGate(c)
+	g.Cmdf = func(format string, args ...any) {
+		cmds = append(cmds, fmt.Sprintf(format, args...))
+	}
+	_ = g.Run("pull_request", "sha", "")
+	var found bool
+	for _, line := range cmds {
+		if strings.Contains(line, "::warning::") &&
+			strings.Contains(line, "attempt 2") &&
+			!strings.Contains(line, "MISSING") &&
+			!strings.Contains(line, "%!") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected fully-substituted attempt-2 warning, "+
+			"got %v", cmds)
+	}
+}
+
+func TestDispatchOverrideThenResolveSHA(t *testing.T) {
+	cases := []struct {
+		name                       string
+		overrideEvent, overrideSHA string
+		wantEvent, wantSHA         string
+	}{
+		{"dispatch_to_pull_request", "pull_request", "deadbeef",
+			"pull_request", "deadbeef"},
+		{"dispatch_to_merge_group", "merge_group", "cafef00d",
+			"merge_group", "cafef00d"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ev, pr, mg := ResolveDispatchOverride(
+				"workflow_dispatch", "", "",
+				tc.overrideSHA, tc.overrideEvent,
+			)
+			if ev != tc.wantEvent {
+				t.Fatalf("override event: got %q want %q",
+					ev, tc.wantEvent)
+			}
+			sha, err := ResolveSHA(ev, pr, mg)
+			if err != nil {
+				t.Fatalf("ResolveSHA after override: %v", err)
+			}
+			if sha != tc.wantSHA {
+				t.Fatalf("resolved sha: got %q want %q",
+					sha, tc.wantSHA)
+			}
+		})
 	}
 }
 

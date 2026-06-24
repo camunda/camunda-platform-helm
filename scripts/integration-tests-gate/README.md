@@ -36,6 +36,10 @@ gh workflow run integration-tests-gate.yaml \
   -f event=pull_request
 ```
 
+GitHub Actions retains run history for 90 days; dispatching against a
+SHA older than that will fail discovery because the matrix run has
+been pruned.
+
 ## Development
 
 ```bash
@@ -43,6 +47,7 @@ cd scripts/integration-tests-gate
 go test ./...
 go vet ./...
 go build .
+go run .   # how the workflow invokes the gate
 ```
 
 The gate logic lives in `gate.go` behind a `ghClient` interface;

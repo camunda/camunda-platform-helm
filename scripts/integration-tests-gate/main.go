@@ -30,6 +30,15 @@ func mustEnv(key string) string {
 }
 
 func main() {
+	// Fork PRs lack actions:write on GITHUB_TOKEN, so rerun --failed
+	// would 403. Return success so the required-check name stays green;
+	// for fork PRs the matrix workflow's own status is the real signal.
+	if os.Getenv("IS_FORK") == "true" {
+		fmt.Fprintln(os.Stderr,
+			"fork PR: deferring to matrix's own status")
+		return
+	}
+
 	repo := mustEnv("GH_REPO")
 	workflow := mustEnv("MATRIX_WORKFLOW")
 	event := mustEnv("EVENT_NAME")
@@ -45,7 +54,7 @@ func main() {
 	gate := &Gate{
 		Client:               newGHCLI(repo, 60*time.Second),
 		Workflow:             workflow,
-		DiscoveryTries:       120,
+		DiscoveryTries:       60,
 		DiscoveryInterval:    10 * time.Second,
 		PollInterval:         60 * time.Second,
 		MaxConsecutiveErrors: 10,

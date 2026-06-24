@@ -246,9 +246,9 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return nil
 	}
 	if final == "failure" {
-		g.Cmdf("::warning::attempt %d still failure after retry; " +
-			"jobs with conclusion=cancelled are not rerun by --failed " +
-			"and may need manual intervention")
+		g.Cmdf("::warning::attempt %d still failure after retry; "+
+			"jobs with conclusion=cancelled are not rerun by --failed "+
+			"and may need manual intervention", next)
 	}
 	return fmt.Errorf("attempt %d conclusion: %s", next, final)
 }
