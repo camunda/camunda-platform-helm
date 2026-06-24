@@ -128,6 +128,64 @@ func newTestGate(client ghClient) *Gate {
 		RerunBackoff:         time.Nanosecond,
 		Sleep:                func(time.Duration) {},
 		Logf:                 func(string, ...any) {},
+		Cmdf:                 func(string, ...any) {},
+	}
+}
+
+func TestResolveDispatchOverride(t *testing.T) {
+	cases := []struct {
+		name                       string
+		event, prHead, mgHead      string
+		overrideSHA, overrideEvent string
+		wantEvent, wantPR, wantMG  string
+	}{
+		{
+			name:    "no_override_passes_through",
+			event:   "pull_request",
+			prHead:  "abc",
+			mgHead:  "",
+			wantEvent: "pull_request", wantPR: "abc", wantMG: "",
+		},
+		{
+			name:        "override_defaults_to_pull_request",
+			event:       "workflow_dispatch",
+			overrideSHA: "deadbeef",
+			wantEvent:   "pull_request",
+			wantPR:      "deadbeef", wantMG: "deadbeef",
+		},
+		{
+			name:          "override_event_merge_group",
+			event:         "workflow_dispatch",
+			overrideSHA:   "deadbeef",
+			overrideEvent: "merge_group",
+			wantEvent:     "merge_group",
+			wantPR:        "deadbeef", wantMG: "deadbeef",
+		},
+		{
+			name:          "override_event_pull_request_explicit",
+			event:         "workflow_dispatch",
+			overrideSHA:   "deadbeef",
+			overrideEvent: "pull_request",
+			wantEvent:     "pull_request",
+			wantPR:        "deadbeef", wantMG: "deadbeef",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ev, pr, mg := ResolveDispatchOverride(
+				tc.event, tc.prHead, tc.mgHead,
+				tc.overrideSHA, tc.overrideEvent,
+			)
+			if ev != tc.wantEvent {
+				t.Errorf("event: got %q want %q", ev, tc.wantEvent)
+			}
+			if pr != tc.wantPR {
+				t.Errorf("pr: got %q want %q", pr, tc.wantPR)
+			}
+			if mg != tc.wantMG {
+				t.Errorf("mg: got %q want %q", mg, tc.wantMG)
+			}
+		})
 	}
 }
 

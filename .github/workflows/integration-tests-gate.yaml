@@ -32,6 +32,12 @@ concurrency:
 jobs:
   gate:
     name: gate
+    # Skip on fork PRs: GITHUB_TOKEN has no actions:write scope from a fork
+    # so `gh run rerun --failed` would 403 anyway. The matrix workflow's own
+    # status remains the required signal for fork PRs.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 420
     steps:

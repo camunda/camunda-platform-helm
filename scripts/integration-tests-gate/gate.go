@@ -49,7 +49,11 @@ type Gate struct {
 	RerunBackoff time.Duration
 
 	Sleep func(time.Duration)
-	Logf  func(format string, args ...any)
+	// Logf prints human-readable progress to stderr.
+	Logf func(format string, args ...any)
+	// Cmdf prints GitHub Actions workflow commands (::group::,
+	// ::endgroup::, ::warning::) to stdout.
+	Cmdf func(format string, args ...any)
 }
 
 func ResolveSHA(event, prHeadSHA, mgHeadSHA string) (string, error) {
@@ -69,10 +73,20 @@ func ResolveSHA(event, prHeadSHA, mgHeadSHA string) (string, error) {
 	}
 }
 
-func (g *Gate) group(name string, fn func() error) error {
-	g.Logf("::group::%s", name)
-	defer g.Logf("::endgroup::")
-	return fn()
+// ResolveDispatchOverride remaps the event and SHAs when the gate is
+// triggered manually via workflow_dispatch with an OVERRIDE_SHA. If
+// overrideSHA is empty the inputs pass through unchanged.
+func ResolveDispatchOverride(
+	event, prHead, mgHead, overrideSHA, overrideEvent string,
+) (string, string, string) {
+	if overrideSHA == "" {
+		return event, prHead, mgHead
+	}
+	resolved := overrideEvent
+	if resolved == "" {
+		resolved = "pull_request"
+	}
+	return resolved, overrideSHA, overrideSHA
 }
 
 func (g *Gate) Discover(sha, event string) (runID, runURL string, err error) {
@@ -174,12 +188,9 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	}
 	g.Logf("gating event=%s sha=%s", event, sha)
 
-	var runID, runURL string
-	err = g.group("discover", func() error {
-		var derr error
-		runID, runURL, derr = g.Discover(sha, event)
-		return derr
-	})
+	g.Cmdf("::group::discover")
+	runID, runURL, err := g.Discover(sha, event)
+	g.Cmdf("::endgroup::")
 	if err != nil {
 		return err
 	}
@@ -193,11 +204,9 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return fmt.Errorf("could not read run_attempt for %s: %w", runID, err)
 	}
 
-	var watchErr error
-	_ = g.group(fmt.Sprintf("watch attempt %d", current), func() error {
-		watchErr = g.watchAndDecide(runID, runURL, current)
-		return nil
-	})
+	g.Cmdf("::group::watch attempt %d", current)
+	watchErr := g.watchAndDecide(runID, runURL, current)
+	g.Cmdf("::endgroup::")
 	if watchErr == nil {
 		return nil
 	}
@@ -206,28 +215,27 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	}
 
 	g.Logf("triggering retry of failed jobs on %s", runURL)
-	if err := g.group("rerun --failed", func() error {
-		return g.RerunWithBackoff(runID)
-	}); err != nil {
+	g.Cmdf("::group::rerun --failed")
+	err = g.RerunWithBackoff(runID)
+	g.Cmdf("::endgroup::")
+	if err != nil {
 		return err
 	}
 
 	next := current + 1
-	if err := g.group(
-		fmt.Sprintf("await attempt %d registration", next),
-		func() error { return g.WaitForAttemptRegistered(runID, next) },
-	); err != nil {
+	g.Cmdf("::group::await attempt %d registration", next)
+	err = g.WaitForAttemptRegistered(runID, next)
+	g.Cmdf("::endgroup::")
+	if err != nil {
 		return err
 	}
 
 	g.Logf("watching attempt %d: %s/attempts/%d", next, runURL, next)
-	var finalErr error
-	_ = g.group(fmt.Sprintf("watch attempt %d", next), func() error {
-		finalErr = g.WaitForCompletion(runID, next)
-		return nil
-	})
-	if finalErr != nil {
-		return finalErr
+	g.Cmdf("::group::watch attempt %d", next)
+	err = g.WaitForCompletion(runID, next)
+	g.Cmdf("::endgroup::")
+	if err != nil {
+		return err
 	}
 	final, err := g.Client.AttemptConclusion(runID, next)
 	if err != nil {
@@ -238,9 +246,9 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return nil
 	}
 	if final == "failure" {
-		g.Logf("::warning::attempt %d still failure after retry; "+
-			"jobs with conclusion=cancelled are not rerun by --failed "+
-			"and may need manual intervention", next)
+		g.Cmdf("::warning::attempt %d still failure after retry; " +
+			"jobs with conclusion=cancelled are not rerun by --failed " +
+			"and may need manual intervention")
 	}
 	return fmt.Errorf("attempt %d conclusion: %s", next, final)
 }

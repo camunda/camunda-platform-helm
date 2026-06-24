@@ -36,15 +36,11 @@ func main() {
 	prHead := os.Getenv("PR_HEAD_SHA")
 	mgHead := os.Getenv("MG_HEAD_SHA")
 
-	if override := os.Getenv("OVERRIDE_SHA"); override != "" {
-		overrideEvent := os.Getenv("OVERRIDE_EVENT")
-		if overrideEvent == "" {
-			overrideEvent = "pull_request"
-		}
-		event = overrideEvent
-		prHead = override
-		mgHead = override
-	}
+	event, prHead, mgHead = ResolveDispatchOverride(
+		event, prHead, mgHead,
+		os.Getenv("OVERRIDE_SHA"),
+		os.Getenv("OVERRIDE_EVENT"),
+	)
 
 	gate := &Gate{
 		Client:               newGHCLI(repo, 60*time.Second),
@@ -63,10 +59,14 @@ func main() {
 		Logf: func(format string, args ...any) {
 			fmt.Fprintf(os.Stderr, format+"\n", args...)
 		},
+		Cmdf: func(format string, args ...any) {
+			fmt.Fprintf(os.Stdout, format+"\n", args...)
+		},
 	}
 
 	if err := gate.Run(event, prHead, mgHead); err != nil {
-		fmt.Fprintf(os.Stderr, "::error::%v\n", err)
+		fmt.Fprintf(os.Stdout, "::error::%v\n", err)
+		fmt.Fprintf(os.Stderr, "gate failed: %v\n", err)
 		os.Exit(1)
 	}
 }
