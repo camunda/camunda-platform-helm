@@ -41,6 +41,7 @@ scripts/vault-secret-mapper/vault-secret-mapper
 scripts/deploy-camunda/deploy-camunda
 scripts/deploy-camunda/.env
 scripts/release-tools/release-tools
+scripts/integration-tests-gate/integration-tests-gate
 
 charts/camunda-platform*/test/e2e/package-lock.json
 
