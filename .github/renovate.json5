@@ -98,15 +98,18 @@
     },
   },
   packageRules: [
-    // vendor-ee/postgresql and vendor-ee/elasticsearch in the 8.9 enterprise values
-    // are sourced from the bitnami-*-camunda custom datasources (see customManagers);
-    // disable the docker/helm-values tracking for them so they are not bumped twice.
+    // vendor-ee/postgresql in the 8.9 enterprise values is sourced from the
+    // bitnami-postgresql-camunda custom datasource (see customManagers); disable
+    // the docker/helm-values tracking for it so it is not bumped twice.
     // NOTE (draft): replicate to 8.7/8.8 once their values are annotated too.
+    // vendor-ee/elasticsearch is intentionally NOT wired here: the chart pins a
+    // plain tag (e.g. 8.19.17) while the published feed uses the
+    // '<x.y.z>-debian-12-rN' scheme, so it needs separate handling.
     {
       description: 'Bitnami enterprise images tracked via custom datasource, not docker.',
       matchManagers: ['helm-values'],
       matchFileNames: ['charts/camunda-platform-8.9/values-enterprise.yaml'],
-      matchPackageNames: ['/vendor-ee/(postgresql|elasticsearch)$/'],
+      matchPackageNames: ['/vendor-ee/postgresql$/'],
       enabled: false,
     },
     {
