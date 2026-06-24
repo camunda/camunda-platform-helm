@@ -323,6 +323,35 @@ jobs:
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
 
+      - name: Restore deploy-camunda binary
+        id: binary-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: ~/.local/bin/deploy-camunda
+          key: deploy-camunda-v2-${{ runner.os }}-${{ hashFiles('scripts/deploy-camunda/**/*.go', 'scripts/deploy-camunda/go.sum') }}
+      - name: Setup Go
+        if: steps.binary-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: scripts/deploy-camunda/go.mod
+          cache: true
+          cache-dependency-path: scripts/deploy-camunda/go.sum
+      - name: Build deploy-camunda
+        if: steps.binary-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          # CGO_ENABLED=0 produces a static binary so it runs unchanged inside the
+          # ci-runner container used by downstream matrix jobs.
+          (cd scripts/deploy-camunda && CGO_ENABLED=0 go build -o "$HOME/.local/bin/deploy-camunda" .)
+      - name: Upload deploy-camunda binary
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: deploy-camunda-binary-${{ inputs.identifier }}
+          path: ~/.local/bin/deploy-camunda
+          if-no-files-found: error
+          retention-days: 1
+
   # The runner job is used to run the install/upgrade flows on the plaform (gke, rosa, etc.). This level of abstraction is needed so
   # we can shard the tests across multiple jobs (this is done via the matrix). If the tests where another job in this workflow, we
   # would need to wait for all the install/upgrade flows to complete before we can run the tests.
@@ -345,6 +374,7 @@ jobs:
       auth: ${{ inputs.auth }}
       exclude: ${{ inputs.exclude }}
       identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
+      binary-artifact-name: deploy-camunda-binary-${{ inputs.identifier }}
       camunda-helm-repo: ${{ inputs.camunda-helm-repo }}
       camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
       camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
