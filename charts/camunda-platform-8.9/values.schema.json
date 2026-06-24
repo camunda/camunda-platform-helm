@@ -6519,6 +6519,14 @@
                                     "type": "boolean",
                                     "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
                                     "default": false
+                                },
+                                "replicas": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ],
+                                    "description": "can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
+                                    "default": null
                                 }
                             }
                         },

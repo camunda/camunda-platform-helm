@@ -343,6 +343,7 @@ zeebe:
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | quote }}
+            numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
@@ -361,6 +362,7 @@ zeebe:
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | quote }}
+            numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
           {{- if or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
           aws:
             enabled: true
