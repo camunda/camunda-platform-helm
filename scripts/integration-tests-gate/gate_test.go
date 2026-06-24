@@ -636,6 +636,56 @@ func TestDispatchOverrideThenResolveSHA(t *testing.T) {
 	}
 }
 
+func TestRun_ContinueOnErrorJobsSoftFailDoesNotTriggerRetry(t *testing.T) {
+	// continue-on-error jobs report job-level conclusion="success" even
+	// when their internal steps fail; they do NOT contribute to the run's
+	// overall conclusion. A run that is otherwise green therefore has
+	// run-level conclusion="success" and the gate must exit 0 without
+	// retrying.
+	c := &fakeClient{
+		t:                   t,
+		findRunQueue:        []findRunResp{{id: "100"}},
+		runURL:              "url",
+		attemptsQueue:       attemptList(1),
+		statusByAttempt:     map[int][]statusResp{1: statusList("completed")},
+		conclusionByAttempt: map[int]string{1: "success"},
+	}
+	g := newTestGate(c)
+	if err := g.Run("pull_request", "sha", ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.rerunCalls != 0 {
+		t.Fatalf("expected no rerun for soft-failing continue-on-error jobs, "+
+			"got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_RunWithMixedFailures_RetriesOnce(t *testing.T) {
+	// A run with both a real failure and continue-on-error soft failures
+	// has run-level conclusion="failure". `gh run rerun --failed` skips
+	// the continue-on-error jobs (their conclusion is success) and only
+	// reruns the hard failure. The gate sees run conclusion go from
+	// failure to success after retry and exits 0.
+	c := &fakeClient{
+		t:             t,
+		findRunQueue:  []findRunResp{{id: "100"}},
+		runURL:        "url",
+		attemptsQueue: attemptList(1, 2),
+		statusByAttempt: map[int][]statusResp{
+			1: statusList("completed"),
+			2: statusList("completed"),
+		},
+		conclusionByAttempt: map[int]string{1: "failure", 2: "success"},
+	}
+	g := newTestGate(c)
+	if err := g.Run("pull_request", "sha", ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.rerunCalls != 1 {
+		t.Fatalf("expected exactly 1 rerun, got %d", c.rerunCalls)
+	}
+}
+
 func TestRun_RunAttemptReadRecoversFromTransient(t *testing.T) {
 	apiErr := errors.New("api blip")
 	c := &fakeClient{

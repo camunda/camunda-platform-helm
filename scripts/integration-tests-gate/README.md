@@ -19,6 +19,23 @@ conclusion.
   Branch protection / merge-queue config must require this check and
   not the raw matrix check.
 
+## continue-on-error jobs
+
+The gate looks at the run-level `conclusion`, never per-job. GitHub
+treats `continue-on-error: true` jobs as soft failures: their internal
+steps can fail but the job's `conclusion` stays `success` and they do
+not contribute to the run-level conclusion. Practical consequences:
+
+- A run with only soft (continue-on-error) failures is `success` at the
+  run level. The gate exits 0 without retrying.
+- A run with a mix of hard and soft failures is `failure` at the run
+  level. The gate retries; `gh run rerun --failed` only reruns the hard
+  failures because the soft ones are already "successful".
+
+If you want a flaky job to be retried by the gate, do NOT mark it
+`continue-on-error: true` — that disqualifies it from `--failed`
+rerun.
+
 ## Fork PRs
 
 The gate is skipped on PRs from fork repositories. `GITHUB_TOKEN`
