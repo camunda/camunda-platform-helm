@@ -16,32 +16,44 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type ghCLI struct {
-	repo string
+	repo    string
+	timeout time.Duration
 }
 
-func newGHCLI(repo string) *ghCLI { return &ghCLI{repo: repo} }
+func newGHCLI(repo string, timeout time.Duration) *ghCLI {
+	return &ghCLI{repo: repo, timeout: timeout}
+}
 
 func (c *ghCLI) run(args ...string) (string, error) {
-	cmd := exec.Command("gh", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "gh", args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("gh %s: %v: %s", strings.Join(args, " "), err,
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("gh %s: timed out after %s",
+				strings.Join(args, " "), c.timeout)
+		}
+		return "", fmt.Errorf("gh %s: %v: %s",
+			strings.Join(args, " "), err,
 			strings.TrimSpace(stderr.String()))
 	}
 	return strings.TrimSpace(stdout.String()), nil
 }
 
 func (c *ghCLI) FindRun(workflow, sha, event string) (string, error) {
-	out, err := c.run("run", "list",
+	return c.run("run", "list",
 		"--repo", c.repo,
 		"--workflow", workflow,
 		"--commit", sha,
@@ -49,10 +61,6 @@ func (c *ghCLI) FindRun(workflow, sha, event string) (string, error) {
 		"--limit", "1",
 		"--json", "databaseId",
 		"--jq", ".[0].databaseId // empty")
-	if err != nil {
-		return "", err
-	}
-	return out, nil
 }
 
 func (c *ghCLI) RunURL(runID string) (string, error) {

@@ -36,18 +36,24 @@ func main() {
 	prHead := os.Getenv("PR_HEAD_SHA")
 	mgHead := os.Getenv("MG_HEAD_SHA")
 
+	if override := os.Getenv("OVERRIDE_SHA"); override != "" {
+		prHead = override
+		mgHead = override
+	}
+
 	gate := &Gate{
-		Client:               newGHCLI(repo),
+		Client:               newGHCLI(repo, 60*time.Second),
 		Workflow:             workflow,
 		DiscoveryTries:       120,
 		DiscoveryInterval:    10 * time.Second,
 		PollInterval:         60 * time.Second,
+		MaxConsecutiveErrors: 10,
 		RegistrationTries:    60,
 		RegistrationInterval: 5 * time.Second,
 		RerunTries:           3,
 		RerunBackoff:         10 * time.Second,
 		Sleep:                time.Sleep,
-		Log: func(format string, args ...any) {
+		Logf: func(format string, args ...any) {
 			fmt.Printf(format+"\n", args...)
 		},
 	}

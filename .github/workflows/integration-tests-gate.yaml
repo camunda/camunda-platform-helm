@@ -4,6 +4,12 @@ on:
   pull_request:
   merge_group:
     types: [checks_requested]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Override head SHA for testing
+        required: true
+        type: string
 
 permissions:
   actions: write
@@ -21,16 +27,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 420
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           sparse-checkout: |
             scripts/integration-tests-gate
           sparse-checkout-cone-mode: false
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: scripts/integration-tests-gate/go.mod
-          cache-dependency-path: scripts/integration-tests-gate/go.sum
+          cache: false
 
       - name: Run gate
         working-directory: scripts/integration-tests-gate
@@ -41,4 +47,5 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          OVERRIDE_SHA: ${{ inputs.sha }}
         run: go run .

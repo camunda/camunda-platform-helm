@@ -36,7 +36,8 @@ type Gate struct {
 	DiscoveryTries    int
 	DiscoveryInterval time.Duration
 
-	PollInterval time.Duration
+	PollInterval         time.Duration
+	MaxConsecutiveErrors int
 
 	RegistrationTries    int
 	RegistrationInterval time.Duration
@@ -45,7 +46,7 @@ type Gate struct {
 	RerunBackoff time.Duration
 
 	Sleep func(time.Duration)
-	Log   func(format string, args ...any)
+	Logf  func(format string, args ...any)
 }
 
 func ResolveSHA(event, prHeadSHA, mgHeadSHA string) (string, error) {
@@ -71,7 +72,7 @@ func (g *Gate) Discover(sha, event string) (runID, runURL string, err error) {
 		if err == nil && runID != "" {
 			break
 		}
-		g.Log("matrix run not yet visible (%d/%d)", i+1, g.DiscoveryTries)
+		g.Logf("matrix run not yet visible (%d/%d)", i+1, g.DiscoveryTries)
 		g.Sleep(g.DiscoveryInterval)
 	}
 	if runID == "" {
@@ -84,33 +85,26 @@ func (g *Gate) Discover(sha, event string) (runID, runURL string, err error) {
 	return runID, runURL, nil
 }
 
-// WaitForCompletion polls until the attempt's status is "completed".
-// It requires at least one observation of a non-completed status before
-// believing a "completed" reading, to guard against the API returning stale
-// top-level state for an attempt that has not actually started yet.
 func (g *Gate) WaitForCompletion(runID string, attempt int) error {
-	seenRunning := false
+	consecutiveErrors := 0
 	for {
 		status, err := g.Client.AttemptStatus(runID, attempt)
 		if err != nil {
-			g.Log("attempt %d status read error: %v", attempt, err)
+			consecutiveErrors++
+			g.Logf("attempt %d status read error (%d/%d): %v",
+				attempt, consecutiveErrors, g.MaxConsecutiveErrors, err)
+			if consecutiveErrors >= g.MaxConsecutiveErrors {
+				return fmt.Errorf("attempt %d: %d consecutive status errors: %w",
+					attempt, consecutiveErrors, err)
+			}
 			g.Sleep(g.PollInterval)
 			continue
 		}
-		switch status {
-		case "completed":
-			if seenRunning {
-				return nil
-			}
-			g.Log("attempt %d completed-but-unconfirmed; awaiting start", attempt)
-		case "queued", "in_progress", "waiting", "requested", "pending":
-			seenRunning = true
-			g.Log("attempt %d status=%s", attempt, status)
-		case "":
-			g.Log("attempt %d not visible yet", attempt)
-		default:
-			g.Log("attempt %d status=%s", attempt, status)
+		consecutiveErrors = 0
+		if status == "completed" {
+			return nil
 		}
+		g.Logf("attempt %d status=%q", attempt, status)
 		g.Sleep(g.PollInterval)
 	}
 }
@@ -122,7 +116,8 @@ func (g *Gate) RerunWithBackoff(runID string) error {
 			return nil
 		} else {
 			last = err
-			g.Log("rerun --failed try %d/%d failed: %v", i+1, g.RerunTries, err)
+			g.Logf("rerun --failed try %d/%d failed: %v",
+				i+1, g.RerunTries, err)
 			g.Sleep(g.RerunBackoff)
 		}
 	}
@@ -143,8 +138,6 @@ func (g *Gate) WaitForAttemptRegistered(runID string, want int) error {
 	return fmt.Errorf("attempt %d was not registered", want)
 }
 
-// ErrNotRetryable is returned when an attempt finished in a state that
-// `gh run rerun --failed` cannot recover (cancelled / timed_out / etc).
 var ErrNotRetryable = errors.New("not retryable")
 
 func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
@@ -152,7 +145,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	if err != nil {
 		return err
 	}
-	g.Log("gating event=%s sha=%s", event, sha)
+	g.Logf("gating event=%s sha=%s", event, sha)
 
 	runID, runURL, err := g.Discover(sha, event)
 	if err != nil {
@@ -161,7 +154,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	if runURL == "" {
 		runURL = "(url unknown)"
 	}
-	g.Log("matrix run %s: %s", runID, runURL)
+	g.Logf("matrix run %s: %s", runID, runURL)
 
 	current, err := g.Client.RunAttempt(runID)
 	if err != nil || current < 1 {
@@ -176,7 +169,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return nil
 	}
 
-	g.Log("triggering retry of failed jobs on %s", runURL)
+	g.Logf("triggering retry of failed jobs on %s", runURL)
 	if err := g.RerunWithBackoff(runID); err != nil {
 		return err
 	}
@@ -186,7 +179,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return err
 	}
 
-	g.Log("watching attempt %d: %s/attempts/%d", next, runURL, next)
+	g.Logf("watching attempt %d: %s/attempts/%d", next, runURL, next)
 	if err := g.WaitForCompletion(runID, next); err != nil {
 		return err
 	}
@@ -194,7 +187,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	if err != nil {
 		return err
 	}
-	g.Log("attempt %d conclusion: %s", next, final)
+	g.Logf("attempt %d conclusion: %s", next, final)
 	if final == "success" {
 		return nil
 	}
@@ -204,7 +197,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 var errNeedsRetry = errors.New("retry needed")
 
 func (g *Gate) watchAndDecide(runID, runURL string, attempt int) error {
-	g.Log("watching attempt %d: %s", attempt, runURL)
+	g.Logf("watching attempt %d: %s", attempt, runURL)
 	if err := g.WaitForCompletion(runID, attempt); err != nil {
 		return err
 	}
@@ -212,7 +205,7 @@ func (g *Gate) watchAndDecide(runID, runURL string, attempt int) error {
 	if err != nil {
 		return err
 	}
-	g.Log("attempt %d conclusion: %s", attempt, conclusion)
+	g.Logf("attempt %d conclusion: %s", attempt, conclusion)
 	switch conclusion {
 	case "success":
 		return nil
