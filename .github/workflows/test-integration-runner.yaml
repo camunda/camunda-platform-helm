@@ -315,21 +315,6 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      # THROWAWAY: deterministic failure of one tier-2 scenario (`oidc`) on
-      # merge_group events to verify Integration Tests Gate retry behavior
-      # in the merge queue end-to-end. The gate should retry this cell once,
-      # see it fail again, report red, and the queue should evict the PR.
-      # REVERT THIS STEP IN A FOLLOWUP COMMIT BEFORE FINAL MERGE.
-      - name: "[GATE-TEST] Intentional failure for tier-2 oidc scenario"
-        if: >-
-          github.event_name == 'merge_group' &&
-          inputs.shortname == 'oidc'
-        run: |
-          echo "::error::Intentional deterministic failure for gate-retry test."
-          echo "Revert the [GATE-TEST] step in test-integration-runner.yaml"
-          echo "before this PR can merge."
-          exit 1
-
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -793,21 +778,6 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      # THROWAWAY: deterministic failure of one tier-2 scenario (`oidc`) on
-      # merge_group events to verify Integration Tests Gate retry behavior
-      # in the merge queue end-to-end. The gate should retry this cell once,
-      # see it fail again, report red, and the queue should evict the PR.
-      # REVERT THIS STEP IN A FOLLOWUP COMMIT BEFORE FINAL MERGE.
-      - name: "[GATE-TEST] Intentional failure for tier-2 oidc scenario"
-        if: >-
-          github.event_name == 'merge_group' &&
-          inputs.shortname == 'oidc'
-        run: |
-          echo "::error::Intentional deterministic failure for gate-retry test."
-          echo "Revert the [GATE-TEST] step in test-integration-runner.yaml"
-          echo "before this PR can merge."
-          exit 1
-
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
