@@ -26,8 +26,8 @@ import (
 //   - no orphan files exist in pre-setup-scripts/ or common/resources/ —
 //     every .sh / .yaml must be referenced by at least one LifecycleHook
 //     across PR/Nightly scenarios, dependency-profile pre-install hooks, and
-//     flow-scoped pre-upgrade hooks (allowlists in lifecycle_allowlist.go
-//     exempt helper scripts and staged-but-disabled fixtures).
+//     flow-scoped pre-upgrade hooks, or be exempt via sibling-invocation
+//     detection or an in-file "# orphan-ok: <reason>" header marker.
 //
 // The validator runs at the tail of LoadRegistry. Errors are aggregated and
 // returned as a single error so the caller sees every problem at once.
@@ -221,32 +221,72 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	}
 
 	// Orphan walk: every .sh in pre-setup-scripts/ must be referenced by some
-	// LifecycleHook, modulo preSetupScriptAllowlist (helper scripts sourced
-	// indirectly and sed-target markers).
+	// LifecycleHook, or be exempt by one of two conventions:
+	//   1. Sibling-invoked helper: another .sh in the same dir calls it via
+	//      `bash "${SCRIPT_DIR}/<name>"` — detected by substring search.
+	//   2. Explicit marker: the file contains a line matching
+	//      `# orphan-ok: <non-empty reason>` (reason required).
+	//
+	// To exempt a file via marker, add to its header:
+	//   # orphan-ok: <reason explaining why it has no LifecycleHook reference>
+	// Alternatively, reference it from a LifecycleHook (script: <name>).
+	var scriptEntries []os.DirEntry
 	if entries, err := os.ReadDir(scriptsDir); err == nil {
-		for _, e := range entries {
-			if e.IsDir() {
-				continue
-			}
-			name := e.Name()
-			if !strings.HasSuffix(name, ".sh") {
-				continue
-			}
-			if preSetupScriptAllowlist[name] {
-				continue
-			}
-			if !referencedScripts[name] {
-				problems = append(problems, fmt.Sprintf("orphan script %q in pre-setup-scripts/: no LifecycleHook references it", name))
-			}
-		}
+		scriptEntries = entries
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		problems = append(problems, fmt.Sprintf("read pre-setup-scripts/: %v", err))
 	}
+	// Build sibling content map (full file) for invocation detection, and a
+	// separate header map (first 1KB) for orphan-ok marker scanning.
+	siblingContent := map[string]string{}
+	siblingHeader := map[string]string{}
+	for _, e := range scriptEntries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".sh") {
+			continue
+		}
+		path := filepath.Join(scriptsDir, e.Name())
+		if data, err := os.ReadFile(path); err == nil {
+			siblingContent[e.Name()] = string(data)
+		}
+		if header, err := readFirstKB(path); err == nil {
+			siblingHeader[e.Name()] = header
+		}
+	}
+	for _, e := range scriptEntries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(name, ".sh") {
+			continue
+		}
+		if referencedScripts[name] {
+			continue
+		}
+		// Check sibling invocation (helper called by another script in the same dir).
+		if isSiblingInvoked(name, siblingContent) {
+			continue
+		}
+		// Check orphan-ok header marker.
+		ok, reason, err := parseOrphanOk(siblingHeader[name])
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("script %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
+			continue
+		}
+		if ok {
+			_ = reason
+			continue
+		}
+		problems = append(problems, fmt.Sprintf(
+			"orphan script %q in pre-setup-scripts/: no LifecycleHook references it and no \"# orphan-ok: <reason>\" header found"+
+				" — either add it to a LifecycleHook (script: %s) or add \"# orphan-ok: <reason>\" to the file header",
+			name, name))
+	}
 
 	// Orphan walk: every .yaml/.yml in common/resources/ must be referenced by
-	// some LifecycleHook fixtures: list, modulo commonResourcesAllowlist
-	// (staged-but-disabled fixtures and resources applied by scripts via
-	// envsubst+kubectl rather than the runner's declarative pipeline).
+	// some LifecycleHook, or carry an explicit marker:
+	//   # orphan-ok: <reason>
+	// (staged-but-disabled fixtures and resources not yet wired to a hook).
 	if entries, err := os.ReadDir(resourcesDir); err == nil {
 		for _, e := range entries {
 			if e.IsDir() {
@@ -256,12 +296,22 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
 				continue
 			}
-			if commonResourcesAllowlist[name] {
+			if referencedFixtures[name] {
 				continue
 			}
-			if !referencedFixtures[name] {
-				problems = append(problems, fmt.Sprintf("orphan fixture %q in common/resources/: no LifecycleHook references it", name))
+			content, _ := readFirstKB(filepath.Join(resourcesDir, name))
+			ok, _, err := parseOrphanOk(content)
+			if err != nil {
+				problems = append(problems, fmt.Sprintf("fixture %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
+				continue
 			}
+			if ok {
+				continue
+			}
+			problems = append(problems, fmt.Sprintf(
+				"orphan fixture %q in common/resources/: no LifecycleHook references it and no \"# orphan-ok: <reason>\" header found"+
+					" — either add it to a LifecycleHook (fixtures: [%s]) or add \"# orphan-ok: <reason>\" to the file header",
+				name, name))
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		problems = append(problems, fmt.Sprintf("read common/resources/: %v", err))
@@ -272,6 +322,59 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	}
 	sort.Strings(problems)
 	return fmt.Errorf("registry validation failed:\n  - %s", strings.Join(problems, "\n  - "))
+}
+
+// readFirstKB reads at most 1024 bytes from a file and returns them as a
+// string. Used to scan file headers without loading whole files.
+func readFirstKB(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	buf := make([]byte, 1024)
+	n, _ := f.Read(buf)
+	return string(buf[:n]), nil
+}
+
+// isSiblingInvoked returns true when any sibling script in siblingContent
+// references name via a subprocess call (e.g. `bash "${SCRIPT_DIR}/name"` or
+// `exec bash "...name"`). A plain basename substring match is sufficient
+// because script names in this codebase are unique within a version directory.
+func isSiblingInvoked(name string, siblingContent map[string]string) bool {
+	for sib, content := range siblingContent {
+		if sib == name {
+			continue
+		}
+		if strings.Contains(content, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// parseOrphanOk scans content for a line matching `# orphan-ok: <reason>`.
+// Returns (true, reason, nil) when found with a non-empty reason,
+// (false, "", fmt.Errorf) when the marker is present but has an empty reason,
+// and (false, "", nil) when no marker is found.
+func parseOrphanOk(content string) (bool, string, error) {
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		rest := strings.TrimPrefix(trimmed, "#")
+		rest = strings.TrimSpace(rest)
+		if !strings.HasPrefix(rest, "orphan-ok:") {
+			continue
+		}
+		reason := strings.TrimSpace(strings.TrimPrefix(rest, "orphan-ok:"))
+		if reason == "" {
+			return false, "", fmt.Errorf("empty reason")
+		}
+		return true, reason, nil
+	}
+	return false, "", nil
 }
 
 // deriveRepoRootAndVersion turns chartDir = .../charts/camunda-platform-<X.Y>
