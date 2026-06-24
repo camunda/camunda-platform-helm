@@ -61,7 +61,7 @@ func (c *DeploymentConfig) Validate() error {
 		return errors.New("--persistence is required")
 	}
 	if c.Platform == "" {
-		return errors.New("--platform is required")
+		return errors.New("--test-platform is required")
 	}
 
 	// Feature constraints
@@ -85,7 +85,7 @@ func (c *DeploymentConfig) ValidateAgainstValues(scenariosDir string) error {
 	checks := []check{
 		{"--identity", c.Identity, ListIdentities},
 		{"--persistence", c.Persistence, ListPersistence},
-		{"--platform", c.Platform, ListPlatforms},
+		{"--test-platform", c.Platform, ListPlatforms},
 	}
 	for _, ch := range checks {
 		valid, err := ch.listFn(scenariosDir)

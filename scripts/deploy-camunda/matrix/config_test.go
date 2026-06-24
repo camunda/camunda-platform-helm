@@ -193,11 +193,11 @@ func TestGenerate_PropagatesPreInstall(t *testing.T) {
 		if e.PreInstall.Description == "" {
 			t.Errorf("scenario %q: PreInstall.Description is empty", w.scenario)
 		}
-		// Fixtures and Script must match what the registry declared.
-		if w.hook.Script != "" && e.PreInstall.Script != w.hook.Script {
+		// Script and fixtures must match exactly what the registry declared.
+		if e.PreInstall.Script != w.hook.Script {
 			t.Errorf("scenario %q: PreInstall.Script: got %q, want %q", w.scenario, e.PreInstall.Script, w.hook.Script)
 		}
-		if len(w.hook.Fixtures) > 0 && len(e.PreInstall.Fixtures) != len(w.hook.Fixtures) {
+		if !slices.Equal(e.PreInstall.Fixtures, w.hook.Fixtures) {
 			t.Errorf("scenario %q: PreInstall.Fixtures: got %v, want %v", w.scenario, e.PreInstall.Fixtures, w.hook.Fixtures)
 		}
 	}

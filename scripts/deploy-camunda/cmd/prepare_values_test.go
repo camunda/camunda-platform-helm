@@ -118,9 +118,8 @@ elasticsearch:
 	if readErr != nil {
 		t.Fatalf("failed to read output file: %v", readErr)
 	}
-	// YAML round-trip may drop quotes (8.9.0 is a valid unquoted scalar), so check
-	// for both quoted and unquoted forms.
-	if !strings.Contains(string(data), `8.9.0`) {
+	// YAML round-trip may drop quotes (8.9.0 is a valid unquoted scalar).
+	if !strings.Contains(string(data), "tag: \"8.9.0\"") && !strings.Contains(string(data), "tag: 8.9.0") {
 		t.Errorf("output file missing expected content, got:\n%s", string(data))
 	}
 }
