@@ -118,6 +118,21 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:                 "TestIngressOmitsOrchestrationWhenGlobalTLSFlagSet",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":                    "true",
+				"orchestration.contextPath":                 "/orchestration",
+				"global.tls.orchestration.rest.enabled":     "true",
+				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "path: /orchestration",
+					"combined ingress-http.yaml must not emit the Orchestration HTTP backend rule when REST TLS is enabled via global.tls.orchestration.rest.enabled — the split ingress-orchestration-http.yaml handles HTTPS")
+			},
+		},
+		{
 			Name:                 "TestIngressComponentDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
