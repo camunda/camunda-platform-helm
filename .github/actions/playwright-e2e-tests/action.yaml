@@ -73,9 +73,10 @@ runs:
         fi
         
         # Install gettext for envsubst command used by render-e2e-env.sh
+        # Note: no sudo — containers run as root, and sudo may not be installed.
         if command -v apt-get &> /dev/null; then
           install_packages() {
-            sudo apt-get update && sudo apt-get install -y gettext-base
+            apt-get update && apt-get install -y gettext-base
           }
 
           # Try up to 5 times with exponential backoff
@@ -88,14 +89,14 @@ runs:
 
             if [ $attempt -lt 5 ]; then
               echo "apt-get failed, cleaning cache and retrying in $((attempt * 30)) seconds..."
-              sudo rm -rf /var/lib/apt/lists/*
+              rm -rf /var/lib/apt/lists/*
               sleep $((attempt * 30))
 
               # On third attempt, try switching to a different mirror
               if [ $attempt -eq 3 ]; then
                 echo "Switching to alternative Ubuntu mirror..."
-                sudo sed -i 's|http://archive.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
-                sudo sed -i 's|http://security.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
+                sed -i 's|http://archive.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
+                sed -i 's|http://security.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
               fi
             else
               echo "All attempts failed"
@@ -123,7 +124,7 @@ runs:
       uses: camunda/infra-global-github-actions/common-tooling@b4808875a583e71eff5b3dd07bb50dafb92694a6 # main
       with:
         overwrite: "false"
-        build-essential-enabled: "true"
+        build-essential-enabled: "false"
         node-enabled: "true"
         yarn-enabled: "false"
         buildx-enabled: "false"
