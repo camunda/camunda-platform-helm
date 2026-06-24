@@ -25,12 +25,16 @@ data:
       name: {{ .Values.global.opensearch.prefix | quote }}
       {{- end }}
 
-    {{- if .Values.global.elasticsearch.enabled }}
     es:
       connection:
         nodes:
+        {{- if .Values.global.elasticsearch.enabled }}
           - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             httpPort: {{ .Values.global.elasticsearch.url.port }}
+        {{- else if .Values.global.opensearch.enabled }}
+          - host: {{ include "camundaPlatform.opensearchHost" . | quote }}
+            httpPort: {{ .Values.global.opensearch.url.port }}
+        {{- end }}
       {{- if .Values.global.elasticsearch.external }}
       security:
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
@@ -39,7 +43,6 @@ data:
           enabled: "true"
         {{- end }}
       {{- end }}
-    {{- end }}
 
     spring:
       servlet:
