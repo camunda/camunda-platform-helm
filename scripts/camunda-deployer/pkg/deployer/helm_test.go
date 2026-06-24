@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"scripts/camunda-deployer/pkg/types"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -503,5 +504,150 @@ func TestUpgradeInstall_NoRetryOnNonTransient(t *testing.T) {
 	}
 	if attempts != 1 {
 		t.Errorf("expected exactly 1 helm invocation for non-transient error, got %d", attempts)
+	}
+}
+
+func TestDeployCompanionCharts_DeploysInParallel(t *testing.T) {
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error { return nil },
+		func(ctx context.Context, name, url string) error { return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	var inFlight, maxInFlight, total int32
+	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+		atomic.AddInt32(&total, 1)
+		cur := atomic.AddInt32(&inFlight, 1)
+		for {
+			prev := atomic.LoadInt32(&maxInFlight)
+			if cur <= prev || atomic.CompareAndSwapInt32(&maxInFlight, prev, cur) {
+				break
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+		atomic.AddInt32(&inFlight, -1)
+		return "", nil
+	}
+
+	err := deployCompanionCharts(context.Background(), types.Options{
+		Namespace: "ns",
+		CompanionCharts: []types.CompanionChart{
+			{ChartRef: "/charts/a", ReleaseName: "a"},
+			{ChartRef: "/charts/b", ReleaseName: "b"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if total != 2 {
+		t.Errorf("expected both companions to deploy, got %d invocations", total)
+	}
+	if maxInFlight < 2 {
+		t.Errorf("expected companions to overlap (maxInFlight>=2), got %d — deploys ran serially", maxInFlight)
+	}
+}
+
+func TestDeployCompanionCharts_ErrorCancelsSiblings(t *testing.T) {
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error { return nil },
+		func(ctx context.Context, name, url string) error { return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	var siblingCancelled atomic.Bool
+	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+		if containsArg(args, "fails") {
+			return "", fmt.Errorf("boom")
+		}
+		// Slow sibling: block until the failing companion cancels the group ctx.
+		select {
+		case <-ctx.Done():
+			siblingCancelled.Store(true)
+			return "", ctx.Err()
+		case <-time.After(2 * time.Second):
+			return "", nil
+		}
+	}
+
+	err := deployCompanionCharts(context.Background(), types.Options{
+		Namespace: "ns",
+		CompanionCharts: []types.CompanionChart{
+			{ChartRef: "/charts/fails", ReleaseName: "fails"},
+			{ChartRef: "/charts/slow", ReleaseName: "slow"},
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error from failing companion, got nil")
+	}
+	if !strings.Contains(err.Error(), "companion chart") {
+		t.Errorf("error = %q, want it to mention the failing companion chart", err.Error())
+	}
+	if !siblingCancelled.Load() {
+		t.Error("expected the in-flight sibling to observe context cancellation")
+	}
+}
+
+func TestDeployCompanionCharts_SingleCompanionSucceeds(t *testing.T) {
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error { return nil },
+		func(ctx context.Context, name, url string) error { return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	var calls int32
+	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+		atomic.AddInt32(&calls, 1)
+		return "", nil
+	}
+
+	err := deployCompanionCharts(context.Background(), types.Options{
+		Namespace: "ns",
+		CompanionCharts: []types.CompanionChart{
+			{ChartRef: "/charts/only", ReleaseName: "only"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if calls != 1 {
+		t.Errorf("expected exactly 1 companion deploy, got %d", calls)
+	}
+}
+
+func TestDeployCompanionCharts_RepoRegistrationSerialized(t *testing.T) {
+	var inFlight, maxRepoInFlight int32
+	repoOp := func() {
+		cur := atomic.AddInt32(&inFlight, 1)
+		for {
+			prev := atomic.LoadInt32(&maxRepoInFlight)
+			if cur <= prev || atomic.CompareAndSwapInt32(&maxRepoInFlight, prev, cur) {
+				break
+			}
+		}
+		time.Sleep(30 * time.Millisecond)
+		atomic.AddInt32(&inFlight, -1)
+	}
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error { return nil },
+		func(ctx context.Context, name, url string) error { repoOp(); return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	err := deployCompanionCharts(context.Background(), types.Options{
+		Namespace: "ns",
+		CompanionCharts: []types.CompanionChart{
+			{ChartRef: "x/a", ReleaseName: "a", RepoName: "x", RepoURL: "https://x"},
+			{ChartRef: "y/b", ReleaseName: "b", RepoName: "y", RepoURL: "https://y"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if maxRepoInFlight != 1 {
+		t.Errorf("repo registration must be serialized (maxRepoInFlight=1), got %d", maxRepoInFlight)
 	}
 }

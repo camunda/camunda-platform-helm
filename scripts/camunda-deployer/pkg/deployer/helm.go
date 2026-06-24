@@ -8,7 +8,10 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-deployer/pkg/types"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // Package-level function variables for helm operations. These default to the
@@ -209,17 +212,51 @@ func formatArgs(args []string) string {
 	return strings.Join(parts, " ")
 }
 
+// companionRepoMu serializes helm repo add/update — those commands rewrite the
+// shared repositories.yaml and must not run concurrently.
+var companionRepoMu sync.Mutex
+
+// deployCompanionCharts deploys all configured companion charts concurrently,
+// blocking until every companion is ready or the first failure cancels the rest.
+// Returns the first error encountered; nil means all companions are up.
+func deployCompanionCharts(ctx context.Context, o types.Options) error {
+	g, gCtx := errgroup.WithContext(ctx)
+	for i, cc := range o.CompanionCharts {
+		g.Go(func() error {
+			logging.Logger.Info().
+				Str("chart", cc.ChartRef).
+				Str("version", cc.Version).
+				Str("release", cc.ReleaseName).
+				Str("namespace", o.Namespace).
+				Msg("Deploying companion chart")
+			if err := deployCompanionChart(gCtx, cc, o); err != nil {
+				return fmt.Errorf("companion chart [%d] %q failed: %w", i, cc.ReleaseName, err)
+			}
+			return nil
+		})
+	}
+	return g.Wait()
+}
+
 // deployCompanionChart deploys a single companion chart as its own Helm release
 // in the same namespace as the main Camunda chart. It uses helm upgrade --install
 // with --wait to ensure the chart is fully ready before returning.
 func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.Options) error {
 	// Ensure the Helm repo is registered when a repo-style chart ref is used.
 	if cc.RepoName != "" && cc.RepoURL != "" {
-		if err := helmRepoAdd(ctx, cc.RepoName, cc.RepoURL); err != nil {
-			return fmt.Errorf("companion chart %q: repo add failed: %w", cc.ReleaseName, err)
-		}
-		if err := helmRepoUpdate(ctx); err != nil {
-			return fmt.Errorf("companion chart %q: repo update failed: %w", cc.ReleaseName, err)
+		err := func() error {
+			companionRepoMu.Lock()
+			defer companionRepoMu.Unlock()
+			if err := helmRepoAdd(ctx, cc.RepoName, cc.RepoURL); err != nil {
+				return fmt.Errorf("companion chart %q: repo add failed: %w", cc.ReleaseName, err)
+			}
+			if err := helmRepoUpdate(ctx); err != nil {
+				return fmt.Errorf("companion chart %q: repo update failed: %w", cc.ReleaseName, err)
+			}
+			return nil
+		}()
+		if err != nil {
+			return err
 		}
 	}
 
