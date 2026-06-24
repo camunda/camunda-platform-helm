@@ -1269,14 +1269,14 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- if and $rest.enabled $rest.secret.existingSecret -}}
 {{- $s := lookup "v1" "Secret" .Release.Namespace $rest.secret.existingSecret -}}
 {{- $data := ($s | default dict).data | default dict -}}
-{{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
-checksum/orchestration-tls-rest: {{ get $data $certKey | sha256sum }}
+{{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . -}}
+{{- printf "\nchecksum/orchestration-tls-rest: %s" (get $data $certKey | sha256sum) -}}
 {{- end -}}
 {{- $grpc := .Values.global.tls.orchestration.grpc -}}
-{{- if and $grpc.enabled $grpc.secret.existingSecret }}
+{{- if and $grpc.enabled $grpc.secret.existingSecret -}}
 {{- $s := lookup "v1" "Secret" .Release.Namespace $grpc.secret.existingSecret -}}
-{{- $data := ($s | default dict).data | default dict }}
-checksum/orchestration-tls-grpc: {{ get $data $grpc.secret.existingSecretKey | sha256sum }}
+{{- $data := ($s | default dict).data | default dict -}}
+{{- printf "\nchecksum/orchestration-tls-grpc: %s" (get $data $grpc.secret.existingSecretKey | sha256sum) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

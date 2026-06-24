@@ -75,10 +75,10 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- end }}
   {{- end }}
   {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
-    {{- if not .Values.global.tls.orchestration.rest.enabled }}
+    {{- if ne (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
       {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but global.tls.orchestration.rest.enabled is false."
-          "NGINX upstream verification only makes sense against a TLS backend; set rest.enabled: true (or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
+          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but Orchestration REST TLS is not enabled."
+          "NGINX upstream verification only makes sense against a TLS backend; set global.tls.orchestration.rest.enabled: true (or wire SERVER_SSL_ENABLED=true via orchestration.env, or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
@@ -91,10 +91,10 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- end }}
   {{- end }}
   {{- if .Values.global.tls.orchestration.grpc.proxyVerify.enabled }}
-    {{- if not .Values.global.tls.orchestration.grpc.enabled }}
+    {{- if ne (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
       {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but global.tls.orchestration.grpc.enabled is false."
-          "NGINX upstream verification only makes sense against a TLS backend; set grpc.enabled: true (or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
+          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but Orchestration gRPC TLS is not enabled."
+          "NGINX upstream verification only makes sense against a TLS backend; set global.tls.orchestration.grpc.enabled: true (or wire CAMUNDA_API_GRPC_SSL_ENABLED=true via orchestration.env, or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
