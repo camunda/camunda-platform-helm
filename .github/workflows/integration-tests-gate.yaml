@@ -1,0 +1,79 @@
+# Required status check that wraps the "Test - Chart Version" matrix with a
+# one-shot retry of failed jobs. The merge queue gates on this workflow, not on
+# the underlying matrix, so a transient failure in any single matrix cell does
+# not evict the PR — the gate retries failed cells once and only reports its
+# own final conclusion.
+name: Integration Tests Gate
+
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{
+      github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: gate
+    runs-on: ubuntu-latest
+    # Must fit (matrix attempt 1 worst case) + (matrix attempt 2 worst case).
+    # Matrix wall time has historically run to ~3h; size for two attempts.
+    timeout-minutes: 360
+    steps:
+      - name: Wait for matrix run and retry once on failure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          MATRIX_WORKFLOW: test-chart-version.yaml
+        run: |
+          set -euo pipefail
+
+          echo "Locating matrix workflow run for SHA $HEAD_SHA"
+          RUN_ID=""
+          for i in $(seq 1 60); do
+            RUN_ID="$(gh run list \
+              --workflow "$MATRIX_WORKFLOW" \
+              --commit "$HEAD_SHA" \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId // empty')"
+            if [ -n "$RUN_ID" ]; then
+              echo "Found matrix run $RUN_ID"
+              break
+            fi
+            echo "Matrix run not yet visible (attempt $i/60), sleeping 10s"
+            sleep 10
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::No matrix run for $MATRIX_WORKFLOW @ $HEAD_SHA"
+            exit 1
+          fi
+
+          echo "Watching matrix run $RUN_ID (attempt 1)"
+          gh run watch "$RUN_ID" --exit-status || true
+
+          CONCLUSION="$(gh run view "$RUN_ID" \
+            --json conclusion --jq '.conclusion')"
+          echo "Matrix attempt 1 conclusion: $CONCLUSION"
+          if [ "$CONCLUSION" = "success" ]; then
+            exit 0
+          fi
+
+          echo "Triggering one retry of failed jobs on run $RUN_ID"
+          gh run rerun "$RUN_ID" --failed
+
+          echo "Watching matrix run $RUN_ID (attempt 2)"
+          gh run watch "$RUN_ID" --exit-status || true
+
+          FINAL="$(gh run view "$RUN_ID" --json conclusion --jq '.conclusion')"
+          echo "Matrix attempt 2 conclusion: $FINAL"
+          [ "$FINAL" = "success" ]
