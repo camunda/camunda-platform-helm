@@ -155,8 +155,13 @@ func TestCheckScenarioEnvScansLayeredFiles(t *testing.T) {
 	dir := t.TempDir()
 	valuesDir := filepath.Join(dir, "values")
 	persistenceDir := filepath.Join(valuesDir, "persistence")
-	if err := os.MkdirAll(persistenceDir, 0o755); err != nil {
-		t.Fatal(err)
+	identityDir := filepath.Join(valuesDir, "identity")
+	platformDir := filepath.Join(valuesDir, "platform")
+	featuresDir := filepath.Join(valuesDir, "features")
+	for _, d := range []string{persistenceDir, identityDir, platformDir, featuresDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// base.yaml makes the dir "layered"; the placeholder lives only in the
 	// persistence layer, never in base.
@@ -164,6 +169,12 @@ func TestCheckScenarioEnvScansLayeredFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(persistenceDir, "elasticsearch.yaml"), []byte("foo:\n  bar: $LAYERED_ONLY_VAR\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(identityDir, "keycloak.yaml"), []byte("# test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(platformDir, "gke.yaml"), []byte("# test\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

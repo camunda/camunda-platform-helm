@@ -449,7 +449,7 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 // buildDeploymentConfigFromFlags creates a DeploymentConfig from RuntimeFlags.
 // It prefers the new selection flags (--identity, --persistence, etc.) over deprecated flags.
 // Returns nil if no explicit flags are set (use auto-detection from scenario name).
-func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) (*scenarios.DeploymentConfig, error) {
+func buildDeploymentConfigFromFlags(scenariosDir string, flags *config.RuntimeFlags, scenarioName string) (*scenarios.DeploymentConfig, error) {
 	// Migrate deprecated flags to new fields first
 	flags.MigrateDeprecatedFlags()
 
@@ -458,7 +458,7 @@ func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName str
 		return nil, nil
 	}
 
-	return scenarios.BuildDeploymentConfig(scenarioName, scenarios.BuilderOverrides{
+	return scenarios.BuildDeploymentConfig(scenariosDir, scenarioName, scenarios.BuilderOverrides{
 		Identity:     flags.Selection.Identity,
 		Persistence:  flags.Selection.Persistence,
 		Platform:     flags.Selection.TestPlatform,
@@ -729,7 +729,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if effectivePlatform == "" {
 			effectivePlatform = flags.Deployment.Platform
 		}
-		deployConfig, err := scenarios.BuildDeploymentConfig(scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
+		deployConfig, err := scenarios.BuildDeploymentConfig(effectiveScenarioDir, scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
 			Identity:     flags.Selection.Identity,
 			Persistence:  flags.Selection.Persistence,
 			Platform:     effectivePlatform,

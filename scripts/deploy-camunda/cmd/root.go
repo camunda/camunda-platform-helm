@@ -258,10 +258,10 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Test.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
 	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
-	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection: keycloak, oidc, basic, hybrid")
-	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-self-signed, elasticsearch-self-signed-os-trust, no-elasticsearch, opensearch-embedded, opensearch-self-signed, opensearch-self-signed-os-trust, rdbms, rdbms-external, rdbms-oracle, rdbms-self-signed")
-	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
-	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
+	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection (see values/identity/ or shell completion)")
+	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection (see values/persistence/ or shell completion)")
+	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection (see values/platform/ or shell completion)")
+	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections, comma-separated (see values/features/ or shell completion)")
 	f.BoolVar(&flags.Selection.QA, "qa", false, "Enable QA configuration (test users, etc.)")
 	f.BoolVar(&flags.Selection.ImageTags, "image-tags", false, "Enable image tag overrides from env vars")
 	f.BoolVar(&flags.Selection.UpgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
@@ -402,19 +402,17 @@ func completeMultiSelect(toComplete string, available []string) ([]string, cobra
 }
 
 // registerSelectionCompletion adds tab completion for the new selection + composition flags.
+// Valid names are discovered from the filesystem at completion time — no hardcoded fallback.
 func registerSelectionCompletion(cmd *cobra.Command) {
 	// Identity completion
 	_ = cmd.RegisterFlagCompletionFunc("identity", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultIdentities := []string{"keycloak", "oidc", "basic", "hybrid"}
-
 		if scenarioPath == "" {
-			return defaultIdentities, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
 		identities, err := scenarios.ListIdentities(scenarioPath)
 		if err != nil || len(identities) == 0 {
-			return defaultIdentities, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return identities, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -422,15 +420,12 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Persistence completion
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "elasticsearch-self-signed-os-trust", "no-elasticsearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
-
 		if scenarioPath == "" {
-			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
 		persistence, err := scenarios.ListPersistence(scenarioPath)
 		if err != nil || len(persistence) == 0 {
-			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return persistence, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -438,15 +433,12 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Test platform completion
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPlatforms := config.TestPlatforms
-
 		if scenarioPath == "" {
-			return defaultPlatforms, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
 		platforms, err := scenarios.ListPlatforms(scenarioPath)
 		if err != nil || len(platforms) == 0 {
-			return defaultPlatforms, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return platforms, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -454,19 +446,13 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Features completion (supports comma-separated multi-select)
 	_ = cmd.RegisterFlagCompletionFunc("features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultFeatures := []string{"multitenancy", "rba", "documentstore"}
-
-		var features []string
-		if scenarioPath != "" {
-			var err error
-			features, err = scenarios.ListFeatures(scenarioPath)
-			if err != nil || len(features) == 0 {
-				features = defaultFeatures
-			}
-		} else {
-			features = defaultFeatures
+		if scenarioPath == "" {
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
+		features, err := scenarios.ListFeatures(scenarioPath)
+		if err != nil || len(features) == 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
 		return completeMultiSelect(toComplete, features)
 	})
 }

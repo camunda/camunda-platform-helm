@@ -84,6 +84,12 @@ func TestRunPrepareValues_LayeredPath(t *testing.T) {
 elasticsearch:
   enabled: true
 `)
+	writeTempFile(t, scenarioDir, "values/identity/keycloak.yaml", "# test\n")
+	writeTempFile(t, scenarioDir, "values/persistence/elasticsearch.yaml", "# test\n")
+	writeTempFile(t, scenarioDir, "values/platform/gke.yaml", "# test\n")
+	if err := os.MkdirAll(filepath.Join(scenarioDir, "values", "features"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	pv := &prepareValuesFlags{
 		scenarioPath: scenarioDir,
@@ -112,7 +118,9 @@ elasticsearch:
 	if readErr != nil {
 		t.Fatalf("failed to read output file: %v", readErr)
 	}
-	if !strings.Contains(string(data), `tag: "8.9.0"`) {
+	// YAML round-trip may drop quotes (8.9.0 is a valid unquoted scalar), so check
+	// for both quoted and unquoted forms.
+	if !strings.Contains(string(data), `8.9.0`) {
 		t.Errorf("output file missing expected content, got:\n%s", string(data))
 	}
 }
@@ -237,6 +245,12 @@ func TestRunPrepareValues_ImageTagsAutoEnabled(t *testing.T) {
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
 `)
+	writeTempFile(t, scenarioDir, "values/identity/keycloak.yaml", "# test\n")
+	writeTempFile(t, scenarioDir, "values/persistence/elasticsearch.yaml", "# test\n")
+	writeTempFile(t, scenarioDir, "values/platform/gke.yaml", "# test\n")
+	if err := os.MkdirAll(filepath.Join(scenarioDir, "values", "features"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	pv := &prepareValuesFlags{
 		scenarioPath: scenarioDir,
@@ -276,6 +290,12 @@ func TestRunPrepareValues_ImageTagsNotAutoEnabledWithoutTagKeys(t *testing.T) {
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
 `)
+	writeTempFile(t, scenarioDir, "values/identity/keycloak.yaml", "# test\n")
+	writeTempFile(t, scenarioDir, "values/persistence/elasticsearch.yaml", "# test\n")
+	writeTempFile(t, scenarioDir, "values/platform/gke.yaml", "# test\n")
+	if err := os.MkdirAll(filepath.Join(scenarioDir, "values", "features"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	pv := &prepareValuesFlags{
 		scenarioPath: scenarioDir,
