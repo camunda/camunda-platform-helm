@@ -37,6 +37,11 @@ func main() {
 	mgHead := os.Getenv("MG_HEAD_SHA")
 
 	if override := os.Getenv("OVERRIDE_SHA"); override != "" {
+		overrideEvent := os.Getenv("OVERRIDE_EVENT")
+		if overrideEvent == "" {
+			overrideEvent = "pull_request"
+		}
+		event = overrideEvent
 		prHead = override
 		mgHead = override
 	}
@@ -48,13 +53,15 @@ func main() {
 		DiscoveryInterval:    10 * time.Second,
 		PollInterval:         60 * time.Second,
 		MaxConsecutiveErrors: 10,
-		RegistrationTries:    60,
+		RegistrationTries:    120,
 		RegistrationInterval: 5 * time.Second,
+		RunAttemptTries:      5,
+		RunAttemptBackoff:    5 * time.Second,
 		RerunTries:           3,
 		RerunBackoff:         10 * time.Second,
 		Sleep:                time.Sleep,
 		Logf: func(format string, args ...any) {
-			fmt.Printf(format+"\n", args...)
+			fmt.Fprintf(os.Stderr, format+"\n", args...)
 		},
 	}
 

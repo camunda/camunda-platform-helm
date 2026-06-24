@@ -42,6 +42,9 @@ type Gate struct {
 	RegistrationTries    int
 	RegistrationInterval time.Duration
 
+	RunAttemptTries   int
+	RunAttemptBackoff time.Duration
+
 	RerunTries   int
 	RerunBackoff time.Duration
 
@@ -66,6 +69,12 @@ func ResolveSHA(event, prHeadSHA, mgHeadSHA string) (string, error) {
 	}
 }
 
+func (g *Gate) group(name string, fn func() error) error {
+	g.Logf("::group::%s", name)
+	defer g.Logf("::endgroup::")
+	return fn()
+}
+
 func (g *Gate) Discover(sha, event string) (runID, runURL string, err error) {
 	for i := 0; i < g.DiscoveryTries; i++ {
 		runID, err = g.Client.FindRun(g.Workflow, sha, event)
@@ -83,6 +92,24 @@ func (g *Gate) Discover(sha, event string) (runID, runURL string, err error) {
 		runURL = ""
 	}
 	return runID, runURL, nil
+}
+
+func (g *Gate) RunAttemptWithRetry(runID string) (int, error) {
+	var last error
+	for i := 0; i < g.RunAttemptTries; i++ {
+		n, err := g.Client.RunAttempt(runID)
+		if err == nil && n >= 1 {
+			return n, nil
+		}
+		last = err
+		g.Logf("run_attempt read failed (%d/%d): %v",
+			i+1, g.RunAttemptTries, err)
+		g.Sleep(g.RunAttemptBackoff)
+	}
+	if last == nil {
+		last = errors.New("run_attempt < 1")
+	}
+	return 0, last
 }
 
 func (g *Gate) WaitForCompletion(runID string, attempt int) error {
@@ -147,7 +174,12 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	}
 	g.Logf("gating event=%s sha=%s", event, sha)
 
-	runID, runURL, err := g.Discover(sha, event)
+	var runID, runURL string
+	err = g.group("discover", func() error {
+		var derr error
+		runID, runURL, derr = g.Discover(sha, event)
+		return derr
+	})
 	if err != nil {
 		return err
 	}
@@ -156,32 +188,46 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	}
 	g.Logf("matrix run %s: %s", runID, runURL)
 
-	current, err := g.Client.RunAttempt(runID)
-	if err != nil || current < 1 {
-		return fmt.Errorf("could not read run_attempt for %s: %v", runID, err)
+	current, err := g.RunAttemptWithRetry(runID)
+	if err != nil {
+		return fmt.Errorf("could not read run_attempt for %s: %w", runID, err)
 	}
 
-	if err := g.watchAndDecide(runID, runURL, current); err != nil {
-		if !errors.Is(err, errNeedsRetry) {
-			return err
-		}
-	} else {
+	var watchErr error
+	_ = g.group(fmt.Sprintf("watch attempt %d", current), func() error {
+		watchErr = g.watchAndDecide(runID, runURL, current)
 		return nil
+	})
+	if watchErr == nil {
+		return nil
+	}
+	if !errors.Is(watchErr, errNeedsRetry) {
+		return watchErr
 	}
 
 	g.Logf("triggering retry of failed jobs on %s", runURL)
-	if err := g.RerunWithBackoff(runID); err != nil {
+	if err := g.group("rerun --failed", func() error {
+		return g.RerunWithBackoff(runID)
+	}); err != nil {
 		return err
 	}
 
 	next := current + 1
-	if err := g.WaitForAttemptRegistered(runID, next); err != nil {
+	if err := g.group(
+		fmt.Sprintf("await attempt %d registration", next),
+		func() error { return g.WaitForAttemptRegistered(runID, next) },
+	); err != nil {
 		return err
 	}
 
 	g.Logf("watching attempt %d: %s/attempts/%d", next, runURL, next)
-	if err := g.WaitForCompletion(runID, next); err != nil {
-		return err
+	var finalErr error
+	_ = g.group(fmt.Sprintf("watch attempt %d", next), func() error {
+		finalErr = g.WaitForCompletion(runID, next)
+		return nil
+	})
+	if finalErr != nil {
+		return finalErr
 	}
 	final, err := g.Client.AttemptConclusion(runID, next)
 	if err != nil {
@@ -190,6 +236,11 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	g.Logf("attempt %d conclusion: %s", next, final)
 	if final == "success" {
 		return nil
+	}
+	if final == "failure" {
+		g.Logf("::warning::attempt %d still failure after retry; "+
+			"jobs with conclusion=cancelled are not rerun by --failed "+
+			"and may need manual intervention", next)
 	}
 	return fmt.Errorf("attempt %d conclusion: %s", next, final)
 }

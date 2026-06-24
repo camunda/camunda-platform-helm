@@ -10,6 +10,14 @@ on:
         description: Override head SHA for testing
         required: true
         type: string
+      event:
+        description: Event the matrix run was triggered by
+        required: true
+        type: choice
+        default: pull_request
+        options:
+          - pull_request
+          - merge_group
 
 permissions:
   actions: write
@@ -48,4 +56,5 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           OVERRIDE_SHA: ${{ inputs.sha }}
+          OVERRIDE_EVENT: ${{ inputs.event }}
         run: go run .

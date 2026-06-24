@@ -25,7 +25,7 @@ type fakeClient struct {
 	findRunQueue        []findRunResp
 	runURL              string
 	runURLErr           error
-	attemptsQueue       []int
+	attemptsQueue       []attemptResp
 	statusByAttempt     map[int][]statusResp
 	conclusionByAttempt map[int]string
 	conclusionErr       map[int]error
@@ -43,6 +43,11 @@ type statusResp struct {
 	err    error
 }
 
+type attemptResp struct {
+	n   int
+	err error
+}
+
 func (f *fakeClient) FindRun(_, _, _ string) (string, error) {
 	if len(f.findRunQueue) == 0 {
 		f.t.Fatalf("findRunQueue exhausted")
@@ -58,9 +63,9 @@ func (f *fakeClient) RunAttempt(string) (int, error) {
 	if len(f.attemptsQueue) == 0 {
 		f.t.Fatalf("attemptsQueue exhausted")
 	}
-	v := f.attemptsQueue[0]
+	r := f.attemptsQueue[0]
 	f.attemptsQueue = f.attemptsQueue[1:]
-	return v, nil
+	return r.n, r.err
 }
 func (f *fakeClient) AttemptStatus(_ string, attempt int) (string, error) {
 	q := f.statusByAttempt[attempt]
@@ -75,7 +80,11 @@ func (f *fakeClient) AttemptConclusion(_ string, attempt int) (string, error) {
 	if err, ok := f.conclusionErr[attempt]; ok {
 		return "", err
 	}
-	return f.conclusionByAttempt[attempt], nil
+	c, ok := f.conclusionByAttempt[attempt]
+	if !ok {
+		f.t.Fatalf("conclusionByAttempt[%d] not set", attempt)
+	}
+	return c, nil
 }
 func (f *fakeClient) RerunFailed(string) error {
 	f.rerunCalls++
@@ -95,6 +104,14 @@ func statusList(statuses ...string) []statusResp {
 	return out
 }
 
+func attemptList(ns ...int) []attemptResp {
+	out := make([]attemptResp, len(ns))
+	for i, n := range ns {
+		out[i] = attemptResp{n: n}
+	}
+	return out
+}
+
 func newTestGate(client ghClient) *Gate {
 	return &Gate{
 		Client:               client,
@@ -105,6 +122,8 @@ func newTestGate(client ghClient) *Gate {
 		MaxConsecutiveErrors: 5,
 		RegistrationTries:    5,
 		RegistrationInterval: time.Nanosecond,
+		RunAttemptTries:      3,
+		RunAttemptBackoff:    time.Nanosecond,
 		RerunTries:           3,
 		RerunBackoff:         time.Nanosecond,
 		Sleep:                func(time.Duration) {},
@@ -126,6 +145,7 @@ func TestResolveSHA(t *testing.T) {
 		{"merge_group_uses_head", "merge_group", "", "def", "def", false},
 		{"merge_group_ignores_pr_head", "merge_group", "abc", "def", "def", false},
 		{"unknown_event", "schedule", "abc", "def", "", true},
+		{"workflow_dispatch_unsupported", "workflow_dispatch", "abc", "def", "", true},
 		{"empty_pr_head", "pull_request", "", "", "", true},
 		{"empty_mg_head", "merge_group", "abc", "", "", true},
 	}
@@ -196,6 +216,38 @@ func TestDiscover_URLFallback(t *testing.T) {
 	}
 	if runURL != "" {
 		t.Fatalf("expected empty URL on error fallback")
+	}
+}
+
+func TestRunAttemptWithRetry_RecoversFromTransientError(t *testing.T) {
+	apiErr := errors.New("api blip")
+	c := &fakeClient{
+		t: t,
+		attemptsQueue: []attemptResp{
+			{err: apiErr}, {err: apiErr}, {n: 1},
+		},
+	}
+	g := newTestGate(c)
+	got, err := g.RunAttemptWithRetry("r")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != 1 {
+		t.Fatalf("got %d, want 1", got)
+	}
+}
+
+func TestRunAttemptWithRetry_ExhaustsRetries(t *testing.T) {
+	apiErr := errors.New("api down")
+	c := &fakeClient{
+		t: t,
+		attemptsQueue: []attemptResp{
+			{err: apiErr}, {err: apiErr}, {err: apiErr},
+		},
+	}
+	g := newTestGate(c)
+	if _, err := g.RunAttemptWithRetry("r"); err == nil {
+		t.Fatalf("expected exhaustion error")
 	}
 }
 
@@ -293,7 +345,7 @@ func TestRerunWithBackoff_ExhaustsRetries(t *testing.T) {
 }
 
 func TestWaitForAttemptRegistered_AdvancesEventually(t *testing.T) {
-	c := &fakeClient{t: t, attemptsQueue: []int{1, 1, 2}}
+	c := &fakeClient{t: t, attemptsQueue: attemptList(1, 1, 2)}
 	g := newTestGate(c)
 	if err := g.WaitForAttemptRegistered("r", 2); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -301,7 +353,7 @@ func TestWaitForAttemptRegistered_AdvancesEventually(t *testing.T) {
 }
 
 func TestWaitForAttemptRegistered_TimesOut(t *testing.T) {
-	c := &fakeClient{t: t, attemptsQueue: []int{1, 1, 1, 1, 1}}
+	c := &fakeClient{t: t, attemptsQueue: attemptList(1, 1, 1, 1, 1)}
 	g := newTestGate(c)
 	if err := g.WaitForAttemptRegistered("r", 2); err == nil {
 		t.Fatalf("expected timeout error")
@@ -313,7 +365,7 @@ func TestRun_AttemptOneSuccess(t *testing.T) {
 		t:                   t,
 		findRunQueue:        []findRunResp{{id: "100"}},
 		runURL:              "url",
-		attemptsQueue:       []int{1},
+		attemptsQueue:       attemptList(1),
 		statusByAttempt:     map[int][]statusResp{1: statusList("completed")},
 		conclusionByAttempt: map[int]string{1: "success"},
 	}
@@ -331,7 +383,7 @@ func TestRun_RetriesOnceAndPasses(t *testing.T) {
 		t:             t,
 		findRunQueue:  []findRunResp{{id: "100"}},
 		runURL:        "url",
-		attemptsQueue: []int{1, 2},
+		attemptsQueue: attemptList(1, 2),
 		statusByAttempt: map[int][]statusResp{
 			1: statusList("completed"),
 			2: statusList("completed"),
@@ -352,7 +404,7 @@ func TestRun_RetriesOnceAndFails(t *testing.T) {
 		t:             t,
 		findRunQueue:  []findRunResp{{id: "100"}},
 		runURL:        "url",
-		attemptsQueue: []int{1, 2},
+		attemptsQueue: attemptList(1, 2),
 		statusByAttempt: map[int][]statusResp{
 			1: statusList("completed"),
 			2: statusList("completed"),
@@ -373,7 +425,7 @@ func TestRun_CancelledIsNotRetryable(t *testing.T) {
 		t:                   t,
 		findRunQueue:        []findRunResp{{id: "100"}},
 		runURL:              "url",
-		attemptsQueue:       []int{1},
+		attemptsQueue:       attemptList(1),
 		statusByAttempt:     map[int][]statusResp{1: statusList("completed")},
 		conclusionByAttempt: map[int]string{1: "cancelled"},
 	}
@@ -395,7 +447,7 @@ func TestRun_HumanRerunStartingAtAttempt2(t *testing.T) {
 		t:             t,
 		findRunQueue:  []findRunResp{{id: "100"}},
 		runURL:        "url",
-		attemptsQueue: []int{2, 3},
+		attemptsQueue: attemptList(2, 3),
 		statusByAttempt: map[int][]statusResp{
 			2: statusList("completed"),
 			3: statusList("completed"),
@@ -427,7 +479,7 @@ func TestRun_MergeGroupUsesHeadSHA(t *testing.T) {
 		t:                   t,
 		findRunQueue:        []findRunResp{{id: "200"}},
 		runURL:              "url",
-		attemptsQueue:       []int{1},
+		attemptsQueue:       attemptList(1),
 		statusByAttempt:     map[int][]statusResp{1: statusList("completed")},
 		conclusionByAttempt: map[int]string{1: "success"},
 	}
@@ -439,19 +491,35 @@ func TestRun_MergeGroupUsesHeadSHA(t *testing.T) {
 
 func TestRun_FastAttempt2_NoSeenRunningGuard(t *testing.T) {
 	// Attempt 2 finishes so quickly that the first poll already shows
-	// `completed` — must NOT hang waiting for a phantom "in_progress"
-	// observation. Regression guard for the seenRunning guard that was
-	// removed because registration upstream already guarantees freshness.
+	// completed — must NOT hang waiting for a phantom in_progress.
 	c := &fakeClient{
 		t:             t,
 		findRunQueue:  []findRunResp{{id: "100"}},
 		runURL:        "url",
-		attemptsQueue: []int{1, 2},
+		attemptsQueue: attemptList(1, 2),
 		statusByAttempt: map[int][]statusResp{
 			1: statusList("completed"),
 			2: statusList("completed"),
 		},
 		conclusionByAttempt: map[int]string{1: "failure", 2: "success"},
+	}
+	g := newTestGate(c)
+	if err := g.Run("pull_request", "sha", ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRun_RunAttemptReadRecoversFromTransient(t *testing.T) {
+	apiErr := errors.New("api blip")
+	c := &fakeClient{
+		t:            t,
+		findRunQueue: []findRunResp{{id: "100"}},
+		runURL:       "url",
+		attemptsQueue: []attemptResp{
+			{err: apiErr}, {n: 1},
+		},
+		statusByAttempt:     map[int][]statusResp{1: statusList("completed")},
+		conclusionByAttempt: map[int]string{1: "success"},
 	}
 	g := newTestGate(c)
 	if err := g.Run("pull_request", "sha", ""); err != nil {

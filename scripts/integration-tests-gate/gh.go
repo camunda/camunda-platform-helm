@@ -17,9 +17,9 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -77,8 +77,8 @@ func (c *ghCLI) RunAttempt(runID string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	var n int
-	if err := json.Unmarshal([]byte(out), &n); err != nil {
+	n, err := strconv.Atoi(out)
+	if err != nil {
 		return 0, fmt.Errorf("parse run_attempt %q: %v", out, err)
 	}
 	return n, nil
