@@ -102,13 +102,6 @@ runs:
     - name: Export deploy-camunda to PATH
       shell: bash
       run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-    - name: Upload deploy-camunda binary
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-      with:
-        name: deploy-camunda-binary
-        path: ~/.local/bin/deploy-camunda
-        if-no-files-found: error
-        retention-days: 1
     - name: Generate matrix
       shell: bash
       id: set-chart-versions

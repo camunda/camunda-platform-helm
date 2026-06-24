@@ -27,6 +27,11 @@ on:
         description: The unique identifier of used in the deployment hostname.
         required: true
         type: string
+      binary-artifact-name:
+        description: Name of the uploaded deploy-camunda binary artifact to download. Callers that build the binary per-leg must override this with a per-run-unique name to avoid artifact-name collisions across parallel reusable-workflow legs.
+        required: false
+        default: deploy-camunda-binary
+        type: string
       camunda-helm-repo:
         description: The Helm repo which is used during the upgrade flow.
         required: false
@@ -335,7 +340,7 @@ jobs:
       - name: Download deploy-camunda binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: deploy-camunda-binary
+          name: ${{ inputs.binary-artifact-name }}
           path: ${{ runner.temp }}/bin
       - name: Add deploy-camunda to PATH
         run: |
@@ -798,7 +803,7 @@ jobs:
       - name: Download deploy-camunda binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: deploy-camunda-binary
+          name: ${{ inputs.binary-artifact-name }}
           path: ${{ runner.temp }}/bin
       - name: Add deploy-camunda to PATH
         run: |
@@ -1475,7 +1480,7 @@ jobs:
       - name: Download deploy-camunda binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: deploy-camunda-binary
+          name: ${{ inputs.binary-artifact-name }}
           path: ${{ runner.temp }}/bin
       - name: Add deploy-camunda to PATH
         run: |
