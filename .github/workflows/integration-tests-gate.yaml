@@ -26,23 +26,46 @@ jobs:
     runs-on: ubuntu-latest
     # Must fit (matrix attempt 1 worst case) + (matrix attempt 2 worst case).
     # Matrix wall time has historically run to ~3h; size for two attempts.
-    timeout-minutes: 360
+    timeout-minutes: 420
     steps:
       - name: Wait for matrix run and retry once on failure
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           MATRIX_WORKFLOW: test-chart-version.yaml
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          POLL_SECONDS: "60"
+          DISCOVERY_ATTEMPTS: "120"
         run: |
           set -euo pipefail
 
-          echo "Locating matrix workflow run for SHA $HEAD_SHA"
+          # Pick the SHA the matrix workflow actually runs against.
+          # In merge_group events, github.sha is the merge commit (NOT what the
+          # matrix is keyed to); the matrix runs against merge_group.head_sha.
+          case "$EVENT_NAME" in
+            pull_request)  HEAD_SHA="$PR_HEAD_SHA" ;;
+            merge_group)   HEAD_SHA="$MG_HEAD_SHA" ;;
+            *)
+              echo "::error::Unsupported event: $EVENT_NAME"
+              exit 1
+              ;;
+          esac
+          if [ -z "$HEAD_SHA" ]; then
+            echo "::error::Could not determine head SHA for event $EVENT_NAME"
+            exit 1
+          fi
+          echo "Gating event=$EVENT_NAME sha=$HEAD_SHA"
+
+          # Locate the matrix run for this SHA. Filter by event so a manual
+          # workflow_dispatch or stale rerun on the same SHA isn't picked up.
           RUN_ID=""
-          for i in $(seq 1 60); do
+          for i in $(seq 1 "$DISCOVERY_ATTEMPTS"); do
             RUN_ID="$(gh run list \
               --workflow "$MATRIX_WORKFLOW" \
               --commit "$HEAD_SHA" \
+              --event "$EVENT_NAME" \
               --limit 1 \
               --json databaseId \
               --jq '.[0].databaseId // empty')"
@@ -50,7 +73,7 @@ jobs:
               echo "Found matrix run $RUN_ID"
               break
             fi
-            echo "Matrix run not yet visible (attempt $i/60), sleeping 10s"
+            echo "Matrix run not yet visible ($i/$DISCOVERY_ATTEMPTS); sleeping"
             sleep 10
           done
           if [ -z "$RUN_ID" ]; then
@@ -58,22 +81,73 @@ jobs:
             exit 1
           fi
 
-          echo "Watching matrix run $RUN_ID (attempt 1)"
-          gh run watch "$RUN_ID" --exit-status || true
+          RUN_URL="https://github.com/${GH_REPO}/actions/runs/${RUN_ID}"
+          echo "Matrix run: $RUN_URL"
 
-          CONCLUSION="$(gh run view "$RUN_ID" \
+          # Sparse-poll until the run completes. Avoids `gh run watch`'s short
+          # poll cadence which burns API budget and runner minutes across the
+          # hours-long matrix wall time.
+          wait_for_completion() {
+            local attempt="$1"
+            while true; do
+              local status
+              status="$(gh run view "$RUN_ID" --attempt "$attempt" \
+                --json status --jq '.status' 2>/dev/null || true)"
+              if [ "$status" = "completed" ]; then
+                return 0
+              fi
+              if [ -z "$status" ]; then
+                echo "Status not yet available for attempt $attempt; retrying"
+              else
+                echo "Attempt $attempt status=$status; sleep ${POLL_SECONDS}s"
+              fi
+              sleep "$POLL_SECONDS"
+            done
+          }
+
+          echo "Waiting for matrix attempt 1 to complete"
+          wait_for_completion 1
+
+          CONCLUSION_1="$(gh run view "$RUN_ID" --attempt 1 \
             --json conclusion --jq '.conclusion')"
-          echo "Matrix attempt 1 conclusion: $CONCLUSION"
-          if [ "$CONCLUSION" = "success" ]; then
+          echo "Matrix attempt 1 conclusion: $CONCLUSION_1"
+          if [ "$CONCLUSION_1" = "success" ]; then
             exit 0
           fi
+          # Only retry on genuine failure. Cancelled / timed_out / skipped /
+          # action_required / neutral are intentionally NOT retried: they
+          # either indicate human intent (cancel) or a state `--failed` can't
+          # rerun anyway.
+          if [ "$CONCLUSION_1" != "failure" ]; then
+            echo "::error::Attempt 1 '$CONCLUSION_1' is not retryable"
+            exit 1
+          fi
 
-          echo "Triggering one retry of failed jobs on run $RUN_ID"
+          echo "Triggering retry of failed jobs on $RUN_URL"
           gh run rerun "$RUN_ID" --failed
 
-          echo "Watching matrix run $RUN_ID (attempt 2)"
-          gh run watch "$RUN_ID" --exit-status || true
+          # Wait until GitHub registers the new attempt before polling status,
+          # otherwise the first read can return the now-stale attempt-1 state.
+          echo "Waiting for attempt 2 to be registered"
+          for i in $(seq 1 30); do
+            LATEST_ATTEMPT="$(gh api \
+              "repos/${GH_REPO}/actions/runs/${RUN_ID}" \
+              --jq '.run_attempt')"
+            if [ "$LATEST_ATTEMPT" -ge 2 ]; then
+              echo "Attempt 2 registered"
+              break
+            fi
+            sleep 5
+          done
+          if [ "${LATEST_ATTEMPT:-1}" -lt 2 ]; then
+            echo "::error::rerun --failed did not produce a second attempt"
+            exit 1
+          fi
 
-          FINAL="$(gh run view "$RUN_ID" --json conclusion --jq '.conclusion')"
-          echo "Matrix attempt 2 conclusion: $FINAL"
-          [ "$FINAL" = "success" ]
+          echo "Waiting for matrix attempt 2 to complete: $RUN_URL/attempts/2"
+          wait_for_completion 2
+
+          CONCLUSION_2="$(gh run view "$RUN_ID" --attempt 2 \
+            --json conclusion --jq '.conclusion')"
+          echo "Matrix attempt 2 conclusion: $CONCLUSION_2"
+          [ "$CONCLUSION_2" = "success" ]
