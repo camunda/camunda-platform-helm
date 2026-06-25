@@ -2083,7 +2083,7 @@ func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
 	baseFlags := &config.RuntimeFlags{
 		Deployment: config.DeploymentFlags{
 			ExtraValues: []string{
-				"/tmp/engine-image.yaml",                                                                                   // global --extra-values (e.g. per-PR image tag)
+				"/tmp/engine-image.yaml", // global --extra-values (e.g. per-PR image tag)
 				"/repo/charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/extra/tuning.yaml", // per-scenario, pre-resolved by appendScenarioExtraValues
 			},
 		},
