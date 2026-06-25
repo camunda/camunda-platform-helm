@@ -303,6 +303,14 @@ Authentication.
 -}}
 {{- end -}}
 
+{{- define "orchestration.hasNoExporter" -}}
+{{-
+and
+(ne (include "orchestration.hasOpenSearchExporter" .) "true")
+(ne (include "orchestration.hasElasticsearchExporter" .) "true")
+-}}
+{{- end -}}
+
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}

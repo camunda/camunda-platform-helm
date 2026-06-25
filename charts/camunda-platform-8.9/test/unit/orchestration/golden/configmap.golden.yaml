@@ -196,5 +196,7 @@ data:
         # zeebe.broker.cluster
         cluster:
           clusterName: camunda-platform-test-zeebe
+        # zeebe.broker.exporters
+        exporters: {}
     
   log4j2.xml: |
