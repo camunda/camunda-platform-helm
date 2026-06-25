@@ -80,7 +80,7 @@ jobs:
           private_key: ${{ steps.secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Shepherd PR through merge queue
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@aef5579dd1bf60ea2e8ccfabeb9aaa46fdeaecf8 # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@e6bf8b7ee0c9ce3e851c0be09fef57c4f4d647db # main
         with:
           pr-number: ${{ matrix.pr }}
           app-token: ${{ steps.generate-github-token.outputs.token }}
