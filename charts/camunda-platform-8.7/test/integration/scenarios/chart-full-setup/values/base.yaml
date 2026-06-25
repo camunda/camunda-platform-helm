@@ -182,6 +182,10 @@ tasklist:
     timeoutSeconds: 1
 
 connectors:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/connectors"
   # Right-sized for CI: CPU P99 389m (from 1000m default), memory P99 531Mi (from 1Gi default).
   resources:
