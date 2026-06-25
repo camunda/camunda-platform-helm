@@ -65,6 +65,7 @@ jobs:
           tools: |
             helm
             yamllint
+            golang
       - name: Cache Helm client cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -118,3 +119,7 @@ jobs:
             echo "::error::values.schema.json is out of date. Run 'make helm.schema-update chartPath=${chartPath}' and commit the result."
             exit 1
           fi
+      - name: Validate values files against schema
+        if: ${{ hashFiles(format('charts/{0}/values.schema.json', inputs.camunda-helm-dir)) != '' }}
+        run: |
+          make helm.schema-validate-values chartPath="charts/${{ inputs.camunda-helm-dir }}"

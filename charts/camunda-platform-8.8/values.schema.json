@@ -17,6 +17,14 @@
                             "type": "string",
                             "description": "defines the name of the secret object that has the auto-generated passwords.",
                             "default": "camunda-credentials"
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "annotations applied to the secrets created by the chart.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
@@ -117,6 +125,11 @@
                                     "default": "basic"
                                 }
                             }
+                        },
+                        "allowInsecureImages": {
+                            "type": "boolean",
+                            "description": "allows the use of Camunda-built images that bundle additional tooling; passed through to Bitnami sub-charts.",
+                            "default": true
                         }
                     }
                 },
@@ -222,6 +235,14 @@
                         "annotations": {
                             "type": "object",
                             "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to define labels which will be applied to the global HTTP ingress resource.",
                             "default": {},
                             "additionalProperties": {
                                 "type": "string"
@@ -742,6 +763,13 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 },
@@ -791,6 +819,13 @@
                                         "initialClaimValue": {
                                             "type": "string",
                                             "description": "defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
                                             "default": ""
                                         }
                                     }
@@ -887,6 +922,13 @@
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Optimize.",
                                             "default": "http://localhost:8083"
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 }
@@ -1137,6 +1179,18 @@
                             "default": 0
                         }
                     }
+                },
+                "testDeprecationFlags": {
+                    "type": "object",
+                    "description": "internal flags used by chart tests to assert deprecation behavior.",
+                    "default": {},
+                    "properties": {
+                        "existingSecretsMustBeSet": {
+                            "type": "string",
+                            "description": "give error or warning when existingSecret is not set.",
+                            "default": "warning"
+                        }
+                    }
                 }
             }
         },
@@ -1319,7 +1373,8 @@
                                     "description": "",
                                     "default": "INFO"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -2663,6 +2718,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -2673,6 +2733,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -3229,6 +3294,13 @@
                                             "default": ""
                                         }
                                     }
+                                },
+                                "existingSecret": {
+                                    "type": [
+                                        "string",
+                                        "object"
+                                    ],
+                                    "default": ""
                                 }
                             }
                         },
@@ -3294,6 +3366,13 @@
                                     "type": "string",
                                     "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
                                     "default": "Camunda 8"
+                                },
+                                "existingSecret": {
+                                    "type": [
+                                        "string",
+                                        "object"
+                                    ],
+                                    "default": ""
                                 }
                             }
                         },
@@ -3688,6 +3767,12 @@
                             "type": "string",
                             "description": "can be used to set a custom path for the Zeebe client configuration file",
                             "default": "/tmp/zeebe_client_cache.txt"
+                        },
+                        "logging": {
+                            "type": "object",
+                            "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
+                            "default": {},
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -5112,6 +5197,13 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 }
@@ -5213,6 +5305,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -5223,6 +5320,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -5685,6 +5787,12 @@
                             "default": {}
                         }
                     }
+                },
+                "logging": {
+                    "type": "object",
+                    "description": "configuration for the Connectors logging, included directly in the connectors configuration YAML file.",
+                    "default": {},
+                    "additionalProperties": true
                 }
             }
         },
@@ -5826,6 +5934,13 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 }
@@ -6375,6 +6490,12 @@
                                     }
                                 }
                             }
+                        },
+                        "affinity": {
+                            "type": "object",
+                            "description": "if specified, the migration job's scheduling constraints.",
+                            "default": {},
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -6780,6 +6901,14 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                },
+                                "labels": {
+                                    "type": "object",
+                                    "description": "can be used to define labels which will be applied to the gRPC ingress resource.",
                                     "default": {},
                                     "additionalProperties": {
                                         "type": "string"
@@ -7349,6 +7478,18 @@
                             "default": false
                         }
                     }
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "if specified, the pod's scheduling constraints. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "profiles": {
+                    "type": "object",
+                    "description": "defines which components of the orchestration cluster are enabled (e.g., broker, admin, operate).",
+                    "default": {},
+                    "additionalProperties": true
                 }
             }
         },

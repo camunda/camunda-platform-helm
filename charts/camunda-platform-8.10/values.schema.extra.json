@@ -11,6 +11,14 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to define labels which will be applied to the global HTTP ingress resource.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
@@ -44,6 +52,16 @@
                                     }
                                 }
                             }
+                        },
+                        "auth": {
+                            "properties": {
+                                "camundaHub": {
+                                    "type": "object",
+                                    "description": "auth configuration alias for Camunda Hub; overrides the legacy console and webModeler auth sections when set.",
+                                    "default": {},
+                                    "additionalProperties": true
+                                }
+                            }
                         }
                     }
                 },
@@ -67,6 +85,38 @@
                             ],
                             "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
                             "default": 0
+                        }
+                    }
+                },
+                "testDeprecationFlags": {
+                    "type": "object",
+                    "description": "internal flags used by chart tests to assert deprecation behavior.",
+                    "default": {},
+                    "properties": {
+                        "existingSecretsMustBeSet": {
+                            "type": "string",
+                            "description": "give error or warning when existingSecret is not set.",
+                            "default": "warning"
+                        }
+                    }
+                },
+                "gateway": {
+                    "properties": {
+                        "labels": {
+                            "type": "object",
+                            "description": "labels added to the Gateway and all Route resources.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "annotations added to the Gateway and all Route resources.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -291,6 +341,12 @@
                         ],
                         "additionalProperties": false
                     }
+                },
+                "logging": {
+                    "type": "object",
+                    "description": "configuration for the Connectors logging, included directly in the connectors configuration YAML file.",
+                    "default": {},
+                    "additionalProperties": true
                 }
             }
         },
@@ -401,6 +457,14 @@
                             "name"
                         ],
                         "additionalProperties": false
+                    }
+                },
+                "logging": {
+                    "properties": {
+                        "level": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     }
                 }
             }
@@ -656,6 +720,14 @@
                                     "additionalProperties": {
                                         "type": "string"
                                     }
+                                },
+                                "labels": {
+                                    "type": "object",
+                                    "description": "can be used to define labels which will be applied to the gRPC ingress resource.",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
@@ -791,6 +863,18 @@
                         ],
                         "additionalProperties": false
                     }
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "if specified, the pod's scheduling constraints. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "profiles": {
+                    "type": "object",
+                    "description": "defines which components of the orchestration cluster are enabled (e.g., broker, admin, operate).",
+                    "default": {},
+                    "additionalProperties": true
                 }
             }
         },
@@ -1027,6 +1111,16 @@
                             ]
                         }
                     }
+                },
+                "restapi": {
+                    "properties": {
+                        "logging": {
+                            "type": "object",
+                            "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
+                            "default": {},
+                            "additionalProperties": true
+                        }
+                    }
                 }
             }
         },
@@ -1047,9 +1141,20 @@
                                 }
                             }
                         }
-                    }
+                    },
+                    "type": "object",
+                    "description": "override values for the WebModeler sub-component when using Camunda Hub; takes precedence over the legacy top-level webModeler.* values.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "console": {
+                    "type": "object",
+                    "description": "override values for the Console sub-component when using Camunda Hub; takes precedence over the legacy top-level console.* values.",
+                    "default": {},
+                    "additionalProperties": true
                 }
-            }
+            },
+            "type": "object"
         }
     }
 }

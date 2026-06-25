@@ -2,8 +2,9 @@
 ---
 name: "Test - Release Tooling"
 
-# Gates the Go that the release pipelines depend on (scripts/camunda-core +
-# scripts/release-tools). Deliberately UNFILTERED: the tooling's behavior is
+# Gates the Go that the release and chart-validate pipelines depend on
+# (scripts/camunda-core + scripts/release-tools + scripts/validate-values-schema).
+# Deliberately UNFILTERED: the tooling's behavior is
 # coupled to inputs that live outside scripts/ (charts/**/values*.yaml,
 # charts/chart-versions.yaml, the committed version-matrix, the release-please
 # trace + Harbor API shapes), so a chart-only PR must still run these tests.
@@ -53,6 +54,12 @@ jobs:
 
       - name: release-tools — vet + test
         working-directory: scripts/release-tools
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: validate-values-schema — vet + test
+        working-directory: scripts/validate-values-schema
         run: |
           go vet ./...
           go test ./...
