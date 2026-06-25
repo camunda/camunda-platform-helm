@@ -121,9 +121,9 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestIngressOmitsOrchestrationWhenGlobalTLSFlagSet",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.ingress.enabled":                    "true",
-				"orchestration.contextPath":                 "/orchestration",
-				"global.tls.orchestration.rest.enabled":     "true",
+				"global.ingress.enabled":                              "true",
+				"orchestration.contextPath":                           "/orchestration",
+				"global.tls.orchestration.rest.enabled":               "true",
 				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -395,11 +395,11 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestOrchestrationHttpIngressProxyVerifyFailsWhenRestDisabled",
 			Values: map[string]string{
-				"global.ingress.enabled":                                            "true",
-				"global.host":                                                       "camunda.example.com",
-				"orchestration.enabled":                                             "true",
-				"orchestration.contextPath":                                         "/orchestration",
-				"global.tls.orchestration.rest.proxyVerify.enabled":                 "true",
+				"global.ingress.enabled":                            "true",
+				"global.host":                                       "camunda.example.com",
+				"orchestration.enabled":                             "true",
+				"orchestration.contextPath":                         "/orchestration",
+				"global.tls.orchestration.rest.proxyVerify.enabled": "true",
 				"global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret": "upstream-ca",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -621,13 +621,13 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressEmitsProxyVerifyAnnotationsWhenEnabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                                              "true",
-				"orchestration.ingress.grpc.enabled":                                 "true",
-				"global.tls.orchestration.grpc.enabled":                              "true",
-				"global.tls.orchestration.grpc.secret.existingSecret":                "grpc-pem",
-				"global.tls.orchestration.grpc.proxyVerify.enabled":                  "true",
-				"global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret":  "upstream-ca",
-				"global.tls.orchestration.grpc.proxyVerify.sniHost":                  "orchestration.svc.cluster.local",
+				"orchestration.enabled":                                             "true",
+				"orchestration.ingress.grpc.enabled":                                "true",
+				"global.tls.orchestration.grpc.enabled":                             "true",
+				"global.tls.orchestration.grpc.secret.existingSecret":               "grpc-pem",
+				"global.tls.orchestration.grpc.proxyVerify.enabled":                 "true",
+				"global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret": "upstream-ca",
+				"global.tls.orchestration.grpc.proxyVerify.sniHost":                 "orchestration.svc.cluster.local",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
