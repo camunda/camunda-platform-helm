@@ -107,7 +107,7 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- end }}
   {{- end }}
   {{- /* Validate rest.secret.type is one of pkcs12 / pem when a secret is referenced. */ -}}
-  {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.secret.existingSecret }}
+  {{- if and (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") .Values.global.tls.orchestration.rest.secret.existingSecret }}
     {{- $t := .Values.global.tls.orchestration.rest.secret.type | default "pkcs12" -}}
     {{- if not (has $t (list "pkcs12" "pem")) }}
       {{- $errorMessage := printf "[camunda][error] global.tls.orchestration.rest.secret.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
