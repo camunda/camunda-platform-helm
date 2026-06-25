@@ -2077,11 +2077,15 @@ func TestExtraValues_PropagatesToDeploymentFlags(t *testing.T) {
 //
 // Mirrors TestChartRefOverride_UpgradeStep1Unaffected above.
 func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
-	// Base flags as executeEntry would build for a single-step install or
-	// Step 2 of an upgrade — ExtraValues populated from the caller.
+	// Base flags as executeEntry would build them after appendScenarioExtraValues
+	// runs — a merged slice of global + per-scenario paths. This mirrors the
+	// production state that arrives at executeTwoStepUpgrade.
 	baseFlags := &config.RuntimeFlags{
 		Deployment: config.DeploymentFlags{
-			ExtraValues: []string{"/tmp/engine-image.yaml"},
+			ExtraValues: []string{
+				"/tmp/engine-image.yaml",                                                                                   // global --extra-values (e.g. per-PR image tag)
+				"/repo/charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/extra/tuning.yaml", // per-scenario, pre-resolved by appendScenarioExtraValues
+			},
 		},
 	}
 
@@ -2091,18 +2095,19 @@ func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
 	step1Flags := *baseFlags
 	step1Flags.Deployment.ExtraValues = nil
 
+	// Both global and per-scenario paths must be absent from Step 1.
 	if step1Flags.Deployment.ExtraValues != nil {
 		t.Errorf("Step 1 ExtraValues = %v, want nil (must not inherit caller overrides)", step1Flags.Deployment.ExtraValues)
 	}
-	// Step 2 inherits from baseFlags and must keep the override.
+	// Step 2 inherits from baseFlags and must keep both paths.
 	step2Flags := *baseFlags
-	if len(step2Flags.Deployment.ExtraValues) != 1 || step2Flags.Deployment.ExtraValues[0] != "/tmp/engine-image.yaml" {
-		t.Errorf("Step 2 ExtraValues = %v, want [/tmp/engine-image.yaml]", step2Flags.Deployment.ExtraValues)
+	if len(step2Flags.Deployment.ExtraValues) != 2 {
+		t.Errorf("Step 2 ExtraValues = %v, want both global and per-scenario paths", step2Flags.Deployment.ExtraValues)
 	}
 	// Nil-out on the shallow copy must not affect the parent (regression
 	// guard for the slice-header sharing trap that runner_upgrade.go's
 	// hook-slice detach comment already calls out).
-	if len(baseFlags.Deployment.ExtraValues) != 1 {
+	if len(baseFlags.Deployment.ExtraValues) != 2 {
 		t.Errorf("baseFlags.ExtraValues mutated by Step 1 nil-out (got %v)", baseFlags.Deployment.ExtraValues)
 	}
 }
