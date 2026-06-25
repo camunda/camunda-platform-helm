@@ -24,7 +24,7 @@
 > Zeebe PVC. After disabling Optimize or the legacy exporter, explicitly disable the running exporter on each broker via
 > `POST /actuator/exporters/{elasticsearch|opensearch}/disable` and confirm convergence with `GET /actuator/exporters`
 > (every broker should report `DISABLED`). Ensure your Camunda version includes the exporter-state reconciliation fix
-> ([camunda/camunda#52260](https://github.com/camunda/camunda/issues/52260)).
+> ([camunda/camunda#52260](https://github.com/camunda/camunda/issues/52260), fixed in 8.10.0-alpha2, so all 8.10.x releases include it).
 
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
 
