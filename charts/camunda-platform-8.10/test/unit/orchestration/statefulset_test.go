@@ -930,11 +930,11 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 		{
 			Name: "REST secret block wires keystore env, mount and volume",
 			Values: map[string]string{
-				"orchestration.enabled":                                            "true",
-				"global.tls.orchestration.rest.enabled":                            "true",
-				"global.tls.orchestration.rest.secret.existingSecret":              "rest-keystore",
-				"global.tls.orchestration.rest.secret.existingSecretPasswordKey":   "ks-pw",
-				"global.tls.orchestration.rest.secret.keyAlias":                    "orchestration-rest",
+				"orchestration.enabled":                                          "true",
+				"global.tls.orchestration.rest.enabled":                          "true",
+				"global.tls.orchestration.rest.secret.existingSecret":            "rest-keystore",
+				"global.tls.orchestration.rest.secret.existingSecretPasswordKey": "ks-pw",
+				"global.tls.orchestration.rest.secret.keyAlias":                  "orchestration-rest",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
