@@ -470,3 +470,27 @@ func (s *ConstraintTemplateTest) TestCaBundleConsoleCertKeyFilenameWarningRender
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+// TestDeprecatedKeyHelperRendersWithoutCrash exercises the
+// camundaPlatform.keyDeprecated helper once: a deprecated app-config-proxy key
+// (epic #6051) set to a non-default value must render without failing. The
+// DEPRECATION warning itself is emitted via NOTES.txt and is not surfaced by
+// `helm template` (the framework these tests use), so warning-content checks
+// live in manual `helm install --dry-run` verification — same constraint as
+// the existing JKS truststore and Bitnami subchart deprecation warnings.
+func (s *ConstraintTemplateTest) TestDeprecatedKeyHelperRendersWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDeprecatedKeySetRenderOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.logLevel":                   "debug",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

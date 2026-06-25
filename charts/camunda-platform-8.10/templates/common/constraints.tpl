@@ -431,6 +431,248 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+
+  {{/*
+  *****************************************************************************
+  8.10 deprecated app-config-proxy keys (epic #6051): warn (never fail) when set
+  to a non-default value; removed in chart v16 (8.11) -> extraConfiguration.
+  *****************************************************************************
+  */}}
+  {{- if .Values.orchestration.enabled }}
+    {{- $orchestrationExtra := "orchestration.extraConfiguration" }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.logLevel | toString) "info")
+      "oldName" "orchestration.logLevel" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.orchestration.security.authentication.unprotectedApi)
+      "oldName" "orchestration.security.authentication.unprotectedApi" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.security.authentication.oidc.usernameClaim | toString) "preferred_username")
+      "oldName" "orchestration.security.authentication.oidc.usernameClaim" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.security.authentication.oidc.clientIdClaim | toString) "client_id")
+      "oldName" "orchestration.security.authentication.oidc.clientIdClaim" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.security.authentication.oidc.groupsClaim))
+      "oldName" "orchestration.security.authentication.oidc.groupsClaim" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.index.prefix))
+      "oldName" "orchestration.index.prefix" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.index.replicas | toString) "1")
+      "oldName" "orchestration.index.replicas" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.data.snapshotPeriod | toString) "5m")
+      "oldName" "orchestration.data.snapshotPeriod" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.orchestration.history.retention.enabled)
+      "oldName" "orchestration.history.retention.enabled" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.retention.minimumAge | toString) "30d")
+      "oldName" "orchestration.history.retention.minimumAge" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.retention.policyName | toString) "camunda-history-retention-policy")
+      "oldName" "orchestration.history.retention.policyName" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.orchestration.retention.enabled)
+      "oldName" "orchestration.retention.enabled" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.retention.minimumAge | toString) "30d")
+      "oldName" "orchestration.retention.minimumAge" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.retention.policyName | toString) "zeebe-record-retention-policy")
+      "oldName" "orchestration.retention.policyName" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.orchestration.security.authentication.oidc.preferUsernameClaim)
+      "oldName" "orchestration.security.authentication.oidc.preferUsernameClaim" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.security.authentication.authenticationRefreshInterval | toString) "PT30S")
+      "oldName" "orchestration.security.authentication.authenticationRefreshInterval" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not .Values.orchestration.security.authorizations.enabled)
+      "oldName" "orchestration.security.authorizations.enabled" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.cpuThreadCount | toString) "3")
+      "oldName" "orchestration.cpuThreadCount" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.ioThreadCount | toString) "3")
+      "oldName" "orchestration.ioThreadCount" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.partitionCount | toString) "3")
+      "oldName" "orchestration.partitionCount" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.replicationFactor | toString) "3")
+      "oldName" "orchestration.replicationFactor" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.delayBetweenRuns | toString) "2000")
+      "oldName" "orchestration.history.delayBetweenRuns" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.maxDelayBetweenRuns | toString) "60000")
+      "oldName" "orchestration.history.maxDelayBetweenRuns" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.rolloverBatchSize | toString) "100")
+      "oldName" "orchestration.history.rolloverBatchSize" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.rolloverInterval | toString) "1d")
+      "oldName" "orchestration.history.rolloverInterval" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.waitPeriodBeforeArchiving | toString) "1h")
+      "oldName" "orchestration.history.waitPeriodBeforeArchiving" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.elsRolloverDateFormat | toString) "date")
+      "oldName" "orchestration.history.elsRolloverDateFormat" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.retention.usageMetricsMinimumAge | toString) "730d")
+      "oldName" "orchestration.history.retention.usageMetricsMinimumAge" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.history.retention.usageMetricsPolicyName | toString) "camunda-usage-metrics-retention-policy")
+      "oldName" "orchestration.history.retention.usageMetricsPolicyName" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.orchestration.debug)
+      "oldName" "orchestration.debug" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.profilesOverride))
+      "oldName" "orchestration.profilesOverride" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.log4j2))
+      "oldName" "orchestration.log4j2" "migration" "orchestration.extraConfiguration (file-content kind)") }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.data.disk.freeSpace.processing | toString) "2GB")
+      "oldName" "orchestration.data.disk.freeSpace.processing" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.data.disk.freeSpace.replication | toString) "1GB")
+      "oldName" "orchestration.data.disk.freeSpace.replication" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.security.authentication.oidc.scope))
+      "oldName" "orchestration.security.authentication.oidc.scope" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.security.authentication.oidc.backwardsCompatibleAudiences))
+      "oldName" "orchestration.security.authentication.oidc.backwardsCompatibleAudiences" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.security.initialization.mappingRules))
+      "oldName" "orchestration.security.initialization.mappingRules" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.security.initialization.authorizations))
+      "oldName" "orchestration.security.initialization.authorizations" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not .Values.orchestration.exporters.camunda.enabled)
+      "oldName" "orchestration.exporters.camunda.enabled" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty .Values.orchestration.exporters.zeebe.replicas))
+      "oldName" "orchestration.exporters.zeebe.replicas" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.orchestration.security.authentication.oidc.redirectUrl | toString) "http://localhost:8080")
+      "oldName" "orchestration.security.authentication.oidc.redirectUrl" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.orchestration.upgrade.allowPreReleaseImages)
+      "oldName" "orchestration.upgrade.allowPreReleaseImages" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.orchestration.multitenancy.checks.enabled)
+      "oldName" "orchestration.multitenancy.checks.enabled" "migration" $orchestrationExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not .Values.orchestration.multitenancy.api.enabled)
+      "oldName" "orchestration.multitenancy.api.enabled" "migration" $orchestrationExtra) }}
+  {{- end }}
+
+  {{- if .Values.connectors.enabled }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (index .Values.connectors.logging.level "io.camunda.connector" | toString) "INFO")
+      "oldName" "connectors.logging.level.io.camunda.connector" "migration" "connectors.extraConfiguration") }}
+  {{- end }}
+
+  {{- if .Values.optimize.enabled }}
+    {{- $optimizeExtra := "optimize.extraConfiguration" }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.logLevel | toString) "info")
+      "oldName" "optimize.logLevel" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.upgradeLogLevel | toString) "info")
+      "oldName" "optimize.upgradeLogLevel" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.esLogLevel | toString) "warn")
+      "oldName" "optimize.esLogLevel" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.profiles | toString) "ccsm")
+      "oldName" "optimize.profiles" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.caches.cloudTenantAuthorizations.maxSize | toString) "10000")
+      "oldName" "optimize.caches.cloudTenantAuthorizations.maxSize" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | toString) "600000")
+      "oldName" "optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.partitionCount | toString) "3")
+      "oldName" "optimize.partitionCount" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.database.elasticsearch.prefix | toString) "zeebe-record")
+      "oldName" "optimize.database.elasticsearch.prefix" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (.Values.optimize.database.opensearch.prefix | toString) "zeebe-record")
+      "oldName" "optimize.database.opensearch.prefix" "migration" $optimizeExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (.Values.optimize.multitenancy.enabled)
+      "oldName" "optimize.multitenancy.enabled" "migration" "global.multitenancy.enabled") }}
+  {{- end }}
+
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+    {{- $wm := mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict) }}
+    {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty $wm.restapi.mail.fromAddress))
+      "oldName" "webModeler.restapi.mail.fromAddress" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne ($wm.restapi.mail.fromName | toString) "Camunda 8")
+      "oldName" "webModeler.restapi.mail.fromName" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty $wm.restapi.mail.smtpHost))
+      "oldName" "webModeler.restapi.mail.smtpHost" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty $wm.restapi.mail.smtpUser))
+      "oldName" "webModeler.restapi.mail.smtpUser" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not $wm.restapi.mail.smtpTlsEnabled)
+      "oldName" "webModeler.restapi.mail.smtpTlsEnabled" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne ($wm.restapi.mail.smtpPort | toString) "587")
+      "oldName" "webModeler.restapi.mail.smtpPort" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (index $wm.restapi.logging.level "io.camunda.modeler" | toString) "INFO")
+      "oldName" "webModeler.restapi.logging.level.io.camunda.modeler" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne (index $wm.restapi.logging.level "io.grpc" | toString) "INFO")
+      "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
+  {{- end }}
+
+  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
+    {{- $con := mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne ($con.keycloak.realm | toString) "camunda-platform")
+      "oldName" "console.keycloak.realm" "migration" "console.extraConfiguration") }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (ne ($con.nodeEnv | toString) "prod")
+      "oldName" "console.nodeEnv" "migration" "console.env") }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty $con.logging))
+      "oldName" "console.logging" "migration" "console.extraConfiguration") }}
+  {{- end }}
+
+  {{- $componentExtra := "the consuming component's extraConfiguration" }}
+  {{- $componentEnv := "the consuming component's extraEnvVars" }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (ne (.Values.global.config.requestBodySize | toString) "10MB")
+    "oldName" "global.config.requestBodySize" "migration" $componentExtra) }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (ne (.Values.global.zeebeClusterName | toString) (printf "%s .Release.Name %s-zeebe" "{{" "}}"))
+    "oldName" "global.zeebeClusterName" "migration" $componentExtra) }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (ne (.Values.global.documentStore.type.aws.storeId | toString) "AWS")
+    "oldName" "global.documentStore.type.aws.storeId" "migration" $componentEnv) }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (ne (.Values.global.documentStore.type.gcp.storeId | toString) "GCP")
+    "oldName" "global.documentStore.type.gcp.storeId" "migration" $componentEnv) }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (ne (.Values.global.documentStore.type.inmemory.storeId | toString) "INMEMORY")
+    "oldName" "global.documentStore.type.inmemory.storeId" "migration" $componentEnv) }}
 {{- end }}
 
 {{/*
@@ -480,6 +722,34 @@ Usage:
         "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end -}}
+
+
+{{/*
+camundaPlatform.keyDeprecated
+Emit a non-fatal DEPRECATION warning when a deprecated values file key is set.
+Unlike camundaPlatform.keyRemoved/keyRenamed this does NOT fail; it returns a
+warning string, so it must be called from within "camunda.constraints.warnings"
+(included by NOTES.txt) to surface on install/upgrade. Per the Breaking Changes
+& Deprecation Policy (docs/policies/breaking-changes.md): warn when the key is
+set, name the replacement and the removal version.
+Usage:
+{{ include "camundaPlatform.keyDeprecated" (dict
+  "condition" (ne (toString .Values.orchestration.logLevel) "info")
+  "oldName" "orchestration.logLevel"
+  "migration" "orchestration.extraConfiguration"
+) }}
+*/}}
+{{- define "camundaPlatform.keyDeprecated" }}
+  {{- if .condition }}
+    {{- $warningMessage := printf
+        "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in chart v16 (Camunda 8.11). %s %s"
+        .oldName
+        (printf "Configure this via \"%s\" instead." (.migration | default "the component's extraConfiguration"))
+        (.url | default "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/")
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 {{- end -}}
 

@@ -50,7 +50,7 @@
                     "properties": {
                         "requestBodySize": {
                             "type": "string",
-                            "description": "defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.",
+                            "description": "(DEPRECATED) defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.",
                             "default": "10MB"
                         }
                     }
@@ -501,7 +501,7 @@
                 },
                 "zeebeClusterName": {
                     "type": "string",
-                    "description": "ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
+                    "description": "(DEPRECATED) ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
                     "default": "{{ .Release.Name }}-zeebe"
                 },
                 "tls": {
@@ -935,7 +935,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
+                                            "description": "(DEPRECATED) Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
                                             "default": "AWS"
                                         },
                                         "region": {
@@ -1025,7 +1025,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
+                                            "description": "(DEPRECATED) Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
                                             "default": "GCP"
                                         },
                                         "bucket": {
@@ -1075,7 +1075,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
+                                            "description": "(DEPRECATED) Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
                                             "default": "INMEMORY"
                                         },
                                         "class": {
@@ -1947,7 +1947,7 @@
                 },
                 "nodeEnv": {
                     "type": "string",
-                    "description": "can be used to set the node environment.",
+                    "description": "(DEPRECATED) can be used to set the node environment.",
                     "default": "prod"
                 },
                 "sidecars": {
@@ -1991,7 +1991,7 @@
                     "properties": {
                         "realm": {
                             "type": "string",
-                            "description": "Specifies the Keycloak realm used for authentication.",
+                            "description": "(DEPRECATED) Specifies the Keycloak realm used for authentication.",
                             "default": "camunda-platform"
                         }
                     }
@@ -2019,7 +2019,7 @@
                 },
                 "logging": {
                     "type": "object",
-                    "description": "configuration for the Console logging. This template will be directly included in the configuration YAML file",
+                    "description": "(DEPRECATED) configuration for the Console logging. This template will be directly included in the configuration YAML file",
                     "default": {}
                 },
                 "service": {
@@ -2659,22 +2659,22 @@
                             "properties": {
                                 "smtpHost": {
                                     "type": "string",
-                                    "description": "defines the host name of the SMTP server to be used by WebModeler",
+                                    "description": "(DEPRECATED) defines the host name of the SMTP server to be used by WebModeler",
                                     "default": ""
                                 },
                                 "smtpPort": {
                                     "type": "number",
-                                    "description": "defines the port number of the SMTP server",
+                                    "description": "(DEPRECATED) defines the port number of the SMTP server",
                                     "default": 587
                                 },
                                 "smtpUser": {
                                     "type": "string",
-                                    "description": "can be used to provide a user for the SMTP server",
+                                    "description": "(DEPRECATED) can be used to provide a user for the SMTP server",
                                     "default": ""
                                 },
                                 "smtpTlsEnabled": {
                                     "type": "boolean",
-                                    "description": "if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
+                                    "description": "(DEPRECATED) if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
                                     "default": true
                                 },
                                 "secret": {
@@ -2699,12 +2699,12 @@
                                 },
                                 "fromAddress": {
                                     "type": "string",
-                                    "description": "defines the email address that will be displayed as the sender of emails sent by WebModeler",
+                                    "description": "(DEPRECATED) defines the email address that will be displayed as the sender of emails sent by WebModeler",
                                     "default": ""
                                 },
                                 "fromName": {
                                     "type": "string",
-                                    "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
+                                    "description": "(DEPRECATED) defines the name that will be displayed as the sender of emails sent by WebModeler",
                                     "default": "Camunda 8"
                                 }
                             }
@@ -4458,13 +4458,13 @@
                 },
                 "debug": {
                     "type": "boolean",
-                    "description": "if true, extra info is printed.",
+                    "description": "(DEPRECATED) if true, extra info is printed.",
                     "default": false
                 },
                 "profilesOverride": {
                     "type": "string",
-                    "description": "defines the override for the profiles as comma-separated string.",
-                    "default": "\"\""
+                    "description": "(DEPRECATED) [string] defines the override for the profiles as comma-separated string.",
+                    "default": ""
                 },
                 "security": {
                     "type": "object",
@@ -4479,12 +4479,12 @@
                                 },
                                 "unprotectedApi": {
                                     "type": "boolean",
-                                    "description": "if true, then allow unauthenticated API access.",
+                                    "description": "(DEPRECATED) if true, then allow unauthenticated API access.",
                                     "default": false
                                 },
                                 "authenticationRefreshInterval": {
                                     "type": "string",
-                                    "description": "defines the session's authentication refresh time, defaulted to PT30S.",
+                                    "description": "(DEPRECATED) defines the session's authentication refresh time, defaulted to PT30S.",
                                     "default": "PT30S"
                                 },
                                 "oidc": {
@@ -4517,22 +4517,22 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "can be used to set username claim.",
+                                            "description": "(DEPRECATED) can be used to set username claim.",
                                             "default": "preferred_username"
                                         },
                                         "preferUsernameClaim": {
                                             "type": "boolean",
-                                            "description": "can be used to set OIDC prefer-username-claim.",
+                                            "description": "(DEPRECATED) can be used to set OIDC prefer-username-claim.",
                                             "default": false
                                         },
                                         "clientIdClaim": {
                                             "type": "string",
-                                            "description": "can be used to set client ID claim.",
+                                            "description": "(DEPRECATED) can be used to set client ID claim.",
                                             "default": "client_id"
                                         },
                                         "groupsClaim": {
                                             "type": "string",
-                                            "description": "can be used to set group claim.",
+                                            "description": "(DEPRECATED) can be used to set group claim.",
                                             "default": ""
                                         },
                                         "audience": {
@@ -4542,13 +4542,13 @@
                                         },
                                         "scope": {
                                             "type": "array",
-                                            "description": "defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
+                                            "description": "(DEPRECATED) defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
                                             "default": [],
                                             "items": {}
                                         },
                                         "backwardsCompatibleAudiences": {
                                             "type": "array",
-                                            "description": "defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
+                                            "description": "(DEPRECATED) defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
                                             "default": [],
                                             "items": {}
                                         },
@@ -4559,7 +4559,7 @@
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
+                                            "description": "(DEPRECATED) defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
                                             "default": "http://localhost:8080"
                                         },
                                         "secret": {
@@ -4591,7 +4591,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable authorizations checks in all applicable components.",
+                                    "description": "(DEPRECATED) if true, then enable authorizations checks in all applicable components.",
                                     "default": true
                                 }
                             }
@@ -4671,13 +4671,13 @@
                                 },
                                 "mappingRules": {
                                     "type": "array",
-                                    "description": "define mapping rules.",
+                                    "description": "(DEPRECATED) define mapping rules.",
                                     "default": [],
                                     "items": {}
                                 },
                                 "authorizations": {
                                     "type": "array",
-                                    "description": "define authorizations for Identity as Code.",
+                                    "description": "(DEPRECATED) define authorizations for Identity as Code.",
                                     "default": [],
                                     "items": {}
                                 }
@@ -4730,7 +4730,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable multitenancy checks in all applicable components.",
+                                    "description": "(DEPRECATED) if true, then enable multitenancy checks in all applicable components.",
                                     "default": false
                                 }
                             }
@@ -4740,7 +4740,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable multitenancy API used for tenant management.",
+                                    "description": "(DEPRECATED) if true, then enable multitenancy API used for tenant management.",
                                     "default": true
                                 }
                             }
@@ -4754,12 +4754,12 @@
                 },
                 "partitionCount": {
                     "type": "string",
-                    "description": "defines how many partitions are set up in the cluster",
+                    "description": "(DEPRECATED) defines how many partitions are set up in the cluster",
                     "default": "3"
                 },
                 "replicationFactor": {
                     "type": "string",
-                    "description": "defines how each partition is replicated, the value defines the number of nodes",
+                    "description": "(DEPRECATED) defines how each partition is replicated, the value defines the number of nodes",
                     "default": "3"
                 },
                 "env": {
@@ -4895,12 +4895,12 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "defines the log level which is used",
+                    "description": "(DEPRECATED) defines the log level which is used",
                     "default": "info"
                 },
                 "log4j2": {
                     "type": "string",
-                    "description": "can be used to overwrite the log4j2 configuration",
+                    "description": "(DEPRECATED) can be used to overwrite the log4j2 configuration",
                     "default": ""
                 },
                 "javaOpts": {
@@ -5131,12 +5131,12 @@
                 },
                 "cpuThreadCount": {
                     "type": "string",
-                    "description": "defines how many threads can be used for the processing on each broker pod",
+                    "description": "(DEPRECATED) defines how many threads can be used for the processing on each broker pod",
                     "default": "3"
                 },
                 "ioThreadCount": {
                     "type": "string",
-                    "description": "defines how many threads can be used for the exporting on each broker pod",
+                    "description": "(DEPRECATED) defines how many threads can be used for the exporting on each broker pod",
                     "default": "3"
                 },
                 "resources": {
@@ -5214,7 +5214,7 @@
                     "properties": {
                         "snapshotPeriod": {
                             "type": "string",
-                            "description": "defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata",
+                            "description": "(DEPRECATED) defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata",
                             "default": "5m"
                         },
                         "disk": {
@@ -5225,12 +5225,12 @@
                                     "properties": {
                                         "processing": {
                                             "type": "string",
-                                            "description": "the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
+                                            "description": "(DEPRECATED) the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "2GB"
                                         },
                                         "replication": {
                                             "type": "string",
-                                            "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
+                                            "description": "(DEPRECATED) the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "1GB"
                                         }
                                     }
@@ -5722,7 +5722,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables the new Camunda exporter.",
+                                    "description": "(DEPRECATED) if true, enables the new Camunda exporter.",
                                     "default": true
                                 }
                             }
@@ -5750,7 +5750,7 @@
                                         "number",
                                         "null"
                                     ],
-                                    "description": "can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
+                                    "description": "(DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
                                     "default": null
                                 }
                             }
@@ -5792,12 +5792,12 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
+                            "description": "(DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "can be used to specify the number of replicas for Orchestration Cluster indices.",
+                            "description": "(DEPRECATED) can be used to specify the number of replicas for Orchestration Cluster indices.",
                             "default": 1
                         }
                     }
@@ -5807,17 +5807,17 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, the ILM Policy is created and applied to the index templates.",
+                            "description": "(DEPRECATED) if true, the ILM Policy is created and applied to the index templates.",
                             "default": false
                         },
                         "minimumAge": {
                             "type": "string",
-                            "description": "defines how old the data must be, before the data is deleted as a duration.",
+                            "description": "(DEPRECATED) defines how old the data must be, before the data is deleted as a duration.",
                             "default": "30d"
                         },
                         "policyName": {
                             "type": "string",
-                            "description": "defines the name of the created and applied ILM policy.",
+                            "description": "(DEPRECATED) defines the name of the created and applied ILM policy.",
                             "default": "zeebe-record-retention-policy"
                         }
                     }
@@ -5827,32 +5827,32 @@
                     "properties": {
                         "elsRolloverDateFormat": {
                             "type": "string",
-                            "description": "defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.",
+                            "description": "(DEPRECATED) defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.",
                             "default": "date"
                         },
                         "rolloverInterval": {
                             "type": "string",
-                            "description": "defines the time range of the historical indices to be created.",
+                            "description": "(DEPRECATED) defines the time range of the historical indices to be created.",
                             "default": "1d"
                         },
                         "rolloverBatchSize": {
                             "type": "number",
-                            "description": "defines the maximum number of process instances per batch during archiving.",
+                            "description": "(DEPRECATED) defines the maximum number of process instances per batch during archiving.",
                             "default": 100
                         },
                         "waitPeriodBeforeArchiving": {
                             "type": "string",
-                            "description": "defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in",
+                            "description": "(DEPRECATED) defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in",
                             "default": "1h"
                         },
                         "delayBetweenRuns": {
                             "type": "number",
-                            "description": "the millisecond interval between archiver runs",
+                            "description": "(DEPRECATED) the millisecond interval between archiver runs",
                             "default": 2000
                         },
                         "maxDelayBetweenRuns": {
                             "type": "number",
-                            "description": "the maximum millisecond interval between archiver runs due to failure backoffs",
+                            "description": "(DEPRECATED) the maximum millisecond interval between archiver runs due to failure backoffs",
                             "default": 60000
                         },
                         "retention": {
@@ -5860,27 +5860,27 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).",
+                                    "description": "(DEPRECATED) if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).",
                                     "default": false
                                 },
                                 "minimumAge": {
                                     "type": "string",
-                                    "description": "defines how old the data must be, before the data is deleted as a duration.",
+                                    "description": "(DEPRECATED) defines how old the data must be, before the data is deleted as a duration.",
                                     "default": "30d"
                                 },
                                 "policyName": {
                                     "type": "string",
-                                    "description": "defines the name of the created and applied ILM policy.",
+                                    "description": "(DEPRECATED) defines the name of the created and applied ILM policy.",
                                     "default": "camunda-history-retention-policy"
                                 },
                                 "usageMetricsMinimumAge": {
                                     "type": "string",
-                                    "description": "defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
+                                    "description": "(DEPRECATED) defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
                                     "default": "730d"
                                 },
                                 "usageMetricsPolicyName": {
                                     "type": "string",
-                                    "description": "defines the name of the created and applied ILM policy to usage metric indices.",
+                                    "description": "(DEPRECATED) defines the name of the created and applied ILM policy to usage metric indices.",
                                     "default": "camunda-usage-metrics-retention-policy"
                                 }
                             }
@@ -5924,7 +5924,7 @@
                     "properties": {
                         "allowPreReleaseImages": {
                             "type": "boolean",
-                            "description": "if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.",
+                            "description": "(DEPRECATED) if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.",
                             "default": false
                         }
                     }
@@ -6063,7 +6063,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                                    "description": "(DEPRECATED) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6163,7 +6163,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                                    "description": "(DEPRECATED) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6254,22 +6254,22 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "(DEPRECATED) configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "upgradeLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "(DEPRECATED) sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "esLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "(DEPRECATED) sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "warn"
                 },
                 "partitionCount": {
                     "type": "string",
-                    "description": "defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize",
+                    "description": "(DEPRECATED) defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize",
                     "default": "3"
                 },
                 "env": {
@@ -6795,8 +6795,8 @@
                 },
                 "profiles": {
                     "type": "string",
-                    "description": "defines SPRING_ACTIVE_PROFILES",
-                    "default": "\"\""
+                    "description": "(DEPRECATED) [string] defines SPRING_ACTIVE_PROFILES",
+                    "default": "ccsm"
                 },
                 "javaOpts": {
                     "type": "string",
@@ -6808,7 +6808,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, enables multitenancy in Optimize",
+                            "description": "(DEPRECATED) if true, enables multitenancy in Optimize",
                             "default": false
                         }
                     }
@@ -6821,12 +6821,12 @@
                             "properties": {
                                 "maxSize": {
                                     "type": "number",
-                                    "description": "defines the maximum number of entries in the cache",
+                                    "description": "(DEPRECATED) defines the maximum number of entries in the cache",
                                     "default": 10000
                                 },
                                 "minFetchIntervalSeconds": {
                                     "type": "number",
-                                    "description": "defines the minimum interval between fetches from the database for the cache",
+                                    "description": "(DEPRECATED) defines the minimum interval between fetches from the database for the cache",
                                     "default": 600000
                                 }
                             }
