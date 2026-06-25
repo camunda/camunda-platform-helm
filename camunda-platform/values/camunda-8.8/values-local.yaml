@@ -23,12 +23,7 @@ identityKeycloak:
 # Orchestration Cluster.
 #
 
-connectors:
-  inbound:
-    mode: disabled
-
 orchestration:
-  replicas: 1
   clusterSize: "1"
   partitionCount: "1"
   replicationFactor: "1"
