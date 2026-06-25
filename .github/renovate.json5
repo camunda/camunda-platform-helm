@@ -63,8 +63,60 @@
       defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-tf-rosa/rosa_versions.txt',
       format: 'plain',
     },
+    // Bitnami Premium image tags published by camunda-deployment-references, one
+    // self-contained JSON per image. Only the 'version' field is used here; the
+    // feed also carries 'newDigest', but custom json datasources do not consume or
+    // maintain digest pins (these values pin tags, not digests).
+    // Complete upstream tag list (incl. pre-Nov-2025 tags), no registry creds.
+    // Opt in per image with a '# renovate: datasource=custom.bitnami-<x>-camunda'
+    // annotation in values-enterprise.yaml (see customManagers).
+    'bitnami-postgresql-camunda': {
+      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_postgresql.json',
+      format: 'json',
+    },
+    'bitnami-os-shell-camunda': {
+      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_os-shell.json',
+      format: 'json',
+    },
+    'bitnami-postgres-exporter-camunda': {
+      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_postgres-exporter.json',
+      format: 'json',
+    },
+    'bitnami-elasticsearch-camunda': {
+      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_elasticsearch.json',
+      format: 'json',
+    },
+    'bitnami-elasticsearch-exporter-camunda': {
+      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_elasticsearch-exporter.json',
+      format: 'json',
+    },
+    'bitnami-keycloak-config-cli-camunda': {
+      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_keycloak-config-cli.json',
+      format: 'json',
+    },
+    'bitnami-keycloak-camunda': {
+      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_keycloak.json',
+      format: 'json',
+    },
   },
   packageRules: [
+    // vendor-ee/postgresql in the 8.7/8.8/8.9 enterprise values is sourced from
+    // the bitnami-postgresql-camunda custom datasource (see customManagers);
+    // disable the docker/helm-values tracking for it so it is not bumped twice.
+    // vendor-ee/elasticsearch is intentionally NOT wired here: the chart pins a
+    // plain tag (e.g. 8.19.16) while the published feed uses the
+    // '<x.y.z>-debian-12-rN' scheme, so it needs separate handling.
+    {
+      description: 'Bitnami enterprise images tracked via custom datasource, not docker.',
+      matchManagers: ['helm-values'],
+      matchFileNames: [
+        'charts/camunda-platform-8.7/values-enterprise.yaml',
+        'charts/camunda-platform-8.8/values-enterprise.yaml',
+        'charts/camunda-platform-8.9/values-enterprise.yaml',
+      ],
+      matchPackageNames: ['/vendor-ee/postgresql$/'],
+      enabled: false,
+    },
     {
       description: 'Major updates require manual review to prevent breaking changes.',
       matchUpdateTypes: ['major'],
@@ -380,6 +432,22 @@
         '# renovate: datasource=docker depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s*?(tag|imageTag): (?<currentValue>\\S+)',
       ],
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
+    },
+    // Bitnami Premium image tags sourced from the camunda-deployment-references
+    // custom datasources (complete upstream list, credential-free). Opt in per
+    // image with '# renovate: datasource=custom.bitnami-<x>-camunda depName=<x>
+    // versioning=regex:...'. Bitnami '<x.y.z>-debian-12-rN' tags require regex
+    // versioning; docker versioning does not order across the '-rN' build suffix.
+    {
+      customType: 'regex',
+      fileMatch: [
+        'values-enterprise\\.yaml$',
+      ],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>custom\\.bitnami-[^\\s]+?) depName=(?<depName>[^\\s]+?)(?: versioning=(?<versioning>[^\\s]+?))?\\s*?tag: (?<currentValue>\\S+)',
+      ],
+      datasourceTemplate: '{{{datasource}}}',
+      versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}',
     },
     // This regex manager is used to update the image digests in the values-digest.yaml files.
     {
