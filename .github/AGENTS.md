@@ -192,6 +192,27 @@ Each chart version has a `test/ci-test-config.yaml` defining scenarios (e.g., `e
 
 Upgrade flows are two-step: install the previous version's chart from the Helm repo, then `helm upgrade` to the local chart. The `base-upgrade.yaml` layer is included only in Step 2.
 
+## Reusable Workflow Contract (consumed by other repos)
+
+`.github/workflows/test-integration-template.yaml` is a `workflow_call` reusable
+workflow invoked by downstream repositories — `camunda/camunda`,
+`camunda/connectors`, `camunda/camunda-hub` — via `uses: …@main`. Its
+`workflow_call.inputs` are therefore a **public API**. A change here can break a
+caller's next run without any failure showing up in this repo's CI:
+
+- removing or renaming an input a caller passes → caller fails with "unexpected input";
+- adding a `required` input without a `default` (or flipping an optional input to
+  required) → every caller that does not pass it fails at dispatch;
+- changing an input's `type` → callers passing that input can break.
+
+This is guarded by `TestIntegrationTemplateConsumerContract` in
+`scripts/deploy-camunda/matrix/` (run by `make go.test`). It checks the template's
+interface against a fixture of how the known callers invoke it
+(`scripts/deploy-camunda/matrix/testdata/integration_template_consumers.yaml`).
+When you intentionally change a caller's call (or onboard a new caller), refresh
+that fixture — the header documents how. All known callers use `secrets: inherit`,
+so secret-level changes are not contract-breaking and are not modeled.
+
 ## Operational Skills
 
 See `SKILLS.md` for instructions on using:

@@ -1,0 +1,109 @@
+# Consumer-driven contract fixture for .github/workflows/test-integration-template.yaml
+#
+# This records how known 3rd-party repositories call the reusable
+# `test-integration-template.yaml` workflow (`uses: …@main`). It is the input to
+# TestIntegrationTemplateConsumerContract, which fails when a change to the
+# template's `workflow_call` interface would break one of these callers:
+#   - an input a caller passes is removed/renamed
+#   - the template gains a required-without-default input a caller does not pass
+#     (covers new required inputs and optional -> required flips)
+#   - the type of an input a caller passes changes
+#
+# All known callers use `secrets: inherit`, so secret-level changes do not break
+# them; only the inputs interface is contract-relevant here.
+#
+# HOW TO REFRESH (when a caller repo changes how it calls the workflow):
+#   For each workflow below, read the job that `uses:` test-integration-template
+#   and copy its `with:` keys into `inputs`. The expected `type` for each input
+#   comes from the template's own `on.workflow_call.inputs.<name>.type`. Quick
+#   dump of what a caller passes:
+#     gh api repos/<owner>/<repo>/contents/<path> --jq .content | base64 -d \
+#       | yq '.jobs.*.with | keys'
+#
+# Captured 2026-06-25.
+
+consumers:
+  - repo: camunda/camunda
+    workflow: .github/workflows/camunda-helm-integration.yml
+    secrets: inherit
+    inputs:
+      - caller-git-ref
+      - camunda-helm-dir
+      - extra-values
+      - identifier
+      - test-enabled
+      - vault-secret-mapping
+
+  - repo: camunda/camunda
+    workflow: .github/workflows/docker-build-helm-integration.yml
+    secrets: inherit
+    inputs:
+      - always-delete-namespace
+      - camunda-helm-dir
+      - camunda-helm-git-ref
+      - deployment-ttl
+      - e2e-enabled
+      - extra-values
+      - flows
+      - identifier
+      - namespace-prefix
+      - platforms
+      - scenario
+      - shortname
+      - test-enabled
+      - vault-secret-mapping
+
+  - repo: camunda/connectors
+    workflow: .github/workflows/INTEGRATION_TEST.yml
+    secrets: inherit
+    inputs:
+      - always-delete-namespace
+      - camunda-helm-dir
+      - camunda-helm-git-ref
+      - deployment-ttl
+      - e2e-enabled
+      - extra-values
+      - identifier
+      - scenario
+      - shortname
+      - test-enabled
+
+  - repo: camunda/camunda-hub
+    workflow: .github/workflows/stage-helm-tests.yml
+    secrets: inherit
+    inputs:
+      - always-delete-namespace
+      - camunda-helm-dir
+      - camunda-helm-git-ref
+      - e2e-enabled
+      - extra-values
+      - flows
+      - identifier
+      - namespace-prefix
+      - platforms
+      - scenario
+      - shortname
+      - test-enabled
+      - values-digest
+      - vault-secret-mapping
+
+# Expected types for every input any consumer passes, taken from the template's
+# own workflow_call.inputs. A type change here would silently break callers, so
+# the test asserts the template still declares these exact types.
+expectedInputTypes:
+  always-delete-namespace: boolean
+  caller-git-ref: string
+  camunda-helm-dir: string
+  camunda-helm-git-ref: string
+  deployment-ttl: string
+  e2e-enabled: boolean
+  extra-values: string
+  flows: string
+  identifier: string
+  namespace-prefix: string
+  platforms: string
+  scenario: string
+  shortname: string
+  test-enabled: boolean
+  values-digest: string
+  vault-secret-mapping: string
