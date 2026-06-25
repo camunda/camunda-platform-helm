@@ -1308,7 +1308,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.4"
+                            "default": "8.9.5"
                         },
                         "digest": {
                             "type": "string",
@@ -2595,7 +2595,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.53"
+                            "default": "8.9.55"
                         },
                         "digest": {
                             "type": "string",

@@ -1,4 +1,4 @@
-module camunda.com/validatevaluesschema
+module scripts/validate-values-schema
 
 go 1.26.0
 

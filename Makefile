@@ -286,18 +286,10 @@ helm.schema-update:
 			continue; \
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
-		readme-generator \
-			--values "$${chart_dir}/values.yaml" \
-			--schema "$${chart_dir}/values.schema.json"; \
-		if [ ! -f "$${chart_dir}/values.schema.extra.json" ]; then \
-			echo "[$@] No extra schema to merge"; \
-			continue; \
-		fi; \
-		echo "[$@] Merging with extra schema"; \
-		jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
-			"$${chart_dir}/values.schema.json" \
-			"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
-			&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
+		bash scripts/regenerate-values-schema.sh \
+			"$${chart_dir}/values.yaml" \
+			"$${chart_dir}/values.schema.extra.json" \
+			"$${chart_dir}/values.schema.json"; \
 	done
 
 # helm.schema-validate-values: verify chart values files only use keys described by the schema.
@@ -315,12 +307,10 @@ helm.schema-validate-values:
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
 		abs="$${root}/$${chart_dir}"; \
 		tmp_schema="$$(mktemp)"; \
-		readme-generator --values "$${abs}/values.yaml" --schema "$${tmp_schema}" || { rm -f "$${tmp_schema}"; exit 1; }; \
-		if [ -f "$${abs}/values.schema.extra.json" ]; then \
-			jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
-				"$${tmp_schema}" "$${abs}/values.schema.extra.json" > "$${tmp_schema}.merged" \
-				&& mv "$${tmp_schema}.merged" "$${tmp_schema}" || { rm -f "$${tmp_schema}" "$${tmp_schema}.merged"; exit 1; }; \
-		fi; \
+		bash scripts/regenerate-values-schema.sh \
+			"$${abs}/values.yaml" \
+			"$${abs}/values.schema.extra.json" \
+			"$${tmp_schema}" || { rm -f "$${tmp_schema}"; exit 1; }; \
 		files=""; \
 		for f in values.yaml values-local.yaml values-enterprise.yaml values-bitnami-legacy.yaml; do \
 			[ -f "$${abs}/$$f" ] && files="$${files} $${abs}/$$f"; \
