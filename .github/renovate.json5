@@ -359,12 +359,6 @@
       prCreation: 'immediate',
     },
     {
-      matchFileNames: [
-        '.tool-versions',
-        '.github/workflows/*',
-        '.github/actions/*',
-        'charts/**',
-      ],
       matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
       addLabels: [
         'automerge',
