@@ -751,6 +751,91 @@
                                     }
                                 }
                             }
+                        },
+                        "connectors": {
+                            "type": "object",
+                            "properties": {
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "opt-in automatic pod rollout on Connectors cert rotation. When true, the chart stamps a `checksum/connectors-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Connectors when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.",
+                                    "default": false
+                                },
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "enable Connectors TLS — sets `SERVER_SSL_ENABLED=true` on the Connectors container and switches container probes to HTTPS.",
+                                    "default": false
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "name of an existing Kubernetes secret containing the Connectors server cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via `connectors.extraVolumes` and `connectors.env`.",
+                                            "default": ""
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "one of `pkcs12` or `pem`. `pkcs12` emits `SERVER_SSL_KEY_STORE*` env vars; `pem` emits the Spring Boot `SERVER_SSL_CERTIFICATE` / `SERVER_SSL_CERTIFICATE_PRIVATE_KEY` env vars and is compatible with cert-manager `kubernetes.io/tls` Secrets out of the box.",
+                                            "default": "pkcs12"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate. When `type=pem` and this field is left at its PKCS12 default, the chart automatically substitutes `tls.crt` so cert-manager `kubernetes.io/tls` Secrets work out of the box.",
+                                            "default": "keystore.p12"
+                                        },
+                                        "existingSecretPrivateKeyKey": {
+                                            "type": "string",
+                                            "description": "for `type=pem` only — key within the same secret that holds the PEM private key (set to `tls.key` for cert-manager-issued secrets). Ignored when `type=pkcs12`.",
+                                            "default": "tls.key"
+                                        },
+                                        "existingSecretPasswordKey": {
+                                            "type": "string",
+                                            "description": "for `type=pkcs12` only — key in the same secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`). Ignored when `type=pem`.",
+                                            "default": "keystore-password"
+                                        },
+                                        "keyAlias": {
+                                            "type": "string",
+                                            "description": "for `type=pkcs12` only — optional cert alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias. Ignored when `type=pem`.",
+                                            "default": ""
+                                        }
+                                    }
+                                },
+                                "proxyVerify": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "when true, the chart marks the Connectors backend as HTTPS-verified upstream. Currently inert under the Gateway API HTTPRoute used in 8.10 (see proxyVerify @extra docstring above).",
+                                            "default": false
+                                        },
+                                        "caSecret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "name of an existing Kubernetes secret containing the CA bundle.",
+                                                    "default": ""
+                                                },
+                                                "namespace": {
+                                                    "type": "string",
+                                                    "description": "optional namespace of the CA bundle Secret. Defaults to the release namespace.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                                    "default": "ca.crt"
+                                                }
+                                            }
+                                        },
+                                        "sniHost": {
+                                            "type": "string",
+                                            "description": "optional hostname for SNI and cert-name verification at the ingress. When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },

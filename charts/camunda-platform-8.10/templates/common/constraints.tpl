@@ -117,6 +117,54 @@ gRPC server to crash on startup. Fail loudly at render time instead.
 {{- end }}
 
 {{/*
+global.tls.connectors footgun: enabling Connectors TLS without providing
+the server cert material (either via the chart-managed `secret.existingSecret`
+or via an explicit cert path in `connectors.env`) causes Spring Boot to crash
+on startup. Fail loudly at render time instead.
+*/}}
+{{- if .Values.connectors.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.connectors.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
+    {{- if not .Values.global.tls.connectors.secret.existingSecret }}
+      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
+        {{- $errorMessage := printf "%s %s %s"
+            "[camunda][error] Connectors TLS is enabled but no server cert is configured."
+            "Set global.tls.connectors.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching connectors.extraVolumes / extraVolumeMounts entries."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.global.tls.connectors.proxyVerify.enabled }}
+    {{- if ne (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.connectors.proxyVerify.enabled is true but Connectors TLS is not enabled."
+          "Upstream verification only makes sense against a TLS backend; set global.tls.connectors.enabled: true (or wire SERVER_SSL_ENABLED=true via connectors.env, or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+    {{- if not .Values.global.tls.connectors.proxyVerify.caSecret.existingSecret }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.connectors.proxyVerify.enabled is true but caSecret.existingSecret is empty."
+          "Provide a Secret holding the CA bundle that the ingress should use to validate the Connectors server cert."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") .Values.global.tls.connectors.secret.existingSecret }}
+    {{- $t := .Values.global.tls.connectors.secret.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.connectors.secret.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}

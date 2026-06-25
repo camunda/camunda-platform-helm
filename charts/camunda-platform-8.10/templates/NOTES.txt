@@ -176,6 +176,38 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- end }}
 
+{{- if and .Values.connectors.enabled .Values.global.tls.connectors.enabled }}
+
+## Connectors TLS
+
+- Server TLS: enabled ({{ .Values.global.tls.connectors.secret.type | default "pkcs12" }} mode{{ if .Values.global.tls.connectors.secret.existingSecret }}, secret: {{ .Values.global.tls.connectors.secret.existingSecret }}{{ end }})
+{{- if .Values.global.tls.connectors.autoRollout }}
+- autoRollout: on (cert content changes will roll Connectors on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
+{{- else }}
+- autoRollout: off (rotate manually with: kubectl rollout restart deployment/{{ include "connectors.fullname" . }})
+{{- end }}
+{{- if ne (include "camundaPlatform.hasCaBundle" .) "true" }}
+
+  WARNING: global.tls.caBundle is not set. If the Connectors cert is self-signed
+  or from a private/internal CA, in-cluster Java callers will fall back to the
+  JVM default truststore and fail TLS handshakes. Set
+  global.tls.caBundle.secret.existingSecret to the CA bundle.
+{{- end }}
+
+  NOTE: Connectors in 8.10 is exposed through the Gateway API `HTTPRoute`, not
+  via an NGINX ingress. Intra-cluster TLS terminates at the Connectors pod;
+  backend-protocol selection for the Gateway listener is a separate concern.
+{{- if .Values.global.tls.connectors.proxyVerify.enabled }}
+
+  WARNING: global.tls.connectors.proxyVerify is enabled, but Connectors in 8.10
+  is routed via Gateway API `HTTPRoute` — the proxy-ssl-* annotations this
+  block emits are consumed by NGINX Ingress only, not by Gateway implementations.
+  Your proxyVerify configuration is inert today. For Gateway API backend TLS
+  verification, configure a `BackendTLSPolicy` (Gateway API v1.0+) targeting
+  the Connectors Service, or your gateway implementation's equivalent.
+{{- end }}
+{{- end }}
+
 {{ if .Values.global.createReleaseInfo -}}
 
 ## Console configuration
