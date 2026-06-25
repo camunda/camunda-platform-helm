@@ -240,10 +240,12 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHttpIngressOmitsOrchestrationPathWithServerTLS",
 			Values: map[string]string{
-				"global.ingress.enabled":    "true",
-				"orchestration.enabled":     "true",
-				"orchestration.contextPath": "/orchestration",
-				"orchestration.env[0].name": "SERVER_SSL_ENABLED",
+				"global.ingress.enabled":     "true",
+				"orchestration.enabled":      "true",
+				"orchestration.contextPath":  "/orchestration",
+				"orchestration.env[0].name":  "SERVER_SSL_ENABLED",
+				"orchestration.env[1].name":  "SERVER_SSL_KEY_STORE",
+				"orchestration.env[1].value": "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12",
 			},
 			RenderTemplateExtraArgs: []string{
 				"--set-string", "orchestration.env[0].value=true",
@@ -294,6 +296,8 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				"orchestration.enabled":                      "true",
 				"orchestration.contextPath":                  "/orchestration",
 				"orchestration.env[0].name":                  "SERVER_SSL_ENABLED",
+				"orchestration.env[1].name":                  "SERVER_SSL_KEY_STORE",
+				"orchestration.env[1].value":                 "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12",
 			},
 			RenderTemplateExtraArgs: []string{
 				"--set-string", "orchestration.env[0].value=true",
@@ -400,7 +404,7 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "proxyVerify.enabled is true but global.tls.orchestration.rest.enabled is false")
+				require.Contains(t, err.Error(), "proxyVerify.enabled is true but Orchestration REST TLS is not enabled")
 			},
 		},
 		{
