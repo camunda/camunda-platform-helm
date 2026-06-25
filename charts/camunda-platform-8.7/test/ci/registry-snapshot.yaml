@@ -114,6 +114,7 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: opensearch-embedded
+          skip-e2e: true
           dependencies:
             - chart: opensearch/opensearch
               version: 2.31.0

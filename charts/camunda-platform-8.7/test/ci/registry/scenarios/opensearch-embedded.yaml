@@ -10,3 +10,4 @@ infra-type:
   gke: distroci
 dependencies:
   - opensearch
+skip-e2e: true  # 8.7 Tasklist can't display Zeebe user tasks (empty flowNodes in process definition)
