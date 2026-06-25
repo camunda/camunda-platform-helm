@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -147,4 +149,40 @@ func TestFindUnknownKeysIsIdempotentOnStrictify(t *testing.T) {
 	s2 := strictify(s1)
 	values := mustYAMLMap(t, `{"a":"v","typo":1}`)
 	assert.Equal(t, findUnknownKeys(s1, values, ""), findUnknownKeys(s2, values, ""))
+}
+
+func TestChartDependencyRoots(t *testing.T) {
+	dir := t.TempDir()
+	chartYAML := filepath.Join(dir, "Chart.yaml")
+	require.NoError(t, os.WriteFile(chartYAML, []byte(`
+apiVersion: v2
+name: camunda-platform
+dependencies:
+  - name: keycloak
+    alias: identityKeycloak
+  - name: postgresql
+    alias: identityPostgresql
+  - name: elasticsearch
+  - name: common
+    alias: ""
+`), 0o600))
+
+	roots, err := chartDependencyRoots(chartYAML)
+	require.NoError(t, err)
+	// alias wins when set; name is the fallback (including empty alias).
+	assert.Equal(t, []string{"identityKeycloak", "identityPostgresql", "elasticsearch", "common"}, roots)
+}
+
+func TestChartDependencyRootsNoDependencies(t *testing.T) {
+	dir := t.TempDir()
+	chartYAML := filepath.Join(dir, "Chart.yaml")
+	require.NoError(t, os.WriteFile(chartYAML, []byte("apiVersion: v2\nname: x\n"), 0o600))
+	roots, err := chartDependencyRoots(chartYAML)
+	require.NoError(t, err)
+	assert.Empty(t, roots)
+}
+
+func TestChartDependencyRootsMissingFile(t *testing.T) {
+	_, err := chartDependencyRoots(filepath.Join(t.TempDir(), "nope.yaml"))
+	assert.Error(t, err)
 }
