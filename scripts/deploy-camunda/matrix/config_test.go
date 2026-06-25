@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
@@ -163,9 +164,16 @@ func TestGenerate_PropagatesPreInstall(t *testing.T) {
 			want = append(want, wantHook{scenario: s.Name, hook: s.PreInstall})
 		}
 	}
-	if len(want) == 0 {
-		t.Skip("no PR scenarios with pre-install hooks in 8.10 registry")
+	require.NotEmpty(t, want, "no enabled PR scenarios with pre-install hooks in 8.10 registry — registry may have regressed")
+	// Invariant: hub-external-db always declares a pre-install hook.
+	var hasHubExternalDB bool
+	for _, w := range want {
+		if w.scenario == "hub-external-db" {
+			hasHubExternalDB = true
+			break
+		}
 	}
+	require.True(t, hasHubExternalDB, "expected hub-external-db to declare a pre-install hook")
 
 	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
 	if err != nil {
@@ -235,9 +243,16 @@ func TestGenerate_PostgresqlCompanionProfiles(t *testing.T) {
 			}
 		}
 	}
-	if len(want) == 0 {
-		t.Skip("no PR scenarios with internal-postgresql dependency in 8.10 registry")
+	require.NotEmpty(t, want, "no enabled PR scenarios with internal-postgresql dependency in 8.10 registry — registry may have regressed")
+	// Invariant: elasticsearch always carries an internal-postgresql companion.
+	var hasElasticsearch bool
+	for _, w := range want {
+		if w.scenario == "elasticsearch" {
+			hasElasticsearch = true
+			break
+		}
 	}
+	require.True(t, hasElasticsearch, "expected elasticsearch scenario to declare an internal-postgresql companion")
 
 	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
 	if err != nil {

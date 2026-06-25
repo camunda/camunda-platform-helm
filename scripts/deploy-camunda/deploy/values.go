@@ -446,31 +446,6 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	return envMap, nil
 }
 
-// buildDeploymentConfigFromFlags creates a DeploymentConfig from RuntimeFlags.
-// It prefers the new selection flags (--identity, --persistence, etc.) over deprecated flags.
-// Returns nil if no explicit flags are set (use auto-detection from scenario name).
-func buildDeploymentConfigFromFlags(scenariosDir string, flags *config.RuntimeFlags, scenarioName string) (*scenarios.DeploymentConfig, error) {
-	// Migrate deprecated flags to new fields first
-	flags.MigrateDeprecatedFlags()
-
-	// Check if we have any explicit configuration
-	if !flags.HasExplicitSelectionConfig() && !flags.HasExplicitLayeredConfig() {
-		return nil, nil
-	}
-
-	return scenarios.BuildDeploymentConfig(scenariosDir, scenarioName, scenarios.BuilderOverrides{
-		Identity:     flags.Selection.Identity,
-		Persistence:  flags.Selection.Persistence,
-		Platform:     flags.Selection.TestPlatform,
-		Features:     flags.Selection.Features,
-		QA:           flags.Selection.QA,
-		ImageTags:    flags.Selection.ImageTags,
-		Upgrade:      flags.Selection.UpgradeFlow,
-		ChartVersion: flags.Chart.ChartVersion,
-		Flow:         flags.Deployment.Flow,
-	})
-}
-
 // enhanceScenarioError wraps scenario resolution errors with helpful context.
 // Supports both layered values (values/ directory) and legacy single-file approach.
 func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) error {

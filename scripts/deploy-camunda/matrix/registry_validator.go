@@ -337,17 +337,24 @@ func readFirstKB(path string) (string, error) {
 	return string(buf[:n]), nil
 }
 
-// isSiblingInvoked returns true when any sibling script in siblingContent
-// references name via a subprocess call (e.g. `bash "${SCRIPT_DIR}/name"` or
-// `exec bash "...name"`). A plain basename substring match is sufficient
-// because script names in this codebase are unique within a version directory.
+// isSiblingInvoked returns true when any sibling script contains an invocation
+// of name — i.e. a line that both contains the filename and also contains a
+// shell-invocation keyword (bash, source) or a dot-source prefix (". ").
+// Requiring an invocation keyword prevents a comment that merely mentions the
+// filename from suppressing the orphan check.
 func isSiblingInvoked(name string, siblingContent map[string]string) bool {
 	for sib, content := range siblingContent {
 		if sib == name {
 			continue
 		}
-		if strings.Contains(content, name) {
-			return true
+		for _, line := range strings.Split(content, "\n") {
+			if !strings.Contains(line, name) {
+				continue
+			}
+			if strings.Contains(line, "bash") || strings.Contains(line, "source") ||
+				strings.HasPrefix(strings.TrimSpace(line), ". ") {
+				return true
+			}
 		}
 	}
 	return false
