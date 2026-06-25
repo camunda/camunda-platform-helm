@@ -186,6 +186,23 @@ These live in `test/integration/scenarios/chart-full-setup/values/` per chart ve
 
 For detailed documentation on how scenario resolution works, see `docs/integration-test-scenario-resolution.md`.
 
+**3rd-party image-override pull-secret contract (guarded):** The reusable
+integration-test workflow (`test-integration-template.yaml` /
+`test-integration-runner.yaml`) is called by downstream repos (`camunda/camunda`,
+`camunda/connectors`, `camunda/identity`, the web-modeler repo, …) which override
+component images to `registry.camunda.cloud` builds (the overridable set is the
+top-level keys of `base-image-tags.yaml`). For those images to pull, each such
+component must resolve an `imagePullSecret` that includes `registry-camunda-cloud`.
+Helm resolves a component's pull secrets as "component-level `image.pullSecrets`
+if set, else `global.image.pullSecrets`" (component-level REPLACES global, it is
+not merged). Keep `global.image.pullSecrets` in each version's
+`chart-full-setup/values/base.yaml` covering both `index-docker-io` and
+`registry-camunda-cloud` so every component is covered by default; if a component
+sets its own `image.pullSecrets`, include both there too. This is enforced by
+`TestThirdPartyImageOverrideHasPullSecret` in `scripts/deploy-camunda/matrix/`
+(run by `make go.test`), which fails before the gap reaches a downstream caller as
+an `ImagePullBackOff`.
+
 ## CI Test Matrix
 
 Each chart version has a `test/ci-test-config.yaml` defining scenarios (e.g., `elasticsearch`, `opensearch`). Each scenario specifies identity, persistence, platforms, and allowed flows. The matrix is filtered by `.github/config/permitted-flows.yaml` which denies specific flows per version (e.g., 8.9 denies `upgrade-patch` but allows `upgrade-minor`).

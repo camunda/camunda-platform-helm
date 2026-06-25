@@ -6,6 +6,11 @@ global:
   imagePullSecrets:
     - index-docker-io
     - registry-camunda-cloud
+  # for camunda images
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   elasticsearch:
     enabled: true
   exporter:

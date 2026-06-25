@@ -10,6 +10,7 @@ global:
   image:
     pullSecrets:
       - name: index-docker-io
+      - name: registry-camunda-cloud
   commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
