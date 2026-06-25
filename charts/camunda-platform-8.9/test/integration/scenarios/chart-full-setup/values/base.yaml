@@ -29,6 +29,10 @@ global:
 # Context paths for all components
 identity:
   enabled: true
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/identity"
   # Right-sized for CI: "camunda-platform" container P99 mem 849Mi (from 400Mi default).
   resources:
@@ -86,6 +90,10 @@ identity:
 
 optimize:
   enabled: true
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/optimize"
   partitionCount: "1"
   env:
@@ -245,6 +253,10 @@ webModelerPostgresql:
       synchronous_commit = off
 
 orchestration:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   data:
     secondaryStorage:
       type: elasticsearch

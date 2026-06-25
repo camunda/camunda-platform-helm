@@ -26,6 +26,10 @@ global:
 # Identity base setup
 identity:
   enabled: true
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/identity"
   # Right-sized for CI: "camunda-platform" container P99 mem 849Mi (from 400Mi default).
   resources:
@@ -89,6 +93,10 @@ identityPostgresql:
 
 optimize:
   enabled: true
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/optimize"
   partitionCount: "1"
   # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
@@ -253,6 +261,10 @@ webModelerPostgresql:
       synchronous_commit = off
 
 orchestration:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/orchestration"
   clusterSize: "1"
   partitionCount: "1"

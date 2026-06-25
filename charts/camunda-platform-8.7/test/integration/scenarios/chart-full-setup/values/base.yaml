@@ -28,6 +28,10 @@ global:
 
 # Context paths for all components
 identity:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/identity"
   # Right-sized for CI: "camunda-platform" container P99 mem 849Mi (from 400Mi default).
   resources:
@@ -97,6 +101,10 @@ identityPostgresql:
       userPasswordKey: "identity-keycloak-postgresql-user-password"
 
 operate:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/operate"
   # Right-sized for CI: CPU P99 446m (from 600m default), memory P99 499Mi INCREASE (from 400Mi default).
   resources:
@@ -125,6 +133,10 @@ operate:
     timeoutSeconds: 1
 
 optimize:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/optimize"
   partitionCount: "1"
   # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
@@ -154,6 +166,10 @@ optimize:
     timeoutSeconds: 5
 
 tasklist:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/tasklist"
   # Right-sized for CI: CPU P99 253m (from 400m default), memory P99 425Mi (from 1Gi default).
   resources:
@@ -319,6 +335,10 @@ postgresql:
 
 # Zeebe (Broker)
 zeebe:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   clusterSize: "1"
   partitionCount: "1"
   replicationFactor: "1"
@@ -351,6 +371,10 @@ zeebe:
     timeoutSeconds: 5
 
 zeebeGateway:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   contextPath: "/zeebe"
   # Single gateway replica for CI (chart default is 2). CI does not test gateway
   # HA/failover, so the second replica only adds a JVM contending for CPU on shared
