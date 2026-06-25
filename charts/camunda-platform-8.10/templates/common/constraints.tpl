@@ -50,25 +50,25 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- range $e := (.Values.orchestration.env | default list) -}}
     {{- $envNames = append $envNames ($e.name | default "") -}}
   {{- end }}
-  {{- if .Values.global.tls.orchestration.rest.enabled }}
+  {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
     {{- if not .Values.global.tls.orchestration.rest.secret.existingSecret }}
       {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
         {{- $errorMessage := printf "%s %s %s"
-            "[camunda][error] global.tls.orchestration.rest.enabled is true but no server cert is configured."
+            "[camunda][error] Orchestration REST TLS is enabled but no server cert is configured."
             "Set global.tls.orchestration.rest.secret.existingSecret (recommended) so the chart mounts the cert,"
-            "or hand-wire a SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE entry under orchestration.env."
+            "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- if .Values.global.tls.orchestration.grpc.enabled }}
+  {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
     {{- if not .Values.global.tls.orchestration.grpc.secret.existingSecret }}
       {{- if not (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) }}
         {{- $errorMessage := printf "%s %s %s"
-            "[camunda][error] global.tls.orchestration.grpc.enabled is true but no server cert is configured."
+            "[camunda][error] Orchestration gRPC TLS is enabled but no server cert is configured."
             "Set global.tls.orchestration.grpc.secret.existingSecret (recommended) so the chart mounts the cert,"
-            "or hand-wire a CAMUNDA_API_GRPC_SSL_CERTIFICATE entry under orchestration.env."
+            "or hand-wire CAMUNDA_API_GRPC_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end }}

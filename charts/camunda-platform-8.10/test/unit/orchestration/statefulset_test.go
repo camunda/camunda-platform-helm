@@ -1068,7 +1068,7 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "global.tls.orchestration.rest.enabled is true but no server cert is configured")
+				require.Contains(t, err.Error(), "Orchestration REST TLS is enabled but no server cert is configured")
 			},
 		},
 		{
@@ -1081,6 +1081,17 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
+			},
+		},
+		{
+			Name: "Constraint fails when gRPC enabled but no cert is configured",
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"global.tls.orchestration.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "Orchestration gRPC TLS is enabled but no server cert is configured")
 			},
 		},
 	}
