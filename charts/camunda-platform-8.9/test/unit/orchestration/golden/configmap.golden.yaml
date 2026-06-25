@@ -196,20 +196,5 @@ data:
         # zeebe.broker.cluster
         cluster:
           clusterName: camunda-platform-test-zeebe
-        # zeebe.broker.exporters
-        exporters:
-          camundaexporter:
-            className: "io.camunda.exporter.CamundaExporter"
-            args:
-              connect:
-                type: "elasticsearch"
-                awsEnabled: false
-              history:
-                elsRolloverDateFormat: "date"
-                rolloverInterval: "1d"
-                rolloverBatchSize: 100
-                waitPeriodBeforeArchiving: "1h"
-                delayBetweenRuns: 2000
-                maxDelayBetweenRuns: 60000
     
   log4j2.xml: |
