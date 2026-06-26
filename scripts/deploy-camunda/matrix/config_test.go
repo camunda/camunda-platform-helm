@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
@@ -135,83 +136,163 @@ integration:
 	}
 }
 
+// TestGenerate_PropagatesPreInstall checks that every scenario declaring a
+// pre-install hook in the registry has that hook faithfully propagated into
+// the generated Entry. The test is data-driven: it discovers which scenarios
+// declare pre-install hooks at load time, so renaming or removing a scenario
+// never requires editing this test.
 func TestGenerate_PropagatesPreInstall(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 
-	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
+	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10")
+	cfg, err := LoadRegistry(chartDir)
 	if err != nil {
-		t.Fatalf("Generate: %v", err)
+		t.Fatalf("LoadRegistry: %v", err)
 	}
 
-	var hub *Entry
-	for i := range entries {
-		if entries[i].Scenario == "hub-external-db" && entries[i].Version == "8.10" {
-			hub = &entries[i]
+	// Collect all enabled PR scenarios that declare a pre-install hook.
+	type wantHook struct {
+		scenario string
+		hook     *LifecycleHook
+	}
+	var want []wantHook
+	for _, s := range cfg.Integration.Case.PR.Scenarios {
+		if !s.Enabled {
+			continue
+		}
+		if s.PreInstall != nil {
+			want = append(want, wantHook{scenario: s.Name, hook: s.PreInstall})
+		}
+	}
+	require.NotEmpty(t, want, "no enabled PR scenarios with pre-install hooks in 8.10 registry — registry may have regressed")
+	// Invariant: hub-external-db always declares a pre-install hook.
+	var hasHubExternalDB bool
+	for _, w := range want {
+		if w.scenario == "hub-external-db" {
+			hasHubExternalDB = true
 			break
 		}
 	}
-	if hub == nil {
-		t.Fatal("hub-external-db 8.10 entry not found")
-	}
-	if hub.PreInstall == nil {
-		t.Fatal("hub-external-db 8.10: PreInstall: nil")
-	}
-	if len(hub.PreInstall.Fixtures) != 1 || hub.PreInstall.Fixtures[0] != "hub-external-postgresql.yaml" {
-		t.Errorf("hub-external-db 8.10 fixtures: got %v", hub.PreInstall.Fixtures)
-	}
-	if hub.PreInstall.Description == "" {
-		t.Error("hub-external-db 8.10: description: empty")
-	}
-}
-
-// TestGenerate_PostgresqlCompanionProfiles pins the internal-postgresql companion
-// profiles that replaced the CloudNativePG fixtures (#6338/#6339): the rdbms and
-// rdbms-self-signed scenarios must resolve to the right values-file, chart, release
-// name, and credential env-vars. A typo in a profile's values-file would otherwise
-// only surface at deploy time on GKE.
-func TestGenerate_PostgresqlCompanionProfiles(t *testing.T) {
-	repoRoot := findRepoRoot(t)
+	require.True(t, hasHubExternalDB, "expected hub-external-db to declare a pre-install hook")
 
 	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
 
-	want := map[string]string{
-		"rdbms":             "test/integration/companion-values/postgresql-rdbms.yaml",
-		"rdbms-self-signed": "test/integration/companion-values/postgresql-tls.yaml",
+	// Index entries by scenario name for fast lookup.
+	byScenario := map[string]*Entry{}
+	for i := range entries {
+		if entries[i].Version == "8.10" {
+			byScenario[entries[i].Scenario] = &entries[i]
+		}
 	}
-	for scenario, wantValuesFile := range want {
-		var entry *Entry
-		for i := range entries {
-			if entries[i].Scenario == scenario && entries[i].Version == "8.10" {
-				entry = &entries[i]
+
+	for _, w := range want {
+		e := byScenario[w.scenario]
+		if e == nil {
+			t.Errorf("scenario %q: entry not found in Generate output", w.scenario)
+			continue
+		}
+		if e.PreInstall == nil {
+			t.Errorf("scenario %q: PreInstall not propagated (nil in entry)", w.scenario)
+			continue
+		}
+		if e.PreInstall.Description == "" {
+			t.Errorf("scenario %q: PreInstall.Description is empty", w.scenario)
+		}
+		// Script and fixtures must match exactly what the registry declared.
+		if e.PreInstall.Script != w.hook.Script {
+			t.Errorf("scenario %q: PreInstall.Script: got %q, want %q", w.scenario, e.PreInstall.Script, w.hook.Script)
+		}
+		if !slices.Equal(e.PreInstall.Fixtures, w.hook.Fixtures) {
+			t.Errorf("scenario %q: PreInstall.Fixtures: got %v, want %v", w.scenario, e.PreInstall.Fixtures, w.hook.Fixtures)
+		}
+	}
+}
+
+// TestGenerate_PostgresqlCompanionProfiles guards that every scenario carrying an
+// internal-postgresql companion dependency has its values-file, release-name, and
+// credential env-vars faithfully propagated into the generated Entry. Expected
+// values are derived from the registry dependency declarations at load time, so
+// renaming a profile or adding a new postgresql-backed scenario never requires
+// editing this test.
+func TestGenerate_PostgresqlCompanionProfiles(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10")
+	cfg, err := LoadRegistry(chartDir)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+
+	// Collect all enabled PR scenarios whose expanded Dependencies include internal-postgresql.
+	type wantDep struct {
+		scenario string
+		dep      ChartDependency
+	}
+	var want []wantDep
+	for _, s := range cfg.Integration.Case.PR.Scenarios {
+		if !s.Enabled {
+			continue
+		}
+		for _, d := range s.Dependencies {
+			if d.Chart == "charts/internal-postgresql" {
+				want = append(want, wantDep{scenario: s.Name, dep: d})
 				break
 			}
 		}
-		if entry == nil {
-			t.Errorf("%s 8.10 entry not found", scenario)
+	}
+	require.NotEmpty(t, want, "no enabled PR scenarios with internal-postgresql dependency in 8.10 registry — registry may have regressed")
+	// Invariant: elasticsearch always carries an internal-postgresql companion.
+	var hasElasticsearch bool
+	for _, w := range want {
+		if w.scenario == "elasticsearch" {
+			hasElasticsearch = true
+			break
+		}
+	}
+	require.True(t, hasElasticsearch, "expected elasticsearch scenario to declare an internal-postgresql companion")
+
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	byScenario := map[string]*Entry{}
+	for i := range entries {
+		if entries[i].Version == "8.10" {
+			byScenario[entries[i].Scenario] = &entries[i]
+		}
+	}
+
+	for _, w := range want {
+		e := byScenario[w.scenario]
+		if e == nil {
+			t.Errorf("scenario %q: entry not found in Generate output", w.scenario)
 			continue
 		}
 		var pg *ChartDependency
-		for i := range entry.Dependencies {
-			if entry.Dependencies[i].Chart == "charts/internal-postgresql" {
-				pg = &entry.Dependencies[i]
+		for i := range e.Dependencies {
+			if e.Dependencies[i].Chart == "charts/internal-postgresql" {
+				pg = &e.Dependencies[i]
 				break
 			}
 		}
 		if pg == nil {
-			t.Errorf("%s: no internal-postgresql dependency; got %v", scenario, entry.Dependencies)
+			t.Errorf("scenario %q: internal-postgresql dependency not propagated; got %v", w.scenario, e.Dependencies)
 			continue
 		}
-		if pg.ValuesFile != wantValuesFile {
-			t.Errorf("%s: values-file: got %q, want %q", scenario, pg.ValuesFile, wantValuesFile)
+		if pg.ValuesFile != w.dep.ValuesFile {
+			t.Errorf("scenario %q: values-file: got %q, want %q", w.scenario, pg.ValuesFile, w.dep.ValuesFile)
 		}
-		if pg.ReleaseName != "postgresql" {
-			t.Errorf("%s: release-name: got %q, want %q", scenario, pg.ReleaseName, "postgresql")
+		if pg.ReleaseName != w.dep.ReleaseName {
+			t.Errorf("scenario %q: release-name: got %q, want %q", w.scenario, pg.ReleaseName, w.dep.ReleaseName)
 		}
-		if !slices.Contains(pg.EnvVars, "RDBMS_POSTGRESQL_USERNAME") || !slices.Contains(pg.EnvVars, "RDBMS_POSTGRESQL_PASSWORD") {
-			t.Errorf("%s: env-vars missing RDBMS_POSTGRESQL_*; got %v", scenario, pg.EnvVars)
+		for _, ev := range w.dep.EnvVars {
+			if !slices.Contains(pg.EnvVars, ev) {
+				t.Errorf("scenario %q: env-var %q missing from propagated dependency; got %v", w.scenario, ev, pg.EnvVars)
+			}
 		}
 	}
 }
