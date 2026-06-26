@@ -88,7 +88,7 @@ func (f *fakeClient) AttemptConclusion(_ string, attempt int) (string, error) {
 	}
 	return c, nil
 }
-func (f *fakeClient) RerunFailed(string) error {
+func (f *fakeClient) Rerun(string) error {
 	f.rerunCalls++
 	if len(f.rerunQueue) == 0 {
 		return nil
@@ -662,10 +662,8 @@ func TestRun_ContinueOnErrorJobsSoftFailDoesNotTriggerRetry(t *testing.T) {
 
 func TestRun_RunWithMixedFailures_RetriesOnce(t *testing.T) {
 	// A run with both a real failure and continue-on-error soft failures
-	// has run-level conclusion="failure". `gh run rerun --failed` skips
-	// the continue-on-error jobs (their conclusion is success) and only
-	// reruns the hard failure. The gate sees run conclusion go from
-	// failure to success after retry and exits 0.
+	// has run-level conclusion="failure". The gate triggers a full rerun
+	// and exits 0 when the second attempt succeeds.
 	c := &fakeClient{
 		t:             t,
 		findRunQueue:  []findRunResp{{id: "100"}},
