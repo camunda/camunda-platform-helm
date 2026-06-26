@@ -81,7 +81,7 @@ If the "overlay" values exist, they will override the "base" values, otherwise t
 Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 */}}
 {{- define "camundaPlatform.imageTagByParams" -}}
-    {{- .overlay.image.tag | default .base.image.tag -}}
+    {{- .overlay.image.tag | default .base.image.tag | default "" -}}
 {{- end -}}
 
 {{/*
