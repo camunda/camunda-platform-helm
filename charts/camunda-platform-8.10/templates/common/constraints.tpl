@@ -608,12 +608,12 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-    {{- $con := mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict) }}
+    {{- $con := mustMergeOverwrite (deepCopy (.Values.console | default dict)) (.Values.camundaHub.console | default dict) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne ($con.keycloak.realm | toString) "camunda-platform")
+      "condition" (ne (dig "keycloak" "realm" "camunda-platform" $con) "camunda-platform")
       "oldName" "console.keycloak.realm" "migration" "console.extraConfiguration") }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne ($con.nodeEnv | toString) "prod")
+      "condition" (ne ($con.nodeEnv | default "prod" | toString) "prod")
       "oldName" "console.nodeEnv" "migration" "console.env") }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $con.logging))
