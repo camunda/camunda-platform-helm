@@ -684,6 +684,67 @@ func TestRun_RunWithMixedFailures_RetriesOnce(t *testing.T) {
 	}
 }
 
+func TestRerunWithBackoff_AlreadyRunning_ReturnsImmediately(t *testing.T) {
+	// First try returns a transient error, second returns ErrRerunAlreadyRunning.
+	// Must return ErrRerunAlreadyRunning without consuming remaining tries.
+	c := &fakeClient{
+		t:          t,
+		rerunQueue: []error{errors.New("502"), ErrRerunAlreadyRunning},
+	}
+	g := newTestGate(c)
+	err := g.RerunWithBackoff("r")
+	if !errors.Is(err, ErrRerunAlreadyRunning) {
+		t.Fatalf("expected ErrRerunAlreadyRunning, got %v", err)
+	}
+	if c.rerunCalls != 2 {
+		t.Fatalf("expected 2 rerun calls, got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_AlreadyRunning_ProceedsToWatchNextAttempt(t *testing.T) {
+	// Attempt 1 fails. Rerun returns ErrRerunAlreadyRunning (attempt 2 already
+	// started externally). Gate must watch attempt 2 and exit 0 when it succeeds.
+	c := &fakeClient{
+		t:             t,
+		findRunQueue:  []findRunResp{{id: "100"}},
+		runURL:        "url",
+		attemptsQueue: attemptList(1, 2),
+		statusByAttempt: map[int][]statusResp{
+			1: statusList("completed"),
+			2: statusList("completed"),
+		},
+		conclusionByAttempt: map[int]string{1: "failure", 2: "success"},
+		rerunQueue:          []error{ErrRerunAlreadyRunning},
+	}
+	g := newTestGate(c)
+	if err := g.Run("pull_request", "sha", ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.rerunCalls != 1 {
+		t.Fatalf("expected 1 rerun call, got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_AlreadyRunning_Attempt2Fails(t *testing.T) {
+	// Same race condition but attempt 2 also fails — gate must propagate the failure.
+	c := &fakeClient{
+		t:             t,
+		findRunQueue:  []findRunResp{{id: "100"}},
+		runURL:        "url",
+		attemptsQueue: attemptList(1, 2),
+		statusByAttempt: map[int][]statusResp{
+			1: statusList("completed"),
+			2: statusList("completed"),
+		},
+		conclusionByAttempt: map[int]string{1: "failure", 2: "failure"},
+		rerunQueue:          []error{ErrRerunAlreadyRunning},
+	}
+	g := newTestGate(c)
+	if err := g.Run("pull_request", "sha", ""); err == nil {
+		t.Fatalf("expected failure, got nil")
+	}
+}
+
 func TestRun_RunAttemptReadRecoversFromTransient(t *testing.T) {
 	apiErr := errors.New("api blip")
 	c := &fakeClient{
