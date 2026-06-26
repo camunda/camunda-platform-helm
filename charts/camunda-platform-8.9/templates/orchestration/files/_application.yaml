@@ -322,16 +322,15 @@ zeebe:
       clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
     {{- if or
-      (eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
-      (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
-      (eq (include "orchestration.hasCamundaExporter" .) "true")
+      (eq (include "orchestration.hasElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasOpenSearchExporter" .) "true")
       (eq (include "orchestration.hasAppIntegrations" .) "true")
       (eq (include "orchestration.hasNoExporter" .) "true")
     }}
     # zeebe.broker.exporters
     exporters: {{- if eq (include "orchestration.hasNoExporter" .) "true" }}{{ printf " %s" "{}" }}{{ end }}
     {{- end }}
-    {{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" }}
+    {{- if eq (include "orchestration.hasElasticsearchExporter" .) "true" }}
       elasticsearch:
         className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         args:
@@ -350,7 +349,7 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
-    {{- else if eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true" }}
+    {{- else if eq (include "orchestration.hasOpenSearchExporter" .) "true" }}
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
@@ -373,24 +372,6 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
-    {{- end }}
-    {{- if eq (include "orchestration.hasCamundaExporter" .) "true" }}
-      camundaexporter:
-        className: "io.camunda.exporter.CamundaExporter"
-        args:
-          connect:
-            type: {{ include "orchestration.secondaryStorage" . | quote }}
-            {{- if .Values.orchestration.index.prefix }}
-            indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
-            {{- end }}
-            awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
-          history:
-            elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
-            rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}
-            rolloverBatchSize: {{ .Values.orchestration.history.rolloverBatchSize }}
-            waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
-            delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
-            maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
     {{- end }}
     {{- if eq (include "orchestration.hasAppIntegrations" .) "true" }}
       appIntegrations:
