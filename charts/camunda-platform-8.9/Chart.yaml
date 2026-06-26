@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.5.0
+version: 14.6.0
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -64,7 +64,7 @@ maintainers:
 annotations:
   # Comma-separated list of supported Helm CLI versions; first entry is the minimum.
   # 8.9 is the last chart minor that supports Helm v3 — listed alongside v4.
-  camunda.io/helmCLIVersion: "3.20.2,4.2.0"
+  camunda.io/helmCLIVersion: "3.20.2,4.2.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -74,5 +74,13 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Source vendor-ee Bitnami images from the published datasource"
     - kind: fixed
-      description: "Support Orchestration gRPC TLS endpoints"
+      description: "Remove obsolete backup.webapps workaround when RDBMS is enabled"
+    - kind: fixed
+      description: "Align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10"
+    - kind: fixed
+      description: "Configure index replicas for the legacy Zeebe ES/OS exporter"
+    - kind: fixed
+      description: "Cover keys shipped by default values.yaml across 8.8/8.9/8.10"

@@ -1,5 +1,32 @@
 # Changelog
 
+## [14.6.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.5.0...camunda-platform-8.9-14.6.0) (2026-06-26)
+
+
+### Features
+
+* **renovate:** source vendor-ee Bitnami images from the published datasource ([#6435](https://github.com/camunda/camunda-platform-helm/issues/6435)) ([9c57a9d](https://github.com/camunda/camunda-platform-helm/commit/9c57a9d6ccd87efd4b59faf3a5970c29b9ad6531))
+
+
+### Bug Fixes
+
+* align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10 ([#5887](https://github.com/camunda/camunda-platform-helm/issues/5887)) ([13e5438](https://github.com/camunda/camunda-platform-helm/commit/13e54382292c63dfbf366141843eb040a4d2d91a))
+* configure index replicas for the legacy Zeebe ES/OS exporter ([#6431](https://github.com/camunda/camunda-platform-helm/issues/6431)) ([367cb08](https://github.com/camunda/camunda-platform-helm/commit/367cb08b9574b5c719e065a3c4ec6df115d04abf))
+* remove obsolete backup.webapps workaround when RDBMS is enabled ([#6396](https://github.com/camunda/camunda-platform-helm/issues/6396)) ([0806cad](https://github.com/camunda/camunda-platform-helm/commit/0806cad46af841f9c4332e44eaeef50e425af15d))
+* **schema:** cover keys shipped by default values.yaml across 8.8/8.9/8.10 ([#6402](https://github.com/camunda/camunda-platform-helm/issues/6402)) ([e7091f2](https://github.com/camunda/camunda-platform-helm/commit/e7091f272484711d426d0d1bb86713fe833dfc0a))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6414](https://github.com/camunda/camunda-platform-helm/issues/6414)) ([0904df8](https://github.com/camunda/camunda-platform-helm/commit/0904df8a1869202f86b1f11c21bc2ff6ef92a8a2))
+* update camunda-platform-images (patch) ([#6432](https://github.com/camunda/camunda-platform-helm/issues/6432)) ([1e59454](https://github.com/camunda/camunda-platform-helm/commit/1e59454020e943bfea80e1b7fad00c49fa2f593c))
+* update camunda-platform-images (patch) ([#6437](https://github.com/camunda/camunda-platform-helm/issues/6437)) ([49c6fa5](https://github.com/camunda/camunda-platform-helm/commit/49c6fa53a8d7bc57e951a01f0489f876a2c06dda))
+* update camunda-platform-images (patch) ([#6440](https://github.com/camunda/camunda-platform-helm/issues/6440)) ([b359323](https://github.com/camunda/camunda-platform-helm/commit/b359323686b6b631336d2002f1a740e230e3e4ea))
+* update camunda-platform-images (patch) ([#6452](https://github.com/camunda/camunda-platform-helm/issues/6452)) ([13e1e50](https://github.com/camunda/camunda-platform-helm/commit/13e1e502a3e3bf161746742aa1e2cde9971d52f9))
+* update camunda-platform-images (patch) ([#6456](https://github.com/camunda/camunda-platform-helm/issues/6456)) ([82415fc](https://github.com/camunda/camunda-platform-helm/commit/82415fc4adbc993f013982a31cc58de623fc00af))
+* update camunda-platform-images to v8.9.52 ([#6422](https://github.com/camunda/camunda-platform-helm/issues/6422)) ([edb7ec3](https://github.com/camunda/camunda-platform-helm/commit/edb7ec3eae419b04fe79e0183cd7d76866304a7a))
+* update patch-updates (patch) ([#6404](https://github.com/camunda/camunda-platform-helm/issues/6404)) ([fc3b54b](https://github.com/camunda/camunda-platform-helm/commit/fc3b54bfcac9c3ce2fc935dccbb4454f571149cc))
+
 ## [14.5.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.4.1...camunda-platform-8.9-14.5.0) (2026-06-17)
 
 
