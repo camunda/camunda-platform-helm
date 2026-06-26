@@ -52,7 +52,7 @@ Do not introduce templates that:
 - **NEVER** change a helper name that is already exported without updating all callers across all chart versions.
 - **NEVER** use `range` over `extraConfiguration` without the `kindIs "slice"` branch — it supports both map and slice forms.
 - **NEVER** inline multi-line YAML strings without `indent N | trim` to prevent YAML parse errors.
-- **NEVER** write a render-time warning directly into `NOTES.txt`. Declare it inside the `camunda.constraints.warnings` define in `templates/common/constraints.tpl`; `NOTES.txt` surfaces warnings only via `{{ include "camunda.constraints.warnings" . | trim }}`.
+- **NEVER** write a render-time warning directly into `NOTES.txt`. Declare it inside the `camunda.constraints.warnings` define in the constraints template (`templates/common/constraints.tpl` on 8.8+; `templates/camunda/constraints.tpl` on 8.7 and older); `NOTES.txt` surfaces warnings only via `{{ include "camunda.constraints.warnings" . | trim }}`.
 
 ### ALWAYS
 - **ALWAYS** use `{{-` / `-}}` to strip whitespace around block-level directives.
@@ -62,7 +62,7 @@ Do not introduce templates that:
 - **ALWAYS** use `tpl` when rendering user-supplied label/annotation maps to support template expressions.
 - **ALWAYS** use `camundaPlatform.imageByParams` to resolve images — never concatenate `image:tag` manually.
 - **ALWAYS** keep 2-space YAML indentation throughout.
-- **ALWAYS** raise hard validation failures at the top level of `constraints.tpl` (prefix `[camunda][error]`, ends `| fail`); raise non-fatal warnings inside the `camunda.constraints.warnings` define (prefix `[camunda][warning]`, no `fail`).
+- **ALWAYS** raise hard validation failures at the top level of the constraints template and abort with `fail` (piped `... | fail` or a direct `fail (...)` call); raise non-fatal warnings inside the `camunda.constraints.warnings` define (no `fail`). Prefer the `[camunda][error]` / `[camunda][warning]` message prefixes — they are the house convention used by nearly all existing entries.
 
 ---
 
@@ -205,10 +205,12 @@ volumeMounts:
 
 ### 10. Render-Time Constraints and Warnings
 
-All render-time validation lives in `templates/common/constraints.tpl`, in two distinct shapes.
+All render-time validation lives in the constraints template — `templates/common/constraints.tpl`
+on 8.8+, `templates/camunda/constraints.tpl` on 8.7 and older — in two distinct shapes.
 `NOTES.txt` does NOT author warnings — it only includes them: `{{ include "camunda.constraints.warnings" . | trim }}`.
 
-**Hard failure** — top-level (outside any `define`), aborts the render with `fail`:
+**Hard failure** — top-level (outside any `define`), aborts the render with `fail` (the piped form
+below, or an equivalent direct `fail (printf "[camunda][error] ...")` call):
 
 ```yaml
 {{- if and .Values.foo.enabled (not .Values.foo.secret.existingSecret) }}
@@ -275,7 +277,7 @@ hand-rolling the warning; it must be called from within `camunda.constraints.war
 - Chart design principles: `docs/index.md`
 - `common/_helpers.tpl`: `charts/<version>/templates/common/_helpers.tpl`
 - `common/_utilz.tpl`: `charts/<version>/templates/common/_utilz.tpl`
-- Constraints & warnings: `charts/<version>/templates/common/constraints.tpl`
+- Constraints & warnings: `charts/<version>/templates/common/constraints.tpl` (8.8+) or `charts/<version>/templates/camunda/constraints.tpl` (8.7 and older)
 - Version differences overview: `AGENTS.md` (Version-Aware Rules section)
 - Render templates locally: `make helm.template chartPath=charts/camunda-platform-8.10`
 - Lint: `make helm.lint chartPath=charts/camunda-platform-8.10`

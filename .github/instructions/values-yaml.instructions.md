@@ -141,20 +141,26 @@ image:
 
 ### 6. Secret Block Pattern
 
-Secrets use a **single canonical shape** — the fixed three-key `secret:` map. Reuse it verbatim;
-do **not** invent a new secret layout. ADR-0068 standardizes the `existingSecret` interface across
-all components, and `constraints.tpl` validates inputs against it — drift here reintroduces exactly
-the inconsistency that standardization removed.
+Secrets use the **canonical `secret:` map** — reuse it verbatim; do **not** invent a new secret
+layout. ADR-0068 standardizes the `existingSecret` interface across all components, and the
+constraints template validates inputs against it — drift here reintroduces exactly the
+inconsistency that standardization removed. The full shape is `inlineSecret` → `existingSecret` →
+`existingSecretKey`; certificate / CA references use the `existingSecret` / `existingSecretKey`
+subset (no inline form).
+
+Canonical block — real example `identity.externalDatabase.secret`, shown with its parent nesting:
 
 ```yaml
-## @extra orchestration.auth.secret configuration to provide the auth secret.
-secret:
-  ## @param orchestration.auth.secret.inlineSecret can be used to provide the secret as a plain-text value for non-production usage.
-  inlineSecret: ""
-  ## @param orchestration.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the credential.
-  existingSecret: ""
-  ## @param orchestration.auth.secret.existingSecretKey defines the key within the existing secret object.
-  existingSecretKey: ""
+identity:
+  externalDatabase:
+    ## @extra identity.externalDatabase.secret configuration to provide the external database password secret.
+    secret:
+      ## @param identity.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+      existingSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 ```
 
 - **Key order is fixed:** `inlineSecret` → `existingSecret` → `existingSecretKey` (matches
@@ -163,23 +169,22 @@ secret:
   per value, each wrapping its **own** canonical `secret:` block. Reference:
   `global.documentStore.type.aws.{accessKeyId,secretAccessKey}.secret` in `values.yaml`.
 - **Auxiliary (non-secret) config goes BESIDE the `secret:` block, never inside it.** Only the
-  three secret-source keys belong in `secret:`. A key alias, a keystore/cert `type` selector, a
-  `proxyVerify` toggle, etc. are SIBLINGS of `secret:`:
+  secret-source keys belong in `secret:`; a key alias, a keystore/cert `type` selector, a
+  `proxyVerify` or `autoRollout` toggle, etc. are SIBLINGS of `secret:`. Real precedent —
+  `global.tls.caBundle`, where `autoRollout` (and `image`) sit beside `secret:`:
 
 ```yaml
-tls:
-  ## @param connectors.tls.type defines the keystore type (pkcs12 | pem).
-  type: pkcs12
-  ## @param connectors.tls.keyAlias can be used to select the key entry within the keystore.
-  keyAlias: ""
-  ## @extra connectors.tls.secret configuration to provide the certificate secret.
-  secret:
-    ## @param connectors.tls.secret.inlineSecret can be used to provide the certificate as a plain-text value for non-production usage.
-    inlineSecret: ""
-    ## @param connectors.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the certificate.
-    existingSecret: ""
-    ## @param connectors.tls.secret.existingSecretKey defines the key within the existing secret object.
-    existingSecretKey: ""
+global:
+  tls:
+    caBundle:
+      ## @extra global.tls.caBundle.secret configuration to provide the CA bundle secret.
+      secret:
+        ## @param global.tls.caBundle.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the PEM-encoded CA bundle.
+        existingSecret: ""
+        ## @param global.tls.caBundle.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: "ca.crt"
+      ## @param global.tls.caBundle.autoRollout if true, rolls Java components when the CA Secret changes.
+      autoRollout: false
 ```
 
 ### 7. Component Structure Pattern
