@@ -1203,20 +1203,20 @@ Usage (inside a pod template's metadata.annotations):
 */}}
 {{/*
 orchestrationRESTSecretCertKey
-Returns the Secret data key that holds the REST server certificate. When
-`secret.type` is `pem` and `existingSecretKey` is still the chart default
-(`keystore.p12`), substitutes `tls.crt` so cert-manager `kubernetes.io/tls`
-Secrets work out of the box. Any explicit `existingSecretKey` other than
-the PKCS12 default wins verbatim.
+Returns the Secret data key that holds the REST server certificate.
+Smart defaults: PEM → tls.crt, PKCS12 → keystore.p12, applied when
+cert.secret.existingSecretKey is empty. Any explicit value wins verbatim.
 */}}
 {{- define "camundaPlatform.orchestrationRESTSecretCertKey" -}}
 {{- $r := .Values.global.tls.orchestration.rest -}}
-{{- $type := $r.secret.type | default "pkcs12" -}}
-{{- $key := $r.secret.existingSecretKey -}}
-{{- if and (eq $type "pem") (eq $key "keystore.p12") -}}
+{{- $type := $r.type | default "pkcs12" -}}
+{{- $key := $r.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
 tls.crt
 {{- else -}}
-{{ $key }}
+keystore.p12
 {{- end -}}
 {{- end -}}
 
@@ -1226,7 +1226,7 @@ Renders the NGINX upstream-TLS-verification annotations for one of the
 Orchestration ingresses (REST or gRPC) based on the matching
 global.tls.orchestration.{rest,grpc}.proxyVerify block.
 
-Returns nothing when proxyVerify.enabled is false or caSecret.existingSecret
+Returns nothing when proxyVerify.enabled is false or caSecret.secret.existingSecret
 is empty. Otherwise emits a flat map of annotation key → value:
   - nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
   - nginx.ingress.kubernetes.io/proxy-ssl-secret: "<namespace>/<existingSecret>"
@@ -1242,10 +1242,10 @@ Usage (inside an ingress template's annotations block, e.g. via merge-overwrite)
 {{- $ctx := .context -}}
 {{- $proto := .proto -}}
 {{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
-{{- if and $pv.enabled $pv.caSecret.existingSecret -}}
+{{- if and $pv.enabled $pv.caSecret.secret.existingSecret -}}
 {{- $ns := $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
 nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
-nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ns $pv.caSecret.existingSecret | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ns $pv.caSecret.secret.existingSecret | quote }}
 {{- with $pv.sniHost }}
 nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
 nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
@@ -1266,17 +1266,17 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- define "camundaPlatform.orchestrationTLSChecksumAnnotations" -}}
 {{- if .Values.global.tls.orchestration.autoRollout -}}
 {{- $rest := .Values.global.tls.orchestration.rest -}}
-{{- if and $rest.enabled $rest.secret.existingSecret -}}
-{{- $s := lookup "v1" "Secret" .Release.Namespace $rest.secret.existingSecret -}}
+{{- if and $rest.enabled $rest.cert.secret.existingSecret -}}
+{{- $s := lookup "v1" "Secret" .Release.Namespace $rest.cert.secret.existingSecret -}}
 {{- $data := ($s | default dict).data | default dict -}}
 {{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . -}}
 {{- printf "\nchecksum/orchestration-tls-rest: %s" (get $data $certKey | sha256sum) -}}
 {{- end -}}
 {{- $grpc := .Values.global.tls.orchestration.grpc -}}
-{{- if and $grpc.enabled $grpc.secret.existingSecret -}}
-{{- $s := lookup "v1" "Secret" .Release.Namespace $grpc.secret.existingSecret -}}
+{{- if and $grpc.enabled $grpc.cert.secret.existingSecret -}}
+{{- $s := lookup "v1" "Secret" .Release.Namespace $grpc.cert.secret.existingSecret -}}
 {{- $data := ($s | default dict).data | default dict -}}
-{{- printf "\nchecksum/orchestration-tls-grpc: %s" (get $data $grpc.secret.existingSecretKey | sha256sum) -}}
+{{- printf "\nchecksum/orchestration-tls-grpc: %s" (get $data $grpc.cert.secret.existingSecretKey | sha256sum) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

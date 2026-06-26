@@ -150,29 +150,21 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 ## Orchestration TLS
 
 {{- if .Values.global.tls.orchestration.rest.enabled }}
-- REST TLS: enabled ({{ .Values.global.tls.orchestration.rest.secret.type | default "pkcs12" }} mode{{ if .Values.global.tls.orchestration.rest.secret.existingSecret }}, secret: {{ .Values.global.tls.orchestration.rest.secret.existingSecret }}{{ end }})
+- REST TLS: enabled ({{ .Values.global.tls.orchestration.rest.type | default "pkcs12" }} mode{{ if .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}{{ end }})
 {{- end }}
 {{- if .Values.global.tls.orchestration.grpc.enabled }}
-- gRPC TLS: enabled (pem{{ if .Values.global.tls.orchestration.grpc.secret.existingSecret }}, secret: {{ .Values.global.tls.orchestration.grpc.secret.existingSecret }}{{ end }})
+- gRPC TLS: enabled (pem{{ if .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}{{ end }})
 {{- end }}
 {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
-- NGINX upstream verify (REST): on (CA: {{ .Values.global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret }})
+- NGINX upstream verify (REST): on (CA: {{ .Values.global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret }})
 {{- end }}
 {{- if .Values.global.tls.orchestration.grpc.proxyVerify.enabled }}
-- NGINX upstream verify (gRPC): on (CA: {{ .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret }})
+- NGINX upstream verify (gRPC): on (CA: {{ .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret }})
 {{- end }}
 {{- if .Values.global.tls.orchestration.autoRollout }}
 - autoRollout: on (cert content changes will roll Orchestration on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
 {{- else }}
 - autoRollout: off (rotate manually with: kubectl rollout restart statefulset/{{ include "orchestration.fullname" . }})
-{{- end }}
-{{- if ne (include "camundaPlatform.hasCaBundle" .) "true" }}
-
-  WARNING: global.tls.caBundle is not set. If the Orchestration cert is self-signed
-  or from a private/internal CA, in-cluster Java clients (Web Modeler, Connectors)
-  will fall back to the JVM default truststore and fail TLS handshakes. Set
-  global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the
-  cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.).
 {{- end }}
 {{- end }}
 

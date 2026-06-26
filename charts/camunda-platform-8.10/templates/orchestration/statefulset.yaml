@@ -104,12 +104,12 @@ spec:
             {{- if .Values.global.tls.orchestration.rest.enabled }}
             - name: SERVER_SSL_ENABLED
               value: "true"
-            {{- if .Values.global.tls.orchestration.rest.secret.existingSecret }}
-            {{- if eq (.Values.global.tls.orchestration.rest.secret.type | default "pkcs12") "pem" }}
+            {{- if .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+            {{- if eq (.Values.global.tls.orchestration.rest.type | default "pkcs12") "pem" }}
             - name: SERVER_SSL_CERTIFICATE
               value: /usr/local/camunda/certificates/orchestration/rest/{{ include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
             - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
-              value: /usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.secret.existingSecretPrivateKeyKey }}
+              value: /usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.privateKey.secret.existingSecretKey }}
             {{- else }}
             - name: SERVER_SSL_KEY_STORE
               value: file:/usr/local/camunda/certificates/orchestration/rest/{{ include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
@@ -118,9 +118,9 @@ spec:
             - name: SERVER_SSL_KEY_STORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.tls.orchestration.rest.secret.existingSecret }}
-                  key: {{ .Values.global.tls.orchestration.rest.secret.existingSecretPasswordKey }}
-            {{- with .Values.global.tls.orchestration.rest.secret.keyAlias }}
+                  name: {{ .Values.global.tls.orchestration.rest.keystorePassword.secret.existingSecret | default .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+                  key: {{ .Values.global.tls.orchestration.rest.keystorePassword.secret.existingSecretKey }}
+            {{- with .Values.global.tls.orchestration.rest.keyAlias }}
             - name: SERVER_SSL_KEY_ALIAS
               value: {{ . | quote }}
             {{- end }}
@@ -130,11 +130,11 @@ spec:
             {{- if .Values.global.tls.orchestration.grpc.enabled }}
             - name: CAMUNDA_API_GRPC_SSL_ENABLED
               value: "true"
-            {{- if .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+            {{- if .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
             - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
-              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.secret.existingSecretKey }}
+              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.cert.secret.existingSecretKey }}
             - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
-              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.secret.existingSecretPrivateKeyKey }}
+              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.privateKey.secret.existingSecretKey }}
             {{- end }}
             {{- end }}
             {{- with .Values.orchestration.env }}
@@ -294,12 +294,12 @@ spec:
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.secret.existingSecret }}
+            {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
             - name: orchestration-tls-rest
               mountPath: /usr/local/camunda/certificates/orchestration/rest
               readOnly: true
             {{- end }}
-            {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+            {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
             - name: orchestration-tls-grpc
               mountPath: /usr/local/camunda/certificates/orchestration/grpc
               readOnly: true
@@ -356,16 +356,16 @@ spec:
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
-        {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.secret.existingSecret }}
+        {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
         - name: orchestration-tls-rest
           secret:
-            secretName: {{ .Values.global.tls.orchestration.rest.secret.existingSecret }}
+            secretName: {{ .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
             defaultMode: 0440
         {{- end }}
-        {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+        {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
         - name: orchestration-tls-grpc
           secret:
-            secretName: {{ .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+            secretName: {{ .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
             defaultMode: 0440
         {{- end }}
         {{- if .Values.orchestration.extraVolumes }}

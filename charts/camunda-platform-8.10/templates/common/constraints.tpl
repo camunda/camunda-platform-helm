@@ -51,11 +51,11 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- $envNames = append $envNames ($e.name | default "") -}}
   {{- end }}
   {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
-    {{- if not .Values.global.tls.orchestration.rest.secret.existingSecret }}
+    {{- if not .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
       {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration REST TLS is enabled but no server cert is configured."
-            "Set global.tls.orchestration.rest.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "Set global.tls.orchestration.rest.cert.secret.existingSecret (recommended) so the chart mounts the cert,"
             "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
@@ -63,11 +63,11 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- end }}
   {{- end }}
   {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
-    {{- if not .Values.global.tls.orchestration.grpc.secret.existingSecret }}
+    {{- if not .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
       {{- if not (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration gRPC TLS is enabled but no server cert is configured."
-            "Set global.tls.orchestration.grpc.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "Set global.tls.orchestration.grpc.cert.secret.existingSecret (recommended) so the chart mounts the cert,"
             "or hand-wire CAMUNDA_API_GRPC_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
@@ -82,9 +82,9 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
-    {{- if not .Values.global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret }}
+    {{- if not .Values.global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret }}
       {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but caSecret.existingSecret is empty."
+          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but caSecret.secret.existingSecret is empty."
           "Provide a Secret holding the CA bundle that NGINX should use to validate the Orchestration REST server cert."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
@@ -98,19 +98,19 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
-    {{- if not .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret }}
+    {{- if not .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret }}
       {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but caSecret.existingSecret is empty."
+          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but caSecret.secret.existingSecret is empty."
           "Provide a Secret holding the CA bundle that NGINX should use to validate the Orchestration gRPC server cert."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
   {{- end }}
-  {{- /* Validate rest.secret.type is one of pkcs12 / pem when a secret is referenced. */ -}}
-  {{- if and (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") .Values.global.tls.orchestration.rest.secret.existingSecret }}
-    {{- $t := .Values.global.tls.orchestration.rest.secret.type | default "pkcs12" -}}
+  {{- /* Validate rest.type is one of pkcs12 / pem when a cert secret is referenced. */ -}}
+  {{- if and (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+    {{- $t := .Values.global.tls.orchestration.rest.type | default "pkcs12" -}}
     {{- if not (has $t (list "pkcs12" "pem")) }}
-      {{- $errorMessage := printf "[camunda][error] global.tls.orchestration.rest.secret.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{- $errorMessage := printf "[camunda][error] global.tls.orchestration.rest.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
   {{- end }}
@@ -462,6 +462,21 @@ The following values inside your values.yaml need to be set but were not:
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
 
+  {{- end }}
+
+  {{/* Warn when Orchestration server TLS is enabled but no caBundle is set.
+       In-cluster Java clients (Web Modeler, Connectors) hit PKIX errors against
+       self-signed or private-CA certs when the JVM default truststore is used. */}}
+  {{- $orchestrationTLSOn := or
+      (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true")
+      (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") -}}
+  {{- if and $orchestrationTLSOn (ne (include "camundaPlatform.hasCaBundle" .) "true") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "global.tls.caBundle is not set. If the Orchestration cert is self-signed or from a private/internal CA, in-cluster Java clients (Web Modeler, Connectors) will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.)."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
