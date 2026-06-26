@@ -73,6 +73,10 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Backport global.tls.caBundle CA-trust support"
-    - kind: added
-      description: "Configurable resources for migration identity wait-for-orchestration init container"
+      description: "Source vendor-ee Bitnami images from the published datasource"
+    - kind: fixed
+      description: "Render es: connection in Optimize configmap for OpenSearch scenarios"
+    - kind: fixed
+      description: "Cover keys shipped by default values.yaml across 8.8/8.9/8.10"
+    - kind: fixed
+      description: "Back Web Modeler restapi /tmp with a per-pod ephemeral volume"
