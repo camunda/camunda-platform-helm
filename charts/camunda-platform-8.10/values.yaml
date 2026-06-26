@@ -515,6 +515,65 @@ global:
           ## @param global.tls.connectors.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
           namespace: ""
 
+    ## @extra global.tls.optimize first-class TLS mode for the Optimize HTTP server. Setting `enabled: true` flips `SERVER_SSL_ENABLED=true` on the Optimize main container, switches container probes to HTTPS, and (when the optional `cert.secret` sub-block is set) mounts the server cert material. Explicit `optimize.env` entries with the same name override these flags (last-wins). This server-side TLS is independent of the client-side `global.elasticsearch.tls.existingSecret` / `global.opensearch.tls.existingSecret` truststore wiring, which secures Optimize's outbound connection to its secondary storage; both can be used together. Client-side trust material for in-cluster callers still flows through `global.tls.caBundle`.
+    optimize:
+      ## @param global.tls.optimize.autoRollout opt-in automatic pod rollout on Optimize cert rotation. When true, the chart stamps a `checksum/optimize-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Optimize when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @param global.tls.optimize.enabled enable Optimize TLS — sets `SERVER_SSL_ENABLED=true` on the Optimize main container and switches container probes to HTTPS.
+      enabled: false
+      ## @param global.tls.optimize.type one of `pkcs12` or `pem`. `pkcs12` emits `SERVER_SSL_KEY_STORE*` env vars; `pem` emits the Spring Boot `SERVER_SSL_CERTIFICATE` / `SERVER_SSL_CERTIFICATE_PRIVATE_KEY` env vars and is compatible with cert-manager `kubernetes.io/tls` Secrets out of the box.
+      type: pkcs12
+      ## @param global.tls.optimize.keyAlias for `type=pkcs12` only — optional cert alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias. Ignored when `type=pem`.
+      keyAlias: ""
+      ## @extra global.tls.optimize.cert reference to the server certificate material for the Optimize (Spring Boot) HTTP server. When `cert.secret.existingSecret` is set, the chart mounts the secret into the Optimize main container and emits the matching env vars; operators do not need to hand-wire `extraVolumes` or `optimize.env` for the cert path. The mount is separate from the existing client-side `keystore` truststore volume used for ES/OS TLS — both volumes coexist when both paths are configured.
+      cert:
+        ## @extra global.tls.optimize.cert.secret [configuration] Secret that holds the server certificate (and for PKCS12 the keystore file).
+        secret:
+          ## @param global.tls.optimize.cert.secret.inlineSecret [defines] an inline secret value (not recommended for production).
+          inlineSecret: ""
+          ## @param global.tls.optimize.cert.secret.existingSecret [can be used] to reference an existing Kubernetes Secret containing the Optimize server cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via `optimize.extraVolumes` and `optimize.env`.
+          existingSecret: ""
+          ## @param global.tls.optimize.cert.secret.existingSecretKey [defines] the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`) or PEM certificate. For `type=pem` when left at the PKCS12 default, the chart substitutes `tls.crt` so cert-manager `kubernetes.io/tls` Secrets work out of the box.
+          existingSecretKey: ""
+      ## @extra global.tls.optimize.privateKey [configuration] Secret that holds the PEM private key (for `type=pem` only; ignored when `type=pkcs12`).
+      privateKey:
+        ## @extra global.tls.optimize.privateKey.secret [configuration] Secret reference for the PEM private key.
+        secret:
+          ## @param global.tls.optimize.privateKey.secret.inlineSecret [defines] an inline private key value (not recommended for production).
+          inlineSecret: ""
+          ## @param global.tls.optimize.privateKey.secret.existingSecret [can be used] to reference an existing Kubernetes Secret. When empty, falls back to `cert.secret.existingSecret`.
+          existingSecret: ""
+          ## @param global.tls.optimize.privateKey.secret.existingSecretKey [defines] the key within the secret that holds the PEM private key (set to `tls.key` for cert-manager-issued Secrets).
+          existingSecretKey: "tls.key"
+      ## @extra global.tls.optimize.keystorePassword [configuration] Secret that holds the PKCS12 keystore password (for `type=pkcs12` only; ignored when `type=pem`).
+      keystorePassword:
+        ## @extra global.tls.optimize.keystorePassword.secret [configuration] Secret reference for the keystore password.
+        secret:
+          ## @param global.tls.optimize.keystorePassword.secret.inlineSecret [defines] an inline keystore password value (not recommended for production).
+          inlineSecret: ""
+          ## @param global.tls.optimize.keystorePassword.secret.existingSecret [can be used] to reference an existing Kubernetes Secret. When empty, falls back to `cert.secret.existingSecret`.
+          existingSecret: ""
+          ## @param global.tls.optimize.keystorePassword.secret.existingSecretKey [defines] the key in the secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`).
+          existingSecretKey: "keystore-password"
+      ## @extra global.tls.optimize.proxyVerify NGINX upstream (proxy) TLS validation for the Optimize ingress. When enabled, the ingress controller verifies the Optimize server cert against the supplied CA bundle. NOTE: Optimize in 8.10 is exposed via Gateway API `HTTPRoute`, not via an NGINX ingress; this block has no effect on Gateway API and is reserved for parity / future NGINX users. See the TLS modes guide for the Gateway API caveat.
+      proxyVerify:
+        ## @param global.tls.optimize.proxyVerify.enabled [if true] the chart marks the Optimize backend as HTTPS-verified upstream. Currently inert under the Gateway API HTTPRoute used in 8.10 (see proxyVerify @extra docstring above).
+        enabled: false
+        ## @extra global.tls.optimize.proxyVerify.caSecret [configuration] Secret holding the CA bundle that the ingress uses to verify the Optimize cert.
+        caSecret:
+          ## @extra global.tls.optimize.proxyVerify.caSecret.secret [configuration] Secret reference for the CA bundle.
+          secret:
+            ## @param global.tls.optimize.proxyVerify.caSecret.secret.inlineSecret [defines] an inline CA bundle value (not recommended for production).
+            inlineSecret: ""
+            ## @param global.tls.optimize.proxyVerify.caSecret.secret.existingSecret [can be used] to reference an existing Kubernetes Secret containing the CA bundle.
+            existingSecret: ""
+            ## @param global.tls.optimize.proxyVerify.caSecret.secret.existingSecretKey [defines] the key within the secret that holds the PEM-encoded CA bundle.
+            existingSecretKey: "ca.crt"
+          ## @param global.tls.optimize.proxyVerify.caSecret.namespace [can be used] when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
+          namespace: ""
+        ## @param global.tls.optimize.proxyVerify.sniHost optional hostname for SNI and cert-name verification at the ingress. When non-empty, sets `proxy-ssl-name` and `proxy-ssl-server-name: on`.
+        sniHost: ""
+
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #

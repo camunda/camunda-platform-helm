@@ -184,6 +184,32 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
   backend-protocol selection for the Gateway listener is a separate concern.
 {{- end }}
 
+{{- if and .Values.optimize.enabled .Values.global.tls.optimize.enabled }}
+
+## Optimize TLS
+
+- Server TLS: enabled ({{ .Values.global.tls.optimize.type | default "pkcs12" }} mode{{ if .Values.global.tls.optimize.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.optimize.cert.secret.existingSecret }}{{ end }})
+{{- if .Values.global.tls.optimize.autoRollout }}
+- autoRollout: on (cert content changes will roll Optimize on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
+{{- else }}
+- autoRollout: off (rotate manually with: kubectl rollout restart deployment/{{ include "optimize.fullname" . }})
+{{- end }}
+- Independent of the client-side `global.elasticsearch.tls.existingSecret` /
+  `global.opensearch.tls.existingSecret` truststore wiring used for the
+  Optimize → ES/OS connection direction; both can be configured together.
+{{- if ne (include "camundaPlatform.hasCaBundle" .) "true" }}
+
+  WARNING: global.tls.caBundle is not set. If the Optimize cert is self-signed
+  or from a private/internal CA, in-cluster Java callers will fall back to the
+  JVM default truststore and fail TLS handshakes. Set
+  global.tls.caBundle.secret.existingSecret to the CA bundle.
+{{- end }}
+
+  NOTE: Optimize in 8.10 is exposed through the Gateway API `HTTPRoute`, not
+  via an NGINX ingress. Intra-cluster TLS terminates at the Optimize pod;
+  backend-protocol selection for the Gateway listener is a separate concern.
+{{- end }}
+
 {{ if .Values.global.createReleaseInfo -}}
 
 ## Console configuration
