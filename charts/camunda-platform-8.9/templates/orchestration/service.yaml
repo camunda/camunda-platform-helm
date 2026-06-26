@@ -33,6 +33,9 @@ spec:
     - port: {{ .Values.orchestration.service.grpcPort }}
       protocol: TCP
       name: {{ default "grpc" .Values.orchestration.service.grpcName }}
+      {{- if .Values.orchestration.service.grpcAppProtocol }}
+      appProtocol: {{ .Values.orchestration.service.grpcAppProtocol }}
+      {{- end }}
     {{- if .Values.orchestration.service.extraPorts }}
     {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}

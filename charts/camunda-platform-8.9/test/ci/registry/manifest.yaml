@@ -58,6 +58,10 @@ integration:
       shortname: gatkc
       tier: 2
       enabled: true
+    - id: gateway-keycloak-gke
+      shortname: gkgkc
+      tier: 2
+      enabled: false
     - id: elasticsearch-arm
       shortname: esarm
       tier: 2
