@@ -4617,7 +4617,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate (zero-downtime), which only works when the PVC supports concurrent attach (RWX storage, or accessModes including ReadWriteMany). For chart-managed PVCs on RWO storage, set to \"Recreate\" to avoid Multi-Attach deadlocks during helm upgrade (introduces brief downtime per upgrade).",
+                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",
