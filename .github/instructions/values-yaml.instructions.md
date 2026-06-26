@@ -139,17 +139,47 @@ image:
   pullSecrets: []
 ```
 
-### 6. Optional Secret Pattern
+### 6. Secret Block Pattern
+
+Secrets use a **single canonical shape** — the fixed three-key `secret:` map. Reuse it verbatim;
+do **not** invent a new secret layout. ADR-0068 standardizes the `existingSecret` interface across
+all components, and `constraints.tpl` validates inputs against it — drift here reintroduces exactly
+the inconsistency that standardization removed.
 
 ```yaml
-## @extra orchestration.auth.existingSecret can be used to reference an existing Kubernetes Secret.
-auth:
-  ## @param orchestration.auth.existingSecret can be used to reference an existing Secret containing auth credentials.
-  existingSecret: ""
-  ## @param orchestration.auth.existingSecretKey defines the key within the existing secret.
-  existingSecretKey: ""
-  ## @param orchestration.auth.inlineSecret can be used to provide the auth secret inline (non-production only).
+## @extra orchestration.auth.secret configuration to provide the auth secret.
+secret:
+  ## @param orchestration.auth.secret.inlineSecret can be used to provide the secret as a plain-text value for non-production usage.
   inlineSecret: ""
+  ## @param orchestration.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the credential.
+  existingSecret: ""
+  ## @param orchestration.auth.secret.existingSecretKey defines the key within the existing secret object.
+  existingSecretKey: ""
+```
+
+- **Key order is fixed:** `inlineSecret` → `existingSecret` → `existingSecretKey` (matches
+  `global.license.secret` and `global.documentStore.type.aws.*.secret` in `values.yaml`).
+- **Multiple secret values** (e.g. an access key ID *and* a secret access key) → one named entry
+  per value, each wrapping its **own** canonical `secret:` block. Reference:
+  `global.documentStore.type.aws.{accessKeyId,secretAccessKey}.secret` in `values.yaml`.
+- **Auxiliary (non-secret) config goes BESIDE the `secret:` block, never inside it.** Only the
+  three secret-source keys belong in `secret:`. A key alias, a keystore/cert `type` selector, a
+  `proxyVerify` toggle, etc. are SIBLINGS of `secret:`:
+
+```yaml
+tls:
+  ## @param connectors.tls.type defines the keystore type (pkcs12 | pem).
+  type: pkcs12
+  ## @param connectors.tls.keyAlias can be used to select the key entry within the keystore.
+  keyAlias: ""
+  ## @extra connectors.tls.secret configuration to provide the certificate secret.
+  secret:
+    ## @param connectors.tls.secret.inlineSecret can be used to provide the certificate as a plain-text value for non-production usage.
+    inlineSecret: ""
+    ## @param connectors.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the certificate.
+    existingSecret: ""
+    ## @param connectors.tls.secret.existingSecretKey defines the key within the existing secret object.
+    existingSecretKey: ""
 ```
 
 ### 7. Component Structure Pattern
@@ -278,6 +308,11 @@ using the layer availability table in `docs/skills/integration-test-scenario-res
     by default, verify all identity/persistence/feature layer files don't conflict. Consult
     `docs/skills/integration-test-scenario-resolution.md` to understand which layer files exist per version.
 
+11. **Non-standard secret block** — inventing a new secret layout, reordering the keys, or nesting
+    auxiliary config (key alias, keystore `type`, `proxyVerify` toggle) *inside* the `secret:` block.
+    Reuse the canonical `inlineSecret` / `existingSecret` / `existingSecretKey` block (Pattern 6);
+    auxiliary keys are siblings of `secret:`, not children. See ADR-0068.
+
 ---
 
 ## Resources
@@ -286,6 +321,7 @@ using the layer availability table in `docs/skills/integration-test-scenario-res
 - helm-docs annotation format: <https://github.com/norwoodj/helm-docs>
 - Chart design principles: `docs/index.md`
 - Values YAML policy (canonical): `docs/policies/values-yaml-policy.md`
+- Standardized secret interface: `docs/adr/0068-standardize-existingsecret-input-interface-across-all-helm.md`
 - Breaking changes policy: `docs/policies/breaking-changes.md`
 - Primary values file: `charts/<version>/values.yaml`
 - Schema file: `charts/<version>/values.schema.json`
