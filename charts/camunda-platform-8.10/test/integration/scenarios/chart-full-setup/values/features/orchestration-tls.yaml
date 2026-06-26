@@ -3,10 +3,13 @@ global:
     orchestration:
       grpc:
         enabled: true
-        secret:
-          existingSecret: orchestration-tls
-          existingSecretKey: tls.crt
-          existingSecretPrivateKeyKey: tls.key
+        cert:
+          secret:
+            existingSecret: orchestration-tls
+            existingSecretKey: tls.crt
+        privateKey:
+          secret:
+            existingSecretKey: tls.key
 
 webModeler:
   restapi:

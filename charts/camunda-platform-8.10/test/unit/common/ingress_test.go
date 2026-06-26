@@ -121,10 +121,10 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestIngressOmitsOrchestrationWhenGlobalTLSFlagSet",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.ingress.enabled":                              "true",
-				"orchestration.contextPath":                           "/orchestration",
-				"global.tls.orchestration.rest.enabled":               "true",
-				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
+				"global.ingress.enabled":                                   "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -337,12 +337,12 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestOrchestrationHttpIngressRenderedWhenGlobalTlsOrchestrationRestEnabled",
 			Values: map[string]string{
-				"global.ingress.enabled":                              "true",
-				"global.host":                                         "camunda.example.com",
-				"orchestration.enabled":                               "true",
-				"orchestration.contextPath":                           "/orchestration",
-				"global.tls.orchestration.rest.enabled":               "true",
-				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -358,14 +358,14 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestOrchestrationHttpIngressEmitsProxyVerifyAnnotationsWhenEnabled",
 			Values: map[string]string{
-				"global.ingress.enabled":                                            "true",
-				"global.host":                                                       "camunda.example.com",
-				"orchestration.enabled":                                             "true",
-				"orchestration.contextPath":                                         "/orchestration",
-				"global.tls.orchestration.rest.enabled":                             "true",
-				"global.tls.orchestration.rest.secret.existingSecret":               "rest-ks",
-				"global.tls.orchestration.rest.proxyVerify.enabled":                 "true",
-				"global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret": "upstream-ca",
+				"global.ingress.enabled":                                                   "true",
+				"global.host":                                                              "camunda.example.com",
+				"orchestration.enabled":                                                    "true",
+				"orchestration.contextPath":                                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret":                 "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                        "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -379,17 +379,17 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestOrchestrationHttpIngressProxyVerifyFailsWithoutCaSecret",
 			Values: map[string]string{
-				"global.ingress.enabled":                              "true",
-				"global.host":                                         "camunda.example.com",
-				"orchestration.enabled":                               "true",
-				"orchestration.contextPath":                           "/orchestration",
-				"global.tls.orchestration.rest.enabled":               "true",
-				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
-				"global.tls.orchestration.rest.proxyVerify.enabled":   "true",
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "proxyVerify.enabled is true but caSecret.existingSecret is empty")
+				require.Contains(t, err.Error(), "proxyVerify.enabled is true but caSecret.secret.existingSecret is empty")
 			},
 		},
 		{
@@ -400,7 +400,7 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				"orchestration.enabled":                             "true",
 				"orchestration.contextPath":                         "/orchestration",
 				"global.tls.orchestration.rest.proxyVerify.enabled": "true",
-				"global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret": "upstream-ca",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
@@ -410,13 +410,13 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestOrchestrationHttpIngressRejectsInvalidSecretType",
 			Values: map[string]string{
-				"global.ingress.enabled":                              "true",
-				"global.host":                                         "camunda.example.com",
-				"orchestration.enabled":                               "true",
-				"orchestration.contextPath":                           "/orchestration",
-				"global.tls.orchestration.rest.enabled":               "true",
-				"global.tls.orchestration.rest.secret.existingSecret": "rest-ks",
-				"global.tls.orchestration.rest.secret.type":           "jks",
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.type":                       "jks",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
@@ -426,15 +426,15 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestOrchestrationHttpIngressProxyVerifyHonoursCaSecretNamespaceOverride",
 			Values: map[string]string{
-				"global.ingress.enabled":                                            "true",
-				"global.host":                                                       "camunda.example.com",
-				"orchestration.enabled":                                             "true",
-				"orchestration.contextPath":                                         "/orchestration",
-				"global.tls.orchestration.rest.enabled":                             "true",
-				"global.tls.orchestration.rest.secret.existingSecret":               "rest-ks",
-				"global.tls.orchestration.rest.proxyVerify.enabled":                 "true",
-				"global.tls.orchestration.rest.proxyVerify.caSecret.existingSecret": "upstream-ca",
-				"global.tls.orchestration.rest.proxyVerify.caSecret.namespace":      "central-pki",
+				"global.ingress.enabled":                                                   "true",
+				"global.host":                                                              "camunda.example.com",
+				"orchestration.enabled":                                                    "true",
+				"orchestration.contextPath":                                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret":                 "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                        "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.namespace":             "central-pki",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -587,10 +587,10 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressUsesSecureBackendProtocolWhenGlobalTlsOrchestrationGrpcEnabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                               "true",
-				"orchestration.ingress.grpc.enabled":                  "true",
-				"global.tls.orchestration.grpc.enabled":               "true",
-				"global.tls.orchestration.grpc.secret.existingSecret": "grpc-pem",
+				"orchestration.enabled":                                    "true",
+				"orchestration.ingress.grpc.enabled":                       "true",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -621,13 +621,13 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressEmitsProxyVerifyAnnotationsWhenEnabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                                             "true",
-				"orchestration.ingress.grpc.enabled":                                "true",
-				"global.tls.orchestration.grpc.enabled":                             "true",
-				"global.tls.orchestration.grpc.secret.existingSecret":               "grpc-pem",
-				"global.tls.orchestration.grpc.proxyVerify.enabled":                 "true",
-				"global.tls.orchestration.grpc.proxyVerify.caSecret.existingSecret": "upstream-ca",
-				"global.tls.orchestration.grpc.proxyVerify.sniHost":                 "orchestration.svc.cluster.local",
+				"orchestration.enabled":                                                    "true",
+				"orchestration.ingress.grpc.enabled":                                       "true",
+				"global.tls.orchestration.grpc.enabled":                                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret":                 "grpc-pem",
+				"global.tls.orchestration.grpc.proxyVerify.enabled":                        "true",
+				"global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+				"global.tls.orchestration.grpc.proxyVerify.sniHost":                        "orchestration.svc.cluster.local",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
