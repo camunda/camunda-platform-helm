@@ -223,6 +223,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"camundaHub.webModeler.restapi.mail.fromAddress":  "example@example.com",
 				"global.image.pullSecrets[0].name":                "SecretName",
 				"camundaHub.webModeler.image.pullSecrets[0].name": "SecretNameSubChart",
+				"camundaHub.webModeler.image.tag":                 "snapshot",
 				"global.elasticsearch.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
