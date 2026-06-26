@@ -65,7 +65,7 @@ global:
 
   ## @extra global.config Config used in various places.
   config:
-    ## @param global.config.requestBodySize (DEPRECATED) defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.
+    ## @param global.config.requestBodySize defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.
     requestBodySize: 10MB
 
   ## Multitenancy configuration.
@@ -274,7 +274,7 @@ global:
     clusterName: "opensearch"
     ## @param global.opensearch.prefix (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.prefix or orchestration.data.secondaryStorage.opensearch) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
     prefix: zeebe-record
-  ## @param global.zeebeClusterName (DEPRECATED) ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
+  ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
   ## @section TLS / certificate trust
@@ -581,25 +581,6 @@ global:
         initialClaimValue: ""
 
       #####################
-      # Console
-      #####################
-
-      ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
-      # In External Keycloak, defaults work out-of-the-box with Keycloak.
-      # In External OIDC, clientId and audience must match the external OIDC provider configuration.
-      console:
-        ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
-        clientId: console
-        ## @param global.identity.auth.console.audience defines the audience which is used by Console's client API.
-        audience: console-api
-        ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
-        wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
-        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8087"
-
-      #####################
       # Webmodeler
       #####################
 
@@ -680,7 +661,7 @@ global:
         irsa:
           ## @param global.documentStore.type.aws.irsa.enabled When set to true, no AWS credentials are injected into pods, allowing IRSA to be used for authentication. When false (default), credentials are required via existingSecret or accessKeyId/secretAccessKey configuration.
           enabled: false
-        ## @param global.documentStore.type.aws.storeId (DEPRECATED) Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
+        ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
         storeId: "AWS"
         ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. (example: us-east-1)
         region: ""
@@ -715,7 +696,7 @@ global:
       gcp:
         ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
         enabled: false
-        ## @param global.documentStore.type.gcp.storeId (DEPRECATED) Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.
+        ## @param global.documentStore.type.gcp.storeId Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.
         storeId: "GCP"
         ## @param global.documentStore.type.gcp.bucket Name of the GCP bucket.
         bucket: "your-gcp-bucket"
@@ -734,7 +715,7 @@ global:
       inmemory:
         ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
         enabled: true
-        ## @param global.documentStore.type.inmemory.storeId (DEPRECATED) Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.
+        ## @param global.documentStore.type.inmemory.storeId Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
@@ -1087,234 +1068,6 @@ identity:
     ## @param identity.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
-#################################################
- #####
-#     #  ####  #    #  ####   ####  #      ######
-#       #    # ##   # #      #    # #      #
-#       #    # # #  #  ####  #    # #      #####
-#       #    # #  # #      # #    # #      #
-#     # #    # #   ## #    # #    # #      #
- #####   ####  #    #  ####   ####  ###### ######
-#################################################
-
-## @section Console Parameters
-## @extra console configuration for the Console.
-console:
-  ## @param console.enabled if true, the Console deployment and its related resources are deployed via a helm release
-  enabled: false
-
-  ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
-  configuration: ""
-  ## @param console.extraConfiguration if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.
-  extraConfiguration: []
-
-  ## console.image configuration to configure the Console image specifics
-  # https://hub.docker.com/r/camunda/console/tags
-  image:
-    ## @param console.image.registry can be used to set container image registry.
-    registry: ""
-    ## @param console.image.repository defines which image repository to use
-    repository: camunda/console
-    ## @param console.image.tag can be used to set the Docker image tag for the Console image
-    tag: 8.9.25
-    ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-    digest: ""
-    ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets: []
-
-  ## @param console.nodeEnv (DEPRECATED) can be used to set the node environment.
-  nodeEnv: prod
-
-  ## @param console.sidecars can be used to attach extra containers to the console deployment
-  sidecars: []
-
-  ## @param console.replicas Number of Console replicas
-  replicas: 1
-
-  ## console.tls Configure the Console TLS options
-  tls:
-    ## @param console.tls.enabled if true, enable TLS traffic for console
-    enabled: false
-    ## @param console.tls.certKeyFilename defines certificate Key filename
-    certKeyFilename: ""
-    ## console.tls.secret New secret configuration pattern (>= 8.9)
-    secret:
-      ## @param console.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificates
-      existingSecret: ""
-
-  ## console.keycloak configuration to configure Keycloak authentication settings.
-  keycloak:
-    ## @param console.keycloak.realm (DEPRECATED) Specifies the Keycloak realm used for authentication.
-    realm: "camunda-platform"
-
-  ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
-
-  ## @param console.initContainers can be used to set up extra init containers for the application Pod
-  initContainers: []
-
-  ## @param console.podAnnotations can be used to define extra Console pod annotations. Supports templating (e.g., {{ .Release.Name }}).
-  podAnnotations: {}
-  ## @param console.podLabels can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }}).
-  podLabels: {}
-
-  ## @param console.logging (DEPRECATED) configuration for the Console logging. This template will be directly included in the configuration YAML file
-  logging: {}
-
-  ## console.service configuration to configure the Console service.
-  service:
-    ## @param console.service.annotations can be used to define annotations, which will be applied to the Console service
-    annotations: {}
-    ## @param console.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-    type: ClusterIP
-    ## @param console.service.port defines the port number where the web application will be available
-    port: 80
-    ## @param console.service.serverName defines the port name where the web application will be available
-    serverName: http
-    ## @param console.service.managementPort defines the management port used to access metrics and app status
-    managementPort: 9100
-
-  ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param console.resources.requests.cpu
-  ## @param console.resources.requests.memory
-  ## @param console.resources.limits.cpu
-  ## @param console.resources.limits.memory
-  resources:
-    requests:
-      cpu: "1000m"
-      memory: 1Gi
-    limits:
-      cpu: "2000m"
-      memory: 2Gi
-
-  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.
-  env: []
-  ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
-  envFrom: []
-  ## @param console.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-  command: []
-  ## @param console.extraVolumes can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumes: []
-  ## @param console.extraVolumeMounts can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates
-  extraVolumeMounts: []
-
-  ## console.startupProbe configuration
-  startupProbe:
-    ## @param console.startupProbe.enabled if true, the startup probe is enabled in app container
-    enabled: false
-    ## @param console.startupProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param console.startupProbe.probePath defines the startup probe route used on the app
-    probePath: /health/readiness
-    ## @param console.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param console.startupProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param console.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param console.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param console.startupProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.readinessProbe configuration
-  readinessProbe:
-    ## @param console.readinessProbe.enabled if true, the readiness probe is enabled in app container
-    enabled: true
-    ## @param console.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param console.readinessProbe.probePath defines the readiness probe route used on the app
-    probePath: /health/readiness
-    ## @param console.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param console.readinessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param console.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
-    successThreshold: 1
-    ## @param console.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
-    failureThreshold: 5
-    ## @param console.readinessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.livenessProbe configuration
-  livenessProbe:
-    ## @param console.livenessProbe.enabled if true, the liveness probe is enabled in app container
-    enabled: false
-    ## @param console.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
-    ## @param console.livenessProbe.probePath defines the liveness probe route used on the app
-    probePath: /health/liveness
-    ## @param console.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
-    # the probe is initiated.
-    initialDelaySeconds: 30
-    ## @param console.livenessProbe.periodSeconds defines how often the probe is executed
-    periodSeconds: 30
-    ## @param console.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
-    successThreshold: 1
-    ## @param console.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
-    failureThreshold: 5
-    ## @param console.livenessProbe.timeoutSeconds defines the seconds after the probe times out
-    timeoutSeconds: 1
-
-  ## console.metrics configuration
-  metrics:
-    ## @param console.metrics.prometheus Prometheus metrics endpoint
-    prometheus: /prometheus
-
-  ## console.serviceAccount configuration for the service account where the Console pods are assigned to
-  serviceAccount:
-    ## @param console.serviceAccount.enabled if true, enables the Console service account
-    enabled: true
-    ## @param console.serviceAccount.name can be used to set the name of the Console service account
-    name: ""
-    ## @param console.serviceAccount.annotations can be used to set the annotations of the service account
-    annotations: {}
-    ## @param console.serviceAccount.labels can be used to set the labels of the service account
-    labels: {}
-    ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: false
-
-  ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
-  podSecurityContext:
-    ## @param console.podSecurityContext.runAsNonRoot run as non root
-    runAsNonRoot: true
-    ## @param console.podSecurityContext.fsGroup
-    fsGroup: 1001
-    ## @extra console.podSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param console.podSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  # ContainerSecurityContext defines the security options the Console broker container should be run with
-  containerSecurityContext:
-    ## @param console.containerSecurityContext.allowPrivilegeEscalation
-    allowPrivilegeEscalation: false
-    ## @param console.containerSecurityContext.privileged
-    privileged: false
-    ## @param console.containerSecurityContext.readOnlyRootFilesystem
-    readOnlyRootFilesystem: true
-    ## @param console.containerSecurityContext.runAsNonRoot
-    runAsNonRoot: true
-    ## @param console.containerSecurityContext.runAsUser
-    runAsUser: 1001
-    ## @extra console.containerSecurityContext.seccompProfile
-    seccompProfile:
-      ## @param console.containerSecurityContext.seccompProfile.type
-      type: RuntimeDefault
-
-  ## @param console.nodeSelector can be used to define on which nodes the Console pods should run
-  nodeSelector: {}
-  ## @param console.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  tolerations: []
-  ## @param console.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  affinity: {}
-  ## @param console.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-  dnsPolicy: ""
-  ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-  dnsConfig: {}
-
 ###############################################################################
 #  #####                                              #     #
 # #     #   ##   #    # #    # #    # #####    ##     #     # #    # #####
@@ -1325,35 +1078,16 @@ console:
 #  #####  #    # #    #  ####  #    # #####  #    #   #     #  ####  #####
 ###############################################################################
 ## @section CamundaHub Parameters
-## @extra camundaHub configuration for the consolidated Console + WebModeler component.
-## When camundaHub.enabled is true, both Console and WebModeler are deployed as sub-components
-## of Camunda Hub. The legacy top-level console.* and webModeler.* keys still work for
-## backward compatibility but emit deprecation warnings when camundaHub is also enabled.
+## @extra camundaHub configuration for Camunda Hub (WebModeler + Console).
+## When camundaHub.enabled is true, the Web Modeler component is deployed and
+## the Console UI is enabled as a feature of the hub-restapi pod (Console is
+## no longer a separate deployment in 8.10).
+## The legacy top-level webModeler.* and console.* keys still work for
+## backward compatibility but emit deprecation warnings when set alongside camundaHub.
 camundaHub:
-  ## @param camundaHub.enabled if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.
-  ## When enabled, this takes precedence over the individual console.enabled and webModeler.enabled flags.
+  ## @param camundaHub.enabled if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.
+  ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
   enabled: false
-
-  ## @skip camundaHub.console Override values for the Console sub-component when using Camunda Hub.
-  ## Any values set here take precedence over the legacy top-level console.* values.
-  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
-  ## To override a value, set it explicitly under camundaHub.console (e.g. camundaHub.console.replicas: 3).
-  ##
-  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
-  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
-  ## camundaHub.console.readinessProbe.enabled=false will NOT disable the probe if the
-  ## legacy console.readinessProbe.enabled is true. Use the legacy keys directly for
-  ## falsy overrides.
-  console:
-    image: {}
-    tls: {}
-    keycloak: {}
-    service: {}
-    startupProbe: {}
-    readinessProbe: {}
-    livenessProbe: {}
-    metrics: {}
-    serviceAccount: {}
 
   ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
   ## Any values set here take precedence over the legacy top-level webModeler.* values.
@@ -1480,13 +1214,13 @@ webModeler:
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
     mail:
-      ## @param webModeler.restapi.mail.smtpHost (DEPRECATED) defines the host name of the SMTP server to be used by WebModeler
+      ## @param webModeler.restapi.mail.smtpHost defines the host name of the SMTP server to be used by WebModeler
       smtpHost: ""
-      ## @param webModeler.restapi.mail.smtpPort (DEPRECATED) defines the port number of the SMTP server
+      ## @param webModeler.restapi.mail.smtpPort defines the port number of the SMTP server
       smtpPort: 587
-      ## @param webModeler.restapi.mail.smtpUser (DEPRECATED) can be used to provide a user for the SMTP server
+      ## @param webModeler.restapi.mail.smtpUser can be used to provide a user for the SMTP server
       smtpUser: ""
-      ## @param webModeler.restapi.mail.smtpTlsEnabled (DEPRECATED) if true, enforces TLS encryption for SMTP connections (using STARTTLS)
+      ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
       ## @extra webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
       secret:
@@ -1496,10 +1230,10 @@ webModeler:
         existingSecret: ""
         ## @param webModeler.restapi.mail.secret.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: ""
-      ## @param webModeler.restapi.mail.fromAddress (DEPRECATED) defines the email address that will be displayed as the sender of emails sent by WebModeler
+      ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
       # NOTE: This value is mandatory.
       fromAddress: ""
-      ## @param webModeler.restapi.mail.fromName (DEPRECATED) defines the name that will be displayed as the sender of emails sent by WebModeler
+      ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
     ## @extra webModeler.restapi.pusher configuration for Pusher integration
     pusher:
@@ -1539,8 +1273,8 @@ webModeler:
     podLabels: {}
 
     ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
-    ## @param webModeler.restapi.logging.level.io.camunda.modeler (DEPRECATED) https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
-    ## @param webModeler.restapi.logging.level.io.grpc (DEPRECATED)
+    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
+    ## @param webModeler.restapi.logging.level.io.grpc
     logging:
       level:
         io.camunda.modeler: INFO
@@ -1970,7 +1704,7 @@ connectors:
   podLabels: {}
 
   ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the connector configuration YAML file
-  ## @param connectors.logging.level.io.camunda.connector (DEPRECATED)
+  ## @param connectors.logging.level.io.camunda.connector
   logging:
     level:
       io.camunda.connector: INFO
@@ -2167,7 +1901,7 @@ orchestration:
   ## @param orchestration.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
   enabled: true
 
-  ## @param orchestration.debug (DEPRECATED) if true, extra info is printed.
+  ## @param orchestration.debug if true, extra info is printed.
   debug: false
 
   ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, admin, operate).
@@ -2177,7 +1911,7 @@ orchestration:
     operate: true
     tasklist: true
 
-  ## @param orchestration.profilesOverride (DEPRECATED) [string] defines the override for the profiles as comma-separated string.
+  ## @param orchestration.profilesOverride [string] defines the override for the profiles as comma-separated string.
   profilesOverride: ""
 
   security:
@@ -2188,9 +1922,9 @@ orchestration:
       # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
       # When set to "oidc", also configure oidc.clientId, audience, and secret below.
       method: ""
-      ## @param orchestration.security.authentication.unprotectedApi (DEPRECATED) if true, then allow unauthenticated API access.
+      ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
-      ## @param orchestration.security.authentication.authenticationRefreshInterval (DEPRECATED) defines the session's authentication refresh time, defaulted to PT30S.
+      ## @param orchestration.security.authentication.authenticationRefreshInterval defines the session's authentication refresh time, defaulted to PT30S.
       authenticationRefreshInterval: "PT30S"
 
       # @extra orchestration.security.authentication.oidc
@@ -2205,23 +1939,23 @@ orchestration:
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
-        ## @param orchestration.security.authentication.oidc.usernameClaim (DEPRECATED) can be used to set username claim.
+        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
         usernameClaim: preferred_username
-        ## @param orchestration.security.authentication.oidc.preferUsernameClaim (DEPRECATED) can be used to set OIDC prefer-username-claim.
+        ## @param orchestration.security.authentication.oidc.preferUsernameClaim can be used to set OIDC prefer-username-claim.
         preferUsernameClaim: false
-        ## @param orchestration.security.authentication.oidc.clientIdClaim (DEPRECATED) can be used to set client ID claim.
+        ## @param orchestration.security.authentication.oidc.clientIdClaim can be used to set client ID claim.
         clientIdClaim: client_id
-        ## @param orchestration.security.authentication.oidc.groupsClaim (DEPRECATED) can be used to set group claim.
+        ## @param orchestration.security.authentication.oidc.groupsClaim can be used to set group claim.
         groupsClaim: ""
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
         audience: orchestration-api
-        ## @param orchestration.security.authentication.oidc.scope (DEPRECATED) defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.
+        ## @param orchestration.security.authentication.oidc.scope defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.
         scope: []
-        ## @param orchestration.security.authentication.oidc.backwardsCompatibleAudiences (DEPRECATED) defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version
+        ## @param orchestration.security.authentication.oidc.backwardsCompatibleAudiences defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version
         backwardsCompatibleAudiences: []
         ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
         clientId: orchestration
-        ## @param orchestration.security.authentication.oidc.redirectUrl (DEPRECATED) defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
         # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
@@ -2237,7 +1971,7 @@ orchestration:
     ## Authorizations configuration.
     ## @extra orchestration.security.authorizations
     authorizations:
-      ## @param orchestration.security.authorizations.enabled (DEPRECATED) if true, then enable authorizations checks in all applicable components.
+      ## @param orchestration.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
       enabled: true
 
     ## Initialization configuration
@@ -2285,9 +2019,9 @@ orchestration:
           clients:
             ## @extra orchestration.security.initialization.defaultRoles.connectors.clients[0].connectors Needed for OIDC setup. Can be removed for basic auth. Define the connectors client with the connrectors role.
             - connectors
-      ## @param orchestration.security.initialization.mappingRules (DEPRECATED) define mapping rules.
+      ## @param orchestration.security.initialization.mappingRules define mapping rules.
       mappingRules: []
-      ## @param orchestration.security.initialization.authorizations (DEPRECATED) define authorizations for Identity as Code.
+      ## @param orchestration.security.initialization.authorizations define authorizations for Identity as Code.
       ## Use this to bootstrap authorization DB entries at application start, e.g. for machine clients (CI/CD).
       ## Ref: https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/identity-as-code/#configure-authorizations
       # Example:
@@ -2320,17 +2054,17 @@ orchestration:
   ## @extra orchestration.multitenancy
   multitenancy:
     checks:
-      ## @param orchestration.multitenancy.checks.enabled (DEPRECATED) if true, then enable multitenancy checks in all applicable components.
+      ## @param orchestration.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
       enabled: false
     api:
-      ## @param orchestration.multitenancy.api.enabled (DEPRECATED) if true, then enable multitenancy API used for tenant management.
+      ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
       enabled: true
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
-  ## @param orchestration.partitionCount (DEPRECATED) defines how many partitions are set up in the cluster
+  ## @param orchestration.partitionCount defines how many partitions are set up in the cluster
   partitionCount: "3"
-  ## @param orchestration.replicationFactor (DEPRECATED) defines how each partition is replicated, the value defines the number of nodes
+  ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.
   env: []
@@ -2347,9 +2081,9 @@ orchestration:
   ## @param orchestration.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
-  ## @param orchestration.logLevel (DEPRECATED) defines the log level which is used
+  ## @param orchestration.logLevel defines the log level which is used
   logLevel: info
-  ## @param orchestration.log4j2 (DEPRECATED) can be used to overwrite the log4j2 configuration
+  ## @param orchestration.log4j2 can be used to overwrite the log4j2 configuration
   log4j2: ""
   ## @param orchestration.javaOpts can be used to set java options
   javaOpts: >-
@@ -2458,9 +2192,9 @@ orchestration:
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param orchestration.cpuThreadCount (DEPRECATED) defines how many threads can be used for the processing on each broker pod
+  ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
-  ## @param orchestration.ioThreadCount (DEPRECATED) defines how many threads can be used for the exporting on each broker pod
+  ## @param orchestration.ioThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
   ## @extra orchestration.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @extra orchestration.resources.requests
@@ -2495,15 +2229,15 @@ orchestration:
   pvcSelector: {}
   ## @extra orchestration.data configuration to configure the data handling of the Zeebe broker pods
   data:
-    ## @param orchestration.data.snapshotPeriod (DEPRECATED) defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
+    ## @param orchestration.data.snapshotPeriod defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
     snapshotPeriod: "5m"
     ## @extra orchestration.data.disk configuration to configure the disk storage of the Zeebe broker pods
     disk:
       ## @extra orchestration.data.disk.freeSpace configuration to configure the free space handling of the Zeebe broker pods
       freeSpace:
-        ## @param orchestration.data.disk.freeSpace.processing (DEPRECATED) the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        ## @param orchestration.data.disk.freeSpace.processing the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         processing: "2GB"
-        ## @param orchestration.data.disk.freeSpace.replication (DEPRECATED) the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         replication: "1GB"
     ## @extra orchestration.data.secondaryStorage configuration for secondary storage backend used by the orchestration cluster
     secondaryStorage:
@@ -2725,7 +2459,7 @@ orchestration:
 
   ## @extra orchestration.exporters allows disabling inbuilt exporters.
   exporters:
-    ## @param orchestration.exporters.camunda.enabled (DEPRECATED) if true, enables the new Camunda exporter.
+    ## @param orchestration.exporters.camunda.enabled if true, enables the new Camunda exporter.
     camunda:
       enabled: true
     ## @param orchestration.exporters.rdbms.enabled if true, enables the new RDBMS exporter.
@@ -2734,8 +2468,6 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
-      ## @param orchestration.exporters.zeebe.replicas [default: ~] (DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.
-      replicas: ~
     appIntegrations:
       apiKey:
         secret:
@@ -2746,47 +2478,47 @@ orchestration:
           ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret.
           existingSecretKey: ""
   index:
-    ## @param orchestration.index.prefix (DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the "global.elasticsearch.prefix" or OpenSearch equivalent.
+    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the "global.elasticsearch.prefix" or OpenSearch equivalent.
     prefix: ""
-    ## @param orchestration.index.replicas (DEPRECATED) can be used to specify the number of replicas for Orchestration Cluster indices.
+    ## @param orchestration.index.replicas can be used to specify the number of replicas for Orchestration Cluster indices.
     replicas: 1
 
   ## @extra orchestration.retention configuration to enable ILM Policy creation and application for Zeebe record (legacy Elasticsearch/Opensearch exporter) indices; controls their retention.
   retention:
-    ## @param orchestration.retention.enabled (DEPRECATED) if true, the ILM Policy is created and applied to the index templates.
+    ## @param orchestration.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
-    ## @param orchestration.retention.minimumAge (DEPRECATED) defines how old the data must be, before the data is deleted as a duration.
+    ## @param orchestration.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
-    ## @param orchestration.retention.policyName (DEPRECATED) defines the name of the created and applied ILM policy.
+    ## @param orchestration.retention.policyName defines the name of the created and applied ILM policy.
     policyName: zeebe-record-retention-policy
 
   ## @extra orchestration.history configuration for Camunda harmonized historical indices.
   history:
-    ## @param orchestration.history.elsRolloverDateFormat (DEPRECATED) defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
+    ## @param orchestration.history.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
     elsRolloverDateFormat: date
-    ## @param orchestration.history.rolloverInterval (DEPRECATED) defines the time range of the historical indices to be created.
+    ## @param orchestration.history.rolloverInterval defines the time range of the historical indices to be created.
     rolloverInterval: 1d
-    ## @param orchestration.history.rolloverBatchSize (DEPRECATED) defines the maximum number of process instances per batch during archiving.
+    ## @param orchestration.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
     rolloverBatchSize: 100
-    ## @param orchestration.history.waitPeriodBeforeArchiving (DEPRECATED) defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
+    ## @param orchestration.history.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
     ## the last hour will not be collected into historical indices.
     waitPeriodBeforeArchiving: 1h
-    ## @param orchestration.history.delayBetweenRuns (DEPRECATED) the millisecond interval between archiver runs
+    ## @param orchestration.history.delayBetweenRuns the millisecond interval between archiver runs
     delayBetweenRuns: 2000
-    ## @param orchestration.history.maxDelayBetweenRuns (DEPRECATED) the maximum millisecond interval between archiver runs due to failure backoffs
+    ## @param orchestration.history.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
     maxDelayBetweenRuns: 60000
     ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.
     retention:
-      ## @param orchestration.history.retention.enabled (DEPRECATED) if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).
+      ## @param orchestration.history.retention.enabled if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).
       enabled: false
-      ## @param orchestration.history.retention.minimumAge (DEPRECATED) defines how old the data must be, before the data is deleted as a duration.
+      ## @param orchestration.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 30d
-      ## @param orchestration.history.retention.policyName (DEPRECATED) defines the name of the created and applied ILM policy.
+      ## @param orchestration.history.retention.policyName defines the name of the created and applied ILM policy.
       # NOTE: The value is set to "zeebe-record-retention-policy" for backward compatibility between 8.7 and 8.8.
       policyName: camunda-history-retention-policy
-      ## @param orchestration.history.retention.usageMetricsMinimumAge (DEPRECATED) defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).
+      ## @param orchestration.history.retention.usageMetricsMinimumAge defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).
       usageMetricsMinimumAge: 730d
-      ## @param orchestration.history.retention.usageMetricsPolicyName (DEPRECATED) defines the name of the created and applied ILM policy to usage metric indices.
+      ## @param orchestration.history.retention.usageMetricsPolicyName defines the name of the created and applied ILM policy to usage metric indices.
       usageMetricsPolicyName: camunda-usage-metrics-retention-policy
 
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
@@ -2807,7 +2539,7 @@ orchestration:
 
   ## @exra orchestration.upgrade is a structure that holds upgrade specific configurations
   upgrade:
-    ## @param orchestration.upgrade.allowPreReleaseImages (DEPRECATED) if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.
+    ## @param orchestration.upgrade.allowPreReleaseImages if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.
     allowPreReleaseImages: false
 
 #############################################
@@ -2877,7 +2609,7 @@ optimize:
         protocol: ""
         host: ""
         port: 0
-      ## @param optimize.database.elasticsearch.prefix (DEPRECATED) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
+      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
       prefix: "zeebe-record"
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
@@ -2917,7 +2649,7 @@ optimize:
         protocol: ""
         host: ""
         port: 0
-      ## @param optimize.database.opensearch.prefix (DEPRECATED) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
+      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
       prefix: "zeebe-record"
 
 
@@ -2962,14 +2694,14 @@ optimize:
   ## @param optimize.podLabels can be used to define extra Optimize pod labels. Supports templating (e.g., {{ .Release.Name }}).
   podLabels: {}
 
-  ## @param optimize.logLevel (DEPRECATED) configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
+  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   logLevel: info
-  ## @param optimize.upgradeLogLevel (DEPRECATED) sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
+  ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   upgradeLogLevel: info
-  ## @param optimize.esLogLevel (DEPRECATED) sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
+  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   esLogLevel: warn
 
-  ## @param optimize.partitionCount (DEPRECATED) defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
+  ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
   ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details.
   env: []
@@ -3148,21 +2880,21 @@ optimize:
     annotations: {}
     ## @param optimize.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
-  ## @param optimize.profiles (DEPRECATED) [string] defines SPRING_ACTIVE_PROFILES
+  ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
   profiles: "ccsm"
   ## @param optimize.javaOpts can be used to set java options for optimize
   javaOpts: ""
   ## @extra optimize.multitenancy options relating to multitenancy in optimize
   multitenancy:
-    ## @param optimize.multitenancy.enabled (DEPRECATED) if true, enables multitenancy in Optimize
+    ## @param optimize.multitenancy.enabled if true, enables multitenancy in Optimize
     enabled: false
   ## @extra optimize.caches options relating to caches in optimize
   caches:
     ## @extra optimize.caches.cloudTenantAuthorizations options relating to cloud tenant authorizations cache in optimize
     cloudTenantAuthorizations:
-      ## @param optimize.caches.cloudTenantAuthorizations.maxSize (DEPRECATED) defines the maximum number of entries in the cache
+      ## @param optimize.caches.cloudTenantAuthorizations.maxSize defines the maximum number of entries in the cache
       maxSize: 10000
-      ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds (DEPRECATED) defines the minimum interval between fetches from the database for the cache
+      ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds defines the minimum interval between fetches from the database for the cache
       minFetchIntervalSeconds: 600000
 
 #####################################################################

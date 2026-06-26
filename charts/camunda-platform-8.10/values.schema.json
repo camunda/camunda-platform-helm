@@ -50,7 +50,7 @@
                     "properties": {
                         "requestBodySize": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.",
+                            "description": "defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.",
                             "default": "10MB"
                         }
                     }
@@ -525,7 +525,7 @@
                 },
                 "zeebeClusterName": {
                     "type": "string",
-                    "description": "(DEPRECATED) ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
+                    "description": "ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
                     "default": "{{ .Release.Name }}-zeebe"
                 },
                 "tls": {
@@ -834,31 +834,6 @@
                                         }
                                     }
                                 },
-                                "console": {
-                                    "type": "object",
-                                    "properties": {
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Console in authentication flows.",
-                                            "default": "console"
-                                        },
-                                        "audience": {
-                                            "type": "string",
-                                            "description": "defines the audience which is used by Console's client API.",
-                                            "default": "console-api"
-                                        },
-                                        "wellKnown": {
-                                            "type": "string",
-                                            "description": "defines the uri for the well known config which is used by Console (optional).",
-                                            "default": "https://well-known-uri"
-                                        },
-                                        "redirectUrl": {
-                                            "type": "string",
-                                            "description": "defines the root URL which is used by Keycloak to access WebModeler.",
-                                            "default": "http://localhost:8087"
-                                        }
-                                    }
-                                },
                                 "webModeler": {
                                     "type": "object",
                                     "properties": {
@@ -965,7 +940,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
+                                            "description": "Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
                                             "default": "AWS"
                                         },
                                         "region": {
@@ -1055,7 +1030,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
+                                            "description": "Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
                                             "default": "GCP"
                                         },
                                         "bucket": {
@@ -1105,7 +1080,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
+                                            "description": "Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
                                             "default": "INMEMORY"
                                         },
                                         "class": {
@@ -1938,605 +1913,12 @@
                 }
             }
         },
-        "console": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "description": "if true, the Console deployment and its related resources are deployed via a helm release",
-                    "default": false
-                },
-                "configuration": {
-                    "type": "string",
-                    "description": "Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)",
-                    "default": ""
-                },
-                "extraConfiguration": {
-                    "type": "array",
-                    "description": "if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.",
-                    "default": [],
-                    "items": {}
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "registry": {
-                            "type": "string",
-                            "description": "can be used to set container image registry.",
-                            "default": ""
-                        },
-                        "repository": {
-                            "type": "string",
-                            "description": "defines which image repository to use",
-                            "default": "camunda/console"
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.25"
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
-                        },
-                        "pullSecrets": {
-                            "type": "array",
-                            "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
-                            "default": [],
-                            "items": {}
-                        }
-                    }
-                },
-                "nodeEnv": {
-                    "type": "string",
-                    "description": "(DEPRECATED) can be used to set the node environment.",
-                    "default": "prod"
-                },
-                "sidecars": {
-                    "type": "array",
-                    "description": "can be used to attach extra containers to the console deployment",
-                    "default": [],
-                    "items": {}
-                },
-                "replicas": {
-                    "type": "number",
-                    "description": "Number of Console replicas",
-                    "default": 1
-                },
-                "tls": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enable TLS traffic for console",
-                            "default": false
-                        },
-                        "certKeyFilename": {
-                            "type": "string",
-                            "description": "defines certificate Key filename",
-                            "default": ""
-                        },
-                        "secret": {
-                            "type": "object",
-                            "properties": {
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificates",
-                                    "default": ""
-                                }
-                            }
-                        }
-                    }
-                },
-                "keycloak": {
-                    "type": "object",
-                    "properties": {
-                        "realm": {
-                            "type": "string",
-                            "description": "(DEPRECATED) Specifies the Keycloak realm used for authentication.",
-                            "default": "camunda-platform"
-                        }
-                    }
-                },
-                "contextPath": {
-                    "type": "string",
-                    "description": "can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
-                },
-                "initContainers": {
-                    "type": "array",
-                    "description": "can be used to set up extra init containers for the application Pod",
-                    "default": [],
-                    "items": {}
-                },
-                "podAnnotations": {
-                    "type": "object",
-                    "description": "can be used to define extra Console pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
-                },
-                "podLabels": {
-                    "type": "object",
-                    "description": "can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
-                },
-                "logging": {
-                    "type": "object",
-                    "description": "(DEPRECATED) configuration for the Console logging. This template will be directly included in the configuration YAML file",
-                    "default": {}
-                },
-                "service": {
-                    "type": "object",
-                    "properties": {
-                        "annotations": {
-                            "type": "object",
-                            "description": "can be used to define annotations, which will be applied to the Console service",
-                            "default": {}
-                        },
-                        "type": {
-                            "type": "string",
-                            "description": "defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
-                            "default": "ClusterIP"
-                        },
-                        "port": {
-                            "type": "number",
-                            "description": "defines the port number where the web application will be available",
-                            "default": 80
-                        },
-                        "serverName": {
-                            "type": "string",
-                            "description": "defines the port name where the web application will be available",
-                            "default": "http"
-                        },
-                        "managementPort": {
-                            "type": "number",
-                            "description": "defines the management port used to access metrics and app status",
-                            "default": 9100
-                        }
-                    }
-                },
-                "resources": {
-                    "type": "object",
-                    "properties": {
-                        "requests": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1Gi"
-                                }
-                            }
-                        },
-                        "limits": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2000m"
-                                },
-                                "memory": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2Gi"
-                                }
-                            }
-                        }
-                    }
-                },
-                "env": {
-                    "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.",
-                    "default": [],
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "Environment variable name"
-                            },
-                            "value": {
-                                "description": "Environment variable value",
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "null"
-                                    }
-                                ],
-                                "nullable": true
-                            },
-                            "valueFrom": {
-                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
-                                "type": "object",
-                                "properties": {
-                                    "fieldRef": {
-                                        "type": "object",
-                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
-                                        "properties": {
-                                            "apiVersion": {
-                                                "type": "string"
-                                            },
-                                            "fieldPath": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "fieldPath"
-                                        ]
-                                    },
-                                    "resourceFieldRef": {
-                                        "type": "object",
-                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
-                                        "properties": {
-                                            "containerName": {
-                                                "type": "string"
-                                            },
-                                            "resource": {
-                                                "type": "string"
-                                            },
-                                            "divisor": {
-                                                "type": [
-                                                    "string",
-                                                    "integer",
-                                                    "number"
-                                                ]
-                                            }
-                                        },
-                                        "required": [
-                                            "resource"
-                                        ]
-                                    },
-                                    "configMapKeyRef": {
-                                        "type": "object",
-                                        "description": "Selects a key of a ConfigMap.",
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            },
-                                            "key": {
-                                                "type": "string"
-                                            },
-                                            "optional": {
-                                                "type": "boolean"
-                                            }
-                                        },
-                                        "required": [
-                                            "key"
-                                        ]
-                                    },
-                                    "secretKeyRef": {
-                                        "type": "object",
-                                        "description": "Selects a key of a Secret.",
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            },
-                                            "key": {
-                                                "type": "string"
-                                            },
-                                            "optional": {
-                                                "type": "boolean"
-                                            }
-                                        },
-                                        "required": [
-                                            "key"
-                                        ]
-                                    }
-                                }
-                            }
-                        },
-                        "required": [
-                            "name"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                "envFrom": {
-                    "type": "array",
-                    "description": "list of environment variables to import from configMapRef and secretRef",
-                    "default": [],
-                    "items": {}
-                },
-                "command": {
-                    "type": "array",
-                    "description": "can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/",
-                    "default": [],
-                    "items": {}
-                },
-                "extraVolumes": {
-                    "type": "array",
-                    "description": "can be used to define extra volumes for the Console pods, useful for TLS and self-signed certificates",
-                    "default": [],
-                    "items": {}
-                },
-                "extraVolumeMounts": {
-                    "type": "array",
-                    "description": "can be used to mount extra volumes for the Console pods, useful for TLS and self-signed certificates",
-                    "default": [],
-                    "items": {}
-                },
-                "startupProbe": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, the startup probe is enabled in app container",
-                            "default": false
-                        },
-                        "scheme": {
-                            "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
-                        },
-                        "probePath": {
-                            "type": "string",
-                            "description": "defines the startup probe route used on the app",
-                            "default": "/health/readiness"
-                        },
-                        "initialDelaySeconds": {
-                            "type": "number",
-                            "description": "defines the number of seconds after the container has started before",
-                            "default": 30
-                        },
-                        "periodSeconds": {
-                            "type": "number",
-                            "description": "defines how often the probe is executed",
-                            "default": 30
-                        },
-                        "successThreshold": {
-                            "type": "number",
-                            "description": "defines how often it needs to be true to be marked as ready, after failure",
-                            "default": 1
-                        },
-                        "failureThreshold": {
-                            "type": "number",
-                            "description": "defines when the probe is considered as failed so the Pod will be marked Unready",
-                            "default": 5
-                        },
-                        "timeoutSeconds": {
-                            "type": "number",
-                            "description": "defines the seconds after the probe times out",
-                            "default": 1
-                        }
-                    }
-                },
-                "readinessProbe": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, the readiness probe is enabled in app container",
-                            "default": true
-                        },
-                        "scheme": {
-                            "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
-                        },
-                        "probePath": {
-                            "type": "string",
-                            "description": "defines the readiness probe route used on the app",
-                            "default": "/health/readiness"
-                        },
-                        "initialDelaySeconds": {
-                            "type": "number",
-                            "description": "defines the number of seconds after the container has started before",
-                            "default": 30
-                        },
-                        "periodSeconds": {
-                            "type": "number",
-                            "description": "defines how often the probe is executed",
-                            "default": 30
-                        },
-                        "successThreshold": {
-                            "type": "number",
-                            "description": "defines how often it needs to be true to be marked as ready, after failure",
-                            "default": 1
-                        },
-                        "failureThreshold": {
-                            "type": "number",
-                            "description": "defines when the probe is considered as failed so the Pod will be marked Unready",
-                            "default": 5
-                        },
-                        "timeoutSeconds": {
-                            "type": "number",
-                            "description": "defines the seconds after the probe times out",
-                            "default": 1
-                        }
-                    }
-                },
-                "livenessProbe": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, the liveness probe is enabled in app container",
-                            "default": false
-                        },
-                        "scheme": {
-                            "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
-                        },
-                        "probePath": {
-                            "type": "string",
-                            "description": "defines the liveness probe route used on the app",
-                            "default": "/health/liveness"
-                        },
-                        "initialDelaySeconds": {
-                            "type": "number",
-                            "description": "defines the number of seconds after the container has started before",
-                            "default": 30
-                        },
-                        "periodSeconds": {
-                            "type": "number",
-                            "description": "defines how often the probe is executed",
-                            "default": 30
-                        },
-                        "successThreshold": {
-                            "type": "number",
-                            "description": "defines how often it needs to be true to be considered successful after having failed",
-                            "default": 1
-                        },
-                        "failureThreshold": {
-                            "type": "number",
-                            "description": "defines when the probe is considered as failed so the container will be restarted",
-                            "default": 5
-                        },
-                        "timeoutSeconds": {
-                            "type": "number",
-                            "description": "defines the seconds after the probe times out",
-                            "default": 1
-                        }
-                    }
-                },
-                "metrics": {
-                    "type": "object",
-                    "properties": {
-                        "prometheus": {
-                            "type": "string",
-                            "description": "Prometheus metrics endpoint",
-                            "default": "/prometheus"
-                        }
-                    }
-                },
-                "serviceAccount": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enables the Console service account",
-                            "default": true
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "can be used to set the name of the Console service account",
-                            "default": ""
-                        },
-                        "annotations": {
-                            "type": "object",
-                            "description": "can be used to set the annotations of the service account",
-                            "default": {}
-                        },
-                        "labels": {
-                            "type": "object",
-                            "description": "can be used to set the labels of the service account",
-                            "default": {}
-                        },
-                        "automountServiceAccountToken": {
-                            "type": "boolean",
-                            "description": "can be used to control whether the service account token should be automatically mounted",
-                            "default": false
-                        }
-                    }
-                },
-                "podSecurityContext": {
-                    "type": "object",
-                    "properties": {
-                        "runAsNonRoot": {
-                            "type": "boolean",
-                            "description": "run as non root",
-                            "default": true
-                        },
-                        "fsGroup": {
-                            "type": "number",
-                            "description": "",
-                            "default": 1001
-                        },
-                        "seccompProfile": {
-                            "type": "object",
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "RuntimeDefault"
-                                }
-                            }
-                        }
-                    }
-                },
-                "containerSecurityContext": {
-                    "type": "object",
-                    "properties": {
-                        "allowPrivilegeEscalation": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": false
-                        },
-                        "privileged": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": false
-                        },
-                        "readOnlyRootFilesystem": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": true
-                        },
-                        "runAsNonRoot": {
-                            "type": "boolean",
-                            "description": "",
-                            "default": true
-                        },
-                        "runAsUser": {
-                            "type": "number",
-                            "description": "",
-                            "default": 1001
-                        },
-                        "seccompProfile": {
-                            "type": "object",
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "RuntimeDefault"
-                                }
-                            }
-                        }
-                    }
-                },
-                "nodeSelector": {
-                    "type": "object",
-                    "description": "can be used to define on which nodes the Console pods should run",
-                    "default": {}
-                },
-                "tolerations": {
-                    "type": "array",
-                    "description": "can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/",
-                    "default": [],
-                    "items": {}
-                },
-                "affinity": {
-                    "type": "object",
-                    "description": "can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                    "default": {}
-                },
-                "dnsPolicy": {
-                    "type": "string",
-                    "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy",
-                    "default": ""
-                },
-                "dnsConfig": {
-                    "type": "object",
-                    "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                    "default": {}
-                }
-            }
-        },
         "camundaHub": {
             "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.",
+                    "description": "if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.",
                     "default": false
                 },
                 "webModeler": {
@@ -2712,22 +2094,22 @@
                             "properties": {
                                 "smtpHost": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the host name of the SMTP server to be used by WebModeler",
+                                    "description": "defines the host name of the SMTP server to be used by WebModeler",
                                     "default": ""
                                 },
                                 "smtpPort": {
                                     "type": "number",
-                                    "description": "(DEPRECATED) defines the port number of the SMTP server",
+                                    "description": "defines the port number of the SMTP server",
                                     "default": 587
                                 },
                                 "smtpUser": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) can be used to provide a user for the SMTP server",
+                                    "description": "can be used to provide a user for the SMTP server",
                                     "default": ""
                                 },
                                 "smtpTlsEnabled": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED) if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
+                                    "description": "if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
                                     "default": true
                                 },
                                 "secret": {
@@ -2752,12 +2134,12 @@
                                 },
                                 "fromAddress": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the email address that will be displayed as the sender of emails sent by WebModeler",
+                                    "description": "defines the email address that will be displayed as the sender of emails sent by WebModeler",
                                     "default": ""
                                 },
                                 "fromName": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the name that will be displayed as the sender of emails sent by WebModeler",
+                                    "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
                                     "default": "Camunda 8"
                                 }
                             }
@@ -4523,13 +3905,13 @@
                 },
                 "debug": {
                     "type": "boolean",
-                    "description": "(DEPRECATED) if true, extra info is printed.",
+                    "description": "if true, extra info is printed.",
                     "default": false
                 },
                 "profilesOverride": {
                     "type": "string",
-                    "description": "(DEPRECATED) [string] defines the override for the profiles as comma-separated string.",
-                    "default": ""
+                    "description": "defines the override for the profiles as comma-separated string.",
+                    "default": "\"\""
                 },
                 "security": {
                     "type": "object",
@@ -4544,12 +3926,12 @@
                                 },
                                 "unprotectedApi": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED) if true, then allow unauthenticated API access.",
+                                    "description": "if true, then allow unauthenticated API access.",
                                     "default": false
                                 },
                                 "authenticationRefreshInterval": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the session's authentication refresh time, defaulted to PT30S.",
+                                    "description": "defines the session's authentication refresh time, defaulted to PT30S.",
                                     "default": "PT30S"
                                 },
                                 "oidc": {
@@ -4582,22 +3964,22 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) can be used to set username claim.",
+                                            "description": "can be used to set username claim.",
                                             "default": "preferred_username"
                                         },
                                         "preferUsernameClaim": {
                                             "type": "boolean",
-                                            "description": "(DEPRECATED) can be used to set OIDC prefer-username-claim.",
+                                            "description": "can be used to set OIDC prefer-username-claim.",
                                             "default": false
                                         },
                                         "clientIdClaim": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) can be used to set client ID claim.",
+                                            "description": "can be used to set client ID claim.",
                                             "default": "client_id"
                                         },
                                         "groupsClaim": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) can be used to set group claim.",
+                                            "description": "can be used to set group claim.",
                                             "default": ""
                                         },
                                         "audience": {
@@ -4607,13 +3989,13 @@
                                         },
                                         "scope": {
                                             "type": "array",
-                                            "description": "(DEPRECATED) defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
+                                            "description": "defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
                                             "default": [],
                                             "items": {}
                                         },
                                         "backwardsCompatibleAudiences": {
                                             "type": "array",
-                                            "description": "(DEPRECATED) defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
+                                            "description": "defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
                                             "default": [],
                                             "items": {}
                                         },
@@ -4624,7 +4006,7 @@
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
+                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
                                             "default": "http://localhost:8080"
                                         },
                                         "secret": {
@@ -4656,7 +4038,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED) if true, then enable authorizations checks in all applicable components.",
+                                    "description": "if true, then enable authorizations checks in all applicable components.",
                                     "default": true
                                 }
                             }
@@ -4736,13 +4118,13 @@
                                 },
                                 "mappingRules": {
                                     "type": "array",
-                                    "description": "(DEPRECATED) define mapping rules.",
+                                    "description": "define mapping rules.",
                                     "default": [],
                                     "items": {}
                                 },
                                 "authorizations": {
                                     "type": "array",
-                                    "description": "(DEPRECATED) define authorizations for Identity as Code.",
+                                    "description": "define authorizations for Identity as Code.",
                                     "default": [],
                                     "items": {}
                                 }
@@ -4795,7 +4177,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED) if true, then enable multitenancy checks in all applicable components.",
+                                    "description": "if true, then enable multitenancy checks in all applicable components.",
                                     "default": false
                                 }
                             }
@@ -4805,7 +4187,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED) if true, then enable multitenancy API used for tenant management.",
+                                    "description": "if true, then enable multitenancy API used for tenant management.",
                                     "default": true
                                 }
                             }
@@ -4819,12 +4201,12 @@
                 },
                 "partitionCount": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines how many partitions are set up in the cluster",
+                    "description": "defines how many partitions are set up in the cluster",
                     "default": "3"
                 },
                 "replicationFactor": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines how each partition is replicated, the value defines the number of nodes",
+                    "description": "defines how each partition is replicated, the value defines the number of nodes",
                     "default": "3"
                 },
                 "env": {
@@ -4960,12 +4342,12 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines the log level which is used",
+                    "description": "defines the log level which is used",
                     "default": "info"
                 },
                 "log4j2": {
                     "type": "string",
-                    "description": "(DEPRECATED) can be used to overwrite the log4j2 configuration",
+                    "description": "can be used to overwrite the log4j2 configuration",
                     "default": ""
                 },
                 "javaOpts": {
@@ -5204,12 +4586,12 @@
                 },
                 "cpuThreadCount": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines how many threads can be used for the processing on each broker pod",
+                    "description": "defines how many threads can be used for the processing on each broker pod",
                     "default": "3"
                 },
                 "ioThreadCount": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines how many threads can be used for the exporting on each broker pod",
+                    "description": "defines how many threads can be used for the exporting on each broker pod",
                     "default": "3"
                 },
                 "resources": {
@@ -5287,7 +4669,7 @@
                     "properties": {
                         "snapshotPeriod": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata",
+                            "description": "defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata",
                             "default": "5m"
                         },
                         "disk": {
@@ -5298,12 +4680,12 @@
                                     "properties": {
                                         "processing": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
+                                            "description": "the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "2GB"
                                         },
                                         "replication": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
+                                            "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "1GB"
                                         }
                                     }
@@ -5795,7 +5177,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED) if true, enables the new Camunda exporter.",
+                                    "description": "if true, enables the new Camunda exporter.",
                                     "default": true
                                 }
                             }
@@ -5865,12 +5247,12 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "(DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
+                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "(DEPRECATED) can be used to specify the number of replicas for Orchestration Cluster indices.",
+                            "description": "can be used to specify the number of replicas for Orchestration Cluster indices.",
                             "default": 1
                         }
                     }
@@ -5880,17 +5262,17 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "(DEPRECATED) if true, the ILM Policy is created and applied to the index templates.",
+                            "description": "if true, the ILM Policy is created and applied to the index templates.",
                             "default": false
                         },
                         "minimumAge": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines how old the data must be, before the data is deleted as a duration.",
+                            "description": "defines how old the data must be, before the data is deleted as a duration.",
                             "default": "30d"
                         },
                         "policyName": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the name of the created and applied ILM policy.",
+                            "description": "defines the name of the created and applied ILM policy.",
                             "default": "zeebe-record-retention-policy"
                         }
                     }
@@ -5900,32 +5282,32 @@
                     "properties": {
                         "elsRolloverDateFormat": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.",
+                            "description": "defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.",
                             "default": "date"
                         },
                         "rolloverInterval": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the time range of the historical indices to be created.",
+                            "description": "defines the time range of the historical indices to be created.",
                             "default": "1d"
                         },
                         "rolloverBatchSize": {
                             "type": "number",
-                            "description": "(DEPRECATED) defines the maximum number of process instances per batch during archiving.",
+                            "description": "defines the maximum number of process instances per batch during archiving.",
                             "default": 100
                         },
                         "waitPeriodBeforeArchiving": {
                             "type": "string",
-                            "description": "(DEPRECATED) defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in",
+                            "description": "defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in",
                             "default": "1h"
                         },
                         "delayBetweenRuns": {
                             "type": "number",
-                            "description": "(DEPRECATED) the millisecond interval between archiver runs",
+                            "description": "the millisecond interval between archiver runs",
                             "default": 2000
                         },
                         "maxDelayBetweenRuns": {
                             "type": "number",
-                            "description": "(DEPRECATED) the maximum millisecond interval between archiver runs due to failure backoffs",
+                            "description": "the maximum millisecond interval between archiver runs due to failure backoffs",
                             "default": 60000
                         },
                         "retention": {
@@ -5933,27 +5315,27 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED) if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).",
+                                    "description": "if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).",
                                     "default": false
                                 },
                                 "minimumAge": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines how old the data must be, before the data is deleted as a duration.",
+                                    "description": "defines how old the data must be, before the data is deleted as a duration.",
                                     "default": "30d"
                                 },
                                 "policyName": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the name of the created and applied ILM policy.",
+                                    "description": "defines the name of the created and applied ILM policy.",
                                     "default": "camunda-history-retention-policy"
                                 },
                                 "usageMetricsMinimumAge": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
+                                    "description": "defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
                                     "default": "730d"
                                 },
                                 "usageMetricsPolicyName": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the name of the created and applied ILM policy to usage metric indices.",
+                                    "description": "defines the name of the created and applied ILM policy to usage metric indices.",
                                     "default": "camunda-usage-metrics-retention-policy"
                                 }
                             }
@@ -5997,7 +5379,7 @@
                     "properties": {
                         "allowPreReleaseImages": {
                             "type": "boolean",
-                            "description": "(DEPRECATED) if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.",
+                            "description": "if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.",
                             "default": false
                         }
                     }
@@ -6148,7 +5530,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6248,7 +5630,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6339,22 +5721,22 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "(DEPRECATED) configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "upgradeLogLevel": {
                     "type": "string",
-                    "description": "(DEPRECATED) sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "esLogLevel": {
                     "type": "string",
-                    "description": "(DEPRECATED) sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "warn"
                 },
                 "partitionCount": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize",
+                    "description": "defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize",
                     "default": "3"
                 },
                 "env": {
@@ -6880,8 +6262,8 @@
                 },
                 "profiles": {
                     "type": "string",
-                    "description": "(DEPRECATED) [string] defines SPRING_ACTIVE_PROFILES",
-                    "default": "ccsm"
+                    "description": "defines SPRING_ACTIVE_PROFILES",
+                    "default": "\"\""
                 },
                 "javaOpts": {
                     "type": "string",
@@ -6893,7 +6275,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "(DEPRECATED) if true, enables multitenancy in Optimize",
+                            "description": "if true, enables multitenancy in Optimize",
                             "default": false
                         }
                     }
@@ -6906,12 +6288,12 @@
                             "properties": {
                                 "maxSize": {
                                     "type": "number",
-                                    "description": "(DEPRECATED) defines the maximum number of entries in the cache",
+                                    "description": "defines the maximum number of entries in the cache",
                                     "default": 10000
                                 },
                                 "minFetchIntervalSeconds": {
                                     "type": "number",
-                                    "description": "(DEPRECATED) defines the minimum interval between fetches from the database for the cache",
+                                    "description": "defines the minimum interval between fetches from the database for the cache",
                                     "default": 600000
                                 }
                             }
@@ -7053,6 +6435,117 @@
                     "type": "string",
                     "description": "can be set to configure the interval at which metrics should be scraped",
                     "default": "10s"
+                }
+            }
+        },
+        "console": {
+            "properties": {
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 }
             }
         }
