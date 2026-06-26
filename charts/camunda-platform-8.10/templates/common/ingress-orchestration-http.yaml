@@ -1,4 +1,4 @@
-{{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) .Values.orchestration.enabled .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true") -}}
+{{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) .Values.orchestration.enabled .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -12,10 +12,12 @@ metadata:
       "context" .
     ) | nindent 4 }}
   annotations:
+    {{- $restProxyVerify := include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "rest") | fromYaml }}
     {{- include "common.tplvalues.merge-overwrite" (dict
       "values" (list
         .Values.global.ingress.annotations
         (dict "nginx.ingress.kubernetes.io/backend-protocol" "HTTPS")
+        ($restProxyVerify | default (dict))
       )
       "context" .
     ) | nindent 4 }}

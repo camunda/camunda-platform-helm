@@ -1,6 +1,13 @@
 #!/bin/bash
 # Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
 # under one or more contributor license agreements. Licensed under a proprietary license.
+#
+# TEST FIXTURE — DO NOT USE IN PRODUCTION
+# This script generates a self-signed RSA-4096 certificate, an unencrypted
+# PEM private key, and PKCS12 stores with the literal password "changeit".
+# It exists only to bootstrap the integration nightly TLS scenarios. Real
+# deployments should source certs from a managed CA (cert-manager, internal
+# PKI, public CA) and keep passwords in a sealed/external secret store.
 
 set -euo pipefail
 
@@ -52,6 +59,16 @@ openssl pkcs12 -export \
   -name orchestration-tls \
   2>/dev/null
 
+# PKCS12 keystore for Orchestration REST (Spring Boot) server SSL.
+# Same key material as the gRPC cert; separate file for clarity.
+openssl pkcs12 -export \
+  -in "$WORK_DIR/tls.crt" \
+  -inkey "$WORK_DIR/tls.key" \
+  -out "$WORK_DIR/keystore.p12" \
+  -password "pass:$KEYSTORE_PASSWORD" \
+  -name orchestration-rest \
+  2>/dev/null
+
 create_or_replace_secret() {
   local name="$1"
   shift
@@ -68,3 +85,7 @@ create_or_replace_secret "orchestration-tls" \
 create_or_replace_secret "orchestration-tls-truststore" \
   --from-file="truststore.p12=$WORK_DIR/truststore.p12" \
   --from-literal="truststore-password=$KEYSTORE_PASSWORD"
+
+create_or_replace_secret "orchestration-tls-keystore" \
+  --from-file="keystore.p12=$WORK_DIR/keystore.p12" \
+  --from-literal="keystore-password=$KEYSTORE_PASSWORD"

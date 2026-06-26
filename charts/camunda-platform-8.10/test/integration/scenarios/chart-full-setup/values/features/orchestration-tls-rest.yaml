@@ -1,0 +1,14 @@
+global:
+  tls:
+    orchestration:
+      rest:
+        enabled: true
+        type: pkcs12
+        keyAlias: orchestration-rest
+        cert:
+          secret:
+            existingSecret: orchestration-tls-keystore
+            existingSecretKey: keystore.p12
+        keystorePassword:
+          secret:
+            existingSecretKey: keystore-password

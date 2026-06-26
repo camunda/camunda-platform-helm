@@ -145,6 +145,29 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 - Camunda REST API: {{ $proto }}://{{ tpl .Values.global.host $ }}
 {{- end }}
 
+{{- if or .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.grpc.enabled }}
+
+## Orchestration TLS
+
+{{- if .Values.global.tls.orchestration.rest.enabled }}
+- REST TLS: enabled ({{ .Values.global.tls.orchestration.rest.type | default "pkcs12" }} mode{{ if .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}{{ end }})
+{{- end }}
+{{- if .Values.global.tls.orchestration.grpc.enabled }}
+- gRPC TLS: enabled (pem{{ if .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}{{ end }})
+{{- end }}
+{{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
+- NGINX upstream verify (REST): on (CA: {{ .Values.global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret }})
+{{- end }}
+{{- if .Values.global.tls.orchestration.grpc.proxyVerify.enabled }}
+- NGINX upstream verify (gRPC): on (CA: {{ .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret }})
+{{- end }}
+{{- if .Values.global.tls.orchestration.autoRollout }}
+- autoRollout: on (cert content changes will roll Orchestration on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
+{{- else }}
+- autoRollout: off (rotate manually with: kubectl rollout restart statefulset/{{ include "orchestration.fullname" . }})
+{{- end }}
+{{- end }}
+
 {{ if .Values.global.createReleaseInfo -}}
 
 ## Console configuration

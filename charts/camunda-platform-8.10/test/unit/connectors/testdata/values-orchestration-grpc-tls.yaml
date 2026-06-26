@@ -2,3 +2,7 @@ orchestration:
   env:
     - name: CAMUNDA_API_GRPC_SSL_ENABLED
       value: "true"
+    - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
+      value: /custom/server.crt
+    - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
+      value: /custom/server.key

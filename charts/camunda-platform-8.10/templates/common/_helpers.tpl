@@ -683,7 +683,7 @@ Zeebe templates.
   {{- if .Values.orchestration.enabled -}}
     {{-
       printf "%s://%s%s"
-        (ternary "https" "http" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true"))
+        (ternary "https" "http" (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true"))
         (include "orchestration.serviceNameHTTP" .)
         (.Values.orchestration.contextPath | default "")
     -}}
@@ -697,9 +697,39 @@ Zeebe templates.
   {{- if .Values.orchestration.enabled -}}
     {{-
       printf "%s://%s"
-        (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true"))
+        (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true"))
         (include "orchestration.serviceNameGRPC" .)
     -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Orchestration REST TLS is enabled via
+global.tls.orchestration.rest.enabled or via an explicit SERVER_SSL_ENABLED=true
+entry in orchestration.env.
+*/}}
+{{- define "camundaPlatform.orchestrationRESTTLSEnabled" -}}
+  {{- if .Values.global.tls.orchestration.rest.enabled -}}
+    true
+  {{- else if eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Orchestration gRPC TLS is enabled via
+global.tls.orchestration.grpc.enabled or via an explicit
+CAMUNDA_API_GRPC_SSL_ENABLED=true entry in orchestration.env.
+*/}}
+{{- define "camundaPlatform.orchestrationGRPCTLSEnabled" -}}
+  {{- if .Values.global.tls.orchestration.grpc.enabled -}}
+    true
+  {{- else if eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true" -}}
+    true
+  {{- else -}}
+    false
   {{- end -}}
 {{- end -}}
 
@@ -1171,6 +1201,86 @@ docs/tls-values-quickstart.md). Emits nothing when caBundle is unset.
 Usage (inside a pod template's metadata.annotations):
   {{- include "camundaPlatform.caBundleChecksumAnnotation" . | nindent 8 }}
 */}}
+{{/*
+orchestrationRESTSecretCertKey
+Returns the Secret data key that holds the REST server certificate.
+Smart defaults: PEM → tls.crt, PKCS12 → keystore.p12, applied when
+cert.secret.existingSecretKey is empty. Any explicit value wins verbatim.
+*/}}
+{{- define "camundaPlatform.orchestrationRESTSecretCertKey" -}}
+{{- $r := .Values.global.tls.orchestration.rest -}}
+{{- $type := $r.type | default "pkcs12" -}}
+{{- $key := $r.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+orchestrationProxyVerifyAnnotations
+Renders the NGINX upstream-TLS-verification annotations for one of the
+Orchestration ingresses (REST or gRPC) based on the matching
+global.tls.orchestration.{rest,grpc}.proxyVerify block.
+
+Returns nothing when proxyVerify.enabled is false or caSecret.secret.existingSecret
+is empty. Otherwise emits a flat map of annotation key → value:
+  - nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+  - nginx.ingress.kubernetes.io/proxy-ssl-secret: "<namespace>/<existingSecret>"
+  - (if sniHost set) proxy-ssl-name + proxy-ssl-server-name: "on"
+
+The caller is responsible for merging the result into the ingress
+annotations block. Pass `proto` ("rest" or "grpc") to select the source.
+
+Usage (inside an ingress template's annotations block, e.g. via merge-overwrite):
+  (include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "grpc"))
+*/}}
+{{- define "camundaPlatform.orchestrationProxyVerifyAnnotations" -}}
+{{- $ctx := .context -}}
+{{- $proto := .proto -}}
+{{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
+{{- if and $pv.enabled $pv.caSecret.secret.existingSecret -}}
+{{- $ns := $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
+nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ns $pv.caSecret.secret.existingSecret | quote }}
+{{- with $pv.sniHost }}
+nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+orchestrationTLSChecksumAnnotations
+Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert
+content of the Orchestration TLS Secrets when global.tls.orchestration.autoRollout
+is true. Opt-in shape and lookup-during-template caveats match
+camundaPlatform.caBundleChecksumAnnotation.
+
+Usage (inside the Orchestration pod template's metadata.annotations):
+  {{- include "camundaPlatform.orchestrationTLSChecksumAnnotations" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.orchestrationTLSChecksumAnnotations" -}}
+{{- if .Values.global.tls.orchestration.autoRollout -}}
+{{- $rest := .Values.global.tls.orchestration.rest -}}
+{{- if and $rest.enabled $rest.cert.secret.existingSecret -}}
+{{- $s := lookup "v1" "Secret" .Release.Namespace $rest.cert.secret.existingSecret -}}
+{{- $data := ($s | default dict).data | default dict -}}
+{{- $certKey := include "camundaPlatform.orchestrationRESTSecretCertKey" . -}}
+{{- printf "\nchecksum/orchestration-tls-rest: %s" (get $data $certKey | sha256sum) -}}
+{{- end -}}
+{{- $grpc := .Values.global.tls.orchestration.grpc -}}
+{{- if and $grpc.enabled $grpc.cert.secret.existingSecret -}}
+{{- $s := lookup "v1" "Secret" .Release.Namespace $grpc.cert.secret.existingSecret -}}
+{{- $data := ($s | default dict).data | default dict -}}
+{{- printf "\nchecksum/orchestration-tls-grpc: %s" (get $data $grpc.cert.secret.existingSecretKey | sha256sum) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "camundaPlatform.caBundleChecksumAnnotation" -}}
 {{- /* Gated on autoRollout (default off): the lookup below requires `get` on
        Secrets for the upgrading identity — a Forbidden error there is NOT

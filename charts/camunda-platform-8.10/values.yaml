@@ -353,6 +353,109 @@ global:
           ## @param global.tls.caBundle.containerSecurityContext.seccompProfile.type
           type: RuntimeDefault
 
+    ## @extra global.tls.orchestration configuration of first-class TLS modes for the Orchestration component. REST (`SERVER_SSL_ENABLED`) and gRPC (`CAMUNDA_API_GRPC_SSL_ENABLED`) are independent server settings; setting either flag drives the Orchestration env var, the public NGINX ingress backend-protocol, and the in-cluster client schemes used by Web Modeler and Connectors. The optional `cert` sub-block additionally mounts the server cert material and points Orchestration at it. Explicit `orchestration.env` entries with the same name override these flags (last-wins). Client-side trust material still flows through `global.tls.caBundle`.
+    orchestration:
+      ## @param global.tls.orchestration.autoRollout opt-in automatic pod rollout on REST/gRPC cert rotation. When true, the chart stamps `checksum/orchestration-tls-{rest,grpc}` pod annotations derived from the configured Secrets so the next `helm upgrade` rolls Orchestration when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @extra global.tls.orchestration.rest configuration of TLS for the Orchestration REST server.
+      rest:
+        ## @param global.tls.orchestration.rest.enabled if true, TLS is terminated at the Orchestration REST server.
+        enabled: false
+        ## @param global.tls.orchestration.rest.type defines the secret format. One of: pkcs12, pem.
+        type: pkcs12
+        ## @param global.tls.orchestration.rest.keyAlias can be used to specify the cert alias within a PKCS12 keystore.
+        keyAlias: ""
+        ## @extra global.tls.orchestration.rest.cert configuration to provide the server certificate (PKCS12 keystore or PEM cert).
+        cert:
+          ## @extra global.tls.orchestration.rest.cert.secret configuration to provide the cert secret.
+          secret:
+            ## @param global.tls.orchestration.rest.cert.secret.inlineSecret can be used to provide the cert as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.rest.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via orchestration.extraVolumes and orchestration.env.
+            existingSecret: ""
+            ## @param global.tls.orchestration.rest.cert.secret.existingSecretKey defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.
+            existingSecretKey: ""
+        ## @extra global.tls.orchestration.rest.privateKey configuration to provide the PEM private key (PEM mode only).
+        privateKey:
+          ## @extra global.tls.orchestration.rest.privateKey.secret configuration to provide the private key secret.
+          secret:
+            ## @param global.tls.orchestration.rest.privateKey.secret.inlineSecret can be used to provide the private key as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.rest.privateKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.
+            existingSecret: ""
+            ## @param global.tls.orchestration.rest.privateKey.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "tls.key"
+        ## @extra global.tls.orchestration.rest.keystorePassword configuration to provide the PKCS12 keystore password (PKCS12 mode only).
+        keystorePassword:
+          ## @extra global.tls.orchestration.rest.keystorePassword.secret configuration to provide the keystore password secret.
+          secret:
+            ## @param global.tls.orchestration.rest.keystorePassword.secret.inlineSecret can be used to provide the keystore password as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.rest.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
+            existingSecret: ""
+            ## @param global.tls.orchestration.rest.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "keystore-password"
+        ## @extra global.tls.orchestration.rest.proxyVerify configuration of NGINX upstream cert verification.
+        proxyVerify:
+          ## @param global.tls.orchestration.rest.proxyVerify.enabled if true, NGINX verifies the upstream server cert against the CA bundle.
+          enabled: false
+          ## @param global.tls.orchestration.rest.proxyVerify.sniHost can be used to set the SNI hostname NGINX presents when verifying the upstream cert.
+          sniHost: ""
+          ## @extra global.tls.orchestration.rest.proxyVerify.caSecret configuration to provide the CA bundle Secret for upstream verification.
+          caSecret:
+            ## @extra global.tls.orchestration.rest.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
+            secret:
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage.
+              inlineSecret: ""
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle.
+              existingSecret: ""
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object.
+              existingSecretKey: "ca.crt"
+            ## @param global.tls.orchestration.rest.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
+            namespace: ""
+      ## @extra global.tls.orchestration.grpc configuration of TLS for the Orchestration gRPC server.
+      grpc:
+        ## @param global.tls.orchestration.grpc.enabled if true, TLS is terminated at the Orchestration gRPC server.
+        enabled: false
+        ## @extra global.tls.orchestration.grpc.cert configuration to provide the server certificate (PEM cert). The gRPC server accepts PEM only.
+        cert:
+          ## @extra global.tls.orchestration.grpc.cert.secret configuration to provide the cert secret.
+          secret:
+            ## @param global.tls.orchestration.grpc.cert.secret.inlineSecret can be used to provide the cert as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.grpc.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring.
+            existingSecret: ""
+            ## @param global.tls.orchestration.grpc.cert.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "tls.crt"
+        ## @extra global.tls.orchestration.grpc.privateKey configuration to provide the PEM private key.
+        privateKey:
+          ## @extra global.tls.orchestration.grpc.privateKey.secret configuration to provide the private key secret.
+          secret:
+            ## @param global.tls.orchestration.grpc.privateKey.secret.inlineSecret can be used to provide the private key as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.grpc.privateKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.
+            existingSecret: ""
+            ## @param global.tls.orchestration.grpc.privateKey.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "tls.key"
+        ## @extra global.tls.orchestration.grpc.proxyVerify configuration of NGINX upstream cert verification.
+        proxyVerify:
+          ## @param global.tls.orchestration.grpc.proxyVerify.enabled if true, NGINX verifies the upstream server cert against the CA bundle.
+          enabled: false
+          ## @param global.tls.orchestration.grpc.proxyVerify.sniHost can be used to set the SNI hostname NGINX presents when verifying the upstream cert.
+          sniHost: ""
+          ## @extra global.tls.orchestration.grpc.proxyVerify.caSecret configuration to provide the CA bundle Secret for upstream verification.
+          caSecret:
+            ## @extra global.tls.orchestration.grpc.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
+            secret:
+              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage.
+              inlineSecret: ""
+              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle.
+              existingSecret: ""
+              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object.
+              existingSecretKey: "ca.crt"
+            ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
+            namespace: ""
+
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #

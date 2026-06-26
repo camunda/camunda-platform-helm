@@ -13,8 +13,12 @@ metadata:
       "context" .
     ) | nindent 4 }}
 {{- $grpcAnnotations := .Values.orchestration.ingress.grpc.annotations -}}
-{{- if eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true" -}}
+{{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" -}}
 {{- $grpcAnnotations = mergeOverwrite (dict) $grpcAnnotations (dict "nginx.ingress.kubernetes.io/backend-protocol" "GRPCS") -}}
+{{- end -}}
+{{- $grpcProxyVerify := include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "grpc") | fromYaml -}}
+{{- if $grpcProxyVerify -}}
+{{- $grpcAnnotations = mergeOverwrite (dict) $grpcAnnotations $grpcProxyVerify -}}
 {{- end -}}
 {{- with $grpcAnnotations }}
   annotations:
