@@ -1,0 +1,16 @@
+name: component-persistence
+auth: keycloak
+flows:
+  - install,upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+features:
+  - persistence
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

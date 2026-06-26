@@ -26,7 +26,7 @@ type ghClient interface {
 	RunAttempt(runID string) (int, error)
 	AttemptStatus(runID string, attempt int) (string, error)
 	AttemptConclusion(runID string, attempt int) (string, error)
-	RerunFailed(runID string) error
+	Rerun(runID string) error
 }
 
 type Gate struct {
@@ -153,17 +153,20 @@ func (g *Gate) WaitForCompletion(runID string, attempt int) error {
 func (g *Gate) RerunWithBackoff(runID string) error {
 	var last error
 	for i := 0; i < g.RerunTries; i++ {
-		if err := g.Client.RerunFailed(runID); err == nil {
+		err := g.Client.Rerun(runID)
+		if err == nil {
 			return nil
-		} else {
-			last = err
-			g.Logf("rerun --failed try %d/%d failed: %v",
-				i+1, g.RerunTries, err)
-			g.Sleep(g.RerunBackoff)
 		}
+		if errors.Is(err, ErrRerunAlreadyRunning) {
+			g.Logf("rerun skipped: attempt already in progress")
+			return ErrRerunAlreadyRunning
+		}
+		last = err
+		g.Logf("rerun try %d/%d failed: %v", i+1, g.RerunTries, err)
+		g.Sleep(g.RerunBackoff)
 	}
 	if last == nil {
-		last = errors.New("rerun --failed exhausted retries")
+		last = errors.New("rerun exhausted retries")
 	}
 	return last
 }
@@ -180,6 +183,7 @@ func (g *Gate) WaitForAttemptRegistered(runID string, want int) error {
 }
 
 var ErrNotRetryable = errors.New("not retryable")
+var ErrRerunAlreadyRunning = errors.New("rerun: workflow already running")
 
 func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	sha, err := ResolveSHA(event, prHeadSHA, mgHeadSHA)
@@ -215,10 +219,10 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	}
 
 	g.Logf("triggering retry of failed jobs on %s", runURL)
-	g.Cmdf("::group::rerun --failed")
+	g.Cmdf("::group::rerun")
 	err = g.RerunWithBackoff(runID)
 	g.Cmdf("::endgroup::")
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrRerunAlreadyRunning) {
 		return err
 	}
 
@@ -246,9 +250,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return nil
 	}
 	if final == "failure" {
-		g.Cmdf("::warning::attempt %d still failure after retry; "+
-			"jobs with conclusion=cancelled are not rerun by --failed "+
-			"and may need manual intervention", next)
+		g.Cmdf("::warning::attempt %d still failure after retry", next)
 	}
 	return fmt.Errorf("attempt %d conclusion: %s", next, final)
 }

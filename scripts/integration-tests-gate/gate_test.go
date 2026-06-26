@@ -88,7 +88,7 @@ func (f *fakeClient) AttemptConclusion(_ string, attempt int) (string, error) {
 	}
 	return c, nil
 }
-func (f *fakeClient) RerunFailed(string) error {
+func (f *fakeClient) Rerun(string) error {
 	f.rerunCalls++
 	if len(f.rerunQueue) == 0 {
 		return nil
@@ -662,10 +662,8 @@ func TestRun_ContinueOnErrorJobsSoftFailDoesNotTriggerRetry(t *testing.T) {
 
 func TestRun_RunWithMixedFailures_RetriesOnce(t *testing.T) {
 	// A run with both a real failure and continue-on-error soft failures
-	// has run-level conclusion="failure". `gh run rerun --failed` skips
-	// the continue-on-error jobs (their conclusion is success) and only
-	// reruns the hard failure. The gate sees run conclusion go from
-	// failure to success after retry and exits 0.
+	// has run-level conclusion="failure". The gate triggers a full rerun
+	// and exits 0 when the second attempt succeeds.
 	c := &fakeClient{
 		t:             t,
 		findRunQueue:  []findRunResp{{id: "100"}},
@@ -683,6 +681,67 @@ func TestRun_RunWithMixedFailures_RetriesOnce(t *testing.T) {
 	}
 	if c.rerunCalls != 1 {
 		t.Fatalf("expected exactly 1 rerun, got %d", c.rerunCalls)
+	}
+}
+
+func TestRerunWithBackoff_AlreadyRunning_ReturnsImmediately(t *testing.T) {
+	// First try returns a transient error, second returns ErrRerunAlreadyRunning.
+	// Must return ErrRerunAlreadyRunning without consuming remaining tries.
+	c := &fakeClient{
+		t:          t,
+		rerunQueue: []error{errors.New("502"), ErrRerunAlreadyRunning},
+	}
+	g := newTestGate(c)
+	err := g.RerunWithBackoff("r")
+	if !errors.Is(err, ErrRerunAlreadyRunning) {
+		t.Fatalf("expected ErrRerunAlreadyRunning, got %v", err)
+	}
+	if c.rerunCalls != 2 {
+		t.Fatalf("expected 2 rerun calls, got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_AlreadyRunning_ProceedsToWatchNextAttempt(t *testing.T) {
+	// Attempt 1 fails. Rerun returns ErrRerunAlreadyRunning (attempt 2 already
+	// started externally). Gate must watch attempt 2 and exit 0 when it succeeds.
+	c := &fakeClient{
+		t:             t,
+		findRunQueue:  []findRunResp{{id: "100"}},
+		runURL:        "url",
+		attemptsQueue: attemptList(1, 2),
+		statusByAttempt: map[int][]statusResp{
+			1: statusList("completed"),
+			2: statusList("completed"),
+		},
+		conclusionByAttempt: map[int]string{1: "failure", 2: "success"},
+		rerunQueue:          []error{ErrRerunAlreadyRunning},
+	}
+	g := newTestGate(c)
+	if err := g.Run("pull_request", "sha", ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.rerunCalls != 1 {
+		t.Fatalf("expected 1 rerun call, got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_AlreadyRunning_Attempt2Fails(t *testing.T) {
+	// Same race condition but attempt 2 also fails — gate must propagate the failure.
+	c := &fakeClient{
+		t:             t,
+		findRunQueue:  []findRunResp{{id: "100"}},
+		runURL:        "url",
+		attemptsQueue: attemptList(1, 2),
+		statusByAttempt: map[int][]statusResp{
+			1: statusList("completed"),
+			2: statusList("completed"),
+		},
+		conclusionByAttempt: map[int]string{1: "failure", 2: "failure"},
+		rerunQueue:          []error{ErrRerunAlreadyRunning},
+	}
+	g := newTestGate(c)
+	if err := g.Run("pull_request", "sha", ""); err == nil {
+		t.Fatalf("expected failure, got nil")
 	}
 }
 
