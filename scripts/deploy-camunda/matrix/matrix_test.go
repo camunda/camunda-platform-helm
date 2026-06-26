@@ -2077,11 +2077,15 @@ func TestExtraValues_PropagatesToDeploymentFlags(t *testing.T) {
 //
 // Mirrors TestChartRefOverride_UpgradeStep1Unaffected above.
 func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
-	// Base flags as executeEntry would build for a single-step install or
-	// Step 2 of an upgrade — ExtraValues populated from the caller.
+	// Base flags as executeEntry would build them after appendScenarioExtraValues
+	// runs — a merged slice of global + per-scenario paths. This mirrors the
+	// production state that arrives at executeTwoStepUpgrade.
 	baseFlags := &config.RuntimeFlags{
 		Deployment: config.DeploymentFlags{
-			ExtraValues: []string{"/tmp/engine-image.yaml"},
+			ExtraValues: []string{
+				"/tmp/engine-image.yaml", // global --extra-values (e.g. per-PR image tag)
+				"/repo/charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/extra/tuning.yaml", // per-scenario, pre-resolved by appendScenarioExtraValues
+			},
 		},
 	}
 
@@ -2091,18 +2095,56 @@ func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
 	step1Flags := *baseFlags
 	step1Flags.Deployment.ExtraValues = nil
 
+	// Both global and per-scenario paths must be absent from Step 1.
 	if step1Flags.Deployment.ExtraValues != nil {
 		t.Errorf("Step 1 ExtraValues = %v, want nil (must not inherit caller overrides)", step1Flags.Deployment.ExtraValues)
 	}
-	// Step 2 inherits from baseFlags and must keep the override.
+	// Step 2 inherits from baseFlags and must keep both paths.
 	step2Flags := *baseFlags
-	if len(step2Flags.Deployment.ExtraValues) != 1 || step2Flags.Deployment.ExtraValues[0] != "/tmp/engine-image.yaml" {
-		t.Errorf("Step 2 ExtraValues = %v, want [/tmp/engine-image.yaml]", step2Flags.Deployment.ExtraValues)
+	if len(step2Flags.Deployment.ExtraValues) != 2 {
+		t.Errorf("Step 2 ExtraValues = %v, want both global and per-scenario paths", step2Flags.Deployment.ExtraValues)
 	}
 	// Nil-out on the shallow copy must not affect the parent (regression
 	// guard for the slice-header sharing trap that runner_upgrade.go's
 	// hook-slice detach comment already calls out).
-	if len(baseFlags.Deployment.ExtraValues) != 1 {
+	if len(baseFlags.Deployment.ExtraValues) != 2 {
 		t.Errorf("baseFlags.ExtraValues mutated by Step 1 nil-out (got %v)", baseFlags.Deployment.ExtraValues)
+	}
+}
+
+// TestAppendScenarioExtraValues pins the #6312 per-scenario precedence: a
+// scenario's declared extra-values are appended AFTER any global --extra-values
+// (so the per-scenario file wins within the chain's `extra` slot), and relative
+// paths resolve against the scenario dir while absolute paths pass through.
+func TestAppendScenarioExtraValues(t *testing.T) {
+	scenarioDir := "/repo/charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup"
+	global := []string{"/tmp/global-image.yaml"}
+	entry := Entry{ExtraValues: []string{"values/extra/image.yaml", "/abs/override.yaml"}}
+
+	got := appendScenarioExtraValues(append([]string(nil), global...), entry, scenarioDir)
+
+	want := []string{
+		"/tmp/global-image.yaml",
+		filepath.Join(scenarioDir, "values/extra/image.yaml"),
+		"/abs/override.yaml",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d files %v, want %d %v", len(got), got, len(want), want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("file[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	// Global override must come before per-scenario so the per-scenario file
+	// is last-wins in helm's -f merge within the extra slot.
+	if got[0] != global[0] {
+		t.Errorf("global --extra-values must come first, got %q", got[0])
+	}
+
+	// Nil per-scenario list leaves the global slice untouched.
+	if out := appendScenarioExtraValues([]string{"/tmp/g.yaml"}, Entry{}, scenarioDir); len(out) != 1 || out[0] != "/tmp/g.yaml" {
+		t.Errorf("empty ExtraValues should pass global through unchanged, got %v", out)
 	}
 }

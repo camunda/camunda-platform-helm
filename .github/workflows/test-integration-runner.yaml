@@ -528,8 +528,7 @@ jobs:
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -548,11 +547,10 @@ jobs:
         env:
           EXTRA_VALUES: ${{ inputs.extra-values }}
         run: |
-          # Persist user-supplied extra values for `deploy-camunda matrix run` to consume.
-          # The runner uses a fixed location (/tmp/extra-values-file.yaml) which is added to
-          # the helm values chain by deploy.Execute via flags.Deployment.ExtraValues.
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          # Persist user-supplied extra values for `deploy-camunda matrix run` to consume
+          # via --extra-values (flags.Deployment.ExtraValues → digest-overlay strip).
+          # Written without echoing to stdout to avoid leaking sensitive values into logs.
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
 
       - name: Helm - OCI Registry Login
         if: inputs.helmChartVersion != ''
@@ -678,7 +676,8 @@ jobs:
           # Forward workflow extra-values via --extra-values (NOT
           # --extra-helm-arg=--values=…): only this path lands in
           # flags.Deployment.ExtraValues, which engages the digest-overlay strip.
-          # Upgrade flow omits this; runner_upgrade.go also nils Step 1's copy.
+          # The upgrade flow forwards the same way; runner_upgrade.go nils Step 1's
+          # copy so the override applies to Step 2 (the upgraded chart) only.
           EXTRA_VALUES_ARGS=()
           if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
             EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
@@ -903,8 +902,7 @@ jobs:
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -954,6 +952,7 @@ jobs:
           E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           INFRA_TYPE: ${{ inputs.infra-type }}
+          EXTRA_VALUES: ${{ inputs.extra-values }}
           # Selection + composition model environment variables.
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
@@ -1037,14 +1036,17 @@ jobs:
             fi
           fi
 
-          # NOTE: extra-values (e.g. the run-built image tag) are intentionally NOT
-          # forwarded for upgrade flows. `matrix run` runs upgrade as a two-step
-          # orchestration — Step 1 installs the previous released version, Step 2
-          # upgrades to the current chart — and --extra-helm-arg fans out to BOTH
-          # steps, which would inject the new image tag into the previous-version
-          # install and break the upgrade-from-stable baseline. Step-2-only / per-
-          # scenario injection is tracked in #6312. (The install flow, being single-
-          # step, forwards the file safely; see that step.)
+          # Persist user-supplied extra values, then forward via --extra-values.
+          # `matrix run` runs upgrade as two steps and applies --extra-values to
+          # Step 2 only (runner_upgrade.go nils Step 1's copy), so the run-built
+          # image tag lands on the upgraded chart without contaminating the
+          # previous-version install. Written without echoing to stdout to avoid
+          # leaking potentially sensitive values into workflow logs.
+          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
+          EXTRA_VALUES_ARGS=()
+          if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
+            EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
+          fi
 
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -1063,6 +1065,7 @@ jobs:
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
+            ${EXTRA_VALUES_ARGS[@]+"${EXTRA_VALUES_ARGS[@]}"} \
             --log-level info
 
       - name: Display Docker Image Git Commits (Upgrade)

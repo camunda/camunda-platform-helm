@@ -288,6 +288,71 @@ func TestLoadRegistryRejectsPathTraversalManifestID(t *testing.T) {
 	}
 }
 
+// TestLoadRegistryCarriesExtraValues pins the #6312 loader plumbing: a
+// scenario's `extra-values` list must flow from scenarios/<id>.yaml into the
+// assembled CIScenario so it can be threaded into the deploy values chain.
+func TestLoadRegistryCarriesExtraValues(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "alpha.yaml"),
+		"name: alpha\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\nextra-values:\n  - values/extra/image.yaml\n  - values/extra/tuning.yaml\n")
+	// The validator (run inside LoadRegistry) resolves relative extra-values
+	// against chart-full-setup, so the referenced files must exist.
+	extraDir := filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "extra")
+	if err := os.MkdirAll(extraDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(extraDir, "image.yaml"), "{}\n")
+	writeFile(t, filepath.Join(extraDir, "tuning.yaml"), "{}\n")
+
+	cfg, err := LoadRegistry(chartDir)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	scns := cfg.Integration.Case.PR.Scenarios
+	if len(scns) != 1 {
+		t.Fatalf("want 1 scenario, got %d", len(scns))
+	}
+	got := scns[0].ExtraValues
+	want := []string{"values/extra/image.yaml", "values/extra/tuning.yaml"}
+	if len(got) != len(want) {
+		t.Fatalf("ExtraValues = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("ExtraValues[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+// TestGenerate_PropagatesExtraValues pins hop 2 of the #6312 chain: the
+// CIScenario→Entry copy in Generate. A regression deleting that copy would
+// leave the loader test green while silently dropping the field before deploy.
+func TestGenerate_PropagatesExtraValues(t *testing.T) {
+	dir, chartDir, regDir := syntheticChart(t)
+	writeFile(t, filepath.Join(dir, "charts", "chart-versions.yaml"),
+		"camundaVersions:\n  supportStandard:\n    - \"99.99\"\n")
+	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "alpha.yaml"),
+		"name: alpha\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\nextra-values:\n  - values/extra/image.yaml\n")
+	extraDir := filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "extra")
+	if err := os.MkdirAll(extraDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(extraDir, "image.yaml"), "{}\n")
+
+	entries, err := Generate(dir, GenerateOptions{Versions: []string{"99.99"}})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("want 1 entry, got %d: %+v", len(entries), entries)
+	}
+	if !reflect.DeepEqual(entries[0].ExtraValues, []string{"values/extra/image.yaml"}) {
+		t.Errorf("Entry.ExtraValues = %v, want [values/extra/image.yaml]", entries[0].ExtraValues)
+	}
+}
+
 // TestLoadRegistryRejectsMalformedManifest surfaces YAML parse failures at
 // load time with the manifest path in the error so authors can locate the
 // broken file.
@@ -347,6 +412,45 @@ func TestRegistryValidatorRejectsMissingFeatureValues(t *testing.T) {
 	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 	if err == nil || !strings.Contains(err.Error(), "nonexistent-feature") {
 		t.Fatalf("want missing-feature error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsMissingExtraValues exercises checkExtraValues:
+// a scenario's relative extra-values path must resolve under chart-full-setup;
+// a dangling reference is caught at validation, not at deploy time. Absolute
+// paths are runtime-supplied and intentionally skipped.
+func TestRegistryValidatorRejectsMissingExtraValues(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].ExtraValues = []string{"values/extra/nope.yaml"}
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "nope.yaml") {
+		t.Fatalf("want missing-extra-values error, got: %v", err)
+	}
+
+	// An absolute path is not validated (runtime-supplied).
+	cfg.Integration.Case.PR.Scenarios[0].ExtraValues = []string{"/tmp/runtime-supplied.yaml"}
+	if err := (&RegistryValidator{ChartDir: abs}).Validate(cfg); err != nil {
+		t.Fatalf("absolute extra-values must skip validation, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsExtraValuesPathTraversal pins the traversal
+// guard in checkExtraValues: a relative path that escapes chart-full-setup
+// via `..` must be rejected even if the target file exists on disk.
+func TestRegistryValidatorRejectsExtraValuesPathTraversal(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].ExtraValues = []string{"../../etc/passwd"}
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "escapes chart-full-setup") {
+		t.Fatalf("want path-traversal rejection, got: %v", err)
 	}
 }
 

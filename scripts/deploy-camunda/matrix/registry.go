@@ -56,6 +56,7 @@ type registryScenario struct {
 	Identity    string            `yaml:"identity,omitempty"`
 	Persistence string            `yaml:"persistence,omitempty"`
 	Features    []string          `yaml:"features,omitempty"`
+	ExtraValues []string          `yaml:"extra-values,omitempty"`
 	QA          bool              `yaml:"qa,omitempty"`
 	ImageTags   bool              `yaml:"image-tags,omitempty"`
 	Upgrade     bool              `yaml:"upgrade,omitempty"`
@@ -210,6 +211,7 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 				Identity:     rscn.Identity,
 				Persistence:  rscn.Persistence,
 				Features:     rscn.Features,
+				ExtraValues:  rscn.ExtraValues,
 				QA:           rscn.QA,
 				ImageTags:    rscn.ImageTags,
 				Upgrade:      rscn.Upgrade,

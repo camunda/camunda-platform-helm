@@ -172,6 +172,12 @@ type CIScenario struct {
 	Persistence string   `yaml:"persistence,omitempty"`
 	Features    []string `yaml:"features,omitempty"`
 
+	// ExtraValues lists scenario-specific values files (paths relative to the
+	// scenario's chart-full-setup dir) appended to the helm values chain after
+	// any global --extra-values. Lets a scenario specialize without losing the
+	// global override.
+	ExtraValues []string `yaml:"extra-values,omitempty"`
+
 	// Base modifier flags.
 	QA         bool `yaml:"qa,omitempty"`
 	ImageTags  bool `yaml:"image-tags,omitempty"`

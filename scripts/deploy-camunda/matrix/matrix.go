@@ -30,6 +30,12 @@ type Entry struct {
 	Persistence string   `json:"persistence,omitempty"`
 	Features    []string `json:"features,omitempty"`
 
+	// ExtraValues are scenario-declared values files (paths relative to the
+	// scenario's chart-full-setup dir) appended to the helm values chain AFTER
+	// any global --extra-values, so a scenario specializes without losing the
+	// global override (precedence: defaults < global --extra-values < per-scenario).
+	ExtraValues []string `json:"extraValues,omitempty"`
+
 	// Base modifier flags.
 	QA         bool `json:"qa,omitempty"`
 	ImageTags  bool `json:"imageTags,omitempty"`
@@ -211,6 +217,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						Identity:     scenario.Identity,
 						Persistence:  scenario.Persistence,
 						Features:     scenario.Features,
+						ExtraValues:  scenario.ExtraValues,
 						QA:           scenario.QA,
 						ImageTags:    scenario.ImageTags,
 						Upgrade:      scenario.Upgrade,

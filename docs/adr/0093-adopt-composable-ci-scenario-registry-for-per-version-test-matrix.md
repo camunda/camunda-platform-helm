@@ -89,7 +89,7 @@ green for one nightly cycle on `main`. Normative constraints:
    ```text
    charts/camunda-platform-<X.Y>/test/ci/registry/
      manifest.yaml             # ordered list of scenario IDs with numeric tier and enabled
-     scenarios/<id>.yaml       # one scenario per file; inlines all `CIScenario` fields (identity, persistence, platforms, infra-type, features, shortname, prefix-key, helmVersion, skip-e2e, skip-it, qa, image-tags, upgrade, enterprise) except `flow`, `pre-install`, `post-deploy`, and `dependencies`
+     scenarios/<id>.yaml       # one scenario per file; inlines all `CIScenario` fields (identity, persistence, platforms, infra-type, features, extra-values, shortname, prefix-key, helmVersion, skip-e2e, skip-it, qa, image-tags, upgrade, enterprise) except `flow`, `pre-install`, `post-deploy`, and `dependencies`
      hooks/<id>.yaml           # named pre-install / post-deploy LifecycleHook blocks
      dependencies/<id>.yaml    # named ChartDependency entries (chart, version, repo, values-file)
    ```
@@ -122,6 +122,10 @@ green for one nightly cycle on `main`. Normative constraints:
    - Referenced basenames (hook manifests, hook scripts, dependency
      values-files, scenario values-layer files, feature values-files)
      resolve under `test/integration/scenarios/`.
+   - `extra-values` relative paths resolve under the scenario's
+     `chart-full-setup/` dir and MUST NOT escape it via `..` traversal;
+     absolute paths are runtime-supplied (e.g. per-PR image-tag overlay)
+     and are intentionally not validated at load time.
    - Platform × flow combinations are not denied by
      `.github/config/permitted-flows.yaml`.
 

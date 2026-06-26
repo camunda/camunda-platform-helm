@@ -53,6 +53,20 @@ func companionChartsForEntry(entry Entry, repoRoot string) []config.CompanionCha
 	return charts
 }
 
+// appendScenarioExtraValues resolves a scenario's declared extra-values files
+// against scenarioDir (absolute paths pass through) and appends them to base.
+// Resolving to absolute paths here sidesteps helm's CWD-relative -f resolution.
+func appendScenarioExtraValues(base []string, entry Entry, scenarioDir string) []string {
+	for _, p := range entry.ExtraValues {
+		if filepath.IsAbs(p) {
+			base = append(base, p)
+			continue
+		}
+		base = append(base, filepath.Join(scenarioDir, p))
+	}
+	return base
+}
+
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
 // The flow determines the execution strategy:
 //   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
@@ -157,7 +171,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			Timeout:              opts.HelmTimeout,
 			DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
 			ExtraHelmArgs:        append([]string(nil), opts.ExtraHelmArgs...),
-			ExtraValues:          append([]string(nil), opts.ExtraValues...),
+			// Global --extra-values first, then scenario-declared extra-values
+			// (resolved against the scenario dir) so the per-scenario files win
+			// within the chain's `extra` slot.
+			ExtraValues: appendScenarioExtraValues(append([]string(nil), opts.ExtraValues...), entry, scenarioDir),
 			// Always include allowPreReleaseImages=true for CI deployments —
 			// matches the legacy Taskfile install/upgrade behaviour. User-supplied
 			// --extra-helm-set values are merged on top and take precedence.
