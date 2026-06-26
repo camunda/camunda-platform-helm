@@ -247,6 +247,7 @@ When opening a PR with `gh pr create`, **do NOT** use the built-in
 
 ## Additional Agent Context
 - `CLAUDE.md` — thin redirect for Claude Code (redirects to this file, AGENTS.md)
+- `.github/instructions/*.instructions.md` — **authoritative path-scoped chart-coding conventions.** These files carry Copilot/VS Code `applyTo:` globs that are NOT auto-applied by Claude Code, so read the matching guide explicitly BEFORE editing: `values-yaml.instructions.md` (values.yaml authoring — `@param` conjunctions, secret-block shape), `helm-templates.instructions.md` (templates, NOTES.txt, constraints/warnings), `code-review.instructions.md`, `go-tests.instructions.md`, `scripting.instructions.md`, `github-actions.instructions.md`.
 - `.github/AGENTS.md` — CI/CD architecture, repo structure, values files
 - `docs/AGENTS.md` — **ADR authoring rules**. Read before drafting, amending, or reviewing any ADR. Points to `docs/adr/TEMPLATE.md` (structure) and `docs/maintainer-guide.md` (process).
 - `SKILLS.md` — deploy-camunda CLI patterns, kubectl usage

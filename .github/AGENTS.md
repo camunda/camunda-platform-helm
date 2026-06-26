@@ -98,6 +98,8 @@ Each chart version depends on: Bitnami Keycloak (local sub-chart), Bitnami Postg
 
 ## Conventions
 
+Path-scoped chart-coding conventions live in `.github/instructions/*.instructions.md` (values.yaml authoring, Helm templates, code review, Go tests, scripting, GitHub Actions). Their `applyTo:` globs are not auto-applied by Claude Code — read the matching guide explicitly before editing files in that path.
+
 ### Commits and PRs
 
 Commit messages and PR titles use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format:
