@@ -54,7 +54,7 @@ spec:
             requests:
               cpu: 50m
               memory: 64Mi
-          image: curlimages/curl:8.20.0
+          image: curlimages/curl:8.21.0
           command:
             - sh
             - -c
