@@ -2742,7 +2742,7 @@ orchestration:
           ## @param orchestration.migration.identity.waitContainer.image.repository defines which image repository to use
           repository: curlimages/curl
           ## @param orchestration.migration.identity.waitContainer.image.tag can be set to overwrite the global tag, which should be used in that chart
-          tag: 8.20.0
+          tag: 8.21.0
           ## @param orchestration.migration.identity.waitContainer.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
           digest: ""
         ## @extra orchestration.migration.identity.waitContainer.resources configuration to set request and limit configuration for the wait-for-orchestration init container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
