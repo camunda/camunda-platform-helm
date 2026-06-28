@@ -340,30 +340,12 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "keycloak-external + elasticsearch-external rejected (shared CI infra decommissioned)",
-			config: DeploymentConfig{
-				Identity:    "keycloak-external",
-				Persistence: "elasticsearch-external",
-				Platform:    "gke",
-			},
-			wantErr: true,
-		},
-		{
 			name: "valid config with no-elasticsearch",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
 				Persistence: "no-elasticsearch",
 				Platform:    "gke",
 			},
-		},
-		{
-			name: "opensearch rejected (shared CI infra decommissioned)",
-			config: DeploymentConfig{
-				Identity:    "keycloak",
-				Persistence: "opensearch",
-				Platform:    "gke",
-			},
-			wantErr: true,
 		},
 		{
 			name: "missing identity",
@@ -374,11 +356,18 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalid persistence",
+			name: "missing persistence",
+			config: DeploymentConfig{
+				Identity: "keycloak",
+				Platform: "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing platform",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
-				Persistence: "mongodb",
-				Platform:    "gke",
+				Persistence: "elasticsearch",
 			},
 			wantErr: true,
 		},
@@ -393,40 +382,10 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "mcp with elasticsearch is valid",
+			name: "mcp feature does not affect required-field validation",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
 				Persistence: "elasticsearch",
-				Platform:    "gke",
-				Features:    []string{"mcp"},
-			},
-			wantErr: false,
-		},
-		{
-			name: "mcp with elasticsearch-external rejected (shared CI infra decommissioned)",
-			config: DeploymentConfig{
-				Identity:    "keycloak",
-				Persistence: "elasticsearch-external",
-				Platform:    "gke",
-				Features:    []string{"mcp"},
-			},
-			wantErr: true,
-		},
-		{
-			name: "mcp with opensearch-embedded is valid",
-			config: DeploymentConfig{
-				Identity:    "keycloak",
-				Persistence: "opensearch-embedded",
-				Platform:    "gke",
-				Features:    []string{"mcp"},
-			},
-			wantErr: false,
-		},
-		{
-			name: "mcp with rdbms is valid",
-			config: DeploymentConfig{
-				Identity:    "keycloak",
-				Persistence: "rdbms",
 				Platform:    "gke",
 				Features:    []string{"mcp"},
 			},
@@ -439,6 +398,113 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			err := tt.config.Validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateAgainstValues(t *testing.T) {
+	tmpDir := t.TempDir()
+	dirs := []string{
+		filepath.Join(tmpDir, "values", "identity"),
+		filepath.Join(tmpDir, "values", "persistence"),
+		filepath.Join(tmpDir, "values", "platform"),
+		filepath.Join(tmpDir, "values", "features"),
+	}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	files := []string{
+		filepath.Join(tmpDir, "values", "identity", "keycloak.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "opensearch-embedded.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "no-elasticsearch.yaml"),
+		filepath.Join(tmpDir, "values", "platform", "gke.yaml"),
+		filepath.Join(tmpDir, "values", "features", "mcp.yaml"),
+	}
+	for _, f := range files {
+		if err := os.WriteFile(f, []byte("# test"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tests := []struct {
+		name    string
+		config  DeploymentConfig
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+			},
+		},
+		{
+			name: "valid config with mcp feature",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+		},
+		{
+			name: "invalid identity (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak-external",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid persistence (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "mongodb",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "opensearch without -embedded suffix rejected (no file for that name)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "opensearch",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "elasticsearch-external rejected (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch-external",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid feature (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"badfeature"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.ValidateAgainstValues(tmpDir)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateAgainstValues() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -887,9 +953,31 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 		},
 	}
 
+	// Build minimal scenariosDir so ValidateAgainstValues can resolve names.
+	scenariosDir := t.TempDir()
+	for _, d := range []string{
+		filepath.Join(scenariosDir, "values", "identity"),
+		filepath.Join(scenariosDir, "values", "persistence"),
+		filepath.Join(scenariosDir, "values", "platform"),
+		filepath.Join(scenariosDir, "values", "features"),
+	} {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, f := range []string{
+		filepath.Join(scenariosDir, "values", "identity", "keycloak.yaml"),
+		filepath.Join(scenariosDir, "values", "persistence", "elasticsearch.yaml"),
+		filepath.Join(scenariosDir, "values", "platform", "gke.yaml"),
+	} {
+		if err := os.WriteFile(f, []byte("# test"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := BuildDeploymentConfig("qa-elasticsearch", BuilderOverrides{
+			cfg, err := BuildDeploymentConfig(scenariosDir, "qa-elasticsearch", BuilderOverrides{
 				Identity:     "keycloak",
 				Persistence:  "elasticsearch",
 				Platform:     "gke",
