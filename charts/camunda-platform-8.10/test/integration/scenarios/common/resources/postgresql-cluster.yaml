@@ -1,3 +1,4 @@
+# orphan-ok: legacy CloudNativePG Cluster fixture for the cnpg dependency-profile; 8.10 moved to the internal-postgresql companion chart but this file is retained for opt-in use.
 ---
 apiVersion: v1
 stringData:

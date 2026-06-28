@@ -1,4 +1,5 @@
 #!/bin/bash
+# orphan-ok: Step-1 hook for 8.8 upgrade-minor flow; referenced by 8.8 registry hooks/elasticsearch-self-signed-upgrade.yaml, not 8.7 itself.
 # Copyright 2024 Camunda Services GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

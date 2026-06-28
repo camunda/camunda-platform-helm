@@ -159,10 +159,10 @@ func TestRegistryValidatorRejectsMissingFixture(t *testing.T) {
 }
 
 // TestRegistryValidatorRejectsOrphanScript: a .sh file in pre-setup-scripts/
-// that no LifecycleHook references must be flagged. Guards against the
-// coverage gap bkenez raised on #6318: post-#6302 (frozen ci-test-config.yaml
-// deletion), this validator is the only place orphan scripts are caught at
-// load time. Allowlist entries (preSetupScriptAllowlist) remain exempt.
+// that no LifecycleHook references, is not invoked by any sibling script, and
+// carries no "# orphan-ok:" marker must be flagged. Guards against the
+// coverage gap raised on #6318: this validator is the only place orphan
+// scripts are caught at load time.
 func TestRegistryValidatorRejectsOrphanScript(t *testing.T) {
 	abs := absChartDir(t)
 	orphanPath := filepath.Join(abs, "test", "integration", "scenarios", "pre-setup-scripts", "orphan-test.sh")
@@ -181,9 +181,8 @@ func TestRegistryValidatorRejectsOrphanScript(t *testing.T) {
 }
 
 // TestRegistryValidatorRejectsOrphanFixture: a .yaml/.yml file in
-// common/resources/ that no LifecycleHook references must be flagged. Mirrors
-// the orphan-script gate. Allowlist entries (commonResourcesAllowlist) remain
-// exempt.
+// common/resources/ that no LifecycleHook references and carries no
+// "# orphan-ok:" marker must be flagged.
 func TestRegistryValidatorRejectsOrphanFixture(t *testing.T) {
 	abs := absChartDir(t)
 	orphanPath := filepath.Join(abs, "test", "integration", "scenarios", "common", "resources", "orphan-test.yaml")
@@ -201,28 +200,74 @@ func TestRegistryValidatorRejectsOrphanFixture(t *testing.T) {
 	}
 }
 
-// TestRegistryValidatorExemptsAllowlistedOrphans: a file listed in
-// preSetupScriptAllowlist / commonResourcesAllowlist is permitted to exist
-// without a hook reference. Asserts both allowlists are consulted by the
-// orphan walks (regression guard if the allowlist consumer is removed).
-func TestRegistryValidatorExemptsAllowlistedOrphans(t *testing.T) {
+// TestRegistryValidatorExemptsOrphanOkMarker: a file carrying
+// "# orphan-ok: <reason>" is permitted to exist without a hook reference.
+// Also guards that an empty reason is rejected.
+func TestRegistryValidatorExemptsOrphanOkMarker(t *testing.T) {
 	abs := absChartDir(t)
-	// pre-install-upgrade.sh is in preSetupScriptAllowlist (sed-target marker).
-	allowedScript := filepath.Join(abs, "test", "integration", "scenarios", "pre-setup-scripts", "pre-install-upgrade.sh")
-	if err := os.WriteFile(allowedScript, []byte("#!/bin/sh\n# sed marker\n"), 0o644); err != nil {
-		t.Fatalf("write allowed script: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Remove(allowedScript) })
+	scriptsDir := filepath.Join(abs, "test", "integration", "scenarios", "pre-setup-scripts")
+	resourcesDir := filepath.Join(abs, "test", "integration", "scenarios", "common", "resources")
 
-	// gateway-proxy-settings.yaml is in commonResourcesAllowlist.
-	allowedFixture := filepath.Join(abs, "test", "integration", "scenarios", "common", "resources", "gateway-proxy-settings.yaml")
-	if err := os.WriteFile(allowedFixture, []byte("kind: ProxySettingsPolicy\n"), 0o644); err != nil {
-		t.Fatalf("write allowed fixture: %v", err)
+	t.Run("script with marker and reason passes", func(t *testing.T) {
+		p := filepath.Join(scriptsDir, "orphan-marked.sh")
+		if err := os.WriteFile(p, []byte("#!/bin/sh\n# orphan-ok: intentional sed-target marker\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Remove(p) })
+		if _, err := LoadRegistry(abs); err != nil {
+			t.Fatalf("LoadRegistry should accept orphan-ok script: %v", err)
+		}
+	})
+
+	t.Run("fixture with marker and reason passes", func(t *testing.T) {
+		p := filepath.Join(resourcesDir, "orphan-marked.yaml")
+		if err := os.WriteFile(p, []byte("# orphan-ok: staged for disabled scenario\nkind: Test\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Remove(p) })
+		if _, err := LoadRegistry(abs); err != nil {
+			t.Fatalf("LoadRegistry should accept orphan-ok fixture: %v", err)
+		}
+	})
+
+	t.Run("script with empty reason is rejected", func(t *testing.T) {
+		p := filepath.Join(scriptsDir, "orphan-empty-reason.sh")
+		if err := os.WriteFile(p, []byte("#!/bin/sh\n# orphan-ok:\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Remove(p) })
+		_, err := LoadRegistry(abs)
+		if err == nil || !strings.Contains(err.Error(), "reason is empty") {
+			t.Fatalf("want empty-reason error, got: %v", err)
+		}
+	})
+}
+
+// TestRegistryValidatorExemptsSiblingInvokedHelper: a .sh file that is called
+// by another script in pre-setup-scripts/ via bash "${SCRIPT_DIR}/<name>" is
+// exempt from the orphan check without any marker.
+func TestRegistryValidatorExemptsSiblingInvokedHelper(t *testing.T) {
+	abs := absChartDir(t)
+	scriptsDir := filepath.Join(abs, "test", "integration", "scenarios", "pre-setup-scripts")
+
+	helper := filepath.Join(scriptsDir, "create-test-helper.sh")
+	caller := filepath.Join(scriptsDir, "orphan-caller.sh")
+	// orphan-caller.sh is itself orphan (no hook reference, no marker) but
+	// invokes the helper — only the helper is under test here.
+	// Actually: orphan-caller.sh has no hook ref either. We need the caller to
+	// be referenced by a hook OR have a marker so it doesn't also fail.
+	// Use an orphan-ok marker on the caller and no marker on the helper.
+	if err := os.WriteFile(caller, []byte("#!/bin/sh\n# orphan-ok: test caller\nbash \"${SCRIPT_DIR}/create-test-helper.sh\"\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = os.Remove(allowedFixture) })
+	t.Cleanup(func() { _ = os.Remove(caller) })
+	if err := os.WriteFile(helper, []byte("#!/bin/sh\n# no orphan-ok marker needed — sibling invokes it\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(helper) })
 
 	if _, err := LoadRegistry(abs); err != nil {
-		t.Fatalf("LoadRegistry should accept allowlisted files: %v", err)
+		t.Fatalf("LoadRegistry should exempt sibling-invoked helper: %v", err)
 	}
 }
 
