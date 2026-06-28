@@ -29,7 +29,7 @@ identityPostgresql:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     # renovate: datasource=custom.bitnami-postgresql-camunda depName=postgresql versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-    tag: 15.18.0-debian-12-r2
+    tag: 15.18.0-debian-12-r9
     pullSecrets:
       - name: registry-camunda-cloud
 
@@ -60,7 +60,7 @@ identityKeycloak:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgresql
       # renovate: datasource=custom.bitnami-postgresql-camunda depName=postgresql versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-      tag: 15.18.0-debian-12-r2
+      tag: 15.18.0-debian-12-r9
       pullSecrets:
         - name: registry-camunda-cloud
 
@@ -84,7 +84,7 @@ postgresql:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
     # renovate: datasource=custom.bitnami-postgresql-camunda depName=postgresql versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-    tag: 14.23.0-debian-12-r2
+    tag: 14.23.0-debian-12-r10
     pullSecrets:
       - name: registry-camunda-cloud
 
