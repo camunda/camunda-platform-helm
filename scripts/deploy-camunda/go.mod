@@ -9,6 +9,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.24
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
+	github.com/stretchr/testify v1.9.0
 	golang.org/x/term v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
 	scripts/camunda-core v0.0.0
@@ -53,6 +54,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect

@@ -104,7 +104,7 @@ Available selections:
 |------|--------|
 | `--identity` | `keycloak`, `oidc`, `basic`, `hybrid` |
 | `--persistence` | `elasticsearch`, `opensearch`, `rdbms`, `rdbms-oracle` |
-| `--test-platform` | `gke`, `eks`, `openshift` |
+| `--test-platform` | `gke`, `eks` |
 | `--features` | `multitenancy`, `rba`, `documentstore` |
 | `--qa` | (boolean) Enable QA configuration |
 | `--upgrade-flow` | (boolean) Enable upgrade flow configuration |

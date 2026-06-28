@@ -51,45 +51,60 @@ type DeploymentConfig struct {
 }
 
 // Validate checks that required fields are set and feature constraints are satisfied.
+// It does not validate against any specific chart version's filesystem — call
+// ValidateAgainstValues for that.
 func (c *DeploymentConfig) Validate() error {
 	if c.Identity == "" {
-		return errors.New("--identity is required (keycloak, oidc, auth0, basic, hybrid)")
+		return errors.New("--identity is required")
 	}
 	if c.Persistence == "" {
-		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle)")
+		return errors.New("--persistence is required")
 	}
 	if c.Platform == "" {
-		return errors.New("--platform is required (gke, eks, openshift)")
-	}
-
-	// Validate identity values
-	validIdentities := []string{"keycloak", "oidc", "auth0", "basic", "hybrid"}
-	if !contains(validIdentities, c.Identity) {
-		return fmt.Errorf("invalid --identity value %q: must be one of: %s", c.Identity, strings.Join(validIdentities, ", "))
-	}
-
-	// Validate persistence values.
-	// Note: this list is global across chart versions and is version-dependent —
-	// a given values file may exist only in some chart series. For example
-	// `elasticsearch-self-signed-os-trust` exists in 8.8/8.9/8.10, while the
-	// `opensearch-self-signed*` variants exist only in 8.10+. Selecting a value
-	// against a chart version that lacks its values file passes Validate() but
-	// produces no persistence layer (ResolvePaths skips missing files), so the
-	// deploy proceeds with no TLS wiring.
-	validPersistence := []string{"elasticsearch", "elasticsearch-self-signed", "elasticsearch-self-signed-os-trust", "no-elasticsearch", "opensearch-embedded", "opensearch-self-signed", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
-	if !contains(validPersistence, c.Persistence) {
-		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
-	}
-
-	// Validate platform values
-	validPlatforms := []string{"gke", "eks", "openshift"}
-	if !contains(validPlatforms, c.Platform) {
-		return fmt.Errorf("invalid --platform value %q: must be one of: %s", c.Platform, strings.Join(validPlatforms, ", "))
+		return errors.New("--test-platform is required")
 	}
 
 	// Feature constraints
 	if contains(c.Features, "multitenancy") && contains(c.Features, "rba") {
 		return errors.New("multitenancy and rba cannot be combined")
+	}
+
+	return nil
+}
+
+// ValidateAgainstValues checks that identity, persistence, platform, and feature
+// selections are each backed by a values file in scenariosDir. Valid names are
+// discovered at runtime from the filesystem, so no code change is required when
+// values files are added or removed.
+func (c *DeploymentConfig) ValidateAgainstValues(scenariosDir string) error {
+	type check struct {
+		field  string
+		value  string
+		listFn func(string) ([]string, error)
+	}
+	checks := []check{
+		{"--identity", c.Identity, ListIdentities},
+		{"--persistence", c.Persistence, ListPersistence},
+		{"--test-platform", c.Platform, ListPlatforms},
+	}
+	for _, ch := range checks {
+		valid, err := ch.listFn(scenariosDir)
+		if err != nil {
+			return fmt.Errorf("cannot discover valid %s values from %q: %w", ch.field, scenariosDir, err)
+		}
+		if !contains(valid, ch.value) {
+			return fmt.Errorf("invalid %s value %q: must be one of: %s", ch.field, ch.value, strings.Join(valid, ", "))
+		}
+	}
+
+	validFeatures, err := ListFeatures(scenariosDir)
+	if err != nil {
+		return fmt.Errorf("cannot discover valid --features values from %q: %w", scenariosDir, err)
+	}
+	for _, f := range c.Features {
+		if !contains(validFeatures, f) {
+			return fmt.Errorf("invalid --features value %q: must be one of: %s", f, strings.Join(validFeatures, ", "))
+		}
 	}
 
 	return nil
@@ -444,7 +459,13 @@ type BuilderOverrides struct {
 // prepare-values, dry-run, and coverage — goes through the same gate. This
 // prevents situations where a value (e.g. persistence: "no-elasticsearch") works
 // locally but fails in CI because only the CI path called Validate().
-func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentConfig, error) {
+//
+// scenariosDir is the path to the chart-full-setup scenario directory for the
+// target chart version (e.g. charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup).
+// Valid identity/persistence/platform/feature names are derived from its values/
+// subdirectories at runtime, so no code change is required when values files are
+// added or removed. An empty or unresolvable scenariosDir is a hard error.
+func BuildDeploymentConfig(scenariosDir, scenario string, ov BuilderOverrides) (*DeploymentConfig, error) {
 	cfg := MapScenarioToConfig(scenario)
 
 	// Apply non-zero overrides.
@@ -483,6 +504,12 @@ func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentCon
 	}
 
 	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("deployment config validation failed for scenario %q: %w", scenario, err)
+	}
+	if scenariosDir == "" {
+		return nil, fmt.Errorf("deployment config validation failed for scenario %q: scenariosDir is required", scenario)
+	}
+	if err := cfg.ValidateAgainstValues(scenariosDir); err != nil {
 		return nil, fmt.Errorf("deployment config validation failed for scenario %q: %w", scenario, err)
 	}
 
