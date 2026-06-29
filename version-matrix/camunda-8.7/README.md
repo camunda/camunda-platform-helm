@@ -52,11 +52,11 @@ Supported versions:
 
 Camunda images:
 
-- docker.io/camunda/connectors-bundle:8.7.21
+- docker.io/camunda/connectors-bundle:8.7.22
 - docker.io/camunda/console:8.7.105
 - docker.io/camunda/identity:8.7.21
 - docker.io/camunda/operate:8.7.34
-- docker.io/camunda/optimize:8.7.23
+- docker.io/camunda/optimize:8.7.24
 - docker.io/camunda/tasklist:8.7.34
 - docker.io/camunda/web-modeler-restapi:8.7.23
 - docker.io/camunda/web-modeler-webapp:8.7.23
