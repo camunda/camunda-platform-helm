@@ -12,6 +12,10 @@
 name: Renovate PR maintainer
 
 on:
+  # TEMP(#1053): push trigger to smoke-test this workflow before merge; reverted after.
+  push:
+    branches:
+    - 1053-renovate-rebase-when-conflicted
   schedule:
   # Runs hourly; actions are taken selectively per PR state, not on every run.
   - cron: "23 * * * *"
@@ -46,7 +50,7 @@ jobs:
     - name: Maintain Renovate PRs
       uses: camunda/infra-global-github-actions/renovate-pr-maintainer@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       with:
-        dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+        dry-run: true  # TEMP(#1053): dry-run for push-triggered smoke test; reverted after.
         github-token: ${{ secrets.GITHUB_TOKEN }}
         # PR is considered stale when its head branch is behind base by >= 20 commits
         # (~a few days' worth of base-branch commits; PRs older than 24h rebase regardless).
