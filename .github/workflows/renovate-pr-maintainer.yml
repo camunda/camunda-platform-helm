@@ -48,8 +48,9 @@ jobs:
       with:
         dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        # PR is considered stale when its head branch is behind base by >= 100 commits.
-        behind-threshold: 100
+        # PR is considered stale when its head branch is behind base by >= 5 commits
+        # (~one day's worth of commits on the base branch; PRs older than 24h rebase regardless).
+        behind-threshold: 5
         # PR is considered stale when its head commit is older than 24 hours.
         stale-hours: 24
         # Re-run failing required checks up to twice to absorb flaky CI jobs.
