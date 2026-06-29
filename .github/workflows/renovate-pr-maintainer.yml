@@ -1,0 +1,96 @@
+# type: Automation
+# owner: @camunda/distribution-team
+
+---
+# Renovate PR maintainer
+#
+# Companion to the `rebaseWhen: conflicted` policy (issue #1053). Renovate no
+# longer rebases every open PR on each base-branch push; instead this workflow
+# selectively rebases only PRs that have genuinely fallen behind, and reruns
+# their flaky required checks. Runs hourly but acts per-PR based on the strategy
+# thresholds below.
+name: Renovate PR maintainer
+
+on:
+  schedule:
+  # Runs hourly; actions are taken selectively per PR state, not on every run.
+  - cron: "23 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Run without modifying any PR (check to enable dry run)
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  maintain:
+    concurrency:
+      group: renovate-pr-maintainer
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+      pull-requests: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+    # Inspects in-scope Renovate PRs and acts per PR: rebase stale PRs (via the
+    # Renovate `rebase` label) or re-run their failed required jobs.
+    - name: Maintain Renovate PRs
+      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      with:
+        dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        # PR is considered stale when its head branch is behind base by >= 100 commits.
+        behind-threshold: 100
+        # PR is considered stale when its head commit is older than 24 hours.
+        stale-hours: 24
+        # Re-run failing required checks up to twice to absorb flaky CI jobs.
+        rerun-budget: 2
+
+  # Failure alerting — intentionally commented out until reviewed and the Slack
+  # webhook secret is confirmed for this repo. Uncomment to enable (issue #1053).
+  #
+  # notify:
+  #   name: Send Slack notification
+  #   runs-on: ubuntu-latest
+  #   needs: [maintain]
+  #   if: ${{ always() && needs.maintain.result != 'success' && github.event_name == 'schedule' }}
+  #   timeout-minutes: 5
+  #   permissions: {}
+  #   steps:
+  #   - name: Import Vault secrets
+  #     id: secrets
+  #     uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+  #     with:
+  #       url: ${{ secrets.VAULT_ADDR }}
+  #       method: approle
+  #       roleId: ${{ secrets.VAULT_ROLE_ID }}
+  #       secretId: ${{ secrets.VAULT_SECRET_ID }}
+  #       exportEnv: false
+  #       secrets: |
+  #         secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_GH;
+  #   - name: Send failure Slack notification
+  #     uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+  #     with:
+  #       webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK_GH }}
+  #       webhook-type: incoming-webhook
+  #       payload: |
+  #         {
+  #           "blocks": [
+  #             {
+  #               "type": "section",
+  #               "text": {
+  #                 "type": "mrkdwn",
+  #                 "text": ":alarm: *Renovate PR maintainer* automation failed on `main`!\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+  #               }
+  #             }
+  #           ]
+  #         }
