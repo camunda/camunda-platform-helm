@@ -8,6 +8,7 @@ on:
     - main
     paths:
     - '.github/workflows/chart-public-files.yaml'
+    - 'charts/camunda-platform*/Chart.yaml'
     - 'charts/camunda-platform*/values*.yaml'
     - 'scripts/templates/version-matrix/*'
     - 'version-matrix/**'
@@ -77,9 +78,7 @@ jobs:
           message: "chore: update camunda-platform public files"
 
   retag-release:
-    # Moves each chart's release Git tag to the release-please merge commit,
-    # closing the window between helm-cr tag creation (Stage 3) and the Chart.yaml
-    # version bump (post-merge). Only runs on chore(release): pushes.
+    # Only runs on chore(release): pushes to main.
     name: Move release tags to release-please merge commit
     runs-on: ubuntu-latest
     permissions:
@@ -87,8 +86,9 @@ jobs:
     steps:
       - name: Check if triggered by a release-please merge
         id: guard
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
           if echo "$COMMIT_MSG" | grep -qE '^chore\(release\):'; then
             echo "is_release=true" >> "$GITHUB_OUTPUT"
           else
