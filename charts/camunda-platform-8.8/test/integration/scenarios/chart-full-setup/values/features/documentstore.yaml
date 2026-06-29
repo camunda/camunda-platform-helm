@@ -20,7 +20,10 @@ connectors:
     - name: username
       value: username
     - name: password
-      value: password
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: password
     - name: IDP_AWS_BUCKET_NAME
       value: "$IDP_AWS_BUCKET_NAME"
     - name: IDP_AWS_REGION
