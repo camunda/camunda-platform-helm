@@ -316,8 +316,8 @@ immediately — no need to manually inspect events or logs.
 A persistence layer is a values file at `charts/<version>/test/integration/scenarios/chart-full-setup/values/persistence/<name>.yaml`. To add one:
 
 1. Create the YAML file with the values needed for the data backend.
-2. Add the name to `validPersistence` in `scripts/camunda-core/pkg/scenarios/scenarios.go`.
-3. Update help text and shell completions in `scripts/deploy-camunda/cmd/prepare_values.go` and `scripts/deploy-camunda/cmd/root.go`.
+
+No code change required — the name is discovered automatically from the filesystem.
 
 ### New CI Test Scenario
 Scenarios are defined in `charts/<version>/test/ci-test-config.yaml`. Each entry specifies identity, persistence, platforms, flows, and optional features. Example:

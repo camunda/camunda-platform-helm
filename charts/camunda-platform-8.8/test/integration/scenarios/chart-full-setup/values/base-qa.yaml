@@ -69,7 +69,10 @@ connectors:
     - name: username
       value: username
     - name: password
-      value: password
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: password
 
 console:
   overrideConfiguration: |

@@ -31,9 +31,6 @@ const (
 // DeployPlatforms lists the valid deployment infrastructure platforms.
 var DeployPlatforms = []string{"gke", "eks", "rosa"}
 
-// TestPlatforms lists the valid test platform identifiers.
-var TestPlatforms = []string{"gke", "eks", "openshift"}
-
 // KeycloakConfig holds Keycloak connection settings.
 type KeycloakConfig struct {
 	Host     string `mapstructure:"host" yaml:"host,omitempty"`

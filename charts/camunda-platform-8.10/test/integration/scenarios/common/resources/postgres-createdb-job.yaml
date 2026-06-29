@@ -1,3 +1,4 @@
+# orphan-ok: staged fixture for the disabled rdbms-external scenario; retained to avoid a separate PR when the scenario is enabled.
 ---
 apiVersion: batch/v1
 kind: Job
