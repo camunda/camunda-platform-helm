@@ -54,6 +54,8 @@ func main() {
 		err = runInjectValues(os.Args[2:])
 	case "version-matrix":
 		err = runVersionMatrix(os.Args[2:])
+	case "retag-release":
+		err = runRetagRelease(os.Args[2:])
 	case "-h", "--help", "help":
 		usage()
 		return
@@ -84,5 +86,6 @@ Subcommands:
   release-notes   Generate RELEASE-NOTES.md + Chart.yaml release annotations (--main / --footer)
   inject-values   Override component image tags in a chart's values.yaml from *_IMAGE_TAG env
   version-matrix  Render version-matrix/camunda-<app>/README.md (--readme <app>) or version-matrix/README.md (--index)
+  retag-release   Move each chart's release Git tag to the release-please merge commit (--repo --sha)
 `)
 }

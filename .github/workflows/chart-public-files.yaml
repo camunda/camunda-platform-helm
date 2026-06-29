@@ -75,3 +75,39 @@ jobs:
       - uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
         with:
           message: "chore: update camunda-platform public files"
+
+  retag-release:
+    # Moves each chart's release Git tag to the release-please merge commit,
+    # closing the window between helm-cr tag creation (Stage 3) and the Chart.yaml
+    # version bump (post-merge). Only runs on chore(release): pushes.
+    name: Move release tags to release-please merge commit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check if triggered by a release-please merge
+        id: guard
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if echo "$COMMIT_MSG" | grep -qE '^chore\(release\):'; then
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            echo "Not a release-please merge commit — skipping retag."
+          fi
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        if: steps.guard.outputs.is_release == 'true'
+
+      - name: Build release-tools
+        if: steps.guard.outputs.is_release == 'true'
+        run: cd scripts/release-tools && go build -o /tmp/release-tools .
+
+      - name: Retag stale release tags
+        if: steps.guard.outputs.is_release == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          /tmp/release-tools retag-release \
+            --repo "${{ github.repository }}" \
+            --sha  "${{ github.sha }}"
