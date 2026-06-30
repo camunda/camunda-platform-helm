@@ -1,5 +1,30 @@
 # Changelog
 
+## [15.0.0-alpha3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha2...camunda-platform-8.10-15.0.0-alpha3) (2026-06-30)
+
+
+### Features
+
+* **8.10:** deprecate app-config proxy keys in favor of extraConfiguration ([#6317](https://github.com/camunda/camunda-platform-helm/issues/6317)) ([7428e1d](https://github.com/camunda/camunda-platform-helm/commit/7428e1d9ecb975faf091ba5deed39d92d4752231))
+
+
+### Bug Fixes
+
+* **8.10:** back Web Modeler restapi /tmp with a per-pod ephemeral volume ([#6406](https://github.com/camunda/camunda-platform-helm/issues/6406)) ([c7f2916](https://github.com/camunda/camunda-platform-helm/commit/c7f2916f3a1c8e01692945c4fe79df814dc1c08e))
+* **8.10:** harden caBundle truststore init container for air-gapped & OpenShift ([#6292](https://github.com/camunda/camunda-platform-helm/issues/6292)) ([38f6791](https://github.com/camunda/camunda-platform-helm/commit/38f6791fb2645e834fc79cfb91bf5d6adf00d1ec))
+* **8.10:** trust caBundle CA in console via NODE_EXTRA_CA_CERTS + CRLF-safe init ([#6371](https://github.com/camunda/camunda-platform-helm/issues/6371)) ([3e8d2b4](https://github.com/camunda/camunda-platform-helm/commit/3e8d2b45a97391bd30b58b1a09d6716f81b1b756))
+* align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10 ([#5887](https://github.com/camunda/camunda-platform-helm/issues/5887)) ([13e5438](https://github.com/camunda/camunda-platform-helm/commit/13e54382292c63dfbf366141843eb040a4d2d91a))
+* configure index replicas for the legacy Zeebe ES/OS exporter ([#6431](https://github.com/camunda/camunda-platform-helm/issues/6431)) ([367cb08](https://github.com/camunda/camunda-platform-helm/commit/367cb08b9574b5c719e065a3c4ec6df115d04abf))
+* remove obsolete backup.webapps workaround when RDBMS is enabled ([#6396](https://github.com/camunda/camunda-platform-helm/issues/6396)) ([0806cad](https://github.com/camunda/camunda-platform-helm/commit/0806cad46af841f9c4332e44eaeef50e425af15d))
+* **schema:** cover keys shipped by default values.yaml across 8.8/8.9/8.10 ([#6402](https://github.com/camunda/camunda-platform-helm/issues/6402)) ([e7091f2](https://github.com/camunda/camunda-platform-helm/commit/e7091f272484711d426d0d1bb86713fe833dfc0a))
+* support Orchestration gRPC TLS endpoints ([#6280](https://github.com/camunda/camunda-platform-helm/issues/6280)) ([faa57dd](https://github.com/camunda/camunda-platform-helm/commit/faa57dd935ddc382655a52f52a4fba790db1dcc0))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6154](https://github.com/camunda/camunda-platform-helm/issues/6154)) ([2598594](https://github.com/camunda/camunda-platform-helm/commit/2598594cff5b3936e3f4478c679d4f8b4087235a))
+* update patch-updates (patch) ([#6289](https://github.com/camunda/camunda-platform-helm/issues/6289)) ([2164f17](https://github.com/camunda/camunda-platform-helm/commit/2164f176bc967536bb9c9b1f279d9201f0711f50))
+
 ## [15.0.0-alpha2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha1...camunda-platform-8.10-15.0.0-alpha2) (2026-06-04)
 
 
