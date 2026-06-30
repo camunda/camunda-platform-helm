@@ -621,7 +621,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 }
 
 func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentityAndWebModelerComponents() {
-	// management-cluster must include both identity and webModelerWebApp so that WebModeler
+	// management-cluster must include both identity and hub so that WebModeler
 	// can reach Identity and register itself as a known component.
 	values := map[string]string{
 		"identity.enabled":                              "true",

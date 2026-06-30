@@ -70,7 +70,7 @@ data:
                 webapp: "http://localhost:8080"
                 readiness: "http://camunda-platform-test-identity.camunda-platform:82/actuator/health"
             - name: WebModeler
-              type: webModelerWebApp
+              type: hub
               version: "8.10.0-alpha3-rc1"
               urls:
                 webapp: "http://localhost:8070"
