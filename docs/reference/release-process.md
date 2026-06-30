@@ -90,10 +90,9 @@ The charts are built, linted, and tested on every push to the main branch. The r
 
 - Updates `Chart.yaml` version and changelog annotations.
 - Updates `.release-please-manifest.json`.
-- Triggers `chart-release-chores.yaml`, which generates:
-  - Release notes (`RELEASE-NOTES.md`).
-  - Version matrix files (component versions mapping).
-  - Updated README.
+- The promotion workflow generates the release files on the PR from the dev
+  package: `RELEASE-NOTES.md`, the `Chart.yaml` release annotations, and the
+  version matrix files (component versions mapping + READMEs).
 
 ### Stage 3: Public Release
 
@@ -304,7 +303,6 @@ Before promoting to RC, verify component image versions match the release train:
 | [`chart-build-dev.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-build-dev.yaml) | Stage 1: Build dev packages |
 | [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) | Stage 2: Promote dev → RC |
 | [`chart-release-public.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml) | Stage 3: Publish to GitHub Releases |
-| [`chart-release-chores.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-chores.yaml) | Auto-generate release notes, version matrix |
 | [`chart-release-artifact-verify.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-artifact-verify.yaml) | Daily Cosign verification |
 | [`chart-public-files.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-public-files.yaml) | Update public docs after PR merge |
 

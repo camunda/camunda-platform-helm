@@ -160,6 +160,8 @@ jobs:
         with:
           tools: |
             helm
+            git-cliff
+            yq
 
       - name: Pull and validate dev package
         id: package
@@ -239,8 +241,7 @@ jobs:
           
           echo "::notice::Release-please PR: ${pr_url}"
 
-      - name: Pre-populate version matrix from dev package
-        if: steps.package.outputs.has_image_overrides == 'true'
+      - name: Generate release files on the release-please PR
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
@@ -248,34 +249,45 @@ jobs:
 
           chart_version="${{ steps.parse.outputs.version }}"
           app_version="${{ steps.package.outputs.camunda_version }}"
+          chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
           head_ref="${{ steps.release-please.outputs.head_ref }}"
-
-          # Update version-matrix.json on the release-please branch.
           git fetch origin "${head_ref}"
           git checkout "${head_ref}"
 
-          version_matrix_file="version-matrix/camunda-${app_version}/version-matrix.json"
+          make helm.repos-add
+          make helm.dependency-update chartPath="${chart_path}"
 
-          # Write the matrix entry from the camunda.io/chart-images annotation in
-          # the package's Chart.yaml (extracted to /tmp/Chart.yaml above).
+          # Chart.yaml release annotations + RELEASE-NOTES.md (body + image footer).
+          /tmp/release-tools release-notes --main "${chart_path}"
+          /tmp/release-tools release-notes --footer "${chart_path}"
+
+          # version-matrix entry (standard + enterprise images) + per-app + index READMEs.
+          version_matrix_file="version-matrix/camunda-${app_version}/version-matrix.json"
           /tmp/release-tools update-matrix \
-            --chart-yaml /tmp/Chart.yaml \
+            --chart-dir "${chart_path}" \
             --chart-version "${chart_version}" \
             --matrix-file "${version_matrix_file}"
+          /tmp/release-tools version-matrix --readme "${app_version}" --chart-version "${chart_version}"
+          /tmp/release-tools version-matrix --index
 
-          # Commit + push if changed.
-          if git diff --quiet "${version_matrix_file}"; then
-            echo "::notice::No changes to version-matrix.json"
+          git config user.name "distro-ci[bot]"
+          git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
+          git add "${chart_path}/Chart.yaml" "${chart_path}/RELEASE-NOTES.md" \
+            "${version_matrix_file}" \
+            "version-matrix/camunda-${app_version}/README.md" \
+            "version-matrix/README.md"
+          if git diff --cached --quiet; then
+            echo "::notice::No release-file changes"
           else
-            git config user.name "distro-ci[bot]"
-            git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
-            git add "${version_matrix_file}"
-            git commit -m "chore: pre-populate version-matrix from dev package ${{ steps.parse.outputs.resolved_tag }}"
+            git commit -m "chore: generate release files from dev package ${{ steps.parse.outputs.resolved_tag }}"
             git push origin "${head_ref}"
-            echo "::notice::Updated version-matrix.json on release-please branch"
+            echo "::notice::Updated release files on release-please branch"
           fi
 
-          # Switch back to original checkout.
+          # Add the release PR to the release board.
+          gh project item-add 33 --owner camunda \
+            --url "${{ steps.release-please.outputs.pr_url }}" >/dev/null || true
+
           git checkout "${{ steps.parse.outputs.sha }}"
 
       - name: Add RC tags to Harbor package
