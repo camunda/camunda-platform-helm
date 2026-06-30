@@ -1,5 +1,21 @@
 # Changelog
 
+## [12.13.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.12.1...camunda-platform-8.7-12.13.0) (2026-06-26)
+
+
+### Features
+
+* **renovate:** source vendor-ee Bitnami images from the published datasource ([#6435](https://github.com/camunda/camunda-platform-helm/issues/6435)) ([9c57a9d](https://github.com/camunda/camunda-platform-helm/commit/9c57a9d6ccd87efd4b59faf3a5970c29b9ad6531))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6389](https://github.com/camunda/camunda-platform-helm/issues/6389)) ([040152b](https://github.com/camunda/camunda-platform-helm/commit/040152b82eee17ff26140e56bee8a2217d97b975))
+* update camunda-platform-images (patch) ([#6437](https://github.com/camunda/camunda-platform-helm/issues/6437)) ([49c6fa5](https://github.com/camunda/camunda-platform-helm/commit/49c6fa53a8d7bc57e951a01f0489f876a2c06dda))
+* update camunda-platform-images (patch) ([#6443](https://github.com/camunda/camunda-platform-helm/issues/6443)) ([9415cda](https://github.com/camunda/camunda-platform-helm/commit/9415cda25c24a4a4d09e6dfb9755b0a6bdcd0d62))
+* update camunda-platform-images (patch) ([#6456](https://github.com/camunda/camunda-platform-helm/issues/6456)) ([82415fc](https://github.com/camunda/camunda-platform-helm/commit/82415fc4adbc993f013982a31cc58de623fc00af))
+* update camunda-platform-images to v8.7.34 ([#6445](https://github.com/camunda/camunda-platform-helm/issues/6445)) ([5b06bc0](https://github.com/camunda/camunda-platform-helm/commit/5b06bc097262b7bfeba70881973d668bb31aa387))
+
 ## [12.12.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.12.0...camunda-platform-8.7-12.12.1) (2026-06-17)
 
 
