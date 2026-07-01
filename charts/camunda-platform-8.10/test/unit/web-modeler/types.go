@@ -84,6 +84,21 @@ type ClusterYAML struct {
 	Authentication string             `yaml:"authentication"`
 	Url            UrlYAML            `yaml:"url"`
 	Authorizations AuthorizationsYAML `yaml:"authorizations"`
+	Components     []ComponentYAML    `yaml:"components"`
+}
+
+type ComponentYAML struct {
+	Name    string           `yaml:"name"`
+	Type    string           `yaml:"type"`
+	Version string           `yaml:"version"`
+	Urls    ComponentUrlYAML `yaml:"urls"`
+}
+
+type ComponentUrlYAML struct {
+	Webapp    string `yaml:"webapp"`
+	Rest      string `yaml:"rest"`
+	Grpc      string `yaml:"grpc"`
+	Readiness string `yaml:"readiness"`
 }
 
 type UrlYAML struct {

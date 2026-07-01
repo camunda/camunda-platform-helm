@@ -40,7 +40,7 @@ spec:
       initContainers:
       containers:
         - name: web-modeler-restapi
-          image: "camunda/hub:8.10.0-alpha1-rc1"
+          image: "camunda/hub:8.10.0-alpha3-rc1"
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -77,6 +77,10 @@ spec:
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: "/tmp/zeebe_client_cache.txt"
+            - name: CAMUNDA_MODELER_FEATURE_CONSOLE_ENABLED
+              value: "false"
+            - name: CAMUNDA_MODELER_FEATURE_GLOBAL_NAVIGATION_V2_ENABLED
+              value: "false"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars

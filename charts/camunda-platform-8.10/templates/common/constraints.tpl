@@ -94,17 +94,6 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{- end }}
 
 {{/*
-Fail with a message if Console is enabled but management Identity is not enabled.
-*/}}
-{{- if and (eq (include "camundaHub.consoleEnabled" .) "true") (not .Values.identity.enabled) }}
-  {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Console is enabled but management Identity is not enabled."
-      "Please ensure that if Console is enabled, management Identity must also be enabled."
-  -}}
-  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-{{- end }}
-
-{{/*
 Fail with a message if Web Modeler is enabled but management Identity is not enabled.
 */}}
 {{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (not .Values.identity.enabled) }}
@@ -135,8 +124,6 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
         {{- $existingSecretsNotConfigured = append
             $existingSecretsNotConfigured "global.identity.auth.identity.secret.existingSecret" }}
       {{- end }}
-
-      {{- /* Console is a public client and does not require a secret */ -}}
 
       {{ if and (.Values.orchestration.enabled)
                 (eq (include "orchestration.authMethod" .) "oidc")
@@ -372,19 +359,6 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
-    {{/* (4) Console (Node.js) pins NODE_EXTRA_CA_CERTS to its own
-           console.tls.certKeyFilename when caBundle is unset; once caBundle is
-           set, NODE_EXTRA_CA_CERTS points at the bundle instead, so a configured
-           certKeyFilename no longer contributes trust. */}}
-    {{- if and (eq (include "camundaHub.consoleEnabled" .) "true") (or .Values.camundaHub.console.tls.certKeyFilename .Values.console.tls.certKeyFilename) }}
-      {{- $warningMessage := printf "%s %s %s"
-          "[camunda][warning]"
-          "global.tls.caBundle is set, so Console's NODE_EXTRA_CA_CERTS now points at the CA bundle and console.tls.certKeyFilename is no longer used for trust."
-          "If that cert's CA must still be trusted, include it in the global.tls.caBundle bundle."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
@@ -412,16 +386,6 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{/* Camunda Hub consolidation deprecation warnings */}}
-  {{- if .Values.console.enabled }}
-    {{- $warningMessage := printf "%s %s %s %s"
-        "[camunda][warning]"
-        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in a future version."
-        "Console has been consolidated into Camunda Hub. Please use \"camundaHub.enabled: true\" instead."
-        "Any console-specific overrides can be placed under \"camundaHub.console.*\"."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
   {{- if .Values.webModeler.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
@@ -644,12 +608,12 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-    {{- $con := mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict) }}
+    {{- $con := mustMergeOverwrite (deepCopy (.Values.console | default dict)) (.Values.camundaHub.console | default dict) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne ($con.keycloak.realm | toString) "camunda-platform")
+      "condition" (ne (dig "keycloak" "realm" "camunda-platform" $con) "camunda-platform")
       "oldName" "console.keycloak.realm" "migration" "console.extraConfiguration") }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne ($con.nodeEnv | toString) "prod")
+      "condition" (ne ($con.nodeEnv | default "prod" | toString) "prod")
       "oldName" "console.nodeEnv" "migration" "console.env") }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $con.logging))
@@ -1130,22 +1094,6 @@ Global - OpenSearch TLS
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.global.opensearch.tls "existingSecret")
   "oldName" "global.opensearch.tls.existingSecret"
-) }}
-
-{{/*
-*******************************************************************************
-Console
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.console "overrideConfiguration")
-  "oldName" "console.overrideConfiguration"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.console.tls "existingSecret")
-  "oldName" "console.tls.existingSecret"
 ) }}
 
 {{/*

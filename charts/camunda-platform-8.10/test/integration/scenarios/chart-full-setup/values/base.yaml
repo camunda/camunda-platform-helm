@@ -81,8 +81,6 @@ identity:
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*
-        - resourceServerId: console-api
-          definition: write:*
 
 optimize:
   enabled: true
@@ -217,7 +215,7 @@ camundaHub:
 # is intentional. The webModeler image helpers in the chart use `or` (returns
 # first truthy value) over (camundaHub.webModeler.image, webModeler.image), so
 # any non-empty camundaHub.webModeler.image stanza fully shadows the legacy
-# webModeler.image — including the default `tag: 8.10.0-alpha1-rc1`. Setting
+# webModeler.image — including the default `tag: 8.10.0-alpha3-rc1`. Setting
 # pullSecrets on the legacy path keeps camundaHub.webModeler.image as the
 # chart-default `{}` (falsy) so the `or` falls through to webModeler.image and
 # the tag stays attached. See templates/web-modeler/_helpers.tpl.

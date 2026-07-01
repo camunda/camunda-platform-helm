@@ -89,8 +89,6 @@ identity:
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*
-        - resourceServerId: console-api
-          definition: write:*
   users:
     - username: lisa
       secret:
@@ -104,7 +102,6 @@ identity:
         - Optimize
         - Web Modeler
         - Web Modeler Admin
-        - Console
         - Orchestration
     - username: bart
       secret:
@@ -118,7 +115,6 @@ identity:
         - Optimize
         - Web Modeler
         - Web Modeler Admin
-        - Console
         - Orchestration
 
 connectors:
@@ -138,29 +134,26 @@ connectors:
     - name: CAMUNDA_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
       value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
 
-camundaHub:
-  console:
-    extraConfiguration:
-      - content: |
-          camunda:
-            console:
-              managed:
-                releases:
-                  - name: integration
-                    namespace: "$TEST_NAMESPACE"
-                    tags:
-                      - dev
-                      - custom
-                      - stage
-                      - prod
-                      - test
-                    custom-properties:
-                      - description: "This is the main integration environment for the Camunda Platform."
-                        links:
-                          - name: "Camunda"
-                            url: "https://camunda.com"
-                          - name: "Camunda Docs"
-                            url: "https://docs.camunda.io"
-    env:
-      - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-        value: 'true'
+webModeler:
+  restapi:
+    additionalClusters:
+      - id: integration
+        name: integration
+        version: '8.10.0'
+        authentication: NONE
+        url:
+          grpc: 'grpc://integration:26500'
+          rest: 'http://integration:8080'
+        tags:
+          - dev
+          - custom
+          - stage
+          - prod
+          - test
+        customProperties:
+          - description: 'This is the main integration environment for the Camunda Platform.'
+            links:
+              - name: Camunda
+                url: 'https://camunda.com'
+              - name: Camunda Docs
+                url: 'https://docs.camunda.io'

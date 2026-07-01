@@ -470,16 +470,38 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				s.Fail("Failed to unmarshal yaml. error=", err)
 			}
 
-			// then
-			s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
-			s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
-			s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-			s.Require().Equal("8.8.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
-			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
-			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
-			s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
-			s.Require().Equal("https://example.com/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
+			// then — two clusters: management-cluster (Identity + WebModeler) followed by default-cluster (Orchestration)
+			s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
+
+			mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+			s.Require().Equal("management-cluster", mgmtCluster.Id)
+			s.Require().Equal("management", mgmtCluster.Name)
+			s.Require().Equal(false, mgmtCluster.Authorizations.Enabled)
+			s.Require().Equal(tc.expectedAuthentication, mgmtCluster.Authentication)
+			var identityComp ComponentYAML
+			for _, c := range mgmtCluster.Components {
+				if c.Type == "identity" {
+					identityComp = c
+					break
+				}
+			}
+			s.Require().Equal("identity", identityComp.Type)
+
+			defaultCluster := configmapApplication.Camunda.Modeler.Clusters[1]
+			s.Require().Equal("default-cluster", defaultCluster.Id)
+			s.Require().Equal("test-zeebe", defaultCluster.Name)
+			s.Require().Equal("8.8.x-alpha1", defaultCluster.Version)
+			s.Require().Equal(tc.expectedAuthentication, defaultCluster.Authentication)
+			s.Require().Equal(false, defaultCluster.Authorizations.Enabled)
+			var orchestrationComp ComponentYAML
+			for _, c := range defaultCluster.Components {
+				if c.Type == "orchestration" {
+					orchestrationComp = c
+					break
+				}
+			}
+			s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
 		})
 	}
 }
@@ -513,8 +535,20 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOr
 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 	require.NoError(s.T(), err)
 
-	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
+	var orchestrationComp ComponentYAML
+	for _, cluster := range configmapApplication.Camunda.Modeler.Clusters {
+		for _, c := range cluster.Components {
+			if c.Type == "orchestration" {
+				orchestrationComp = c
+				break
+			}
+		}
+		if orchestrationComp.Type != "" {
+			break
+		}
+	}
+	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
@@ -584,6 +618,51 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("grpc://orchestration.test-3:26500", configmapApplication.Camunda.Modeler.Clusters[2].Url.Grpc)
 	s.Require().Equal("http://orchestration.test-3:8080", configmapApplication.Camunda.Modeler.Clusters[2].Url.Rest)
 	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[2].Url.WebApp)
+}
+
+func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentityAndWebModelerComponents() {
+	// management-cluster must include both identity and webModelerWebApp so that WebModeler
+	// can reach Identity and register itself as a known component.
+	values := map[string]string{
+		"identity.enabled":                              "true",
+		"global.elasticsearch.enabled":                  "true",
+		"global.ingress.enabled":                        "true",
+		"global.host":                                   "example.com",
+		"orchestration.security.authorizations.enabled": "false",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then — management-cluster contains both identity and webModelerWebApp
+	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Modeler.Clusters), 1)
+	mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+	s.Require().Equal("management-cluster", mgmtCluster.Id)
+
+	var hasIdentity, hasWebModeler bool
+	for _, c := range mgmtCluster.Components {
+		if c.Type == "identity" {
+			hasIdentity = true
+		}
+		if c.Type == "webModelerWebApp" {
+			hasWebModeler = true
+		}
+	}
+	s.Require().True(hasIdentity, "management-cluster should contain an identity component")
+	s.Require().True(hasWebModeler, "management-cluster should contain a webModelerWebApp component")
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {

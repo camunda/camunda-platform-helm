@@ -21,8 +21,8 @@ Camunda images:
 - docker.io/camunda/camunda:8.10.0-alpha1
 - docker.io/camunda/connectors-bundle:8.10.0-alpha1
 - docker.io/camunda/console:8.9.25
-- docker.io/camunda/hub-websockets:8.10.0-alpha1-rc1
-- docker.io/camunda/hub:8.10.0-alpha1-rc1
+- docker.io/camunda/hub-websockets:8.10.0-alpha3-rc1
+- docker.io/camunda/hub:8.10.0-alpha3-rc1
 - docker.io/camunda/identity:8.10.0-alpha1
 - docker.io/camunda/optimize:8.10.0-alpha1
 

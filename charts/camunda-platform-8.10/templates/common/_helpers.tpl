@@ -397,7 +397,6 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" 
       {{- $portMapping := (dict
       "identity" "8080"
       "optimize" "8083"
-      "console" "8087"
       "connectors" "8086"
       ) -}}
       {{- printf "http://localhost:%s" (get $portMapping .component) -}}
@@ -574,25 +573,10 @@ Identity Auth.
   {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
-
-{{/*
-********************************************************************************
-Console templates.
-********************************************************************************
-*/}}
-{{/*
-[camunda-platform] Console external URL.
-*/}}
-{{- define "camundaPlatform.consoleExternalURL" }}
-  {{- if eq (include "camundaHub.consoleEnabled" .) "true" -}}
-    {{- if .Values.global.ingress.enabled -}}
-      {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto (tpl .Values.global.host .) (or .Values.camundaHub.console.contextPath .Values.console.contextPath) -}}
-    {{- else -}}
-      {{- printf "http://localhost:8087" -}}
-    {{- end -}}
-  {{- end -}}
+{{- define "console.authAudience" -}}
+  {{- .Values.global.identity.auth.camundaHub.console.audience | default "console-api" -}}
 {{- end -}}
+
 
 
 {{/*
@@ -609,12 +593,12 @@ camundaHub.webModeler.* overrides take precedence over the legacy keys.
 */}}
 
 {{/*
-[camunda-hub] Check if the Console sub-component should be enabled.
-Returns "true" if camundaHub.enabled OR console.enabled.
-Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
+[camunda-hub] Check if the WebModeler sub-component should be enabled.
+Returns "true" if camundaHub.enabled OR webModeler.enabled.
+Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
 */}}
-{{- define "camundaHub.consoleEnabled" -}}
-  {{- if or .Values.camundaHub.enabled .Values.console.enabled -}}
+{{- define "camundaHub.webModelerEnabled" -}}
+  {{- if or .Values.camundaHub.enabled .Values.webModeler.enabled -}}
     true
   {{- else -}}
     false
@@ -622,12 +606,13 @@ Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
 {{- end -}}
 
 {{/*
-[camunda-hub] Check if the WebModeler sub-component should be enabled.
-Returns "true" if camundaHub.enabled OR webModeler.enabled.
-Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+[camunda-hub] Check if the Console sub-component should be enabled.
+Returns "true" if camundaHub.enabled OR console.enabled (legacy 8.9 key).
+Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
 */}}
-{{- define "camundaHub.webModelerEnabled" -}}
-  {{- if or .Values.camundaHub.enabled .Values.webModeler.enabled -}}
+{{- define "camundaHub.consoleEnabled" -}}
+  {{- $console := default (dict) .Values.console -}}
+  {{- if or .Values.camundaHub.enabled $console.enabled -}}
     true
   {{- else -}}
     false
@@ -736,16 +721,6 @@ Release templates.
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
-  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-  {{-  $proto := (lower (or .Values.camundaHub.console.readinessProbe.scheme .Values.console.readinessProbe.scheme)) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace (or .Values.camundaHub.console.service.managementPort .Values.console.service.managementPort) }}
-  - name: Console
-    id: console
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict))) }}
-    url: {{ include "camundaPlatform.consoleExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.readinessProbe.probePath .Values.console.readinessProbe.probePath) }}
-    metrics: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.metrics.prometheus .Values.console.metrics.prometheus) }}
-  {{- end }}
   {{- if .Values.identity.enabled }}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
@@ -826,6 +801,106 @@ Release templates.
     readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
   {{- end }}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Generate the default WebModeler cluster config using the new components[] schema.
+Mirrors camundaPlatform.releaseInfo component gating but outputs the new format
+required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
+********************************************************************************
+*/}}
+{{- define "camundaPlatform.defaultWebModelerCluster" -}}
+{{- if or .Values.identity.enabled (eq (include "camundaHub.webModelerEnabled" .) "true") }}
+- id: "management-cluster"
+  name: "management"
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict))) | quote }}
+  authentication: {{ include "webModeler.authConfigValue" . | quote }}
+  authorizations:
+    enabled: false
+  components:
+  {{- if .Values.identity.enabled }}
+  {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
+  - name: Identity
+    type: identity
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.identityExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath | quote }}
+  {{- end }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- $proto := (lower (or .Values.camundaHub.webModeler.restapi.readinessProbe.scheme .Values.webModeler.restapi.readinessProbe.scheme)) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (or .Values.camundaHub.webModeler.restapi.service.managementPort .Values.webModeler.restapi.service.managementPort) }}
+  - name: WebModeler
+    type: webModelerWebApp
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict))) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.webModelerExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.webModeler.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}
+  {{- end }}
+{{- end }}
+{{- if or .Values.orchestration.enabled .Values.optimize.enabled .Values.connectors.enabled }}
+- id: "default-cluster"
+  name: {{ tpl .Values.global.zeebeClusterName . | quote }}
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+  authentication: {{ include "webModeler.authConfigValue" . | quote }}
+  authorizations:
+    enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+  components:
+  {{- if .Values.optimize.enabled }}
+  {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
+  - name: Optimize
+    type: optimize
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.optimizeExternalURL" . | quote }}
+      readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) | quote }}
+  {{- end }}
+  {{- if .Values.connectors.enabled }}
+  {{- $proto := (lower .Values.connectors.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
+  - name: Connectors
+    type: connectors
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) | quote }}
+    urls:
+      rest: {{ include "camundaPlatform.connectorsExternalURL" . | quote }}
+      readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) | quote }}
+  {{- end }}
+  {{- if .Values.orchestration.enabled }}
+  {{- $proto := (lower .Values.orchestration.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "orchestration.fullname" . | trimAll "\"") .Release.Namespace .Values.orchestration.service.managementPort }}
+  - name: Operate
+    type: operate
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.operateExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Tasklist
+    type: tasklist
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.tasklistExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Orchestration Admin
+    type: orchestrationIdentity
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.orchestrationIdentityExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Orchestration Cluster
+    type: orchestration
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
+      rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  {{- end }}
+{{- end }}
+{{- range (or .Values.camundaHub.webModeler.restapi.additionalClusters .Values.webModeler.restapi.additionalClusters) }}
+- {{ toYaml . | nindent 2 }}
+{{- end }}
 {{- end -}}
 
 {{/*
