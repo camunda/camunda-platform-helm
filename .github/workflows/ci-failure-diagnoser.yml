@@ -1,0 +1,180 @@
+# type: CI
+# owner: @camunda/distribution-team
+---
+# CI Failure Diagnoser
+#
+# Triggered when an integration-test workflow finishes with a failure status.
+# Downloads the per-matrix-cell `ci-diagnostics--*` artifacts uploaded by
+# .github/workflows/test-integration-runner.yaml, asks Claude to analyse the
+# pods/events/logs, and posts the diagnosis as a single PR comment.
+#
+# Design notes:
+# - workflow_run runs against the default branch's workflow definition with a
+#   GITHUB_TOKEN. It cannot be poisoned by PR code, so it's safe to grant
+#   pull-requests:write here (the standard GitHub-recommended pattern).
+# - We never check out the PR's source. The diagnoser binary lives in main.
+# - When ANTHROPIC_API_KEY is absent, the diagnoser exits 0 without posting,
+#   so this workflow can land before the secret is provisioned.
+#
+# Manual usage (e.g. for re-running on an already-failed workflow):
+#   gh workflow run ci-failure-diagnoser.yml -f run_id=<workflow_run_id>
+name: CI - Failure Diagnoser
+
+on:
+  workflow_run:
+    workflows:
+      - "Test - Chart Version"
+      - "Test - Chart Version Nightly"
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Workflow run ID to analyse"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-failure-diagnoser-${{ github.event.workflow_run.id || inputs.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read         # download artifacts from the source workflow_run
+      pull-requests: write  # post the diagnosis comment
+    env:
+      SOURCE_RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+
+    steps:
+      - name: Checkout (default branch)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: scripts/ci-failure-diagnoser/go.mod
+
+      - name: Import Vault secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          # ANTHROPIC_API_KEY must be provisioned at this Vault path before
+          # diagnoses run. Until then, the binary exits cleanly without
+          # producing output (see scripts/ci-failure-diagnoser/main.go).
+          secrets: |
+            secret/data/products/distribution/ci ANTHROPIC_API_KEY;
+          exportEnv: true
+
+      # Download every matching diagnostics artifact for the failed run.
+      # Each artifact lands at artifacts/<artifact-name>/diagnostics/<ns>/<ts>/.
+      - name: Download diagnostics artifacts
+        id: download
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v6
+        with:
+          pattern: ci-diagnostics--*
+          path: artifacts
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve PR number
+        id: pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+        run: |
+          set -euo pipefail
+          # workflow_run.pull_requests is populated only for same-repo PRs,
+          # not forks. Fall back to a /search/issues lookup by head SHA.
+          PR_NUMBER=$(jq -r '.workflow_run.pull_requests[0].number // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+          if [[ -z "$PR_NUMBER" && -n "${HEAD_SHA:-}" ]]; then
+            PR_NUMBER=$(gh api "/search/issues?q=repo:${GITHUB_REPOSITORY}+is:pr+sha:${HEAD_SHA}" \
+              --jq '.items[0].number // empty' || true)
+          fi
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          if [[ -n "$PR_NUMBER" ]]; then
+            echo "ℹ️ Resolved PR #${PR_NUMBER}"
+          else
+            echo "ℹ️ No associated PR (likely a scheduled/main run); will only write to step summary."
+          fi
+
+      - name: Build diagnoser
+        run: |
+          cd scripts/ci-failure-diagnoser
+          go build -o /tmp/ci-failure-diagnoser .
+
+      # Iterate over each downloaded artifact, run the diagnoser, and append
+      # the markdown to a single combined report. Each artifact's name encodes
+      # the matrix coordinates: ci-diagnostics--<chart-dir>--<scenario>--<flow>--<platform>--<shortname>--<phase>
+      - name: Run diagnoser per artifact
+        id: diag
+        env:
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          REPORT=reports/combined.md
+          : > "$REPORT"
+
+          if [[ ! -d artifacts ]] || [[ -z "$(ls -A artifacts 2>/dev/null)" ]]; then
+            echo "ℹ️ No diagnostics artifacts found for run ${SOURCE_RUN_ID}; nothing to diagnose."
+            echo "has_report=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          for dir in artifacts/ci-diagnostics--*; do
+            [[ -d "$dir" ]] || continue
+            name=$(basename "$dir")
+            # Strip prefix and split on -- (5 fields after stripping ci-diagnostics--).
+            stripped=${name#ci-diagnostics--}
+            IFS='|' read -r chart_dir scenario flow platform shortname phase <<< "$(echo "$stripped" | sed 's/--/|/g')"
+            chart_version=${chart_dir#camunda-platform-}
+
+            echo "── Diagnosing ${name} ──"
+            out=reports/$(echo "$name" | tr '/' '_').md
+            ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" /tmp/ci-failure-diagnoser \
+              --diagnostics-dir "$dir" \
+              --chart-version "$chart_version" \
+              --scenario "$scenario" \
+              --flow "$flow" \
+              --platform "$platform" \
+              --shortname "$shortname" \
+              --workflow-url "$WORKFLOW_URL" \
+              --output "$out" || {
+                echo "⚠️ diagnoser failed for ${name} (non-fatal)"
+                continue
+              }
+            if [[ -s "$out" ]]; then
+              cat "$out" >> "$REPORT"
+              echo -e "\n\n" >> "$REPORT"
+            fi
+          done
+
+          if [[ -s "$REPORT" ]]; then
+            echo "has_report=true" >> "$GITHUB_OUTPUT"
+            cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "has_report=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ No diagnoses produced (most likely ANTHROPIC_API_KEY not set or no parsable diagnostics)."
+          fi
+
+      - name: Post diagnosis comment on PR
+        if: steps.diag.outputs.has_report == 'true' && steps.pr.outputs.pr_number != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file reports/combined.md
+          echo "✅ Posted diagnosis comment on PR #${PR_NUMBER}"

@@ -748,6 +748,25 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
+      # Diagnostics produced by `deploy-camunda matrix run` (see
+      # scripts/deploy-camunda/matrix/runner.go: collectDiagnostics). Uploaded so
+      # the ci-failure-diagnoser workflow can ingest them after this run.
+      # Matrix coordinates are encoded in the artifact name so the downstream
+      # workflow can reconstruct scenario/flow/platform without extra metadata.
+      - name: Upload diagnostics artifact
+        # Always run: deploy-camunda only writes `diagnostics/` on failure
+        # (see scripts/deploy-camunda/matrix/runner.go:collectDiagnostics), so
+        # `if-no-files-found: ignore` makes this a fast no-op on success.
+        # `if: failure()` would miss cases where the install step succeeded
+        # but a sibling job (e.g. Playwright e2e) detected a real problem.
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-diagnostics--${{ inputs.camunda-helm-dir }}--${{ inputs.scenario }}--${{ inputs.flow }}--${{ inputs.distro-platform }}--${{ inputs.shortname }}--install
+          path: diagnostics/
+          retention-days: 7
+          if-no-files-found: ignore
+
   upgrade:
     if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
@@ -1084,6 +1103,20 @@ jobs:
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info
+
+      - name: Upload diagnostics artifact
+        # Always run: deploy-camunda only writes `diagnostics/` on failure
+        # (see scripts/deploy-camunda/matrix/runner.go:collectDiagnostics), so
+        # `if-no-files-found: ignore` makes this a fast no-op on success.
+        # `if: failure()` would miss cases where the install step succeeded
+        # but a sibling job (e.g. Playwright e2e) detected a real problem.
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-diagnostics--${{ inputs.camunda-helm-dir }}--${{ inputs.scenario }}--${{ inputs.flow }}--${{ inputs.distro-platform }}--${{ inputs.shortname }}--upgrade
+          path: diagnostics/
+          retention-days: 7
+          if-no-files-found: ignore
 
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
