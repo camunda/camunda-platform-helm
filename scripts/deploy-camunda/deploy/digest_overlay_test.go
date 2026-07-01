@@ -152,6 +152,55 @@ global:
 	}
 }
 
+// TestNeutralizeOverriddenDigestsEmptyTag verifies that an --extra-values image
+// override which redirects registry/repository but leaves the tag empty (or null)
+// and pins no digest fails fast with an actionable error, rather than stripping
+// the overlay digest and rendering a version-less "<repository>:" image that helm
+// rejects as invalid YAML.
+func TestNeutralizeOverriddenDigestsEmptyTag(t *testing.T) {
+	tests := []struct {
+		name        string
+		extraValues string
+	}{
+		{
+			name: "null tag",
+			extraValues: `
+orchestration:
+  image:
+    registry: registry.camunda.cloud
+    repository: team-camunda/camunda
+    tag:
+`,
+		},
+		{
+			name: "empty-string tag",
+			extraValues: `
+orchestration:
+  image:
+    registry: registry.camunda.cloud
+    repository: team-camunda/camunda
+    tag: ""
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			overlayPath := writeTempYAML(t, dir, "values-digest.yaml", digestOverlay)
+			extraPath := writeTempYAML(t, dir, "extra-values.yaml", tt.extraValues)
+
+			_, err := neutralizeOverriddenDigests(overlayPath, []string{extraPath}, dir)
+			if err == nil {
+				t.Fatal("expected an error for an empty-tag image override, got nil")
+			}
+			if !strings.Contains(err.Error(), "orchestration") || !strings.Contains(err.Error(), "empty tag") {
+				t.Fatalf("error should name the component and the empty tag, got: %v", err)
+			}
+		})
+	}
+}
+
 // TestNeutralizeOverriddenDigestsNoDigestInOverlay verifies that when the caller
 // overrides a component whose overlay block has no digest, the overlay is
 // returned unchanged (nothing to strip).
