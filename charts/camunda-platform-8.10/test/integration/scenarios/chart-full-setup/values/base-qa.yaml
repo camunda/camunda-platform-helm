@@ -89,8 +89,6 @@ identity:
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*
-        - resourceServerId: console-api
-          definition: write:*
   users:
     - username: lisa
       secret:
@@ -104,7 +102,6 @@ identity:
         - Optimize
         - Web Modeler
         - Web Modeler Admin
-        - Console
         - Orchestration
     - username: bart
       secret:
@@ -118,7 +115,6 @@ identity:
         - Optimize
         - Web Modeler
         - Web Modeler Admin
-        - Console
         - Orchestration
 
 connectors:
