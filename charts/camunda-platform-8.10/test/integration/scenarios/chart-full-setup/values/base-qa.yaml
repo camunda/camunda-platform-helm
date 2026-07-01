@@ -137,17 +137,23 @@ connectors:
 webModeler:
   restapi:
     env:
-      - name: CAMUNDA_MODELER_CLUSTERS_1_NAME
+      - name: CAMUNDA_MODELER_CLUSTERS_2_ID
         value: 'integration'
-      - name: CAMUNDA_MODELER_CLUSTERS_1_TAGS
+      - name: CAMUNDA_MODELER_CLUSTERS_2_NAME
+        value: 'integration'
+      - name: CAMUNDA_MODELER_CLUSTERS_2_VERSION
+        value: '8.10.0'
+      - name: CAMUNDA_MODELER_CLUSTERS_2_AUTHENTICATION
+        value: 'NONE'
+      - name: CAMUNDA_MODELER_CLUSTERS_2_TAGS
         value: 'dev,custom,stage,prod,test'
-      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_DESCRIPTION
+      - name: CAMUNDA_MODELER_CLUSTERS_2_CUSTOM_PROPERTIES_0_DESCRIPTION
         value: 'This is the main integration environment for the Camunda Platform.'
-      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_0_NAME
+      - name: CAMUNDA_MODELER_CLUSTERS_2_CUSTOM_PROPERTIES_0_LINKS_0_NAME
         value: 'Camunda'
-      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_0_URL
+      - name: CAMUNDA_MODELER_CLUSTERS_2_CUSTOM_PROPERTIES_0_LINKS_0_URL
         value: 'https://camunda.com'
-      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_1_NAME
+      - name: CAMUNDA_MODELER_CLUSTERS_2_CUSTOM_PROPERTIES_0_LINKS_1_NAME
         value: 'Camunda Docs'
-      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_1_URL
+      - name: CAMUNDA_MODELER_CLUSTERS_2_CUSTOM_PROPERTIES_0_LINKS_1_URL
         value: 'https://docs.camunda.io'
