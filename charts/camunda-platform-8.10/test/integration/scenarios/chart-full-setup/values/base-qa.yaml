@@ -134,29 +134,22 @@ connectors:
     - name: CAMUNDA_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
       value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
 
-camundaHub:
-  console:
-    extraConfiguration:
-      - content: |
-          camunda:
-            console:
-              managed:
-                releases:
-                  - name: integration
-                    namespace: "$TEST_NAMESPACE"
-                    tags:
-                      - dev
-                      - custom
-                      - stage
-                      - prod
-                      - test
-                    custom-properties:
-                      - description: "This is the main integration environment for the Camunda Platform."
-                        links:
-                          - name: "Camunda"
-                            url: "https://camunda.com"
-                          - name: "Camunda Docs"
-                            url: "https://docs.camunda.io"
+webModeler:
+  restapi:
     env:
       - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
         value: 'true'
+      - name: CAMUNDA_MODELER_CLUSTERS_1_NAME
+        value: 'integration'
+      - name: CAMUNDA_MODELER_CLUSTERS_1_TAGS
+        value: 'dev,custom,stage,prod,test'
+      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_DESCRIPTION
+        value: 'This is the main integration environment for the Camunda Platform.'
+      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_0_NAME
+        value: 'Camunda'
+      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_0_URL
+        value: 'https://camunda.com'
+      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_1_NAME
+        value: 'Camunda Docs'
+      - name: CAMUNDA_MODELER_CLUSTERS_1_CUSTOM_PROPERTIES_0_LINKS_1_URL
+        value: 'https://docs.camunda.io'
