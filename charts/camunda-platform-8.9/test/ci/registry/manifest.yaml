@@ -77,6 +77,10 @@ integration:
       shortname: rdbms
       tier: 2
       enabled: true
+    - id: component-persistence
+      shortname: cprst
+      tier: 2
+      enabled: true
     - id: keycloak-original-install-tier1
       shortname: keyco
       tier: 1
