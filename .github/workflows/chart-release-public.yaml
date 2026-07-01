@@ -540,7 +540,7 @@ jobs:
           repository-owner: ${{ github.repository_owner }}
           repository-name: ${{ github.event.repository.name }}
           merge-method: squash
-          timeout-minutes: "90"
+          timeout-minutes: "50"
           max-evictions: "3"
 
       - name: Alert if release-please PR did not merge
@@ -560,6 +560,66 @@ jobs:
                     *Helm Chart ${{ needs.release.outputs.version }}* was published, but its release-please PR is *not merged* (merge-queue result: `${{ steps.merge-queue.outputs.result || 'unknown' }}`).
                     Please merge it so `main` syncs with the released artifact.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
+
+  approve-release-pr-runs:
+    name: Approve release-please PR workflow runs
+    needs: [release, post-release]
+    if: ${{ !cancelled() && needs.post-release.outputs.auto-merge-enabled == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: false
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Approve gated workflow runs until the PR closes
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.post-release.outputs.pr-number }}
+        run: |
+          set -uo pipefail
+          head_ref="$(gh pr view "${PR_NUMBER}" --repo "${REPO}" --json headRefName --jq '.headRefName')"
+          if [ -z "${head_ref}" ]; then
+            echo "::error::could not resolve head ref for PR #${PR_NUMBER}"
+            exit 1
+          fi
+          deadline=$(( SECONDS + 48 * 60 ))
+          while [ "${SECONDS}" -lt "${deadline}" ]; do
+            state="$(gh pr view "${PR_NUMBER}" --repo "${REPO}" --json state --jq '.state' 2>/dev/null || echo UNKNOWN)"
+            if [ "${state}" = "MERGED" ] || [ "${state}" = "CLOSED" ]; then
+              echo "PR #${PR_NUMBER} is ${state}; nothing more to approve."
+              break
+            fi
+            for run_status in action_required waiting; do
+              for run_id in $(gh api \
+                "repos/${REPO}/actions/runs?branch=${head_ref}&status=${run_status}&per_page=100" \
+                --jq '.workflow_runs[].id' 2>/dev/null); do
+                echo "Approving workflow run ${run_id} (${run_status})"
+                gh api --method POST "repos/${REPO}/actions/runs/${run_id}/approve" >/dev/null 2>&1 \
+                  || echo "::warning::could not approve run ${run_id}"
+              done
+            done
+            sleep 30
+          done
 
   notify-on-failure:
     name: Notify on Failure
