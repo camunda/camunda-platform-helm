@@ -189,10 +189,12 @@ main() {
             charts+=("camunda-platform-${version}")
         done
     else
-        # Find all chart directories
-        while IFS= read -r chart_dir; do
-            charts+=("$(basename "$chart_dir")")
-        done < <(find "${REPO_ROOT}/charts" -maxdepth 1 -type d -name "camunda-platform-8.*" | sort)
+        # Validate only Renovate-managed versions (alpha + supportStandard).
+        # supportExtended/endOfLife charts have Renovate updates disabled
+        # (see renovate.json5), so their values-latest.yaml is not kept current.
+        while IFS= read -r version; do
+            charts+=("camunda-platform-${version}")
+        done < <(yq '.camundaVersions.alpha[], .camundaVersions.supportStandard[]' "${REPO_ROOT}/charts/chart-versions.yaml")
     fi
     
     # Validate each chart
