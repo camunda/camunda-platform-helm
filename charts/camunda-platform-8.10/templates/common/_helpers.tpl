@@ -898,6 +898,9 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
   {{- end }}
 {{- end }}
+{{- range (or .Values.camundaHub.webModeler.restapi.additionalClusters .Values.webModeler.restapi.additionalClusters) }}
+- {{ toYaml . | nindent 2 }}
+{{- end }}
 {{- end -}}
 
 {{/*
