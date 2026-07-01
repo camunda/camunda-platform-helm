@@ -52,6 +52,7 @@ Do not introduce templates that:
 - **NEVER** change a helper name that is already exported without updating all callers across all chart versions.
 - **NEVER** use `range` over `extraConfiguration` without the `kindIs "slice"` branch — it supports both map and slice forms.
 - **NEVER** inline multi-line YAML strings without `indent N | trim` to prevent YAML parse errors.
+- **NEVER** write a render-time warning directly into `NOTES.txt`. Declare it inside the `camunda.constraints.warnings` define in the constraints template (`templates/common/constraints.tpl` on 8.8+; `templates/camunda/constraints.tpl` on 8.7 and older); `NOTES.txt` surfaces warnings only via `{{ include "camunda.constraints.warnings" . | trim }}`.
 
 ### ALWAYS
 - **ALWAYS** use `{{-` / `-}}` to strip whitespace around block-level directives.
@@ -61,6 +62,7 @@ Do not introduce templates that:
 - **ALWAYS** use `tpl` when rendering user-supplied label/annotation maps to support template expressions.
 - **ALWAYS** use `camundaPlatform.imageByParams` to resolve images — never concatenate `image:tag` manually.
 - **ALWAYS** keep 2-space YAML indentation throughout.
+- **ALWAYS** raise hard validation failures at the top level of the constraints template and abort with `fail` (piped `... | fail` or a direct `fail (...)` call); raise non-fatal warnings inside the `camunda.constraints.warnings` define (no `fail`). Prefer the `[camunda][error]` / `[camunda][warning]` message prefixes — they are the house convention used by nearly all existing entries.
 
 ---
 
@@ -201,6 +203,41 @@ volumeMounts:
   ) | nindent 10 }}
 ```
 
+### 10. Render-Time Constraints and Warnings
+
+All render-time validation lives in the constraints template — `templates/common/constraints.tpl`
+on 8.8+, `templates/camunda/constraints.tpl` on 8.7 and older — in two distinct shapes.
+`NOTES.txt` does NOT author warnings — it only includes them: `{{ include "camunda.constraints.warnings" . | trim }}`.
+
+**Hard failure** — top-level (outside any `define`), aborts the render with `fail` (the piped form
+below, or an equivalent direct `fail (printf "[camunda][error] ...")` call):
+
+```yaml
+{{- if and .Values.foo.enabled (not .Values.foo.secret.existingSecret) }}
+  {{- $errorMessage := printf "[camunda][error] %s"
+      "foo.enabled requires foo.secret.existingSecret to be set."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+{{- end }}
+```
+
+**Soft warning** — inside the `camunda.constraints.warnings` define, returns a string, **no `fail`**:
+
+```yaml
+{{- define "camunda.constraints.warnings" }}
+  {{- if .Values.console.enabled }}
+    {{- $warningMessage := printf "%s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"console.enabled\" is deprecated; use \"camundaHub.enabled: true\" instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+{{- end }}
+```
+
+For deprecated values keys, prefer the `camundaPlatform.keyDeprecated` helper (non-fatal) over
+hand-rolling the warning; it must be called from within `camunda.constraints.warnings`.
+
 ---
 
 ## Common Mistakes
@@ -228,6 +265,10 @@ volumeMounts:
 
 8. **Missing `enabled` guard** — resources emitted when a component is disabled cause Helm install failures.
 
+9. **Writing a warning into `NOTES.txt`** — install/upgrade warnings belong in the
+   `camunda.constraints.warnings` define in `constraints.tpl`, not as hand-written prose in
+   `NOTES.txt`. `NOTES.txt` only renders them via the `include` (see Pattern 10).
+
 ---
 
 ## Resources
@@ -236,6 +277,7 @@ volumeMounts:
 - Chart design principles: `docs/index.md`
 - `common/_helpers.tpl`: `charts/<version>/templates/common/_helpers.tpl`
 - `common/_utilz.tpl`: `charts/<version>/templates/common/_utilz.tpl`
+- Constraints & warnings: `charts/<version>/templates/common/constraints.tpl` (8.8+) or `charts/<version>/templates/camunda/constraints.tpl` (8.7 and older)
 - Version differences overview: `AGENTS.md` (Version-Aware Rules section)
 - Render templates locally: `make helm.template chartPath=charts/camunda-platform-8.10`
 - Lint: `make helm.lint chartPath=charts/camunda-platform-8.10`
