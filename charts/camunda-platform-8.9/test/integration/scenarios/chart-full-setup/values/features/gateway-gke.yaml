@@ -1,0 +1,20 @@
+global:
+  host: "$CAMUNDA_HOSTNAME"
+  ingress:
+    enabled: false
+  gateway:
+    createGatewayResource: true
+    enabled: true
+    className: gke-l7-global-external-managed
+    tls:
+      enabled: true
+      secretName: camunda-platform
+    annotations: {}
+
+orchestration:
+  service:
+    grpcAppProtocol: "kubernetes.io/h2c"
+  gateway:
+    grpc:
+      enabled: true
+      host: "grpc-$CAMUNDA_HOSTNAME"

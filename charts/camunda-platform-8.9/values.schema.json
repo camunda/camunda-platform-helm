@@ -5823,6 +5823,11 @@
                             "description": "defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to",
                             "default": 26500
                         },
+                        "grpcAppProtocol": {
+                            "type": "string",
+                            "description": "defines the appProtocol for the gRPC service port.",
+                            "default": ""
+                        },
                         "commandName": {
                             "type": "string",
                             "description": "defines the name of the command API endpoint, where the broker commands are sent to",
