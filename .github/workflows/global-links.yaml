@@ -66,6 +66,7 @@ jobs:
         continue-on-error: ${{ github.event_name == 'pull_request' }}
         uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
         with:
+          lycheeVersion: v0.24.2
           fail: true
           args: >-
             -c ./lychee-links.toml
