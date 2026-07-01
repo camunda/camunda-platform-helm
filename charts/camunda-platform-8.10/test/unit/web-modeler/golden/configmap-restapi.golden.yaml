@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: web-modeler
-    app.kubernetes.io/version: "8.10.0-alpha1-rc1"
+    app.kubernetes.io/version: "8.10.0-alpha3-rc1"
   annotations:
     {}
 data:
@@ -58,7 +58,7 @@ data:
           
           - id: "management-cluster"
             name: "management"
-            version: "8.10.0-alpha1-rc1"
+            version: "8.10.0-alpha3-rc1"
             authentication: "BASIC"
             authorizations:
               enabled: false
@@ -71,7 +71,7 @@ data:
                 readiness: "http://camunda-platform-test-identity.camunda-platform:82/actuator/health"
             - name: WebModeler
               type: webModelerWebApp
-              version: "8.10.0-alpha1-rc1"
+              version: "8.10.0-alpha3-rc1"
               urls:
                 webapp: "http://localhost:8070"
                 readiness: "http://camunda-platform-test-web-modeler-restapi.camunda-platform:8091/health/readiness"
