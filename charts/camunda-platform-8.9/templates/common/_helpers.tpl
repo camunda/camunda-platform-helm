@@ -1472,5 +1472,5 @@ Release highlights.
 - Some values have been renamed or moved in the new chart structure.
 - When upgraded from 8.8 to 8.9, manual adjustments may be required for some cases like custom configurations.
 - Please refer to the official docs for more details.
-https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-880-890/
+https://docs.camunda.io/docs/8.9/self-managed/upgrade/helm/880-to-890/
 {{- end -}}

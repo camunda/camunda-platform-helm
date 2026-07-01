@@ -148,7 +148,15 @@ func SortAppVersionsDescending(versions []string) []string {
 	return sorted
 }
 
-const enterpriseDocsURL = "https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/"
+// enterpriseDocsURL returns the version-pinned Bitnami enterprise-images guide
+// URL. The docs path for this guide differs between 8.7 and later minors.
+func enterpriseDocsURL(appVersion string) string {
+	path := "self-managed/deployment/helm/configure/registry-and-images/install-bitnami-enterprise-images"
+	if appVersion == "8.7" {
+		path = "self-managed/setup/guides/install-bitnami-enterprise-images"
+	}
+	return fmt.Sprintf("https://docs.camunda.io/docs/%s/%s/", appVersion, path)
+}
 
 // ReleaseSection renders one chart version's block of a version-matrix README.
 // appVersion is the Camunda minor (e.g.
@@ -183,7 +191,7 @@ func ReleaseSection(appVersion string, entry ChartEntry, helmCLIVersions []strin
 		fmt.Fprintf(&b, "\nNon-Camunda images:\n\n%s\n", imageList(nonCamunda))
 	}
 	if len(entry.ChartEnterpriseImages) > 0 {
-		fmt.Fprintf(&b, "\nEnterprise images ([Camunda Enterprise](%s)):\n\n%s\n", enterpriseDocsURL, imageList(entry.ChartEnterpriseImages))
+		fmt.Fprintf(&b, "\nEnterprise images ([Camunda Enterprise](%s)):\n\n%s\n", enterpriseDocsURL(appVersion), imageList(entry.ChartEnterpriseImages))
 	}
 	return b.String()
 }
