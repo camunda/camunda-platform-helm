@@ -141,6 +141,9 @@ webModeler:
         name: integration
         version: '8.10.0'
         authentication: NONE
+        url:
+          grpc: 'grpc://integration:26500'
+          rest: 'http://integration:8080'
         tags:
           - dev
           - custom
