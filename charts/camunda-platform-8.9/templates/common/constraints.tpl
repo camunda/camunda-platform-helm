@@ -62,7 +62,7 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 */}}
 {{- if has (include "camundaPlatform.authIssuerType" .) (list "MICROSOFT" "GENERIC") }}
   {{/*
-  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types. 
+  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types.
         More details: https://github.com/camunda/camunda-platform-helm/issues/4419
   */}}
 {{- end }}
@@ -195,7 +195,7 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
       `
 [camunda][warning]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 In appVersion 8.6, this warning will appear if all necessary existingSecrets are not set.
 
 The following values inside your values.yaml need to be set but were not:
@@ -212,7 +212,7 @@ The following values inside your values.yaml need to be set but were not:
       `
 [camunda][error]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -250,7 +250,7 @@ The following values inside your values.yaml need to be set but were not:
         "DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10:"
         (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
         "Please migrate to externally managed services before upgrading to 8.10."
-        "For more details: https://docs.camunda.io/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
+        "For more details: https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}

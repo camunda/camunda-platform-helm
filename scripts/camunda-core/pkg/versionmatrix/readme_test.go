@@ -50,7 +50,7 @@ Non-Camunda images:
 
 - docker.io/bitnamilegacy/elasticsearch:8.17.4
 
-Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.7/self-managed/setup/guides/install-bitnami-enterprise-images/)):
 
 - registry.camunda.cloud/keycloak-ee/keycloak:26.4.0
 `
@@ -278,6 +278,19 @@ func TestRenderIndex(t *testing.T) {
 	// No blank line between consecutive chart entries.
 	if !containsStr(got, "alpha2)\n### [Helm chart 15.0.0-alpha1]") {
 		t.Errorf("RenderIndex: expected no blank line between chart entries")
+	}
+}
+
+func TestEnterpriseDocsURL(t *testing.T) {
+	cases := map[string]string{
+		"8.7": "https://docs.camunda.io/docs/8.7/self-managed/setup/guides/install-bitnami-enterprise-images/",
+		"8.8": "https://docs.camunda.io/docs/8.8/self-managed/deployment/helm/configure/registry-and-images/install-bitnami-enterprise-images/",
+		"8.9": "https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/configure/registry-and-images/install-bitnami-enterprise-images/",
+	}
+	for appVersion, want := range cases {
+		if got := enterpriseDocsURL(appVersion); got != want {
+			t.Errorf("enterpriseDocsURL(%q) = %q, want %q", appVersion, got, want)
+		}
 	}
 }
 
