@@ -573,6 +573,10 @@ Identity Auth.
   {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
+{{- define "console.authAudience" -}}
+  {{- .Values.global.identity.auth.camundaHub.console.audience | default "console-api" -}}
+{{- end -}}
+
 
 
 {{/*
