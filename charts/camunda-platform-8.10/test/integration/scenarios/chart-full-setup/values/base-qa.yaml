@@ -137,8 +137,6 @@ connectors:
 webModeler:
   restapi:
     env:
-      - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-        value: 'true'
       - name: CAMUNDA_MODELER_CLUSTERS_1_NAME
         value: 'integration'
       - name: CAMUNDA_MODELER_CLUSTERS_1_TAGS
