@@ -1,0 +1,61 @@
+name: Renovate PR maintainer
+
+on:
+  schedule:
+    # Hourly tick; acts only on PRs that need it.
+    - cron: "23 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Run without modifying any PR (check to enable dry run)
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  maintain:
+    name: Maintain Renovate PRs
+    concurrency:
+      group: renovate-pr-maintainer
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+      pull-requests: write
+    steps:
+      # Inspects in-scope Renovate PRs and rebases stale ones by adding the Renovate `rebase` label.
+      - name: Maintain Renovate PRs
+        uses: camunda/infra-global-github-actions/renovate-pr-maintainer@e5e6668cef06b3ab76e94a8eb0045b9b16b33bd1 # renovate-pr-maintainer-1.1.0
+        with:
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # PR is considered stale if head branch is behind base branch by at least 25 commits
+          behind-threshold: 25
+          # PR is considered stale if head commit is older than 24 hours
+          stale-hours: 24
+
+      - name: 🚨 Notify the team via Slack 🚨
+        if: failure() && github.event_name == 'schedule'
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_DISTRO_TEAM_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: Renovate PR Maintainer Failed
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    🚨 *Action Required* 🚨
+                    The Renovate PR maintainer workflow failed. Please investigate.
+                    <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Check failed workflow>
