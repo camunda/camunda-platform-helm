@@ -9,7 +9,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.24
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
 	scripts/camunda-core v0.0.0
