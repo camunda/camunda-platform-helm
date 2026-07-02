@@ -42,7 +42,7 @@ integration:
       enabled: false
     - id: auth0
       shortname: esa0
-      enabled: true
+      enabled: false
     - id: keycloak-mt
       shortname: kemt
       enabled: false
