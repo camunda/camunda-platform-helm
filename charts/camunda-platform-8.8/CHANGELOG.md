@@ -1,5 +1,19 @@
 # Changelog
 
+## [13.12.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.0...camunda-platform-8.8-13.12.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* repair failing scheduled workflows for docs links, lychee, and values-latest ([#6492](https://github.com/camunda/camunda-platform-helm/issues/6492)) ([721fbc8](https://github.com/camunda/camunda-platform-helm/commit/721fbc88a0e792d511a29f0fe0ee16b885cce0a7))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6481](https://github.com/camunda/camunda-platform-helm/issues/6481)) ([cd112dc](https://github.com/camunda/camunda-platform-helm/commit/cd112dca1a8ac03beff048b1d6af12e7311f3458))
+* update camunda-platform-images to v8.8.30 ([#6497](https://github.com/camunda/camunda-platform-helm/issues/6497)) ([7bc1ad9](https://github.com/camunda/camunda-platform-helm/commit/7bc1ad93d9aa9c291956cf6887f7e50bd4fb2d75))
+* update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.18 ([#6491](https://github.com/camunda/camunda-platform-helm/issues/6491)) ([9f68888](https://github.com/camunda/camunda-platform-helm/commit/9f6888876b8203cf9eb4bc553055116874f4af22))
+
 ## [13.12.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.11.1...camunda-platform-8.8-13.12.0) (2026-06-26)
 
 
