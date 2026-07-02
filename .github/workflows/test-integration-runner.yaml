@@ -967,6 +967,9 @@ jobs:
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
           TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
+          HARBOR_REGISTRY_HOST: registry.camunda.cloud
+          HARBOR_REGISTRY_USER: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
           NEXUS_USERNAME: ${{ steps.setup.outputs.NEXUS_USERNAME }}
           NEXUS_PASSWORD: ${{ steps.setup.outputs.NEXUS_PASSWORD }}
           TEST_DOCKER_USERNAME: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME }}
