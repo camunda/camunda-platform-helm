@@ -8,6 +8,7 @@ import (
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
@@ -30,6 +31,23 @@ var bitnamiPGPasswordMapping = map[string][]string{
 
 func shouldExtractBitnamiPGPasswords(targetVersion string) bool {
 	return compareVersions(targetVersion, "8.10") < 0
+}
+
+// filterKnownFeatures splits want into features present in available and those
+// that are not, preserving the original order of want in both results.
+func filterKnownFeatures(want, available []string) (kept, dropped []string) {
+	known := make(map[string]struct{}, len(available))
+	for _, a := range available {
+		known[a] = struct{}{}
+	}
+	for _, f := range want {
+		if _, ok := known[f]; ok {
+			kept = append(kept, f)
+		} else {
+			dropped = append(dropped, f)
+		}
+	}
+	return kept, dropped
 }
 
 // extractBitnamiPGPasswords reads the "integration-test-credentials" Kubernetes Secret from the
@@ -208,6 +226,26 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 			Str("previousVersion", prevVersion).
 			Str("scenarioDir", prevScenarioDir).
 			Msg("Step 1: using previous app version's values files (matching CI behavior)")
+
+		// Features new to the target version have no values file in the previous
+		// version's scenario dir; drop them from Step 1 (Step 2 applies the full
+		// set against the current chart). Reassigns the slice header on the copy,
+		// so the parent flags' Features are unaffected.
+		if len(step1Flags.Selection.Features) > 0 {
+			prevFeatures, err := scenarios.ListFeatures(prevScenarioDir)
+			if err != nil {
+				return fmt.Errorf("step 1: list features for %s: %w", prevVersion, err)
+			}
+			kept, dropped := filterKnownFeatures(step1Flags.Selection.Features, prevFeatures)
+			step1Flags.Selection.Features = kept
+			if len(dropped) > 0 {
+				logging.Logger.Info().
+					Str("previousVersion", prevVersion).
+					Strs("dropped", dropped).
+					Strs("kept", kept).
+					Msg("Step 1: dropped features absent from previous version (applied in Step 2)")
+			}
+		}
 	}
 
 	// --- Pre-install lifecycle hook (Step 1 of two-step upgrade) ---
