@@ -72,11 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Source vendor-ee Bitnami images from the published datasource"
     - kind: fixed
-      description: "Render es: connection in Optimize configmap for OpenSearch scenarios"
-    - kind: fixed
-      description: "Cover keys shipped by default values.yaml across 8.8/8.9/8.10"
-    - kind: fixed
-      description: "Back Web Modeler restapi /tmp with a per-pod ephemeral volume"
+      description: "Repair failing scheduled workflows for docs links, lychee, and values-latest"
