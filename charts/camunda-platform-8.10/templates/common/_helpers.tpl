@@ -843,6 +843,14 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+  {{- with (or .Values.camundaHub.webModeler.restapi.defaultClusterTags .Values.webModeler.restapi.defaultClusterTags) }}
+  tags:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with (or .Values.camundaHub.webModeler.restapi.defaultClusterCustomProperties .Values.webModeler.restapi.defaultClusterCustomProperties) }}
+  customProperties:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   components:
   {{- if .Values.optimize.enabled }}
   {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
@@ -893,9 +901,6 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
   {{- end }}
-{{- end }}
-{{- range (or .Values.camundaHub.webModeler.restapi.additionalClusters .Values.webModeler.restapi.additionalClusters) }}
-- {{ toYaml . | nindent 2 }}
 {{- end }}
 {{- end -}}
 
