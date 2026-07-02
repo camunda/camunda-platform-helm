@@ -602,7 +602,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: component-persistence
-          enabled: true
+          enabled: false
           shortname: cprst
           auth: keycloak
           flow: install,upgrade-minor
