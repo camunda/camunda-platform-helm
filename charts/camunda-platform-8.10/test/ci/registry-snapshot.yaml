@@ -241,7 +241,7 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: auth0
-          enabled: true
+          enabled: false
           shortname: esa0
           auth: oidc
           flow: install
