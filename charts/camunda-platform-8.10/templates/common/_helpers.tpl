@@ -843,14 +843,19 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: {{ .Values.orchestration.security.authorizations.enabled }}
-  {{- with (or .Values.camundaHub.webModeler.restapi.defaultClusterTags .Values.webModeler.restapi.defaultClusterTags) }}
   tags:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- with (or .Values.camundaHub.webModeler.restapi.defaultClusterCustomProperties .Values.webModeler.restapi.defaultClusterCustomProperties) }}
+    - dev
+    - custom
+    - stage
+    - prod
+    - test
   customProperties:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    - description: 'This is the main integration environment for the Camunda Platform.'
+      links:
+        - name: Camunda
+          url: 'https://camunda.com'
+        - name: Camunda Docs
+          url: 'https://docs.camunda.io'
   components:
   {{- if .Values.optimize.enabled }}
   {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
