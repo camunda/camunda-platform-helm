@@ -1006,6 +1006,25 @@
                                             "default": null,
                                             "nullable": true
                                         },
+                                        "supportLegacyMd5": {
+                                            "type": [
+                                                "boolean",
+                                                "null"
+                                            ],
+                                            "description": "(Optional) Add MD5 checksum plugin to the S3 client for MD5 checksums backward compatibility. Set to true to enable. When unset, the plugin is not added.",
+                                            "default": null,
+                                            "nullable": true
+                                        },
+                                        "requestChecksumCalculation": {
+                                            "type": "string",
+                                            "description": "(Optional) AWS SDK request checksum calculation mode (e.g. WHEN_REQUIRED). Required for AWS backward compatibility.",
+                                            "default": ""
+                                        },
+                                        "responseChecksumValidation": {
+                                            "type": "string",
+                                            "description": "(Optional) AWS SDK response checksum validation mode (e.g. WHEN_REQUIRED). Required for AWS backward compatibility.",
+                                            "default": ""
+                                        },
                                         "class": {
                                             "type": "string",
                                             "description": "Fully qualified class name for the AWS document store provider.",

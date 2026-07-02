@@ -685,6 +685,12 @@ global:
         forcePathStyle:
         ## @param global.documentStore.type.aws.chunkedEncodingEnabled [nullable] (Optional) Enable AWS chunked transfer encoding. Set to false for S3-compatible backends that do not support it (e.g. Garage). When unset, the SDK default (true) is used.
         chunkedEncodingEnabled:
+        ## @param global.documentStore.type.aws.supportLegacyMd5 [nullable] (Optional) Add MD5 checksum plugin to the S3 client for MD5 checksums backward compatibility. Set to true to enable. When unset, the plugin is not added.
+        supportLegacyMd5:
+        ## @param global.documentStore.type.aws.requestChecksumCalculation (Optional) AWS SDK request checksum calculation mode. Set to WHEN_REQUIRED for AWS checksum backward compatibility.
+        requestChecksumCalculation: ""
+        ## @param global.documentStore.type.aws.responseChecksumValidation (Optional) AWS SDK response checksum validation mode. Set to WHEN_REQUIRED for AWS checksum backward compatibility.
+        responseChecksumValidation: ""
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
         ## @extra global.documentStore.type.aws.accessKeyId configuration to provide the AWS access key ID.
