@@ -352,7 +352,7 @@ jobs:
             -f target_url="https://cla-assistant.io/${{ github.repository }}"
 
   # Report release-chores status for non-release PRs and merge queue events.
-  # For release-please PRs, chart-release-chores.yaml owns this status.
+  # Release-please PRs get their release files from the promotion workflow.
   # For all other PRs, chores are not applicable — report success immediately.
   # For merge queue commits, chores were verified on the PR — re-report success.
   report-release-chores-skip:

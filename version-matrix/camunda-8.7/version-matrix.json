@@ -1246,13 +1246,13 @@
       "docker.io/camunda/connectors-bundle:8.7.21",
       "docker.io/camunda/console:8.7.105",
       "docker.io/camunda/identity:8.7.20",
-      "docker.io/camunda/operate:8.7.32",
+      "docker.io/camunda/operate:8.7.33",
       "docker.io/camunda/optimize:8.7.22",
-      "docker.io/camunda/tasklist:8.7.32",
+      "docker.io/camunda/tasklist:8.7.33",
       "docker.io/camunda/web-modeler-restapi:8.7.22",
       "docker.io/camunda/web-modeler-webapp:8.7.22",
       "docker.io/camunda/web-modeler-websockets:8.7.22",
-      "docker.io/camunda/zeebe:8.7.32",
+      "docker.io/camunda/zeebe:8.7.33",
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
