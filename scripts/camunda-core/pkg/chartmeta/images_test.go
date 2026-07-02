@@ -82,7 +82,7 @@ func TestImageSetWebModelerSharedTag(t *testing.T) {
 	dir := writeValues(t, `
 webModeler:
   image:
-    tag: 8.10.0-alpha1-rc1
+    tag: 8.10.0-alpha3-rc1
   restapi:
     image:
       repository: camunda/hub
@@ -95,8 +95,8 @@ webModeler:
 		t.Fatalf("ImageSet: %v", err)
 	}
 	want := []string{
-		"docker.io/camunda/hub-websockets:8.10.0-alpha1-rc1",
-		"docker.io/camunda/hub:8.10.0-alpha1-rc1",
+		"docker.io/camunda/hub-websockets:8.10.0-alpha3-rc1",
+		"docker.io/camunda/hub:8.10.0-alpha3-rc1",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ImageSet webModeler:\n got: %v\nwant: %v", got, want)

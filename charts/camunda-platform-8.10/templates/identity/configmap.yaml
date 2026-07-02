@@ -54,26 +54,6 @@ data:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: read:*
         {{- end }}
-        console:
-          applications:
-            - name: "Console"
-              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
-              type: public
-              root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.console.redirectUrl .Values.global.identity.auth.console.redirectUrl) $ | quote }}
-              redirect-uris:
-                - "/"
-          apis:
-            - name: Console API
-              audience: {{ include "console.authAudience" . | quote }}
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Console"
-              description: "Grants full access to Console"
-              permissions:
-                - audience: {{ include "console.authAudience" . | quote }}
-                  definition: write:*
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -211,8 +191,6 @@ data:
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         {{- end }}
-        console:
-          root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.console.redirectUrl .Values.global.identity.auth.console.redirectUrl) $ | quote }}
         {{- if .Values.optimize.enabled }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
@@ -248,8 +226,6 @@ data:
             {{- end }}
             - resourceServerId: web-modeler-api
               definition: write:*
-            - resourceServerId: console-api
-              definition: write:*
       {{- end }}
       {{- if .Values.identity.clients }}
         {{- range $index, $client := .Values.identity.clients }}
@@ -283,9 +259,6 @@ data:
             {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
             - Web Modeler
             - Web Modeler Admin
-            {{- end }}
-            {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-            - Console
             {{- end }}
             {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             - Orchestration

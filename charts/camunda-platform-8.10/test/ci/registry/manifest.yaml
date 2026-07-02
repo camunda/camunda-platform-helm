@@ -42,7 +42,7 @@ integration:
       enabled: false
     - id: auth0
       shortname: esa0
-      enabled: true
+      enabled: false
     - id: keycloak-mt
       shortname: kemt
       enabled: false
@@ -86,7 +86,7 @@ integration:
     - id: component-persistence
       shortname: cprst
       tier: 2
-      enabled: true
+      enabled: false
     - id: hub-legacy-install
       shortname: huble
       tier: 2
