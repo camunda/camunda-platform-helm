@@ -1011,18 +1011,18 @@
                                                 "boolean",
                                                 "null"
                                             ],
-                                            "description": "(Optional) Add MD5 checksum plugin to the S3 client for MD5 checksums backward compatibility. Set to true to enable. When unset, the plugin is not added.",
+                                            "description": "(Optional) Add MD5 checksum plugin to the S3 client for MD5 checksum backward compatibility. Set to true to enable. When unset, the plugin is not added.",
                                             "default": null,
                                             "nullable": true
                                         },
                                         "requestChecksumCalculation": {
                                             "type": "string",
-                                            "description": "(Optional) AWS SDK request checksum calculation mode (e.g. WHEN_REQUIRED). Required for AWS backward compatibility.",
+                                            "description": "(Optional) AWS SDK request checksum calculation mode. Set to WHEN_REQUIRED for AWS checksum backward compatibility.",
                                             "default": ""
                                         },
                                         "responseChecksumValidation": {
                                             "type": "string",
-                                            "description": "(Optional) AWS SDK response checksum validation mode (e.g. WHEN_REQUIRED). Required for AWS backward compatibility.",
+                                            "description": "(Optional) AWS SDK response checksum validation mode. Set to WHEN_REQUIRED for AWS checksum backward compatibility.",
                                             "default": ""
                                         },
                                         "class": {
