@@ -3,6 +3,9 @@
     'config:recommended',
     'helpers:pinGitHubActionDigests',
     ':semanticCommitTypeAll(deps)',
+    // Rebase Renovate PRs only on real conflicts, not on every base-branch push.
+    // Provides rebaseWhen: conflicted, rebaseLabel: rebase, keepUpdatedLabel: keep-updated.
+    'github>camunda/infra-renovate-config:rebase.json5',
   ],
   semanticCommitScope: '',
   labels: [
@@ -12,7 +15,6 @@
   prHourlyLimit: 6,
   prConcurrentLimit: 20,
   recreateWhen: 'always',
-  rebaseWhen: 'behind-base-branch',
   commitBodyTable: true,
   separateMajorMinor: true,
   separateMinorPatch: true,
