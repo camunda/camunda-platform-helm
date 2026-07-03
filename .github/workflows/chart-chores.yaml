@@ -13,33 +13,23 @@ permissions:
   pull-requests: write
 
 jobs:
-  init:
-    name: Check Conditions
-    runs-on: ubuntu-latest
-    steps:
-      # The workflow shouldn't run on some branches where we have independent workflows for them.
-      - name: Check conditions
-        id: conditions
-        run: |
-          set -x
-          SHOULD_RUN=true
-          case "${{ github.head_ref }}" in
-              "renovate/"*)
-                  SHOULD_RUN="false"
-                  ;;
-              "release-please--"*)
-                  SHOULD_RUN="false"
-              ;;
-          esac
-          echo "should-run=${SHOULD_RUN}" | tee -a ${GITHUB_OUTPUT}
-    outputs:
-      should-run: ${{ steps.conditions.outputs.should-run }}
   chores:
-    needs: [init]
-    if: needs.init.outputs.should-run == 'true'
+    if: ${{ !startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'release-please--') }}
     name: Chart chores
     runs-on: ubuntu-latest
     steps:
+      - name: Import Vault secrets for Harbor
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        id: vault-harbor
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: false
       #
       # Checkout.
       #
@@ -47,10 +37,10 @@ jobs:
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app_id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
@@ -76,7 +66,7 @@ jobs:
       - name: Add Helm repos
         run: |
           make helm.repos-add
-      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             ~/.cache/go-build
@@ -105,7 +95,7 @@ jobs:
             make helm.schema-update
       - name: Git pull
         run: git pull --rebase --autostash .
-      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+      - uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
         with:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"

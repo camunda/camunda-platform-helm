@@ -1,0 +1,58 @@
+# Build and deploy the Docusaurus docs site to GitHub Pages on every push to main
+# that touches docs/** or helm-docs-site/**.
+#
+# Published at: https://helm.camunda.io/camunda-platform-helm/
+# The gh-pages root serves helm.camunda.io (Helm chart index).
+# Docusaurus output is placed in the camunda-platform-helm/ subdirectory via
+# destination_dir so the existing chart index.yaml and values files are preserved.
+name: "Docs - Build and Deploy"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "helm-docs-site/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy docs site
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: helm-docs-site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: helm-docs-site
+
+      - name: Build site
+        run: npm run build
+        working-directory: helm-docs-site
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./helm-docs-site/build
+          # Place Docusaurus output under camunda-platform-helm/ on gh-pages,
+          # keeping the Helm chart index at the root untouched.
+          destination_dir: camunda-platform-helm
+          # Preserve existing files (index.yaml, values/, version-matrix/, etc.)
+          keep_files: true
+          # Allow Jekyll to run so README.md at the gh-pages root is rendered as HTML.
+          enable_jekyll: true

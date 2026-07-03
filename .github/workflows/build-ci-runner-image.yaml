@@ -15,6 +15,13 @@ on:
       - ".github/docker/**"
       - ".github/workflows/build-ci-runner-image.yaml"
       - "scripts/build-ci-runner-local.sh"
+      # Rebuild when the e2e test-suite's pinned deps change so the image's
+      # prebuilt /opt/e2e-prebuilt/node_modules stays in sync.
+      - "charts/camunda-platform-*/test/e2e/package.json"
+  schedule:
+    # Weekly refresh so the prebuilt node_modules tracks any package.json drift
+    # we missed and picks up new transitive versions within semver ranges.
+    - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       force-rebuild:
@@ -27,11 +34,14 @@ env:
   REGISTRY: ghcr.io
   CI_RUNNER_IMAGE: ghcr.io/camunda/team-distribution/ci-runner
   PLAYWRIGHT_RUNNER_IMAGE: ghcr.io/camunda/team-distribution/playwright-runner
-  KEYCLOAK_CI_IMAGE: registry.camunda.cloud/team-distribution/keycloak-ci
 
 permissions:
   contents: read
   packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-ci-runner:
@@ -43,49 +53,27 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Generate image tags
         id: tags
         run: |
-          # Generate hash from .tool-versions for versioning (same logic as build-ci-runner-local.sh)
           TOOLS_HASH=$(sha256sum .tool-versions | cut -c1-8)
           DATE_TAG=$(date +%Y%m%d)
-
           echo "tools-hash=sha-${TOOLS_HASH}" >> "$GITHUB_OUTPUT"
           echo "date-tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
-          # Tags for CI runner
           CI_TAGS="${CI_RUNNER_IMAGE}:latest"
           CI_TAGS="${CI_TAGS},${CI_RUNNER_IMAGE}:sha-${TOOLS_HASH}"
           CI_TAGS="${CI_TAGS},${CI_RUNNER_IMAGE}:${DATE_TAG}"
           echo "ci-tags=${CI_TAGS}" >> "$GITHUB_OUTPUT"
-
-          # Tags for Playwright runner
-          PW_TAGS="${PLAYWRIGHT_RUNNER_IMAGE}:latest"
-          PW_TAGS="${PW_TAGS},${PLAYWRIGHT_RUNNER_IMAGE}:sha-${TOOLS_HASH}"
-          PW_TAGS="${PW_TAGS},${PLAYWRIGHT_RUNNER_IMAGE}:${DATE_TAG}"
-          echo "playwright-tags=${PW_TAGS}" >> "$GITHUB_OUTPUT"
-
-          # Tags for Keycloak CI (pre-built for fast startup)
-          # Read the Keycloak version from the Dockerfile ARG default
-          KC_VERSION=$(grep -oP '(?<=ARG KEYCLOAK_VERSION=)\S+' .github/docker/keycloak-ci/Dockerfile)
-          KC_TAGS="${KEYCLOAK_CI_IMAGE}:latest"
-          KC_TAGS="${KC_TAGS},${KEYCLOAK_CI_IMAGE}:${KC_VERSION}"
-          KC_TAGS="${KC_TAGS},${KEYCLOAK_CI_IMAGE}:${DATE_TAG}"
-          echo "keycloak-ci-tags=${KC_TAGS}" >> "$GITHUB_OUTPUT"
-          echo "keycloak-version=${KC_VERSION}" >> "$GITHUB_OUTPUT"
-
-          echo "Generated tags:"
-          echo "  CI Runner: ${CI_TAGS}"
-          echo "  Playwright Runner: ${PW_TAGS}"
-          echo "  Keycloak CI: ${KC_TAGS}"
+          echo "Generated tags: ${CI_TAGS}"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -96,98 +84,128 @@ jobs:
           cp .tool-versions .github/docker/ci-runner/.tool-versions
 
       - name: Build and push CI Runner image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .github/docker/ci-runner
           file: .github/docker/ci-runner/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.ci-tags }}
-          no-cache: ${{ inputs.force-rebuild == true }}
+          no-cache: ${{ github.event_name == 'schedule' || inputs.force-rebuild == true }}
           cache-from: type=gha,scope=ci-runner
           cache-to: type=gha,mode=max,scope=ci-runner
           platforms: linux/amd64
           provenance: false
 
+      - name: Output image digests
+        run: |
+          {
+            echo "## 🐳 CI Runner Image Built"
+            echo ""
+            echo "- \`${CI_RUNNER_IMAGE}:latest\`"
+            echo "- \`${CI_RUNNER_IMAGE}:${{ steps.tags.outputs.tools-hash }}\`"
+            echo "- \`${CI_RUNNER_IMAGE}:${{ steps.tags.outputs.date-tag }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-playwright-runner:
+    name: Build Playwright Runner Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          TOOLS_HASH=$(sha256sum .tool-versions | cut -c1-8)
+          DATE_TAG=$(date +%Y%m%d)
+          echo "tools-hash=sha-${TOOLS_HASH}" >> "$GITHUB_OUTPUT"
+          echo "date-tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
+
+          PW_TAGS="${PLAYWRIGHT_RUNNER_IMAGE}:latest"
+          PW_TAGS="${PW_TAGS},${PLAYWRIGHT_RUNNER_IMAGE}:sha-${TOOLS_HASH}"
+          PW_TAGS="${PW_TAGS},${PLAYWRIGHT_RUNNER_IMAGE}:${DATE_TAG}"
+          echo "playwright-tags=${PW_TAGS}" >> "$GITHUB_OUTPUT"
+          echo "Generated tags: ${PW_TAGS}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Copy .tool-versions for Playwright Runner build
         run: |
           cp .tool-versions .github/docker/playwright-runner/.tool-versions
 
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: scripts/playwright-pin/go.mod
+          cache-dependency-path: scripts/playwright-pin/go.sum
+
+      - name: Resolve @playwright/test pin and stage e2e-package.json
+        id: e2e-pkg
+        working-directory: scripts/playwright-pin
+        run: |
+          go run . \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --copy-to "${GITHUB_WORKSPACE}/.github/docker/playwright-runner/e2e-package.json" \
+            >> "$GITHUB_OUTPUT"
+
       - name: Build and push Playwright Runner image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .github/docker/playwright-runner
           file: .github/docker/playwright-runner/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.playwright-tags }}
-          no-cache: ${{ inputs.force-rebuild == true }}
+          build-args: |
+            PLAYWRIGHT_VERSION=${{ steps.e2e-pkg.outputs.playwright-version }}
+          no-cache: ${{ github.event_name == 'schedule' || inputs.force-rebuild == true }}
           cache-from: type=gha,scope=playwright-runner
           cache-to: type=gha,mode=max,scope=playwright-runner
           platforms: linux/amd64
           provenance: false
 
-      - name: Build and push Keycloak CI image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        with:
-          context: .github/docker/keycloak-ci
-          file: .github/docker/keycloak-ci/Dockerfile
-          push: true
-          tags: ${{ steps.tags.outputs.keycloak-ci-tags }}
-          no-cache: ${{ inputs.force-rebuild == true }}
-          cache-from: type=gha,scope=keycloak-ci
-          cache-to: type=gha,mode=max,scope=keycloak-ci
-          platforms: linux/amd64,linux/arm64
-          provenance: false
-
       - name: Output image digests
         run: |
-          echo "## 🐳 CI Runner Images Built" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### CI Runner" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${CI_RUNNER_IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${CI_RUNNER_IMAGE}:${{ steps.tags.outputs.tools-hash }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${CI_RUNNER_IMAGE}:${{ steps.tags.outputs.date-tag }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Playwright Runner" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:${{ steps.tags.outputs.tools-hash }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:${{ steps.tags.outputs.date-tag }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Keycloak CI (pre-built)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${KEYCLOAK_CI_IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${KEYCLOAK_CI_IMAGE}:${{ steps.tags.outputs.keycloak-version }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${KEYCLOAK_CI_IMAGE}:${{ steps.tags.outputs.date-tag }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Tool Versions Hash" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`${{ steps.tags.outputs.tools-hash }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Local Build" >> "$GITHUB_STEP_SUMMARY"
-          echo "To build locally: \`./scripts/build-ci-runner-local.sh\`" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 🐳 Playwright Runner Image Built"
+            echo ""
+            echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:latest\`"
+            echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:${{ steps.tags.outputs.tools-hash }}\`"
+            echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:${{ steps.tags.outputs.date-tag }}\`"
+            echo ""
+            echo "Pinned \`@playwright/test=${{ steps.e2e-pkg.outputs.playwright-version }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   verify-images:
     name: Verify Images
     runs-on: ubuntu-latest
-    needs: build-ci-runner
+    needs:
+      - build-ci-runner
+      - build-playwright-runner
     permissions:
       contents: read
+      packages: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Generate GitHub App token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-github-token
-        with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-          repositories: '["team-distribution"]'
-          permissions: '{"packages": "read"}'
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4
         with:
           registry: ${{ env.REGISTRY }}
-          username: x-access-token
-          password: ${{ steps.generate-github-token.outputs.token }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify CI Runner image
         run: |
@@ -195,7 +213,7 @@ jobs:
           docker pull ${CI_RUNNER_IMAGE}:latest
 
           echo "Testing CI Runner tools..."
-          docker run --rm ${CI_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && task --version && yq --version && jq --version && go version"
+          docker run --rm ${CI_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && go version && yq --version && jq --version"
 
           echo "✅ CI Runner image verified successfully"
 
@@ -205,18 +223,16 @@ jobs:
           docker pull ${PLAYWRIGHT_RUNNER_IMAGE}:latest
 
           echo "Testing Playwright Runner tools..."
-          docker run --rm ${PLAYWRIGHT_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && task --version && yq --version && jq --version && npx playwright --version"
+          docker run --rm ${PLAYWRIGHT_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && go version && yq --version && jq --version && npx playwright --version"
+
+          echo "Verifying prebuilt e2e node_modules and baked browser revision..."
+          docker run --rm --entrypoint sh ${PLAYWRIGHT_RUNNER_IMAGE}:latest -c '
+            set -e
+            test -d /opt/e2e-prebuilt/node_modules/@playwright/test
+            test ! -d /opt/e2e-prebuilt/node_modules/@camunda/e2e-test-suite
+            # Confirm at least one chromium-headless-shell revision is baked in;
+            # the exact rev is set by ARG PLAYWRIGHT_VERSION at build time.
+            ls -1 /ms-playwright/ | grep -q "^chromium_headless_shell-"
+          '
 
           echo "✅ Playwright Runner image verified successfully"
-
-      - name: Verify Keycloak CI image
-        run: |
-          echo "Pulling and verifying Keycloak CI image..."
-          docker pull ${KEYCLOAK_CI_IMAGE}:latest
-
-          echo "Verifying Keycloak optimized build is present..."
-          docker run --rm --entrypoint "" ${KEYCLOAK_CI_IMAGE}:latest \
-            /opt/bitnami/keycloak/bin/kc.sh show-config | head -30
-
-          echo "✅ Keycloak CI image verified successfully"
-

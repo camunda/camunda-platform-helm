@@ -1,0 +1,48 @@
+# Enables Zeebe internal TLS for 8.7 -> 8.8 migration tests.
+orchestration:
+  extraVolumes:
+    - name: zeebe-tls
+      secret:
+        secretName: camunda-zeebe-tls
+  extraVolumeMounts:
+    - name: zeebe-tls
+      readOnly: true
+      mountPath: /etc/tls/
+  importer:
+    extraVolumes:
+      - name: zeebe-tls
+        secret:
+          secretName: camunda-zeebe-tls
+    extraVolumeMounts:
+      - name: zeebe-tls
+        readOnly: true
+        mountPath: /etc/tls/
+  migration:
+    data:
+      extraVolumes:
+        - name: zeebe-tls
+          secret:
+            secretName: camunda-zeebe-tls
+      extraVolumeMounts:
+        - name: zeebe-tls
+          readOnly: true
+          mountPath: /etc/tls/
+  env:
+    - name: ZEEBE_BROKER_NETWORK_SECURITY_ENABLED
+      value: "true"
+    - name: ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH
+      value: "/etc/tls/chainZeebeCluster.pem"
+    - name: ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH
+      value: "/etc/tls/zeebeCluster.key"
+    - name: ZEEBE_BROKER_GATEWAY_CLUSTER_SECURITY_ENABLED
+      value: "true"
+    - name: ZEEBE_BROKER_GATEWAY_CLUSTER_SECURITY_CERTIFICATECHAINPATH
+      value: "/etc/tls/chainZeebeCluster.pem"
+    - name: ZEEBE_BROKER_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH
+      value: "/etc/tls/zeebeCluster.key"
+    - name: ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED
+      value: "true"
+    - name: ZEEBE_GATEWAY_CLUSTER_SECURITY_CERTIFICATECHAINPATH
+      value: "/etc/tls/chainZeebeCluster.pem"
+    - name: ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH
+      value: "/etc/tls/zeebeCluster.key"

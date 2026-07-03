@@ -475,7 +475,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
 						"connectors.enabled":           "true",
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -510,7 +509,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
 						"connectors.enabled":           "true",
-						"elasticsearch.enabled":        "true",
 						"global.elasticsearch.enabled": "true",
 					},
 				}, s.chartPath, s.release, s.templates)
@@ -554,7 +552,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"connectors.enabled":                                               "true",
 				"connectors.inbound.mode":                                          "oauth",
 				"identity.enabled":                                                 "true",
-				"identityKeycloak.enabled":                                         "true",
 				"global.identity.auth.enabled":                                     "true",
 				"connectors.security.authentication.method":                        "oidc",
 				"connectors.security.authentication.oidc.secret.existingSecret":    "camunda-platform-test-connectors-identity-secret",
@@ -589,7 +586,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"connectors.enabled":                           "true",
 				"identity.enabled":                             "true",
-				"identityKeycloak.enabled":                     "true",
 				"global.identity.auth.enabled":                 "true",
 				"orchestration.security.authentication.method": "oidc",
 				"connectors.security.authentication.method":    "basic",
@@ -611,7 +607,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"connectors.enabled":                                               "true",
 				"identity.enabled":                                                 "true",
-				"identityKeycloak.enabled":                                         "true",
 				"global.identity.auth.enabled":                                     "true",
 				"orchestration.security.authentication.method":                     "basic",
 				"connectors.security.authentication.method":                        "oidc",

@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type MigrationIdentityJobTest struct {
@@ -152,6 +153,211 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 				s.Require().Equal(1, len(initContainers))
 				s.Require().Contains(initContainers[0].Image, "override.registry.io/curlimages/curl:")
 				s.Require().NotContains(initContainers[0].Image, "global.registry.io")
+			},
+		},
+		{
+			Name: "TestTmpAndLogsVolumesArePresent",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":             "true",
+				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				// Verify /tmp and /usr/local/camunda/logs volume mounts exist
+				volumeMounts := containers[0].VolumeMounts
+				tmpVolumeMountFound := false
+				logsVolumeMountFound := false
+				for _, vm := range volumeMounts {
+					if vm.Name == "tmp" {
+						tmpVolumeMountFound = true
+						s.Require().Equal("/tmp", vm.MountPath)
+					}
+					if vm.Name == "logs" {
+						logsVolumeMountFound = true
+						s.Require().Equal("/usr/local/camunda/logs", vm.MountPath)
+					}
+				}
+				s.Require().True(tmpVolumeMountFound, "tmp volume mount should exist at /tmp")
+				s.Require().True(logsVolumeMountFound, "logs volume mount should exist at /usr/local/camunda/logs")
+
+				// Verify tmp and logs volumes exist
+				volumes := job.Spec.Template.Spec.Volumes
+				tmpVolumeFound := false
+				logsVolumeFound := false
+				for _, vol := range volumes {
+					if vol.Name == "tmp" {
+						tmpVolumeFound = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+					if vol.Name == "logs" {
+						logsVolumeFound = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+				}
+				s.Require().True(tmpVolumeFound, "tmp volume should exist as emptyDir")
+				s.Require().True(logsVolumeFound, "logs volume should exist as emptyDir")
+			},
+		},
+		{
+			Name: "TestContainerSetInitContainerResources",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":                                 "true",
+				"orchestration.migration.identity.secret.inlineSecret":                     "s",
+				"orchestration.migration.identity.waitContainer.resources.requests.cpu":    "25m",
+				"orchestration.migration.identity.waitContainer.resources.requests.memory": "32Mi",
+				"orchestration.migration.identity.waitContainer.resources.limits.cpu":      "50m",
+				"orchestration.migration.identity.waitContainer.resources.limits.memory":   "64Mi",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				initContainers := job.Spec.Template.Spec.InitContainers
+				s.Require().Equal(1, len(initContainers))
+				res := initContainers[0].Resources
+				s.Require().Equal(resource.MustParse("25m"), *res.Requests.Cpu())
+				s.Require().Equal(resource.MustParse("32Mi"), *res.Requests.Memory())
+				s.Require().Equal(resource.MustParse("50m"), *res.Limits.Cpu())
+				s.Require().Equal(resource.MustParse("64Mi"), *res.Limits.Memory())
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *MigrationIdentityJobTest) TestServiceAccount() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestServiceAccountDefault",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":             "true",
+				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+				s.Require().Equal("camunda-platform-test-zeebe", job.Spec.Template.Spec.ServiceAccountName)
+			},
+		},
+		{
+			Name: "TestServiceAccountCustomName",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":             "true",
+				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
+				"orchestration.serviceAccount.name":                    "custom-sa",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+				s.Require().Equal("custom-sa", job.Spec.Template.Spec.ServiceAccountName)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *MigrationIdentityJobTest) TestResources() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDefaultResources",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":             "true",
+				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+				container := containers[0]
+
+				// given defaults of 500m CPU / 500Mi memory
+				s.Require().True(container.Resources.Requests.Cpu().Equal(resource.MustParse("500m")),
+					"default CPU request should be 500m, got %s", container.Resources.Requests.Cpu().String())
+				s.Require().True(container.Resources.Requests.Memory().Equal(resource.MustParse("500Mi")),
+					"default memory request should be 500Mi, got %s", container.Resources.Requests.Memory().String())
+				s.Require().True(container.Resources.Limits.Cpu().Equal(resource.MustParse("500m")),
+					"default CPU limit should be 500m, got %s", container.Resources.Limits.Cpu().String())
+				s.Require().True(container.Resources.Limits.Memory().Equal(resource.MustParse("500Mi")),
+					"default memory limit should be 500Mi, got %s", container.Resources.Limits.Memory().String())
+			},
+		},
+		{
+			Name: "TestCustomResources",
+			Values: map[string]string{
+				"orchestration.migration.identity.enabled":                   "true",
+				"orchestration.migration.identity.secret.inlineSecret":       "very-secret-thus-plaintext",
+				"orchestration.migration.identity.resources.requests.cpu":    "200m",
+				"orchestration.migration.identity.resources.requests.memory": "256Mi",
+				"orchestration.migration.identity.resources.limits.cpu":      "1000m",
+				"orchestration.migration.identity.resources.limits.memory":   "1Gi",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+				container := containers[0]
+
+				s.Require().True(container.Resources.Requests.Cpu().Equal(resource.MustParse("200m")),
+					"CPU request should be 200m, got %s", container.Resources.Requests.Cpu().String())
+				s.Require().True(container.Resources.Requests.Memory().Equal(resource.MustParse("256Mi")),
+					"memory request should be 256Mi, got %s", container.Resources.Requests.Memory().String())
+				s.Require().True(container.Resources.Limits.Cpu().Equal(resource.MustParse("1000m")),
+					"CPU limit should be 1000m, got %s", container.Resources.Limits.Cpu().String())
+				s.Require().True(container.Resources.Limits.Memory().Equal(resource.MustParse("1Gi")),
+					"memory limit should be 1Gi, got %s", container.Resources.Limits.Memory().String())
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *MigrationIdentityJobTest) TestExtraVolumesAndMounts() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraVolumesAndMountsRendered",
+			ValuesFiles: []string{
+				"testdata/migration-identity-extra-volumes.yaml",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				// Verify custom volume mount exists
+				volumeMounts := containers[0].VolumeMounts
+				found := false
+				for _, vm := range volumeMounts {
+					if vm.Name == "custom-mount" {
+						found = true
+						s.Require().Equal("/custom/path", vm.MountPath)
+					}
+				}
+				s.Require().True(found, "custom volume mount should exist")
+
+				// Verify custom volume exists
+				volumes := job.Spec.Template.Spec.Volumes
+				found = false
+				for _, vol := range volumes {
+					if vol.Name == "custom-volume" {
+						found = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+				}
+				s.Require().True(found, "custom volume should exist")
 			},
 		},
 	}

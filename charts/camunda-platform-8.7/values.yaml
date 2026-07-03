@@ -76,7 +76,7 @@ global:
 
   ## @extra global.config Config used in various places.
   config:
-    ## @param global.config.requestBodySize defines applications request body size which used for upload files.
+    ## @param global.config.requestBodySize defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.
     requestBodySize: 10MB
 
   ## Multitenancy configuration.
@@ -153,12 +153,21 @@ global:
   ## @param global.elasticsearch.auth.password the password for external elasticsearch
   ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
   ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
+  ## @extra global.elasticsearch.tls.jks configuration to provide the jks secret.
+  ## @param global.elasticsearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
+  ## @param global.elasticsearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
+  ## @param global.elasticsearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
   elasticsearch:
     enabled: true
     external: false
     tls:
       enabled: false
       existingSecret:
+      jks:
+        secret:
+          existingSecret: ""
+          existingSecretKey: ""
+          inlineSecret: ""
     auth:
       username:
       password:
@@ -190,6 +199,10 @@ global:
   ## @param global.opensearch.auth.password the password for external opensearch
   ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
   ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
+  ## @extra global.opensearch.tls.jks configuration to provide the jks secret.
+  ## @param global.opensearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
+  ## @param global.opensearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
+  ## @param global.opensearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
   opensearch:
     enabled: false
     aws:
@@ -197,6 +210,11 @@ global:
     tls:
       enabled: false
       existingSecret:
+      jks:
+        secret:
+          existingSecret: ""
+          existingSecretKey: ""
+          inlineSecret: ""
     auth:
       username:
       password:
@@ -485,7 +503,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.7.102
+    tag: 8.7.106
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -637,6 +655,8 @@ console:
     name: ""
     ## @param console.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param console.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -732,7 +752,7 @@ zeebe:
      ## @param zeebe.image.repository defines which image repository to use
     repository: camunda/zeebe
      ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.25
+    tag: 8.7.34
     ## @param zeebe.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -802,6 +822,8 @@ zeebe:
     name: ""
     ## @param zeebe.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
+    ## @param zeebe.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param zeebe.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -1030,7 +1052,7 @@ zeebeGateway:
     ## @param zeebeGateway.image.repository defines which image repository to use
     repository: camunda/zeebe
     ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.25
+    tag: 8.7.34
     ## @param zeebeGateway.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1247,6 +1269,8 @@ zeebeGateway:
     name: ""
     ## @param zeebeGateway.serviceAccount.annotations can be used to set the annotations of the gateway service account
     annotations: {}
+    ## @param zeebeGateway.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param zeebeGateway.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -1346,7 +1370,7 @@ operate:
     ## @param operate.image.repository defines which image repository to use
     repository: camunda/operate
     ## @param operate.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.25
+    tag: 8.7.34
     ## @param operate.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1445,6 +1469,8 @@ operate:
     name: ""
     ## @param operate.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param operate.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param operate.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -1618,7 +1644,7 @@ tasklist:
     ## @param tasklist.image.repository defines which image repository to use
     repository: camunda/tasklist
     ## @param tasklist.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.25
+    tag: 8.7.34
     ## @param tasklist.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param tasklist.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1682,6 +1708,8 @@ tasklist:
     name: ""
     ## @param tasklist.serviceAccount.annotations can be used to set the annotations of the Tasklist service account
     annotations: {}
+    ## @param tasklist.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param tasklist.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -1868,7 +1896,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.18
+    tag: 8.7.24
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1937,6 +1965,8 @@ optimize:
     name: ""
     ## @param optimize.serviceAccount.annotations can be used to set the annotations of the Optimize service account
     annotations: {}
+    ## @param optimize.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -2283,6 +2313,8 @@ executionIdentity:
     name: ""
     ## @skip executionIdentity.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @skip executionIdentity.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @skip executionIdentity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -2434,7 +2466,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.16
+    tag: 8.7.21
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2602,6 +2634,8 @@ identity:
     name: ""
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
+    ## @param identity.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: true
 
@@ -2955,7 +2989,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.7.18
+    tag: 8.7.23
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -3561,6 +3595,8 @@ webModeler:
     name: ""
     ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the WebModeler service account
     annotations: {}
+    ## @param webModeler.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -3718,7 +3754,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.17
+    tag: 8.7.22
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3854,6 +3890,8 @@ connectors:
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the Operate service account
     annotations: {}
+    ## @param connectors.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 

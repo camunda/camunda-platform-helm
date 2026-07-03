@@ -1,0 +1,14 @@
+name: elasticsearch-self-signed-upgrade
+auth: keycloak
+flows:
+  - upgrade-minor
+identity: keycloak
+persistence: elasticsearch-self-signed
+features:
+  - migrator
+  - zeebe-tls
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+pre-install: elasticsearch-self-signed-upgrade

@@ -9,25 +9,10 @@ identity:
     key: workload
     operator: Equal
     value: distroci
-identityKeycloak:
-  nodeSelector:
-    workload: distroci
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: distroci
-  postgresql:
-    primary:
-      nodeSelector:
-        workload: distroci
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: distroci
-identityPostgresql:
-  primary:
+
+# Camunda Hub.
+camundaHub:
+  console:
     nodeSelector:
       workload: distroci
     tolerations:
@@ -35,16 +20,23 @@ identityPostgresql:
       key: workload
       operator: Equal
       value: distroci
-
-# Web Apps.
-console:
-  nodeSelector:
-    workload: distroci
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: distroci
+  webModeler:
+    restapi:
+      nodeSelector:
+        workload: distroci
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: distroci
+    websockets:
+      nodeSelector:
+        workload: distroci
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: distroci
 connectors:
   nodeSelector:
     workload: distroci
@@ -78,33 +70,6 @@ optimize:
     operator: Equal
     value: distroci
 
-# Web Modeler.
-webModeler:
-  restapi:
-    nodeSelector:
-      workload: distroci
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: distroci
-  websockets:
-    nodeSelector:
-      workload: distroci
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: distroci
-webModelerPostgresql:
-  primary:
-    nodeSelector:
-      workload: distroci
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: distroci
 
 # Zeebe.
 orchestration:
@@ -124,13 +89,3 @@ zeebeGateway:
     operator: Equal
     value: distroci
 
-# Elasticsearch.
-elasticsearch:
-  master:
-    nodeSelector:
-      workload: distroci
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: distroci

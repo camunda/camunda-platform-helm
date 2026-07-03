@@ -1,5 +1,14 @@
 # ARM nodes (c4a-standard-8) don't support pd-balanced disks.
 # Use hyperdisk-balanced for all StatefulSet PVCs.
+
+# Identity startup is slower on ARM; increase startup probe budget.
+# periodSeconds is inherited from base.yaml (2s) but set explicitly here so the
+# effective budget (failureThreshold * periodSeconds = ~6min) is obvious.
+identity:
+  startupProbe:
+    periodSeconds: 2
+    failureThreshold: 180
+
 orchestration:
   pvcStorageClassName: hyperdisk-balanced
 
@@ -10,5 +19,21 @@ identityPostgresql:
 
 webModelerPostgresql:
   primary:
+    persistence:
+      storageClass: hyperdisk-balanced
+
+identityKeycloak:
+  # Override chart-default tag 26.3.3 — its linux/arm64 manifest is missing
+  # in registry.camunda.cloud (digest 404 on sha256:1d18277a…), causing
+  # ImagePullBackOff on ARM nodes. 26.3.2 has an intact arm64 manifest.
+  image:
+    tag: "26.3.2"
+  postgresql:
+    primary:
+      persistence:
+        storageClass: hyperdisk-balanced
+
+elasticsearch:
+  master:
     persistence:
       storageClass: hyperdisk-balanced

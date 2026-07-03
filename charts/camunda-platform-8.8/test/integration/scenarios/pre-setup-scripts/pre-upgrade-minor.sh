@@ -12,7 +12,11 @@ if [[ -n "${KUBE_CONTEXT:-}" ]]; then
   CONTEXT_FLAG="--context ${KUBE_CONTEXT}"
 fi
 
-# Remove StatefulSets that commonly hit immutable-spec diffs between 8.7 and 8.8.
-# They are recreated by Helm with the new spec while keeping PVC data.
-kubectl ${CONTEXT_FLAG} delete sts -n "${TEST_NAMESPACE}" -l app.kubernetes.io/name=postgresql --ignore-not-found
-kubectl ${CONTEXT_FLAG} delete sts -n "${TEST_NAMESPACE}" -l app.kubernetes.io/name=postgresql-web-modeler --ignore-not-found
+# No StatefulSet pre-deletions are required for the 8.7 -> 8.8 upgrade.
+# The previous postgresql / postgresql-web-modeler deletions existed to
+# work around immutable-spec diffs surfaced when helm upgrade ran with
+# the --force flag (which uses helper.Replace -> HTTP PUT, requiring
+# byte-exact immutable-field equality after server defaulting). With
+# --force removed from the chart-upgrade Taskfile, helm uses strategic-
+# merge-patch, which only validates the diff'd fields and does not
+# require this pre-cleanup.

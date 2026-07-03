@@ -1,36 +1,18 @@
-# Resource-Based Access (RBA) feature configuration for 8.9
-# Layer 4: Feature - Resource-Based Access control
+# No-secondary-storage feature configuration for 8.10
+# Layer 4: Feature - No secondary storage (no Elasticsearch/OpenSearch backend)
+#
+# Composed with persistence/no-elasticsearch.yaml. Optimize requires a
+# secondary-storage backend, so it is disabled here.
+optimize:
+  enabled: false
+
+identity:
+  clients: null
+
+# base.yaml sets orchestration.data.secondaryStorage.type=elasticsearch for the
+# normal scenarios; clear it here so the chart helpers fall back to
+# global.noSecondaryStorage and skip the Camunda exporter / web-app profiles.
 orchestration:
   data:
     secondaryStorage:
-      elasticsearch:
-        auth:
-          username: elastic
-          secret:
-            existingSecret: infra-credentials
-            existingSecretKey: elasticsearch-password
-  index:
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-
-optimize:
-  enabled: true
-  contextPath: "/optimize"
-  database:
-    elasticsearch:
-      enabled: true
-      external: true
-      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-      auth:
-        username: elastic
-        secret:
-          existingSecret: infra-credentials
-          existingSecretKey: elasticsearch-password
-      url:
-        protocol: https
-        host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-        port: 443
-  env:
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
-    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      type: null

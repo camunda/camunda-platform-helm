@@ -86,12 +86,9 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 	if values == nil {
 		values = make(map[string]string)
 	}
-	// Add default Elasticsearch flags if not already present
+	// Add default Elasticsearch flag if not already present
 	if _, hasGlobalES := values["global.elasticsearch.enabled"]; !hasGlobalES {
 		values["global.elasticsearch.enabled"] = "true"
-	}
-	if _, hasES := values["elasticsearch.enabled"]; !hasES {
-		values["elasticsearch.enabled"] = "true"
 	}
 
 	options := &helm.Options{
@@ -160,8 +157,8 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 }
 
 // renderTemplate renders the specified Helm templates into a Kubernetes ConfigMap
-func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string) corev1.ConfigMap {
-	options := setupHelmOptions(namespace, values, nil, nil)
+func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, valuesFiles []string) corev1.ConfigMap {
+	options := setupHelmOptions(namespace, values, valuesFiles, nil)
 
 	output := helm.RenderTemplate(t, options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
@@ -173,7 +170,7 @@ func renderTemplate(t *testing.T, chartPath, release string, namespace string, t
 func RunTestCases(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(tct *testing.T) {
-			configmap := renderTemplate(tct, chartPath, release, namespace, templates, tc.Values)
+			configmap := renderTemplate(tct, chartPath, release, namespace, templates, tc.Values, tc.ValuesFiles)
 			verifyConfigMap(tct, tc.Name, configmap, tc.Expected)
 		})
 	}

@@ -133,9 +133,7 @@ connectors:
     - name: username
       value: username
     - name: password
-      value: password
-
-optimize:
-  caches:
-    cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: password

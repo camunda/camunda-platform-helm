@@ -1,0 +1,64 @@
+name: Integration Tests Gate
+
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Override head SHA for testing
+        required: true
+        type: string
+      event:
+        description: Event the matrix run was triggered by
+        required: true
+        type: choice
+        default: pull_request
+        options:
+          - pull_request
+          - merge_group
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{
+      github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 420
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          sparse-checkout: |
+            scripts/integration-tests-gate
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: scripts/integration-tests-gate/go.mod
+          cache: false
+
+      - name: Run gate
+        working-directory: scripts/integration-tests-gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          MATRIX_WORKFLOW: test-chart-version.yaml
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          OVERRIDE_SHA: ${{ inputs.sha }}
+          OVERRIDE_EVENT: ${{ inputs.event }}
+          IS_FORK: >-
+            ${{ github.event_name == 'pull_request' &&
+                github.event.pull_request.head.repo.full_name
+                != github.repository }}
+        run: go run .

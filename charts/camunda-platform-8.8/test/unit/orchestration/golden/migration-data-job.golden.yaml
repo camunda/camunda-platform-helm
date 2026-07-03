@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: orchestration-migration
-    app.kubernetes.io/version: "8.8.19"
+    app.kubernetes.io/version: "8.8.30"
   annotations:
     {}
 spec:
@@ -25,10 +25,11 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: orchestration-migration
-        app.kubernetes.io/version: "8.8.19"
+        app.kubernetes.io/version: "8.8.30"
       annotations:
     spec:
       restartPolicy: OnFailure
+      serviceAccountName: camunda-platform-test-zeebe
       imagePullSecrets:
         []
       securityContext:
@@ -38,7 +39,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: camunda-migration-data
-          image: camunda/camunda:8.8.19
+          image: camunda/camunda:8.8.30
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -68,6 +69,10 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /usr/local/camunda/logs
+              name: logs
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -85,3 +90,7 @@ spec:
           configMap:
             name: camunda-platform-test-zeebe-configuration-unified
             defaultMode: 492
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}

@@ -2,6 +2,9 @@
 # Layer 2: Auth method - Basic authentication (no identity provider)
 
 global:
+  security:
+    authentication:
+      method: basic
   exporter:
     zeebe:
       enabled: false
@@ -9,13 +12,7 @@ global:
 orchestration:
   security:
     authentication:
-      method: basic
       authenticationRefreshInterval: "PT30S"
 
 console:
   enabled: false
-
-connectors:
-  security:
-    authentication:
-      method: basic

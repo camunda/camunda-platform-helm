@@ -1,0 +1,71 @@
+# Minimal PostgreSQL chart values — CI use only.
+# Not intended for production deployments.
+
+## @param fullnameOverride Override the full resource name (e.g., "postgresql").
+fullnameOverride: ""
+
+## @param nameOverride Override the chart name portion of resource names.
+nameOverride: ""
+
+image:
+  registry: docker.io
+  repository: postgres
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+## @param imagePullSecrets Array of image pull secret names.
+imagePullSecrets: []
+
+auth:
+  ## @param auth.username PostgreSQL user.
+  username: app
+  ## @param auth.password PostgreSQL password (ignored if existingSecret is set).
+  password: ""
+  ## @param auth.existingSecret Existing Secret containing the PostgreSQL password.
+  existingSecret: ""
+  ## @param auth.passwordSecretKey Key within the existing Secret holding the password.
+  passwordSecretKey: "postgresql-password"
+  ## @param auth.database Initial database created by the image.
+  database: identity
+
+## TLS configuration. When enabled, the chart generates a self-signed CA plus a
+## server certificate (SANs cover the in-cluster service name) at install time
+## and starts PostgreSQL with `ssl=on`. The CA is exposed in the generated TLS
+## Secret under `ca.crt` so clients can validate with `sslmode=verify-full`.
+## CI-only — certs regenerate on every render, so this is not upgrade-safe.
+## TLS is self-contained: when enabled, the Deployment pins the pod to the alpine
+## `postgres` image's `postgres` user (uid/gid 70) and stages the generated key
+## with chmod 0600 owned by that user (PostgreSQL refuses a world-readable key).
+## When disabled, the pod runs exactly as before (no securityContext).
+tls:
+  ## @param tls.enabled Enable server-side TLS with a generated self-signed CA.
+  enabled: false
+  ## @param tls.certValidityDays Validity (days) of the generated CA and cert.
+  certValidityDays: 3650
+
+## Additional databases created during container initialization.
+databases:
+  - identity
+  - webmodeler
+
+service:
+  type: ClusterIP
+  port: 5432
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+## @param podAnnotations Additional annotations for PostgreSQL pods.
+podAnnotations: {}
+
+## @param nodeSelector Node selector for PostgreSQL pods.
+nodeSelector: {}
+
+## @param tolerations Tolerations for PostgreSQL pods.
+tolerations: []

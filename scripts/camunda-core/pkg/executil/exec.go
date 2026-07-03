@@ -153,7 +153,7 @@ func RunCommandWithStdin(ctx context.Context, name string, args []string, env []
 		defer stdinPipe.Close()
 		_, _ = stdinPipe.Write(stdin)
 	}()
-	
+
 	bufferCB := getBufferFromContext(ctx)
 	if bufferCB != nil {
 		// Buffered mode: capture output and send to callback
@@ -176,7 +176,7 @@ func RunCommandWithStdin(ctx context.Context, name string, args []string, env []
 		wg.Wait()
 		return cmd.Wait()
 	}
-	
+
 	// Normal mode: stream output
 	baseLogger := logging.Logger
 	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
@@ -242,7 +242,7 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 	var stderrLines []string
 	var wg sync.WaitGroup
 	wg.Add(2)
-	
+
 	go func() {
 		defer wg.Done()
 		sc := bufio.NewScanner(stdout)
@@ -250,7 +250,7 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 			stdoutLines = append(stdoutLines, sc.Text())
 		}
 	}()
-	
+
 	go func() {
 		defer wg.Done()
 		sc := bufio.NewScanner(stderr)
@@ -261,11 +261,100 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 
 	wg.Wait()
 	err = cmd.Wait()
-	
+
 	return &BufferedOutput{
 		Stdout: stdoutLines,
 		Stderr: stderrLines,
 	}, err
+}
+
+// RunCommandCaptureStderr behaves exactly like RunCommand — honoring the buffer
+// callback in context when present, otherwise logging stdout as info and stderr as
+// warnings — but additionally returns the accumulated stderr text so callers can
+// classify transient errors for retry decisions without re-running the command.
+func RunCommandCaptureStderr(ctx context.Context, name string, args []string, env []string, workingDir string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	if workingDir != "" {
+		cmd.Dir = workingDir
+	}
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", err
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return "", err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+
+	// Only the stderr goroutine writes to stderrBuf, so no locking is needed.
+	var stderrBuf strings.Builder
+
+	bufferCB := getBufferFromContext(ctx)
+	if bufferCB != nil {
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			sc := bufio.NewScanner(stdout)
+			for sc.Scan() {
+				bufferCB("info", sc.Text())
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			sc := bufio.NewScanner(stderrPipe)
+			for sc.Scan() {
+				line := sc.Text()
+				bufferCB("warn", line)
+				stderrBuf.WriteString(line)
+				stderrBuf.WriteByte('\n')
+			}
+		}()
+		wg.Wait()
+		return stderrBuf.String(), cmd.Wait()
+	}
+
+	baseLogger := logging.Logger
+	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
+		b := baseLogger.With()
+		for k, v := range fields {
+			b = b.Str(k, v)
+		}
+		baseLogger = b.Logger()
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		sc := bufio.NewScanner(stdout)
+		for sc.Scan() {
+			prefix := logging.PrefixFromContext(ctx, name)
+			baseLogger.Info().Msg(prefix + sc.Text())
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		sc := bufio.NewScanner(stderrPipe)
+		for sc.Scan() {
+			line := sc.Text()
+			prefix := logging.PrefixFromContext(ctx, name)
+			baseLogger.Warn().Msg(prefix + line)
+			stderrBuf.WriteString(line)
+			stderrBuf.WriteByte('\n')
+		}
+	}()
+
+	wg.Wait()
+	return stderrBuf.String(), cmd.Wait()
 }
 
 // FieldsNoEmpty splits on whitespace and removes empty entries.
@@ -276,5 +365,3 @@ func FieldsNoEmpty(s string) []string {
 	}
 	return ff
 }
-
-

@@ -8,3 +8,9 @@
 # review when someone opens a pull request.
 
 * @camunda/distribution
+
+# Docs site — Docusaurus project and markdown content
+/helm-docs-site/ @camunda/distribution
+/docs/ @camunda/distribution
+/.github/workflows/docs-build-deploy.yml @camunda/distribution
+/.github/workflows/docs-preview.yml @camunda/distribution

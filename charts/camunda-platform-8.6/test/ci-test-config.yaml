@@ -42,11 +42,11 @@ integration:
           shortname: es
           auth: keycloak
         - name: multitenancy
-          enabled: true
+          enabled: false
           exclude: []
           shortname: mt
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch
           features: [multitenancy]
         - name: opensearch

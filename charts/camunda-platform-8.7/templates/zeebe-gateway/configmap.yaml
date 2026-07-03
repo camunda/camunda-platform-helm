@@ -55,6 +55,8 @@ data:
     server:
       address: "0.0.0.0"
       port: {{  .Values.zeebeGateway.service.restPort | quote }}
+      tomcat:
+        max-http-form-post-size: {{ .Values.global.config.requestBodySize | quote }}
       {{- if .Values.zeebeGateway.contextPath }}
       servlet:
         context-path: {{ .Values.zeebeGateway.contextPath | quote }}
@@ -84,6 +86,7 @@ data:
         network:
           host: 0.0.0.0
           port: {{ .Values.zeebeGateway.service.grpcPort | quote }}
+          maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
         {{- if .Values.global.multitenancy.enabled }}
         multitenancy:
           enabled: true

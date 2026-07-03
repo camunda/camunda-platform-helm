@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: orchestration-migration
-    app.kubernetes.io/version: "8.8.19"
+    app.kubernetes.io/version: "8.8.30"
   annotations:
     {}
 spec:
@@ -25,10 +25,11 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: orchestration-migration
-        app.kubernetes.io/version: "8.8.19"
+        app.kubernetes.io/version: "8.8.30"
       annotations:
     spec:
       restartPolicy: OnFailure
+      serviceAccountName: camunda-platform-test-zeebe
       imagePullSecrets:
         []
       securityContext:
@@ -46,7 +47,14 @@ spec:
             runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
-          image: curlimages/curl:8.18.0
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          image: curlimages/curl:8.21.0
           command:
             - sh
             - -c
@@ -56,7 +64,7 @@ spec:
               done
       containers:
         - name: camunda-migration
-          image: camunda/camunda:8.8.19
+          image: camunda/camunda:8.8.30
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -84,6 +92,10 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /usr/local/camunda/logs
+              name: logs
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -100,3 +112,7 @@ spec:
         - name: config
           configMap:
             name: camunda-platform-test-identity-migration-configuration
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}

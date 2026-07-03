@@ -17,10 +17,8 @@ package web_modeler
 import (
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -44,25 +42,31 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 		suite.Run(t, &utils.TemplateGoldenTest{
 			ChartPath:      chartPath,
 			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+			Namespace:      "camunda-platform",
 			GoldenFileName: name,
 			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
 			SetValues: map[string]string{
 				"webModeler.enabled":                                               "true",
 				"webModeler.restapi.mail.fromAddress":                              "example@example.com",
-				"webModelerPostgresql.enabled":                                     "true",
-				"webModelerPostgresql.auth.existingSecret":                         "camunda-platform-test-postgresql-web-modeler",
 				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
 				"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
 				"global.identity.auth.enabled":                                     "true",
 				"identity.enabled":                                                 "true",
-				"identityKeycloak.enabled":                                         "true",
 				"global.elasticsearch.enabled":                                     "true",
-				"elasticsearch.enabled":                                            "true",
+				"global.identity.keycloak.url.protocol":                            "https",
+				"global.identity.keycloak.url.host":                                "keycloak.example.com",
+				"global.identity.keycloak.url.port":                                "8443",
+				"global.identity.keycloak.auth.adminUser":                          "admin",
+				"global.identity.keycloak.auth.secret.existingSecret":              "kc-secret",
+				"global.identity.keycloak.auth.secret.existingSecretKey":           "password",
+				"webModeler.restapi.externalDatabase.url":                          "jdbc:postgresql://postgres.example.com:5432/web-modeler",
+				"webModeler.restapi.externalDatabase.username":                     "modeler",
+				"webModeler.restapi.externalDatabase.secret.existingSecret":        "wm-db-secret",
+				"webModeler.restapi.externalDatabase.secret.existingSecretKey":     "password",
 			},
 			IgnoredLines: []string{
-				`\s+.*-secret:\s+.*`,         // secrets are auto-generated and need to be ignored.
-				`\s+checksum/.+?:\s+.*`,      // ignore configmap checksum.
+				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},
 		})
 	}

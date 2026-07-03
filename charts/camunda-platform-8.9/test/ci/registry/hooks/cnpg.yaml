@@ -1,0 +1,9 @@
+fixtures:
+  - postgresql-cluster.yaml
+description: |
+  Provisions a CloudNativePG `Cluster` plus auth Secret in the
+  scenario namespace. The CloudNativePG operator reconciles the
+  Cluster into a running PostgreSQL instance reachable as
+  postgresql-cluster-rw.<namespace>.svc.cluster.local — required
+  before helm install or the Camunda OrchestrationCluster pods
+  crash-loop trying to reach RDBMS.

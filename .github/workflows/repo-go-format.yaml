@@ -1,0 +1,36 @@
+name: Repo - Go Format
+
+# Repo-wide, always-run gofmt gate. Deliberately NOT path-filtered and NOT
+# scoped to a chart-version matrix: the per-version `make go.fmt` step in the
+# unit-test workflow only checks the chart(s) a PR touches, so formatting drift
+# in untouched versions (8.3-8.x) and in the standalone scripts/ modules
+# accumulated unnoticed. This job scans every tracked Go file in one shot
+# (gofmt is syntactic, so it needs no module context) and fails on any drift.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  gofmt:
+    name: gofmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - name: Install Go (from .tool-versions)
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+      - name: Check gofmt across all Go files
+        run: |
+          unformatted=$(gofmt -l $(git ls-files '*.go'))
+          if [ -n "$unformatted" ]; then
+            echo "::error::These Go files are not gofmt-clean. Run 'gofmt -w' on them (or 'make go.fmt') and commit:"
+            echo "$unformatted"
+            exit 1
+          fi
+          echo "All tracked Go files are gofmt-clean."

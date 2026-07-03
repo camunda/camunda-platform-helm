@@ -27,7 +27,19 @@ The dependency management is fully automated and managed by Helm itself.
 ## Documentation
 
 - Official docs (to install the platform via Helm chart): [Camunda 8 Self-Managed](https://docs.camunda.io/docs/self-managed/about-self-managed/).
-- This repo wiki (e.g., contribution guidance, testing, etc.): [Camunda 8 Helm chart wiki](https://github.com/camunda/camunda-platform-helm/wiki).
+- Internal developer docs (release process, CI workflows, contribution guidelines, etc.): [helm.camunda.io/camunda-platform-helm](https://helm.camunda.io/camunda-platform-helm/).
+
+## Contributing to the Docs
+
+Documentation source files live in [`docs/`](./docs/) at the repo root. The Docusaurus project is in [`helm-docs-site/`](./helm-docs-site/).
+
+```bash
+cd helm-docs-site
+npm install
+npm start   # opens http://localhost:3000/camunda-platform-helm/
+```
+
+When adding a new page, also add its `id` to [`helm-docs-site/sidebars.js`](./helm-docs-site/sidebars.js). See [`helm-docs-site/README.md`](./helm-docs-site/README.md) for full details.
 
 ## Versioning and Release Cycles
 

@@ -1,7 +1,10 @@
-# Basic auth configuration for 8.9
+# Basic auth configuration for 8.10
 # Layer 2: Auth method - Basic authentication (no identity provider)
 
 global:
+  security:
+    authentication:
+      method: basic
   exporter:
     zeebe:
       enabled: false
@@ -9,13 +12,7 @@ global:
 orchestration:
   security:
     authentication:
-      method: basic
       authenticationRefreshInterval: "PT30S"
 
-console:
+camundaHub:
   enabled: false
-
-connectors:
-  security:
-    authentication:
-      method: basic

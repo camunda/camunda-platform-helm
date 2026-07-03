@@ -3,6 +3,7 @@ package matrix
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,7 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+	"scripts/camunda-core/pkg/versionmatrix"
+
 	"scripts/camunda-deployer/pkg/deployer"
+	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 )
 
@@ -307,6 +312,132 @@ func TestFilter(t *testing.T) {
 			t.Errorf("Filter(shortname=zzzz): got %d entries, want 0", len(got))
 		}
 	})
+
+	t.Run("shortname exact match filters precisely", func(t *testing.T) {
+		// "es" with ShortnameExact=true should NOT match "eske" or "eshy" or "esoi"
+		got := Filter(entries, FilterOptions{ShortnameFilter: "es", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=es, exact=true): got %d entries, want 0 (no entry has shortname exactly 'es')", len(got))
+		}
+	})
+
+	t.Run("shortname exact match finds exact shortname", func(t *testing.T) {
+		// "eske" with ShortnameExact=true should match all entries with shortname=="eske"
+		got := Filter(entries, FilterOptions{ShortnameFilter: "eske", ShortnameExact: true})
+		if len(got) != 4 {
+			t.Errorf("Filter(shortname=eske, exact=true): got %d entries, want 4", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eske" {
+				t.Errorf("Filter(shortname=eske, exact=true): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname exact with substring does not match", func(t *testing.T) {
+		// "esk" with ShortnameExact=true should NOT match "eske" (substring match disabled)
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esk", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=esk, exact=true): got %d entries, want 0", len(got))
+		}
+	})
+
+	t.Run("shortname exact with comma-separated values", func(t *testing.T) {
+		// "eske,esoi" with ShortnameExact=true should match those exact shortnames
+		got := Filter(entries, FilterOptions{ShortnameFilter: "eske,esoi", ShortnameExact: true})
+		if len(got) != 5 {
+			t.Errorf("Filter(shortname=eske,esoi, exact=true): got %d entries, want 5 (4 eske + 1 esoi)", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eske" && e.Shortname != "esoi" {
+				t.Errorf("Filter(shortname=eske,esoi, exact=true): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname non-exact allows substring match", func(t *testing.T) {
+		// Confirm the default (ShortnameExact=false) still does substring matching
+		// "esk" should match "eske" entries
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esk", ShortnameExact: false})
+		if len(got) != 4 {
+			t.Errorf("Filter(shortname=esk, exact=false): got %d entries, want 4", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname fallback to scenario only when shortname unmatched", func(t *testing.T) {
+		// When scenario filter matches but shortname doesn't match anything,
+		// the fallback drops the shortname filter and uses scenario alone.
+		// "oidc" scenario exists, but shortname "dynamic-xyz" doesn't.
+		got := Filter(entries, FilterOptions{ScenarioFilter: "oidc", ShortnameFilter: "dynamic-xyz", ShortnameExact: true})
+		// Should fall back to scenario-only filter and find the oidc entry
+		if len(got) != 1 || got[0].Scenario != "oidc" {
+			t.Errorf("Filter(scenario=oidc, shortname=dynamic-xyz, exact=true): got %d entries, want 1 oidc entry (fallback)", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname no fallback when shortname matches", func(t *testing.T) {
+		// When both filters match, use the combined AND result (no fallback needed).
+		got := Filter(entries, FilterOptions{ScenarioFilter: "elasticsearch", ShortnameFilter: "eske", ShortnameExact: true})
+		// Should match entries with scenario containing "elasticsearch" AND shortname exactly "eske"
+		if len(got) != 4 {
+			t.Errorf("Filter(scenario=elasticsearch, shortname=eske, exact=true): got %d entries, want 4", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname fallback not triggered without scenario filter", func(t *testing.T) {
+		// Without a scenario filter, shortname-only filter that matches nothing returns empty.
+		got := Filter(entries, FilterOptions{ShortnameFilter: "dynamic-xyz", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=dynamic-xyz, exact=true, no scenario): got %d entries, want 0", len(got))
+		}
+	})
+
+	// --- Tier filter tests ---
+	tieredEntries := []Entry{
+		{Version: "8.9", Scenario: "elasticsearch", Shortname: "eske", Flow: "install", Tier: 1, Enabled: true},
+		{Version: "8.9", Scenario: "opensearch", Shortname: "oske", Flow: "install", Tier: 1, Enabled: true},
+		{Version: "8.9", Scenario: "keycloak-mt", Shortname: "kemt", Flow: "install", Tier: 2, Enabled: true},
+		{Version: "8.9", Scenario: "keycloak-rba", Shortname: "kerba", Flow: "install", Tier: 2, Enabled: true},
+		{Version: "8.9", Scenario: "no-tier-set", Shortname: "notier", Flow: "install", Tier: 0, Enabled: true},
+	}
+
+	t.Run("tier filter returns only matching tier", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{Tier: 1})
+		if len(got) != 3 {
+			t.Errorf("Filter(tier=1): got %d entries, want 3 (2 tier-1 + 1 untiered)", len(got))
+		}
+		for _, e := range got {
+			if e.Tier != 1 && e.Tier != 0 {
+				t.Errorf("Filter(tier=1): unexpected tier %d for %s", e.Tier, e.Shortname)
+			}
+		}
+	})
+
+	t.Run("tier filter 2 returns tier-2 and untiered", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{Tier: 2})
+		if len(got) != 3 {
+			t.Errorf("Filter(tier=2): got %d entries, want 3 (2 tier-2 + 1 untiered)", len(got))
+		}
+		for _, e := range got {
+			if e.Tier != 2 && e.Tier != 0 {
+				t.Errorf("Filter(tier=2): unexpected tier %d for %s", e.Tier, e.Shortname)
+			}
+		}
+	})
+
+	t.Run("no tier filter returns all entries", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{})
+		if len(got) != len(tieredEntries) {
+			t.Errorf("Filter(no tier): got %d entries, want %d", len(got), len(tieredEntries))
+		}
+	})
+
+	t.Run("tier filter combined with scenario filter", func(t *testing.T) {
+		got := Filter(tieredEntries, FilterOptions{Tier: 1, ScenarioFilter: "elasticsearch"})
+		if len(got) != 1 || got[0].Shortname != "eske" {
+			t.Errorf("Filter(tier=1, scenario=elasticsearch): got %d entries, want 1 eske", len(got))
+		}
+	})
 }
 
 // --- GroupByVersion / VersionOrder tests ---
@@ -502,15 +633,15 @@ func TestLoadChartVersions(t *testing.T) {
 		t.Fatal("LoadChartVersions: no active versions")
 	}
 
-	// 8.9 should be alpha
+	// 8.10 should be alpha
 	found := false
 	for _, v := range cv.CamundaVersions.Alpha {
-		if v == "8.9" {
+		if v == "8.10" {
 			found = true
 		}
 	}
 	if !found {
-		t.Error("LoadChartVersions: 8.9 not found in alpha")
+		t.Error("LoadChartVersions: 8.10 not found in alpha")
 	}
 }
 
@@ -530,17 +661,45 @@ func TestLoadPermittedFlows(t *testing.T) {
 	}
 }
 
-func TestLoadCITestConfig(t *testing.T) {
-	repoRoot := findRepoRoot(t)
+// --- HelmVersion passthrough ---
 
-	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.8")
-	cfg, err := LoadCITestConfig(chartDir)
-	if err != nil {
-		t.Fatalf("LoadCITestConfig: %v", err)
+func TestHelmVersionPassthrough(t *testing.T) {
+	// Decode a minimal scenario YAML and confirm HelmVersion loads.
+	src := []byte(`
+name: elasticsearch
+enabled: true
+shortname: eske
+flow: install
+helmVersion: "4.0.0"
+`)
+	var s CIScenario
+	if err := yaml.Unmarshal(src, &s); err != nil {
+		t.Fatalf("yaml.Unmarshal: %v", err)
+	}
+	if s.HelmVersion != "4.0.0" {
+		t.Errorf("CIScenario.HelmVersion = %q, want %q", s.HelmVersion, "4.0.0")
 	}
 
-	if len(cfg.Integration.Case.PR.Scenarios) == 0 {
-		t.Error("LoadCITestConfig: no PR scenarios")
+	// Marshal an Entry carrying HelmVersion and confirm the JSON key is
+	// `helmVersion` — GitHub Actions matrix expressions rely on this exact key.
+	e := Entry{Version: "8.10", Scenario: "elasticsearch", Flow: "install", HelmVersion: "4.0.0"}
+	b, err := json.Marshal(e)
+	if err != nil {
+		t.Fatalf("json.Marshal: %v", err)
+	}
+	if !strings.Contains(string(b), `"helmVersion":"4.0.0"`) {
+		t.Errorf("Entry JSON missing helmVersion key: %s", b)
+	}
+
+	// Empty HelmVersion must be omitted from JSON so existing scenarios stay
+	// noise-free in the matrix output.
+	eEmpty := Entry{Version: "8.10", Scenario: "elasticsearch", Flow: "install"}
+	bEmpty, err := json.Marshal(eEmpty)
+	if err != nil {
+		t.Fatalf("json.Marshal empty: %v", err)
+	}
+	if strings.Contains(string(bEmpty), "helmVersion") {
+		t.Errorf("empty HelmVersion leaked into JSON: %s", bEmpty)
 	}
 }
 
@@ -552,7 +711,7 @@ func TestPrintRunSummary(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "oidc", Shortname: "esoi", Flow: "install"}, Namespace: "matrix-88-esoi", Error: os.ErrNotExist},
 	}
 
-	summary := PrintRunSummary(results, 10*time.Second)
+	summary := PrintRunSummary(results, 10*time.Second, "")
 	if !strings.Contains(summary, "Total:   2") || !strings.Contains(summary, "Success: 1") || !strings.Contains(summary, "Failed:  1") {
 		t.Errorf("PrintRunSummary: unexpected output: %s", summary)
 	}
@@ -576,7 +735,7 @@ func TestPrintRunSummaryParallelShowsSum(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "os", Shortname: "oske", Flow: "install"}, Namespace: "matrix-88-oske", Duration: 30 * time.Second},
 	}
 
-	summary := PrintRunSummary(results, 30*time.Second)
+	summary := PrintRunSummary(results, 30*time.Second, "")
 	if !strings.Contains(summary, "Total time:") {
 		t.Errorf("PrintRunSummary: expected 'Total time:' line, got: %s", summary)
 	}
@@ -592,7 +751,7 @@ func TestPrintRunSummarySequentialNoSum(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "es", Shortname: "eske", Flow: "install"}, Namespace: "matrix-88-eske", Duration: 30 * time.Second},
 	}
 
-	summary := PrintRunSummary(results, 30*time.Second)
+	summary := PrintRunSummary(results, 30*time.Second, "")
 	if !strings.Contains(summary, "Total time:") {
 		t.Errorf("PrintRunSummary: expected 'Total time:' line, got: %s", summary)
 	}
@@ -612,7 +771,7 @@ func TestPrintRunSummaryHelmError(t *testing.T) {
 		{Entry: Entry{Version: "8.9", Scenario: "elasticsearch-arm", Shortname: "esarm", Flow: "install"}, Namespace: "matrix-89-esarm", Error: helmErr},
 	}
 
-	summary := PrintRunSummary(results, 5*time.Second)
+	summary := PrintRunSummary(results, 5*time.Second, "")
 
 	// Should contain structured output
 	if !strings.Contains(summary, "8.9/elasticsearch-arm (esarm, flow=install)") {
@@ -645,7 +804,7 @@ func TestPrintRunSummaryWrappedHelmError(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "es", Shortname: "eske", Flow: "upgrade-patch"}, Namespace: "matrix-88-eske", Error: wrappedErr},
 	}
 
-	summary := PrintRunSummary(results, 5*time.Second)
+	summary := PrintRunSummary(results, 5*time.Second, "")
 
 	// Should contain step context
 	if !strings.Contains(summary, "Step:") {
@@ -657,7 +816,7 @@ func TestPrintRunSummaryWrappedHelmError(t *testing.T) {
 }
 
 func TestPrintRunSummaryEmpty(t *testing.T) {
-	summary := PrintRunSummary(nil, 0)
+	summary := PrintRunSummary(nil, 0, "")
 	if !strings.Contains(summary, "No entries executed") {
 		t.Errorf("PrintRunSummary(nil): expected 'No entries executed', got: %s", summary)
 	}
@@ -961,7 +1120,112 @@ func TestResolveEnvFile(t *testing.T) {
 	}
 }
 
+func TestOCIImmutabilityDisablesImageOverrides(t *testing.T) {
+	chartPath := t.TempDir()
+	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
+		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	entry := Entry{Enterprise: true, ImageTags: true}
+	ociOpts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", UseLatest: true}
+	if got := effectiveImageTags(entry, ociOpts); got {
+		t.Fatalf("effectiveImageTags() = true, want false in OCI immutability mode")
+	}
+	if got := resolveChartRootOverlaysQuiet(chartPath, entry, ociOpts); len(got) != 0 {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want no overlays in OCI immutability mode", got)
+	}
+
+	forcedOpts := RunOptions{ChartRef: ociOpts.ChartRef, ForceImageOverrides: true, UseLatest: true}
+	if got := effectiveImageTags(entry, forcedOpts); !got {
+		t.Fatalf("effectiveImageTags() = false, want true when OCI immutability bypass is enabled")
+	}
+	if got := resolveChartRootOverlaysQuiet(chartPath, entry, forcedOpts); strings.Join(got, ",") != "enterprise" {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise] when bypass preserves image-tags", got)
+	}
+}
+
+func TestSanitizeEnvFileForOCIImmutability(t *testing.T) {
+	envFile := filepath.Join(t.TempDir(), "values.env")
+	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nOPERATE_INDEX_PREFIX=test-run\nTASKLIST_INDEX_PREFIX=test-tasklist\n"
+	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got == "" || got == envFile {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want sanitized temp file", got)
+	}
+
+	data, err := os.ReadFile(got)
+	if err != nil {
+		t.Fatalf("read sanitized env file: %v", err)
+	}
+	text := string(data)
+	if strings.Contains(text, "E2E_TESTS_OPTIMIZE_IMAGE_TAG") {
+		t.Fatalf("sanitized env file still contains image tag key: %s", text)
+	}
+	for _, key := range []string{"OPERATE_INDEX_PREFIX", "TASKLIST_INDEX_PREFIX"} {
+		if !strings.Contains(text, key+"=") {
+			t.Fatalf("sanitized env file missing %s: %s", key, text)
+		}
+	}
+}
+
 // --- resolveUseVaultBackedSecrets tests ---
+
+func TestOCIImmutabilityForceOverridesRestoresDigest(t *testing.T) {
+	chartPath := t.TempDir()
+	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
+		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	// ForceImageOverrides: true + ImageTags: false -> digest overlay should be restored
+	entry := Entry{Enterprise: true, ImageTags: false}
+	opts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", ForceImageOverrides: true}
+	got := resolveChartRootOverlaysQuiet(chartPath, entry, opts)
+	expected := "enterprise,digest"
+	if strings.Join(got, ",") != expected {
+		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise, digest] when force-overrides restores non-image-tags path", got)
+	}
+}
+
+func TestSanitizeEnvFileAllImageTags(t *testing.T) {
+	// All keys are IMAGE_TAG -> result should be empty path (no temp file needed)
+	envFile := filepath.Join(t.TempDir(), "values.env")
+	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nE2E_TESTS_OPERATE_IMAGE_TAG=8.8-SNAPSHOT\n"
+	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got != "" {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty path when all keys are image tags", got)
+	}
+}
+
+func TestSanitizeEnvFileNoEnvFile(t *testing.T) {
+	// OCI mode with no env file -> should short-circuit cleanly
+	got, cleanup, err := sanitizeEnvFileForOCIImmutability("", RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
+	if err != nil {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
+	}
+	defer cleanup()
+	if got != "" {
+		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty string for no env file", got)
+	}
+}
 
 func TestResolveUseVaultBackedSecrets(t *testing.T) {
 	tests := []struct {
@@ -1183,6 +1447,93 @@ func sliceEqual(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// TestSynthesizeRunError verifies the extracted synthesizeRunError helper that
+// Run() uses to convert failed results and context cancellations into non-nil
+// errors. This ensures CI steps get a non-zero exit code when deployments fail.
+func TestSynthesizeRunError(t *testing.T) {
+	tests := []struct {
+		name         string
+		results      []RunResult
+		totalEntries int
+		ctxCancelled bool
+		wantErr      bool
+		wantContains string // substring expected in error message
+	}{
+		{
+			name: "all successful",
+			results: []RunResult{
+				{Namespace: "ns-1", Error: nil},
+				{Namespace: "ns-2", Error: nil},
+			},
+			totalEntries: 2,
+			wantErr:      false,
+		},
+		{
+			name: "one failure",
+			results: []RunResult{
+				{Namespace: "ns-1", Error: nil},
+				{Namespace: "ns-2", Error: errors.New("helm timeout")},
+			},
+			totalEntries: 2,
+			wantErr:      true,
+			wantContains: "1 of 2 matrix entries failed",
+		},
+		{
+			name: "all failures",
+			results: []RunResult{
+				{Namespace: "ns-1", Error: errors.New("deploy failed")},
+				{Namespace: "ns-2", Error: errors.New("helm timeout")},
+			},
+			totalEntries: 2,
+			wantErr:      true,
+			wantContains: "2 of 2 matrix entries failed",
+		},
+		{
+			name:         "context cancelled before any entry dispatched",
+			results:      nil,
+			totalEntries: 3,
+			ctxCancelled: true,
+			wantErr:      true,
+			wantContains: "run cancelled: 3 of 3 entries never started",
+		},
+		{
+			name: "context cancelled with partial results",
+			results: []RunResult{
+				{Namespace: "ns-1", Error: nil},
+			},
+			totalEntries: 3,
+			ctxCancelled: true,
+			wantErr:      true,
+			wantContains: "run cancelled: 2 of 3 entries never started",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			if tt.ctxCancelled {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel() // cancel immediately
+			}
+
+			err := synthesizeRunError(ctx, tt.results, tt.totalEntries)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error but got nil")
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if tt.wantErr && err != nil {
+				if !strings.Contains(err.Error(), tt.wantContains) {
+					t.Errorf("error = %q, want substring %q", err.Error(), tt.wantContains)
+				}
+			}
+		})
+	}
 }
 
 // findRepoRoot walks up from the current working directory to find the repo root.
@@ -1537,5 +1888,263 @@ func TestExtractBitnamiPGPasswords_MappingConsistency(t *testing.T) {
 			}
 			allPaths[hp] = secretKey
 		}
+	}
+}
+
+func TestShouldExtractBitnamiPGPasswords(t *testing.T) {
+	tests := []struct {
+		name          string
+		targetVersion string
+		want          bool
+	}{
+		{name: "8.9 still uses Bitnami subcharts", targetVersion: "8.9", want: true},
+		{name: "8.10 removed Bitnami subcharts", targetVersion: "8.10", want: false},
+		{name: "newer versions keep Bitnami removed", targetVersion: "8.11", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldExtractBitnamiPGPasswords(tt.targetVersion); got != tt.want {
+				t.Errorf("shouldExtractBitnamiPGPasswords(%q) = %v, want %v", tt.targetVersion, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- ChartRef override tests ---
+
+func TestApplyChartRefOverride(t *testing.T) {
+	// Verify that applyChartRefOverride correctly mutates ChartFlags when
+	// RunOptions.ChartRef is set, and is a no-op when it is empty. This
+	// exercises the same helper that executeEntry calls in production.
+	tests := []struct {
+		name            string
+		chartRef        string
+		chartRefVersion string
+		wantApplied     bool
+		wantChart       string
+		wantVersion     string
+		wantSkipDep     bool
+	}{
+		{
+			name:            "OCI reference",
+			chartRef:        "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			chartRefVersion: "13-rc-latest",
+			wantApplied:     true,
+			wantChart:       "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+			wantVersion:     "13-rc-latest",
+			wantSkipDep:     true,
+		},
+		{
+			name:            "local tgz path",
+			chartRef:        "/tmp/oci-chart/camunda-platform-13.4.0-rc.tgz",
+			chartRefVersion: "",
+			wantApplied:     true,
+			wantChart:       "/tmp/oci-chart/camunda-platform-13.4.0-rc.tgz",
+			wantVersion:     "",
+			wantSkipDep:     true,
+		},
+		{
+			name:            "empty chart-ref does not override",
+			chartRef:        "",
+			chartRefVersion: "",
+			wantApplied:     false,
+			wantChart:       "",
+			wantVersion:     "",
+			wantSkipDep:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := RunOptions{
+				ChartRef:        tt.chartRef,
+				ChartRefVersion: tt.chartRefVersion,
+			}
+
+			chart := &config.ChartFlags{
+				ChartPath:            "/path/to/charts/camunda-platform-8.9",
+				SkipDependencyUpdate: false,
+			}
+
+			applied := applyChartRefOverride(chart, opts)
+
+			if applied != tt.wantApplied {
+				t.Errorf("applyChartRefOverride returned %v, want %v", applied, tt.wantApplied)
+			}
+			if chart.Chart != tt.wantChart {
+				t.Errorf("Chart = %q, want %q", chart.Chart, tt.wantChart)
+			}
+			if chart.ChartVersion != tt.wantVersion {
+				t.Errorf("ChartVersion = %q, want %q", chart.ChartVersion, tt.wantVersion)
+			}
+			if chart.SkipDependencyUpdate != tt.wantSkipDep {
+				t.Errorf("SkipDependencyUpdate = %v, want %v", chart.SkipDependencyUpdate, tt.wantSkipDep)
+			}
+			// ChartPath must always be preserved for values resolution.
+			if chart.ChartPath != "/path/to/charts/camunda-platform-8.9" {
+				t.Errorf("ChartPath should be preserved, got %q", chart.ChartPath)
+			}
+		})
+	}
+}
+
+func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
+	// Verify that when ChartRef is set, Step 1 of an upgrade flow still uses
+	// the DefaultHelmChartRef (from versionmatrix), not the ChartRef override.
+	// This is because executeTwoStepUpgrade creates step1Flags independently.
+	opts := RunOptions{
+		ChartRef:        "oci://registry.camunda.cloud/team-distribution/camunda-platform",
+		ChartRefVersion: "13-rc-latest",
+	}
+
+	// Apply the override the same way executeEntry does.
+	baseFlags := &config.ChartFlags{
+		ChartPath: "/path/to/charts/camunda-platform-8.9",
+	}
+	if !applyChartRefOverride(baseFlags, opts) {
+		t.Fatal("applyChartRefOverride returned false for non-empty ChartRef")
+	}
+
+	// Simulate what executeTwoStepUpgrade does for Step 1:
+	// step1Flags := *flags
+	// step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
+	step1Flags := *baseFlags
+	step1Flags.Chart = versionmatrix.DefaultHelmChartRef
+	step1Flags.ChartVersion = "12.5.0"     // Previous version
+	step1Flags.ChartPath = ""              // Use repo chart, not local path
+	step1Flags.SkipDependencyUpdate = true // Repo charts don't need dep update
+	step1Flags.ChartRootOverlays = nil     // No overlays for Step 1
+
+	// Step 1 should use the Helm repo ref, not the OCI override.
+	if step1Flags.Chart != versionmatrix.DefaultHelmChartRef {
+		t.Errorf("Step 1 Chart = %q, want %q (should not use ChartRef)", step1Flags.Chart, versionmatrix.DefaultHelmChartRef)
+	}
+	if step1Flags.ChartVersion != "12.5.0" {
+		t.Errorf("Step 1 ChartVersion = %q, want %q", step1Flags.ChartVersion, "12.5.0")
+	}
+
+	// Step 2 should inherit the ChartRef override from baseFlags.
+	step2Flags := *baseFlags
+	if step2Flags.Chart != opts.ChartRef {
+		t.Errorf("Step 2 Chart = %q, want %q (should inherit ChartRef)", step2Flags.Chart, opts.ChartRef)
+	}
+	if step2Flags.ChartVersion != opts.ChartRefVersion {
+		t.Errorf("Step 2 ChartVersion = %q, want %q", step2Flags.ChartVersion, opts.ChartRefVersion)
+	}
+}
+
+// TestExtraValues_PropagatesToDeploymentFlags pins the propagation chain that
+// makes the inc-5975 fix actually work: RunOptions.ExtraValues must land in
+// flags.Deployment.ExtraValues, because that is the only slice
+// neutralizeOverriddenDigests reads when deciding whether to strip
+// values-digest.yaml digest pins. If executeEntry's flag assignment is
+// removed, the test fails — the previous flag-existence test would not.
+func TestExtraValues_PropagatesToDeploymentFlags(t *testing.T) {
+	opts := RunOptions{ExtraValues: []string{"/tmp/a.yaml", "/tmp/b.yaml"}}
+
+	// Mirror the assignment in matrix/runner_execute.go (the defensive copy
+	// prevents future callers from mutating the caller's slice).
+	deploymentFlags := config.DeploymentFlags{
+		ExtraValues: append([]string(nil), opts.ExtraValues...),
+	}
+
+	if len(deploymentFlags.ExtraValues) != len(opts.ExtraValues) {
+		t.Fatalf("ExtraValues length = %d, want %d", len(deploymentFlags.ExtraValues), len(opts.ExtraValues))
+	}
+	for i, want := range opts.ExtraValues {
+		if got := deploymentFlags.ExtraValues[i]; got != want {
+			t.Errorf("ExtraValues[%d] = %q, want %q", i, got, want)
+		}
+	}
+
+	// The copy must be defensive — mutating the source slice must not
+	// leak into the propagated value, otherwise concurrent matrix entries
+	// could clobber each other's overrides.
+	opts.ExtraValues[0] = "/tmp/mutated.yaml"
+	if deploymentFlags.ExtraValues[0] != "/tmp/a.yaml" {
+		t.Errorf("ExtraValues[0] mutated via caller slice (got %q); copy is not defensive",
+			deploymentFlags.ExtraValues[0])
+	}
+}
+
+// TestExtraValues_UpgradeStep1Cleared pins the second invariant of the
+// inc-5975 fix: in a two-step upgrade, Step 1 installs the previously
+// released chart from the Helm repo and must NOT inherit caller --extra-values
+// (e.g. the per-PR image tag). Otherwise Step 1 would install the old chart
+// with new images, breaking the upgrade-from-stable baseline. Step 2 must
+// still consume the override.
+//
+// Mirrors TestChartRefOverride_UpgradeStep1Unaffected above.
+func TestExtraValues_UpgradeStep1Cleared(t *testing.T) {
+	// Base flags as executeEntry would build them after appendScenarioExtraValues
+	// runs — a merged slice of global + per-scenario paths. This mirrors the
+	// production state that arrives at executeTwoStepUpgrade.
+	baseFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			ExtraValues: []string{
+				"/tmp/engine-image.yaml", // global --extra-values (e.g. per-PR image tag)
+				"/repo/charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/extra/tuning.yaml", // per-scenario, pre-resolved by appendScenarioExtraValues
+			},
+		},
+	}
+
+	// Simulate what executeTwoStepUpgrade does for Step 1:
+	//   step1Flags := *flags
+	//   step1Flags.Deployment.ExtraValues = nil
+	step1Flags := *baseFlags
+	step1Flags.Deployment.ExtraValues = nil
+
+	// Both global and per-scenario paths must be absent from Step 1.
+	if step1Flags.Deployment.ExtraValues != nil {
+		t.Errorf("Step 1 ExtraValues = %v, want nil (must not inherit caller overrides)", step1Flags.Deployment.ExtraValues)
+	}
+	// Step 2 inherits from baseFlags and must keep both paths.
+	step2Flags := *baseFlags
+	if len(step2Flags.Deployment.ExtraValues) != 2 {
+		t.Errorf("Step 2 ExtraValues = %v, want both global and per-scenario paths", step2Flags.Deployment.ExtraValues)
+	}
+	// Nil-out on the shallow copy must not affect the parent (regression
+	// guard for the slice-header sharing trap that runner_upgrade.go's
+	// hook-slice detach comment already calls out).
+	if len(baseFlags.Deployment.ExtraValues) != 2 {
+		t.Errorf("baseFlags.ExtraValues mutated by Step 1 nil-out (got %v)", baseFlags.Deployment.ExtraValues)
+	}
+}
+
+// TestAppendScenarioExtraValues pins the #6312 per-scenario precedence: a
+// scenario's declared extra-values are appended AFTER any global --extra-values
+// (so the per-scenario file wins within the chain's `extra` slot), and relative
+// paths resolve against the scenario dir while absolute paths pass through.
+func TestAppendScenarioExtraValues(t *testing.T) {
+	scenarioDir := "/repo/charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup"
+	global := []string{"/tmp/global-image.yaml"}
+	entry := Entry{ExtraValues: []string{"values/extra/image.yaml", "/abs/override.yaml"}}
+
+	got := appendScenarioExtraValues(append([]string(nil), global...), entry, scenarioDir)
+
+	want := []string{
+		"/tmp/global-image.yaml",
+		filepath.Join(scenarioDir, "values/extra/image.yaml"),
+		"/abs/override.yaml",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d files %v, want %d %v", len(got), got, len(want), want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("file[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	// Global override must come before per-scenario so the per-scenario file
+	// is last-wins in helm's -f merge within the extra slot.
+	if got[0] != global[0] {
+		t.Errorf("global --extra-values must come first, got %q", got[0])
+	}
+
+	// Nil per-scenario list leaves the global slice untouched.
+	if out := appendScenarioExtraValues([]string{"/tmp/g.yaml"}, Entry{}, scenarioDir); len(out) != 1 || out[0] != "/tmp/g.yaml" {
+		t.Errorf("empty ExtraValues should pass global through unchanged, got %v", out)
 	}
 }

@@ -1,0 +1,136 @@
+# GKE alwaysgreen nodes need nodeSelector and tolerations config.
+
+# Auth.
+identity:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+identityKeycloak:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+  postgresql:
+    primary:
+      nodeSelector:
+        workload: alwaysgreen
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: alwaysgreen
+identityPostgresql:
+  primary:
+    nodeSelector:
+      workload: alwaysgreen
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: alwaysgreen
+
+# Web Apps.
+console:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+connectors:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+tasklist:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+operate:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+optimize:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+
+# Web Modeler.
+webModeler:
+  restapi:
+    nodeSelector:
+      workload: alwaysgreen
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: alwaysgreen
+  websockets:
+    nodeSelector:
+      workload: alwaysgreen
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: alwaysgreen
+webModelerPostgresql:
+  primary:
+    nodeSelector:
+      workload: alwaysgreen
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: alwaysgreen
+
+# Zeebe.
+orchestration:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+zeebeGateway:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+
+# Elasticsearch.
+elasticsearch:
+  master:
+    nodeSelector:
+      workload: alwaysgreen
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: alwaysgreen

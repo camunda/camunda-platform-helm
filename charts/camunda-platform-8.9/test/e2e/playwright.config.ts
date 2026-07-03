@@ -13,6 +13,14 @@ export default defineConfig({
     {
       name: "full-suite",
       testMatch: ["**/*.spec.{ts,js}"],
+      // cluster-variables requires Vault-managed secrets not available in PR CI.
+      testIgnore: ["**/cluster-variables.spec.{ts,js}"],
+      // @tasklistV1: requires Tasklist v1 mode with RBA enabled, not deployed in
+      // standard CI scenarios. Also excludes all Optimize tests (under
+      // 'Optimize User Flow Tests @tasklistV1') which require long Optimize
+      // warm-up not available on fresh clusters.
+      // Connector Secrets/Custom Tags/Properties: require QA-specific config.
+      grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
     },
   ],
   fullyParallel: true,

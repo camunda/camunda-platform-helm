@@ -189,10 +189,9 @@ main() {
             charts+=("camunda-platform-${version}")
         done
     else
-        # Find all chart directories
-        while IFS= read -r chart_dir; do
-            charts+=("$(basename "$chart_dir")")
-        done < <(find "${REPO_ROOT}/charts" -maxdepth 1 -type d -name "camunda-platform-8.*" | sort)
+        while IFS= read -r version; do
+            charts+=("camunda-platform-${version}")
+        done < <(yq eval -r '.camundaVersions.alpha[], .camundaVersions.supportStandard[]' "${REPO_ROOT}/charts/chart-versions.yaml")
     fi
     
     # Validate each chart

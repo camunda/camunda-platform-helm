@@ -28,9 +28,6 @@
 #
 # Usage examples
 #   # Local run against KIND cluster
-#   ./scripts/run-integration-tests.sh \
-#       --chart-path /home/runner/work/camunda-platform-helm/charts/camunda-platform-8.7 \
-#       --namespace camunda
 #
 #   ./scripts/run-e2e-tests.sh \
 #       --chart-path /home/runner/work/camunda-platform-helm/charts/camunda-platform-8.7 \
@@ -40,15 +37,26 @@
 # systems mark the job as failed.
 # ============================================================================
 
-# Color definitions
-COLOR_RESET='\033[0m'
-COLOR_RED='\033[0;31m'
-COLOR_GREEN='\033[0;32m'
-COLOR_YELLOW='\033[0;33m'
-COLOR_BLUE='\033[0;34m'
-COLOR_MAGENTA='\033[0;35m'
-COLOR_CYAN='\033[0;36m'
-COLOR_GRAY='\033[0;90m'
+# Color definitions — disabled when stderr is not a terminal (e.g., redirected to a log file)
+if [[ -t 2 ]]; then
+  COLOR_RESET='\033[0m'
+  COLOR_RED='\033[0;31m'
+  COLOR_GREEN='\033[0;32m'
+  COLOR_YELLOW='\033[0;33m'
+  COLOR_BLUE='\033[0;34m'
+  COLOR_MAGENTA='\033[0;35m'
+  COLOR_CYAN='\033[0;36m'
+  COLOR_GRAY='\033[0;90m'
+else
+  COLOR_RESET=''
+  COLOR_RED=''
+  COLOR_GREEN=''
+  COLOR_YELLOW=''
+  COLOR_BLUE=''
+  COLOR_MAGENTA=''
+  COLOR_CYAN=''
+  COLOR_GRAY=''
+fi
 
 # Always-visible status output for long-running steps.
 # Use this instead of log() for messages the user must see regardless of -v.
@@ -262,8 +270,8 @@ _wait_for_dns_resolution() {
   _RESOLVED_IP=""
   _NEEDS_DNS_FALLBACK=false
 
-  # Skip if hostname is an IP address
-  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  # Skip if hostname is an IP address (IPv4 or IPv6)
+  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ "$hostname" == *:* ]]; then
     _RESOLVED_IP="$hostname"
     return 0
   fi
@@ -337,11 +345,15 @@ _wait_for_dns_resolution() {
 # ingress context path until the LB routes traffic end-to-end.
 # Uses _RESOLVED_IP (set by _wait_for_dns_resolution) to add a curl --resolve
 # flag when the system resolver cannot resolve the hostname (stale NXDOMAIN).
-# Args: hostname, namespace, [timeout_seconds=120], [kube_context]
+# This is a probe, not a gate: on timeout it warns and returns 0 so the e2e
+# run still proceeds and surfaces a precise Playwright failure rather than a
+# generic ingress-timeout exit. EKS ALB target-group registration for
+# Connectors regularly needs >2 min on cold-start; default raised to 300s.
+# Args: hostname, namespace, [timeout_seconds=300], [kube_context]
 _wait_for_ingress_ready() {
   local hostname="$1"
   local namespace="$2"
-  local timeout="${3:-120}"
+  local timeout="${3:-300}"
   local kube_context="${4:-}"
   local kubectl_cmd="kubectl"
 
@@ -410,8 +422,8 @@ _wait_for_ingress_ready() {
     elapsed=$((elapsed + 5))
   done
 
-  info "${COLOR_RED}ERROR:${COLOR_RESET} Ingress readiness timed out after ${timeout}s on ${hostname}"
-  return 1
+  info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Ingress readiness timed out after ${timeout}s on ${hostname}; continuing so Playwright surfaces the precise failure"
+  return 0
 }
 
 # ==============================================================================
@@ -505,90 +517,6 @@ _release_npm_lock() {
   log "Released npm install lock"
 }
 
-# Patch the SM-8.7 ModelerHomePage page object to add banner dismissal.
-# The upstream @camunda/e2e-test-suite@0.0.242 ships SM-8.8 with clickMessageBanner()
-# but the SM-8.7 variant is missing it.  Web Modeler now shows a top banner that
-# overlays the "New project" button, so all SM-8.7 smoke tests that navigate to the
-# Modeler home page fail with "Failed to assert visibility".
-# This function is idempotent — it detects whether the patch was already applied.
-_patch_sm87_modeler_home_page() {
-  local test_suite_path="$1"
-  local target="$test_suite_path/node_modules/@camunda/e2e-test-suite/dist/pages/SM-8.7/ModelerHomePage.js"
-  [[ -f "$target" ]] || return 0
-
-  # Skip if the patch was already applied (clickMessageBanner already exists).
-  if grep -q 'clickMessageBanner' "$target" 2>/dev/null; then
-    log "SM-8.7 ModelerHomePage already patched, skipping"
-    return 0
-  fi
-
-  info "Patching SM-8.7 ModelerHomePage to add banner dismissal..."
-
-  # We need to:
-  # 1. Add messageBanner and closeButton locators in the constructor
-  # 2. Add clickMessageBanner() method
-  # 3. Update clickCreateNewProjectButton() to dismiss banners before checking visibility
-  # 4. Update createCrossComponentProjectFolder() to dismiss banners first
-
-  # Use node to do a reliable AST-free patch via string replacement.
-  node -e "
-    const fs = require('fs');
-    let src = fs.readFileSync('$target', 'utf8');
-
-    // 1. Add locator fields in constructor (after uploadFilesButton assignment)
-    src = src.replace(
-      /this\.uploadFilesButton = page\.getByRole\('menuitem', \{ name: 'Upload files' \}\);/,
-      \`this.uploadFilesButton = page.getByRole('menuitem', { name: 'Upload files' });
-        this.messageBanner = page.locator('[data-test=\"close-top-banner\"]');
-        this.closeButton = page.getByRole('button', { name: 'Got it - Dismiss' });\`
-    );
-
-    // 2. Patch clickCreateNewProjectButton to dismiss banners first
-    src = src.replace(
-      /async clickCreateNewProjectButton\(\) \{/,
-      \`async clickCreateNewProjectButton() {
-        await this.clickMessageBanner();\`
-    );
-
-    // 3. Replace createCrossComponentProjectFolder to call clickMessageBanner first
-    src = src.replace(
-      /async createCrossComponentProjectFolder\(\) \{\s*await this\.enterNewProjectName\(this\.defaultFolderName\);\s*\}/,
-      \`async createCrossComponentProjectFolder() {
-        await this.clickMessageBanner();
-        if (await this.crossComponentProjectFolder.isVisible()) {
-            console.log('Cross Component Project folder already exists. Clicking into it');
-            await this.clickCrossComponentProjectFolder();
-            return;
-        }
-        await this.clickCreateNewProjectButton();
-        await this.enterNewProjectName(this.defaultFolderName);
-    }\`
-    );
-
-    // 4. Add clickMessageBanner method (before clickCrossComponentProjectFolder)
-    src = src.replace(
-      /async clickCrossComponentProjectFolder\(\)/,
-      \`async clickMessageBanner() {
-        try {
-            await Promise.race([
-                this.messageBanner.click(),
-                this.closeButton.click(),
-            ]);
-        }
-        catch {
-            console.log('No banner or close button found to click');
-        }
-    }
-    async clickCrossComponentProjectFolder()\`
-    );
-
-    fs.writeFileSync('$target', src);
-    console.log('SM-8.7 ModelerHomePage patched successfully');
-  " || {
-    info "WARNING: Failed to patch SM-8.7 ModelerHomePage — E2E tests may fail"
-  }
-}
-
 # Replace the npm-installed @camunda/e2e-test-suite with a copy of the local
 # checkout's dist/ so Playwright resolves test files from within the e2e
 # node_modules tree (avoiding a second @playwright/test from the local
@@ -631,11 +559,36 @@ _link_local_test_suite() {
   info "Copied local test suite dist into $target from $local_dir"
 }
 
+# Log the installed @camunda/e2e-test-suite version for debugging.
+# Must be called after _setup_playwright_environment (which cd's into the test suite
+# directory and runs npm install).  Uses a guard variable so the version is only
+# printed once per shell invocation even when multiple entrypoints call this.
+_log_e2e_suite_version() {
+  if [[ -n "${_E2E_SUITE_VERSION_LOGGED:-}" ]]; then
+    return
+  fi
+  _E2E_SUITE_VERSION_LOGGED=true
+
+  local version
+  version=$(npm ls @camunda/e2e-test-suite --json 2>/dev/null | jq -r '.dependencies["@camunda/e2e-test-suite"].version // "unknown"') || version="unknown"
+  info "E2E test suite version: ${version}"
+}
+
+# Path to a node_modules tree pre-built into the playwright-runner image
+# (see .github/docker/playwright-runner/Dockerfile). Contains every pinned dep
+# from charts/<v>/test/e2e/package.json EXCEPT @camunda/e2e-test-suite, which
+# is intentionally fetched fresh on every run.
+PREBUILT_E2E_NODE_MODULES="${PREBUILT_E2E_NODE_MODULES:-/opt/e2e-prebuilt/node_modules}"
+
 # Setup playwright environment: change directory, install dependencies, create test-results dir
 # Uses double-checked locking to prevent concurrent npm install corruption.
-# Before installing, updates @camunda/e2e-test-suite to the latest version from
-# the registry so that the "latest" tag in package.json is actually resolved
-# (npm install alone never upgrades past the version pinned in package-lock.json).
+#
+# Fast path (CI in playwright-runner image): seed node_modules from the
+# prebuilt tree baked into the image, then `npm install @camunda/e2e-test-suite@latest`
+# on top — one network round-trip instead of a full dependency tree install.
+#
+# Slow path (local dev / image without prebuilt tree): full `npm install` after
+# an `npm update @camunda/e2e-test-suite` to chase the floating "latest" tag.
 #
 # When PLAYWRIGHT_E2E_LOCAL_TEST_SUITE is set, symlinks the local checkout into
 # node_modules instead of using the npm-published package. This allows iterating
@@ -654,10 +607,42 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Acquire the lock first — npm update and npm install both modify
-  # node_modules and package-lock.json, so they must be serialized.
+  # Serialize npm install across concurrent shards.
   local got_lock=true
   _acquire_npm_lock "$test_suite_path" 120 || got_lock=false
+
+  # Seed node_modules from the prebuilt tree baked into the runner image.
+  # `cp -al` hardlinks when src and dst share a filesystem; falls back to
+  # recursive copy when they don't.
+  if [[ ! -d "node_modules" ]] && [[ -d "$PREBUILT_E2E_NODE_MODULES" ]]; then
+    info "Seeding node_modules from prebuilt tree at $PREBUILT_E2E_NODE_MODULES"
+    if ! cp -al "$PREBUILT_E2E_NODE_MODULES" node_modules 2>/dev/null; then
+      log "Hardlink copy not supported, falling back to recursive copy"
+      cp -a "$PREBUILT_E2E_NODE_MODULES" node_modules
+    fi
+  fi
+
+  # Fetch the moving-target @camunda/e2e-test-suite on top of the prebuilt tree.
+  if [[ -d "node_modules" ]] && [[ -f "package.json" ]] \
+      && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
+    info "Fetching latest @camunda/e2e-test-suite..."
+    # shellcheck disable=SC2086
+    if npm install @camunda/e2e-test-suite@latest --no-save --prefer-online $npm_flags; then
+      [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
+      if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
+        _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
+      fi
+      local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+      mkdir -p "$results_dir"
+      return 0
+    fi
+    # Targeted install failed — fall through to a full install below as a
+    # safety net (e.g., transitive dep mismatch after an upstream package.json bump).
+    info "Targeted @camunda/e2e-test-suite install failed — falling back to full npm install"
+    rm -rf node_modules
+  fi
+
+  # ---------- Slow path: no prebuilt tree available (local dev) ----------
 
   # Update @camunda/e2e-test-suite to the latest version from the registry.
   # npm install respects package-lock.json and never upgrades past the pinned
@@ -688,11 +673,6 @@ _setup_playwright_environment() {
     [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
     if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
       _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
-    else
-      # Apply SM-8.7 patch even when npm install is skipped — the patch modifies
-      # node_modules in-place and is idempotent, so it must run on every invocation
-      # to handle the case where node_modules was cached before the patch existed.
-      _patch_sm87_modeler_home_page "$test_suite_path"
     fi
     local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
     mkdir -p "$results_dir"
@@ -714,14 +694,6 @@ _setup_playwright_environment() {
 
   if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
     _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
-  else
-    # Patch SM-8.7 ModelerHomePage: add banner-dismissal logic missing from the
-    # upstream @camunda/e2e-test-suite package.  The SM-8.8 page object already
-    # has clickMessageBanner() / createCrossComponentProjectFolder() with banner
-    # handling, but SM-8.7 does not.  Web Modeler now shows a top banner that
-    # blocks the "New project" button, causing all 8.7 smoke tests to fail.
-    # Remove this workaround once the upstream package ships a fix.
-    _patch_sm87_modeler_home_page "$test_suite_path"
   fi
 
   # Create the test-results directory; use namespace-scoped path when set.
@@ -729,37 +701,18 @@ _setup_playwright_environment() {
   mkdir -p "$results_dir"
 }
 
-# Install Playwright browsers (with deps on Linux)
-# Skips installation if browsers are already present (e.g., in pre-built container image)
+# Install Playwright browsers.
+# Only installs chromium-headless-shell — the browser used by all CI smoke and
+# full-suite runs. Firefox and WebKit are not needed.
+#
+# `npx playwright install chromium-headless-shell` is version-aware: it checks
+# whether the expected revision directory already exists under
+# PLAYWRIGHT_BROWSERS_PATH (/ms-playwright). When the playwright-runner image
+# is built with a matching PLAYWRIGHT_VERSION, the revision directory is already
+# present and the download is skipped entirely (~85 s saved per job).
 _install_playwright_browsers() {
-  # Check if we're running in a container with pre-installed browsers
-  # The official Playwright Docker image sets PLAYWRIGHT_BROWSERS_PATH
-  if [[ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]] && [[ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]]; then
-    local browser_count
-    browser_count=$(find "${PLAYWRIGHT_BROWSERS_PATH}" -maxdepth 1 -type d | wc -l)
-    if [[ "$browser_count" -gt 1 ]]; then
-      log "Playwright browsers already installed at ${PLAYWRIGHT_BROWSERS_PATH}, skipping installation"
-      return 0
-    fi
-  fi
-
-  # Also check common Playwright browser locations
-  local ms_playwright_path="/ms-playwright"
-  if [[ -d "$ms_playwright_path" ]]; then
-    local browser_count
-    browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
-    if [[ "$browser_count" -gt 1 ]]; then
-      log "Playwright browsers already installed at ${ms_playwright_path}, skipping installation"
-      return 0
-    fi
-  fi
-
   info "Installing Playwright browsers..."
-  if [[ "$(uname -s)" == "Linux" ]]; then
-    npx playwright install --with-deps || exit 1
-  else
-    npx playwright install || exit 1
-  fi
+  npx playwright install chromium-headless-shell || exit 1
 }
 
 # Handle playwright test result and exit appropriately
@@ -811,7 +764,6 @@ _get_reporter() {
 # For pods to be considered ready:
 #   - Completed/Succeeded pods (Jobs) are always considered ready
 #   - Running pods must have all containers ready (e.g., 1/1, 2/2)
-# Args: namespace
 # Args: namespace, [kube_context]
 _check_all_pods_ready() {
   local namespace="$1"
@@ -832,7 +784,7 @@ _check_all_pods_ready() {
   # READY column (field 2) shows "X/Y" - we need X==Y for ready
   # STATUS column (field 3) shows Running, Completed, Succeeded, etc.
   local not_ready_pods
-  not_ready_pods=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | awk '
+  not_ready_pods=$($kubectl_cmd get pods -n "$namespace" --no-headers 2>/dev/null | awk '
     # Skip completed jobs - they are always considered ready
     $3 == "Completed" || $3 == "Succeeded" { next }
     # For other pods, check if READY column shows all containers ready AND status is Running
@@ -843,8 +795,6 @@ _check_all_pods_ready() {
       }
     }
   ')
-  local not_ready
-  not_ready=$($kubectl_cmd get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || true)
   
   if [[ -z "$not_ready_pods" ]]; then
     return 0
@@ -900,16 +850,24 @@ _wait_for_pods_ready() {
     fi
     
     log "ERROR: Timeout waiting for pods to be Ready in namespace $namespace"
-    _dump_pod_status "$namespace"
+    _dump_pod_status "$namespace" "$kube_context"
     return 1
   fi
 }
 
 # Helper to dump pod status for diagnostics
+# Args: namespace, [kube_context]
 _dump_pod_status() {
   local namespace="$1"
+  local kube_context="${2:-}"
+  local kubectl_cmd="kubectl"
+
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
+
   log "Current pod status in namespace $namespace:"
-  kubectl get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
+  $kubectl_cmd get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
     log "  $line"
   done
 }
@@ -984,8 +942,12 @@ _run_playwright_with_retry() {
     # children terminate.  Using process substitution avoids this: the
     # shell only waits for the main command, not for the tee background
     # process.
+    #
+    # After the command exits we give the background `tee` a moment to
+    # flush remaining output so the subsequent grep sees complete data.
     "${playwright_cmd[@]}" > >(tee "$output_file") 2>&1
     playwright_rc=$?
+    sleep 1  # allow process-substitution tee to flush
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then
@@ -1032,13 +994,13 @@ _run_playwright_with_retry() {
           continue
         else
           info "${COLOR_RED}Max retry attempts reached${COLOR_RESET}"
-          _dump_pod_status "$namespace"
+          _dump_pod_status "$namespace" "$kube_context"
           return $playwright_rc
         fi
       else
         # Pods are ready and no connection errors - legitimate test failure
         log "Pods are healthy and no connection errors detected - this appears to be a legitimate test failure"
-        _dump_pod_status "$namespace"
+        _dump_pod_status "$namespace" "$kube_context"
         return $playwright_rc
       fi
     else
@@ -1066,6 +1028,7 @@ run_playwright_tests() {
   local namespace="${9:-}"  # Optional: namespace for pod health checks
   local kube_context="${10:-}"  # Optional: kubernetes context
   local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
+  local is_auth0="${12:-false}"  # Optional: select auth0-smoke project (Auth0 OIDC scenario)
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
@@ -1074,6 +1037,8 @@ run_playwright_tests() {
 
   _setup_playwright_environment "$test_suite_path" "false"
   _install_playwright_browsers
+
+  _log_e2e_suite_version
 
   reporter=$(_get_reporter "$reporter" "$show_html_report")
 
@@ -1087,8 +1052,15 @@ run_playwright_tests() {
     log "Playwright DEBUG enabled: $DEBUG"
   fi
 
+  # Project selection. auth0 takes precedence over smoke-tests because the
+  # auth0 scenario can never run the QA-owned smoke-tests.spec.js (which
+  # depends on a Keycloak admin) — it has its own auth0-smoke project that
+  # speaks Auth0 OIDC instead.
   local project="full-suite"
-  if [[ "$run_smoke_tests" == "true" ]]; then
+  if [[ "$is_auth0" == "true" ]]; then
+    project="auth0-smoke"
+    info "Running Auth0 OIDC smoke tests..."
+  elif [[ "$run_smoke_tests" == "true" ]]; then
     project="smoke-tests"
     info "Running smoke tests..."
   else
@@ -1140,6 +1112,8 @@ run_playwright_tests_hybrid() {
   [[ -n "$kube_context" ]] && log "Kube context: $kube_context"
 
   _setup_playwright_environment "$test_suite_path" "true"
+
+  _log_e2e_suite_version
 
   local reporter
   reporter=$(_get_reporter "html" "$show_html_report")

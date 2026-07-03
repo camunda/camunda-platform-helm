@@ -21,55 +21,31 @@ const (
 	PreSetupScriptsDir = "pre-setup-scripts"
 )
 
-// PreUpgradeScriptName returns the pre-upgrade script filename for a given flow.
-// Maps flow to script name:
+// PreSetupScriptPath returns the absolute path to a pre-setup script for the
+// given app version and explicit filename. Used for declarative lifecycle hooks
+// referenced by ci-test-config.yaml.
 //
-//	"upgrade-patch"           → "pre-upgrade-patch.sh"
-//	"upgrade-minor"           → "pre-upgrade-minor.sh"
-//	"modular-upgrade-minor"   → "pre-upgrade-minor.sh"
+//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/<filename>
 //
-// Returns empty string for non-upgrade flows.
-func PreUpgradeScriptName(flow string) string {
-	switch flow {
-	case "upgrade-patch":
-		return "pre-upgrade-patch.sh"
-	case "upgrade-minor", "modular-upgrade-minor":
-		return "pre-upgrade-minor.sh"
-	default:
-		return ""
-	}
-}
-
-// PreUpgradeScriptPath returns the absolute path to the pre-upgrade script for a given
-// app version and flow. The path follows the convention:
-//
-//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/pre-upgrade-<suffix>.sh
-//
-// Returns empty string if the flow doesn't have a pre-upgrade script.
-func PreUpgradeScriptPath(repoRoot, appVersion, flow string) string {
-	name := PreUpgradeScriptName(flow)
-	if name == "" {
-		return ""
-	}
+// Callers must pass a non-empty filename; LifecycleHook.Validate enforces this
+// upstream of every call site.
+func PreSetupScriptPath(repoRoot, appVersion, filename string) string {
 	return filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion,
-		"test", "integration", "scenarios", PreSetupScriptsDir, name)
+		"test", "integration", "scenarios", PreSetupScriptsDir, filename)
 }
 
-// HasPreUpgradeScript returns true if a pre-upgrade script exists on disk for the
-// given app version and flow.
-func HasPreUpgradeScript(repoRoot, appVersion, flow string) bool {
-	p := PreUpgradeScriptPath(repoRoot, appVersion, flow)
-	if p == "" {
-		return false
-	}
-	info, err := os.Stat(p)
+// HasPreSetupScript returns true if a pre-setup script with the given filename
+// exists on disk for the given app version.
+func HasPreSetupScript(repoRoot, appVersion, filename string) bool {
+	info, err := os.Stat(PreSetupScriptPath(repoRoot, appVersion, filename))
 	return err == nil && !info.IsDir()
 }
 
 // ChartEntry represents a single entry in a version-matrix.json file.
 type ChartEntry struct {
-	ChartVersion string   `json:"chart_version"`
-	ChartImages  []string `json:"chart_images"`
+	ChartVersion          string   `json:"chart_version"`
+	ChartImages           []string `json:"chart_images"`
+	ChartEnterpriseImages []string `json:"chart_enterprise_images,omitempty"`
 }
 
 // LoadVersionMatrix reads and parses the version-matrix.json for the given app version.
@@ -120,6 +96,23 @@ func LatestStableVersion(entries []ChartEntry) (string, error) {
 	return stable[len(stable)-1].ChartVersion, nil
 }
 
+// LatestVersion returns the highest chart version from all entries, including pre-release.
+// Stable versions are preferred over pre-release when numeric parts are equal.
+// Returns an error if no entries exist.
+func LatestVersion(entries []ChartEntry) (string, error) {
+	if len(entries) == 0 {
+		return "", fmt.Errorf("no chart versions found")
+	}
+
+	sorted := make([]ChartEntry, len(entries))
+	copy(sorted, entries)
+	slices.SortFunc(sorted, func(a, b ChartEntry) int {
+		return CompareChartVersionsFull(a.ChartVersion, b.ChartVersion)
+	})
+
+	return sorted[len(sorted)-1].ChartVersion, nil
+}
+
 // PreviousAppVersion decrements the minor component of an app version.
 // "8.8" -> "8.7", "8.2" -> "8.1".
 // Returns an error if the minor version is 0 or the format is invalid.
@@ -144,8 +137,11 @@ func PreviousAppVersion(appVersion string) (string, error) {
 
 // ResolveUpgradeFromVersion determines the "from" chart version for upgrade flows.
 //
-// For "upgrade-patch": returns the latest stable chart version for the SAME app version.
-// For "upgrade-minor": returns the latest stable chart version for the PREVIOUS app version.
+// For "upgrade-patch": returns the latest chart version for the SAME app version.
+// For "upgrade-minor": returns the latest chart version for the PREVIOUS app version.
+//
+// Stable versions are preferred. When no stable version exists (e.g., alpha-only
+// version matrices), the latest pre-release version is returned as a fallback.
 //
 // repoRoot is the repository root containing version-matrix/ directories.
 // appVersion is the target app version (e.g., "8.8").
@@ -173,7 +169,13 @@ func ResolveUpgradeFromVersion(repoRoot, appVersion, flow string) (string, error
 
 	version, err := LatestStableVersion(entries)
 	if err != nil {
-		return "", fmt.Errorf("find latest stable version for %s (flow %s): %w", lookupVersion, flow, err)
+		// No stable version available — fall back to latest version including pre-release.
+		// This handles app versions that only have alpha/RC chart releases (e.g., 8.9).
+		// Once a stable version is published, LatestStableVersion will return it instead.
+		version, err = LatestVersion(entries)
+		if err != nil {
+			return "", fmt.Errorf("find latest version for %s (flow %s): %w", lookupVersion, flow, err)
+		}
 	}
 
 	return version, nil
@@ -199,6 +201,38 @@ func CompareChartVersions(a, b string) int {
 	return 0
 }
 
+// CompareChartVersionsFull compares two semver-like chart version strings
+// including pre-release suffixes. Numeric parts are compared first; when
+// equal, a stable version (no suffix) sorts higher than a pre-release,
+// and two pre-release suffixes are compared lexicographically.
+func CompareChartVersionsFull(a, b string) int {
+	if cmp := CompareChartVersions(a, b); cmp != 0 {
+		return cmp
+	}
+	aSuffix := preReleaseSuffix(a)
+	bSuffix := preReleaseSuffix(b)
+
+	// Stable (no suffix) > pre-release.
+	if aSuffix == "" && bSuffix == "" {
+		return 0
+	}
+	if aSuffix == "" {
+		return 1 // a is stable, b is pre-release → a > b
+	}
+	if bSuffix == "" {
+		return -1 // b is stable, a is pre-release → a < b
+	}
+
+	// Both pre-release: compare lexicographically.
+	if aSuffix < bSuffix {
+		return -1
+	}
+	if aSuffix > bSuffix {
+		return 1
+	}
+	return 0
+}
+
 // parseChartVersion extracts [major, minor, patch] from a version string.
 // Pre-release suffixes (after "-") are stripped before parsing.
 // Returns [0,0,0] for unparseable input.
@@ -214,6 +248,13 @@ func parseChartVersion(v string) [3]int {
 		result[i], _ = strconv.Atoi(parts[i])
 	}
 	return result
+}
+
+func preReleaseSuffix(v string) string {
+	if idx := strings.Index(v, "-"); idx >= 0 {
+		return v[idx+1:]
+	}
+	return ""
 }
 
 // IsUpgradeFlow returns true if the flow string represents any kind of upgrade flow

@@ -1,0 +1,8 @@
+script: pre-install-elasticsearch-self-signed-upgrade.sh
+description: |
+  Generates a self-signed CA plus node certificate via openssl,
+  packages them into JKS keystore + truststore via keytool, and
+  creates the elasticsearch-tls-certs, elasticsearch-tls-passwords,
+  elasticsearch-jks, and camunda-zeebe-tls Secrets consumed by the
+  8.7 Elasticsearch and Zeebe StatefulSets' TLS config before the
+  8.7→8.8 upgrade.

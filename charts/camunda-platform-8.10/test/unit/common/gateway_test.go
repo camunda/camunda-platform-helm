@@ -269,6 +269,19 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestGatewayCustomName",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.createGatewayResource": "true",
+				"global.gateway.name":                  "my-shared-gateway",
+				"global.host":                          "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: my-shared-gateway")
+			},
+		},
+		{
 			Name: "TestGatewayTLSDefaultSecretName",
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",

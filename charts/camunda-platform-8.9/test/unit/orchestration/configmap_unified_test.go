@@ -106,6 +106,26 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldInheritAuthMethodFromGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method":         "oidc",
+				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
+			},
+		},
+		{
+			Name: "TestApplicationYamlComponentMethodShouldOverrideGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method":        "basic",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method": "oidc",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainEnabledProfilesWithDeprecatedIdentityProfile",
 			Values: map[string]string{
 				"orchestration.profiles.identity": "true",
@@ -122,6 +142,115 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "admin,broker,operate,tasklist,consolidated-auth",
+			},
+		},
+		{
+			Name: "TestApplicationYamlNoWebAppProfilesWhenNoSecondaryStorageEnabled",
+			Values: map[string]string{
+				"global.noSecondaryStorage":                    "true",
+				"global.elasticsearch.enabled":                 "false",
+				"elasticsearch.enabled":                        "false",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "admin,broker,consolidated-auth",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledFalseByDefault",
+			Values: map[string]string{
+				"global.opensearch.enabled":  "true",
+				"global.opensearch.url.host": "opensearch.example.com",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "false",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaSecondaryStorage",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                  "true",
+				"global.opensearch.url.host":                                 "opensearch.example.com",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaDeprecatedGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":     "true",
+				"global.opensearch.url.host":    "opensearch.example.com",
+				"global.opensearch.aws.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearchAWS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledFalseByDefault",
+			Values: map[string]string{
+				"global.elasticsearch.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.aws-enabled": "false",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledViaSecondaryStorage",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "true",
+				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.aws-enabled": "true",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMSAWS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainRDBMSAwsEnabledFalseByDefault",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.rdbms.aws-enabled": "false",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainRDBMSAwsEnabledViaSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.aws.enabled":         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.rdbms.aws-enabled": "true",
 			},
 		},
 	}
@@ -193,6 +322,25 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldRenderTemplatedAuthUrls",
+			Values: map[string]string{
+				"identity.enabled":                                       "false",
+				"identityKeycloak.enabled":                               "false",
+				"global.identity.auth.enabled":                           "false",
+				"global.identity.auth.issuer":                            "",
+				"global.identity.auth.authUrl":                           "https://{{ .Release.Name }}.example.com/auth",
+				"global.identity.auth.tokenUrl":                          "https://{{ .Release.Name }}.example.com/token",
+				"global.identity.auth.jwksUrl":                           "https://{{ .Release.Name }}.example.com/certs",
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect-url.com/orchestration",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://camunda-platform-test.example.com/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://camunda-platform-test.example.com/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://camunda-platform-test.example.com/token",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlUnUsedAndKeycloakExternal",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
@@ -223,8 +371,8 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenDefault",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":      "oidc",
-				"orchestration.data.secondaryStorage.type":          "elasticsearch",
+				"orchestration.security.authentication.method": "oidc",
+				"orchestration.data.secondaryStorage.type":     "elasticsearch",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -234,7 +382,7 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenExplicitlyEmpty",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "",
 				"orchestration.data.secondaryStorage.type":               "elasticsearch",
 			},
@@ -246,12 +394,82 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldContainGroupsClaimWhenSet",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
 				"orchestration.data.secondaryStorage.type":               "elasticsearch",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.security.authentication.oidc.groups-claim": "custom-groups",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestMappingRulesConditionalRendering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldNotContainMappingRulesWhenDefault",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "mapping-rules")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainMappingRulesWhenSet",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.initialization.mappingRules[0].mappingRuleID": "demo-user-mapping-rule",
+				"orchestration.security.initialization.mappingRules[0].claimName":     "preferred_username",
+				"orchestration.security.initialization.mappingRules[0].claimValue":    "demo",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "mapping-rules")
+				require.Contains(t, output, "demo-user-mapping-rule")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestUnprotectedApiConditionalRendering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainAllowUnauthenticatedApiAccessWhenBasicAuthAndUnprotectedApiTrue",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "basic",
+				"orchestration.security.authentication.unprotectedApi": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.basic.allow-unauthenticated-api-access": "true",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainAllowUnauthenticatedApiAccessWhenBasicAuthAndUnprotectedApiFalse",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "basic",
+				"orchestration.security.authentication.unprotectedApi": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "allow-unauthenticated-api-access")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainAllowUnauthenticatedApiAccessWhenOidcAuthAndUnprotectedApiTrue",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "oidc",
+				"orchestration.security.authentication.unprotectedApi": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "allow-unauthenticated-api-access")
 			},
 		},
 	}
@@ -293,4 +511,235 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestLegacyESExporterAbsentWhenRdbmsAndOptimizeButNoElasticsearch",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"elasticsearch.enabled":                                         "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+				"optimize.database.opensearch.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms+optimize without elasticsearch must not render legacy ES exporter")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeAndGlobalElasticsearch",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms+optimize with global.elasticsearch.enabled must render legacy ES exporter")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeDatabaseElasticsearchOnly",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"elasticsearch.enabled":                                         "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+				"optimize.database.elasticsearch.enabled":                       "true",
+				"optimize.database.elasticsearch.external":                      "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms+optimize with optimize.database.elasticsearch.enabled must render legacy ES exporter")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterAbsentForSupport32901CustomerConfig",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"elasticsearch.enabled":                                         "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.exporters.zeebe.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+				"optimize.database.opensearch.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"SUPPORT-32901: rdbms+optimize+zeebe with OpenSearch must not render legacy ES exporter")
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
+					"SUPPORT-32901: OS exporter must still render to feed Optimize")
+			},
+		},
+		{
+			Name: "TestLegacyESExporterAbsentWhenOnlyRdbmsNoOptimize",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "false",
+				"elasticsearch.enabled":                                         "false",
+				"global.opensearch.enabled":                                     "true",
+				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms without optimize must not render legacy ES exporter")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ESExporterReplicasInheritIndexReplicasByDefault",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+				"global.elasticsearch.enabled":          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
+				require.Contains(t, output, "numberOfReplicas: \"1\"",
+					"legacy ES exporter replicas must default to orchestration.index.replicas (1)")
+			},
+		},
+		{
+			Name: "ESExporterReplicasInheritCustomIndexReplicas",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+				"global.elasticsearch.enabled":          "true",
+				"orchestration.index.replicas":          "3",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "numberOfReplicas: \"3\"",
+					"legacy ES exporter replicas must inherit a custom orchestration.index.replicas")
+			},
+		},
+		{
+			Name: "ESExporterReplicasIndependentOverride",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":  "true",
+				"global.elasticsearch.enabled":           "true",
+				"orchestration.index.replicas":           "3",
+				"orchestration.exporters.zeebe.replicas": "2",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "numberOfReplicas: \"2\"",
+					"orchestration.exporters.zeebe.replicas must override the inherited value")
+			},
+		},
+		{
+			Name: "ESExporterReplicasExplicitZero",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":  "true",
+				"global.elasticsearch.enabled":           "true",
+				"orchestration.exporters.zeebe.replicas": "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "numberOfReplicas: \"0\"",
+					"an explicit orchestration.exporters.zeebe.replicas of 0 must be honored")
+			},
+		},
+		{
+			Name: "OSExporterReplicas",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":  "true",
+				"global.elasticsearch.enabled":           "false",
+				"global.opensearch.enabled":              "true",
+				"global.opensearch.url.host":             "opensearch.example.com",
+				"orchestration.exporters.zeebe.replicas": "5",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+				require.Contains(t, output, "numberOfReplicas: \"5\"",
+					"legacy OS exporter must render orchestration.exporters.zeebe.replicas")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainInitialContactPointsForSingleRegion",
+			Values: map[string]string{
+				"global.multiregion.regions":    "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "initial-contact-points")
+				require.Contains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502")
+				require.NotContains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainInitialContactPointsForMultiRegion",
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"global.multiregion.regionId":   "0",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+				require.Contains(t, output, "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS")
+				// Ensure no contact points are generated
+				require.NotContains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainInitialContactPointsForThreeRegions",
+			Values: map[string]string{
+				"global.multiregion.regions":    "3",
+				"global.multiregion.regionId":   "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

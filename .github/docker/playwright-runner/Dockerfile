@@ -51,7 +51,6 @@
 #      kubectl:             47 MB → 12 MB
 #      aws-iam-auth:        61 MB → 24 MB
 #      yq:                  13 MB →  5 MB
-#      task:                 8 MB →  3 MB
 #      jq:                   2 MB →  1 MB
 #
 # 4. MINIMAL FONTS (saves ~60 MB)
@@ -104,7 +103,7 @@
 #
 # Or build directly:
 #   docker buildx build --platform linux/amd64 \
-#     --build-arg PLAYWRIGHT_VERSION=1.57.0 \
+#     --build-arg PLAYWRIGHT_VERSION=1.61.0 \
 #     -t playwright-runner:test .
 #
 # ==============================================================================
@@ -134,11 +133,10 @@ RUN curl -fsSL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx
 # ------------------------------------------------------------------------------
 # Tool versions - These should match .tool-versions in the repository root
 # ------------------------------------------------------------------------------
-ARG HELM_VERSION=3.19.4
+ARG HELM_VERSION=4.1.4
 ARG KUBECTL_VERSION=1.27.16
 ARG JQ_VERSION=1.8.1
 ARG YQ_VERSION=4.50.1
-ARG TASK_VERSION=3.30.1
 ARG AWS_IAM_AUTH_VERSION=0.6.26
 
 WORKDIR /tools
@@ -165,9 +163,6 @@ RUN curl -fsSL -o jq "https://github.com/jqlang/jq/releases/download/jq-${JQ_VER
 RUN curl -fsSL -o yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
     && chmod +x yq
 
-# Task - For running Taskfile.yaml tasks
-RUN curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz" | tar -xzf - task
-
 # aws-iam-authenticator - For EKS authentication
 # WHY THIS INSTEAD OF AWS CLI:
 # - aws-iam-authenticator is a single 61 MB binary (24 MB compressed)
@@ -183,7 +178,7 @@ RUN echo "=== Original binary sizes ===" && ls -lh /tools/
 # ------------------------------------------------------------------------------
 # Compress all binaries with UPX
 # ------------------------------------------------------------------------------
-RUN upx --best helm kubectl yq task aws-iam-authenticator \
+RUN upx --best helm kubectl yq aws-iam-authenticator \
     && upx --best jq || true  # jq sometimes fails with UPX
 
 # Show compressed sizes for build log
@@ -202,7 +197,9 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # Build arguments
 # ------------------------------------------------------------------------------
 ARG ZBCTL_VERSION=v8.6.0
-ARG PLAYWRIGHT_VERSION=1.58.0
+ARG PLAYWRIGHT_VERSION=1.61.0
+# Keep in sync with .tool-versions (golang).
+ARG GO_VERSION=1.26.2
 
 # Environment configuration
 ENV DEBIAN_FRONTEND=noninteractive
@@ -286,7 +283,6 @@ COPY --from=tools /tools/helm /usr/local/bin/
 COPY --from=tools /tools/kubectl /usr/local/bin/
 COPY --from=tools /tools/jq /usr/local/bin/
 COPY --from=tools /tools/yq /usr/local/bin/
-COPY --from=tools /tools/task /usr/local/bin/
 COPY --from=tools /tools/aws-iam-authenticator /usr/local/bin/
 
 # ==============================================================================
@@ -315,7 +311,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 #    - chromium-XXXX/ (357 MB) - Full browser
 #    - chromium_headless_shell-XXXX/ (110 MB) - Headless-only
 #    - ffmpeg-XXXX/ (5 MB) - Video encoding
-# 3. Delete the full browser and ffmpeg (we only need headless shell)
+# 3. Delete the full browser (we only need headless shell; ffmpeg is kept — see NOTE below)
 #
 # WHY HEADLESS SHELL ONLY:
 # - Our tests run headless (no visible browser window)
@@ -330,6 +326,53 @@ RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
     # Delete full Chromium browser - keep only headless shell
     && rm -rf /ms-playwright/chromium-*/chrome-linux \
     # Clean npm cache
+    && npm cache clean --force \
+    && rm -rf /root/.npm /tmp/*
+
+# ==============================================================================
+# Layer 4b: Go toolchain
+# ==============================================================================
+# Required so the playwright-runner can execute the Go-based CLIs that live
+# in this repo (scripts/deploy-camunda, scripts/camunda-core, ...). The goal
+# is a single-job CI flow where helm install/upgrade + playwright e2e tests
+# run in the same container — see camunda/camunda-platform-helm#5786.
+#
+# We install the official upstream tarball rather than Debian's `golang`
+# package so the toolchain matches .tool-versions exactly (Debian Bookworm
+# ships an older Go).
+#
+# Module/build caches are routed to /go-cache so they can be shared via a
+# mounted volume if needed; GOTOOLCHAIN=local prevents Go from silently
+# downloading a newer toolchain at runtime, keeping image behaviour
+# deterministic.
+# ==============================================================================
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
+    | tar -C /usr/local -xzf - \
+    && rm -rf /usr/local/go/doc /usr/local/go/test /usr/local/go/api \
+    && find /usr/local/go -name "*.md" -delete 2>/dev/null || true \
+    && rm -rf /usr/local/go/src/runtime/race 2>/dev/null || true \
+    && rm -f /usr/local/go/lib/time/zoneinfo.zip 2>/dev/null || true
+ENV GOROOT=/usr/local/go
+ENV GOPATH=/go
+ENV GOCACHE=/go-cache/build
+ENV GOMODCACHE=/go-cache/mod
+ENV GOTOOLCHAIN=local
+ENV PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+RUN mkdir -p "${GOPATH}/bin" "${GOCACHE}" "${GOMODCACHE}"
+
+# Layer 4c: Pre-built E2E test-suite node_modules.
+# `e2e-package.json` is staged into the build context by scripts/playwright-pin.
+# `@camunda/e2e-test-suite` is stripped before install — it is fetched at
+# runtime by scripts/base_playwright_script.sh.
+COPY e2e-package.json /opt/e2e-prebuilt/package.json
+
+RUN cd /opt/e2e-prebuilt \
+    && jq 'del(.devDependencies["@camunda/e2e-test-suite"], .dependencies["@camunda/e2e-test-suite"])' \
+        package.json > package.json.stripped \
+    && mv package.json.stripped package.json \
+    && npm install --no-audit --no-fund --omit=optional \
+    && node -e "require('@playwright/test')" \
+    && du -sh node_modules \
     && npm cache clean --force \
     && rm -rf /root/.npm /tmp/*
 
@@ -365,12 +408,15 @@ RUN echo "=== Verifying tool installations ===" \
     && kubectl version --client \
     && jq --version \
     && yq --version \
-    && task --version \
     && gke-gcloud-auth-plugin --version \
     && aws-iam-authenticator version \
     && (zbctl version 2>/dev/null || true) \
+    && go version \
     && echo "=== Checking browser installation ===" \
     && ls -la /ms-playwright/ \
+    && echo "=== Checking prebuilt e2e node_modules ===" \
+    && test -d /opt/e2e-prebuilt/node_modules/@playwright/test \
+    && test ! -d /opt/e2e-prebuilt/node_modules/@camunda/e2e-test-suite \
     && echo "=== All tools verified successfully ==="
 
 # Run as root by default (CI typically runs as root)

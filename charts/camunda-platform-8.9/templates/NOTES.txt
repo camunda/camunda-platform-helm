@@ -27,6 +27,12 @@
     {{- end }}
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
+    {{- if and (gt (int .Values.global.multiregion.regions) 1) .Values.orchestration.profiles.broker }}
+  - Multi-region deployment detected (regions: {{ .Values.global.multiregion.regions }})
+    ℹ️  You must configure initial contact points manually via environment variable:
+    Set orchestration.env with CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
+    Example: <pod>.<headless-service>.<namespace>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace>.svc.cluster.local:26502,...
+    {{- end }}
   {{- end }}
 - Optimize:
   - Enabled: {{ .Values.optimize.enabled }}

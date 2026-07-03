@@ -115,6 +115,14 @@ func parseLevel(s string) (zerolog.Level, error) {
 	}
 }
 
+// ShouldLog returns true when messageLevel is at or above configuredLevel.
+// Both arguments are level strings (trace, debug, info, warn, error).
+func ShouldLog(configuredLevel, messageLevel string) bool {
+	cfg, _ := parseLevel(configuredLevel)
+	msg, _ := parseLevel(messageLevel)
+	return msg >= cfg
+}
+
 // Styler is a function that styles a string (compatible with gchalk color funcs).
 type Styler func(...string) string
 

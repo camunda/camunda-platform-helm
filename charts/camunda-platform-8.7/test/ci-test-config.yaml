@@ -1,4 +1,11 @@
 # Used in the GitHub Actions unit test CI workflow.
+# auth can be the following values: basic, keycloak, oidc
+#
+# ─── `unit:` block: LIVE ─────────────────────────────────────────────────────
+# The `unit:` block below is still the source of truth for the unit test
+# workflow — read via yq in `.github/actions/test-type-vars/action.yaml`.
+# Edit freely.
+#
 unit:
   enabled: true
   matrix:
@@ -11,115 +18,3 @@ unit:
     - name: WebModeler
       packages: web-modeler
 
-# Used in the GitHub Actions integration test CI workflow.
-integration:
-  vars:
-    # Using the common test dir.
-    tasksBaseDir: ../../../test/integration/scenarios
-    valuesBaseDir: integration/scenarios
-    chartsBaseDir: ../../../..
-  case:
-    pr:
-      scenario:
-        - name: elasticsearch
-          enabled: true
-          shortname: eske
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          persistence: elasticsearch
-          flow: install
-          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
-          infra-type:
-            gke: distroci
-            eks: preemptible
-          platforms: [gke]  # EKS removed: Playwright ITs fail due to pods not recovering on EKS (newly exposed by ExternalSecrets fix)
-        - name: keycloak-mt
-          enabled: true
-          shortname: kemt
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          persistence: elasticsearch
-          flow: install,upgrade-patch
-          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
-          infra-type:
-            gke: distroci
-            eks: preemptible
-          platforms: [gke]
-        - name: keycloak-rba
-          enabled: true
-          shortname: kerba
-          exclude: []
-          auth: keycloak
-          identity: keycloak
-          persistence: elasticsearch
-          flow: install
-          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
-          infra-type:
-            gke: distroci
-          platforms: [gke]
-        - name: oidc
-          enabled: true
-          shortname: esoi
-          exclude: []
-          auth: oidc
-          persistence: elasticsearch
-          flow: install,upgrade-patch
-          skip-e2e: true  # 8.7 web-modeler-restapi bug + OIDC incompatible with Keycloak-dependent smoke tests
-          skip-it: true   # OIDC ITs require Entra setup that returns 401
-          infra-type:
-            gke: distroci
-            eks: preemptible
-          platforms: [gke]
-        - name: keycloak-original
-          enabled: true
-          shortname: keyc
-          exclude: []
-          auth: keycloak
-          flow: install,upgrade-patch
-          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
-          infra-type:
-            gke: distroci
-            eks: preemptible
-          identity: keycloak
-          persistence: elasticsearch
-          platforms: [gke]
-    nightly:
-      scenario:
-        - name: elasticsearch
-          enabled: true
-          exclude: []
-          shortname: es
-          auth: keycloak
-        - name: multitenancy
-          enabled: true
-          exclude: []
-          shortname: mt
-          auth: keycloak
-          identity: keycloak-external
-          persistence: elasticsearch
-          features: [multitenancy]
-        - name: oidc
-          enabled: false
-          exclude: []
-          shortname: oi
-          auth: keycloak
-        - name: opensearch
-          enabled: true
-          shortname: os
-          exclude: []
-          auth: keycloak
-        - name: elasticsearch
-          enabled: true
-          exclude: []
-          auth: keycloak
-          enterprise: true
-        - name: documentstore
-          enabled: false
-          exclude: []
-          shortname: docstr
-          auth: keycloak
-          identity: keycloak
-          persistence: elasticsearch
-          features: [documentstore]

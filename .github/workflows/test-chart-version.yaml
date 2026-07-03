@@ -3,21 +3,8 @@ name: "Test - Chart Version"
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/chart-validate-template.yaml"
-      - ".github/workflows/test-unit-template.yaml"
-      - ".github/workflows/test-integration-runner.yaml"
-      - ".github/workflows/test-integration-template.yaml"
-      - ".github/workflows/test-chart-version-template.yaml"
-      - ".github/workflows/test-chart-version.yaml"
-      - ".github/config/external-secret/**"
-      - "!.github/workflows/test-backward-compat.yaml"
-      - "scripts/**"
-      - ".tool-versions"
-      - "charts/camunda-platform-8*/**"
-      - "!charts/camunda-platform-8*/*.md"
-      - "!charts/camunda-platform-8*/*.MD"
-      - "!charts/camunda-platform-8*/*.txt"
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
     inputs:
       manual-trigger:
@@ -110,27 +97,119 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
   id-token: write
   deployments: write
   packages: read
+  statuses: write
 
 jobs:
   init:
     name: Generate chart matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
-      camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
+      matrix: ${{ steps.annotate-cache.outputs.matrix || steps.generate-chart-versions.outputs.matrix || steps.empty-matrix.outputs.matrix }}
+      camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions || steps.empty-matrix.outputs.camunda-versions }}
       workspace: ${{ github.workspace }}
+      pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      # Detect whether any chart/CI-relevant files changed. On non-PR events
+      # (merge_group, workflow_dispatch) we always consider changes present.
+      - name: Detect relevant file changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            charts:
+              - '.github/workflows/chart-validate-template.yaml'
+              - '.github/workflows/test-unit-template.yaml'
+              - '.github/workflows/test-integration-runner.yaml'
+              - '.github/workflows/test-integration-template.yaml'
+              - '.github/workflows/test-chart-version-template.yaml'
+              - '.github/workflows/test-chart-version.yaml'
+              - '.github/config/external-secret/**'
+              - 'scripts/**'
+              - '.tool-versions'
+              - 'charts/camunda-platform-8*/**'
+              - '!charts/camunda-platform-8*/*.md'
+              - '!charts/camunda-platform-8*/*.MD'
+              - '!charts/camunda-platform-8*/*.txt'
+
+      # Short-circuit: if no relevant files changed, emit empty matrix and skip
+      # all downstream jobs. CI Gate (if: always()) still reports success.
+      - name: Emit empty matrix (no relevant changes)
+        id: empty-matrix
+        if: github.event_name == 'pull_request' && steps.changes.outputs.charts != 'true'
+        run: |
+          echo "No chart/CI files changed — emitting empty matrix."
+          echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+          echo 'camunda-versions=[]' >> "$GITHUB_OUTPUT"
+
       - name: Generate chart versions
         id: generate-chart-versions
+        if: github.event_name != 'pull_request' || steps.changes.outputs.charts == 'true'
         uses: ./.github/actions/generate-chart-matrix
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
           manual-scenario: ${{ github.event.inputs.scenario || 'none' }}
           manual-flow: ${{ github.event.inputs.flows || 'none' }}
+          tier: ${{ github.event_name == 'pull_request' && '1' || '' }}
+
+      # Resolve PR HEAD SHA for cache operations.
+      # - pull_request: directly available from event context
+      # - merge_group: extract PR number from head_ref and query API
+      - name: Resolve PR HEAD SHA
+        id: resolve-pr-sha
+        if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "pr-head-sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            PR_NUM=$(echo "${{ github.event.merge_group.head_ref }}" | grep -oP 'pr-\K\d+')
+            if [[ -n "$PR_NUM" ]]; then
+              SHA=$(gh pr view "$PR_NUM" --json headRefOid -q .headRefOid)
+              echo "pr-head-sha=${SHA}" >> "$GITHUB_OUTPUT"
+              echo "Resolved PR #${PR_NUM} HEAD SHA: ${SHA}"
+            else
+              echo "Warning: could not extract PR number from merge_group head_ref"
+              echo "pr-head-sha=" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      # Annotate matrix with cache status (pull_request and merge_group).
+      # Scenarios that already passed for the same content hash are marked cached=true
+      # and will be routed to a fast-path job, skipping the full GKE deploy+test cycle.
+      # The gate is pr-head-sha != '' (set by resolve-pr-sha only for pull_request and
+      # merge_group), so push/schedule/dispatch runs still execute the full matrix.
+      - name: Setup Go for cache annotation
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: scripts/ci-result-cache/go.mod
+          # Cache disabled: the previous setup-go invocation (in the
+          # generate-chart-matrix composite) already populated GOMODCACHE
+          # with overlapping packages. Restoring a second cache on top of
+          # the first triggers tar "File exists" errors.
+          cache: false
+
+      - name: Annotate matrix with cache status
+        id: annotate-cache
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          cd scripts/ci-result-cache && go build -o /tmp/ci-result-cache .
+          ANNOTATED=$(echo '${{ steps.generate-chart-versions.outputs.matrix }}' | \
+            /tmp/ci-result-cache annotate-matrix \
+              --sha "${{ steps.resolve-pr-sha.outputs.pr-head-sha }}" \
+              --repo-root "${{ github.workspace }}")
+          echo "matrix=${ANNOTATED}" >> "$GITHUB_OUTPUT"
 
   unit-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
@@ -180,8 +259,11 @@ jobs:
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
     # validated by AlwaysGreen before publishing. Only golden file updates are needed.
+    # Also skip on empty matrix; without this gate the matrix produces zero jobs and
+    # report-cla-status.needs.integration-tests resolves as a failed dependency on merge_group.
     if: >-
       ${{
+        needs.init.outputs.camunda-versions != '[]' &&
         !contains(github.head_ref, 'release-please--branches--') &&
         !(startsWith(github.head_ref, 'renovate/') && (
           contains(github.head_ref, 'camunda-platform-images') ||
@@ -220,4 +302,79 @@ jobs:
       test-qa: ${{ matrix.qa == 'true' }}
       test-upgrade: ${{ matrix.upgrade == 'true' }}
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
-      skip-it: ${{ matrix.skipIT == 'true' }}
+      helm-version: ${{ matrix.helmVersion }}
+      cached: ${{ matrix.cached == 'true' }}
+      pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}
+
+  # Aggregation gate job that fails if any CI job fails.
+  # Add this job's name ("CI Gate") to the ruleset's required status checks
+  # so the merge queue will not merge PRs with broken CI.
+  ci-gate:
+    name: "CI Gate"
+    if: always()
+    needs: [init, unit-testing, validation, kind-testing, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        run: |
+          results=(
+            "${{ needs.init.result }}"
+            "${{ needs.unit-testing.result }}"
+            "${{ needs.validation.result }}"
+            "${{ needs.kind-testing.result }}"
+            "${{ needs.integration-tests.result }}"
+          )
+          for result in "${results[@]}"; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::Required job reported: $result"
+              exit 1
+            fi
+          done
+          echo "All required jobs passed (or were skipped)."
+
+  # Report license/cla commit status on merge queue commits.
+  # The CLA bot only reports on pull_request events; the merge queue creates
+  # ephemeral commits that never receive the status. This job bridges that gap
+  # by immediately reporting success — the CLA was already verified on the PR.
+  report-cla-status:
+    name: "Report CLA status"
+    if: ${{ github.event_name == 'merge_group' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report license/cla status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state="success" \
+            -f context="license/cla" \
+            -f description="Contributor License Agreement is signed." \
+            -f target_url="https://cla-assistant.io/${{ github.repository }}"
+
+  # Report release-chores status for non-release PRs and merge queue events.
+  # Release-please PRs get their release files from the promotion workflow.
+  # For all other PRs, chores are not applicable — report success immediately.
+  # For merge queue commits, chores were verified on the PR — re-report success.
+  report-release-chores-skip:
+    name: "Report release-chores status (skip)"
+    if: >-
+      ${{
+        github.event_name == 'merge_group' ||
+        (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--'))
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report release-chores as not applicable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            desc="Merge queue: release-chores verified on PR before queuing."
+          else
+            desc="Not a release PR — release-chores not required."
+          fi
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state="success" \
+            -f context="release-chores" \
+            -f description="$desc"
+

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: internal-keycloak
+description: Minimal internal Keycloak chart for Camunda CI integration tests. Not for production use.
+type: application
+version: 0.1.0
+appVersion: "26.3.3"
+maintainers:
+  - name: Camunda Services GmbH
+    url: https://camunda.com

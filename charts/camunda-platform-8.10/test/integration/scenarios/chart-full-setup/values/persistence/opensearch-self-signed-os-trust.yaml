@@ -1,0 +1,60 @@
+# =============================================================================
+# OpenSearch Backend with Self-Signed TLS — caBundle ONLY (no JKS path)
+# =============================================================================
+# Layer 3: Backend - OpenSearch (companion, self-signed TLS, OS-trust only)
+# Used with: --persistence opensearch-self-signed-os-trust
+#
+# Validates the new global.tls.caBundle / chart-built JKS truststore wiring
+# (Phase B2 closure of helm#3498). Identical infrastructure to
+# opensearch-self-signed but DELIBERATELY OMITS the legacy
+# tls.secret.existingSecret JKS truststore. The Camunda components must
+# trust the self-signed OS endpoint solely via the chart-built combined
+# truststore from the JDK system cacerts + the user CA, built at runtime
+# by an init container that runs keytool against the image's bundled JRE.
+#
+# If this scenario passes with the JKS path completely removed, the new
+# init-container + JAVA_TOOL_OPTIONS wiring is the customer-facing
+# answer to helm#3498: users supply one global.tls.caBundle secret and
+# every Java component automatically gets a trusted JVM truststore.
+# =============================================================================
+
+global:
+  elasticsearch:
+    enabled: false
+  tls:
+    caBundle:
+      secret:
+        existingSecret: opensearch-tls-ca
+        existingSecretKey: ca.crt
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: opensearch
+      opensearch:
+        url: "https://opensearch-master:9200"
+        auth:
+          username: admin
+          secret:
+            inlineSecret: "Camunda-CI-OS-2026!"
+        # Intentionally NO tls.secret.existingSecret — proves the
+        # chart-built truststore alone carries trust.
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: false
+    opensearch:
+      enabled: true
+      aws:
+        enabled: false
+      url:
+        protocol: https
+        host: "opensearch-master"
+        port: 9200
+      auth:
+        username: admin
+        secret:
+          inlineSecret: "Camunda-CI-OS-2026!"
+        # Same as above — no JKS path.

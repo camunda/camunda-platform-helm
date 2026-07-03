@@ -30,8 +30,8 @@ const (
 // selection + composition model. This replaces the old LayeredConfig.
 type DeploymentConfig struct {
 	// Required selections
-	Identity    string // keycloak, keycloak-external, oidc, basic, hybrid
-	Persistence string // elasticsearch, opensearch, rdbms, rdbms-oracle
+	Identity    string // keycloak, oidc, basic, hybrid
+	Persistence string // elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle
 	Platform    string // gke, eks, openshift
 
 	// Optional features (combinable with constraints)
@@ -51,38 +51,60 @@ type DeploymentConfig struct {
 }
 
 // Validate checks that required fields are set and feature constraints are satisfied.
+// It does not validate against any specific chart version's filesystem — call
+// ValidateAgainstValues for that.
 func (c *DeploymentConfig) Validate() error {
 	if c.Identity == "" {
-		return errors.New("--identity is required (keycloak, keycloak-external, oidc, basic, hybrid)")
+		return errors.New("--identity is required")
 	}
 	if c.Persistence == "" {
-		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-oracle)")
+		return errors.New("--persistence is required")
 	}
 	if c.Platform == "" {
-		return errors.New("--platform is required (gke, eks, openshift)")
-	}
-
-	// Validate identity values
-	validIdentities := []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}
-	if !contains(validIdentities, c.Identity) {
-		return fmt.Errorf("invalid --identity value %q: must be one of: %s", c.Identity, strings.Join(validIdentities, ", "))
-	}
-
-	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "opensearch-external", "rdbms", "rdbms-oracle"}
-	if !contains(validPersistence, c.Persistence) {
-		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
-	}
-
-	// Validate platform values
-	validPlatforms := []string{"gke", "eks", "openshift"}
-	if !contains(validPlatforms, c.Platform) {
-		return fmt.Errorf("invalid --platform value %q: must be one of: %s", c.Platform, strings.Join(validPlatforms, ", "))
+		return errors.New("--test-platform is required")
 	}
 
 	// Feature constraints
 	if contains(c.Features, "multitenancy") && contains(c.Features, "rba") {
 		return errors.New("multitenancy and rba cannot be combined")
+	}
+
+	return nil
+}
+
+// ValidateAgainstValues checks that identity, persistence, platform, and feature
+// selections are each backed by a values file in scenariosDir. Valid names are
+// discovered at runtime from the filesystem, so no code change is required when
+// values files are added or removed.
+func (c *DeploymentConfig) ValidateAgainstValues(scenariosDir string) error {
+	type check struct {
+		field  string
+		value  string
+		listFn func(string) ([]string, error)
+	}
+	checks := []check{
+		{"--identity", c.Identity, ListIdentities},
+		{"--persistence", c.Persistence, ListPersistence},
+		{"--test-platform", c.Platform, ListPlatforms},
+	}
+	for _, ch := range checks {
+		valid, err := ch.listFn(scenariosDir)
+		if err != nil {
+			return fmt.Errorf("cannot discover valid %s values from %q: %w", ch.field, scenariosDir, err)
+		}
+		if !contains(valid, ch.value) {
+			return fmt.Errorf("invalid %s value %q: must be one of: %s", ch.field, ch.value, strings.Join(valid, ", "))
+		}
+	}
+
+	validFeatures, err := ListFeatures(scenariosDir)
+	if err != nil {
+		return fmt.Errorf("cannot discover valid --features values from %q: %w", scenariosDir, err)
+	}
+	for _, f := range c.Features {
+		if !contains(validFeatures, f) {
+			return fmt.Errorf("invalid --features value %q: must be one of: %s", f, strings.Join(validFeatures, ", "))
+		}
 	}
 
 	return nil
@@ -314,10 +336,11 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	}
 
 	// Handle well-known composite scenarios that can't be derived from name parsing alone.
-	// keycloak-original historically means: external Keycloak + external Elasticsearch.
-	// The name is misleading (it refers to the "original" test config format), but
-	// 3rd parties call test-integration-template.yaml with scenario: keycloak-original,
-	// so it must keep working.
+	// keycloak-original historically meant external Keycloak + external Elasticsearch; that
+	// shared CI infra was decommissioned (#6245), so it now maps to the bundled Keycloak +
+	// bundled Elasticsearch. The name is misleading (it refers to the "original" test config
+	// format), but 3rd parties call test-integration-template.yaml with
+	// scenario: keycloak-original, so it must keep working.
 	if s == "keycloak-original" {
 		config.Identity = "keycloak"
 		config.Persistence = "elasticsearch"
@@ -334,6 +357,8 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 
 	// Derive identity
 	switch {
+	case strings.Contains(s, "auth0"):
+		config.Identity = "auth0"
 	case strings.Contains(s, "oidc") || strings.Contains(s, "entra"):
 		config.Identity = "oidc"
 	case strings.Contains(s, "basic"):
@@ -344,10 +369,23 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 		config.Identity = "keycloak"
 	}
 
-	// Derive persistence
+	// Derive persistence.
+	// Specific opensearch variants must precede the generic "opensearch" arm
+	// since Go's switch evaluates in order and all contain the substring
+	// "opensearch". The generic arm resolves to opensearch-embedded.
 	switch {
+	case strings.Contains(s, "opensearch-self-signed-os-trust"):
+		config.Persistence = "opensearch-self-signed-os-trust"
+	case strings.Contains(s, "opensearch-self-signed"):
+		config.Persistence = "opensearch-self-signed"
+	case strings.Contains(s, "opensearch-embedded"):
+		config.Persistence = "opensearch-embedded"
 	case strings.Contains(s, "opensearch"):
-		config.Persistence = "opensearch-external"
+		config.Persistence = "opensearch-embedded"
+	case strings.Contains(s, "rdbms-self-signed"):
+		config.Persistence = "rdbms-self-signed"
+	case strings.Contains(s, "rdbms-external"):
+		config.Persistence = "rdbms-external"
 	case strings.Contains(s, "rdbms") && strings.Contains(s, "oracle"):
 		config.Persistence = "rdbms-oracle"
 	case strings.Contains(s, "rdbms"):
@@ -382,6 +420,9 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	if strings.Contains(s, "tasklist-v1") {
 		config.Features = append(config.Features, "tasklist-v1")
 	}
+	if strings.Contains(s, "mcp") {
+		config.Features = append(config.Features, "mcp")
+	}
 
 	// Derive upgrade mode
 	if strings.Contains(s, "upgrade") || strings.Contains(s, "-upg") {
@@ -394,7 +435,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 // BuilderOverrides holds optional overrides applied on top of name-derived defaults.
 // Zero-value fields are ignored so callers only need to set the dimensions they care about.
 type BuilderOverrides struct {
-	Identity     string   // keycloak, keycloak-external, oidc, basic, hybrid
+	Identity     string   // keycloak, oidc, basic, hybrid
 	Persistence  string   // elasticsearch, opensearch, rdbms, rdbms-oracle
 	Platform     string   // effective platform (already resolved from TestPlatform/Platform)
 	Features     []string // multitenancy, rba, documentstore
@@ -418,7 +459,13 @@ type BuilderOverrides struct {
 // prepare-values, dry-run, and coverage — goes through the same gate. This
 // prevents situations where a value (e.g. persistence: "no-elasticsearch") works
 // locally but fails in CI because only the CI path called Validate().
-func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentConfig, error) {
+//
+// scenariosDir is the path to the chart-full-setup scenario directory for the
+// target chart version (e.g. charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup).
+// Valid identity/persistence/platform/feature names are derived from its values/
+// subdirectories at runtime, so no code change is required when values files are
+// added or removed. An empty or unresolvable scenariosDir is a hard error.
+func BuildDeploymentConfig(scenariosDir, scenario string, ov BuilderOverrides) (*DeploymentConfig, error) {
 	cfg := MapScenarioToConfig(scenario)
 
 	// Apply non-zero overrides.
@@ -457,6 +504,12 @@ func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentCon
 	}
 
 	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("deployment config validation failed for scenario %q: %w", scenario, err)
+	}
+	if scenariosDir == "" {
+		return nil, fmt.Errorf("deployment config validation failed for scenario %q: scenariosDir is required", scenario)
+	}
+	if err := cfg.ValidateAgainstValues(scenariosDir); err != nil {
 		return nil, fmt.Errorf("deployment config validation failed for scenario %q: %w", scenario, err)
 	}
 

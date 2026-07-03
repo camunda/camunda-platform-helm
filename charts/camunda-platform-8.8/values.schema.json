@@ -17,6 +17,14 @@
                             "type": "string",
                             "description": "defines the name of the secret object that has the auto-generated passwords.",
                             "default": "camunda-credentials"
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "annotations applied to the secrets created by the chart.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
@@ -25,17 +33,17 @@
                     "properties": {
                         "key": {
                             "type": "string",
-                            "description": "(DEPRECATED - use global.license.secret instead) if set, it will be exposed as \"CAMUNDA_LICENSE_KEY\" in the apps.",
+                            "description": "(DEPRECATED - use global.license.secret.inlineSecret instead) if set, it will be exposed as \"CAMUNDA_LICENSE_KEY\" in the apps.",
                             "default": ""
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "(DEPRECATED - use global.license.secret instead) you can provide an existing secret name for Camunda license secret.",
+                            "description": "(DEPRECATED - use global.license.secret.existingSecret instead) you can provide an existing secret name for Camunda license secret.",
                             "default": ""
                         },
                         "existingSecretKey": {
                             "type": "string",
-                            "description": "(DEPRECATED - use global.license.secret instead) you can provide the key within the existing secret object for Camunda license key.",
+                            "description": "(DEPRECATED - use global.license.secret.existingSecretKey instead) you can provide the key within the existing secret object for Camunda license key.",
                             "default": ""
                         },
                         "secret": {
@@ -90,7 +98,7 @@
                     "properties": {
                         "requestBodySize": {
                             "type": "string",
-                            "description": "defines applications request body size which used for upload files.",
+                            "description": "defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.",
                             "default": "10MB"
                         }
                     }
@@ -117,6 +125,11 @@
                                     "default": "basic"
                                 }
                             }
+                        },
+                        "allowInsecureImages": {
+                            "type": "boolean",
+                            "description": "allows the use of Camunda-built images that bundle additional tooling; passed through to Bitnami sub-charts.",
+                            "default": true
                         }
                     }
                 },
@@ -217,6 +230,22 @@
                                     "description": "defines the secret name which contains the TLS private key and certificate",
                                     "default": "camunda-platform"
                                 }
+                            }
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to define labels which will be applied to the global HTTP ingress resource.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -496,6 +525,101 @@
                     "description": "ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
                     "default": "{{ .Release.Name }}-zeebe"
                 },
+                "tls": {
+                    "type": "object",
+                    "properties": {
+                        "caBundle": {
+                            "type": "object",
+                            "properties": {
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                            "default": "ca.crt"
+                                        }
+                                    }
+                                },
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "opt-in automatic pod rollout on CA rotation. When true, the chart stamps a checksum/ca-bundle pod annotation derived from the CA Secret so the next `helm upgrade` rolls the Java components when the CA changes. OFF by default: it uses Helm's `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace — without it, `helm upgrade` fails to render — and (b) is inert under GitOps tools that render with `helm template` (no cluster access). When off (or in those cases), rotate the CA with `kubectl rollout restart` (see the TLS guide). Trust itself never depends on this flag.",
+                                    "default": false
+                                },
+                                "image": {
+                                    "type": "string",
+                                    "description": "OPTIONAL override for the truststore init-container image. Empty (default) reuses each component's OWN image: it already ships keytool, it is already mirrored in your registry (so this adds no new image dependency in air-gapped installs), and copying its cacerts preserves any CAs baked into a custom build. Set this only if a component image lacks keytool — the value is used verbatim (NOT prefixed with global.image.registry), so include your registry/mirror path if needed.",
+                                    "default": ""
+                                },
+                                "imagePullPolicy": {
+                                    "type": "string",
+                                    "description": "pull policy for the init-container image. Empty (default) inherits global.image.pullPolicy.",
+                                    "default": ""
+                                },
+                                "containerSecurityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runAsNonRoot": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "runAsUser": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "runAsGroup": {
+                                            "type": "number",
+                                            "description": "",
+                                            "default": 1000
+                                        },
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": false
+                                        },
+                                        "readOnlyRootFilesystem": {
+                                            "type": "boolean",
+                                            "description": "",
+                                            "default": true
+                                        },
+                                        "capabilities": {
+                                            "type": "object",
+                                            "properties": {
+                                                "drop": {
+                                                    "type": "array",
+                                                    "description": "",
+                                                    "default": [
+                                                        "ALL"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "seccompProfile": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "RuntimeDefault"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "identity": {
                     "type": "object",
                     "properties": {
@@ -519,8 +643,28 @@
                                 },
                                 "url": {
                                     "type": "object",
-                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart.",
-                                    "default": {}
+                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": {},
+                                    "properties": {
+                                        "protocol": {
+                                            "type": "string",
+                                            "description": "defines the protocol used for Keycloak URL (e.g., https).",
+                                            "default": ""
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "defines the hostname for Keycloak. Supports templating (e.g., {{ .Release.Namespace }}).",
+                                            "default": ""
+                                        },
+                                        "port": {
+                                            "type": [
+                                                "string",
+                                                "integer"
+                                            ],
+                                            "description": "defines the port for Keycloak (e.g., 443).",
+                                            "default": ""
+                                        }
+                                    }
                                 },
                                 "contextPath": {
                                     "type": "string",
@@ -554,22 +698,22 @@
                                 },
                                 "issuerBackendUrl": {
                                     "type": "string",
-                                    "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.",
+                                    "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "authUrl": {
                                     "type": "string",
-                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access.",
+                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "tokenUrl": {
                                     "type": "string",
-                                    "description": "defines the token URL, which is used by the services to request JWT tokens.",
+                                    "description": "defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "jwksUrl": {
                                     "type": "string",
-                                    "description": "defines the JWKS URL, which is used by the services to validate the JWT tokens.",
+                                    "description": "defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "type": {
@@ -619,6 +763,13 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 },
@@ -668,6 +819,13 @@
                                         "initialClaimValue": {
                                             "type": "string",
                                             "description": "defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
                                             "default": ""
                                         }
                                     }
@@ -764,6 +922,13 @@
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Optimize.",
                                             "default": "http://localhost:8083"
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 }
@@ -991,6 +1156,41 @@
                     "type": "boolean",
                     "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
                     "default": false
+                },
+                "multiregion": {
+                    "type": "object",
+                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "default": {},
+                    "properties": {
+                        "regions": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "default": 1
+                        },
+                        "regionId": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "default": 0
+                        }
+                    }
+                },
+                "testDeprecationFlags": {
+                    "type": "object",
+                    "description": "internal flags used by chart tests to assert deprecation behavior.",
+                    "default": {},
+                    "properties": {
+                        "existingSecretsMustBeSet": {
+                            "type": "string",
+                            "description": "give error or warning when existingSecret is not set.",
+                            "default": "warning"
+                        }
+                    }
                 }
             }
         },
@@ -1105,7 +1305,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.9"
+                            "default": "8.8.14"
                         },
                         "digest": {
                             "type": "string",
@@ -1173,7 +1373,8 @@
                                     "description": "",
                                     "default": "INFO"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -1492,8 +1693,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -1542,6 +1818,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the identity service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
@@ -1868,6 +2149,29 @@
                             "type": "string",
                             "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "pullSecrets": {
+                            "type": "array",
+                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
+                            "default": [],
+                            "items": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "name"
+                                        ]
+                                    }
+                                ]
+                            }
                         }
                     }
                 },
@@ -2291,7 +2595,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.130"
+                            "default": "8.8.137"
                         },
                         "digest": {
                             "type": "string",
@@ -2414,6 +2718,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -2424,6 +2733,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -2457,8 +2771,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -2654,6 +3043,11 @@
                             "description": "can be used to set the annotations of the service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -2783,7 +3177,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.11"
+                            "default": "8.8.16"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2900,6 +3294,13 @@
                                             "default": ""
                                         }
                                     }
+                                },
+                                "existingSecret": {
+                                    "type": [
+                                        "string",
+                                        "object"
+                                    ],
+                                    "default": ""
                                 }
                             }
                         },
@@ -2965,6 +3366,13 @@
                                     "type": "string",
                                     "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
                                     "default": "Camunda 8"
+                                },
+                                "existingSecret": {
+                                    "type": [
+                                        "string",
+                                        "object"
+                                    ],
+                                    "default": ""
                                 }
                             }
                         },
@@ -3359,6 +3767,12 @@
                             "type": "string",
                             "description": "can be used to set a custom path for the Zeebe client configuration file",
                             "default": "/tmp/zeebe_client_cache.txt"
+                        },
+                        "logging": {
+                            "type": "object",
+                            "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
+                            "default": {},
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -4146,6 +4560,11 @@
                             "description": "can be used to set the annotations of the WebModeler service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -4195,6 +4614,15 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        },
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "default": "RollingUpdate",
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
                         }
                     }
                 }
@@ -4223,8 +4651,83 @@
                                     "nullable": true
                                 },
                                 "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
                                 }
                             },
                             "required": [
@@ -4259,8 +4762,83 @@
                                     "nullable": true
                                 },
                                 "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
                                 }
                             },
                             "required": [
@@ -4295,8 +4873,83 @@
                                     "nullable": true
                                 },
                                 "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
                                 }
                             },
                             "required": [
@@ -4544,6 +5197,13 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 }
@@ -4567,7 +5227,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.8"
+                            "default": "8.8.15"
                         },
                         "digest": {
                             "type": "string",
@@ -4645,6 +5305,11 @@
                         "requests": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "1000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4655,6 +5320,11 @@
                         "limits": {
                             "type": "object",
                             "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "2000m"
+                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4688,8 +5358,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -4885,6 +5630,11 @@
                             "description": "can be used to set the annotations of the service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -5037,6 +5787,12 @@
                             "default": {}
                         }
                     }
+                },
+                "logging": {
+                    "type": "object",
+                    "description": "configuration for the Connectors logging, included directly in the connectors configuration YAML file.",
+                    "default": {},
+                    "additionalProperties": true
                 }
             }
         },
@@ -5094,17 +5850,17 @@
                                         },
                                         "authUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.authUrl`.",
+                                            "description": "can be used to override `global.identity.auth.authUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "tokenUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.tokenUrl`.",
+                                            "description": "can be used to override `global.identity.auth.tokenUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "jwksUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.jwksUrl`.",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "usernameClaim": {
@@ -5178,6 +5934,13 @@
                                                     "default": ""
                                                 }
                                             }
+                                        },
+                                        "existingSecret": {
+                                            "type": [
+                                                "string",
+                                                "object"
+                                            ],
+                                            "default": ""
                                         }
                                     }
                                 }
@@ -5286,7 +6049,7 @@
                                 },
                                 "authorizations": {
                                     "type": "array",
-                                    "description": "define authorizations.",
+                                    "description": "define authorizations for Identity as Code.",
                                     "default": [],
                                     "items": {}
                                 }
@@ -5310,7 +6073,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.19"
+                            "default": "8.8.30"
                         },
                         "digest": {
                             "type": "string",
@@ -5505,6 +6268,53 @@
                                             }
                                         }
                                     }
+                                },
+                                "extraVolumes": {
+                                    "type": "array",
+                                    "description": "can be used to define extra volumes for the migration data job pod",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumeMounts": {
+                                    "type": "array",
+                                    "description": "can be used to mount extra volumes for the migration data job pod",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                        "requests": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        },
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -5535,12 +6345,47 @@
                                                 "tag": {
                                                     "type": "string",
                                                     "description": "can be set to overwrite the global tag, which should be used in that chart",
-                                                    "default": "8.18.0"
+                                                    "default": "8.21.0"
                                                 },
                                                 "digest": {
                                                     "type": "string",
                                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                                     "default": ""
+                                                }
+                                            }
+                                        },
+                                        "resources": {
+                                            "type": "object",
+                                            "properties": {
+                                                "requests": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "cpu": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "50m"
+                                                        },
+                                                        "memory": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "64Mi"
+                                                        }
+                                                    }
+                                                },
+                                                "limits": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "cpu": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "50m"
+                                                        },
+                                                        "memory": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "64Mi"
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -5596,8 +6441,61 @@
                                     "description": "can be used to set extra environment variables in the identity migration job container",
                                     "default": [],
                                     "items": {}
+                                },
+                                "extraVolumes": {
+                                    "type": "array",
+                                    "description": "can be used to define extra volumes for the migration identity job pod",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumeMounts": {
+                                    "type": "array",
+                                    "description": "can be used to mount extra volumes for the migration identity job pod",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                        "requests": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        },
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500m"
+                                                },
+                                                "memory": {
+                                                    "type": "string",
+                                                    "description": "",
+                                                    "default": "500Mi"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                        },
+                        "affinity": {
+                            "type": "object",
+                            "description": "if specified, the migration job's scheduling constraints.",
+                            "default": {},
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -5694,8 +6592,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -5747,7 +6720,10 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         },
                         "headless": {
                             "type": "object",
@@ -5755,7 +6731,10 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations, which will be applied to the headless service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
                                 },
                                 "type": {
                                     "type": "string",
@@ -5856,6 +6835,11 @@
                             "description": "can be used to set the annotations of the broker service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -5912,6 +6896,22 @@
                                             "description": "defines the secret name which contains the TLS private key and certificate",
                                             "default": "camunda-platform-zeebe-gateway"
                                         }
+                                    }
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                },
+                                "labels": {
+                                    "type": "object",
+                                    "description": "can be used to define labels which will be applied to the gRPC ingress resource.",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
                                     }
                                 }
                             }
@@ -6458,6 +7458,11 @@
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
                 },
+                "hostNetwork": {
+                    "type": "boolean",
+                    "description": "if true, the orchestration pods will use the host network namespace. When enabled, dnsPolicy defaults to `ClusterFirstWithHostNet` unless explicitly overridden via `orchestration.dnsPolicy`. https://kubernetes.io/docs/concepts/configuration/overview/#services",
+                    "default": false
+                },
                 "extraVolumeClaimTemplates": {
                     "type": "array",
                     "description": "can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!",
@@ -6473,6 +7478,18 @@
                             "default": false
                         }
                     }
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "if specified, the pod's scheduling constraints. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "profiles": {
+                    "type": "object",
+                    "description": "defines which components of the orchestration cluster are enabled (e.g., broker, admin, operate).",
+                    "default": {},
+                    "additionalProperties": true
                 }
             }
         },
@@ -6500,7 +7517,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.7"
+                            "default": "8.8.30"
                         },
                         "digest": {
                             "type": "string",
@@ -6641,8 +7658,83 @@
                                 "nullable": true
                             },
                             "valueFrom": {
-                                "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
                             }
                         },
                         "required": [
@@ -6697,6 +7789,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the Optimize service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
@@ -7122,8 +8219,83 @@
                                     "nullable": true
                                 },
                                 "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
                                 }
                             },
                             "required": [
@@ -7159,6 +8331,29 @@
                                         }
                                     }
                                 }
+                            }
+                        },
+                        "imagePullSecrets": {
+                            "type": "array",
+                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
+                            "default": [],
+                            "items": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "name"
+                                        ]
+                                    }
+                                ]
                             }
                         }
                     }

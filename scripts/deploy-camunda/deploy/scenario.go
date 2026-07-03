@@ -1,13 +1,12 @@
 package deploy
 
 import (
-	"crypto/rand"
 	"fmt"
 	"hash/fnv"
-	"math/big"
 	"regexp"
 	"strings"
 
+	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 )
 
@@ -62,6 +61,7 @@ type PreparedScenario struct {
 	ValuesFiles         []string
 	LayeredFiles        []string // Source values files resolved from layers (pre-processing)
 	VaultSecretPath     string
+	CompanionCharts     []config.CompanionChart
 	TempDir             string
 	RealmName           string
 	OptimizePrefix      string
@@ -74,18 +74,14 @@ type PreparedScenario struct {
 
 // generateScenarioContext creates a scenario-specific deployment context.
 func generateScenarioContext(scenario string, flags *config.RuntimeFlags) (*ScenarioContext, error) {
-	suffix, err := generateRandomSuffix()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate random suffix: %w", err)
-	}
+	// Use EffectiveNamespace() to apply any namespace prefix (e.g., for EKS)
+	effectiveNs := flags.EffectiveNamespace()
+	suffix := namespaceDerivedSuffix(effectiveNs)
 
 	// Generate unique identifiers for this scenario
 	var realmName, optimizePrefix, orchestrationPrefix, tasklistPrefix, operatePrefix string
 	var namespace, release, ingressHost string
 
-	// Use provided values or generate unique ones
-	// Use EffectiveNamespace() to apply any namespace prefix (e.g., for EKS)
-	effectiveNs := flags.EffectiveNamespace()
 	if flags.Auth.KeycloakRealm != "" && len(flags.Deployment.Scenarios) == 1 {
 		realmName = flags.Auth.KeycloakRealm
 	} else {
@@ -151,18 +147,18 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) (*Scen
 	}, nil
 }
 
-// generateRandomSuffix creates an 8-character random string.
-func generateRandomSuffix() (string, error) {
-	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
-	result := make([]byte, 8)
-	for i := range result {
-		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
-		if err != nil {
-			return "", fmt.Errorf("crypto/rand failed: %w", err)
-		}
-		result[i] = chars[num.Int64()]
-	}
-	return string(result), nil
+// namespaceDerivedSuffix produces a deterministic 8-character hex suffix from a
+// namespace name. This ensures that install and upgrade deployments targeting the
+// same namespace always generate identical index prefixes and Keycloak realm names,
+// even when running in separate CI jobs.
+//
+// Using FNV-1a for speed and good distribution; 32 bits (8 hex chars) provides
+// sufficient uniqueness across test namespaces (which already contain shortnames
+// and version identifiers).
+func namespaceDerivedSuffix(namespace string) string {
+	h := fnv.New32a()
+	h.Write([]byte(namespace))
+	return fmt.Sprintf("%08x", h.Sum32())
 }
 
 // generateCompactRealmName creates a realm name that fits within Keycloak's 36 character limit.
@@ -202,7 +198,7 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 }
 
 // keycloakVersionSuffix extracts a version suffix from a Keycloak hostname.
-// For example, "keycloak-24-9-0.ci.distro.ultrawombat.com" → "24_9_0".
+// For example, "keycloak-25-0-0.example.com" → "25_0_0".
 // The hostname is expected to have the form "keycloak-<version>.<domain>",
 // where <version> uses hyphens that are replaced with underscores.
 // If the hostname does not match this pattern, the full hostname (with
@@ -219,10 +215,29 @@ func keycloakVersionSuffix(host string) string {
 	return strings.ReplaceAll(version, "-", "_")
 }
 
-// PinScenarioPrefixes generates a random suffix and writes index prefixes +
-// Keycloak realm name into flags so that subsequent calls to Execute() (which
-// internally call generateScenarioContext) will reuse the same values instead
-// of generating new random ones.
+// ComputeExpectedOrchestrationPrefix returns the orchestration index prefix that
+// will be used when deploy.Execute() runs for the given scenario and flags. This
+// allows callers to validate the prefix against external state (e.g., a live Helm
+// release) before executing the deployment.
+func ComputeExpectedOrchestrationPrefix(scenario string, flags *config.RuntimeFlags) string {
+	if flags.Index.OrchestrationIndexPrefix != "" {
+		return flags.Index.OrchestrationIndexPrefix
+	}
+	normalizedScenario := normalizeIdentifierPart(scenario)
+	suffix := namespaceDerivedSuffix(flags.EffectiveNamespace())
+	return orchestrationPrefix(normalizedScenario, suffix)
+}
+
+// orchestrationPrefix returns the canonical orchestration index prefix for a
+// given normalized scenario name and namespace-derived suffix.
+func orchestrationPrefix(normalizedScenario, suffix string) string {
+	return fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
+}
+
+// PinScenarioPrefixes derives a deterministic suffix from the namespace and writes
+// index prefixes + Keycloak realm name into flags so that subsequent calls to
+// Execute() (which internally call generateScenarioContext) will reuse the same
+// values.
 //
 // This is critical for multi-step upgrade flows where Step 1 (install old
 // version) and Step 2 (upgrade to new version) must share the same index
@@ -232,20 +247,16 @@ func keycloakVersionSuffix(host string) string {
 // Only call this when len(flags.Deployment.Scenarios) == 1, which is always
 // true in the matrix runner.
 func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
-	suffix, err := generateRandomSuffix()
-	if err != nil {
-		return fmt.Errorf("failed to generate random suffix: %w", err)
-	}
-
 	normalizedScenario := normalizeIdentifierPart(scenario)
 	effectiveNs := flags.EffectiveNamespace()
+	suffix := namespaceDerivedSuffix(effectiveNs)
 
 	// Pin index prefixes (only if not already set).
 	if flags.Index.OptimizeIndexPrefix == "" {
 		flags.Index.OptimizeIndexPrefix = fmt.Sprintf("opt-%s-%s", normalizedScenario, suffix)
 	}
 	if flags.Index.OrchestrationIndexPrefix == "" {
-		flags.Index.OrchestrationIndexPrefix = fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
+		flags.Index.OrchestrationIndexPrefix = orchestrationPrefix(normalizedScenario, suffix)
 	}
 	if flags.Index.TasklistIndexPrefix == "" {
 		flags.Index.TasklistIndexPrefix = fmt.Sprintf("task-%s-%s", normalizedScenario, suffix)
@@ -262,6 +273,16 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 			suffix,
 		)
 	}
+
+	logging.Logger.Info().
+		Str("scenario", scenario).
+		Str("namespace", effectiveNs).
+		Str("orchestrationPrefix", flags.Index.OrchestrationIndexPrefix).
+		Str("operatePrefix", flags.Index.OperateIndexPrefix).
+		Str("optimizePrefix", flags.Index.OptimizeIndexPrefix).
+		Str("tasklistPrefix", flags.Index.TasklistIndexPrefix).
+		Str("keycloakRealm", flags.Auth.KeycloakRealm).
+		Msg("Pinned scenario prefixes")
 
 	return nil
 }

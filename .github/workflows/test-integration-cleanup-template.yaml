@@ -54,19 +54,34 @@ jobs:
         - distro:
             if: false
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
         repository: camunda/camunda-platform-helm
+    - name: Import Vault secrets
+      if: matrix.distro.platform == 'gke'
+      id: test-credentials-secret
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+          secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+          secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+          secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+        exportEnv: false
     # TODO: Later, find a way to abstract the auth for different platforms.
     - name: Authenticate to GKE
       if: matrix.distro.platform == 'gke'
       uses: ./.github/actions/gke-login
       with:
-        cluster-name: ${{ secrets[matrix.distro.secret.cluster-name] }}
-        cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
-        workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
-        service-account: ${{ secrets[matrix.distro.secret.service-account] }}
+        cluster-name: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+        cluster-location: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+        workload-identity-provider: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service-account: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
     - name: Authenticate to OpenShift
       if: matrix.distro.platform == 'rosa'
       uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1

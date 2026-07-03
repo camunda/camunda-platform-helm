@@ -11,6 +11,6 @@ runs:
       kubectl -n $TEST_NAMESPACE get po
       kubectl -n $TEST_NAMESPACE get po | grep -v "Completed" | awk '/0\//{print $1}' | while read pod_name; do
         echo -e "\n###Failed Pod: ${pod_name}###\n";
-        kubectl -n $TEST_NAMESPACE describe po ${pod_name};
-        kubectl -n $TEST_NAMESPACE logs ${pod_name};
+        kubectl -n $TEST_NAMESPACE describe po ${pod_name} || true;
+        kubectl -n $TEST_NAMESPACE logs ${pod_name} --all-containers || true;
       done

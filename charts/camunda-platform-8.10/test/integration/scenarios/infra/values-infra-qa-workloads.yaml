@@ -9,25 +9,10 @@ identity:
     key: workload
     operator: Equal
     value: qa-workloads
-identityKeycloak:
-  nodeSelector:
-    workload: qa-workloads
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: qa-workloads
-  postgresql:
-    primary:
-      nodeSelector:
-        workload: qa-workloads
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: qa-workloads
-identityPostgresql:
-  primary:
+
+# Camunda Hub.
+camundaHub:
+  console:
     nodeSelector:
       workload: qa-workloads
     tolerations:
@@ -35,16 +20,23 @@ identityPostgresql:
       key: workload
       operator: Equal
       value: qa-workloads
-
-# Web Apps.
-console:
-  nodeSelector:
-    workload: qa-workloads
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: qa-workloads
+  webModeler:
+    restapi:
+      nodeSelector:
+        workload: qa-workloads
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: qa-workloads
+    websockets:
+      nodeSelector:
+        workload: qa-workloads
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: qa-workloads
 connectors:
   nodeSelector:
     workload: qa-workloads
@@ -78,33 +70,6 @@ optimize:
     operator: Equal
     value: qa-workloads
 
-# Web Modeler.
-webModeler:
-  restapi:
-    nodeSelector:
-      workload: qa-workloads
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: qa-workloads
-  websockets:
-    nodeSelector:
-      workload: qa-workloads
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: qa-workloads
-webModelerPostgresql:
-  primary:
-    nodeSelector:
-      workload: qa-workloads
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: qa-workloads
 
 # Zeebe.
 orchestration:
@@ -124,13 +89,3 @@ zeebeGateway:
     operator: Equal
     value: qa-workloads
 
-# Elasticsearch.
-elasticsearch:
-  master:
-    nodeSelector:
-      workload: qa-workloads
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: qa-workloads

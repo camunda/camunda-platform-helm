@@ -221,7 +221,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "optimize.enabled=true", "--set", "elasticsearch.enabled=true", "--set", "global.elasticsearch.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "optimize.enabled=true", "--set", "global.elasticsearch.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// given
@@ -250,7 +250,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "optimize.enabled=true", "--set", "elasticsearch.enabled=true", "--set", "global.elasticsearch.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "optimize.enabled=true", "--set", "global.elasticsearch.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
@@ -282,7 +282,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes, volumemounts array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "optimize.enabled=true", "--set", "identity.enabled=true", "--set", "elasticsearch.enabled=true", "--set", "global.elasticsearch.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "optimize.enabled=true", "--set", "identity.enabled=true", "--set", "global.elasticsearch.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
@@ -698,11 +698,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestOptimizeMultiTenancyEnabled",
 			Values: map[string]string{
-				"identity.enabled":              "true",
-				"global.identity.auth.enabled":  "true",
-				"optimize.enabled":              "true",
-				"identity.multitenancy.enabled": "true",
-				"identityPostgresql.enabled":    "true",
+				"identity.enabled":                   "true",
+				"global.identity.auth.enabled":       "true",
+				"optimize.enabled":                   "true",
+				"identity.multitenancy.enabled":      "true",
+				"identity.externalDatabase.enabled":  "true",
+				"identity.externalDatabase.host":     "my-database-host",
+				"identity.externalDatabase.username": "my-database-username",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -822,6 +824,179 @@ es:
 				}
 
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
+			},
+		},
+		{
+			Name: "TestOptimizeOpenSearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.opensearch.tls.secret.existingSecret":        "os-tls-secret",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststorePassword *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststorePassword = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotNil(s.T(), truststorePassword)
+				require.NotNil(s.T(), truststorePassword.ValueFrom)
+				require.NotNil(s.T(), truststorePassword.ValueFrom.SecretKeyRef)
+				require.Equal(s.T(), "truststore-secret", truststorePassword.ValueFrom.SecretKeyRef.Name)
+				require.Equal(s.T(), "truststore-password", truststorePassword.ValueFrom.SecretKeyRef.Key)
+			},
+		},
+		{
+			Name: "TestOptimizeOpenSearchTLSWithJKSInlineEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.opensearch.tls.secret.existingSecret":   "os-tls-secret",
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststorePassword *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststorePassword = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotNil(s.T(), truststorePassword)
+				require.Equal(s.T(), "changeit", truststorePassword.Value)
+			},
+		},
+		{
+			Name: "TestOptimizeOpenSearchTLSWithoutJKSDoesNotEmitPassword",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.opensearch.tls.secret.existingSecret": "os-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststoreFound bool
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststoreFound = true
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.False(s.T(), truststoreFound)
+			},
+		},
+		{
+			Name: "TestOptimizeElasticsearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.elasticsearch.tls.secret.existingSecret":        "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststorePassword *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststorePassword = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotNil(s.T(), truststorePassword)
+				require.NotNil(s.T(), truststorePassword.ValueFrom)
+				require.NotNil(s.T(), truststorePassword.ValueFrom.SecretKeyRef)
+				require.Equal(s.T(), "truststore-secret", truststorePassword.ValueFrom.SecretKeyRef.Name)
+				require.Equal(s.T(), "truststore-password", truststorePassword.ValueFrom.SecretKeyRef.Key)
+			},
+		},
+		{
+			Name: "TestOptimizeElasticsearchTLSWithoutJKSDoesNotEmitPassword",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.elasticsearch.tls.secret.existingSecret": "es-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststoreFound bool
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststoreFound = true
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.False(s.T(), truststoreFound)
+			},
+		},
+		{
+			Name: "TestOptimizeOpenSearchTLSRespectsJavaOptsWithAndWithoutJKS",
+			Values: map[string]string{
+				"identity.enabled":                            "true",
+				"optimize.enabled":                            "true",
+				"optimize.javaOpts":                           "-Xmx512m -Xms256m",
+				"global.opensearch.tls.secret.existingSecret": "os-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Xmx512m -Xms256m")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 			},
 		},
 	}
@@ -949,7 +1124,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":             "true",
 				"optimize.enabled":             "true",
 				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
 				"global.opensearch.enabled":    "true",
 				"global.opensearch.url.host":   "opensearch-host",
 			},
@@ -968,7 +1142,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                      "true",
 				"optimize.enabled":                      "true",
 				"global.elasticsearch.enabled":          "false",
-				"elasticsearch.enabled":                 "false",
 				"global.opensearch.enabled":             "true",
 				"global.opensearch.url.host":            "opensearch-host",
 				"optimize.database.opensearch.url.port": "9200",
@@ -988,7 +1161,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                "true",
 				"optimize.enabled":                "true",
 				"global.elasticsearch.enabled":    "false",
-				"elasticsearch.enabled":           "false",
 				"global.opensearch.enabled":       "true",
 				"global.opensearch.url.host":      "opensearch-host",
 				"global.opensearch.auth.username": "globaluser",
@@ -1008,7 +1180,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                           "true",
 				"optimize.enabled":                           "true",
 				"global.elasticsearch.enabled":               "false",
-				"elasticsearch.enabled":                      "false",
 				"global.opensearch.enabled":                  "true",
 				"global.opensearch.url.host":                 "opensearch-host",
 				"global.opensearch.auth.username":            "globaluser",
@@ -1029,7 +1200,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":             "true",
 				"optimize.enabled":             "true",
 				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
 				"global.opensearch.enabled":    "true",
 				"global.opensearch.url.host":   "opensearch-host",
 			},
@@ -1049,7 +1219,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":               "true",
 				"optimize.enabled":               "true",
 				"global.elasticsearch.enabled":   "false",
-				"elasticsearch.enabled":          "false",
 				"global.opensearch.enabled":      "true",
 				"global.opensearch.url.host":     "opensearch-host",
 				"global.opensearch.url.protocol": "https",
@@ -1069,7 +1238,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                          "true",
 				"optimize.enabled":                          "true",
 				"global.elasticsearch.enabled":              "false",
-				"elasticsearch.enabled":                     "false",
 				"global.opensearch.enabled":                 "true",
 				"global.opensearch.url.host":                "opensearch-host",
 				"global.opensearch.url.protocol":            "https",
@@ -1093,7 +1261,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":              "true",
 				"optimize.enabled":              "true",
 				"global.elasticsearch.enabled":  "false",
-				"elasticsearch.enabled":         "false",
 				"global.opensearch.enabled":     "true",
 				"global.opensearch.url.host":    "opensearch-host",
 				"global.opensearch.aws.enabled": "true",
@@ -1113,7 +1280,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                         "true",
 				"optimize.enabled":                         "true",
 				"global.elasticsearch.enabled":             "false",
-				"elasticsearch.enabled":                    "false",
 				"global.opensearch.enabled":                "true",
 				"global.opensearch.url.host":               "opensearch-host",
 				"global.opensearch.aws.enabled":            "false",
@@ -1214,7 +1380,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                               "true",
 				"optimize.enabled":                               "true",
 				"global.elasticsearch.enabled":                   "false",
-				"elasticsearch.enabled":                          "false",
 				"global.opensearch.enabled":                      "true",
 				"global.opensearch.url.host":                     "opensearch-host",
 				"global.opensearch.tls.secret.existingSecret":    "my-os-tls-secret",
@@ -1243,7 +1408,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                                "true",
 				"optimize.enabled":                                "true",
 				"global.elasticsearch.enabled":                    "false",
-				"elasticsearch.enabled":                           "false",
 				"global.opensearch.enabled":                       "true",
 				"global.opensearch.url.host":                      "opensearch-host",
 				"global.opensearch.auth.secret.existingSecret":    "my-os-auth-secret",
@@ -1272,7 +1436,6 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                                           "true",
 				"optimize.enabled":                                           "true",
 				"global.elasticsearch.enabled":                               "false",
-				"elasticsearch.enabled":                                      "false",
 				"global.opensearch.enabled":                                  "true",
 				"global.opensearch.url.host":                                 "opensearch-host",
 				"global.opensearch.auth.secret.existingSecret":               "global-os-auth-secret",

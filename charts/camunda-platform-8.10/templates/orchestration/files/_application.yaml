@@ -3,10 +3,16 @@ This file name should start with an underscore to avoid rendering it as a templa
 It is included (imported) in the ConfigMap.
 */}}
 spring:
-  {{- if .Values.orchestration.extraConfiguration }}
+  {{- $springImports := list }}
+  {{- range .Values.orchestration.extraConfiguration }}
+    {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
+      {{- $springImports = append $springImports . }}
+    {{- end }}
+  {{- end }}
+  {{- if $springImports }}
   config:
     import:
-    {{- range .Values.orchestration.extraConfiguration }}
+    {{- range $springImports }}
       - optional:file:/usr/local/camunda/config/{{ .file }}
     {{- end }}
   {{- end }}
@@ -20,6 +26,8 @@ spring:
 server:
   address: 0.0.0.0
   port: {{ .Values.orchestration.service.httpPort }}
+  tomcat:
+    max-http-form-post-size: {{ .Values.global.config.requestBodySize | quote }}
   {{- if .Values.orchestration.contextPath }}
   servlet:
     context-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
@@ -32,11 +40,6 @@ management:
     base-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
 
 camunda:
-  {{- if .Values.orchestration.exporters.rdbms.enabled }}
-  backup:
-    webapps:
-      enabled: false
-  {{- end }}
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
   {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
@@ -65,21 +68,32 @@ camunda:
     size: {{ .Values.orchestration.clusterSize | quote }}
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    # Keep the unified Camunda and legacy Zeebe network limits aligned while supported versions bind both namespaces.
+    network:
+      max-message-size: {{ .Values.global.config.requestBodySize | quote }}
     # zeebe.broker.cluster
+    {{- if le (int .Values.global.multiregion.regions) 1 }}
     initial-contact-points:
     {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- else }}
+    # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
+    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across regions.
+    # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
+    #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
     {{- end }}
 
   api:
     grpc:
       address: 0.0.0.0
       port: {{ .Values.orchestration.service.grpcPort }}
+      max-message-size: {{ .Values.global.config.requestBodySize | quote }}
 
   # Database configuration - Separated syntax.
   database:
   {{- if .Values.global.opensearch.enabled }}
-    awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+    awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
   {{- end }}
 
   data:
@@ -99,6 +113,7 @@ camunda:
       {{- end }}
       {{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "elasticsearch") }}
       elasticsearch:
+        aws-enabled: {{ .Values.orchestration.data.secondaryStorage.elasticsearch.aws.enabled }}
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
         username: {{ .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
@@ -112,6 +127,7 @@ camunda:
       {{- end }}
       {{- if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "opensearch") }}
       opensearch:
+        aws-enabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
         username: {{ .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
@@ -126,6 +142,7 @@ camunda:
       {{- if .Values.orchestration.exporters.rdbms.enabled }}
       rdbms:
         {{- with .Values.orchestration.data.secondaryStorage.rdbms }}
+        aws-enabled: {{ .aws.enabled }}
         url: {{ .url | quote }}
         username: {{ .username | quote }}
         password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
@@ -135,6 +152,10 @@ camunda:
   # Security configuration - Separated syntax.
   security:
     authentication:
+    {{- if and (eq (include "orchestration.authMethod" .) "basic") (.Values.orchestration.security.authentication.unprotectedApi) }}
+      basic:
+        allow-unauthenticated-api-access: {{ .Values.orchestration.security.authentication.unprotectedApi }}
+    {{- end }}
     {{- if eq (include "orchestration.authMethod" .) "oidc" }}
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
@@ -150,7 +171,7 @@ camunda:
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
-          - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+          - {{ (or .Values.global.identity.auth.camundaHub.webModeler.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
@@ -179,6 +200,10 @@ camunda:
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
       {{- end }}
+      {{- if .Values.orchestration.security.initialization.mappingRules }}
+      mapping-rules:
+        {{- .Values.orchestration.security.initialization.mappingRules | toYaml | nindent 8 }}
+      {{- end }}
       {{- if .Values.orchestration.security.initialization.authorizations }}
       authorizations:
         {{- .Values.orchestration.security.initialization.authorizations | toYaml | nindent 8 }}
@@ -186,16 +211,15 @@ camunda:
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
-
-  persistent:
-    sessions:
-      enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
-
   {{- if eq (include "orchestration.authMethod" .) "oidc" }}
   identity:
     clientId: {{ include "orchestration.authClientId" . | quote }}
     audience: {{ include "orchestration.authAudience" . | quote }}
   {{- end }}
+  persistent:
+    sessions:
+      enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
+
 
 {{- if .Values.orchestration.profiles.operate -}}
   {{- "\n" }}
@@ -212,9 +236,9 @@ camunda:
     {{- if .Values.global.opensearch.enabled }}
     # OpenSearch
     opensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
     {{- end }}
     # Zeebe instance
     zeebe:
@@ -243,9 +267,9 @@ camunda:
     {{- if .Values.global.opensearch.enabled }}
     # OpenSearch
     opensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
       username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
       password: "${VALUES_OPENSEARCH_PASSWORD:}"
     {{- end }}
@@ -286,6 +310,8 @@ zeebe:
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
       {{- end }}
       host: 0.0.0.0
+      # Legacy Zeebe namespace retained while supported versions still bind it; keep it aligned with camunda.cluster.network.
+      maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
       commandApi:
         port: {{ .Values.orchestration.service.commandPort }}
       internalApi:
@@ -317,6 +343,7 @@ zeebe:
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | quote }}
+            numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
@@ -327,7 +354,7 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
-          {{- if and (not .Values.global.opensearch.aws.enabled) (not .Values.optimize.database.opensearch.aws.enabled) }}
+          {{- if and (not (or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled)) (not .Values.optimize.database.opensearch.aws.enabled) }}
           authentication:
             username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
             password: "${VALUES_OPENSEARCH_PASSWORD:}"
@@ -335,7 +362,8 @@ zeebe:
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | quote }}
-          {{- if or .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
+            numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
+          {{- if or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
           aws:
             enabled: true
           {{- end }}
@@ -355,7 +383,7 @@ zeebe:
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
-            awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+            awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
             rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}

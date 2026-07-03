@@ -1,0 +1,14 @@
+name: alwaysgreen
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+platforms:
+  - gke
+infra-type:
+  gke: alwaysgreen
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

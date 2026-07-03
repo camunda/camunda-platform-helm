@@ -1,3 +1,4 @@
+# orphan-ok: applied by post-deploy-gateway-keycloak.sh via envsubst+kubectl; not registered as a LifecycleHook fixture because the script handles substitution and apply directly.
 apiVersion: gateway.nginx.org/v1alpha1
 kind: ProxySettingsPolicy
 metadata:

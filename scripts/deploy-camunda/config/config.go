@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -19,17 +20,16 @@ var ValidIngressBaseDomains = []string{
 }
 
 const (
-	// DefaultKeycloakHost is the default external Keycloak hostname used in CI.
-	DefaultKeycloakHost = "keycloak-24-9-0.ci.distro.ultrawombat.com"
+	// DefaultKeycloakHost is the default external Keycloak host. The shared CI
+	// Keycloak was decommissioned (#6245), so there is no default; external-keycloak
+	// deploys must pass --keycloak-host explicitly.
+	DefaultKeycloakHost = ""
 	// DefaultKeycloakProtocol is the default protocol for the external Keycloak.
 	DefaultKeycloakProtocol = "https"
 )
 
 // DeployPlatforms lists the valid deployment infrastructure platforms.
 var DeployPlatforms = []string{"gke", "eks", "rosa"}
-
-// TestPlatforms lists the valid test platform identifiers.
-var TestPlatforms = []string{"gke", "eks", "openshift"}
 
 // KeycloakConfig holds Keycloak connection settings.
 type KeycloakConfig struct {
@@ -89,8 +89,16 @@ type DeploySpecConfig struct {
 	ExtraValues              []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
 	ScenarioRoot             string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
 	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
-	RunIntegrationTests      *bool    `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
 	RunE2ETests              *bool    `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
+
+	// Selection + composition model fields (alternative to Scenario)
+	Identity     string   `mapstructure:"identity" yaml:"identity,omitempty"`
+	Persistence  string   `mapstructure:"persistence" yaml:"persistence,omitempty"`
+	TestPlatform string   `mapstructure:"testPlatform" yaml:"testPlatform,omitempty"`
+	Features     []string `mapstructure:"features" yaml:"features,omitempty"`
+	QA           *bool    `mapstructure:"qa" yaml:"qa,omitempty"`
+	ImageTags    *bool    `mapstructure:"imageTags" yaml:"imageTags,omitempty"`
+	UpgradeFlow  *bool    `mapstructure:"upgradeFlow" yaml:"upgradeFlow,omitempty"`
 }
 
 // MatrixConfig holds configuration specific to the "matrix" subcommand.
@@ -117,7 +125,6 @@ type MatrixConfig struct {
 	HelmTimeout   *int  `mapstructure:"helmTimeout" yaml:"helmTimeout,omitempty"`
 
 	// Tests
-	TestIT  *bool `mapstructure:"testIT" yaml:"testIT,omitempty"`
 	TestE2E *bool `mapstructure:"testE2E" yaml:"testE2E,omitempty"`
 	TestAll *bool `mapstructure:"testAll" yaml:"testAll,omitempty"`
 
@@ -162,6 +169,16 @@ type RootConfig struct {
 	FilePath    string                      `mapstructure:"-" yaml:"-"`
 }
 
+// ConfigResolution captures how the config file was resolved — which paths
+// were searched, whether a file was actually found, and which file is in use.
+// This enables downstream code (especially Validate) to produce actionable
+// error messages instead of generic "flag X not set" errors.
+type ConfigResolution struct {
+	Path     string   // resolved config file path (may not exist on disk)
+	Found    bool     // true when the file actually exists
+	Searched []string // all candidate paths that were checked, in order
+}
+
 // DetectRepoRoot uses git to auto-detect the repository root from the current
 // working directory. This correctly returns the worktree root when running
 // inside a git worktree. Returns ("", nil) when git is not available or the
@@ -184,21 +201,50 @@ func DetectRepoRoot() (string, error) {
 }
 
 // ResolvePath determines the config file path to use.
-func ResolvePath(explicit string) (string, error) {
+// It returns a ConfigResolution that records which paths were searched and
+// whether the resolved file actually exists on disk.
+func ResolvePath(explicit string) (*ConfigResolution, error) {
 	if strings.TrimSpace(explicit) != "" {
-		return explicit, nil
+		_, statErr := os.Stat(explicit)
+		return &ConfigResolution{
+			Path:     explicit,
+			Found:    statErr == nil,
+			Searched: []string{explicit},
+		}, nil
 	}
-	// prefer local project file if present
+
+	var searched []string
 	local := ".camunda-deploy.yaml"
+
+	// prefer local project file if present
+	cwd, _ := os.Getwd()
+	cwdLocal := filepath.Join(cwd, local)
+	searched = append(searched, cwdLocal)
 	if _, err := os.Stat(local); err == nil {
-		return local, nil
+		return &ConfigResolution{Path: local, Found: true, Searched: searched}, nil
 	}
+
+	// check repo root (handles running from subdirectories)
+	if root, err := DetectRepoRoot(); err == nil && root != "" {
+		repoLocal := filepath.Join(root, local)
+		// avoid duplicate if CWD is the repo root
+		if repoLocal != cwdLocal {
+			searched = append(searched, repoLocal)
+		}
+		if _, err := os.Stat(repoLocal); err == nil {
+			return &ConfigResolution{Path: repoLocal, Found: true, Searched: searched}, nil
+		}
+	}
+
 	// fallback to user config directory
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return filepath.Join(home, ".config", "camunda", "deploy.yaml"), nil
+	fallback := filepath.Join(home, ".config", "camunda", "deploy.yaml")
+	searched = append(searched, fallback)
+	_, statErr := os.Stat(fallback)
+	return &ConfigResolution{Path: fallback, Found: statErr == nil, Searched: searched}, nil
 }
 
 // Read loads configuration from the specified path.
@@ -307,18 +353,6 @@ func applyEnvOverrides(rc *RootConfig) {
 	if v := get("CAMUNDA_KEYCLOAK_REALM"); v != "" {
 		rc.KeycloakRealm = v
 	}
-	if v := get("CAMUNDA_OPTIMIZE_INDEX_PREFIX"); v != "" {
-		rc.OptimizeIndexPrefix = v
-	}
-	if v := get("CAMUNDA_ORCHESTRATION_INDEX_PREFIX"); v != "" {
-		rc.OrchestrationIndexPrefix = v
-	}
-	if v := get("CAMUNDA_TASKLIST_INDEX_PREFIX"); v != "" {
-		rc.TasklistIndexPrefix = v
-	}
-	if v := get("CAMUNDA_OPERATE_INDEX_PREFIX"); v != "" {
-		rc.OperateIndexPrefix = v
-	}
 	if v := get("CAMUNDA_HOSTNAME"); v != "" {
 		rc.IngressHost = v
 	}
@@ -421,10 +455,6 @@ func applyMatrixEnvOverrides(m *MatrixConfig, get func(string) string) {
 	}
 	if v := get("CAMUNDA_MATRIX_UPGRADE_FROM_VERSION"); v != "" {
 		m.UpgradeFromVersion = v
-	}
-	if v := get("CAMUNDA_MATRIX_TEST_IT"); v != "" {
-		b := parseBool(v)
-		m.TestIT = &b
 	}
 	if v := get("CAMUNDA_MATRIX_TEST_E2E"); v != "" {
 		b := parseBool(v)
@@ -591,6 +621,10 @@ func GetValue(cfgPath, key string) (string, error) {
 	return formatValue(val), nil
 }
 
+// ErrDeploymentExists is returned by CreateDeployment when the named deployment
+// is already present. Callers match it with errors.Is to take an update path.
+var ErrDeploymentExists = errors.New("deployment already exists")
+
 // CreateDeployment creates a new empty deployment configuration.
 func CreateDeployment(cfgPath, name string) error {
 	content, err := os.ReadFile(cfgPath)
@@ -617,7 +651,7 @@ func CreateDeployment(cfgPath, name string) error {
 
 	// Check if deployment already exists
 	if _, exists := deployments[name]; exists {
-		return fmt.Errorf("deployment %q already exists", name)
+		return fmt.Errorf("deployment %q: %w", name, ErrDeploymentExists)
 	}
 
 	// Create empty deployment

@@ -100,7 +100,7 @@ on:
       # and features instead of relying on scenario name parsing.
       # =============================================================================
       test-identity:
-        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        description: "Identity selection: keycloak, oidc, basic, hybrid"
         required: false
         type: string
       test-persistence:
@@ -131,10 +131,24 @@ on:
         default: false
         type: boolean
       skip-it:
-        description: "Skip integration (Playwright IT) tests for this scenario"
+        # Deprecated no-op: kept so existing external callers (camunda/camunda,
+        # camunda/identity, camunda/connectors, …) don't fail on unknown-input.
+        # The integration test runner was removed; remove this input once
+        # downstream repos stop passing it.
+        description: "Deprecated — no-op. The --test-it runner was removed."
         required: false
         default: false
         type: boolean
+      pr-head-sha:
+        description: "PR HEAD commit SHA for recording cache results"
+        required: false
+        default: ""
+        type: string
+      camunda-version:
+        description: "Camunda version (e.g., 8.9) for cache result recording"
+        required: false
+        default: ""
+        type: string
       shortname:
         required: false
         default: "es"
@@ -201,6 +215,16 @@ on:
         required: false
         default: false
         type: boolean
+      force-image-overrides:
+        description: '⚠️ DANGER: Bypass OCI artifact immutability guard and allow image version overrides even when helmChartVersion is set. Only use if you know what you are doing.'
+        required: false
+        default: false
+        type: boolean
+      helm-version:
+        description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -214,10 +238,10 @@ permissions:
   id-token: write
   deployments: write
   packages: read
+  statuses: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
-  cancel-in-progress: true
+# No concurrency block here — cancellation is handled by each caller workflow.
+# Adding cancel-in-progress here would kill the runner's cleanup job. See #5307.
 
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
@@ -227,19 +251,9 @@ env:
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
-  TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
-  TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
-  # Camunda registry auth to access WebModeler Docker image since it's not public.
-  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
-  # OIDC.
-  ENTRA_APP_CLIENT_ID: ${{ secrets.ENTRA_APP_CLIENT_ID }}
-  ENTRA_APP_CLIENT_SECRET: ${{ secrets.ENTRA_APP_CLIENT_SECRET }}
-  ENTRA_APP_DIRECTORY_ID: ${{ secrets.ENTRA_APP_DIRECTORY_ID }}
-  ENTRA_APP_OBJECT_ID: ${{ secrets.ENTRA_APP_OBJECT_ID }}
   # Misc.
-  AWS_PROFILE: distribution
-  CLUSTER_NAME: camunda-ci-eks
+  # NOTE: AWS_PROFILE and CLUSTER_NAME are loaded from .github/config/infra.yaml
+  # by the workflow-vars action and exported to $GITHUB_ENV per-job.
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
@@ -254,7 +268,7 @@ jobs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # This is needed if the workflow is triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -267,44 +281,76 @@ jobs:
         id: generate-workflow-matrix
         env:
           CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
-          # Use GH env to safly load JSON matrix input.
+          # Use GH env to safely load JSON matrix input.
           CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
+          CI_PLATFORMS: "${{ inputs.platforms }}"
+          CI_FLOWS: "${{ inputs.flows }}"
         run: |
-          # TODO: Find a better way to handle GitHub Actions expressions substitution.
-          # Substitute vars.
-          export INPUTS_PLATFORMS_GKE=${{ contains(inputs.platforms, 'gke') }}
-          export INPUTS_PLATFORMS_EKS=${{ contains(inputs.platforms, 'eks') }}
-          export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
-          # Split flows string and check exact matches to avoid substring collisions
-          export INPUTS_FLOWS="${{ inputs.flows }}"
-          # Convert comma-separated list to array (no trimming)
-          IFS=',' read -r -a CI_FLOWS_ARR <<< "$INPUTS_FLOWS"
+          # Build yq select expressions from comma-separated platform and flow inputs.
+          # This replaces the previous envsubst + exclude hack, which silently turned
+          # unset variables into empty strings and relied on a non-standard 'if' field.
 
-          # Helper to check if array contains a value
-          flow_has() {
-            local needle="$1"
-            for f in "${CI_FLOWS_ARR[@]}"; do
-              if [[ "$f" == "$needle" ]]; then
-                return 0
-              fi
-            done
-            return 1
-          }
+          # Lowercase inputs so callers passing e.g. "GKE" or "Install" still match
+          # the canonical lowercase keys in test-integration-matrix.yaml.
+          CI_PLATFORMS="${CI_PLATFORMS,,}"
+          CI_FLOWS="${CI_FLOWS,,}"
 
-          # Set flow flags
-          export INPUTS_FLOWS_INSTALL=$(flow_has "install" && echo true || echo false)
-          export INPUTS_FLOWS_UPGRADE_PATCH=$(flow_has "upgrade-patch" && echo true || echo false)
-          export INPUTS_FLOWS_UPGRADE_MINOR=$(flow_has "upgrade-minor" && echo true || echo false)
-          export INPUTS_FLOWS_MODULAR_UPGRADE_MINOR=$(flow_has "modular-upgrade-minor" && echo true || echo false)
+          # Build platform filter: ".platform == \"gke\" or .platform == \"eks\""
+          platform_expr=""
+          IFS=',' read -r -a platforms_arr <<< "${CI_PLATFORMS}"
+          for p in "${platforms_arr[@]}"; do
+            [ -n "$platform_expr" ] && platform_expr="${platform_expr} or "
+            platform_expr="${platform_expr}.platform == \"${p}\""
+          done
 
-          cat "${CI_MATRIX_FILE}" | envsubst | tee /tmp/matrix.yaml
+          # Build flow filter: ".flow == \"install\" or .flow == \"upgrade-patch\""
+          flow_expr=""
+          IFS=',' read -r -a flows_arr <<< "${CI_FLOWS}"
+          for f in "${flows_arr[@]}"; do
+            [ -n "$flow_expr" ] && flow_expr="${flow_expr} or "
+            flow_expr="${flow_expr}.flow == \"${f}\""
+          done
+
+          # Filter distro and scenario entries using yq select(); no envsubst or exclude needed.
+          yq ".matrix.distro |= map(select(${platform_expr})) | .matrix.scenario |= map(select(${flow_expr}))" \
+            "${CI_MATRIX_FILE}" | tee /tmp/matrix.yaml
+
           # Read matrix YAML file.
           matrix_default="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
           matrix="${CI_MATRIX_INPUT:-${matrix_default}}"
-          echo "\n"
+          echo ""
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
+
+      - name: Restore deploy-camunda binary
+        id: binary-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ~/.local/bin/deploy-camunda
+          key: deploy-camunda-v2-${{ runner.os }}-${{ hashFiles('scripts/deploy-camunda/**/*.go', 'scripts/deploy-camunda/go.sum') }}
+      - name: Setup Go
+        if: steps.binary-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: scripts/deploy-camunda/go.mod
+          cache: true
+          cache-dependency-path: scripts/deploy-camunda/go.sum
+      - name: Build deploy-camunda
+        if: steps.binary-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          # CGO_ENABLED=0 produces a static binary so it runs unchanged inside the
+          # ci-runner container used by downstream matrix jobs.
+          (cd scripts/deploy-camunda && CGO_ENABLED=0 go build -o "$HOME/.local/bin/deploy-camunda" .)
+      - name: Upload deploy-camunda binary
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: deploy-camunda-binary-${{ inputs.identifier }}
+          path: ~/.local/bin/deploy-camunda
+          if-no-files-found: error
+          retention-days: 1
 
   # The runner job is used to run the install/upgrade flows on the plaform (gke, rosa, etc.). This level of abstraction is needed so
   # we can shard the tests across multiple jobs (this is done via the matrix). If the tests where another job in this workflow, we
@@ -319,6 +365,7 @@ jobs:
       id-token: write
       deployments: write
       packages: read
+      statuses: write
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -327,6 +374,7 @@ jobs:
       auth: ${{ inputs.auth }}
       exclude: ${{ inputs.exclude }}
       identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
+      binary-artifact-name: deploy-camunda-binary-${{ inputs.identifier }}
       camunda-helm-repo: ${{ inputs.camunda-helm-repo }}
       camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
       camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
@@ -360,10 +408,12 @@ jobs:
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
       skip-e2e: ${{ inputs.skip-e2e }}
-      skip-it: ${{ inputs.skip-it }}
+      pr-head-sha: ${{ inputs.pr-head-sha }}
+      camunda-version: ${{ inputs.camunda-version }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
+      helm-version: ${{ inputs.helm-version }}
       shortname: ${{ inputs.shortname }}
       teleport-token: ${{ inputs.teleport-token }}
       namespace-prefix: ${{ inputs.namespace-prefix }}
@@ -373,6 +423,7 @@ jobs:
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
       initialClaimValue: ${{ inputs.initialClaimValue }}
       include-image-tags: ${{ inputs.include-image-tags }}
+      force-image-overrides: ${{ inputs.force-image-overrides }}
   print-outputs:
     name: Print outputs
     runs-on: ubuntu-latest
@@ -382,7 +433,7 @@ jobs:
       namespace: ${{ needs.runner.outputs.namespace }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -396,7 +447,6 @@ jobs:
           setup-flow: install
           platform: ${{ inputs.platforms }}
           identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
-          ingress-hostname-base: ci.distro.ultrawombat.com
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}

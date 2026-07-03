@@ -93,9 +93,6 @@ func Deploy(ctx context.Context, o types.Options) error {
 		if err := applyIntegrationTestCredentials(ctx, kubeClient, o.Namespace); err != nil {
 			return err
 		}
-		if err := applyInfraTestCredentials(ctx, kubeClient, o.Namespace); err != nil {
-			return err
-		}
 	}
 
 	if o.VaultSecretPath != "" {
@@ -114,6 +111,22 @@ func Deploy(ctx context.Context, o types.Options) error {
 	for i, hook := range o.PreInstallHooks {
 		if err := hook(ctx); err != nil {
 			return fmt.Errorf("pre-install hook [%d] failed: %w", i, err)
+		}
+	}
+
+	// Deploy companion charts before the post-infra hooks and main chart.
+	// deployCompanionCharts blocks until all companions are ready.
+	if err := deployCompanionCharts(ctx, o); err != nil {
+		return err
+	}
+
+	// Run post-infra hooks after the companion charts (external infrastructure)
+	// are deployed and ready, but before the main Camunda chart. This is the
+	// point to act on freshly-provisioned infrastructure — e.g. migrating data
+	// from a prior release's bundled backends onto the companion services.
+	for i, hook := range o.PostInfraHooks {
+		if err := hook(ctx); err != nil {
+			return fmt.Errorf("post-infra hook [%d] failed: %w", i, err)
 		}
 	}
 

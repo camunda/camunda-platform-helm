@@ -35,11 +35,19 @@ identity:
   externalDatabase:
     enabled: false
 
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 120
+
 connectors:
   env:
     - name: username
       value: username
     - name: password
-      value: password
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: password
     - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
       value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"

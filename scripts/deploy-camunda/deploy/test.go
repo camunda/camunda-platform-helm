@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -33,33 +34,34 @@ func (e *TestError) Unwrap() error {
 
 // TestResult holds the result of a test execution.
 type TestResult struct {
-	Type   string // "integration" or "e2e"
+	Type   string // "e2e"
 	Error  error
 	Output string // Captured stdout+stderr from the test script.
 }
 
 // RunTests executes tests after deployment based on flags.
-// Tests are run in parallel if both --test-it and --test-e2e (or --test-all) are specified.
 //
 // On failure, the returned error is a *TestError containing the captured output
 // from the test scripts. Callers can use errors.As to extract it.
 func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string) error {
-	runIT := flags.Test.RunIntegrationTests || flags.Test.RunAllTests
 	runE2E := flags.Test.RunE2ETests || flags.Test.RunAllTests
 
-	if !runIT && !runE2E {
+	if !runE2E {
 		return nil
 	}
 
+	if flags.OnPhase != nil {
+		flags.OnPhase("testing")
+	}
+
 	logging.Logger.Info().
-		Bool("integrationTests", runIT).
 		Bool("e2eTests", runE2E).
 		Str("namespace", namespace).
 		Msg("Starting post-deployment tests")
 
 	// Bound total post-deployment test runtime so matrix entries cannot hang
 	// indefinitely after Helm has already completed.
-	// Keep this well above Helm timeout because integration tests (DNS + ingress
+	// Keep this well above Helm timeout because e2e tests (DNS + ingress
 	// readiness + Playwright retries) can legitimately run much longer on
 	// upgrade-minor flows for 8.9.
 	testTimeout := 30 * time.Minute
@@ -98,20 +100,11 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 	var wg sync.WaitGroup
 	resultCh := make(chan TestResult, 2)
 
-	if runIT {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			output, err := runIntegrationTests(testCtx, repoRoot, chartPath, namespace, flags.Deployment.Platform, flags.Test.KubeContext, flags.Test.TestExclude, flags.Auth.Auth)
-			resultCh <- TestResult{Type: "integration", Error: err, Output: output}
-		}()
-	}
-
 	if runE2E {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude)
+			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.Selection.Persistence, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
 	}
@@ -151,43 +144,8 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 	return nil
 }
 
-// runIntegrationTests executes the integration test script.
-func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude, testAuthType string) (string, error) {
-	scriptPath := filepath.Join(repoRoot, "scripts", "run-integration-tests.sh")
-
-	if _, err := os.Stat(scriptPath); err != nil {
-		return "", fmt.Errorf("integration test script not found at %s: %w", scriptPath, err)
-	}
-
-	logging.Logger.Info().
-		Str("script", scriptPath).
-		Str("chartPath", chartPath).
-		Str("namespace", namespace).
-		Str("platform", platform).
-		Str("kubeContext", kubeContext).
-		Msg("Running integration tests")
-
-	args := []string{
-		"--absolute-chart-path", chartPath,
-		"--namespace", namespace,
-		"--platform", platform,
-	}
-
-	if kubeContext != "" {
-		args = append(args, "--kube-context", kubeContext)
-	}
-	if testExclude != "" {
-		args = append(args, "--test-exclude", testExclude)
-	}
-	if testAuthType != "" {
-		args = append(args, "--test-auth-type", testAuthType)
-	}
-
-	return executeScript(ctx, scriptPath, args, "integration")
-}
-
 // runE2ETests executes the e2e test script.
-func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude string) (string, error) {
+func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude, persistence string, outputSink io.Writer) (string, error) {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-e2e-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
@@ -199,12 +157,20 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 		Str("chartPath", chartPath).
 		Str("namespace", namespace).
 		Str("kubeContext", kubeContext).
+		Str("persistence", persistence).
 		Msg("Running e2e tests")
 
 	args := []string{
 		"--absolute-chart-path", chartPath,
 		"--namespace", namespace,
-		"--run-smoke-tests",
+	}
+
+	// For chart versions < 8.10, run only the smoke-tests project.
+	// 8.10+ runs the full-suite project (the script's default) which
+	// exercises the full E2E suite with proper exclusions configured
+	// in the chart's playwright.config.ts.
+	if !isFullSuiteChart(chartPath) {
+		args = append(args, "--run-smoke-tests")
 	}
 
 	if kubeContext != "" {
@@ -213,15 +179,43 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 	if testExclude != "" {
 		args = append(args, "--test-exclude", testExclude)
 	}
+	if strings.Contains(persistence, "opensearch") {
+		args = append(args, "--opensearch")
+	}
 
-	return executeScript(ctx, scriptPath, args, "e2e")
+	return executeScript(ctx, scriptPath, args, "e2e", outputSink)
+}
+
+// isFullSuiteChart returns true if the chart path indicates version 8.10 or
+// later, which should run the full E2E suite instead of just smoke tests.
+// Chart directories follow the naming pattern "camunda-platform-8.<minor>".
+func isFullSuiteChart(chartPath string) bool {
+	base := filepath.Base(chartPath)
+	const prefix = "camunda-platform-8."
+	idx := strings.Index(base, prefix)
+	if idx < 0 {
+		return false
+	}
+	minorStr := base[idx+len(prefix):]
+	// Trim any non-digit suffix (e.g., "-alpha1")
+	for i, c := range minorStr {
+		if c < '0' || c > '9' {
+			minorStr = minorStr[:i]
+			break
+		}
+	}
+	minor, err := strconv.Atoi(minorStr)
+	if err != nil {
+		return false
+	}
+	return minor >= 10
 }
 
 // executeScript runs a shell script with the given arguments and returns the
 // captured combined output alongside any error.
 //
-// Output is tee'd: it streams to os.Stdout/os.Stderr in real time (so the user
-// sees live progress) and is simultaneously captured into a buffer. The buffer
+// Output is tee'd: it streams to the provided outputSink (or os.Stdout/os.Stderr
+// when nil) in real time and is simultaneously captured into a buffer. The buffer
 // contents are returned so callers can include them in diagnostics on failure.
 //
 // The subprocess is placed in its own process group (Setpgid) so that when
@@ -232,12 +226,19 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 // Without this, exec.CommandContext sends os.Kill (SIGKILL) only to the
 // direct child PID, and any grandchild processes (npx, playwright, tee, etc.)
 // continue running until they finish or the terminal is closed.
-func executeScript(ctx context.Context, scriptPath string, args []string, testType string) (string, error) {
+func executeScript(ctx context.Context, scriptPath string, args []string, testType string, outputSink io.Writer) (string, error) {
 	var buf bytes.Buffer
 
+	stdoutW := io.Writer(os.Stdout)
+	stderrW := io.Writer(os.Stderr)
+	if outputSink != nil {
+		stdoutW = outputSink
+		stderrW = outputSink
+	}
+
 	cmd := exec.CommandContext(ctx, scriptPath, args...)
-	cmd.Stdout = io.MultiWriter(os.Stdout, &buf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &buf)
+	cmd.Stdout = io.MultiWriter(stdoutW, &buf)
+	cmd.Stderr = io.MultiWriter(stderrW, &buf)
 	cmd.Env = os.Environ()
 	// If context cancellation does not terminate children promptly, force-kill
 	// after a short grace period to prevent hung matrix entries.
@@ -315,7 +316,7 @@ func findRepoRoot(chartPath string) string {
 		}
 
 		// Check for scripts directory (specific to this repo)
-		if _, err := os.Stat(filepath.Join(dir, "scripts", "run-integration-tests.sh")); err == nil {
+		if _, err := os.Stat(filepath.Join(dir, "scripts", "run-e2e-tests.sh")); err == nil {
 			return dir
 		}
 

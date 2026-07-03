@@ -6,41 +6,39 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9-SNAPSHOT
-    digest: "sha256:3d8be0298a1221c3934c9016c08de5bdde9b5528673f1585565fa5b4930c6d09"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:40d43e46918e7fd2e1ab824018b11288fedadc1698712367fdd63fb13a87fc49"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: SNAPSHOT
-    digest: "sha256:291cdaa212c4f1896f93662de42200dace938cda8b294baeefb45ce9ca26211e"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:dd1926f820c9fc7ab9a1c36c889317b0f956e723129545c2de122f5157ea5ff1"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8-SNAPSHOT
-    digest: "sha256:d1a9b20d3e76ea8fe20dee8a8f5070db700fb17509d2c368dfe274a3df00f89a"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:ccc73bd4eaef0d00386effcd0ae9b663c57c560a2824df5b36027d7ca93309a8"
 
 #
 # Web Modeler
 #
 
 webModeler:
-  # https://hub.docker.com/r/camunda/web-modeler-restapi/tags
+  # https://hub.docker.com/r/camunda/hub/tags
   restapi:
     image:
-      repository: camunda/web-modeler-restapi
+      repository: camunda/hub
       tag: SNAPSHOT
-      digest: "sha256:0da13c4a30ea3e1715403ce5a55369b79674c82f0110ae1f1b53600c6e9f0b57"
 
-  # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
+  # https://hub.docker.com/r/camunda/hub-websockets/tags
   websockets:
     image:
-      repository: camunda/web-modeler-websockets
+      repository: camunda/hub-websockets
       tag: SNAPSHOT
-      digest: "sha256:33e4a3d8f0eafffde441b87da78d3dba986498db7a16cc425dd3c10713109b41"
 
 #
 # Orchestration Cluster
@@ -50,8 +48,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: SNAPSHOT
-    digest: "sha256:478a65d17de63333c282716b561722c876d357ed6a184154b4d269adc04641c2"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:d744c40133d86d364aa30fd14a7b69968c95aa3479256bb0a4771be0f714a651"
 
 #
 # Identity
@@ -62,4 +60,4 @@ identity:
   image:
     repository: camunda/identity
     tag: SNAPSHOT
-    digest: "sha256:412cbc203c8b1a994e1348ed6acb11c5c81b71112fe4cf72d23909c696e89780"
+    digest: "sha256:4e1e44e740bd5c15b3c1b5fe3dc375bd38681d71354dcff22f89a2ef099e0882"

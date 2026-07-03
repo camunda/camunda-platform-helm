@@ -531,6 +531,39 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	}
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOrchestrationGrpcTlsIsEnabled() {
+	values := map[string]string{
+		"identity.enabled":                              "true",
+		"webModelerPostgresql.enabled":                  "false",
+		"global.zeebeClusterName":                       "test-zeebe",
+		"global.ingress.enabled":                        "true",
+		"global.ingress.tls.enabled":                    "true",
+		"global.ingress.host":                           "example.com",
+		"orchestration.contextPath":                     "/orchestration",
+		"orchestration.data.secondaryStorage.type":      "elasticsearch",
+		"orchestration.service.grpcPort":                "26600",
+		"orchestration.service.httpPort":                "8090",
+		"orchestration.security.authorizations.enabled": "false",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		ValuesFiles:    []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-orchestration-grpc-tls.yaml")},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	require.NoError(s.T(), err)
+
+	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
 	// given
 	values := map[string]string{
@@ -965,6 +998,96 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 
 				// Verify literal host values still work (backward compatibility)
 				s.Require().Equal("literal.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host, "Pusher host should contain literal host")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraConfigWithSpringImportDefault",
+			Values: map[string]string{
+				"identity.enabled":                                 "true",
+				"webModeler.enabled":                               "true",
+				"webModeler.restapi.mail.fromAddress":              "example@example.com",
+				"webModeler.restapi.extraConfiguration[0].file":    "custom-spring.yaml",
+				"webModeler.restapi.extraConfiguration[0].content": "some: config",
+				"global.elasticsearch.enabled":                     "true",
+				"elasticsearch.enabled":                            "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should include the file
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				// File content should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"File content should be present in ConfigMap")
+			},
+		},
+		{
+			Name: "TestExtraConfigWithSpringImportFalse",
+			Values: map[string]string{
+				"identity.enabled":                                      "true",
+				"webModeler.enabled":                                    "true",
+				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
+				"webModeler.restapi.extraConfiguration[0].file":         "log4j2-spring.xml",
+				"webModeler.restapi.extraConfiguration[0].springImport": "false",
+				"webModeler.restapi.extraConfiguration[0].content":      "<Configuration/>",
+				"global.elasticsearch.enabled":                          "true",
+				"elasticsearch.enabled":                                 "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should NOT include the file
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// spring.config.import block should not be rendered
+				s.Require().NotContains(applicationYaml, "optional:file:",
+					"spring.config.import block should not be rendered when all entries have springImport: false")
+				// File content should still be in ConfigMap
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"File content should be present in ConfigMap even with springImport: false")
+			},
+		},
+		{
+			Name: "TestExtraConfigMixedSpringImport",
+			Values: map[string]string{
+				"identity.enabled":                                      "true",
+				"webModeler.enabled":                                    "true",
+				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
+				"webModeler.restapi.extraConfiguration[0].file":         "custom-spring.yaml",
+				"webModeler.restapi.extraConfiguration[0].content":      "some: config",
+				"webModeler.restapi.extraConfiguration[1].file":         "log4j2-spring.xml",
+				"webModeler.restapi.extraConfiguration[1].springImport": "false",
+				"webModeler.restapi.extraConfiguration[1].content":      "<Configuration/>",
+				"global.elasticsearch.enabled":                          "true",
+				"elasticsearch.enabled":                                 "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// Only custom-spring.yaml should be in spring.config.import
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// Both files should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"First file content should be present in ConfigMap")
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"Second file content should be present in ConfigMap even with springImport: false")
 			},
 		},
 	}

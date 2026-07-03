@@ -83,7 +83,7 @@ jobs:
       chart-matrix: ${{ steps.matrix.outputs.chart-matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
 
@@ -157,13 +157,13 @@ jobs:
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
 
       - name: Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -172,7 +172,7 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
-          exportEnv: true
+          exportEnv: false
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -180,15 +180,19 @@ jobs:
           tools: |
             git-cliff
             golang
-            gomplate
             helm
             oras
             yq
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
-      - name: Build values-injector
+      - name: Build release-tools
+        run: |
+          cd $(git rev-parse --show-toplevel)/scripts/release-tools
+          go build -o /tmp/release-tools .
+
+      - name: Inject image-tag overrides into values.yaml
         env:
           CONSOLE_IMAGE_TAG: ${{ inputs.console-image-tag }}
           CONNECTORS_IMAGE_TAG: ${{ inputs.connectors-image-tag }}
@@ -203,22 +207,15 @@ jobs:
           CHART_VERSION: ${{ matrix.chart.version }}
         run: |
           cd $(git rev-parse --show-toplevel)
-          cd scripts/values-injector
-          go build
-          cd $(git rev-parse --show-toplevel)
-          ./scripts/values-injector/values-injector
+          /tmp/release-tools inject-values
 
       - name: Login to Harbor registry
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
-          echo "${HARBOR_REGISTRY_PASSWORD}" | \
-            helm registry login "${HARBOR_REGISTRY_HOST}" \
-              -u "${HARBOR_REGISTRY_USER}" \
-              --password-stdin
-
-          echo "${HARBOR_REGISTRY_PASSWORD}" | \
-            cosign login "${HARBOR_REGISTRY_HOST}" \
-              -u "${HARBOR_REGISTRY_USER}" \
-              --password-stdin
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
 
       - name: Set version vars
         id: vars
@@ -249,36 +246,8 @@ jobs:
           CURRENT_VERSION=$(yq '.version' Chart.yaml)
           echo "Current version: ${CURRENT_VERSION}"
 
-          # Check if current version is a prerelease (alpha, beta, rc)
-          IS_PRERELEASE=false
-          if [[ "${CURRENT_VERSION}" =~ -(alpha|beta|rc)([0-9]+)$ ]]; then
-            PRERELEASE_TYPE="${BASH_REMATCH[1]}"
-            PRERELEASE_NUM="${BASH_REMATCH[2]}"
-            BASE_VERSION="${CURRENT_VERSION%%-*}"
-
-            # Cross-reference chart-versions.yaml to detect alpha-to-stable transition.
-            # If Chart.yaml has an alpha suffix but the chart is no longer listed under
-            # alpha in chart-versions.yaml, this is the first stable release: strip the
-            # prerelease suffix instead of incrementing it.
-            CHART_VERSIONS_FILE="$(git rev-parse --show-toplevel)/charts/chart-versions.yaml"
-            IS_STILL_ALPHA=$(yq ".camundaVersions.alpha[] | select(. == \"${{ matrix.chart.version }}\")" "${CHART_VERSIONS_FILE}")
-
-            if [[ -n "${IS_STILL_ALPHA}" ]]; then
-              IS_PRERELEASE=true
-              NEXT_PRERELEASE_NUM=$((PRERELEASE_NUM + 1))
-              RELEASE_VERSION="${BASE_VERSION}-${PRERELEASE_TYPE}${NEXT_PRERELEASE_NUM}"
-              echo "Prerelease detected: ${PRERELEASE_TYPE}${PRERELEASE_NUM} -> ${PRERELEASE_TYPE}${NEXT_PRERELEASE_NUM}"
-            else
-              RELEASE_VERSION="${BASE_VERSION}"
-              echo "Alpha-to-stable transition detected: ${CURRENT_VERSION} -> ${RELEASE_VERSION}"
-            fi
-
-            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
-            echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
-            echo "::notice::Computed version: ${RELEASE_VERSION}"
-          fi
-
-          # Run release-please dry-run to get changelog annotations
+          # Run release-please dry-run; its trace is scraped for the next stable
+          # version. (Orchestration stays in the workflow.)
           cd ../..
           release-please release-pr \
             --token="${GITHUB_TOKEN}" \
@@ -291,91 +260,68 @@ jobs:
             --trace 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
           cd ${{ matrix.chart.directory }}
 
-          # For stable releases, extract version from release-please output
-          if [[ "${IS_PRERELEASE}" != "true" ]]; then
-            RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
-            if [[ -z "${RELEASE_VERSION}" ]]; then
-              RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
-            fi
-            if [[ -z "${RELEASE_VERSION}" ]]; then
-              echo "::warning::Could not determine release version from release-please dry-run"
-              echo "RELEASE_VERSION_COMPUTED=false" >> $GITHUB_ENV
-            else
-              echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
-              echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
-              echo "::notice::Computed release version: ${RELEASE_VERSION}"
-            fi
-          fi
-
-          # Set dev tag version: {release-version}-dev-{sha}
-          if [[ "${RELEASE_VERSION_COMPUTED}" == "true" || -n "${RELEASE_VERSION}" ]]; then
-            DEV_TAG="${RELEASE_VERSION}-dev-${SHORT_SHA}"
-          else
-            # Fallback to current version if release-please couldn't compute
-            DEV_TAG="${CURRENT_VERSION}-dev-${SHORT_SHA}"
-            RELEASE_VERSION="${CURRENT_VERSION}"
-            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
-          fi
-          echo "DEV_TAG=${DEV_TAG}" | tee -a $GITHUB_ENV
-
-          # Extract chart major version for rolling tag (e.g., 13.4.0 -> 13)
-          CHART_MAJOR_VERSION="${RELEASE_VERSION%%.*}"
-          echo "CHART_MAJOR_VERSION=${CHART_MAJOR_VERSION}" | tee -a $GITHUB_ENV
-          echo "::notice::Dev tag: ${DEV_TAG}, Rolling tag: ${CHART_MAJOR_VERSION}-dev-latest"
+          # Derive the release version (prerelease bump / alpha→stable / scraped
+          # from the release-please trace, falling back to the current version)
+          # and emit RELEASE_VERSION, IS_PRERELEASE, RELEASE_VERSION_COMPUTED,
+          # DEV_TAG and CHART_MAJOR_VERSION to $GITHUB_ENV.
+          # --fail-if-released (dispatch only): error if the computed version
+          # already has a release tag, blocking a rebuild over a published release.
+          /tmp/release-tools release-version \
+            --current-version "${CURRENT_VERSION}" \
+            --chart-version "${{ matrix.chart.version }}" \
+            --chart-versions-file "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml" \
+            --chart-dir "${{ matrix.chart.directory }}" \
+            --short-sha "${SHORT_SHA}" \
+            --trace-file release-please-trace.log \
+            --fail-if-released=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Check for image override inputs
         id: check-overrides
         run: |
-          # Detect if any image override inputs were provided via workflow_dispatch
-          # When overrides are present, we must rebuild even if artifact exists
-          HAS_IMAGE_OVERRIDES=false
-          OVERRIDES_YAML=""
-
-          declare -A OVERRIDE_INPUTS=(
-            ["orchestration"]="${{ inputs.orchestration-image-tag }}"
-            ["zeebe"]="${{ inputs.zeebe-image-tag }}"
-            ["zeebe-gateway"]="${{ inputs.zeebe-gateway-image-tag }}"
-            ["operate"]="${{ inputs.operate-image-tag }}"
-            ["tasklist"]="${{ inputs.tasklist-image-tag }}"
-            ["console"]="${{ inputs.console-image-tag }}"
-            ["modeler"]="${{ inputs.modeler-image-tag }}"
-            ["connectors"]="${{ inputs.connectors-image-tag }}"
-            ["optimize"]="${{ inputs.optimize-image-tag }}"
-            ["identity"]="${{ inputs.identity-image-tag }}"
-          )
-
-          for key in "${!OVERRIDE_INPUTS[@]}"; do
-            value="${OVERRIDE_INPUTS[$key]}"
-            if [[ -n "${value}" ]]; then
-              HAS_IMAGE_OVERRIDES=true
-              OVERRIDES_YAML+="${key}: ${value}\n"
-            fi
-          done
-
-          echo "HAS_IMAGE_OVERRIDES=${HAS_IMAGE_OVERRIDES}" | tee -a $GITHUB_ENV
-
-          if [[ "${HAS_IMAGE_OVERRIDES}" == "true" ]]; then
-            echo -e "${OVERRIDES_YAML}" > /tmp/image-overrides.yaml
-            echo "::notice::Image override inputs detected - will force rebuild if artifact exists"
-            echo "Overrides:"
-            cat /tmp/image-overrides.yaml
-          fi
+          # Collect the *-image-tag override inputs: sets HAS_IMAGE_OVERRIDES in
+          # $GITHUB_ENV and, when any are set, writes /tmp/image-overrides.yaml
+          # for the imageOverrides annotation. Their presence forces a rebuild
+          # even when the artifact already exists.
+          /tmp/release-tools image-overrides \
+            --orchestration "${{ inputs.orchestration-image-tag }}" \
+            --zeebe "${{ inputs.zeebe-image-tag }}" \
+            --zeebe-gateway "${{ inputs.zeebe-gateway-image-tag }}" \
+            --operate "${{ inputs.operate-image-tag }}" \
+            --tasklist "${{ inputs.tasklist-image-tag }}" \
+            --console "${{ inputs.console-image-tag }}" \
+            --modeler "${{ inputs.modeler-image-tag }}" \
+            --connectors "${{ inputs.connectors-image-tag }}" \
+            --optimize "${{ inputs.optimize-image-tag }}" \
+            --identity "${{ inputs.identity-image-tag }}" \
+            --out /tmp/image-overrides.yaml
 
       - name: Check if artifact already exists
         id: check-artifact
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+
           # Dev packages are immutable - skip if already exists
           # Exception: when image overrides are provided, delete and rebuild
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
-          # Use --destination /tmp to avoid polluting the chart directory with downloaded .tgz
-          helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
-            --version "${DEV_TAG}" --destination /tmp 2>/dev/null && EXIT_CODE=0 || EXIT_CODE=1
 
-          if [[ ${EXIT_CODE} -eq 0 ]]; then
+          # Retry helm pull with re-auth to avoid misinterpreting transient 401 as "not found"
+          # harbor_helm_pull returns: 0=found, 1=not-found/other non-auth error, 2=persistent auth failure
+          PULL_RC=0
+          harbor_helm_pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
+            --version "${DEV_TAG}" --destination /tmp || PULL_RC=$?
+          if [[ ${PULL_RC} -eq 2 ]]; then
+            echo "::error::Harbor auth failure checking artifact existence"
+            exit 1
+          fi
+
+          if [[ ${PULL_RC} -eq 0 ]]; then
             if [[ "${HAS_IMAGE_OVERRIDES}" == "true" ]]; then
               # Image overrides provided - delete existing artifact to allow rebuild
               echo "::notice::Dev package ${DEV_TAG} exists but image overrides provided - deleting to rebuild"
-              curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              harbor_curl \
                 -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DEV_TAG}/tags/${DEV_TAG}" || true
               echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
             else
@@ -386,46 +332,27 @@ jobs:
             echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
           fi
 
-      - name: Apply Chart.yaml version and changelog from release-please
+      - name: Apply Chart.yaml version from release-please
         if: env.SKIP_BUILD == 'false' && env.RELEASE_VERSION_COMPUTED == 'true'
         run: |
-          # Extract the Chart.yaml diff from trace output and apply it
-          # The trace contains unified diff format for each file
-
-          echo "Applying release-please computed changes to Chart.yaml..."
+          echo "Applying release-please computed version to Chart.yaml..."
           echo "Release version: ${RELEASE_VERSION}"
 
           # Update the version field
           yq -i ".version = \"${RELEASE_VERSION}\"" Chart.yaml
 
-          # Extract and apply the artifacthub.io/changes annotation from trace
-          # The trace output contains the full YAML block for the annotation
-
-          # Parse the changelog entries from trace output
-          # Look for lines between artifacthub.io/changes and the next annotation or end of annotations
-          CHANGELOG_YAML=$(awk '
-            /^\+.*artifacthub.io\/changes:/ { capture=1; next }
-            capture && /^\+/ {
-              line=$0
-              sub(/^\+[ ]*/, "", line)
-              print line
-            }
-            capture && !/^\+/ { capture=0 }
-          ' release-please-trace.log)
-
-          if [[ -n "${CHANGELOG_YAML}" ]]; then
-            echo "Extracted changelog annotations:"
-            echo "${CHANGELOG_YAML}"
-
-            # Create a temp file with the changelog YAML
-            echo "${CHANGELOG_YAML}" > /tmp/changelog.yaml
-
-            # Update the annotation in Chart.yaml
-            yq -i '.annotations."artifacthub.io/changes" = load_str("/tmp/changelog.yaml")' Chart.yaml
-            echo "Applied artifacthub.io/changes annotations"
-          else
-            echo "::warning::Could not extract changelog annotations from trace output"
+          # Remove prerelease annotation for stable releases.
+          # During alpha-to-stable transitions the source Chart.yaml may still
+          # carry artifacthub.io/prerelease: "true". Strip it so Artifact Hub
+          # does not label the GA chart as a pre-release.
+          if [[ "${IS_PRERELEASE}" != "true" ]]; then
+            yq -i 'del(.annotations."artifacthub.io/prerelease")' Chart.yaml
+            echo "Removed artifacthub.io/prerelease annotation (stable release)"
           fi
+
+          # The artifacthub.io/changes annotation is intentionally NOT set here:
+          # the later "Generate RELEASE-NOTES.md" step (release-notes --main, via
+          # git-cliff) sets it unconditionally, so setting it here is redundant.
 
           echo "Updated Chart.yaml:"
           head -50 Chart.yaml
@@ -433,45 +360,12 @@ jobs:
       - name: Add component image versions to Chart.yaml annotations
         if: env.SKIP_BUILD == 'false'
         run: |
-          # Extract image tags from values.yaml and add as Chart.yaml annotation
-          # This makes the artifact self-documenting with exact component versions
-
-          get_tag() {
-            local path=$1
-            yq -r "${path} // \"N/A\"" values.yaml
-          }
-
-          # Version-specific components (order matches workflow summary)
-          CAMUNDA_MINOR=$(echo "${{ env.CAMUNDA_VERSION }}" | sed 's/^8\.//')
-
-          if [[ ${CAMUNDA_MINOR} -ge 8 ]]; then
-            # 8.8+ orchestration architecture
-            IMAGE_VERSIONS=$(cat << YAML
-          camunda: $(get_tag '.orchestration.image.tag')
-          managementIdentity: $(get_tag '.identity.image.tag')
-          optimize: $(get_tag '.optimize.image.tag')
-          webModeler: $(get_tag '.webModeler.image.tag')
-          connectors: $(get_tag '.connectors.image.tag')
-          console: $(get_tag '.console.image.tag')
-          YAML
-            )
-          else
-            # 8.6-8.7 classic architecture
-            IMAGE_VERSIONS=$(cat << YAML
-          zeebe: $(get_tag '.zeebe.image.tag')
-          operate: $(get_tag '.operate.image.tag')
-          tasklist: $(get_tag '.tasklist.image.tag')
-          identity: $(get_tag '.identity.image.tag')
-          optimize: $(get_tag '.optimize.image.tag')
-          webModeler: $(get_tag '.webModeler.image.tag')
-          connectors: $(get_tag '.connectors.image.tag')
-          console: $(get_tag '.console.image.tag')
-          YAML
-            )
-          fi
-
-          # Write to temp file and add annotation
-          echo "${IMAGE_VERSIONS}" > /tmp/image-versions.yaml
+          # Record each component's image tag (read from values.yaml) as the
+          # camunda.io/component-image-versions Chart.yaml annotation. The
+          # component set differs by version (8.8+ orchestration vs 8.6-8.7 classic).
+          /tmp/release-tools component-image-versions \
+            --chart-dir "$(pwd)" --camunda-version "${{ env.CAMUNDA_VERSION }}" \
+            > /tmp/image-versions.yaml
           yq -i '.annotations."camunda.io/component-image-versions" = load_str("/tmp/image-versions.yaml")' Chart.yaml
 
           echo "Added camunda.io/component-image-versions annotation:"
@@ -536,6 +430,17 @@ jobs:
           make -C ../.. helm.dependency-update \
             chartPath=${{ matrix.chart.directory }}
 
+      - name: Record chart-images annotation
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          # Record the full image set (components + bundled subcharts), read from
+          # values.yaml, as the camunda.io/chart-images annotation. Runs after the
+          # dependency update so the vendored subchart values are present to read.
+          /tmp/release-tools chart-images --chart-dir "$(pwd)" > /tmp/chart-images.txt
+          yq -i '.annotations."camunda.io/chart-images" = load_str("/tmp/chart-images.txt")' Chart.yaml
+          echo "Added camunda.io/chart-images annotation:"
+          yq '.annotations."camunda.io/chart-images"' Chart.yaml
+
       #
       # Generate release notes
       #
@@ -545,9 +450,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Generate release notes using the same script as the release process
-          bash scripts/generate-release-notes.sh --main ${{ matrix.chart.directory }}
-          bash scripts/generate-release-notes.sh --footer ${{ matrix.chart.directory }}
+          # --main: RELEASE-NOTES.md (git-cliff changelog) + the helmCLIVersion
+          # and artifacthub.io/changes Chart.yaml annotations.
+          # --footer: append the version-matrix block.
+          /tmp/release-tools release-notes --main ${{ matrix.chart.directory }}
+          /tmp/release-tools release-notes --footer ${{ matrix.chart.directory }}
 
           # Verify release notes contain actual version matrix content 
           if ! grep -q "Camunda images:" "${{ matrix.chart.directory }}/RELEASE-NOTES.md"; then
@@ -587,13 +494,18 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
 
           # helm push creates OCI tag from Chart.yaml version (the release version)
           # We need to retag to our dev tag and add rolling tag
-          helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
-          blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
+
+          # helm push with retry and re-auth (most common 401 failure point)
+          harbor_retry "helm push" helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
+
           cosign sign-blob -y ${HELM_PACKAGE} \
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
 
@@ -602,7 +514,9 @@ jobs:
 
           cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq
 
-          rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
+          # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex;
+          # old format uses .rekorBundle.Payload.logIndex. Try both.
+          rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"')"
           echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
 
           cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
@@ -633,7 +547,9 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-          oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
+          # oras push with retry and re-auth
+          harbor_retry "oras push" \
+            oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
@@ -641,36 +557,30 @@ jobs:
 
           # Get the digest for API operations
           DIGEST=$(helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" --version "${PUSHED_TAG}" 2>&1 | grep -oP 'Digest: \K[^\s]+' || \
-            curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${PUSHED_TAG}" | jq -r '.digest')
+            harbor_curl "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${PUSHED_TAG}" | jq -r '.digest')
           echo "Artifact digest: ${DIGEST}"
 
-          # Harbor API base URL for this artifact
-          HARBOR_API="https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DIGEST}/tags"
+          # helm push created the artifact under the release-version tag. Retag it
+          # to the dev tag and (re)point the {major}-dev-latest rolling tag.
+          # Deletes hit the deleteTag endpoint (DELETE .../tags/{tag}) so only the
+          # tag is removed, never the shared artifact.
+          api="https://${HARBOR_REGISTRY_HOST}/api/v2.0"
+          repo="projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}"
 
           # Add dev tag: {version}-dev-{sha}
-          echo "Adding dev tag: ${DEV_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            -X POST "${HARBOR_API}" \
-            -H "Content-Type: application/json" \
-            -d "{\"name\": \"${DEV_TAG}\"}"
+          /tmp/release-tools harbor-tag add --api "$api" --repo "$repo" \
+            --digest "${DIGEST}" --tag "${DEV_TAG}"
 
-          # Delete the release version tag (we only want dev tag for now)
-          echo "Removing release version tag: ${PUSHED_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            -X DELETE "${HARBOR_API}/${PUSHED_TAG}"
+          # Delete the release version tag (we only want the dev tag for now).
+          /tmp/release-tools harbor-tag delete --api "$api" --repo "$repo" \
+            --ref "${DIGEST}" --tag "${PUSHED_TAG}"
 
-          # Add rolling tag: {chart-major}-dev-latest
+          # Move rolling tag: {chart-major}-dev-latest
           ROLLING_TAG="${CHART_MAJOR_VERSION}-dev-latest"
-          echo "Removing existing rolling tag if present: ${ROLLING_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${ROLLING_TAG}/tags/${ROLLING_TAG}" || true
-
-          echo "Adding rolling tag: ${ROLLING_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            -X POST "${HARBOR_API}" \
-            -H "Content-Type: application/json" \
-            -d "{\"name\": \"${ROLLING_TAG}\"}"
+          /tmp/release-tools harbor-tag delete --api "$api" --repo "$repo" \
+            --ref "${ROLLING_TAG}" --tag "${ROLLING_TAG}" --ignore-missing
+          /tmp/release-tools harbor-tag add --api "$api" --repo "$repo" \
+            --digest "${DIGEST}" --tag "${ROLLING_TAG}"
 
           echo "::notice::Pushed to Harbor with tags: ${DEV_TAG}, ${ROLLING_TAG}"
 
@@ -846,7 +756,7 @@ jobs:
     steps:
       - name: Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -857,7 +767,7 @@ jobs:
           exportEnv: false
       - name: Send Slack notification
         continue-on-error: true
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook

@@ -70,11 +70,11 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestSecretNotCreatedWhenExistingSecretProvided",
 			Values: map[string]string{
-				"identity.enabled":                                     "true",
-				"webModeler.enabled":                                   "true",
-				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":      "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":   "pusher-key",
+				"identity.enabled":                                   "true",
+				"webModeler.enabled":                                 "true",
+				"webModeler.restapi.mail.fromAddress":                "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":    "my-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey": "pusher-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// Secret should not be rendered when existingSecret is provided

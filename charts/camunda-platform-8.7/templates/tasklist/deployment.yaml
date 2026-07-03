@@ -83,8 +83,7 @@ spec:
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks %s" .Values.tasklist.javaOpts | trim | quote }}
+            {{- include "camunda.java_tool_options_tls_env" (dict "Values" .Values "component" "tasklist" "truststorePath" "/app/certificates/externaldb.jks") | nindent 12 }}
             {{- else if .Values.tasklist.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.tasklist.javaOpts | quote }}

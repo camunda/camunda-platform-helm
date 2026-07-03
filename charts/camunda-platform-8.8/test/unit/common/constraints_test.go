@@ -52,13 +52,13 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestExistingSecretConstraintDisplays",
 			Values: map[string]string{
-				"identity.enabled":                                              "true",
-				"global.identity.auth.enabled":                                  "true",
-				"global.security.authentication.method":                         "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":           "foo",
-				"orchestration.security.authentication.oidc.existingSecret":     "",
-				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":          "error",
+				"identity.enabled":                                            "true",
+				"global.identity.auth.enabled":                                "true",
+				"global.security.authentication.method":                       "oidc",
+				"connectors.security.authentication.oidc.existingSecret.name": "foo",
+				"orchestration.security.authentication.oidc.existingSecret":   "",
+				"global.identity.auth.issuerBackendUrl":                       "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":        "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -67,12 +67,12 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
 			Values: map[string]string{
-				"identity.enabled":                                                   "true",
-				"global.identity.auth.enabled":                                       "true",
-				"global.security.authentication.method":                              "oidc",
-				"orchestration.security.authentication.oidc.existingSecret.name":    "bar",
-				"global.identity.auth.issuerBackendUrl":                              "http://keycloak:80/auth/realms/camunda-platform",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":               "error",
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
+				"global.identity.auth.issuerBackendUrl":                          "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":           "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -82,15 +82,82 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
 			Values: map[string]string{
-				"identity.enabled":                                                "true",
-				"global.security.authentication.method":                           "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
+				"identity.enabled":                                               "true",
+				"global.security.authentication.method":                          "oidc",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
-				"global.identity.auth.issuerBackendUrl":                           "http://keycloak:80/auth/realms/camunda-platform",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":            "warning",
+				"global.identity.auth.issuerBackendUrl":                          "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":           "warning",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestCaBundleAndLegacyJksRenderWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGlobalElasticsearchTlsExistingSecretRendersOk",
+			Values: map[string]string{
+				"global.elasticsearch.tls.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalOpensearchTlsJksInlineSecretRendersOk",
+			Values: map[string]string{
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleRendersOk",
+			Values: map[string]string{
+				"global.tls.caBundle.secret.existingSecret": "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk",
+			Values: map[string]string{
+				"global.elasticsearch.tls.existingSecret":   "my-legacy-jks",
+				"global.elasticsearch.url.protocol":         "http",
+				"global.tls.caBundle.secret.existingSecret": "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestCaBundleConsoleCertKeyFilenameWarningRendersOk() {
+	testCases := []testhelpers.TestCase{
+		{
+			// Exercises the constraints warning that fires when caBundle is set
+			// AND console.tls.certKeyFilename is configured (the latter no longer
+			// contributes trust). Asserts the warning path renders without crashing.
+			Name: "TestCaBundleWithConsoleCertKeyFilenameRendersOk",
+			Values: map[string]string{
+				"console.enabled":                           "true",
+				"identity.enabled":                          "true",
+				"global.tls.caBundle.secret.existingSecret": "camunda-ca-bundle",
+				"console.tls.certKeyFilename":               "tls.crt",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
 			},
 		},

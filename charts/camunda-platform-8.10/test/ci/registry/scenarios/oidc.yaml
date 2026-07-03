@@ -1,0 +1,21 @@
+name: oidc
+auth: oidc
+flows:
+  - upgrade-minor
+identity: oidc
+persistence: elasticsearch
+features:
+  - postgresql-companion
+platforms:
+  - gke
+exclude:
+  - identity
+  - console
+  - orchestration-grpc
+infra-type:
+  eks: preemptible
+  gke: distroci
+skip-e2e: true
+dependencies:
+  - postgresql
+  - elasticsearch

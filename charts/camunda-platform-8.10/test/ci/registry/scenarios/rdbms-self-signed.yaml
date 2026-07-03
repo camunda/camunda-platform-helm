@@ -1,0 +1,14 @@
+name: rdbms-self-signed
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: rdbms-self-signed
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql-tls

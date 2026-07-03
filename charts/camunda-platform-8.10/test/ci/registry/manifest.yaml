@@ -1,0 +1,175 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  flows:
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the patch upgrade. Required because the
+          target chart's PostgreSQL spec has immutable diffs vs the prior
+          patch (PSQL 15→14 rollback path) — Helm cannot reconcile in place.
+  scenarios:
+    - id: elasticsearch
+      shortname: eske
+      tier: 1
+      enabled: true
+    - id: orchestration-tls
+      shortname: estls
+      tier: 2
+      enabled: true
+    - id: opensearch
+      shortname: oske
+      tier: 2
+      enabled: true
+    - id: opensearch-self-signed
+      shortname: osss
+      enabled: true
+    - id: opensearch-self-signed-os-trust
+      shortname: osot
+      enabled: true
+    - id: upgrade-migration
+      shortname: eske-upgm
+      enabled: false
+    - id: elasticsearch-basic
+      shortname: esba
+      enabled: false
+    - id: oidc
+      shortname: esoi
+      enabled: false
+    - id: auth0
+      shortname: esa0
+      enabled: false
+    - id: keycloak-mt
+      shortname: kemt
+      enabled: false
+    - id: keycloak-rba
+      shortname: kerba
+      enabled: false
+    - id: keycloak-original-upgrade
+      shortname: keyc
+      enabled: false
+    - id: keycloak-original-install-tier2
+      shortname: keorg
+      tier: 2
+      enabled: true
+    - id: gateway-keycloak
+      shortname: gatkc
+      tier: 2
+      enabled: true
+    - id: elasticsearch-arm
+      shortname: esarm
+      tier: 2
+      enabled: true
+    - id: no-secondary-storage
+      shortname: nosec
+      tier: 2
+      enabled: true
+    - id: documentstore
+      shortname: docstr
+      tier: 2
+      enabled: true
+    - id: rdbms-self-signed
+      shortname: rdbss
+      tier: 2
+      enabled: true
+    - id: rdbms-external
+      shortname: rdbme
+      enabled: false
+    - id: rdbms
+      shortname: rdbms
+      tier: 2
+      enabled: true
+    - id: component-persistence
+      shortname: cprst
+      tier: 2
+      enabled: false
+    - id: hub-legacy-install
+      shortname: huble
+      tier: 2
+      enabled: true
+    - id: shadow-e2e
+      shortname: shde2
+      tier: 2
+      enabled: true
+    - id: hub-legacy-upgrade
+      shortname: hublu
+      tier: 2
+      enabled: true
+    - id: hub-mixed
+      shortname: hubmu
+      tier: 2
+      enabled: true
+    - id: hub-webmodeler-only
+      shortname: hubwo
+      tier: 2
+      enabled: true
+    - id: hub-pinned-images
+      shortname: hubpi
+      tier: 2
+      enabled: true
+    - id: hub-external-db
+      shortname: hubdb
+      tier: 2
+      enabled: true
+    - id: keycloak-original-install-tier1
+      shortname: keyco
+      tier: 1
+      enabled: true
+    - id: alwaysgreen
+      shortname: agrn
+      enabled: false
+    - id: qa-elasticsearch-upg-install
+      shortname: qaelupg
+      enabled: false
+    - id: qa-elasticsearch-upg-modular
+      shortname: qaelupg
+      enabled: false
+    - id: qa-elasticsearch
+      shortname: qael
+      enabled: false
+    - id: qa-opensearch
+      shortname: qaos
+      enabled: false
+    - id: qa-opensearch-upg-install
+      shortname: qaosupg
+      enabled: false
+    - id: qa-opensearch-upg-modular
+      shortname: qaosupg
+      enabled: false
+    - id: qa-elasticsearch-mt
+      shortname: qaelmt
+      enabled: false
+    - id: qa-elasticsearch-mt-upg-install
+      shortname: qaelmtupg
+      enabled: false
+    - id: qa-elasticsearch-mt-upg-modular
+      shortname: qaelmtupg
+      enabled: false
+    - id: qa-elasticsearch-rba
+      shortname: qaelrba
+      enabled: false
+    - id: qa-document-store-gke
+      shortname: qadoc
+      enabled: false
+    - id: qa-document-store-eks
+      shortname: qadoc
+      enabled: false
+    - id: qa-document-store-upg-install-gke
+      shortname: qadocupg
+      enabled: false
+    - id: qa-document-store-upg-install-eks
+      shortname: qadocupg
+      enabled: false
+    - id: qa-document-store-upg-modular-gke
+      shortname: qadocupg
+      enabled: false
+    - id: qa-document-store-upg-modular-eks
+      shortname: qadocupg
+      enabled: false
+    - id: qa-license
+      shortname: lic
+      enabled: false

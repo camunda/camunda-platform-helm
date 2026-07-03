@@ -1,4 +1,11 @@
 {{- if .Values.webModeler.enabled -}}
+{{- $deploymentStrategy := .Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate" -}}
+{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
+{{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- end -}}
+{{- if and (eq $deploymentStrategy "Recreate") (not .Values.webModeler.persistence.enabled) -}}
+{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true. The default chart-managed path uses a per-pod ephemeral volume with no Multi-Attach contention, so Recreate is only useful when existingClaim points to a ReadWriteOnce volume; without persistence it only adds upgrade downtime" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +14,7 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   strategy:
-    type: RollingUpdate
+    type: {{ $deploymentStrategy }}
   replicas: {{ .Values.webModeler.restapi.replicas }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
@@ -17,15 +24,23 @@ spec:
       {{- if .Values.webModeler.restapi.podLabels }}
       {{- tpl (toYaml .Values.webModeler.restapi.podLabels) $ | nindent 8 }}
       {{- end }}
-      {{- if .Values.webModeler.restapi.podAnnotations }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) .Values.webModeler.restapi.podAnnotations }}
       annotations:
-        {{- tpl (toYaml .Values.webModeler.restapi.podAnnotations) $ | nindent 8 }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with .Values.webModeler.restapi.podAnnotations }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.webModeler.restapi.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "webModeler.restapi.image" $)) | nindent 8 }}
+        {{- end }}
+        {{- with .Values.webModeler.restapi.initContainers }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: {{ include "webModeler.name" . }}-restapi
           image: {{ include "webModeler.restapi.image" . | quote }}
@@ -93,6 +108,10 @@ spec:
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
             {{- end }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -167,6 +186,10 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
             {{- if .Values.webModeler.restapi.extraVolumeMounts }}
             {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -179,8 +202,23 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.webModeler.persistence.existingClaim }}
           {{- else if .Values.webModeler.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-webmodeler-data
+          ephemeral:
+            volumeClaimTemplate:
+              {{- with .Values.webModeler.persistence.annotations }}
+              metadata:
+                annotations: {{- toYaml . | nindent 18 }}
+              {{- end }}
+              spec:
+                accessModes: {{ .Values.webModeler.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 18 }}
+                {{- with .Values.webModeler.persistence.storageClassName }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+                {{- with .Values.webModeler.persistence.selector }}
+                selector: {{- toYaml . | nindent 18 }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ .Values.webModeler.persistence.size | default "1Gi" | quote }}
           {{- else }}
           emptyDir: {}
           {{- end }}
@@ -194,6 +232,10 @@ spec:
             "legacyKeyField" "credentialsKey"
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.webModeler.restapi.extraVolumes }}
         {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}

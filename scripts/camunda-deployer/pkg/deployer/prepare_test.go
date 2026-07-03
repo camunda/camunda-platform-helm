@@ -387,7 +387,7 @@ func TestResolveCommonValues(t *testing.T) {
 func TestOverlayIfExists(t *testing.T) {
 	tmpDir := t.TempDir()
 	scenarioDir := filepath.Join(tmpDir, "scenarios")
-	
+
 	if err := os.MkdirAll(scenarioDir, 0755); err != nil {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
@@ -427,4 +427,3 @@ func TestOverlayIfExists(t *testing.T) {
 		})
 	}
 }
-

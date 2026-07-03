@@ -7,6 +7,34 @@ import (
 	"testing"
 )
 
+func TestIsSecretName(t *testing.T) {
+	cases := []struct {
+		name string
+		want bool
+	}{
+		// Genuine secrets — masked.
+		{"OPENAI_API_KEY", true},
+		{"IDP_AWS_ACCESSKEY", true},
+		{"KEYCLOAK_CLIENTS_SECRET", true},
+		{"KEYCLOAK_ADMIN_PASSWORD", true},
+		{"SOME_TOKEN", true},
+		{"my_password", true},
+		// KEYCLOAK_* hostnames/realms/protocols — NOT secrets, must stay visible.
+		{"KEYCLOAK_REALM", false},
+		{"KEYCLOAK_HOST", false},
+		{"KEYCLOAK_EXT_HOST_8_10", false},
+		{"KEYCLOAK_EXT_PROTOCOL_8_10", false},
+		{"CAMUNDA_HOSTNAME", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsSecretName(tc.name); got != tc.want {
+				t.Errorf("IsSecretName(%q) = %v, want %v", tc.name, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestProcessImageTags_NoFileSpecified(t *testing.T) {
 	opts := Options{
 		ImageTagsFile: "",

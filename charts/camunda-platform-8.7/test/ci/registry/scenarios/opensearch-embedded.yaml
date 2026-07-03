@@ -1,0 +1,12 @@
+name: opensearch-embedded
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: opensearch-embedded
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+dependencies:
+  - opensearch

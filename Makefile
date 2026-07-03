@@ -47,12 +47,29 @@ build.vault-secret-mapper:
 install.vault-secret-mapper:
 	cd scripts/vault-secret-mapper && go mod tidy && go install .
 
+.PHONY: build.ci-result-cache
+build.ci-result-cache:
+	cd scripts/ci-result-cache && go mod tidy && go build .
+
+.PHONY: install.ci-result-cache
+install.ci-result-cache:
+	cd scripts/ci-result-cache && go mod tidy && go install .
+
+.PHONY: build.release-tools
+build.release-tools:
+	cd scripts/release-tools && go mod tidy && go build .
+
+.PHONY: install.release-tools
+install.release-tools:
+	cd scripts/release-tools && go mod tidy && go install .
+
 .PHONY: build.dx-tooling
 build.dx-tooling:
 	make build.deployer
 	make build.prepare-helm-values
 	make build.deploy-camunda
 	make build.vault-secret-mapper
+	make build.release-tools
 
 .PHONY: install.dx-tooling
 install.dx-tooling:
@@ -60,6 +77,7 @@ install.dx-tooling:
 	make install.prepare-helm-values
 	make install.deploy-camunda
 	make install.vault-secret-mapper
+	make install.release-tools
 	@if command -v asdf >/dev/null 2>&1; then \
 		echo "asdf detected, reshimming..."; \
 		asdf reshim golang; \
@@ -79,6 +97,9 @@ endef
 .PHONY: go.test
 go.test: helm.dependency-update
 	@$(call go_test_run, go test ./...)
+	@echo "\n[$@] Matrix package: registry validator + snapshot drift + lifecycle fixtures"
+	# Intentionally cross-version: walks all charts/*/test/ci/ regardless of chartPath (YAML parse only, fast).
+	@cd scripts/deploy-camunda && go test -timeout 2m ./matrix/
 
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
@@ -97,6 +118,15 @@ go.update-golden-only-cleanup: helm.dependency-update
 .PHONY: go.update-golden-only-lite
 go.update-golden-only-lite:
 	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
+	@$(MAKE) go.update-registry-golden
+
+# go.update-registry-golden: refresh charts/<v>/test/ci/registry-snapshot.yaml for every
+# chart version that has a composable registry. Runs the matrix-package golden test
+# in update mode, which writes the compiled CITestConfig view back to disk.
+.PHONY: go.update-registry-golden
+go.update-registry-golden:
+	@echo "\n[$@] Updating registry snapshots in charts/<v>/test/ci/registry-snapshot.yaml"
+	@cd scripts/deploy-camunda && go test ./matrix/ -run TestRegistryGolden -update-golden
 
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only
@@ -163,9 +193,25 @@ tools.zbctl-topology:
 # helm.repos-add: add Helm repos needed by the charts
 .PHONY: helm.repos-add
 helm.repos-add:
-	helm repo add camunda https://helm.camunda.io
-	helm repo add elastic https://helm.elastic.co
-	helm repo update
+	@for repo_args in \
+		"camunda https://helm.camunda.io" ; \
+	do \
+		success=false; \
+		for i in 1 2 3; do \
+			if helm repo add $$repo_args --force-update; then \
+				success=true; break; \
+			fi; \
+			if [ $$i -lt 3 ]; then \
+				echo "⚠️  helm repo add $$repo_args failed (attempt $$i/3), retrying in 5s..." >&2; \
+				sleep 5; \
+			fi; \
+		done; \
+		if [ "$$success" != "true" ]; then \
+			echo "❌ helm repo add $$repo_args failed after 3 attempts" >&2; \
+			exit 1; \
+		fi; \
+	done
+	@helm repo update
 
 # helm.dependency-update: update and downloads the dependencies for the Helm chart
 .PHONY: helm.dependency-update
@@ -227,6 +273,12 @@ helm.readme-update:
 # TODO: Once 8.7 is released, remove "alpha" name from the excluded versions.
 helm.schema-update:
 	for chart_dir in $(chartPath); do \
+		excluded_charts="keycloak|postgres|elasticsearch"; \
+		if echo "$${chart_dir}" | grep -qE "$${excluded_charts}"; then \
+			echo "\n[$@] Chart dir: $${chart_dir}";\
+			echo "[$@] This chart version shouldnt autogenerate schema"; \
+			continue; \
+		fi; \
 		excluded_versions="camunda-platform-(8\.(2|3|4|5|6|7)|alpha)$$"; \
 		if echo "$${chart_dir}" | grep -qE "$${excluded_versions}"; then \
 			echo "\n[$@] Chart dir: $${chart_dir}";\
@@ -234,18 +286,40 @@ helm.schema-update:
 			continue; \
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
-		readme-generator \
-			--values "$${chart_dir}/values.yaml" \
-			--schema "$${chart_dir}/values.schema.json"; \
-		if [ ! -f "$${chart_dir}/values.schema.extra.json" ]; then \
-			echo "[$@] No extra schema to merge"; \
+		bash scripts/regenerate-values-schema.sh \
+			"$${chart_dir}/values.yaml" \
+			"$${chart_dir}/values.schema.extra.json" \
+			"$${chart_dir}/values.schema.json"; \
+	done
+
+# helm.schema-validate-values: verify chart values files only use keys described by the schema.
+# Self-contained: regenerates the schema from values.yaml + values.schema.extra.json into a
+# temp file (does NOT trust or mutate the committed values.schema.json) and validates against
+# it. Verification gate only — never adds additionalProperties:false to the shipped schema (#4564).
+.PHONY: helm.schema-validate-values
+helm.schema-validate-values:
+	root="$$(git rev-parse --show-toplevel)"; \
+	for chart_dir in $(chartPath); do \
+		if [ ! -f "$${chart_dir}/values.schema.json" ]; then \
+			echo "\n[$@] $${chart_dir}: no values.schema.json, skipping"; \
 			continue; \
 		fi; \
-		echo "[$@] Merging with extra schema"; \
-		jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
-			"$${chart_dir}/values.schema.json" \
-			"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
-			&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
+		echo "\n[$@] Chart dir: $${chart_dir}"; \
+		abs="$${root}/$${chart_dir}"; \
+		tmp_schema="$$(mktemp)"; \
+		bash scripts/regenerate-values-schema.sh \
+			"$${abs}/values.yaml" \
+			"$${abs}/values.schema.extra.json" \
+			"$${tmp_schema}" || { rm -f "$${tmp_schema}"; exit 1; }; \
+		files=""; \
+		for f in values.yaml values-local.yaml values-enterprise.yaml values-bitnami-legacy.yaml; do \
+			[ -f "$${abs}/$$f" ] && files="$${files} $${abs}/$$f"; \
+		done; \
+		( cd "$${root}/scripts/validate-values-schema" && \
+			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} ); \
+		status=$$?; \
+		rm -f "$${tmp_schema}"; \
+		[ $$status -eq 0 ] || exit $$status; \
 	done
 
 # helm.get-images: list all images in the chart.
@@ -270,17 +344,17 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 	git commit -m "chore: bump camunda-platform chart version to $(chartVersion)"
 
 .PHONY: release.generate-notes
-release.generate-notes:
+release.generate-notes: install.release-tools
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		bash scripts/generate-release-notes.sh --main "$${chart_dir}";\
+		release-tools release-notes --main "$${chart_dir}";\
 	done
 
 .PHONY: release.generate-notes-footer
-release.generate-notes-footer:
+release.generate-notes-footer: install.release-tools helm.dependency-update
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		bash scripts/generate-release-notes.sh --footer "$${chart_dir}";\
+		release-tools release-notes --footer "$${chart_dir}";\
 	done
 
 .PHONY: release.generate-and-commit
@@ -291,21 +365,6 @@ release.generate-and-commit: release.generate-notes
 .PHONY: release.verify-components-version
 release.verify-components-version:
 	@bash scripts/verify-components-version.sh
-
-.PHONY: release.generate-version-matrix-index
-release.generate-version-matrix-index:
-	@bash scripts/generate-version-matrix.sh --init
-	@CHART_DIR=$(chartPath) bash scripts/generate-version-matrix.sh --index
-
-.PHONY: release.generate-version-matrix-released
-release.generate-version-matrix-released:
-	@bash scripts/generate-version-matrix.sh --init
-	@bash scripts/generate-version-matrix.sh --released
-
-.PHONY: release.generate-version-matrix-unreleased
-release.generate-version-matrix-unreleased:
-	@bash scripts/generate-version-matrix.sh --init
-	@CHART_DIR=$(chartPath) bash scripts/generate-version-matrix.sh --unreleased
 
 .PHONY: release.set-prs-version-label
 release.set-prs-version-label:

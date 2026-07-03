@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -16,8 +17,73 @@ import (
 	"scripts/deploy-camunda/config"
 )
 
+// runFailFastPreflight runs the secrets/env preflight before a deploy and
+// returns an error when a required input is missing. It skips the cluster
+// reachability probe (the deploy will contact the cluster regardless) to avoid
+// adding a network round-trip to every run. In interactive mode it downgrades a
+// failure to a warning, because the downstream values.Process step prompts for
+// missing scenario placeholders; non-interactive runs fail fast.
+func runFailFastPreflight(ctx context.Context, flags *config.RuntimeFlags) error {
+	if flags.SkipPreflight {
+		return nil
+	}
+	// Prefer the path resolved by the root command; fall back to auto-discovery
+	// for callers that don't populate it (e.g. tests).
+	configPath, found := flags.ConfigPath, flags.ConfigFound
+	if configPath == "" {
+		if cfgRes, err := config.ResolvePath(""); err == nil && cfgRes != nil {
+			configPath, found = cfgRes.Path, cfgRes.Found
+		}
+	}
+	report := Preflight(ctx, flags, PreflightOptions{
+		ConfigPath:           configPath,
+		ConfigFound:          found,
+		SkipKubeReachability: true,
+	})
+	if report.OK() {
+		return nil
+	}
+
+	// Interactive runs: prompt for the missing vars, persist them, and re-check
+	// before deciding. Non-interactive runs (the matrix) fail fast with the list.
+	if flags.Interactive {
+		var buf bytes.Buffer
+		report.Render(&buf)
+		logging.Logger.Info().Msgf("preflight found missing inputs:\n%s", buf.String())
+		if n, err := ResolveMissingInteractively(ctx, report, flags); err != nil {
+			return err
+		} else if n > 0 {
+			report = Preflight(ctx, flags, PreflightOptions{
+				ConfigPath:           configPath,
+				ConfigFound:          found,
+				SkipKubeReachability: true,
+			})
+			if report.OK() {
+				return nil
+			}
+		}
+		// Still not satisfied (or nothing entered). Some missing vars may still be
+		// resolvable by the downstream interactive values.Process prompt, so warn
+		// and continue rather than blocking.
+		var after bytes.Buffer
+		report.Render(&after)
+		logging.Logger.Warn().Msgf("preflight still has issues (continuing — downstream prompts may resolve scenario vars):\n%s", after.String())
+		return nil
+	}
+
+	var buf bytes.Buffer
+	report.Render(&buf)
+	return fmt.Errorf("preflight failed before deploy:\n%s\nfix the above, or re-run with --interactive (to be prompted) or --skip-preflight", buf.String())
+}
+
 // Execute performs the actual Camunda deployment based on the provided flags.
 func Execute(ctx context.Context, flags *config.RuntimeFlags) error {
+	// Fail-fast: validate secrets/env before any cluster mutation so a missing
+	// credential surfaces here rather than as an ImagePullBackOff minutes later.
+	if err := runFailFastPreflight(ctx, flags); err != nil {
+		return err
+	}
+
 	// Check if we're deploying multiple scenarios in parallel
 	if len(flags.Deployment.Scenarios) > 1 {
 		return executeParallelDeployments(ctx, flags)
@@ -172,6 +238,9 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 	}
 
 	// Phase 2: Deploy
+	if flags.OnPhase != nil {
+		flags.OnPhase("deploying")
+	}
 	result := executeDeployment(ctx, prepared, flags)
 
 	if result.Error != nil {
@@ -309,6 +378,8 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		ExtraArgs:             flags.Deployment.ExtraHelmArgs,
 		SetPairs:              flags.Deployment.ExtraHelmSets,
 		PreInstallHooks:       flags.PreInstallHooks,
+		CompanionCharts:       toDeployerCompanionCharts(prepared.CompanionCharts),
+		PostInfraHooks:        flags.PostInfraHooks,
 	}
 
 	// Log deployment options (redact sensitive fields)
@@ -363,15 +434,19 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Dur("deployDuration", deployDuration).
 		Msg("✅ [executeDeployment] helm deployment completed successfully")
 
-	// Apply post-deploy resources (e.g., Gateway API ProxySettingsPolicy)
-	if err := applyPostDeployResources(ctx, scenarioCtx, flags.Chart.ChartPath, flags.Test.KubeContext); err != nil {
-		logging.Logger.Error().
-			Err(err).
-			Str("scenario", scenarioCtx.ScenarioName).
-			Str("namespace", scenarioCtx.Namespace).
-			Msg("❌ [executeDeployment] failed to apply post-deploy resources")
-		result.Error = fmt.Errorf("post-deploy resources failed: %w", err)
-		return result
+	// Apply post-deploy hooks (e.g., the Gateway API ProxySettingsPolicy
+	// applied for gateway-keycloak via a declarative post-deploy: block in
+	// ci-test-config.yaml). Registered by the matrix runner before deploy.
+	for _, hook := range flags.PostDeployHooks {
+		if err := hook(ctx); err != nil {
+			logging.Logger.Error().
+				Err(err).
+				Str("scenario", scenarioCtx.ScenarioName).
+				Str("namespace", scenarioCtx.Namespace).
+				Msg("❌ [executeDeployment] post-deploy hook failed")
+			result.Error = fmt.Errorf("post-deploy hook failed: %w", err)
+			return result
+		}
 	}
 
 	// Capture credentials from the secrets map prepared in prepareScenarioValues.
@@ -414,4 +489,23 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 // deleteNamespace deletes a Kubernetes namespace.
 func deleteNamespace(ctx context.Context, kubeContext, namespace string) error {
 	return kube.DeleteNamespace(ctx, "", kubeContext, namespace)
+}
+
+// toDeployerCompanionCharts converts config.CompanionChart to types.CompanionChart.
+func toDeployerCompanionCharts(charts []config.CompanionChart) []types.CompanionChart {
+	if len(charts) == 0 {
+		return nil
+	}
+	result := make([]types.CompanionChart, len(charts))
+	for i, c := range charts {
+		result[i] = types.CompanionChart{
+			ChartRef:    c.ChartRef,
+			Version:     c.Version,
+			ReleaseName: c.ReleaseName,
+			ValuesFile:  c.ValuesFile,
+			RepoName:    c.RepoName,
+			RepoURL:     c.RepoURL,
+		}
+	}
+	return result
 }

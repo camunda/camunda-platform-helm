@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.9.0-alpha5"
+    app.kubernetes.io/version: "8.10.0-alpha2"
   annotations:
     {}
 data:
@@ -27,29 +27,9 @@ data:
         multi-tenancy: "false"
 
       authProvider:
-        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
-        backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
+        issuer-url: ""
+        backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
       component-presets:
-        console:
-          applications:
-            - name: "Console"
-              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
-              type: public
-              root-url: "http://localhost:8087"
-              redirect-uris:
-                - "/"
-          apis:
-            - name: Console API
-              audience: "console-api"
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Console"
-              description: "Grants full access to Console"
-              permissions:
-                - audience: "console-api"
-                  definition: write:*
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -114,13 +94,11 @@ data:
                 - audience: "web-modeler-api"
                   definition: admin:*
     keycloak:
-      url: "http://camunda-platform-test-keycloak/auth"
+      url: "https://keycloak.example.com:8443/auth/"
       setup:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
-        console:
-          root-url: "http://localhost:8087"
         webmodeler:
           root-url: "http://localhost:8070"
       clients:

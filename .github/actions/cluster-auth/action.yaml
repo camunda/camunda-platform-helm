@@ -51,7 +51,7 @@ runs:
 
     - name: Set up Teleport
       if: inputs.platform == 'eks'
-      uses: teleport-actions/setup@a820ebbf1bc1a496efca348ad21042d6e8df73a6 # v1
+      uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1
       with:
         version: 17.2.2
 
@@ -71,7 +71,7 @@ runs:
       id: teleport-auth
       shell: bash
       env:
-        TELEPORT_PROXY: "camunda.teleport.sh:443"
+        TELEPORT_PROXY: ${{ env.INFRA_TELEPORT_PROXY || 'camunda.teleport.sh:443' }}
         TELEPORT_TOKEN: ${{ env.TELEPORT_TOKEN }}
         KUBERNETES_CLUSTER: ${{ env.CLUSTER_NAME }}
       run: |

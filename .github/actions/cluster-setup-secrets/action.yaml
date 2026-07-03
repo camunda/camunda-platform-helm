@@ -10,9 +10,6 @@ inputs:
   namespace:
     description: "Target namespace for test secrets"
     required: true
-  namespace-prefix:
-    description: "Namespace prefix (used only for EKS)"
-    required: false
 runs:
   using: "composite"
   steps:
@@ -24,14 +21,13 @@ runs:
         DISTRO_PLATFORM="${{ inputs.distro-platform }}"
         TEST_NAMESPACE="${{ inputs.namespace }}"
         CHART_PATH="${{ inputs.chart-path }}"
-        NAMESPACE_PREFIX="${{ inputs.namespace-prefix }}"
 
         # Function to apply external secrets with retry logic
         # This handles the case where the external-secrets webhook is not yet ready
         apply_external_secret_with_retry() {
           local file="$1"
           local namespace="$2"
-          local max_retries=5
+          local max_retries=20
           local retry_delay=10
           
           for ((i=1; i<=max_retries; i++)); do
@@ -52,16 +48,37 @@ runs:
           done
         }
 
+        wait_for_secret_keys() {
+          local namespace="$1"
+          local secret_name="$2"
+          local expected_keys missing_keys
+          expected_keys="$(kubectl get externalsecret -n "$namespace" -o json | jq -r --arg secret "$secret_name" '.items[] | select(.spec.target.name == $secret) | .spec.data[]?.secretKey')"
+          test -n "$expected_keys" || { echo "❌ No ExternalSecret found for target Secret $secret_name"; return 1; }
+          for _ in {1..60}; do
+            missing_keys="$(while IFS= read -r key; do kubectl get secret "$secret_name" -n "$namespace" -o json 2>/dev/null | jq -e --arg key "$key" '.data[$key] // empty' >/dev/null || printf '%s\n' "$key"; done <<< "$expected_keys")"
+            test -n "$missing_keys" || { echo "✅ Secret $secret_name contains all expected ExternalSecret keys"; return 0; }
+            echo "⏳ Waiting for Secret $secret_name keys: $(tr '\n' ' ' <<< "$missing_keys")"
+            sleep 10
+          done
+          echo "❌ Secret $secret_name is missing expected keys: $(tr '\n' ' ' <<< "$missing_keys")"
+          return 1
+        }
+
         if [[ "$DISTRO_PLATFORM" == "gke" || "$DISTRO_PLATFORM" == "rosa" ]]; then
           echo "🔧 Applying external secret certificates for $DISTRO_PLATFORM"
           apply_external_secret_with_retry \
             ".github/config/external-secret/external-secret-certificates.yaml" \
             "$TEST_NAMESPACE"
 
-          # Apply external secret configuration for integration tests
-          # Check for chart-specific external secret first (better approach)
+          stale_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
+            jq -r '.items[] | select(.spec.target.name == "integration-test-credentials") | .metadata.name')"
+          if [[ -n "$stale_es" ]]; then
+            echo "🧹 Removing stale ExternalSecrets targeting integration-test-credentials: $(tr '\n' ' ' <<< "$stale_es")"
+            echo "$stale_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
+          fi
+
           CHART_SPECIFIC_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials.yaml"
-          
+
           if [[ -f "$CHART_SPECIFIC_FILE" ]]; then
             echo "✅ Applying chart-specific external secret for integration tests: $CHART_SPECIFIC_FILE"
             apply_external_secret_with_retry "$CHART_SPECIFIC_FILE" "$TEST_NAMESPACE"
@@ -76,26 +93,16 @@ runs:
           for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
+          wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
 
         else
-          echo "🔧 Running in EKS mode"
-          # Copy TLS certificate from certs namespace (EKS uses a pre-provisioned secret, not an ExternalSecret)
-          if kubectl get secret aws-camunda-cloud-tls -n "$TEST_NAMESPACE" &>/dev/null; then
-            echo "✅ Secret aws-camunda-cloud-tls already exists in $TEST_NAMESPACE, skipping copy"
-          else
-            kubectl get secret -n "${NAMESPACE_PREFIX}-certs" aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
-            sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
-            kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
-          fi
+          echo "🔧 Running in EKS mode — using vault-backed ExternalSecrets"
 
-          # EKS uses vault-backed ExternalSecrets (ClusterSecretStore: vault-backend)
-          echo "🔧 Applying vault-backed external secrets for EKS"
-
-          # Apply infra secrets (creates infra-credentials secret)
+          # Apply EKS TLS certificate ExternalSecret (creates aws-camunda-cloud-tls secret from Vault)
           apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-infra-vault.yaml" \
+            ".github/config/external-secret/external-secret-certificates-vault.yaml" \
             "$TEST_NAMESPACE"
 
           # Apply credentials secrets (creates integration-test secret, for backward compat)
@@ -104,6 +111,13 @@ runs:
             "$TEST_NAMESPACE"
 
           # Apply integration test credentials (creates integration-test-credentials secret)
+          stale_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
+            jq -r '.items[] | select(.spec.target.name == "integration-test-credentials") | .metadata.name')"
+          if [[ -n "$stale_es" ]]; then
+            echo "🧹 Removing stale ExternalSecrets targeting integration-test-credentials: $(tr '\n' ' ' <<< "$stale_es")"
+            echo "$stale_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
+          fi
+
           # Check for chart-specific vault external secret first
           CHART_SPECIFIC_VAULT_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials-vault.yaml"
 
@@ -121,18 +135,9 @@ runs:
           for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
-        fi
-
-        if [[ "$DISTRO_PLATFORM" == "eks" ]]; then
-          echo "✅ Infra secrets already applied via vault-backed ExternalSecrets above"
-        else
-          echo "🔧 Applying external secret infra configuration"
-          apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-infra.yaml" \
-            "$TEST_NAMESPACE"
+          wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
         fi
 
         echo "✅ TLS Certificates/Secrets configuration completed."
-

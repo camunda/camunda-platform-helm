@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/deploy-camunda/config"
@@ -72,6 +73,18 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "entra" || (cmd.Parent() != nil && cmd.Parent().Name() == "entra") {
 					return nil
 				}
+				if cmd.Name() == "watch" || (cmd.Parent() != nil && cmd.Parent().Name() == "watch") {
+					return nil
+				}
+				if cmd.Name() == "auth0" || (cmd.Parent() != nil && cmd.Parent().Name() == "auth0") {
+					return nil
+				}
+				// doctor runs its own config load + preflight; skip the deploy
+				// PersistentPreRunE so its strict Validate doesn't reject a
+				// diagnostic run with no chart/namespace/release set.
+				if cmd.Name() == "doctor" {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -97,8 +110,14 @@ func NewRootCommand() *cobra.Command {
 			})
 
 			// Load config and merge with flags first to get envFile from config
-			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {
+			_, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
+			if err != nil {
 				return err
+			}
+			// Hand the resolved config path to the preflight via flags.
+			if cfgRes != nil {
+				flags.ConfigPath = cfgRes.Path
+				flags.ConfigFound = cfgRes.Found
 			}
 
 			// Auto-detect repoRoot from CWD if not set by CLI or config.
@@ -128,8 +147,18 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// Validate merged configuration
-			if err := config.Validate(&flags); err != nil {
+			if err := config.Validate(&flags, cfgRes); err != nil {
 				return err
+			}
+
+			// Resolve relative chartPath against repoRoot when running from a subdirectory
+			if strings.TrimSpace(flags.Chart.ChartPath) != "" && !filepath.IsAbs(flags.Chart.ChartPath) && flags.Chart.RepoRoot != "" {
+				if _, err := os.Stat(flags.Chart.ChartPath); err != nil {
+					resolved := filepath.Join(flags.Chart.RepoRoot, flags.Chart.ChartPath)
+					if fi, err := os.Stat(resolved); err == nil && fi.IsDir() {
+						flags.Chart.ChartPath = resolved
+					}
+				}
 			}
 
 			// Validate chartPath exists
@@ -197,8 +226,10 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Deployment.Flow, "flow", "install", "Flow type")
 	f.StringVar(&flags.EnvFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
 	f.BoolVar(&flags.Interactive, "interactive", true, "Enable interactive prompts for missing variables")
+	f.BoolVar(&flags.SkipPreflight, "skip-preflight", false, "Skip the fail-fast secrets/env preflight run before deploying")
 	f.StringVar(&flags.Secrets.VaultSecretMapping, "vault-secret-mapping", "", "Vault secret mapping content")
 	f.BoolVar(&flags.Secrets.AutoGenerateSecrets, "auto-generate-secrets", false, "Auto-generate certain secrets for testing purposes")
+	f.BoolVar(&flags.Secrets.StrictSecrets, "strict-secrets", false, "Fail if any env var in the vault secret mapping is unset (instead of silently omitting it)")
 	f.BoolVar(&flags.Deployment.DeleteNamespaceFirst, "delete-namespace", false, "Delete the namespace first, then deploy")
 	f.StringVar(&flags.Docker.DockerUsername, "docker-username", "", "Harbor registry username")
 	f.StringVar(&flags.Docker.DockerPassword, "docker-password", "", "Harbor registry password")
@@ -221,17 +252,16 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Test.OutputTestEnvPath, "output-test-env-path", ".env.test", "Path for the test .env file output (for multi-scenario: used as base, e.g., .env.test.{scenario})")
 
 	// Test execution flags
-	f.BoolVar(&flags.Test.RunIntegrationTests, "test-it", false, "Run integration tests after deployment")
 	f.BoolVar(&flags.Test.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
-	f.BoolVar(&flags.Test.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
+	f.BoolVar(&flags.Test.RunAllTests, "test-all", false, "Run all e2e tests after deployment")
 	f.StringVar(&flags.Test.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
 	f.StringVar(&flags.Test.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
 	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
-	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, opensearch, opensearch-external, rdbms, rdbms-oracle")
-	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
-	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
+	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection (see values/identity/ or shell completion)")
+	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection (see values/persistence/ or shell completion)")
+	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection (see values/platform/ or shell completion)")
+	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections, comma-separated (see values/features/ or shell completion)")
 	f.BoolVar(&flags.Selection.QA, "qa", false, "Enable QA configuration (test users, etc.)")
 	f.BoolVar(&flags.Selection.ImageTags, "image-tags", false, "Enable image tag overrides from env vars")
 	f.BoolVar(&flags.Selection.UpgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
@@ -275,7 +305,7 @@ func registerScenarioCompletion(cmd *cobra.Command, flagName string) {
 			tempFlags.Deployment.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
 			tempFlags.Chart.ChartPath, _ = cmd.Flags().GetString("chart-path")
 
-			if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
+			if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
 				scenarioPath = tempFlags.Deployment.ScenarioPath
 			}
 		}
@@ -372,19 +402,17 @@ func completeMultiSelect(toComplete string, available []string) ([]string, cobra
 }
 
 // registerSelectionCompletion adds tab completion for the new selection + composition flags.
+// Valid names are discovered from the filesystem at completion time — no hardcoded fallback.
 func registerSelectionCompletion(cmd *cobra.Command) {
 	// Identity completion
 	_ = cmd.RegisterFlagCompletionFunc("identity", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultIdentities := []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}
-
 		if scenarioPath == "" {
-			return defaultIdentities, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
 		identities, err := scenarios.ListIdentities(scenarioPath)
 		if err != nil || len(identities) == 0 {
-			return defaultIdentities, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return identities, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -392,15 +420,12 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Persistence completion
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPersistence := []string{"elasticsearch", "opensearch", "rdbms", "rdbms-oracle"}
-
 		if scenarioPath == "" {
-			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
 		persistence, err := scenarios.ListPersistence(scenarioPath)
 		if err != nil || len(persistence) == 0 {
-			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return persistence, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -408,15 +433,12 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Test platform completion
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPlatforms := config.TestPlatforms
-
 		if scenarioPath == "" {
-			return defaultPlatforms, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
 		platforms, err := scenarios.ListPlatforms(scenarioPath)
 		if err != nil || len(platforms) == 0 {
-			return defaultPlatforms, cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return platforms, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -424,19 +446,13 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Features completion (supports comma-separated multi-select)
 	_ = cmd.RegisterFlagCompletionFunc("features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultFeatures := []string{"multitenancy", "rba", "documentstore"}
-
-		var features []string
-		if scenarioPath != "" {
-			var err error
-			features, err = scenarios.ListFeatures(scenarioPath)
-			if err != nil || len(features) == 0 {
-				features = defaultFeatures
-			}
-		} else {
-			features = defaultFeatures
+		if scenarioPath == "" {
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
+		features, err := scenarios.ListFeatures(scenarioPath)
+		if err != nil || len(features) == 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
 		return completeMultiSelect(toComplete, features)
 	})
 }
@@ -448,12 +464,12 @@ func registerLayeredValuesCompletion(cmd *cobra.Command) {
 		scenarioPath := resolveScenarioPath(cmd)
 		if scenarioPath == "" {
 			// Return default auth types
-			return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
+			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		authTypes, err := scenarios.ListLayeredAuthTypes(scenarioPath)
 		if err != nil || len(authTypes) == 0 {
-			return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
+			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
 		}
 		return authTypes, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -462,12 +478,12 @@ func registerLayeredValuesCompletion(cmd *cobra.Command) {
 	_ = cmd.RegisterFlagCompletionFunc("values-backend", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
 		if scenarioPath == "" {
-			return []string{"elasticsearch", "opensearch"}, cobra.ShellCompDirectiveNoFileComp
+			return []string{"elasticsearch", "opensearch-embedded"}, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		backends, err := scenarios.ListLayeredBackends(scenarioPath)
 		if err != nil || len(backends) == 0 {
-			return []string{"elasticsearch", "opensearch"}, cobra.ShellCompDirectiveNoFileComp
+			return []string{"elasticsearch", "opensearch-embedded"}, cobra.ShellCompDirectiveNoFileComp
 		}
 		return backends, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -475,7 +491,7 @@ func registerLayeredValuesCompletion(cmd *cobra.Command) {
 	// Feature types completion
 	_ = cmd.RegisterFlagCompletionFunc("values-features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultFeatures := []string{"multitenancy", "rba", "documentstore", "rdbms", "rdbms-oracle", "upgrade"}
+		defaultFeatures := []string{"multitenancy", "rba", "documentstore", "rdbms", "rdbms-external", "rdbms-oracle", "upgrade"}
 
 		if scenarioPath == "" {
 			return defaultFeatures, cobra.ShellCompDirectiveNoFileComp
@@ -503,7 +519,7 @@ func resolveScenarioPath(cmd *cobra.Command) string {
 		tempFlags.Deployment.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
 		tempFlags.Chart.ChartPath, _ = cmd.Flags().GetString("chart-path")
 
-		if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
+		if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
 			scenarioPath = tempFlags.Deployment.ScenarioPath
 		}
 	}
@@ -518,6 +534,9 @@ func Execute() error {
 	rootCmd.AddCommand(newMatrixCommand())
 	rootCmd.AddCommand(newPrepareValuesCommand())
 	rootCmd.AddCommand(newEntraCommand())
+	rootCmd.AddCommand(newWatchCommand())
+	rootCmd.AddCommand(newAuth0Command())
+	rootCmd.AddCommand(newDoctorCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {

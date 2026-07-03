@@ -172,6 +172,133 @@ func TestPinScenarioPrefixes_SharedBetweenClones(t *testing.T) {
 	t.Logf("Step2 orch=%s realm=%s", step2.Index.OrchestrationIndexPrefix, step2.Auth.KeycloakRealm)
 }
 
+func TestNamespaceDerivedSuffix_Deterministic(t *testing.T) {
+	// Same namespace always produces the same suffix.
+	s1 := namespaceDerivedSuffix("matrix-88-qaosupg-inst-gke")
+	s2 := namespaceDerivedSuffix("matrix-88-qaosupg-inst-gke")
+	if s1 != s2 {
+		t.Errorf("same namespace produced different suffixes: %q vs %q", s1, s2)
+	}
+	if len(s1) != 8 {
+		t.Errorf("suffix should be 8 chars, got %d: %q", len(s1), s1)
+	}
+}
+
+func TestNamespaceDerivedSuffix_UniquenessAcrossNamespaces(t *testing.T) {
+	// Different namespaces produce different suffixes.
+	namespaces := []string{
+		"matrix-88-qaosupg-inst-gke",
+		"matrix-89-qaosupg-inst-gke",
+		"matrix-88-qaelupg-inst-gke",
+		"matrix-810-keyco-inst-gke",
+	}
+	seen := make(map[string]string)
+	for _, ns := range namespaces {
+		s := namespaceDerivedSuffix(ns)
+		if prev, ok := seen[s]; ok {
+			t.Errorf("collision: %q and %q both produce suffix %q", prev, ns, s)
+		}
+		seen[s] = ns
+	}
+}
+
+func TestCrossJobPrefixConsistency(t *testing.T) {
+	// Simulate cross-job upgrade: install and upgrade are independent calls
+	// with the same namespace but fresh RuntimeFlags. Both should produce
+	// identical prefixes because the suffix is derived from the namespace.
+	namespace := "matrix-88-qaosupg-inst-gke"
+
+	// Job 1: install
+	installFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch"},
+		},
+	}
+	installCtx, err := generateScenarioContext("qa-opensearch", installFlags)
+	if err != nil {
+		t.Fatalf("install generateScenarioContext: %v", err)
+	}
+
+	// Job 2: upgrade (completely fresh flags, same namespace)
+	upgradeFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch"},
+		},
+	}
+	upgradeCtx, err := generateScenarioContext("qa-opensearch", upgradeFlags)
+	if err != nil {
+		t.Fatalf("upgrade generateScenarioContext: %v", err)
+	}
+
+	// Prefixes must match — this is the core property that fixes cross-job upgrades.
+	if installCtx.OrchestrationIndexPrefix != upgradeCtx.OrchestrationIndexPrefix {
+		t.Errorf("OrchestrationIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.OrchestrationIndexPrefix, upgradeCtx.OrchestrationIndexPrefix)
+	}
+	if installCtx.OperateIndexPrefix != upgradeCtx.OperateIndexPrefix {
+		t.Errorf("OperateIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.OperateIndexPrefix, upgradeCtx.OperateIndexPrefix)
+	}
+	if installCtx.OptimizeIndexPrefix != upgradeCtx.OptimizeIndexPrefix {
+		t.Errorf("OptimizeIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.OptimizeIndexPrefix, upgradeCtx.OptimizeIndexPrefix)
+	}
+	if installCtx.TasklistIndexPrefix != upgradeCtx.TasklistIndexPrefix {
+		t.Errorf("TasklistIndexPrefix mismatch: install=%q upgrade=%q",
+			installCtx.TasklistIndexPrefix, upgradeCtx.TasklistIndexPrefix)
+	}
+	if installCtx.KeycloakRealm != upgradeCtx.KeycloakRealm {
+		t.Errorf("KeycloakRealm mismatch: install=%q upgrade=%q",
+			installCtx.KeycloakRealm, upgradeCtx.KeycloakRealm)
+	}
+}
+
+func TestPrefixKeyOverridesScenarioName(t *testing.T) {
+	// Simulate the cross-version upgrade issue: 8.8 uses scenario name
+	// "qa-opensearch-tasklist-v1" while 8.9 uses "qa-opensearch-upg".
+	// When prefix-key is used to pin both to "qa-opensearch-upg", the
+	// prefixes must match despite different scenario names.
+	namespace := "matrix-88-qaosupg-inst-gke"
+
+	// Job 1: install on 8.8 (scenario="qa-opensearch-tasklist-v1", prefix-key="qa-opensearch-upg")
+	installFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch-tasklist-v1"},
+		},
+	}
+	// PinScenarioPrefixes called with prefix-key value, not scenario name
+	if err := PinScenarioPrefixes("qa-opensearch-upg", installFlags); err != nil {
+		t.Fatalf("PinScenarioPrefixes (install): %v", err)
+	}
+
+	// Job 2: upgrade on 8.9 (scenario="qa-opensearch-upg", prefix-key="qa-opensearch-upg")
+	upgradeFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+			Scenarios: []string{"qa-opensearch-upg"},
+		},
+	}
+	if err := PinScenarioPrefixes("qa-opensearch-upg", upgradeFlags); err != nil {
+		t.Fatalf("PinScenarioPrefixes (upgrade): %v", err)
+	}
+
+	if installFlags.Index.OrchestrationIndexPrefix != upgradeFlags.Index.OrchestrationIndexPrefix {
+		t.Errorf("OrchestrationIndexPrefix mismatch: install=%q upgrade=%q",
+			installFlags.Index.OrchestrationIndexPrefix, upgradeFlags.Index.OrchestrationIndexPrefix)
+	}
+	if installFlags.Index.OptimizeIndexPrefix != upgradeFlags.Index.OptimizeIndexPrefix {
+		t.Errorf("OptimizeIndexPrefix mismatch: install=%q upgrade=%q",
+			installFlags.Index.OptimizeIndexPrefix, upgradeFlags.Index.OptimizeIndexPrefix)
+	}
+	if installFlags.Auth.KeycloakRealm != upgradeFlags.Auth.KeycloakRealm {
+		t.Errorf("KeycloakRealm mismatch: install=%q upgrade=%q",
+			installFlags.Auth.KeycloakRealm, upgradeFlags.Auth.KeycloakRealm)
+	}
+}
+
 func TestNormalizeIdentifierPart(t *testing.T) {
 	tests := []struct {
 		input string
@@ -222,4 +349,67 @@ func TestGenerateCompactRealmName(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestComputeExpectedOrchestrationPrefix_UsesExistingFlag(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-89-eske-upgm",
+		},
+		Index: config.IndexPrefixFlags{
+			OrchestrationIndexPrefix: "already-pinned-prefix",
+		},
+	}
+
+	got := ComputeExpectedOrchestrationPrefix("some-scenario", flags)
+	if got != "already-pinned-prefix" {
+		t.Errorf("expected pinned prefix %q, got %q", "already-pinned-prefix", got)
+	}
+}
+
+func TestComputeExpectedOrchestrationPrefix_ComputesFromScenario(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-89-eske-upgm",
+		},
+	}
+
+	got := ComputeExpectedOrchestrationPrefix("elasticsearch", flags)
+	if got == "" {
+		t.Fatal("expected non-empty prefix, got empty")
+	}
+	if !startsWith(got, "orch-") {
+		t.Errorf("expected prefix to start with 'orch-', got %q", got)
+	}
+}
+
+func TestComputeExpectedOrchestrationPrefix_MatchesPinned(t *testing.T) {
+	// ComputeExpected should produce the same value as PinScenarioPrefixes.
+	namespace := "matrix-89-qaosupg-inst-gke"
+	scenario := "qa-opensearch-upg"
+
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+		},
+	}
+	if err := PinScenarioPrefixes(scenario, flags); err != nil {
+		t.Fatalf("PinScenarioPrefixes: %v", err)
+	}
+
+	freshFlags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: namespace,
+		},
+	}
+	computed := ComputeExpectedOrchestrationPrefix(scenario, freshFlags)
+
+	if computed != flags.Index.OrchestrationIndexPrefix {
+		t.Errorf("ComputeExpected=%q does not match Pinned=%q",
+			computed, flags.Index.OrchestrationIndexPrefix)
+	}
+}
+
+func startsWith(s, prefix string) bool {
+	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }

@@ -44,7 +44,8 @@ Keep it concise. The file should be useful to a fresh agent session that has nev
 
 ```
 charts/
-  camunda-platform-8.9/     # Latest (alpha) - unified "orchestration" component
+  camunda-platform-8.10/    # Latest - unified "orchestration" component
+  camunda-platform-8.9/     # Unified "orchestration" component
   camunda-platform-8.8/     # Unified "orchestration" component
   camunda-platform-8.7/     # Separate zeebe/, operate/, tasklist/ templates
   camunda-platform-8.6/     # Separate zeebe/, operate/, tasklist/ templates
@@ -61,21 +62,21 @@ scripts/
   prepare-helm-values/       # Values preparation/merging
   vault-secret-mapper/       # Vault-to-K8s secret mapping
   camunda-core/              # Shared Go packages (scenario resolution, kube client)
-  values-injector/           # Values injection utility
+  release-tools/             # Release-pipeline CLI (image set, Harbor tags, release notes, values injection)
 
 test/
   integration/scenarios/     # Cross-version integration test scenarios
   integration/testsuites/    # Test suite definitions (Venom, Playwright)
 
-version-matrix/              # Version compatibility matrices (8.2 through 8.9)
+version-matrix/              # Version compatibility matrices (8.2 through 8.10)
 infra/                       # Infrastructure values for shared ES/Keycloak
 docs/                        # Internal developer documentation
 ```
 
-### Architecture: 8.6/8.7 vs 8.8/8.9
+### Architecture: 8.6/8.7 vs 8.8+
 
 - **8.6 and 8.7:** Separate template directories for `zeebe/`, `zeebe-gateway/`, `operate/`, `tasklist/`.
-- **8.8 and 8.9:** These merged into a single `orchestration/` component (Zeebe + Operate + Tasklist unified).
+- **8.8, 8.9, and 8.10:** These merged into a single `orchestration/` component (Zeebe + Operate + Tasklist unified).
 
 When making changes across chart versions, check which structure applies. Do not assume templates are the same across versions.
 
@@ -116,7 +117,8 @@ Keep the header under 120 chars (prefer under 72). The description should be in 
 - Go code uses the golden file (snapshot) testing pattern. After changes that affect rendered output, run:
 
   ```bash
-  make go.update-golden-only
+  make go.update-golden-only        # full regeneration (cleanup before re-render)
+  make go.update-golden-only-lite   # faster iteration (skips cleanup)
   ```
 
 ### Branches
@@ -144,14 +146,15 @@ Pinned in `.tool-versions` (managed by `asdf`). Install all with: `asdf install`
 make install.dx-tooling          # Build and install all Go CLI tools to $GOPATH/bin
 make go.test                     # Run unit tests (checks against golden files)
 make go.update-golden-only       # Update golden files after template changes
+make go.update-golden-only-lite  # Faster update during iteration (skips cleanup)
 make helm.lint                   # Lint all Helm charts
 make helm.dependency-update      # Update chart dependencies
 make precommit.chores            # Pre-commit chores (lint + readme + schema + golden files)
-make helm.template chartPath=charts/camunda-platform-8.9   # Template a chart (inspect output)
-make helm.dry-run chartPath=charts/camunda-platform-8.9    # Dry-run an install
+make helm.template chartPath=charts/camunda-platform-8.10  # Template a chart (inspect output)
+make helm.dry-run chartPath=charts/camunda-platform-8.10   # Dry-run an install
 ```
 
-Most `make` targets accept `chartPath` to target a specific version (e.g., `make go.test chartPath=charts/camunda-platform-8.9`).
+Most `make` targets accept `chartPath` to target a specific version (e.g., `make go.test chartPath=charts/camunda-platform-8.10`).
 
 ### Values Files
 
@@ -178,6 +181,8 @@ base.yaml -> base-upgrade.yaml (if upgrade flow) -> identity -> persistence -> p
 These live in `test/integration/scenarios/chart-full-setup/values/` per chart version. The `deploy-camunda` CLI handles resolution and merging automatically.
 
 **Note on array merging:** The `deploy-camunda` CLI uses a deep merge strategy (`scripts/deploy-camunda/deploy/merge.go`) that intelligently merges arrays with `name`-keyed elements (like `env` arrays). Entries with matching `name` keys get their values overridden, and new entries are appended. This means feature layers do NOT need to re-include env vars from base.yaml — the merge logic handles it. This is different from raw Helm behavior (which replaces arrays entirely).
+
+**Image-tag activation:** The image-tags layer (`base-image-tags.yaml`) is enabled by setting `image-tags: true` in `ci-test-config.yaml`. All `qa-*` scenarios have this set because they always receive SNAPSHOT versions from nightly CI. When active, neither `values-digest.yaml` nor `values-latest.yaml` is applied — image versions come entirely from `base-image-tags.yaml` with placeholder substitution from the `.env` file (loaded by `buildScenarioEnv()`). In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file and passes it via `--env-file`. See `docs/integration-test-scenario-resolution.md` for the full data flow.
 
 For detailed documentation on how scenario resolution works, see `docs/integration-test-scenario-resolution.md`.
 

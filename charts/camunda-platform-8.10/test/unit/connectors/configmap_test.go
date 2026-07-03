@@ -10,7 +10,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -87,18 +86,9 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"global.security.authentication.method": "oidc",
 				"global.identity.auth.tokenUrl":         "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var configmapApplication ConnectorsConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// then
-				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.token-url": "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
 			},
 		},
 		{
@@ -109,23 +99,128 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"connectors.security.authentication.method": "oidc",
 				"global.identity.auth.tokenUrl":             "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var configmapApplication ConnectorsConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// then
-				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.token-url": "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
+			},
+		},
+		{
+			Name: "TestConnectorsOIDCShouldInheritAuthMethodFromGlobal",
+			Values: map[string]string{
+				"connectors.enabled":                    "true",
+				"global.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
+			},
+		},
+		{
+			Name: "TestConnectorsOIDCComponentMethodShouldOverrideGlobal",
+			Values: map[string]string{
+				"connectors.enabled":                        "true",
+				"global.security.authentication.method":     "basic",
+				"connectors.security.authentication.method": "oidc",
+				"global.identity.auth.tokenUrl":             "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
+			},
+		},
+		{
+			Name:        "TestConnectorsShouldUseSecureGrpcAddressWhenOrchestrationGrpcTlsIsEnabled",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/connectors/testdata/values-orchestration-grpc-tls.yaml")},
+			Values: map[string]string{
+				"connectors.enabled":             "true",
+				"orchestration.contextPath":      "/orchestration",
+				"orchestration.service.grpcPort": "26600",
+				"orchestration.service.httpPort": "8090",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.grpc-address": "https://camunda-platform-test-zeebe-gateway:26600",
+				"configmapApplication.camunda.client.rest-address": "http://camunda-platform-test-zeebe-gateway:8090/orchestration",
 			},
 		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapTemplateTest) TestExtraConfigurationSpringImport() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraConfigWithSpringImportDefault",
+			Values: map[string]string{
+				"connectors.enabled":                       "true",
+				"connectors.extraConfiguration[0].file":    "custom-spring.yaml",
+				"connectors.extraConfiguration[0].content": "some: config",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should include the file
+				s.Require().Contains(applicationYaml, "optional:file:/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				// File content should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"File content should be present in ConfigMap")
+			},
+		},
+		{
+			Name: "TestExtraConfigWithSpringImportFalse",
+			Values: map[string]string{
+				"connectors.enabled":                            "true",
+				"connectors.extraConfiguration[0].file":         "log4j2-spring.xml",
+				"connectors.extraConfiguration[0].springImport": "false",
+				"connectors.extraConfiguration[0].content":      "<Configuration/>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should NOT include the file
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// spring.config.import block should not be rendered at all
+				s.Require().NotContains(applicationYaml, "config:",
+					"spring.config.import block should not be rendered when all entries have springImport: false")
+				// File content should still be in ConfigMap
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"File content should be present in ConfigMap even with springImport: false")
+			},
+		},
+		{
+			Name: "TestExtraConfigMixedSpringImport",
+			Values: map[string]string{
+				"connectors.enabled":                            "true",
+				"connectors.extraConfiguration[0].file":         "custom-spring.yaml",
+				"connectors.extraConfiguration[0].content":      "some: config",
+				"connectors.extraConfiguration[1].file":         "log4j2-spring.xml",
+				"connectors.extraConfiguration[1].springImport": "false",
+				"connectors.extraConfiguration[1].content":      "<Configuration/>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// Only custom-spring.yaml should be in spring.config.import
+				s.Require().Contains(applicationYaml, "optional:file:/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// Both files should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"First file content should be present in ConfigMap")
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"Second file content should be present in ConfigMap even with springImport: false")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
 // // TODO: Refactor the tests to work with the new Connectors config.

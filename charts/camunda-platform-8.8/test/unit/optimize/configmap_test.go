@@ -81,6 +81,32 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("custom-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
+		{
+			Name:                 "TestOpenSearchNodeRenderedInEsSection",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"optimize.enabled":             "true",
+				"elasticsearch.enabled":        "false",
+				"global.elasticsearch.enabled": "false",
+				"global.opensearch.enabled":    "true",
+				"global.opensearch.url.host":   "my-opensearch",
+				"global.opensearch.url.port":   "9200",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OptimizeConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				s.Require().Len(configmapApplication.Es.Connection.Nodes, 1)
+				s.Require().Equal("my-opensearch", configmapApplication.Es.Connection.Nodes[0].Host)
+				s.Require().Equal(9200, configmapApplication.Es.Connection.Nodes[0].HttpPort)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

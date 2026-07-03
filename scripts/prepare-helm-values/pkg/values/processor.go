@@ -157,8 +157,7 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 		for _, p := range ph {
 			if val, ok := getVal(p); ok {
 				displayVal := val
-				upper := strings.ToUpper(p)
-				if strings.Contains(upper, "KEY") || strings.Contains(upper, "SECRET") || strings.Contains(upper, "PASSWORD") || strings.Contains(upper, "TOKEN") {
+				if IsSecretName(p) {
 					displayVal = "***"
 				}
 				logging.Logger.Info().Str("var", p).Str("value", displayVal).Msg("")
@@ -260,6 +259,21 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 	}
 	logging.Logger.Debug().Int("bytes", len(content)).Str("output-path", outputPath).Msg("Successfully wrote bytes to")
 	return outputPath, content, nil
+}
+
+// IsSecretName reports whether an environment variable name looks like it holds
+// a secret value (key, secret, password, or token), so callers can mask it in
+// human-facing output. The heuristic is intentionally simple and case-insensitive.
+// The "KEYCLOAK" token is stripped before the "KEY" check so KEYCLOAK_* hostnames
+// and realms (not secrets) are not masked; KEYCLOAK_*_SECRET/_PASSWORD still match
+// the other checks.
+func IsSecretName(name string) bool {
+	upper := strings.ToUpper(name)
+	deKeycloaked := strings.ReplaceAll(upper, "KEYCLOAK", "")
+	return strings.Contains(deKeycloaked, "KEY") ||
+		strings.Contains(upper, "SECRET") ||
+		strings.Contains(upper, "PASSWORD") ||
+		strings.Contains(upper, "TOKEN")
 }
 
 // IsMissingEnv returns (true, names) if err is a MissingEnvError.

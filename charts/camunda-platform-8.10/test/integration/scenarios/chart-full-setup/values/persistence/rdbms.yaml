@@ -1,14 +1,20 @@
 # RDBMS feature configuration for 8.9 (PostgreSQL)
 # Layer 4: Feature - RDBMS secondary storage
 
+global:
+  elasticsearch:
+    url:
+      host: "elasticsearch-master"
+
 orchestration:
   data:
     secondaryStorage:
+      type: rdbms
       rdbms:
-        url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
-        username: ${POSTGRESQL_USERNAME}
+        url: jdbc:postgresql://postgresql:5432/app
+        username: ${RDBMS_POSTGRESQL_USERNAME}
         secret:
-          inlineSecret: ${POSTGRESQL_PASSWORD}
+          inlineSecret: ${RDBMS_POSTGRESQL_PASSWORD}
   security:
     authorizations:
       enabled: false
@@ -23,6 +29,3 @@ orchestration:
   extraVolumes:
     - name: jdbcdrivers
       emptyDir: {}
-
-optimize:
-  enabled: false

@@ -54,15 +54,14 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                           "true",
-			"identity.enabled":                             "true",
-			"elasticsearch.enabled":                        "true",
-			"global.elasticsearch.enabled":                 "true",
-			"webModeler.restapi.mail.fromAddress":          "test@example.com",
-			"webModeler.restapi.resources.requests.cpu":    "300m",
-			"webModeler.restapi.resources.limits.cpu":      "1.5",
-			"webModeler.restapi.resources.requests.memory": "256Mi",
-			"webModeler.restapi.resources.limits.memory":   "512Mi",
+			"webModeler.enabled":                                      "true",
+			"identity.enabled":                                        "true",
+			"global.elasticsearch.enabled":                            "true",
+			"camundaHub.webModeler.restapi.mail.fromAddress":          "test@example.com",
+			"camundaHub.webModeler.restapi.resources.requests.cpu":    "300m",
+			"camundaHub.webModeler.restapi.resources.limits.cpu":      "1.5",
+			"camundaHub.webModeler.restapi.resources.requests.memory": "256Mi",
+			"camundaHub.webModeler.restapi.resources.limits.memory":   "512Mi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -90,19 +89,18 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		"CPU limit should be 1.5, got %s", cpuLimit.String())
 }
 
-func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
+func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesCustomValues() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                           "true",
-			"identity.enabled":                             "true",
-			"elasticsearch.enabled":                        "true",
-			"global.elasticsearch.enabled":                 "true",
-			"webModeler.restapi.mail.fromAddress":          "test@example.com",
-			"webModeler.restapi.resources.requests.cpu":    "500m",
-			"webModeler.restapi.resources.limits.cpu":      "1000m",
-			"webModeler.restapi.resources.requests.memory": "1Gi",
-			"webModeler.restapi.resources.limits.memory":   "2Gi",
+			"webModeler.enabled":                                      "true",
+			"identity.enabled":                                        "true",
+			"global.elasticsearch.enabled":                            "true",
+			"camundaHub.webModeler.restapi.mail.fromAddress":          "test@example.com",
+			"camundaHub.webModeler.restapi.resources.requests.cpu":    "500m",
+			"camundaHub.webModeler.restapi.resources.limits.cpu":      "1000m",
+			"camundaHub.webModeler.restapi.resources.requests.memory": "1Gi",
+			"camundaHub.webModeler.restapi.resources.limits.memory":   "2Gi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

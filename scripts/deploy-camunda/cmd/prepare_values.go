@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
-	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
@@ -53,8 +52,8 @@ type prepareValuesFlags struct {
 //
 //	deploy-camunda prepare-values \
 //	  --scenario-path /path/to/chart-full-setup \
-//	  --identity keycloak-external \
-//	  --persistence elasticsearch-external \
+//	  --identity keycloak \
+//	  --persistence elasticsearch \
 //	  --features multitenancy \
 //	  --output-dir /tmp/values
 func newPrepareValuesCommand() *cobra.Command {
@@ -88,11 +87,11 @@ All diagnostic output goes to stderr via the logger.`,
 	f.StringVar(&pv.scenarioPath, "scenario-path", "", "Path to the scenario directory (e.g., chart-full-setup)")
 	f.StringVar(&pv.chartPath, "chart-path", "", "Path to the Camunda chart directory (used to derive scenario-path if not set)")
 	f.StringVar(&pv.scenario, "scenario", "chart-full-setup", "Scenario name (used to derive defaults from naming conventions)")
-	f.StringVar(&pv.identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-external, opensearch, opensearch-external, rdbms, rdbms-oracle")
-	f.StringVar(&pv.testPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
+	f.StringVar(&pv.identity, "identity", "", "Identity selection (see values/identity/ or shell completion)")
+	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection (see values/persistence/ or shell completion)")
+	f.StringVar(&pv.testPlatform, "test-platform", "", "Test platform selection (see values/platform/ or shell completion)")
 	f.StringVar(&pv.platform, "platform", "gke", "Deploy platform: gke, rosa, eks (fallback for --test-platform)")
-	f.StringSliceVar(&pv.features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
+	f.StringSliceVar(&pv.features, "features", nil, "Feature selections, comma-separated (see values/features/ or shell completion)")
 	f.BoolVar(&pv.qa, "qa", false, "Enable QA configuration (test users, etc.)")
 	f.BoolVar(&pv.imageTags, "image-tags", false, "Enable image tag overrides from env vars")
 	f.BoolVar(&pv.upgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
@@ -105,18 +104,50 @@ All diagnostic output goes to stderr via the logger.`,
 	f.BoolVar(&pv.interactive, "interactive", false, "Enable interactive prompts for missing variables")
 	f.StringVarP(&pv.logLevel, "log-level", "l", "info", "Log level")
 
-	// Register completions for selection flags
+	// Register completions for selection flags — names discovered from the filesystem.
 	_ = cmd.RegisterFlagCompletionFunc("identity", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
+		scenarioPath := resolvePrepareValuesScenarioPath(cmd)
+		if scenarioPath == "" {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		names, err := scenarios.ListIdentities(scenarioPath)
+		if err != nil || len(names) == 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return names, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"elasticsearch", "elasticsearch-external", "opensearch", "rdbms", "rdbms-oracle"}, cobra.ShellCompDirectiveNoFileComp
+		scenarioPath := resolvePrepareValuesScenarioPath(cmd)
+		if scenarioPath == "" {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		names, err := scenarios.ListPersistence(scenarioPath)
+		if err != nil || len(names) == 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return names, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return config.TestPlatforms, cobra.ShellCompDirectiveNoFileComp
+		scenarioPath := resolvePrepareValuesScenarioPath(cmd)
+		if scenarioPath == "" {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		names, err := scenarios.ListPlatforms(scenarioPath)
+		if err != nil || len(names) == 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return names, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return completeMultiSelect(toComplete, []string{"multitenancy", "rba", "documentstore", "arm", "migrator"})
+		scenarioPath := resolvePrepareValuesScenarioPath(cmd)
+		if scenarioPath == "" {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		names, err := scenarios.ListFeatures(scenarioPath)
+		if err != nil || len(names) == 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return completeMultiSelect(toComplete, names)
 	})
 	_ = cmd.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return completeLogLevels(toComplete)
@@ -218,7 +249,7 @@ func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir stri
 		effectivePlatform = pv.platform
 	}
 
-	deployConfig, err := scenarios.BuildDeploymentConfig(pv.scenario, scenarios.BuilderOverrides{
+	deployConfig, err := scenarios.BuildDeploymentConfig(scenarioDir, pv.scenario, scenarios.BuilderOverrides{
 		Identity:     pv.identity,
 		Persistence:  pv.persistence,
 		Platform:     effectivePlatform,
@@ -325,4 +356,16 @@ func runPrepareValuesLegacy(pv *prepareValuesFlags, scenarioDir, outputDir strin
 
 	fmt.Fprintln(os.Stdout, outputPath)
 	return nil
+}
+
+// resolvePrepareValuesScenarioPath derives the scenario directory from the
+// --scenario-path or --chart-path flags for use in shell completion functions.
+func resolvePrepareValuesScenarioPath(cmd *cobra.Command) string {
+	if p, err := cmd.Flags().GetString("scenario-path"); err == nil && p != "" {
+		return p
+	}
+	if cp, err := cmd.Flags().GetString("chart-path"); err == nil && cp != "" {
+		return filepath.Join(cp, "test/integration/scenarios/chart-full-setup")
+	}
+	return ""
 }

@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/matrix"
@@ -38,10 +40,12 @@ func newMatrixListCommand() *cobra.Command {
 		includeDisabled bool
 		scenarioFilter  string
 		shortnameFilter string
+		shortnameExact  bool
 		flowFilter      string
 		outputFormat    string
 		platform        string
 		repoRoot        string
+		tier            int
 	)
 
 	cmd := &cobra.Command{
@@ -95,8 +99,10 @@ This command does not require cluster access.`,
 			entries = matrix.Filter(entries, matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
+				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
+				Tier:            tier,
 			})
 
 			output, err := matrix.Print(entries, outputFormat)
@@ -113,10 +119,12 @@ This command does not require cluster access.`,
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
+	f.BoolVar(&shortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&outputFormat, "format", "table", "Output format: table, json")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
+	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
@@ -137,7 +145,6 @@ func newMatrixRunCommand() *cobra.Command {
 		repoRoot                 string
 		dryRun                   bool
 		coverage                 bool
-		testIT                   bool
 		testE2E                  bool
 		testAll                  bool
 		stopOnFailure            bool
@@ -172,7 +179,18 @@ func newMatrixRunCommand() *cobra.Command {
 		dockerHubPassword        string
 		ensureDockerHub          bool
 		useLatest                bool
+		useQA                    bool
+		forceImageOverrides      bool
 		yes                      bool
+		logDir                   string
+		extraHelmArgs            []string
+		extraHelmSets            []string
+		extraValues              []string
+		namespaceOverride        string
+		shortnameExact           bool
+		tier                     int
+		chartRef                 string
+		chartRefVersion          string
 	)
 
 	cmd := &cobra.Command{
@@ -184,6 +202,9 @@ Each entry gets its own namespace (<prefix>-<version>-<shortname>).
 Use --cleanup to automatically delete each entry's namespace after its deployment and tests complete.
 
 This command calls deploy.Execute() for each matrix entry.`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validateChartRefFlags(chartRef, chartRefVersion)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create a signal-aware context so that Ctrl+C (SIGINT) and
 			// SIGTERM cancel the context, which propagates through
@@ -261,7 +282,6 @@ This command calls deploy.Execute() for each matrix entry.`,
 					SkipDependencyUpdate: &skipDependencyUpdate,
 					HelmTimeout:          &helmTimeout,
 					// Tests
-					TestIT:  &testIT,
 					TestE2E: &testE2E,
 					TestAll: &testAll,
 					// Kube contexts
@@ -360,13 +380,28 @@ This command calls deploy.Execute() for each matrix entry.`,
 			entries = matrix.Filter(entries, matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
+				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
+				Tier:            tier,
 			})
 
 			if len(entries) == 0 {
+				// Per-scenario CI workflows (signalled by --namespace-override or
+				// any explicit filter) always expect exactly one entry. A silent
+				// no-op here would let Playwright run against an empty namespace.
+				if namespaceOverride != "" || shortnameFilter != "" || scenarioFilter != "" || flowFilter != "" {
+					return fmt.Errorf("no matrix entries matched the filters (versions=%v, scenario-filter=%q, shortname-filter=%q, flow-filter=%q, platform=%q); check ci-test-config.yaml has an entry for this scenario+flow combination",
+						versions, scenarioFilter, shortnameFilter, flowFilter, platform)
+				}
 				fmt.Fprintln(os.Stdout, "No matrix entries matched the filters.")
 				return nil
+			}
+
+			// An external --chart-ref artifact corresponds to a single Camunda
+			// version, so it must not be applied across a multi-version matrix.
+			if err := validateChartRefVersionSpan(chartRef, entries); err != nil {
+				return err
 			}
 
 			// Block e2e runs with many entries — Playwright spawns a browser per test
@@ -392,6 +427,48 @@ This command calls deploy.Execute() for each matrix entry.`,
 				fmt.Fprintln(os.Stdout, output)
 			}
 
+			// Set up status display and log redirection.
+			// Auto-generates a timestamped log dir when stdout is a TTY and
+			// --log-dir is not explicitly set, so each run gets its own logs.
+			var statusDisplay *matrix.StatusDisplay
+			var logFile io.Closer
+			stdoutIsTerminal := logging.IsTerminal(os.Stdout.Fd())
+			// When --log-dir is explicitly set, append a timestamp subdirectory
+			// so successive runs don't clobber each other's logs.
+			if logDir != "" {
+				logDir = filepath.Join(logDir, time.Now().Format("20060102-150405"))
+			}
+			if logDir == "" && stdoutIsTerminal && !dryRun && !coverage {
+				logDir = filepath.Join(os.TempDir(), "matrix-logs", time.Now().Format("20060102-150405"))
+			}
+			if logDir != "" && !dryRun && !coverage {
+				if err := os.MkdirAll(logDir, 0o755); err != nil {
+					return fmt.Errorf("failed to create log directory %q: %w", logDir, err)
+				}
+
+				// Create/update a "latest" symlink so `tail -f /tmp/matrix-logs/latest/matrix-run.log` always works.
+				latestLink := filepath.Join(filepath.Dir(logDir), "latest")
+				_ = os.Remove(latestLink)
+				_ = os.Symlink(logDir, latestLink)
+
+				f, err := os.Create(filepath.Join(logDir, "matrix-run.log"))
+				if err != nil {
+					return fmt.Errorf("failed to create log file: %w", err)
+				}
+				logFile = f
+
+				// Redirect zerolog to the log file so stdout is clean for the status table.
+				if err := logging.Setup(logging.Options{
+					LevelString:  logLevel,
+					ColorEnabled: false,
+					Writer:       f,
+				}); err != nil {
+					return err
+				}
+
+				statusDisplay = matrix.NewStatusDisplay(os.Stdout, entries, stdoutIsTerminal, logDir)
+			}
+
 			runStart := time.Now()
 			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
 				DryRun:                dryRun,
@@ -404,7 +481,6 @@ This command calls deploy.Execute() for each matrix entry.`,
 				NamespacePrefix:       namespacePrefix,
 				Platform:              platform,
 				MaxParallel:           maxParallel,
-				TestIT:                testIT,
 				TestE2E:               testE2E,
 				TestAll:               testAll,
 				RepoRoot:              repoRoot,
@@ -427,14 +503,60 @@ This command calls deploy.Execute() for each matrix entry.`,
 				DockerHubPassword:     dockerHubPassword,
 				EnsureDockerHub:       ensureDockerHub,
 				UseLatest:             useLatest,
+				UseQA:                 useQA,
+				ForceImageOverrides:   forceImageOverrides,
+				ExtraHelmArgs:         extraHelmArgs,
+				ExtraHelmSets:         extraHelmSets,
+				ExtraValues:           extraValues,
+				NamespaceOverride:     namespaceOverride,
+				ChartRef:              chartRef,
+				ChartRefVersion:       chartRefVersion,
+				OnEntryStart: func(entry matrix.Entry, namespace string) {
+					if statusDisplay != nil {
+						statusDisplay.OnEntryStart(entry, namespace)
+					}
+				},
+				OnEntryComplete: func(entry matrix.Entry, result matrix.RunResult) {
+					if statusDisplay != nil {
+						statusDisplay.OnEntryComplete(entry, result)
+					}
+				},
+				OnPhaseChange: func(entry matrix.Entry, phase string) {
+					if statusDisplay != nil {
+						statusDisplay.OnPhaseChange(entry, phase)
+					}
+				},
+				LogDir: logDir,
 			})
 
-			// Print summary (skip for dry-run/coverage since they print their own output)
-			if !dryRun && !coverage {
-				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart)))
+			// Close the log file if we opened one.
+			if logFile != nil {
+				logFile.Close()
 			}
 
-			return err
+			// Print summary (skip for dry-run/coverage since they print their own output).
+			if !dryRun && !coverage {
+				// Stop the ticker, restore the cursor, and clear the status table
+				// before printing the final summary.
+				if statusDisplay != nil {
+					statusDisplay.Stop()
+					statusDisplay.Clear()
+					// Restore color output for the summary since logging was redirected to a file.
+					logging.ColorEnabled = stdoutIsTerminal
+				}
+				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart), logDir))
+			}
+
+			if err != nil {
+				return err
+			}
+			// Without --stop-on-failure, matrix.Run swallows per-entry errors so the
+			// process can drain remaining entries. Re-surface them here so the CLI
+			// (and any CI job invoking it) exits non-zero when any entry failed.
+			if failed := countFailedResults(results); failed > 0 {
+				return fmt.Errorf("matrix run: %d entr%s failed", failed, pluralEntry(failed))
+			}
+			return nil
 		},
 	}
 
@@ -443,14 +565,14 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
+	f.BoolVar(&shortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
 	f.BoolVar(&dryRun, "dry-run", false, "Log what would be deployed without actually deploying")
 	f.BoolVar(&coverage, "coverage", false, "Show a layer-breakdown report of what is tested in the matrix (no deployment)")
-	f.BoolVar(&testIT, "test-it", false, "Run integration tests after each deployment")
 	f.BoolVar(&testE2E, "test-e2e", false, "Run e2e tests after each deployment")
-	f.BoolVar(&testAll, "test-all", false, "Run both integration and e2e tests after each deployment")
+	f.BoolVar(&testAll, "test-all", false, "Run all e2e tests after each deployment")
 	f.BoolVar(&stopOnFailure, "stop-on-failure", false, "Stop the run on the first failure")
 	f.StringVar(&namespacePrefix, "namespace-prefix", "matrix", "Prefix for generated namespaces")
 	f.BoolVar(&cleanup, "cleanup", false, "Delete each entry's namespace after its deployment and tests complete")
@@ -472,7 +594,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&useVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets for all platforms (overridden by --use-vault-backed-secrets-gke/--use-vault-backed-secrets-eks)")
 	f.BoolVar(&useVaultBackedSecretsGKE, "use-vault-backed-secrets-gke", false, "Use vault-backed external secrets for GKE entries")
 	f.BoolVar(&useVaultBackedSecretsEKS, "use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
-	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host (defaults to "+config.DefaultKeycloakHost+")")
+	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host")
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
 	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
@@ -483,7 +605,17 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
 	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
+	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
+	f.BoolVar(&forceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: allow chart-root image overlays when --chart-ref is set (env-file IMAGE_TAG keys stripped at the workflow layer are not restored).")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
+	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
+	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
+	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
+	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Engages digest-overlay strip; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
+	f.StringVar(&namespaceOverride, "namespace-override", "", "Override the computed namespace for every entry (use with filters that narrow to a single entry — per-scenario CI workflows that pre-create the namespace).")
+	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
+	f.StringVar(&chartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
+	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
@@ -589,7 +721,7 @@ func resolveRepoRoot(flagValue string) string {
 
 	// Try to resolve from config file
 	var tempFlags config.RuntimeFlags
-	if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
+	if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
 		if tempFlags.Chart.RepoRoot != "" {
 			return tempFlags.Chart.RepoRoot
 		}
@@ -602,4 +734,88 @@ func resolveRepoRoot(flagValue string) string {
 	}
 
 	return ""
+}
+
+// validateChartRefFlags rejects inconsistent --chart-ref / --chart-version
+// combinations before any matrix entries run, so misconfiguration surfaces as
+// a clear CLI error rather than a confusing helm failure.
+//
+// Rules:
+//   - --chart-version requires --chart-ref (it has no meaning otherwise).
+//   - --chart-ref must be either an OCI reference (oci://...) or a path to a
+//     packaged chart (*.tgz). Bare directory paths are rejected because
+//     deploy-camunda already supports local-directory installs via the normal
+//     (non-overridden) chart path.
+//   - When --chart-ref is an OCI reference, --chart-version is required —
+//     otherwise helm would resolve to an arbitrary tag.
+func validateChartRefFlags(chartRef, chartRefVersion string) error {
+	if chartRef == "" {
+		if chartRefVersion != "" {
+			return fmt.Errorf("--chart-version requires --chart-ref")
+		}
+		return nil
+	}
+
+	isOCI := strings.HasPrefix(chartRef, "oci://")
+	isTGZ := strings.HasSuffix(chartRef, ".tgz")
+	if !isOCI && !isTGZ {
+		return fmt.Errorf("--chart-ref must be an OCI reference (oci://...) or a packaged chart (.tgz), got %q", chartRef)
+	}
+
+	if isOCI && chartRefVersion == "" {
+		return fmt.Errorf("--chart-version is required when --chart-ref is an OCI reference")
+	}
+
+	return nil
+}
+
+// validateChartRefVersionSpan rejects a --chart-ref override that would span
+// more than one chart version. An external chart artifact (OCI ref or .tgz)
+// corresponds to a single Camunda version, so applying it across multiple
+// resolved matrix versions would install the wrong chart on every entry but the
+// matching one. Multiple entries that share one version (scenarios/flows) are
+// allowed — that is the normal RC-validation workflow.
+func validateChartRefVersionSpan(chartRef string, entries []matrix.Entry) error {
+	if chartRef == "" {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	order := []string{}
+	for _, e := range entries {
+		if _, ok := seen[e.Version]; !ok {
+			seen[e.Version] = struct{}{}
+			order = append(order, e.Version)
+		}
+	}
+	if len(order) > 1 {
+		return fmt.Errorf(
+			"--chart-ref applies a single external chart artifact, but the resolved matrix spans %d versions (%s); "+
+				"narrow the run to one version with --versions (e.g. --versions %s)",
+			len(order), strings.Join(order, ", "), order[0])
+	}
+	return nil
+}
+
+// countFailedResults returns the number of entries that finished with an error.
+// Entries cancelled by --stop-on-failure are excluded so the count reflects
+// real deployment failures rather than skipped work.
+func countFailedResults(results []matrix.RunResult) int {
+	failed := 0
+	for _, r := range results {
+		if r.Error == nil {
+			continue
+		}
+		if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
+			continue
+		}
+		failed++
+	}
+	return failed
+}
+
+func pluralEntry(n int) string {
+	if n == 1 {
+		return "y"
+	}
+	return "ies"
 }

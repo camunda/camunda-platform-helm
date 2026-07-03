@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type ServiceTest struct {
@@ -125,6 +126,10 @@ func (s *KeycloakServiceTest) TestKeycloakDifferentServiceValuesInputs() {
 				// then
 				s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
 				s.Require().Equal("keycloak.prod.svc.cluster.local", service.Spec.ExternalName)
+				s.Require().Len(service.Spec.Ports, 1)
+				s.Require().Equal("http", service.Spec.Ports[0].Name)
+				s.Require().Equal(int32(8443), service.Spec.Ports[0].Port)
+				s.Require().Equal(intstr.FromInt32(8443), service.Spec.Ports[0].TargetPort)
 			},
 		},
 	}

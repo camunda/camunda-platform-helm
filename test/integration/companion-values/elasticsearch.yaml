@@ -1,0 +1,115 @@
+# CI values for the embedded Elasticsearch companion chart (elastic/elasticsearch).
+# Security/X-Pack disabled, single node, minimal resources for CI/dev environments.
+#
+# Deployed as a separate Helm release by deploy-camunda before the main
+# Camunda chart. Referenced from ci-test-config.yaml dependencies.
+
+clusterName: "elasticsearch"
+
+replicas: 1
+minimumMasterNodes: 1
+
+protocol: http
+
+# Use ES 8.18.0 — the elastic/elasticsearch Helm chart 8.5.1 defaults to its
+# own app version (8.5.1) but Camunda 8.10 requires ES 8.6+ (specifically for
+# the unassignedPrimaryShards field in HealthResponse). The Bitnami subchart
+# this replaces bundled ES 8.18.0.
+imageTag: "8.18.0"
+
+# Disable automatic TLS certificate generation. When createCert=true (default),
+# the chart injects env vars that force xpack.security.enabled=true and
+# xpack.security.{http,transport}.ssl.enabled=true, overriding any esConfig
+# settings. Setting createCert=false prevents cert creation, volume mounts, AND
+# the env var injection — letting our esConfig settings take effect.
+createCert: false
+
+# Keep the credentials secret enabled even though security is disabled.
+# The chart's readiness probe script checks [ -z "${ELASTIC_PASSWORD}" ] and
+# exits 1 if unset. The password is injected from this secret but ignored by
+# ES when xpack.security.enabled=false.
+secret:
+  enabled: true
+
+# Single-node disco + disable HTTP TLS + disable X-Pack security so Camunda
+# can talk to the cluster anonymously over plain HTTP (mirrors the OpenSearch
+# companion chart's "security disabled" stance).
+#
+# NOTE: discovery.type: single-node is NOT set here because the
+# elastic/elasticsearch chart injects cluster.initial_master_nodes via an env
+# var in the StatefulSet template, and ES 8.x rejects having both. With
+# replicas=1 the chart bootstraps correctly without the explicit single-node
+# setting.
+esConfig:
+  elasticsearch.yml: |
+    cluster.name: elasticsearch
+    network.host: 0.0.0.0
+    xpack.security.enabled: false
+    xpack.security.http.ssl.enabled: false
+    # Allow _reindex-from-remote to pull data from the source (bundled Bitnami)
+    # Elasticsearch during the Bitnami→companion migration (upgrade-minor flows).
+    # Harmless for install scenarios, which never issue a remote reindex.
+    reindex.remote.whitelist: "*:9200"
+    xpack.security.transport.ssl.enabled: false
+
+extraEnvs:
+  - name: ES_JAVA_OPTS
+    value: "-Xms512m -Xmx512m"
+
+# Single-node clusters cannot allocate index replicas. Camunda components
+# create indices with number_of_replicas=1, which leaves every replica
+# unassigned, drives the cluster to yellow, and causes intermittent "all
+# shards failed" 503s on _search calls.
+#
+# auto_expand_replicas dynamically adjusts replicas based on cluster size:
+# on a 1-node cluster it settles at 0; on a 2-node cluster it scales to 1.
+# It overrides any explicit number_of_replicas setting.
+#
+# Priority MUST be lower than the application's own index templates:
+#   - Zeebe-record templates: priority 20 (define aliases for Optimize)
+#   - Operate/Tasklist/Camunda templates: priority 0
+# Setting priority=1 ensures:
+#   - Zeebe-record templates (p20) win → their aliases are applied correctly
+#   - Our template (p1) wins over operate/tasklist/camunda (p0) → auto_expand
+#     applies to those indices
+# Zeebe-record indices already set number_of_replicas=0 in their templates,
+# so they don't need auto_expand_replicas to be green on a single node.
+#
+# Index patterns are intentionally substring globs (e.g. "*operate*") rather
+# than prefix globs ("operate-*"). CI prepends $GITHUB_WORKFLOW_JOB_ID to
+# every component prefix, and deploy-camunda matrix uses shortened prefixes
+# ("op-*", "opt-*", "orch-*") for index naming.
+lifecycle:
+  postStart:
+    exec:
+      command:
+        - bash
+        - -c
+        - |
+          max=60
+          n=0
+          until curl -fsS --connect-timeout 5 "http://localhost:9200/_cluster/health" >/dev/null 2>&1; do
+            n=$((n + 1))
+            if [ "$n" -ge "$max" ]; then
+              echo "elasticsearch not reachable after $max attempts" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          curl -fsS --connect-timeout 5 -X PUT "http://localhost:9200/_index_template/camunda-ci-auto-expand-replicas" \
+            -H 'Content-Type: application/json' \
+            -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*","op-*","opt-*","orch-*"],"priority":1,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 4Gi

@@ -1,0 +1,64 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  scenarios:
+    - id: elasticsearch
+      shortname: eske
+      tier: 1
+      enabled: true
+    - id: enterprise-values
+      shortname: entv
+      tier: 2
+      enabled: true
+    - id: keycloak-mt
+      shortname: kemt
+      tier: 2
+      enabled: true
+    - id: keycloak-rba
+      shortname: kerba
+      tier: 2
+      enabled: true
+    - id: oidc
+      shortname: esoi
+      tier: 2
+      enabled: true
+    - id: keycloak-original-install-patch
+      shortname: keyc
+      tier: 2
+      enabled: true
+    - id: opensearch-embedded
+      shortname: osem
+      tier: 2
+      enabled: true
+    - id: component-persistence
+      shortname: cprst
+      tier: 2
+      enabled: true
+    - id: shadow-e2e
+      shortname: shde2
+      tier: 2
+      enabled: true
+    - id: keycloak-original-install
+      shortname: keyco
+      tier: 1
+      enabled: true
+    - id: alwaysgreen
+      shortname: agrn
+      enabled: false
+    - id: qa-elasticsearch
+      shortname: qael
+      enabled: false
+    - id: qa-elasticsearch-rba
+      shortname: qarba
+      enabled: false
+    - id: qa-elasticsearch-mt
+      shortname: qamt
+      enabled: false
+    - id: qa-license
+      shortname: lic
+      enabled: false
+    - id: qa-opensearch
+      shortname: qaos
+      enabled: false

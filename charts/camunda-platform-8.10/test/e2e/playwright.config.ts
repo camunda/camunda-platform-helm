@@ -29,6 +29,14 @@ if (!fs.existsSync(skipFile)) {
   );
 }
 
+// Auth0 smoke directory in @camunda/e2e-test-suite. Distinct from the SM-8.10
+// suite because the QA-owned smoke-tests.spec.js calls setupKeycloakUser which
+// needs a real Keycloak admin — incompatible with the Auth0 deployment.
+const auth0TestDir = path.resolve(
+  __dirname,
+  "./node_modules/@camunda/e2e-test-suite/dist/tests/auth0",
+);
+
 export default defineConfig({
   testDir,
   projects: [
@@ -37,13 +45,47 @@ export default defineConfig({
       testMatch: ["**/smoke-tests.spec.{ts,js}"],
     },
     {
+      name: "full-suite-setup",
+      testMatch: ["**/test-setup.spec.{ts,js}"],
+      use: {
+        extraHTTPHeaders: {
+          "X-Test-Tasklist-Version": "v2",
+        },
+      },
+    },
+    {
       name: "full-suite",
+      dependencies: ["full-suite-setup"],
+      testMatch: ["**/*.spec.{ts,js}"],
+      // cluster-variables requires Vault-managed secrets not available in PR CI.
+      // test-setup is run via the full-suite-setup dependency, not directly.
+      testIgnore: ["**/cluster-variables.spec.{ts,js}", "**/test-setup.spec.{ts,js}"],
+      // Match the E2E repo's chromium-v2 project behavior:
+      // - @tasklistV1: These tests require Tasklist v1 mode with RBA enabled
+      //   (CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true), which
+      //   is not deployed in standard PR CI scenarios. Also excludes all Optimize
+      //   tests (under 'Optimize User Flow Tests @tasklistV1' describe) which
+      //   require long Optimize warm-up not available on fresh clusters.
+      // - Connector Secrets/Custom Tags/Properties: Require QA-specific config.
+      grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
+      use: {
+        extraHTTPHeaders: {
+          "X-Test-Tasklist-Version": "v2",
+        },
+      },
+    },
+    {
+      // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
+      // route redirects to the Auth0 issuer with a well-formed authorize URL.
+      // No browser fixtures, no Keycloak admin — just request/response checks.
+      name: "auth0-smoke",
+      testDir: auth0TestDir,
       testMatch: ["**/*.spec.{ts,js}"],
     },
   ],
   fullyParallel: true,
   retries: 2,
-  timeout: 10 * 60 * 1000, // no test should take more than 3 minutes (failing fast is important so that we can run our tests on each PR)
+  timeout: 12 * 60 * 1000, // match E2E repo timeout (12 minutes); test.slow() triples this
   workers: "100%",
   //workers: process.env.CI == "true" ? 1 : "50%",
   use: {

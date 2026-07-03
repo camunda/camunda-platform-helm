@@ -12,13 +12,6 @@
 
 ## Installed Services:
 
-- Console:
-  - Enabled: {{ .Values.console.enabled }}
-  {{- if .Values.console.enabled }}
-    {{- if .Values.console.image.tag }}
-  - Docker Image used for Console: {{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}
-    {{- end }}
-  {{- end }}
 - Orchestration:
   - Enabled: {{ .Values.orchestration.enabled }}
   {{- if .Values.orchestration.enabled }}
@@ -27,6 +20,12 @@
     {{- end }}
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
+    {{- if and (gt (int .Values.global.multiregion.regions) 1) .Values.orchestration.profiles.broker }}
+  - Multi-region deployment detected (regions: {{ .Values.global.multiregion.regions }})
+    ℹ️  You must configure initial contact points manually via environment variable:
+    Set orchestration.env with CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
+    Example: <pod>.<headless-service>.<namespace>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace>.svc.cluster.local:26502,...
+    {{- end }}
   {{- end }}
 - Optimize:
   - Enabled: {{ .Values.optimize.enabled }}
@@ -46,21 +45,13 @@
     {{- if .Values.identity.image.tag }}
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag }}
     {{- end }}
-  {{- if .Values.identityKeycloak.enabled }}
-  - Keycloak: {{ .Values.identityKeycloak.image.repository }}:{{ .Values.identityKeycloak.image.tag }}
-  {{- end }}
   {{- end }}
 - Web Modeler:
-  - Enabled: {{ .Values.webModeler.enabled }}
-  {{- if .Values.webModeler.enabled }}
+  - Enabled: {{ eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
   - Docker images used for Web Modeler:
     - {{ include "webModeler.restapi.image" . }}
     - {{ include "webModeler.websockets.image" . }}
-  {{- end }}
-- Elasticsearch:
-  - Enabled: {{ .Values.elasticsearch.enabled }}
-  {{- if .Values.elasticsearch.enabled }}
-  - Docker Image used for Elasticsearch: {{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}
   {{- end }}
 
 ### Orchestration (Zeebe, Operate, Tasklist, and Identity)
@@ -87,7 +78,7 @@ Identity:
 Optimize:
 > kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
-{{ if .Values.webModeler.enabled -}}
+{{ if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 Web Modeler:
 > kubectl port-forward svc/{{ include "webModeler.restapi.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
@@ -96,21 +87,11 @@ Web Modeler:
 Connectors:
 > kubectl port-forward svc/{{ .Release.Name }}-connectors 8086:8080
 {{- end }}
-{{ if .Values.console.enabled -}}
-Console:
-> kubectl port-forward svc/{{ .Release.Name }}-console 8087:80
-{{- end }}
-
 {{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
 
 If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URLs for Keycloak.
 
-Authentication via Identity/Keycloak is enabled. To login into one of the services please port-forward to Keycloak
-as well, otherwise, a login will not be possible. Make sure you use `18080` as a port.
-
-{{ if .Values.identityKeycloak.enabled -}}
-> kubectl port-forward svc/{{ include "common.names.dependency.fullname" (dict "chartName" "keycloak" "chartValues" .Values.identityKeycloak "context" $) | trunc 20 | trimSuffix "-" }} 18080:80
-{{- end }}
+Authentication via Identity/Keycloak is enabled. Ensure your external Keycloak is reachable at the configured URL (see `global.identity.keycloak.url`).
 {{- end }}
 
 Now you can point your browser to one of the service's login pages.
@@ -128,18 +109,12 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- if .Values.global.ingress.enabled }}
 ## Combined Ingress
 
-{{ if .Values.identityKeycloak.enabled -}}
-- Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
-{{- end }}
-{{- if or (.Values.identity.enabled) (.Values.webModeler.enabled) }}
+{{- if or (.Values.identity.enabled) (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - Web Applications:
-  {{ if .Values.console.enabled -}}
-  - Console: {{ include "camundaPlatform.consoleExternalURL" . }}
-  {{- end }}
   {{ if .Values.identity.enabled -}}
   - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
-  {{ if .Values.webModeler.enabled -}}
+  {{ if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
   - WebModeler: {{ include "camundaPlatform.webModelerExternalURL" . }}
   - WebModeler WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
   {{- end }}

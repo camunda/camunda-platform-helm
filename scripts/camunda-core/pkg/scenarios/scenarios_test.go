@@ -20,33 +20,33 @@ func TestMapScenarioToConfig(t *testing.T) {
 	}{
 		// Well-known composite scenarios
 		{
-			name:            "keycloak-original maps to keycloak + elasticsearch-external",
+			name:            "keycloak-original maps to keycloak + elasticsearch",
 			scenario:        "keycloak-original",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "keycloak-original case insensitive",
 			scenario:        "Keycloak-Original",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 		},
 
 		// Standard identity derivation
 		{
-			name:            "elasticsearch defaults to keycloak + elasticsearch-external",
+			name:            "elasticsearch defaults to keycloak + elasticsearch",
 			scenario:        "elasticsearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "keycloak-mt maps to keycloak with multitenancy",
 			scenario:        "keycloak-mt",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy"},
 		},
@@ -54,7 +54,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "multitenancy maps to keycloak with multitenancy",
 			scenario:        "multitenancy",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy"},
 		},
@@ -62,30 +62,65 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "oidc maps to oidc identity",
 			scenario:        "oidc",
 			wantIdentity:    "oidc",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "auth0 maps to auth0 identity",
+			scenario:        "auth0",
+			wantIdentity:    "auth0",
+			wantPersistence: "elasticsearch",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "elasticsearch-auth0 maps to auth0 identity",
+			scenario:        "elasticsearch-auth0",
+			wantIdentity:    "auth0",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "elasticsearch-basic maps to basic identity",
 			scenario:        "elasticsearch-basic",
 			wantIdentity:    "basic",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "hybrid maps to hybrid identity",
 			scenario:        "hybrid",
 			wantIdentity:    "hybrid",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 		},
 
 		// Persistence derivation
 		{
-			name:            "opensearch maps to opensearch-external persistence",
+			name:            "opensearch maps to opensearch-embedded persistence",
 			scenario:        "opensearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch-external",
+			wantPersistence: "opensearch-embedded",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "opensearch-self-signed-os-trust resolves to its own persistence (substring trap regression)",
+			scenario:        "opensearch-self-signed-os-trust",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-self-signed-os-trust",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "opensearch-self-signed maps to opensearch-self-signed persistence",
+			scenario:        "opensearch-self-signed",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-self-signed",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "opensearch-embedded maps to opensearch-embedded persistence",
+			scenario:        "opensearch-embedded",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-embedded",
 			wantPlatform:    "gke",
 		},
 		{
@@ -102,27 +137,34 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPersistence: "rdbms-oracle",
 			wantPlatform:    "gke",
 		},
+		{
+			name:            "rdbms-self-signed maps to rdbms-self-signed persistence",
+			scenario:        "rdbms-self-signed",
+			wantIdentity:    "keycloak",
+			wantPersistence: "rdbms-self-signed",
+			wantPlatform:    "gke",
+		},
 
 		// Platform derivation
 		{
 			name:            "eks maps to eks platform",
 			scenario:        "elasticsearch-eks",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "eks",
 		},
 		{
 			name:            "openshift maps to openshift platform",
 			scenario:        "elasticsearch-openshift",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "openshift",
 		},
 		{
 			name:            "rosa maps to openshift platform",
 			scenario:        "elasticsearch-rosa",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "openshift",
 		},
 
@@ -131,7 +173,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "keycloak-rba maps to rba feature",
 			scenario:        "keycloak-rba",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"rba"},
 		},
@@ -139,9 +181,26 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "documentstore maps to documentstore feature",
 			scenario:        "documentstore",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"documentstore"},
+		},
+		{
+			name:            "mcp maps to mcp feature",
+			scenario:        "mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+		},
+		{
+			name:            "qa-elasticsearch-mcp enables QA and MCP",
+			scenario:        "qa-elasticsearch-mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+			wantQA:          true,
 		},
 
 		// QA and upgrade modifiers
@@ -149,7 +208,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "qa- prefix enables QA mode",
 			scenario:        "qa-elasticsearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantQA:          true,
 		},
@@ -157,7 +216,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "upgrade in name enables upgrade mode",
 			scenario:        "upgrade-migration",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantUpgrade:     true,
 		},
@@ -167,14 +226,14 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "entra maps to oidc identity",
 			scenario:        "entra",
 			wantIdentity:    "oidc",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "-mt- trigger maps to keycloak with multitenancy",
 			scenario:        "foo-mt-bar",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy"},
 		},
@@ -182,7 +241,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "-upg trigger enables upgrade mode",
 			scenario:        "elasticsearch-upg",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantUpgrade:     true,
 		},
@@ -190,7 +249,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "combined multi-feature: mt + documentstore",
 			scenario:        "keycloak-mt-document",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy", "documentstore"},
 		},
@@ -198,7 +257,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "combined qa + opensearch + eks",
 			scenario:        "qa-opensearch-eks",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch-external",
+			wantPersistence: "opensearch-embedded",
 			wantPlatform:    "eks",
 			wantQA:          true,
 		},
@@ -216,7 +275,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "qa-elasticsearch-tasklist-v1 maps to QA + tasklist-v1 feature",
 			scenario:        "qa-elasticsearch-tasklist-v1",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"tasklist-v1"},
 			wantQA:          true,
@@ -225,7 +284,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "qa-elasticsearch-upg maps to QA + upgrade mode",
 			scenario:        "qa-elasticsearch-upg",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch-external",
+			wantPersistence: "elasticsearch",
 			wantPlatform:    "gke",
 			wantQA:          true,
 			wantUpgrade:     true,
@@ -281,26 +340,10 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "valid config with elasticsearch-external",
-			config: DeploymentConfig{
-				Identity:    "keycloak-external",
-				Persistence: "elasticsearch-external",
-				Platform:    "gke",
-			},
-		},
-		{
 			name: "valid config with no-elasticsearch",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
 				Persistence: "no-elasticsearch",
-				Platform:    "gke",
-			},
-		},
-		{
-			name: "valid config with opensearch-external",
-			config: DeploymentConfig{
-				Identity:    "keycloak",
-				Persistence: "opensearch-external",
 				Platform:    "gke",
 			},
 		},
@@ -313,11 +356,18 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalid persistence",
+			name: "missing persistence",
+			config: DeploymentConfig{
+				Identity: "keycloak",
+				Platform: "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing platform",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
-				Persistence: "mongodb",
-				Platform:    "gke",
+				Persistence: "elasticsearch",
 			},
 			wantErr: true,
 		},
@@ -331,6 +381,16 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "mcp feature does not affect required-field validation",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -338,6 +398,113 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			err := tt.config.Validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateAgainstValues(t *testing.T) {
+	tmpDir := t.TempDir()
+	dirs := []string{
+		filepath.Join(tmpDir, "values", "identity"),
+		filepath.Join(tmpDir, "values", "persistence"),
+		filepath.Join(tmpDir, "values", "platform"),
+		filepath.Join(tmpDir, "values", "features"),
+	}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	files := []string{
+		filepath.Join(tmpDir, "values", "identity", "keycloak.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "opensearch-embedded.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "no-elasticsearch.yaml"),
+		filepath.Join(tmpDir, "values", "platform", "gke.yaml"),
+		filepath.Join(tmpDir, "values", "features", "mcp.yaml"),
+	}
+	for _, f := range files {
+		if err := os.WriteFile(f, []byte("# test"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tests := []struct {
+		name    string
+		config  DeploymentConfig
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+			},
+		},
+		{
+			name: "valid config with mcp feature",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+		},
+		{
+			name: "invalid identity (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak-external",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid persistence (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "mongodb",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "opensearch without -embedded suffix rejected (no file for that name)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "opensearch",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "elasticsearch-external rejected (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch-external",
+				Platform:    "gke",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid feature (no file)",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"badfeature"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.ValidateAgainstValues(tmpDir)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateAgainstValues() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -365,11 +532,8 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		filepath.Join(tmpDir, "values", "base.yaml"),
 		filepath.Join(tmpDir, "values", "base-qa.yaml"),
 		filepath.Join(tmpDir, "values", "identity", "keycloak.yaml"),
-		filepath.Join(tmpDir, "values", "identity", "keycloak-external.yaml"),
 		filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"),
-		filepath.Join(tmpDir, "values", "persistence", "elasticsearch-external.yaml"),
-		filepath.Join(tmpDir, "values", "persistence", "opensearch.yaml"),
-		filepath.Join(tmpDir, "values", "persistence", "opensearch-external.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "opensearch-embedded.yaml"),
 		filepath.Join(tmpDir, "values", "platform", "gke.yaml"),
 		filepath.Join(tmpDir, "values", "platform", "eks.yaml"),
 		filepath.Join(tmpDir, "values", "features", "multitenancy.yaml"),
@@ -380,14 +544,14 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		}
 	}
 
-	t.Run("keycloak-original config resolves to keycloak + elasticsearch-external", func(t *testing.T) {
+	t.Run("keycloak-original config resolves to keycloak + elasticsearch", func(t *testing.T) {
 		config := MapScenarioToConfig("keycloak-original")
 		paths, err := config.ResolvePaths(tmpDir)
 		if err != nil {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml
+		// Should contain: base.yaml, keycloak.yaml, elasticsearch.yaml, gke.yaml
 		if len(paths) != 4 {
 			t.Fatalf("Expected 4 paths, got %d: %v", len(paths), paths)
 		}
@@ -395,7 +559,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		expectedSuffixes := []string{
 			"values/base.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/elasticsearch-external.yaml",
+			"values/persistence/elasticsearch.yaml",
 			"values/platform/gke.yaml",
 		}
 		for i, suffix := range expectedSuffixes {
@@ -412,7 +576,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml
+		// Should contain: base.yaml, keycloak.yaml, elasticsearch.yaml, gke.yaml
 		if len(paths) != 4 {
 			t.Fatalf("Expected 4 paths, got %d: %v", len(paths), paths)
 		}
@@ -420,7 +584,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		expectedSuffixes := []string{
 			"values/base.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/elasticsearch-external.yaml",
+			"values/persistence/elasticsearch.yaml",
 			"values/platform/gke.yaml",
 		}
 		for i, suffix := range expectedSuffixes {
@@ -437,7 +601,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml, multitenancy.yaml
+		// Should contain: base.yaml, keycloak.yaml, elasticsearch.yaml, gke.yaml, multitenancy.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
@@ -445,7 +609,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		expectedSuffixes := []string{
 			"values/base.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/elasticsearch-external.yaml",
+			"values/persistence/elasticsearch.yaml",
 			"values/platform/gke.yaml",
 			"values/features/multitenancy.yaml",
 		}
@@ -463,7 +627,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, elasticsearch.yaml, gke.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
@@ -472,7 +636,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			"values/base.yaml",
 			"values/base-qa.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/elasticsearch-external.yaml",
+			"values/persistence/elasticsearch.yaml",
 			"values/platform/gke.yaml",
 		}
 		for i, suffix := range expectedSuffixes {
@@ -489,7 +653,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch-external.yaml, eks.yaml
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch-embedded.yaml, eks.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
@@ -498,37 +662,8 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			"values/base.yaml",
 			"values/base-qa.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/opensearch-external.yaml",
+			"values/persistence/opensearch-embedded.yaml",
 			"values/platform/eks.yaml",
-		}
-		for i, suffix := range expectedSuffixes {
-			if !containsSuffix(paths[i], suffix) {
-				t.Errorf("paths[%d] = %q, want suffix %q", i, paths[i], suffix)
-			}
-		}
-	})
-
-	t.Run("opensearch-external persistence resolves to opensearch-external.yaml", func(t *testing.T) {
-		config := &DeploymentConfig{
-			Identity:    "keycloak",
-			Persistence: "opensearch-external",
-			Platform:    "gke",
-		}
-		paths, err := config.ResolvePaths(tmpDir)
-		if err != nil {
-			t.Fatalf("ResolvePaths() error = %v", err)
-		}
-
-		// Should contain: base.yaml, keycloak.yaml, opensearch-external.yaml, gke.yaml
-		if len(paths) != 4 {
-			t.Fatalf("Expected 4 paths, got %d: %v", len(paths), paths)
-		}
-
-		expectedSuffixes := []string{
-			"values/base.yaml",
-			"values/identity/keycloak.yaml",
-			"values/persistence/opensearch-external.yaml",
-			"values/platform/gke.yaml",
 		}
 		for i, suffix := range expectedSuffixes {
 			if !containsSuffix(paths[i], suffix) {
@@ -697,11 +832,11 @@ func TestDeploymentConfigResolvePathsWithImports(t *testing.T) {
 		}
 	}
 
-	// Create files — hybrid.yaml imports keycloak-external
+	// Create files — hybrid.yaml imports keycloak
 	writeYAML(t, filepath.Join(tmpDir, "values", "base.yaml"), "base: true\n")
-	writeYAML(t, filepath.Join(tmpDir, "values", "identity", "keycloak-external.yaml"), "identity: keycloak-external\n")
+	writeYAML(t, filepath.Join(tmpDir, "values", "identity", "keycloak.yaml"), "identity: keycloak\n")
 	writeYAML(t, filepath.Join(tmpDir, "values", "identity", "hybrid.yaml"),
-		"imports:\n  - keycloak-external\nidentity: hybrid\n")
+		"imports:\n  - keycloak\nidentity: hybrid\n")
 	writeYAML(t, filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"), "persistence: elasticsearch\n")
 	writeYAML(t, filepath.Join(tmpDir, "values", "platform", "gke.yaml"), "platform: gke\n")
 
@@ -715,14 +850,14 @@ func TestDeploymentConfigResolvePathsWithImports(t *testing.T) {
 		t.Fatalf("ResolvePaths() error = %v", err)
 	}
 
-	// Expected: base, keycloak-external (imported), hybrid, elasticsearch, gke
+	// Expected: base, keycloak (imported), hybrid, elasticsearch, gke
 	if len(paths) != 5 {
 		t.Fatalf("expected 5 paths, got %d: %v", len(paths), paths)
 	}
 
 	expectedSuffixes := []string{
 		"values/base.yaml",
-		"values/identity/keycloak-external.yaml",
+		"values/identity/keycloak.yaml",
 		"values/identity/hybrid.yaml",
 		"values/persistence/elasticsearch.yaml",
 		"values/platform/gke.yaml",
@@ -818,9 +953,31 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 		},
 	}
 
+	// Build minimal scenariosDir so ValidateAgainstValues can resolve names.
+	scenariosDir := t.TempDir()
+	for _, d := range []string{
+		filepath.Join(scenariosDir, "values", "identity"),
+		filepath.Join(scenariosDir, "values", "persistence"),
+		filepath.Join(scenariosDir, "values", "platform"),
+		filepath.Join(scenariosDir, "values", "features"),
+	} {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, f := range []string{
+		filepath.Join(scenariosDir, "values", "identity", "keycloak.yaml"),
+		filepath.Join(scenariosDir, "values", "persistence", "elasticsearch.yaml"),
+		filepath.Join(scenariosDir, "values", "platform", "gke.yaml"),
+	} {
+		if err := os.WriteFile(f, []byte("# test"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := BuildDeploymentConfig("qa-elasticsearch", BuilderOverrides{
+			cfg, err := BuildDeploymentConfig(scenariosDir, "qa-elasticsearch", BuilderOverrides{
 				Identity:     "keycloak",
 				Persistence:  "elasticsearch",
 				Platform:     "gke",

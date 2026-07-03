@@ -18,6 +18,7 @@ func main() {
 	mapping := flag.String("mapping", "", "Vault secret mapping content (multi-line, semicolon-terminated entries)")
 	secretName := flag.String("secret-name", "vault-mapped-secrets", "Kubernetes Secret name to generate")
 	outputPath := flag.String("output", "", "Path to write the generated Secret YAML")
+	strict := flag.Bool("strict", false, "Fail if any mapped env var is unset, instead of omitting it from the Secret")
 	flag.Parse()
 
 	if *outputPath == "" {
@@ -27,7 +28,11 @@ func main() {
 		exitWithError("missing required flag: --mapping")
 	}
 
-	if err := mapper.Generate(*mapping, *secretName, *outputPath); err != nil {
+	generate := mapper.Generate
+	if *strict {
+		generate = mapper.GenerateStrict
+	}
+	if err := generate(*mapping, *secretName, *outputPath); err != nil {
 		exitWithError("%v", err)
 	}
 }

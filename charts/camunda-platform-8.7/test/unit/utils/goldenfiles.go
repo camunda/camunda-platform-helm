@@ -51,6 +51,14 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		regex := regexp.MustCompile(ignoredLine)
 		bytes = regex.ReplaceAll(bytes, []byte(""))
 	}
+
+	// Normalize trailing whitespace to ensure exactly one trailing newline.
+	// Different Helm versions may produce varying trailing whitespace which
+	// causes yamllint failures (empty-lines max-end: 0).
+	for len(bytes) > 0 && bytes[len(bytes)-1] == '\n' {
+		bytes = bytes[:len(bytes)-1]
+	}
+	bytes = append(bytes, '\n')
 	output = string(bytes)
 
 	goldenFile := "golden/" + s.GoldenFileName + ".golden.yaml"

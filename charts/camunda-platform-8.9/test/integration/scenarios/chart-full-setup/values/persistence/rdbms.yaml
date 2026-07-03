@@ -4,11 +4,12 @@
 orchestration:
   data:
     secondaryStorage:
+      type: rdbms
       rdbms:
-        url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
-        username: ${POSTGRESQL_USERNAME}
+        url: jdbc:postgresql://postgresql-cluster-rw:5432/app
+        username: ${RDBMS_POSTGRESQL_USERNAME}
         secret:
-          inlineSecret: ${POSTGRESQL_PASSWORD}
+          inlineSecret: ${RDBMS_POSTGRESQL_PASSWORD}
   security:
     authorizations:
       enabled: false
@@ -24,5 +25,5 @@ orchestration:
     - name: jdbcdrivers
       emptyDir: {}
 
-optimize:
-  enabled: false
+elasticsearch:
+  enabled: true

@@ -1,0 +1,81 @@
+// Copyright 2025 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"fmt"
+	"os"
+	"time"
+)
+
+func mustEnv(key string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		fmt.Fprintf(os.Stderr, "error: required env var %s is not set\n", key)
+		os.Exit(2)
+	}
+	return v
+}
+
+func main() {
+	// Fork PRs lack actions:write on GITHUB_TOKEN, so rerun --failed
+	// would 403. Return success so the required-check name stays green;
+	// for fork PRs the matrix workflow's own status is the real signal.
+	if os.Getenv("IS_FORK") == "true" {
+		fmt.Fprintln(os.Stderr,
+			"fork PR: deferring to matrix's own status")
+		return
+	}
+
+	repo := mustEnv("GH_REPO")
+	workflow := mustEnv("MATRIX_WORKFLOW")
+	event := mustEnv("EVENT_NAME")
+	prHead := os.Getenv("PR_HEAD_SHA")
+	mgHead := os.Getenv("MG_HEAD_SHA")
+
+	event, prHead, mgHead = ResolveDispatchOverride(
+		event, prHead, mgHead,
+		os.Getenv("OVERRIDE_SHA"),
+		os.Getenv("OVERRIDE_EVENT"),
+	)
+
+	gate := &Gate{
+		Client:               newGHCLI(repo, 60*time.Second),
+		Workflow:             workflow,
+		DiscoveryTries:       60,
+		DiscoveryInterval:    10 * time.Second,
+		PollInterval:         60 * time.Second,
+		MaxConsecutiveErrors: 10,
+		RegistrationTries:    120,
+		RegistrationInterval: 5 * time.Second,
+		RunAttemptTries:      5,
+		RunAttemptBackoff:    5 * time.Second,
+		RerunTries:           3,
+		RerunBackoff:         10 * time.Second,
+		Sleep:                time.Sleep,
+		Logf: func(format string, args ...any) {
+			fmt.Fprintf(os.Stderr, format+"\n", args...)
+		},
+		Cmdf: func(format string, args ...any) {
+			fmt.Fprintf(os.Stdout, format+"\n", args...)
+		},
+	}
+
+	if err := gate.Run(event, prHead, mgHead); err != nil {
+		fmt.Fprintf(os.Stdout, "::error::%v\n", err)
+		fmt.Fprintf(os.Stderr, "gate failed: %v\n", err)
+		os.Exit(1)
+	}
+}

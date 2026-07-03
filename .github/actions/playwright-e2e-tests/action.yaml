@@ -56,6 +56,10 @@ inputs:
     description: The scenario being tested (e.g., opensearch, keycloak-rba, keycloak-mt, multitenancy)
     required: false
     default: "elasticsearch"
+  run-smoke-tests:
+    description: If true, run only the smoke-tests project. If false, run the full-suite project.
+    required: false
+    default: "true"
 runs:
   using: composite
   steps:
@@ -69,9 +73,10 @@ runs:
         fi
         
         # Install gettext for envsubst command used by render-e2e-env.sh
+        # Note: no sudo — containers run as root, and sudo may not be installed.
         if command -v apt-get &> /dev/null; then
           install_packages() {
-            sudo apt-get update && sudo apt-get install -y gettext-base
+            apt-get update && apt-get install -y gettext-base
           }
 
           # Try up to 5 times with exponential backoff
@@ -84,14 +89,14 @@ runs:
 
             if [ $attempt -lt 5 ]; then
               echo "apt-get failed, cleaning cache and retrying in $((attempt * 30)) seconds..."
-              sudo rm -rf /var/lib/apt/lists/*
+              rm -rf /var/lib/apt/lists/*
               sleep $((attempt * 30))
 
               # On third attempt, try switching to a different mirror
               if [ $attempt -eq 3 ]; then
                 echo "Switching to alternative Ubuntu mirror..."
-                sudo sed -i 's|http://archive.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
-                sudo sed -i 's|http://security.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
+                sed -i 's|http://archive.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
+                sed -i 's|http://security.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
               fi
             else
               echo "All attempts failed"
@@ -101,12 +106,12 @@ runs:
         elif command -v apk &> /dev/null; then
           apk add --no-cache gettext
         fi
-        
+
     - name: Check if tools are pre-installed
       id: check-tools
       shell: bash
       run: |
-        if command -v helm &> /dev/null && command -v kubectl &> /dev/null && command -v task &> /dev/null; then
+        if command -v helm &> /dev/null && command -v kubectl &> /dev/null; then
           echo "Tools are pre-installed in container, skipping installation"
           echo "skip-install=true" >> "$GITHUB_OUTPUT"
         else
@@ -116,10 +121,10 @@ runs:
 
     - name: Install if required common software tooling
       if: steps.check-tools.outputs.skip-install != 'true'
-      uses: camunda/infra-global-github-actions/common-tooling@main
+      uses: camunda/infra-global-github-actions/common-tooling@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
       with:
         overwrite: "false"
-        build-essential-enabled: "true"
+        build-essential-enabled: "false"
         node-enabled: "true"
         yarn-enabled: "false"
         buildx-enabled: "false"
@@ -134,10 +139,21 @@ runs:
           helm
           kubectl
           oc
-          task
           yq
           zbctl
           jq
+
+    - name: Set workflow vars
+      id: vars
+      uses: ./.github/actions/workflow-vars
+      with:
+        deployment-ttl: ${{ inputs.deployment-ttl }}
+        setup-flow: ${{ inputs.flow }}
+        platform: ${{ inputs.distro-platform }}
+        identifier-base: ${{ inputs.identifier }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+        prefix: ${{ inputs.namespace-prefix }}
 
     - name: Authenticate to cluster
       id: cluster-auth
@@ -155,20 +171,7 @@ runs:
         ROSA_URL:         ${{ env.ROSA_URL }}
         ROSA_USER:        ${{ env.ROSA_USER }}
         ROSA_PASS:        ${{ env.ROSA_PASS }}
-        CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-    - name: Set workflow vars
-      id: vars
-      uses: ./.github/actions/workflow-vars
-      with:
-        deployment-ttl: ${{ inputs.deployment-ttl }}
-        setup-flow: ${{ inputs.flow }}
-        platform: ${{ inputs.distro-platform }}
-        identifier-base: ${{ inputs.identifier }}
-        ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-        chart-dir: ${{ inputs.camunda-helm-dir }}
-        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-        prefix: ${{ inputs.namespace-prefix }}
+        CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
 
     - name: Set test type vars
       id: test-type-vars
@@ -193,20 +196,53 @@ runs:
 
         # Build scenario-specific flags
         EXTRA_FLAGS=""
-        if [[ "${{ inputs.scenario }}" == "opensearch" ]]; then
+        SMOKE_FLAG="${{ inputs.run-smoke-tests == 'true' && '--run-smoke-tests' || '' }}"
+        if [[ "${{ inputs.scenario }}" == opensearch* ]]; then
           EXTRA_FLAGS="--opensearch"
         elif [[ "${{ inputs.scenario }}" == "keycloak-rba" ]]; then
           EXTRA_FLAGS="--rba"
         elif [[ "${{ inputs.scenario }}" == "keycloak-mt" ]] || [[ "${{ inputs.scenario }}" == "multitenancy" ]]; then
           EXTRA_FLAGS="--mt"
+        elif [[ "${{ inputs.scenario }}" == "auth0" ]]; then
+          # auth0 uses its own Playwright project (auth0-smoke); do NOT pass
+          # --run-smoke-tests, which would otherwise route to the Keycloak-
+          # coupled smoke-tests project.
+          EXTRA_FLAGS="--auth0"
+          SMOKE_FLAG=""
         fi
 
-        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests --verbose ${EXTRA_FLAGS}
+        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${SMOKE_FLAG} --trace retain-on-failure --verbose ${EXTRA_FLAGS}
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
         retention-days: 1
+
+    - name: Set report date
+      id: report_date
+      if: ${{ !cancelled() }}
+      shell: bash
+      run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_OUTPUT"
+
+    - name: Upload Playwright JSON results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
+        if-no-files-found: warn
+        retention-days: 5
+
+    - name: Upload Playwright traces for failed tests
+      if: ${{ failure() && !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        path: |
+          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/trace.zip
+          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/*.png
+        if-no-files-found: ignore
+        retention-days: 5

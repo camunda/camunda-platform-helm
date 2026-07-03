@@ -112,14 +112,6 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		logging.Logger.Debug().Msg("using vault-backed external secrets")
 	}
 
-	// Apply infra secrets
-	infraSecretFile := fmt.Sprintf("external-secret-infra%s.yaml", vaultSuffix)
-	if err := applyManifestIfExists(ctx, client, namespace,
-		filepath.Join(externalSecretDir, infraSecretFile),
-		"infra-secrets external-secret"); err != nil {
-		return fmt.Errorf("apply infra secrets: %w", err)
-	}
-
 	// Apply credentials secrets
 	credentialsSecretFile := fmt.Sprintf("external-secret-credentials%s.yaml", vaultSuffix)
 	if err := applyManifestIfExists(ctx, client, namespace,
@@ -175,7 +167,7 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 	return nil
 }
 
-const externalSecretsReadyTimeout = 300 * time.Second
+const externalSecretsReadyTimeout = 600 * time.Second
 
 func copySecretBetweenNamespaces(ctx context.Context, client *Client, srcNamespace, secretName, destNamespace string) error {
 	logging.Logger.Debug().

@@ -70,18 +70,60 @@ get_first_version() {
 }
 
 
-@test "non-chart changes produce an empty matrix and succeed" {
-  export GITHUB_OUTPUT="$TMPDIR_TEST/github_output"
-  : > "$GITHUB_OUTPUT"
-
-  # Simulate a PR that only changes tooling/scripts paths, not charts.
+@test "scripts/ change triggers all chart versions" {
+  # Regression for #6108: a top-level scripts/ change is invoked by chart tests
+  # (e.g. render-e2e-env.sh) and must rebuild every version.
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
     --manual-trigger none \
     --active-versions "$AV" \
-    --all-modified-files "scripts/camunda-core"
+    --all-modified-files "scripts/render-e2e-env.sh"
+  assert_success
+  run bash -c 'yq -o=json ".matrix | [.[] | .version] | unique | sort" matrix_versions.txt | jq -c'
+  assert_success
+  expected="$(printf '%s\n' $AV | jq -R . | jq -s -c 'sort')"
+  assert_output "$expected"
+}
+
+@test "bare 'scripts' dir name (dir_names:true output) triggers all chart versions" {
+  # tj-actions/changed-files with dir_names:true collapses scripts/<file> to
+  # the bare token "scripts"; the BUILD_ALL_TRIGGERS regex must catch that too.
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger none \
+    --active-versions "$AV" \
+    --all-modified-files "scripts"
+  assert_success
+  run bash -c 'yq -o=json ".matrix | [.[] | .version] | unique | sort" matrix_versions.txt | jq -c'
+  assert_success
+  expected="$(printf '%s\n' $AV | jq -R . | jq -s -c 'sort')"
+  assert_output "$expected"
+}
+
+@test "unrelated path produces an empty matrix and succeeds" {
+  export GITHUB_OUTPUT="$TMPDIR_TEST/github_output"
+  : > "$GITHUB_OUTPUT"
+
+  # A docs-only path matches no BUILD_ALL_TRIGGER and no chart path.
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger none \
+    --active-versions "$AV" \
+    --all-modified-files "README.md"
   assert_success
 
   # The script should emit an empty JSON matrix for downstream jobs to skip.
+  run bash -c 'grep -E "^matrix=\{\\\"include\\\":\[\]\}$" "$GITHUB_OUTPUT"'
+  assert_success
+}
+
+@test "name containing 'scripts' substring does not trigger all chart versions" {
+  export GITHUB_OUTPUT="$TMPDIR_TEST/github_output"
+  : > "$GITHUB_OUTPUT"
+
+  # Anchored regex must not match e.g. "myscripts" or "descripts/foo".
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger none \
+    --active-versions "$AV" \
+    --all-modified-files "myscripts/foo.sh"
+  assert_success
   run bash -c 'grep -E "^matrix=\{\\\"include\\\":\[\]\}$" "$GITHUB_OUTPUT"'
   assert_success
 }
@@ -147,13 +189,13 @@ get_first_version() {
 
 }
 
-@test "upgrade-patch is filtered for version == 8.9 via YAML config" {
-  # Ensure 8.9 is among active versions; skip if not present
-  if ! printf "%s\n" $AV | grep -q '^8\.9$'; then
-    skip "8.9 not available in active versions"
+@test "upgrade-patch is filtered for version == 8.10 via YAML config" {
+  # Ensure 8.10 is among active versions; skip if not present
+  if ! printf "%s\n" $AV | grep -q '^8\.10$'; then
+    skip "8.10 not available in active versions"
   fi
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
-    --manual-trigger "8.9" \
+    --manual-trigger "8.10" \
     --active-versions "$AV" \
     --manual-flow "install,upgrade-patch,upgrade-minor"
   assert_success
@@ -173,19 +215,20 @@ get_first_version() {
     --manual-trigger "8.7" \
     --active-versions "$AV"
   assert_success
-  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"keycloak-original\") | .flow" matrix_versions.txt | jq -s -c'
+  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"keycloak-original\") | .flow" matrix_versions.txt | jq -s -c "unique"'
   assert_success
-  # Only install should remain for keycloak-original
+  # Only install should remain for keycloak-original (multiple entries may exist with different shortnames)
   assert_output '["install"]'
 }
 
 @test "upgrade-patch is skipped for keycloak-mt even with manual flow" {
-  # Ensure 8.8 is among active versions; skip if not present
-  if ! printf "%s\n" $AV | grep -q '^8\.8$'; then
-    skip "8.8 not available in active versions"
+  # Ensure 8.7 is among active versions; skip if not present.
+  # keycloak-mt exists in 8.7 (not in 8.8+).
+  if ! printf "%s\n" $AV | grep -q '^8\.7$'; then
+    skip "8.7 not available in active versions"
   fi
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
-    --manual-trigger "8.8" \
+    --manual-trigger "8.7" \
     --active-versions "$AV" \
     --manual-flow "install,upgrade-patch"
   assert_success
@@ -195,3 +238,21 @@ get_first_version() {
   assert_output '["install"]'
 }
 
+@test "oidc+upgrade-minor is excluded from matrix" {
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger "8.10" --active-versions "$AV"
+  assert_success
+  run bash -c 'yq -o=json ".matrix[] | select(.scenario==\"oidc\" and .flow==\"upgrade-minor\")" matrix_versions.txt | jq -s .'
+  assert_success
+  assert_output '[]'
+}
+
+@test "yaml_block emits required GHA fields" {
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger "8.10" --active-versions "$AV"
+  assert_success
+  prev="$(yq '.matrix[0].camundaVersionPrevious' matrix_versions.txt)"
+  [[ "$prev" != "" && "$prev" != "null" ]]
+  gke="$(yq '.matrix[0].infraTypeGke' matrix_versions.txt)"
+  [[ "$gke" != "null" ]]
+}

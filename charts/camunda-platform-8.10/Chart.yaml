@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.0.0-alpha0
+version: 15.0.0-alpha2
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -26,31 +26,9 @@ keywords:
   - workflow
   - workflow-engine
 dependencies:
-  # Identity Dependencies.
-  - name: keycloak
-    alias: identityKeycloak
-    repository: "file://../keycloak-24"
-    version: 24.x.x
-    condition: "identityKeycloak.enabled"
-  - name: postgresql
-    alias: identityPostgresql
-    repository: oci://registry-1.docker.io/bitnamicharts
-    version: 16.x.x
-    condition: "identityPostgresql.enabled"
-  # WebModeler Dependencies.
-  - name: web-modeler-postgresql
-    alias: webModelerPostgresql
-    repository: "file://../web-modeler-postgresql-15"
-    version: 15.x.x
-    condition: "webModelerPostgresql.enabled"
-  # Shared Dependencies.
-  - name: elasticsearch
-    repository: oci://registry-1.docker.io/bitnamicharts
-    version: 21.6.3
-    condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
-    repository: oci://registry-1.docker.io/bitnamicharts
+    repository: "file://../common-2"
     version: 2.x.x
 maintainers:
   - name: aabouzaid
@@ -63,7 +41,7 @@ maintainers:
     email: jesse.simpson@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.19.4"
+  camunda.io/helmCLIVersion: "4.1.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -74,4 +52,40 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Initial 8.10 alpha chart"
+      description: "Fail early when Helm CLI < v4 is used with chart 15.x"
+    - kind: added
+      description: "Add orchestration.hostNetwork value"
+    - kind: added
+      description: "[TLS B1] add global.tls.caBundle helper for OS-level CA injection part 1 of helm#3498"
+    - kind: added
+      description: "[TLS B2] add init-container truststore import — closes helm#3498 for JVM clients"
+    - kind: added
+      description: "[TLS D] add values-tls.yaml customer overlay + quickstart doc"
+    - kind: added
+      description: "[TLS F] deprecate legacy per-component JKS truststore fields"
+    - kind: added
+      description: "Add global.gateway.namespace to support cross-namespace Gateway parentRefs"
+    - kind: added
+      description: "Added service account labels"
+    - kind: changed
+      description: "Drop camundaPlatform.toYamlPretty helm v3 compat wrapper"
+    - kind: changed
+      description: "Migrate console and webModeler values under camundaHub namespace [1/6]"
+    - kind: changed
+      description: "Drop bundled Bitnami subcharts"
+    - kind: changed
+      description: "Drop orphan helpers and guard keycloak release info"
+    - kind: fixed
+      description: "Update image tags to 8.10.0-alpha1"
+    - kind: fixed
+      description: "Expose cpu keys in connectors/console resources schema"
+    - kind: fixed
+      description: "Allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets"
+    - kind: fixed
+      description: "Allow Recreate strategy for Web Modeler persistence"
+    - kind: fixed
+      description: "Guard legacy ES exporter on global.elasticsearch.enabled"
+    - kind: fixed
+      description: "Align camunda hub service account gating"
+    - kind: fixed
+      description: "Align upload size with Zeebe message limits"

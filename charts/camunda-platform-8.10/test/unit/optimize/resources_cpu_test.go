@@ -57,7 +57,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		SetValues: map[string]string{
 			"optimize.enabled":                   "true",
 			"identity.enabled":                   "true",
-			"elasticsearch.enabled":              "true",
 			"global.elasticsearch.enabled":       "true",
 			"optimize.resources.requests.cpu":    "500m",
 			"optimize.resources.limits.cpu":      "1.5",
@@ -98,7 +97,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
 		SetValues: map[string]string{
 			"optimize.enabled":                   "true",
 			"identity.enabled":                   "true",
-			"elasticsearch.enabled":              "true",
 			"global.elasticsearch.enabled":       "true",
 			"optimize.resources.requests.cpu":    "600m",
 			"optimize.resources.limits.cpu":      "2000m",

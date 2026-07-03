@@ -1,0 +1,34 @@
+# Enables Zeebe internal TLS for 8.7 source installs in 8.7 -> 8.8 migration tests.
+zeebe:
+  extraVolumes:
+    - name: zeebe-tls
+      secret:
+        secretName: camunda-zeebe-tls
+  extraVolumeMounts:
+    - name: zeebe-tls
+      readOnly: true
+      mountPath: /etc/tls/
+  env:
+    - name: ZEEBE_BROKER_NETWORK_SECURITY_ENABLED
+      value: "true"
+    - name: ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH
+      value: "/etc/tls/chainZeebeCluster.pem"
+    - name: ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH
+      value: "/etc/tls/zeebeCluster.key"
+
+zeebeGateway:
+  extraVolumes:
+    - name: zeebe-tls
+      secret:
+        secretName: camunda-zeebe-tls
+  extraVolumeMounts:
+    - name: zeebe-tls
+      readOnly: true
+      mountPath: /etc/tls/
+  env:
+    - name: ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED
+      value: "true"
+    - name: ZEEBE_GATEWAY_CLUSTER_SECURITY_CERTIFICATECHAINPATH
+      value: "/etc/tls/chainZeebeCluster.pem"
+    - name: ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH
+      value: "/etc/tls/zeebeCluster.key"

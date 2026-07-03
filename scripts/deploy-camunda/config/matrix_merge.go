@@ -1,5 +1,7 @@
 package config
 
+import "strings"
+
 // MergeIntField applies the matrix/root value to target when the CLI flag was
 // not explicitly set by the user. Pointer-typed config values (nil = unset)
 // allow distinguishing "not configured" from zero.
@@ -91,7 +93,6 @@ type MatrixRunFlags struct {
 	HelmTimeout          *int
 
 	// Tests
-	TestIT  *bool
 	TestE2E *bool
 	TestAll *bool
 
@@ -147,11 +148,44 @@ type MatrixRunFlags struct {
 // For per-platform maps (KubeContexts, IngressBaseDomains, VaultBackedSecrets) and
 // per-version maps (EnvFiles), config values are merged into the already-assembled maps
 // (keys from CLI flags take precedence over config keys).
+// activeDeployment returns the active deployment profile, honoring `current`
+// and auto-selecting when exactly one profile exists (mirrors the selection in
+// ApplyActiveDeployment). Returns nil when no profile applies.
+func activeDeployment(rc *RootConfig) *DeploymentConfig {
+	if rc == nil || len(rc.Deployments) == 0 {
+		return nil
+	}
+	name := rc.Current
+	if strings.TrimSpace(name) == "" && len(rc.Deployments) == 1 {
+		for n := range rc.Deployments {
+			name = n
+		}
+	}
+	if dep, ok := rc.Deployments[name]; ok {
+		return &dep
+	}
+	return nil
+}
+
 func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *MatrixRunFlags) {
 	if rc == nil {
 		return
 	}
 	m := &rc.Matrix
+
+	// Fall back to the active deployment profile for shared infra fields so a
+	// profile created by `config init` (which writes deployments.<name>.*) also
+	// configures the matrix — not just single deploys. Precedence stays:
+	// CLI flag > matrix block (m.*) > root (rc.*) > active deployment profile.
+	rcPlatform, rcRepoRoot := rc.Platform, rc.RepoRoot
+	rcKubeContext, rcIngressBaseDomain, rcEnvFile := rc.KubeContext, rc.IngressBaseDomain, rc.EnvFile
+	if dep := activeDeployment(rc); dep != nil {
+		rcPlatform = FirstNonEmpty(rc.Platform, dep.Platform)
+		rcRepoRoot = FirstNonEmpty(rc.RepoRoot, dep.RepoRoot)
+		rcKubeContext = FirstNonEmpty(rc.KubeContext, dep.KubeContext)
+		rcIngressBaseDomain = FirstNonEmpty(rc.IngressBaseDomain, dep.IngressBaseDomain)
+		rcEnvFile = FirstNonEmpty(rc.EnvFile, dep.EnvFile)
+	}
 
 	// --- Filtering & generation ---
 	MergeStringSliceField(f.Versions, m.Versions, nil)
@@ -159,8 +193,8 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 	MergeStringField(f.ScenarioFilter, m.ScenarioFilter, "", changedFlags, "scenario-filter")
 	MergeStringField(f.ShortnameFilter, m.ShortnameFilter, "", changedFlags, "shortname-filter")
 	MergeStringField(f.FlowFilter, m.FlowFilter, "", changedFlags, "flow-filter")
-	MergeStringField(f.Platform, m.Platform, rc.Platform, changedFlags, "platform")
-	MergeStringField(f.RepoRoot, m.RepoRoot, rc.RepoRoot, changedFlags, "repo-root")
+	MergeStringField(f.Platform, m.Platform, rcPlatform, changedFlags, "platform")
+	MergeStringField(f.RepoRoot, m.RepoRoot, rcRepoRoot, changedFlags, "repo-root")
 
 	// --- Execution ---
 	MergeStringField(f.NamespacePrefix, m.NamespacePrefix, "", changedFlags, "namespace-prefix")
@@ -175,20 +209,19 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 	MergeStringField(f.LogLevel, m.LogLevel, rc.LogLevel, changedFlags, "log-level")
 
 	// --- Tests ---
-	MergeBoolField(f.TestIT, m.TestIT, nil, changedFlags, "test-it")
 	MergeBoolField(f.TestE2E, m.TestE2E, nil, changedFlags, "test-e2e")
 	MergeBoolField(f.TestAll, m.TestAll, nil, changedFlags, "test-all")
 
 	// --- Kube contexts ---
 	// Scalar fallbacks (default context for all platforms)
-	MergeStringField(f.KubeContext, m.KubeContext, rc.KubeContext, changedFlags, "kube-context")
+	MergeStringField(f.KubeContext, m.KubeContext, rcKubeContext, changedFlags, "kube-context")
 	// Per-platform map: merge config map into the CLI-assembled map
 	if f.KubeContexts != nil {
 		MergeStringMapField(f.KubeContexts, m.KubeContexts)
 	}
 
 	// --- Ingress base domains ---
-	MergeStringField(f.IngressBaseDomain, m.IngressBaseDomain, rc.IngressBaseDomain, changedFlags, "ingress-base-domain")
+	MergeStringField(f.IngressBaseDomain, m.IngressBaseDomain, rcIngressBaseDomain, changedFlags, "ingress-base-domain")
 	if f.IngressBaseDomains != nil {
 		MergeStringMapField(f.IngressBaseDomains, m.IngressBaseDomains)
 	}
@@ -200,7 +233,7 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 	}
 
 	// --- Env files ---
-	MergeStringField(f.EnvFile, m.EnvFile, rc.EnvFile, changedFlags, "env-file")
+	MergeStringField(f.EnvFile, m.EnvFile, rcEnvFile, changedFlags, "env-file")
 	if f.EnvFiles != nil {
 		MergeStringMapField(f.EnvFiles, m.EnvFiles)
 	}
@@ -224,9 +257,9 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 // LoadMatrixConfig loads the config file and returns the parsed RootConfig
 // suitable for use by matrix subcommands. Environment overrides are applied.
 func LoadMatrixConfig(configPath string) (*RootConfig, error) {
-	cfgPath, err := ResolvePath(configPath)
+	res, err := ResolvePath(configPath)
 	if err != nil {
 		return nil, err
 	}
-	return Read(cfgPath, true)
+	return Read(res.Path, true)
 }

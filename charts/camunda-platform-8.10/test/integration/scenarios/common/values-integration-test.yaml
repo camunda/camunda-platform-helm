@@ -58,8 +58,6 @@ connectors:
       io.camunda.client.job.poller: INFO
 
 optimize:
-  migration:
-    enabled: false
   livenessProbe:
     enabled: true
   initContainers:

@@ -23,11 +23,18 @@ type Entry struct {
 	InfraType string   `json:"infraType,omitempty"`
 	Exclude   []string `json:"exclude,omitempty"`
 	Enabled   bool     `json:"enabled"`
+	Tier      int      `json:"tier,omitempty"`
 
 	// Selection + Composition fields (explicit layer overrides from ci-test-config.yaml).
 	Identity    string   `json:"identity,omitempty"`
 	Persistence string   `json:"persistence,omitempty"`
 	Features    []string `json:"features,omitempty"`
+
+	// ExtraValues are scenario-declared values files (paths relative to the
+	// scenario's chart-full-setup dir) appended to the helm values chain AFTER
+	// any global --extra-values, so a scenario specializes without losing the
+	// global override (precedence: defaults < global --extra-values < per-scenario).
+	ExtraValues []string `json:"extraValues,omitempty"`
 
 	// Base modifier flags.
 	QA         bool `json:"qa,omitempty"`
@@ -37,7 +44,37 @@ type Entry struct {
 
 	// Test skip flags — declarative controls from ci-test-config.yaml.
 	SkipE2E bool `json:"skipE2E,omitempty"`
-	SkipIT  bool `json:"skipIT,omitempty"`
+
+	// Dependencies specifies companion charts to deploy before the main Camunda chart.
+	Dependencies []ChartDependency `json:"dependencies,omitempty"`
+
+	// PreInstall declares a fixture or script to run before helm install.
+	// Carried from CIScenario.PreInstall so the runner can dispatch declaratively
+	// without re-loading ci-test-config.yaml.
+	PreInstall *LifecycleHook `json:"preInstall,omitempty"`
+
+	// PostInfra declares a fixture or script to run after companion charts
+	// (external infrastructure) are deployed but before the main Camunda chart.
+	// Carried from CIScenario.PostInfra.
+	PostInfra *LifecycleHook `json:"postInfra,omitempty"`
+
+	// PostDeploy declares a fixture or script to run after helm install
+	// completes successfully. Carried from CIScenario.PostDeploy.
+	PostDeploy *LifecycleHook `json:"postDeploy,omitempty"`
+
+	// PreUpgrade is the flow-scoped pre-upgrade hook (between Step 1 and
+	// Step 2 of a two-step upgrade flow) resolved at matrix-generation time
+	// from cfg.Integration.Flows[Flow].PreUpgrade. Carried on the Entry so the
+	// runner does not re-load ci-test-config.yaml at execution time.
+	PreUpgrade *LifecycleHook `json:"preUpgrade,omitempty"`
+	// HelmVersion, when non-empty, tells the integration workflow to install
+	// this Helm version via azure/setup-helm (overriding the pre-baked binary).
+	HelmVersion string `json:"helmVersion,omitempty"`
+
+	// PrefixKey overrides the scenario name for index prefix derivation.
+	// When set, generateScenarioContext uses this instead of Entry.Scenario
+	// to compute orchestration/optimize/tasklist/operate index prefixes.
+	PrefixKey string `json:"prefixKey,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -53,11 +90,18 @@ type FilterOptions struct {
 	// ScenarioFilter limits output to scenarios matching one or more substrings (comma-separated).
 	ScenarioFilter string
 	// ShortnameFilter limits output to entries whose shortname matches one or more substrings (comma-separated).
+	// When ShortnameExact is true, each comma-separated value must match the entry's shortname exactly
+	// — required by per-scenario CI workflows where short shortnames like "es" otherwise greedily
+	// match unrelated entries (eske, esba, esoi, eshy, esarm, ...).
 	ShortnameFilter string
+	// ShortnameExact, when true, treats each ShortnameFilter value as an exact match instead of a substring.
+	ShortnameExact bool
 	// FlowFilter limits output to entries with this specific flow.
 	FlowFilter string
 	// Platform limits output to entries targeting this platform.
 	Platform string
+	// Tier limits output to entries with this specific tier (1 or 2). Zero means no filter.
+	Tier int
 }
 
 // Generate builds the full test matrix from CI config files.
@@ -100,12 +144,12 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	for _, version := range versions {
 		chartDir := filepath.Join(repoRoot, "charts", fmt.Sprintf("camunda-platform-%s", version))
 
-		cfg, err := LoadCITestConfig(chartDir)
+		cfg, err := LoadRegistry(chartDir)
 		if err != nil {
 			logging.Logger.Warn().
 				Str("version", version).
 				Err(err).
-				Msg("Skipping version — failed to load ci-test-config.yaml")
+				Msg("Skipping version — failed to load CI test config")
 			continue
 		}
 
@@ -153,27 +197,39 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 			}
 
 			for _, flow := range permittedFlows {
+				var preUpgrade *LifecycleHook
+				if fh, ok := cfg.Integration.Flows[flow]; ok && fh != nil {
+					preUpgrade = fh.PreUpgrade
+				}
 				for _, platform := range platforms {
 					entries = append(entries, Entry{
-						Version:     version,
-						ChartPath:   chartDir,
-						Scenario:    scenario.Name,
-						Shortname:   scenario.Shortname,
-						Auth:        scenario.Auth,
-						Flow:        flow,
-						Platform:    platform,
-						InfraType:   resolveInfraType(scenario.InfraType, platform),
-						Exclude:     scenario.Exclude,
-						Enabled:     scenario.Enabled,
-						Identity:    scenario.Identity,
-						Persistence: scenario.Persistence,
-						Features:    scenario.Features,
-						QA:          scenario.QA,
-						ImageTags:   scenario.ImageTags,
-						Upgrade:     scenario.Upgrade,
-						Enterprise:  scenario.Enterprise,
-						SkipE2E:     scenario.SkipE2E,
-						SkipIT:      scenario.SkipIT,
+						Version:      version,
+						ChartPath:    chartDir,
+						Scenario:     scenario.Name,
+						Shortname:    scenario.Shortname,
+						Auth:         scenario.Auth,
+						Flow:         flow,
+						Platform:     platform,
+						InfraType:    resolveInfraType(scenario.InfraType, platform),
+						Exclude:      scenario.Exclude,
+						Enabled:      scenario.Enabled,
+						Tier:         scenario.Tier,
+						Identity:     scenario.Identity,
+						Persistence:  scenario.Persistence,
+						Features:     scenario.Features,
+						ExtraValues:  scenario.ExtraValues,
+						QA:           scenario.QA,
+						ImageTags:    scenario.ImageTags,
+						Upgrade:      scenario.Upgrade,
+						Enterprise:   scenario.Enterprise,
+						SkipE2E:      scenario.SkipE2E,
+						Dependencies: append([]ChartDependency(nil), scenario.Dependencies...),
+						PreInstall:   scenario.PreInstall,
+						PostInfra:    scenario.PostInfra,
+						PostDeploy:   scenario.PostDeploy,
+						PreUpgrade:   preUpgrade,
+						HelmVersion:  scenario.HelmVersion,
+						PrefixKey:    scenario.PrefixKey,
 					})
 				}
 			}
@@ -184,11 +240,34 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 }
 
 // Filter applies post-generation filtering to the matrix entries.
+// When both ScenarioFilter and ShortnameFilter are provided and the combined
+// AND produces zero results, Filter retries with just the ScenarioFilter
+// (dropping the shortname constraint). This supports workflows with dynamic
+// shortnames (e.g., the license-key workflow passes "8.10-come" which isn't
+// in ci-test-config) while keeping shortname as a precise disambiguator when
+// multiple entries share a scenario name.
 func Filter(entries []Entry, opts FilterOptions) []Entry {
-	if opts.ScenarioFilter == "" && opts.ShortnameFilter == "" && opts.FlowFilter == "" && opts.Platform == "" {
+	if opts.ScenarioFilter == "" && opts.ShortnameFilter == "" && opts.FlowFilter == "" && opts.Platform == "" && opts.Tier == 0 {
 		return entries
 	}
 
+	filtered := filterEntries(entries, opts)
+
+	// Fallback: when both scenario and shortname filters are set but yield no
+	// results, retry without the shortname filter. This handles dynamic shortnames
+	// (e.g., license workflow) where the scenario is the stable lookup key.
+	if len(filtered) == 0 && opts.ScenarioFilter != "" && opts.ShortnameFilter != "" {
+		fallbackOpts := opts
+		fallbackOpts.ShortnameFilter = ""
+		fallbackOpts.ShortnameExact = false
+		filtered = filterEntries(entries, fallbackOpts)
+	}
+
+	return filtered
+}
+
+// filterEntries is the core filter logic used by Filter.
+func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 	// Parse comma-separated scenario filters into individual substrings.
 	var scenarioFilters []string
 	if opts.ScenarioFilter != "" {
@@ -211,11 +290,27 @@ func Filter(entries []Entry, opts FilterOptions) []Entry {
 
 	var filtered []Entry
 	for _, e := range entries {
+		if opts.Tier > 0 && e.Tier != 0 && e.Tier != opts.Tier {
+			continue
+		}
 		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {
 			continue
 		}
-		if len(shortnameFilters) > 0 && !matchesAny(e.Shortname, shortnameFilters) {
-			continue
+		if len(shortnameFilters) > 0 {
+			matched := false
+			if opts.ShortnameExact {
+				for _, sn := range shortnameFilters {
+					if e.Shortname == sn {
+						matched = true
+						break
+					}
+				}
+			} else {
+				matched = matchesAny(e.Shortname, shortnameFilters)
+			}
+			if !matched {
+				continue
+			}
 		}
 		if opts.FlowFilter != "" && e.Flow != opts.FlowFilter {
 			continue

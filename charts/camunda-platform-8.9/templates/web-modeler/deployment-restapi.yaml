@@ -1,4 +1,11 @@
 {{- if .Values.webModeler.enabled -}}
+{{- $deploymentStrategy := .Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate" -}}
+{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
+{{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- end -}}
+{{- if and (eq $deploymentStrategy "Recreate") (not .Values.webModeler.persistence.enabled) -}}
+{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true (it avoids a Multi-Attach deadlock on the chart-managed RWO PVC; without persistence it only adds upgrade downtime)" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +14,7 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   strategy:
-    type: RollingUpdate
+    type: {{ $deploymentStrategy }}
   replicas: {{ .Values.webModeler.restapi.replicas }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
@@ -17,15 +24,23 @@ spec:
       {{- if .Values.webModeler.restapi.podLabels }}
       {{- tpl (toYaml .Values.webModeler.restapi.podLabels) $ | nindent 8 }}
       {{- end }}
-      {{- if .Values.webModeler.restapi.podAnnotations }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) .Values.webModeler.restapi.podAnnotations }}
       annotations:
-        {{- tpl (toYaml .Values.webModeler.restapi.podAnnotations) $ | nindent 8 }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with .Values.webModeler.restapi.podAnnotations }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.webModeler.restapi.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "webModeler.restapi.image" $)) | nindent 8 }}
+        {{- end }}
+        {{- with .Values.webModeler.restapi.initContainers }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: {{ include "webModeler.name" . }}-restapi
           image: {{ include "webModeler.restapi.image" . | quote }}
@@ -75,47 +90,6 @@ spec:
             ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | default "/tmp/zeebe_client_cache.txt" | quote }}
-            # -- Pusher (WebSocket) configuration env vars --
-            # Required because the in-JAR application-self-managed.yml uses ${ENV_VAR:} placeholders
-            # that must be resolved via environment variables (not overridable via external configmap).
-            - name: RESTAPI_PUSHER_HOST
-              value: {{ include "webModeler.websockets.fullname" . | quote }}
-            - name: RESTAPI_PUSHER_PORT
-              value: {{ .Values.webModeler.websockets.service.port | quote }}
-            - name: CLIENT_PUSHER_HOST
-              value: {{ include "webModeler.publicWebsocketHost" . | quote }}
-            - name: CLIENT_PUSHER_PORT
-              value: {{ include "webModeler.publicWebsocketPort" . | quote }}
-            {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-            - name: CLIENT_PUSHER_PATH
-              value: {{ include "webModeler.websocketContextPath" . | quote }}
-            {{- end }}
-            - name: CLIENT_PUSHER_FORCE_TLS
-              value: {{ include "webModeler.websocketTlsEnabled" . | quote }}
-            # -- Server configuration env vars --
-            - name: RESTAPI_SERVER_URL
-              value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-            - name: SERVER_HTTPS_ONLY
-              value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
-            # -- OAuth2 / Identity env vars --
-            - name: OAUTH2_CLIENT_ID
-              value: {{ include "webModeler.authClientId" . | quote }}
-            # -- Mail env vars --
-            - name: RESTAPI_MAIL_FROM_ADDRESS
-              value: {{ .Values.webModeler.restapi.mail.fromAddress | quote }}
-            - name: RESTAPI_MAIL_FROM_NAME
-              value: {{ .Values.webModeler.restapi.mail.fromName | quote }}
-            # -- Identity / Auth env vars (conditional) --
-            {{- if .Values.identity.enabled }}
-            - name: RESTAPI_IDENTITY_BASE_URL
-              value: {{ include "camundaPlatform.identityURL" . | quote }}
-            {{- end }}
-            {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER
-              value: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
-              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            {{- end }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
@@ -131,6 +105,10 @@ spec:
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
             {{- end }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -203,6 +181,10 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
             {{- if .Values.webModeler.restapi.extraVolumeMounts }}
             {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -216,7 +198,7 @@ spec:
             claimName: {{ .Values.webModeler.persistence.existingClaim }}
           {{- else if .Values.webModeler.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-webModeler-data
+            claimName: {{ include "camundaPlatform.fullname" . }}-webmodeler-data
           {{- else }}
           emptyDir: {}
           {{- end }}
@@ -229,6 +211,10 @@ spec:
             "config" .Values.global.documentStore.type.gcp
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.webModeler.restapi.extraVolumes }}
         {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}

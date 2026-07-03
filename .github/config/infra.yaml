@@ -1,0 +1,26 @@
+# CI infrastructure endpoints — single source of truth.
+# Consumed by .github/actions/workflow-vars/action.yaml and workflow cleanup jobs.
+#
+# When an infrastructure value changes (e.g. ES cluster migration),
+# update it HERE ONLY. All workflows read from this file via the workflow-vars action.
+
+gke:
+  ingress-hostname-base: ci.distro.ultrawombat.com
+  namespace-prefix: camunda
+
+eks:
+  ingress-hostname-base: distribution.aws.camunda.cloud
+  namespace-prefix: distribution
+  cluster-name: camunda-ci-eks
+  aws-profile: distribution
+
+rosa:
+  ingress-hostname-base: ci.distro.ultrawombat.com
+  namespace-prefix: camunda
+
+postgresql:
+  jdbc-host: postgresql-cluster-rw.distribution-postgresql.svc.cluster.local
+  jdbc-port: "5432"
+
+teleport:
+  proxy: camunda.teleport.sh:443

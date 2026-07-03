@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type MigrationDataJobTest struct {
@@ -156,8 +157,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestElasticsearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":             "true",
-				"global.elasticsearch.tls.existingSecret":          "elasticsearch-tls-secret",
+				"orchestration.migration.data.enabled":                  "true",
+				"global.elasticsearch.tls.existingSecret":               "elasticsearch-tls-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -191,8 +192,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestElasticsearchTLSWithJKSInlineEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":         "true",
-				"global.elasticsearch.tls.existingSecret":      "elasticsearch-tls-secret",
+				"orchestration.migration.data.enabled":             "true",
+				"global.elasticsearch.tls.existingSecret":          "elasticsearch-tls-secret",
 				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -222,8 +223,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestOpenSearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":        "true",
-				"global.opensearch.tls.existingSecret":        "opensearch-tls-secret",
+				"orchestration.migration.data.enabled":               "true",
+				"global.opensearch.tls.existingSecret":               "opensearch-tls-secret",
 				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
 				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
 			},
@@ -257,8 +258,8 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 		{
 			Name: "TestOpenSearchTLSWithJKSInlineEmitsPasswordAndFlag",
 			Values: map[string]string{
-				"orchestration.migration.data.enabled":    "true",
-				"global.opensearch.tls.existingSecret":    "opensearch-tls-secret",
+				"orchestration.migration.data.enabled":          "true",
+				"global.opensearch.tls.existingSecret":          "opensearch-tls-secret",
 				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -313,6 +314,183 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 				for _, vol := range volumes {
 					s.Require().NotEqual("keystore", vol.Name, "keystore volume should not exist when no TLS secret is configured")
 				}
+			},
+		},
+		{
+			Name: "TestTmpAndLogsVolumesArePresent",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				// Verify /tmp volume mount exists
+				volumeMounts := containers[0].VolumeMounts
+				tmpVolumeMountFound := false
+				logsVolumeMountFound := false
+				for _, vm := range volumeMounts {
+					if vm.Name == "tmp" {
+						tmpVolumeMountFound = true
+						s.Require().Equal("/tmp", vm.MountPath)
+					}
+					if vm.Name == "logs" {
+						logsVolumeMountFound = true
+						s.Require().Equal("/usr/local/camunda/logs", vm.MountPath)
+					}
+				}
+				s.Require().True(tmpVolumeMountFound, "tmp volume mount should exist at /tmp")
+				s.Require().True(logsVolumeMountFound, "logs volume mount should exist at /usr/local/camunda/logs")
+
+				// Verify tmp and logs volumes exist
+				volumes := job.Spec.Template.Spec.Volumes
+				tmpVolumeFound := false
+				logsVolumeFound := false
+				for _, vol := range volumes {
+					if vol.Name == "tmp" {
+						tmpVolumeFound = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+					if vol.Name == "logs" {
+						logsVolumeFound = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+				}
+				s.Require().True(tmpVolumeFound, "tmp volume should exist as emptyDir")
+				s.Require().True(logsVolumeFound, "logs volume should exist as emptyDir")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *MigrationDataJobTest) TestServiceAccount() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestServiceAccountDefault",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+				s.Require().Equal("camunda-platform-test-zeebe", job.Spec.Template.Spec.ServiceAccountName)
+			},
+		},
+		{
+			Name: "TestServiceAccountCustomName",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+				"orchestration.serviceAccount.name":    "custom-sa",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+				s.Require().Equal("custom-sa", job.Spec.Template.Spec.ServiceAccountName)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *MigrationDataJobTest) TestExtraVolumesAndMounts() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraVolumesAndMountsRendered",
+			ValuesFiles: []string{
+				"testdata/migration-data-extra-volumes.yaml",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				// Verify custom volume mount exists
+				volumeMounts := containers[0].VolumeMounts
+				found := false
+				for _, vm := range volumeMounts {
+					if vm.Name == "custom-mount" {
+						found = true
+						s.Require().Equal("/custom/path", vm.MountPath)
+					}
+				}
+				s.Require().True(found, "custom volume mount should exist")
+
+				// Verify custom volume exists
+				volumes := job.Spec.Template.Spec.Volumes
+				found = false
+				for _, vol := range volumes {
+					if vol.Name == "custom-volume" {
+						found = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+				}
+				s.Require().True(found, "custom volume should exist")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *MigrationDataJobTest) TestResources() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDefaultResources",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+				container := containers[0]
+
+				// given defaults of 500m CPU / 500Mi memory
+				s.Require().True(container.Resources.Requests.Cpu().Equal(resource.MustParse("500m")),
+					"default CPU request should be 500m, got %s", container.Resources.Requests.Cpu().String())
+				s.Require().True(container.Resources.Requests.Memory().Equal(resource.MustParse("500Mi")),
+					"default memory request should be 500Mi, got %s", container.Resources.Requests.Memory().String())
+				s.Require().True(container.Resources.Limits.Cpu().Equal(resource.MustParse("500m")),
+					"default CPU limit should be 500m, got %s", container.Resources.Limits.Cpu().String())
+				s.Require().True(container.Resources.Limits.Memory().Equal(resource.MustParse("500Mi")),
+					"default memory limit should be 500Mi, got %s", container.Resources.Limits.Memory().String())
+			},
+		},
+		{
+			Name: "TestCustomResources",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":                   "true",
+				"orchestration.migration.data.resources.requests.cpu":    "200m",
+				"orchestration.migration.data.resources.requests.memory": "256Mi",
+				"orchestration.migration.data.resources.limits.cpu":      "1000m",
+				"orchestration.migration.data.resources.limits.memory":   "1Gi",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+				container := containers[0]
+
+				s.Require().True(container.Resources.Requests.Cpu().Equal(resource.MustParse("200m")),
+					"CPU request should be 200m, got %s", container.Resources.Requests.Cpu().String())
+				s.Require().True(container.Resources.Requests.Memory().Equal(resource.MustParse("256Mi")),
+					"memory request should be 256Mi, got %s", container.Resources.Requests.Memory().String())
+				s.Require().True(container.Resources.Limits.Cpu().Equal(resource.MustParse("1000m")),
+					"CPU limit should be 1000m, got %s", container.Resources.Limits.Cpu().String())
+				s.Require().True(container.Resources.Limits.Memory().Equal(resource.MustParse("1Gi")),
+					"memory limit should be 1Gi, got %s", container.Resources.Limits.Memory().String())
 			},
 		},
 	}

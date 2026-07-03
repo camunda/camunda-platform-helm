@@ -1,5 +1,5 @@
 {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
-{{- if .Values.identityKeycloak.enabled }}
+{{- if .Values.global.identity.keycloak.internal }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -21,7 +21,10 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ include "camundaPlatform.fullname" . }}
+  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
+    {{- if .Values.global.gateway.namespace }}
+    namespace: {{ .Values.global.gateway.namespace }}
+    {{- end }}
     sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
@@ -58,7 +61,10 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ include "camundaPlatform.fullname" . }}
+  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
+    {{- if .Values.global.gateway.namespace }}
+    namespace: {{ .Values.global.gateway.namespace }}
+    {{- end }}
     sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}

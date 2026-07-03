@@ -1,0 +1,24 @@
+# Companion values for internal-postgresql — RDBMS secondary-storage variant.
+# Adds the `app` database used by Camunda's RDBMS secondary storage exporter
+# alongside the Identity and Web Modeler databases. Replaces the CloudNativePG
+# `postgresql-cluster.yaml` fixture for the `rdbms` scenario.
+
+fullnameOverride: postgresql
+
+auth:
+  username: "$RDBMS_POSTGRESQL_USERNAME"
+  password: "$RDBMS_POSTGRESQL_PASSWORD"
+  database: identity
+
+databases:
+  - identity
+  - webmodeler
+  - app
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

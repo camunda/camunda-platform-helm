@@ -234,6 +234,34 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 				s.Require().Equal("https://keycloak.example.com:443/realms/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
+		}, {
+			Name: "TestConfigMapAuthIssuerBackendUrlWithTemplatedKeycloakHost",
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"identityKeycloak.enabled":              "false",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.{{ .Release.Namespace }}.svc.cluster.local",
+				"global.identity.keycloak.url.port":     "443",
+				"global.identity.keycloak.contextPath":  "/auth/",
+				"global.identity.keycloak.realm":        "camunda-platform",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication IdentityConfigYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.NotEmpty(configmap.Data)
+
+				// Verify the full BackendUrl including the rendered namespace
+				expectedBackendURL := "https://keycloak." + s.namespace + ".svc.cluster.local:443/auth/camunda-platform"
+				s.Require().Equal(expectedBackendURL, configmapApplication.Identity.AuthProvider.BackendUrl)
+			},
 		},
 		// Hybrid Auth Tests - verify OIDC client config is only included for components using OIDC auth
 		{

@@ -24,6 +24,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 )
 
@@ -59,12 +60,11 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"global.annotations.foo":              "bar",
-				"global.elasticsearch.enabled":        "true",
-				"elasticsearch.enabled":               "true",
+				"identity.enabled":   "true",
+				"webModeler.enabled": "true",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
+				"global.annotations.foo":                         "bar",
+				"global.elasticsearch.enabled":                   "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -76,12 +76,11 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
-				"identity.enabled":                                       "true",
-				"webModeler.enabled":                                     "true",
-				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
-				"webModeler." + s.component + ".service.annotations.foo": "bar",
-				"global.elasticsearch.enabled":                           "true",
-				"elasticsearch.enabled":                                  "true",
+				"identity.enabled":   "true",
+				"webModeler.enabled": "true",
+				"camundaHub.webModeler.restapi.mail.fromAddress":                    "example@example.com",
+				"camundaHub.webModeler." + s.component + ".service.annotations.foo": "bar",
+				"global.elasticsearch.enabled":                                      "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -94,4 +93,40 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ServiceTest) TestLegacyServiceAccountEnabledOverrideDoesNotBreakDeploymentReference() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"identity.enabled":                               "true",
+			"webModeler.enabled":                             "true",
+			"webModeler.serviceAccount.enabled":              "false",
+			"camundaHub.webModeler.serviceAccount.enabled":   "true",
+			"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
+			"global.elasticsearch.enabled":                   "true",
+		},
+	}
+	templates := []string{
+		"templates/web-modeler/serviceaccount.yaml",
+		"templates/web-modeler/deployment-" + s.component + ".yaml",
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, templates)
+
+	var serviceAccount coreV1.ServiceAccount
+	var deployment appsv1.Deployment
+	for _, object := range strings.Split(output, "---") {
+		if strings.Contains(object, "kind: ServiceAccount") {
+			helm.UnmarshalK8SYaml(s.T(), object, &serviceAccount)
+		}
+		if strings.Contains(object, "kind: Deployment") {
+			helm.UnmarshalK8SYaml(s.T(), object, &deployment)
+		}
+	}
+
+	// then
+	s.Require().NotEmpty(serviceAccount.Name)
+	s.Require().Equal(serviceAccount.Name, deployment.Spec.Template.Spec.ServiceAccountName)
 }

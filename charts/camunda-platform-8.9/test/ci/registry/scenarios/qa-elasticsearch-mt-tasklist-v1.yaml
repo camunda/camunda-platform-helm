@@ -1,0 +1,15 @@
+name: qa-elasticsearch-mt-tasklist-v1
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - multitenancy
+  - tasklist-v1
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -182,6 +183,92 @@ func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, 
 	return processedFiles, nil
 }
 
+// processCompanionCharts substitutes environment variables into companion
+// chart values files. Substitution is opt-in and allowlist-scoped: a chart is
+// processed only when it declares EnvVars, and only the names in that allowlist
+// are expanded. This keeps ordinary shell variables embedded in companion
+// values (e.g. $n, $max in Elasticsearch/OpenSearch init scripts) untouched and
+// avoids the previous service-specific content scan for $RDBMS_POSTGRESQL_.
+// envOverrides is deploy-camunda's isolated scenario env map; it is never the
+// process environment.
+func processCompanionCharts(_ context.Context, charts []config.CompanionChart, outputDir, _ string, envOverrides map[string]string) ([]config.CompanionChart, error) {
+	if len(charts) == 0 {
+		return nil, nil
+	}
+
+	processed := make([]config.CompanionChart, len(charts))
+	copy(processed, charts)
+	companionOutputDir := filepath.Join(outputDir, "companion-values")
+
+	for i, chart := range processed {
+		if chart.ValuesFile == "" || len(chart.EnvVars) == 0 {
+			continue
+		}
+		content, err := os.ReadFile(chart.ValuesFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read companion values file %q: %w", chart.ValuesFile, err)
+		}
+		substituted, err := substituteCompanionEnvVars(string(content), chart.EnvVars, envOverrides)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process companion values file %q: %w", chart.ValuesFile, err)
+		}
+		if err := os.MkdirAll(companionOutputDir, 0o755); err != nil {
+			return nil, fmt.Errorf("failed to create companion values dir %q: %w", companionOutputDir, err)
+		}
+		// Prefix with the loop index (and release name for readability) so two
+		// companion charts whose values files share a basename cannot overwrite
+		// each other's processed output. The index guarantees uniqueness within
+		// this call regardless of release-name/basename concatenation.
+		outputPath := filepath.Join(companionOutputDir, fmt.Sprintf("%d-%s-%s", i, chart.ReleaseName, filepath.Base(chart.ValuesFile)))
+		if err := os.WriteFile(outputPath, []byte(substituted), 0o644); err != nil {
+			return nil, fmt.Errorf("failed to write companion values file %q: %w", outputPath, err)
+		}
+		processed[i].ValuesFile = outputPath
+	}
+
+	return processed, nil
+}
+
+// substituteCompanionEnvVars replaces only the allowlisted $VAR / ${VAR} tokens
+// in content using envMap. Any $-token whose name is not in allowlist is left
+// intact, so shell variables such as $n or $max survive untouched. It returns
+// an error naming every allowlisted variable that is missing from envMap, so a
+// misconfigured scenario fails early with a useful message.
+func substituteCompanionEnvVars(content string, allowlist []string, envMap map[string]string) (string, error) {
+	if len(allowlist) == 0 {
+		return content, nil
+	}
+
+	var missing []string
+	for _, name := range allowlist {
+		if _, ok := envMap[name]; !ok {
+			missing = append(missing, name)
+		}
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("missing required environment variable(s) for substitution: %s", strings.Join(missing, ", "))
+	}
+
+	// Sort longest-first so a name that is a prefix of another (e.g. FOO vs
+	// FOOBAR) cannot shadow it in the alternation. The trailing \b on the bare
+	// $VAR form already prevents partial matches, but ordering is cheap insurance.
+	names := append([]string(nil), allowlist...)
+	sort.Slice(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
+	quoted := make([]string, len(names))
+	for i, n := range names {
+		quoted[i] = regexp.QuoteMeta(n)
+	}
+	alt := strings.Join(quoted, "|")
+	re := regexp.MustCompile(`\$\{(?:` + alt + `)\}|\$(?:` + alt + `)\b`)
+
+	return re.ReplaceAllStringFunc(content, func(match string) string {
+		name := strings.TrimPrefix(match, "$")
+		name = strings.TrimPrefix(name, "{")
+		name = strings.TrimSuffix(name, "}")
+		return envMap[name]
+	}), nil
+}
+
 // generateDebugValuesFile creates a temporary values file with debug configuration
 // for the specified components. Returns the path to the generated file, or empty string
 // if no debug components are enabled.
@@ -285,24 +372,48 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
 // the process environment, loading the .env file, and applying scenario-specific
 // overrides. The returned map is used as values.Options.EnvOverrides so that
 // parallel calls to values.Process never touch (or race on) the real process env.
+// scenarioEnvSeeds returns the lowest-precedence client-ID defaults seeded into
+// the scenario env (see buildScenarioEnv step 0). Both buildScenarioEnv and the
+// preflight fallback (scenarioDeployEnv) read from here.
+func scenarioEnvSeeds() map[string]string {
+	return map[string]string{
+		"VENOM_CLIENT_ID":      "venom",
+		"CONNECTORS_CLIENT_ID": "connectors",
+	}
+}
+
 func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (map[string]string, error) {
+	// 0. Seed mapping-rule client ID defaults for Keycloak. These mirror the
+	// workflow-level env defaults in .github/workflows/test-integration-runner.yaml
+	// ("VENOM_CLIENT_ID: venom" / "CONNECTORS_CLIENT_ID: connectors"), which make
+	// keycloak scenarios deploy in CI without anyone supplying these. Local
+	// deploy-camunda runs otherwise lack them and fail in prepareScenarioValues
+	// on the $VENOM_CLIENT_ID/$CONNECTORS_CLIENT_ID placeholders in the
+	// persistence/identity layers. Seeded at the lowest precedence: the process
+	// environment and .env (steps 1–2) override them, and OIDC/Entra entries
+	// override with the real app GUIDs via flags.ExtraEnv (step 4).
+	envMap := scenarioEnvSeeds()
+
 	// 1. Snapshot the current process environment as the baseline.
-	envMap := make(map[string]string)
 	for _, entry := range os.Environ() {
 		if k, v, ok := strings.Cut(entry, "="); ok {
 			envMap[k] = v
 		}
 	}
 
-	// 2. Overlay .env file values (without modifying the process environment).
-	if flags.EnvFile != "" {
-		dotenvMap, err := env.ReadFile(flags.EnvFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read env file %q: %w", flags.EnvFile, err)
-		}
-		for k, v := range dotenvMap {
-			envMap[k] = v
-		}
+	// 2. Overlay .env file values (without modifying the process environment),
+	// defaulting to ".env" when unset to match EnvProvenance and the root.go
+	// loader. env.ReadFile returns an empty map (not an error) for an absent file.
+	envFile := flags.EnvFile
+	if envFile == "" {
+		envFile = ".env"
+	}
+	dotenvMap, err := env.ReadFile(envFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read env file %q: %w", envFile, err)
+	}
+	for k, v := range dotenvMap {
+		envMap[k] = v
 	}
 
 	// 3. Apply scenario-specific overrides.
@@ -320,26 +431,6 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	}
 	envMap["FLOW"] = flags.Deployment.Flow
 
-	// Default ES pool index to 0 if not set (for local dev / manual runs).
-	esPoolIndex := flags.ESPoolIndex
-	if esPoolIndex == "" {
-		esPoolIndex = envMap["ES_POOL_INDEX"]
-	}
-	if esPoolIndex == "" {
-		esPoolIndex = "0"
-	}
-	envMap["ES_POOL_INDEX"] = esPoolIndex
-
-	// Default OS pool index to 0 if not set (for local dev / manual runs).
-	osPoolIndex := flags.OSPoolIndex
-	if osPoolIndex == "" {
-		osPoolIndex = envMap["OS_POOL_INDEX"]
-	}
-	if osPoolIndex == "" {
-		osPoolIndex = "0"
-	}
-	envMap["OS_POOL_INDEX"] = osPoolIndex
-
 	// 4. Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
 	for k, v := range flags.ExtraEnv {
 		envMap[k] = v
@@ -353,31 +444,6 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	}
 
 	return envMap, nil
-}
-
-// buildDeploymentConfigFromFlags creates a DeploymentConfig from RuntimeFlags.
-// It prefers the new selection flags (--identity, --persistence, etc.) over deprecated flags.
-// Returns nil if no explicit flags are set (use auto-detection from scenario name).
-func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) (*scenarios.DeploymentConfig, error) {
-	// Migrate deprecated flags to new fields first
-	flags.MigrateDeprecatedFlags()
-
-	// Check if we have any explicit configuration
-	if !flags.HasExplicitSelectionConfig() && !flags.HasExplicitLayeredConfig() {
-		return nil, nil
-	}
-
-	return scenarios.BuildDeploymentConfig(scenarioName, scenarios.BuilderOverrides{
-		Identity:     flags.Selection.Identity,
-		Persistence:  flags.Selection.Persistence,
-		Platform:     flags.Selection.TestPlatform,
-		Features:     flags.Selection.Features,
-		QA:           flags.Selection.QA,
-		ImageTags:    flags.Selection.ImageTags,
-		Upgrade:      flags.Selection.UpgradeFlow,
-		ChartVersion: flags.Chart.ChartVersion,
-		Flow:         flags.Deployment.Flow,
-	})
 }
 
 // enhanceScenarioError wraps scenario resolution errors with helpful context.
@@ -465,7 +531,7 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 
 		fmt.Fprintf(&helpMsg, "Hint: Use the new flags directly. Examples:\n")
 		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke\n")
-		fmt.Fprintf(&helpMsg, "  --identity keycloak-external --persistence opensearch --test-platform gke --features multitenancy\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence opensearch-embedded --test-platform gke --features multitenancy\n")
 		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke --qa --image-tags\n")
 	} else {
 		// Legacy single-file structure
@@ -557,6 +623,12 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		return nil, fmt.Errorf("failed to build scenario env: %w", err)
 	}
 
+	companionCharts, err := processCompanionCharts(ctx, flags.CompanionCharts, tempDir, flags.EnvFile, envMap)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return nil, err
+	}
+
 	// Helper function to process values files
 	processValues := func(scen string) error {
 		logging.Logger.Debug().
@@ -632,7 +704,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if effectivePlatform == "" {
 			effectivePlatform = flags.Deployment.Platform
 		}
-		deployConfig, err := scenarios.BuildDeploymentConfig(scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
+		deployConfig, err := scenarios.BuildDeploymentConfig(effectiveScenarioDir, scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
 			Identity:     flags.Selection.Identity,
 			Persistence:  flags.Selection.Persistence,
 			Platform:     effectivePlatform,
@@ -706,7 +778,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		// Deep-merge all layered files into a single YAML file to prevent
 		// Helm's shallow array replacement from silently dropping entries.
 		// Without this, a later layer's array (e.g., rba.yaml's operate.env)
-		// completely replaces an earlier layer's array (e.g., elasticsearch-external.yaml's
+		// completely replaces an earlier layer's array (e.g., elasticsearch.yaml's
 		// operate.env), losing critical env vars like index prefix overrides.
 		scenarioValueFiles, err = MergeLayeredValues(scenarioValueFiles, tempDir)
 		if err != nil {
@@ -761,7 +833,11 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if mapping == "" {
 			mapping = envMap["vault_secret_mapping"]
 		}
-		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
+		generate := mapper.Generate
+		if flags.Secrets.StrictSecrets {
+			generate = mapper.GenerateStrict
+		}
+		if err := generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
 			os.RemoveAll(tempDir) // Cleanup on error
 			return nil, fmt.Errorf("failed to generate vault secrets: %w", err)
 		}
@@ -792,6 +868,19 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		}
 		overlayPath := filepath.Join(flags.Chart.ChartPath, "values-"+overlay+".yaml")
 		if _, statErr := os.Stat(overlayPath); statErr == nil {
+			// The digest overlay pins image.digest, which the chart image helper
+			// prefers over tag. If --extra-values overrides a component's image
+			// coordinates (without its own digest), strip that component's digest
+			// from the overlay so the override actually takes effect instead of
+			// being silently shadowed. See neutralizeOverriddenDigests.
+			if overlay == "digest" && len(flags.Deployment.ExtraValues) > 0 {
+				sanitized, sanErr := neutralizeOverriddenDigests(overlayPath, flags.Deployment.ExtraValues, tempDir)
+				if sanErr != nil {
+					os.RemoveAll(tempDir)
+					return nil, fmt.Errorf("failed to sanitize digest overlay: %w", sanErr)
+				}
+				overlayPath = sanitized
+			}
 			chartRootOverlayFiles = append(chartRootOverlayFiles, overlayPath)
 			logging.Logger.Info().
 				Str("overlay", overlay).
@@ -843,6 +932,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		ValuesFiles:         vals,
 		LayeredFiles:        resolvedLayerFiles,
 		VaultSecretPath:     vaultSecretPath,
+		CompanionCharts:     companionCharts,
 		TempDir:             tempDir,
 		RealmName:           realmName,
 		OptimizePrefix:      optimizePrefix,

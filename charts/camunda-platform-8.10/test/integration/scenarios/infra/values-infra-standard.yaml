@@ -9,25 +9,10 @@ identity:
     key: workload
     operator: Equal
     value: standard
-identityKeycloak:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
-  postgresql:
-    primary:
-      nodeSelector:
-        workload: standard
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: standard
-identityPostgresql:
-  primary:
+
+# Camunda Hub.
+camundaHub:
+  console:
     nodeSelector:
       workload: standard
     tolerations:
@@ -35,16 +20,23 @@ identityPostgresql:
       key: workload
       operator: Equal
       value: standard
-
-# Web Apps.
-console:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
+  webModeler:
+    restapi:
+      nodeSelector:
+        workload: standard
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: standard
+    websockets:
+      nodeSelector:
+        workload: standard
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: standard
 connectors:
   nodeSelector:
     workload: standard
@@ -77,37 +69,7 @@ optimize:
     key: workload
     operator: Equal
     value: standard
-  resources:
-    requests:
-      cpu: 2000m
 
-# Web Modeler.
-webModeler:
-  restapi:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
-  websockets:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
-webModelerPostgresql:
-  primary:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
 
 # Zeebe.
 orchestration:
@@ -118,11 +80,6 @@ orchestration:
     key: workload
     operator: Equal
     value: standard
-  resources:
-    requests:
-      cpu: 4000m
-    limits:
-      cpu: 4000m
 zeebeGateway:
   nodeSelector:
     workload: standard
@@ -132,13 +89,3 @@ zeebeGateway:
     operator: Equal
     value: standard
 
-# Elasticsearch.
-elasticsearch:
-  master:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard

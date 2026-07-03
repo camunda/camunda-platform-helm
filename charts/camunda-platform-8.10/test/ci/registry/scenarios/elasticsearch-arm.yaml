@@ -1,0 +1,16 @@
+name: elasticsearch-arm
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - arm
+platforms:
+  - gke
+infra-type:
+  gke: arm
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

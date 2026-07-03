@@ -57,7 +57,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		SetValues: map[string]string{
 			"connectors.enabled":                   "true",
 			"orchestration.enabled":                "true",
-			"elasticsearch.enabled":                "true",
 			"global.elasticsearch.enabled":         "true",
 			"connectors.resources.requests.cpu":    "500m",
 			"connectors.resources.limits.cpu":      "1.5",
@@ -98,7 +97,6 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
 		SetValues: map[string]string{
 			"connectors.enabled":                   "true",
 			"orchestration.enabled":                "true",
-			"elasticsearch.enabled":                "true",
 			"global.elasticsearch.enabled":         "true",
 			"connectors.resources.requests.cpu":    "1000m",
 			"connectors.resources.limits.cpu":      "2000m",

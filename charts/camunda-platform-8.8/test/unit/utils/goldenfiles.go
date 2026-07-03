@@ -42,10 +42,10 @@ type TemplateGoldenTest struct {
 func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	if s.SetValues == nil {
 		s.SetValues = map[string]string{
-			"connectors.security.authentication.oidc.existingSecret.name":             "camunda-credentials",
+			"connectors.security.authentication.oidc.existingSecret.name":    "camunda-credentials",
 			"orchestration.security.authentication.oidc.existingSecret.name": "camunda-credentials",
-			"global.identity.auth.console.existingSecret.name":                "camunda-credentials",
-			"global.identity.auth.optimize.existingSecret.name":               "camunda-credentials",
+			"global.identity.auth.console.existingSecret.name":               "camunda-credentials",
+			"global.identity.auth.optimize.existingSecret.name":              "camunda-credentials",
 		}
 	}
 	values := s.SetValues
@@ -66,6 +66,14 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		regex := regexp.MustCompile(ignoredLine)
 		bytes = regex.ReplaceAll(bytes, []byte(""))
 	}
+
+	// Normalize trailing whitespace to ensure exactly one trailing newline.
+	// Different Helm versions may produce varying trailing whitespace which
+	// causes yamllint failures (empty-lines max-end: 0).
+	for len(bytes) > 0 && bytes[len(bytes)-1] == '\n' {
+		bytes = bytes[:len(bytes)-1]
+	}
+	bytes = append(bytes, '\n')
 	output = string(bytes)
 
 	goldenFile := "golden/" + s.GoldenFileName + ".golden.yaml"

@@ -1,6 +1,9 @@
 name: "Test - Unit - Template"
 
 on:
+  push:
+    paths:
+      - "test/scripts/generate_chart_matrix.bats"
   workflow_call:
     inputs:
       identifier:
@@ -25,12 +28,13 @@ permissions:
 jobs:
   init:
     name: Unit - Generate test matrix
+    if: inputs.camunda-helm-dir != ''
     runs-on: ubuntu-latest
     outputs:
       unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}
       unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       with:
         ref: "${{ inputs.camunda-helm-git-ref }}"
     - name: Get CI unit test matrix
@@ -47,7 +51,7 @@ jobs:
     name: UnitTest Scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -79,7 +83,7 @@ jobs:
       run: |
         echo "Workflow Inputs:"
         echo "${GITHUB_CONTEXT}"
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
     - name: Install tools
       uses: ./.github/actions/install-tool-versions
       with:
@@ -88,7 +92,7 @@ jobs:
           helm
     - name: Configure curl and wget
       uses: ./.github/actions/setup-curl
-    - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+    - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
       with:
         path: |
           ~/.cache/go-build

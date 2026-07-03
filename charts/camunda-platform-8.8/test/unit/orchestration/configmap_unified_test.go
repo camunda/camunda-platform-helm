@@ -105,6 +105,26 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
+		{
+			Name: "TestApplicationYamlShouldInheritAuthMethodFromGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method":         "oidc",
+				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
+			},
+		},
+		{
+			Name: "TestApplicationYamlComponentMethodShouldOverrideGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method":        "basic",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method": "oidc",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -248,6 +268,25 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldRenderTemplatedAuthUrls",
+			Values: map[string]string{
+				"identity.enabled":                                       "false",
+				"identityKeycloak.enabled":                               "false",
+				"global.identity.auth.enabled":                           "false",
+				"global.identity.auth.issuer":                            "",
+				"global.identity.auth.authUrl":                           "https://{{ .Release.Name }}.example.com/auth",
+				"global.identity.auth.tokenUrl":                          "https://{{ .Release.Name }}.example.com/token",
+				"global.identity.auth.jwksUrl":                           "https://{{ .Release.Name }}.example.com/certs",
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect-url.com/orchestration",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://camunda-platform-test.example.com/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://camunda-platform-test.example.com/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://camunda-platform-test.example.com/token",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlUnUsedAndKeycloakExternal",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
@@ -288,7 +327,7 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenExplicitlyEmpty",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -299,7 +338,7 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldContainGroupsClaimWhenSet",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
 			},
 			Expected: map[string]string{
