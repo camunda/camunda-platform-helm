@@ -77,7 +77,7 @@ data:
                 readiness: "http://camunda-platform-test-web-modeler-restapi.camunda-platform:8091/health/readiness"
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
-            version: "8.10.0-alpha2"
+            version: "8.10.0-alpha3"
             authentication: "BASIC"
             authorizations:
               enabled: true
@@ -103,25 +103,25 @@ data:
                 readiness: "http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness"
             - name: Operate
               type: operate
-              version: "8.10.0-alpha2"
+              version: "8.10.0-alpha3"
               urls:
                 webapp: "http://localhost:8080/operate"
                 readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
             - name: Tasklist
               type: tasklist
-              version: "8.10.0-alpha2"
+              version: "8.10.0-alpha3"
               urls:
                 webapp: "http://localhost:8080/tasklist"
                 readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
             - name: Orchestration Admin
               type: orchestrationIdentity
-              version: "8.10.0-alpha2"
+              version: "8.10.0-alpha3"
               urls:
                 webapp: "http://localhost:8080/admin"
                 readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
             - name: Orchestration Cluster
               type: orchestration
-              version: "8.10.0-alpha2"
+              version: "8.10.0-alpha3"
               urls:
                 grpc: "grpc://camunda-platform-test-zeebe-gateway:26500"
                 rest: "http://camunda-platform-test-zeebe-gateway:8080"
