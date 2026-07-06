@@ -521,7 +521,6 @@ func (s *ConstraintTemplateTest) TestCamundaHubConsolidationDeprecationWarningsR
 // webModeler.restapi.externalDatabase.user removal check (camundaPlatform.keyRemoved,
 // which calls fail and IS surfaced by helm template) fires on both enablement
 // paths: the legacy webModeler.enabled key and the new camundaHub.enabled key.
-// This locks the gate switch to camundaHub.webModelerEnabled.
 func (s *ConstraintTemplateTest) TestWebModelerExternalDatabaseUserRemovedGate() {
 	testCases := []testhelpers.TestCase{
 		{

@@ -1136,7 +1136,7 @@ camundaHub:
 ## @section WebModeler Parameters
 # WebModeler configuration of the WebModeler deployment
 webModeler:
-  ## @param webModeler.enabled DEPRECATED (use "camundaHub.enabled"): if true, the WebModeler deployment and its related resources are deployed via a helm release. Web Modeler has been consolidated into Camunda Hub; place overrides under "camundaHub.webModeler.*". Removed in a future version.
+  ## @param webModeler.enabled if true, the WebModeler deployment and its related resources are deployed via a helm release. DEPRECATED: Web Modeler has been consolidated into Camunda Hub; use "camundaHub.enabled" instead and place overrides under "camundaHub.webModeler.*". Removed in a future version.
   enabled: false
 
   ## @param webModeler.fullnameOverride can be used to override the full name of the WebModeler resources
