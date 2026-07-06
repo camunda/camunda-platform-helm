@@ -232,6 +232,25 @@ func TestSelectFailedJob(t *testing.T) {
 	}
 }
 
+func TestFirstFailedStep(t *testing.T) {
+	t.Parallel()
+	job := ghJob{Steps: []struct {
+		Name       string `json:"name"`
+		Conclusion string `json:"conclusion"`
+	}{
+		{Name: "Setup", Conclusion: "success"},
+		{Name: "Install Camunda chart", Conclusion: "timed_out"},
+		{Name: "Later", Conclusion: "failure"},
+	}}
+	// timed_out must count as failed (matches selectFailedJob's failedConclusions).
+	if got := firstFailedStep(job); got != "Install Camunda chart" {
+		t.Errorf("firstFailedStep = %q, want the timed_out step", got)
+	}
+	if got := firstFailedStep(ghJob{}); got != "" {
+		t.Errorf("no steps should yield empty, got %q", got)
+	}
+}
+
 func TestFetchFailingJobLog(t *testing.T) {
 	ref := runRef{Owner: "camunda", Repo: "camunda-platform-helm", RunID: "42"}
 

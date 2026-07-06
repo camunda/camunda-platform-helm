@@ -312,7 +312,7 @@ func selectFailedJob(jobs []ghJob) *ghJob {
 
 func firstFailedStep(job ghJob) string {
 	for _, s := range job.Steps {
-		if s.Conclusion == "failure" {
+		if failedConclusions[s.Conclusion] {
 			return s.Name
 		}
 	}
