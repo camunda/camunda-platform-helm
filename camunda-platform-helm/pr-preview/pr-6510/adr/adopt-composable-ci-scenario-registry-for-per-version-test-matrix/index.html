@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6510/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6510/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6510/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6510/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6510/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6510/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6510/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6510/assets/css/styles.3f6cd398.css">
+<script src="/camunda-platform-helm/pr-preview/pr-6510/assets/js/runtime~main.773a5d7a.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6510/assets/js/main.03fa6524.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda-platform-helm/pr-preview/pr-6510/img/camunda-logo.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda-platform-helm/pr-preview/pr-6510/"><div class="navbar__logo"><img src="/camunda-platform-helm/pr-preview/pr-6510/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda-platform-helm/pr-preview/pr-6510/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Helm Charts</b></a><a class="navbar__item navbar__link" href="/camunda-platform-helm/pr-preview/pr-6510/">Docs</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Adopt a composable CI scenario registry for the per-version integration test matrix</h1></header>
+<ul>
+<li class="">Status: accepted</li>
+<li class="">Date: 2026-06-01</li>
+<li class="">Decision-makers: Distribution team</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context-and-problem-statement">Context and Problem Statement<a href="#context-and-problem-statement" class="hash-link" aria-label="Direct link to Context and Problem Statement" title="Direct link to Context and Problem Statement" translate="no">​</a></h2>
+<p>The Camunda Helm chart&#x27;s CI integration test matrix is defined by one
+<code>ci-test-config.yaml</code> per chart version at
+<code>charts/camunda-platform-{8.7,8.8,8.9,8.10}/test/ci-test-config.yaml</code>.
+Each file is an ordered list under
+<code>integration.case.pr.scenario</code>; each list item is a ~30-line inline
+<code>CIScenario</code> blob mixing identity, persistence, platform/infra,
+flow, tier, lifecycle hooks, dependencies, and scenario scalars.
+The 8.10 file is ~1200 lines.</p>
+<p>The 100-commit sample in
+<a href="https://github.com/camunda/camunda-platform-helm/issues/6264" target="_blank" rel="noopener noreferrer" class="">#6264</a>
+shows 11–16 edits per version file. Structurally independent
+changes (new scenarios, hook tweaks, infra routing, skip policy)
+collide as merge conflicts in the same ordered list — structural
+conflicts, not stale-branch artifacts.</p>
+<p>Two duplication pressures compound it:</p>
+<ul>
+<li class=""><strong>Inlined hooks</strong> — identical <code>pre-install</code> fixtures and descriptions
+copied across every CloudNativePG-using scenario.</li>
+<li class=""><strong>Inlined companion dependencies</strong> — same <code>internal-keycloak-26</code> and
+<code>elastic/elasticsearch 8.5.1</code> repo+values blocks copied across every
+consumer; a single bump touches many scenarios × four files.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
+<p>Applies to all currently supported chart versions — <strong>8.7, 8.8, 8.9,
+8.10</strong>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Conflict surface area.</strong> Independent scenario or policy changes
+must touch independent files. Primary motivation from #6264.</li>
+<li class=""><strong>Reviewability.</strong> A scenario diff must show all relevant policy
+without scrolling a 1200-line file; a hook or dependency change must
+show its full blast radius via ID references.</li>
+<li class=""><strong>Migration safety.</strong> <code>deploy-camunda matrix list/run</code> MUST
+produce a matrix equivalent to the pre-migration one at the
+migration cut, enforced by the equivalence test (item 4).</li>
+<li class=""><strong>Single source of truth.</strong> Post-migration, only the registry is
+edited; the legacy file is a frozen snapshot with a header comment.</li>
+<li class=""><strong>Internal scope.</strong> Registry is a CI-internal mechanism. MUST NOT
+alter user-facing chart values, templates, golden files, or
+<code>values.schema.json</code>. MUST NOT change the <code>CITestConfig</code> struct
+consumed by <code>deploy-camunda matrix run</code>.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="considered-options">Considered Options<a href="#considered-options" class="hash-link" aria-label="Direct link to Considered Options" title="Direct link to Considered Options" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Keep the monolithic file; rely on smaller PRs and rebase
+discipline.</strong> Rejected — conflict pattern is structural; process
+cannot remove file-level adjacency.</li>
+<li class=""><strong>Full composable registry; identity, persistence, flows,
+platforms, infra, features, and e2e each extracted into their own
+subdirectory alongside scenarios, hooks, and dependencies.</strong>
+Rejected — scenario-specific, not cited in #6264 as duplication
+sources; extracting them imposes multi-file reads without removing
+conflict surface.</li>
+<li class=""><strong>Cross-version composable registry; one repo-global tree shared
+by 8.7/8.8/8.9/8.10 with per-version field overrides.</strong> Rejected —
+version divergence collapses shared defaults into per-version
+overrides, and the override layer becomes the new
+single-point-of-conflict.</li>
+<li class=""><strong>Scenarios into their own files, plus hooks and dependencies
+extracted; everything else inline (chosen).</strong> Targets exactly the
+duplication sources #6264 cites — the ordered scenario list and
+the inlined hooks/dependencies. Layout in item 1.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
+<p>A composable CI scenario registry at
+<code>charts/camunda-platform-&lt;X.Y&gt;/test/ci/registry/</code> becomes the source
+of truth for that version&#x27;s integration test matrix. <code>deploy-camunda</code>
+reads the registry directly once migrated; the legacy
+<code>ci-test-config.yaml</code> is frozen as the pre-migration snapshot for
+item 4 and is deleted once all four versions have migrated and held
+green for one nightly cycle on <code>main</code>. Normative constraints:</p>
+<ol>
+<li class="">
+<p><strong>Layout.</strong> Thin manifest plus <code>scenarios/</code>, <code>hooks/</code>,
+<code>dependencies/</code> subdirectories; files keyed by stable ID:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#bfc7d5;--prism-background-color:#292d3e"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#bfc7d5;background-color:#292d3e"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#bfc7d5"><span class="token plain">charts/camunda-platform-&lt;X.Y&gt;/test/ci/registry/</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  manifest.yaml             # ordered list of scenario IDs with numeric tier and enabled</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  scenarios/&lt;id&gt;.yaml       # one scenario per file; inlines all `CIScenario` fields (identity, persistence, platforms, infra-type, features, extra-values, shortname, prefix-key, helmVersion, skip-e2e, skip-it, qa, image-tags, upgrade, enterprise) except `flow`, `pre-install`, `post-deploy`, and `dependencies`</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  hooks/&lt;id&gt;.yaml           # named pre-install / post-deploy LifecycleHook blocks</span><br></div><div class="token-line" style="color:#bfc7d5"><span class="token plain">  dependencies/&lt;id&gt;.yaml    # named ChartDependency entries (chart, version, repo, values-file)</span><br></div></code></pre></div></div>
+<p>Registry lives under the version&#x27;s chart subtree, matching the
+ADR 0063 precedent.</p>
+<p>Scenario files carry a plural <code>flows: [&lt;flow-id&gt;, …]</code>. The loader
+fans out one scenario × N flows into N <code>CIScenario</code> entries with
+distinct singular <code>Flow</code>, preserving the existing <code>CITestConfig</code>
+struct unchanged. Inline companion-chart blocks MUST NOT be
+permitted; identity sections reference <code>dependencies/&lt;id&gt;</code> by ID.</p>
+<p>Values-layer files (under <code>chart-full-setup/values/</code>), hook
+manifests (<code>common/resources/</code>), and hook scripts
+(<code>pre-setup-scripts/</code>) are named by basename and resolved against
+the same version&#x27;s <code>test/integration/scenarios/</code> tree.</p>
+</li>
+<li class="">
+<p><strong>Loader.</strong> <code>scripts/deploy-camunda/matrix/config.go</code> gains
+<code>LoadRegistry(chartDir string) (*CITestConfig, error)</code>, which
+resolves the manifest&#x27;s ID references against the colocated
+registry and returns the existing <code>CITestConfig</code> struct. Legacy
+<code>LoadCITestConfig</code> is retained until all four supported versions
+have migrated, then removed.</p>
+</li>
+<li class="">
+<p><strong>Validation.</strong> A new <code>RegistryValidator</code> enforces at load time:</p>
+<ul>
+<li class="">Every referenced hook and dependency ID resolves to a file.</li>
+<li class="">Scenario IDs and shortnames are unique.</li>
+<li class="">Platform × flow tuples do not duplicate.</li>
+<li class="">Referenced basenames (hook manifests, hook scripts, dependency
+values-files, scenario values-layer files, feature values-files)
+resolve under <code>test/integration/scenarios/</code>.</li>
+<li class=""><code>extra-values</code> relative paths resolve under the scenario&#x27;s
+<code>chart-full-setup/</code> dir and MUST NOT escape it via <code>..</code> traversal;
+absolute paths are runtime-supplied (e.g. per-PR image-tag overlay)
+and are intentionally not validated at load time.</li>
+<li class="">Platform × flow combinations are not denied by
+<code>.github/config/permitted-flows.yaml</code>.</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Equivalence test (one-shot, in the migration PR).</strong> A Go test
+in <code>scripts/deploy-camunda/matrix/</code> loads both the legacy
+<code>ci-test-config.yaml</code> and the registry and asserts the two
+<code>*CITestConfig</code> values equal via <code>cmp.Diff</code>, with slice-order
+normalization for order-independent fields and the post-fan-out
+scenario list. Proves the migration cut; not a long-running
+invariant. Post-migration regressions caught by the nightly
+integration suite.</p>
+</li>
+<li class="">
+<p><strong>Migration order and source switch.</strong> 8.10 migrates first
+(highest churn); 8.9, 8.8, 8.7 follow after 8.10 holds green on
+<code>main</code> for one full nightly run. Each migration is a single PR:
+registry files added, equivalence test (item 4) green, legacy
+file frozen with header comment. At runtime the loader picks the
+registry when <code>&lt;chartDir&gt;/test/ci/registry/manifest.yaml</code> exists,
+else falls back to <code>LoadCITestConfig</code>. No runtime flag.</p>
+</li>
+</ol>
+<p>Follow-ups (not in the first-landing 8.10 PR): 8.9 / 8.8 / 8.7
+migrations; removal of <code>LoadCITestConfig</code> and the legacy files;
+<code>runner.go</code> split into concern-scoped packages; migration of
+scenario-specific behavior in <code>.github/workflows/test-integration-runner.yaml</code>
+into registry data.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">Adding a scenario creates one <code>scenarios/&lt;id&gt;.yaml</code> and one
+manifest line. Two unrelated scenario PRs collide only if they
+touch the same scenario or the same shared file.</li>
+<li class="">Editing a hook or dependency touches one file; blast radius
+visible via ID references back to consuming scenarios.</li>
+<li class="">Scenario review shows a focused <code>scenarios/&lt;id&gt;.yaml</code> instead of
+a blob in a 1200-line file.</li>
+<li class=""><code>deploy-camunda matrix list/run</code> behavior is preserved; GHA
+workflows and external callers continue to work unchanged.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative-consequences">Negative Consequences<a href="#negative-consequences" class="hash-link" aria-label="Direct link to Negative Consequences" title="Direct link to Negative Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">Frozen legacy file mitigated only by header comment, not a CI
+guard; regressions surface in the nightly integration run, not at
+PR time.</li>
+<li class="">Reading a scenario&#x27;s effective configuration means reading its
+file plus referenced hook and dependency files; two-hop
+composition replaces long inline blobs as the cognitive cost.</li>
+<li class="">New loader, validator, and equivalence test add maintenance surface
+in <code>scripts/deploy-camunda/matrix/</code>.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="links">Links<a href="#links" class="hash-link" aria-label="Direct link to Links" title="Direct link to Links" translate="no">​</a></h2>
+<ul>
+<li class="">Issue <a href="https://github.com/camunda/camunda-platform-helm/issues/6264" target="_blank" rel="noopener noreferrer" class="">#6264 — Reduce CI scenario merge conflicts with a composable scenario registry</a> — source problem statement and 100-commit evidence.</li>
+<li class=""><a class="" href="/camunda-platform-helm/pr-preview/pr-6510/adr/implement-matrix-driven-ci-framework-for-testing-supported">ADR 0071</a> — established the matrix-driven CI framework this registry restructures.</li>
+<li class=""><a class="" href="/camunda-platform-helm/pr-preview/pr-6510/adr/rewrite-ci-shell-scripts-as-structured-go-clis-with-shared">ADR 0075</a> — established the Go-CLI pattern (<code>deploy-camunda</code>) the registry loader extends.</li>
+<li class=""><a class="" href="/camunda-platform-helm/pr-preview/pr-6510/adr/internalize-integration-test-values-within-the-helm-chart">ADR 0063</a> — established the precedent for keeping CI test artifacts inside the chart repo; this ADR extends that direction to the matrix definition itself.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda-platform-helm/edit/main/../docs/adr/0093-adopt-composable-ci-scenario-registry-for-per-version-test-matrix.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context-and-problem-statement" class="table-of-contents__link toc-highlight">Context and Problem Statement</a><ul><li><a href="#applicability-by-version" class="table-of-contents__link toc-highlight">Applicability by version</a></li></ul></li><li><a href="#decision-drivers" class="table-of-contents__link toc-highlight">Decision Drivers</a></li><li><a href="#considered-options" class="table-of-contents__link toc-highlight">Considered Options</a></li><li><a href="#decision-outcome" class="table-of-contents__link toc-highlight">Decision Outcome</a><ul><li><a href="#positive-consequences" class="table-of-contents__link toc-highlight">Positive Consequences</a></li><li><a href="#negative-consequences" class="table-of-contents__link toc-highlight">Negative Consequences</a></li></ul></li><li><a href="#links" class="table-of-contents__link toc-highlight">Links</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6510/reference/release-process">Release Process</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6510/reference/github-actions-workflows">GitHub Actions Workflows</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6510/contribution-and-collaboration">Contribution &amp; Collaboration</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm/issues" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub Issues<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://docs.camunda.io" target="_blank" rel="noopener noreferrer" class="footer__link-item">Camunda Docs<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://artifacthub.io/packages/helm/camunda/camunda-platform" target="_blank" rel="noopener noreferrer" class="footer__link-item">Artifact Hub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda Services GmbH. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
