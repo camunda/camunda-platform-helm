@@ -751,11 +751,20 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
+      - name: Compute diagnostics artifact name
+        if: failure()
+        id: diag-artifact
+        shell: bash
+        run: |
+          raw="diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          # Artifact names reject spaces/colons/slashes etc.; normalize to a safe set.
+          echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
+
       - name: Upload deployment diagnostics bundle
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ steps.diag-artifact.outputs.name }}
           path: diagnostics/
           retention-days: 14
           if-no-files-found: ignore
@@ -1100,11 +1109,20 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
+      - name: Compute diagnostics artifact name
+        if: failure()
+        id: diag-artifact
+        shell: bash
+        run: |
+          raw="diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          # Artifact names reject spaces/colons/slashes etc.; normalize to a safe set.
+          echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
+
       - name: Upload deployment diagnostics bundle
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ steps.diag-artifact.outputs.name }}
           path: diagnostics/
           retention-days: 14
           if-no-files-found: ignore

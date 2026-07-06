@@ -99,6 +99,25 @@ func GetPodLogs(ctx context.Context, kubeContext, namespace, pod string, tailLin
 	return runKubectl(ctx, args)
 }
 
+// GetPodLogsPrevious returns the last tailLines of logs from the previous
+// (crashed) container instance. Empty when the pod never restarted.
+func GetPodLogsPrevious(ctx context.Context, kubeContext, namespace, pod string, tailLines int) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext),
+		"logs", pod, "-n", namespace,
+		"--tail", fmt.Sprintf("%d", tailLines),
+		"--all-containers", "--previous",
+	)
+	return runKubectl(ctx, args)
+}
+
+// DescribePod returns the output of `kubectl describe pod <pod> -n <namespace>`.
+// The Events section is the key evidence for scheduling, mount, and image-pull
+// failures on a pod that never became ready.
+func DescribePod(ctx context.Context, kubeContext, namespace, pod string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "describe", "pod", pod, "-n", namespace)
+	return runKubectl(ctx, args)
+}
+
 // GetNonReadyPods returns the names of pods that are not fully ready.
 // It uses a field-selector to find non-Running pods and also parses output to
 // catch Running-but-not-Ready pods (e.g., readiness probe failing).

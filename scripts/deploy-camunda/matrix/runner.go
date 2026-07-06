@@ -1292,19 +1292,6 @@ func collectDiagnostics(namespace, kubeContext string) string {
 		summary.Errors = append(summary.Errors, fmt.Sprintf("get events: %v", err))
 	}
 
-	// PVCs: state + describe. Key evidence for volume-mount and provisioning hangs
-	// (pending claims, WaitForFirstConsumer, multi-attach conflicts).
-	if pvcs, err := kube.GetPVCs(ctx, kubeContext, namespace); err == nil && pvcs != "" {
-		summary.PVCs = pvcs
-	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("get pvc: %v", err))
-	}
-	if pvcDesc, err := kube.DescribePVCs(ctx, kubeContext, namespace); err == nil && pvcDesc != "" {
-		summary.PVCDescribe = pvcDesc
-	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("describe pvc: %v", err))
-	}
-
 	// Logs from all pods: one file per pod under logs/.
 	if podNames, err := kube.GetPodNames(ctx, kubeContext, namespace); err == nil {
 		sort.Strings(podNames)
@@ -1334,6 +1321,21 @@ func collectDiagnostics(namespace, kubeContext string) string {
 		}
 	} else {
 		summary.Errors = append(summary.Errors, fmt.Sprintf("list pod names: %v", err))
+	}
+
+	// PVCs: state + describe. Key evidence for volume-mount and provisioning hangs
+	// (pending claims, WaitForFirstConsumer, multi-attach conflicts). Collected
+	// after per-pod logs so that, under the shared collection deadline, the
+	// higher-value pod logs are not starved by the slower `describe pvc`.
+	if pvcs, err := kube.GetPVCs(ctx, kubeContext, namespace); err == nil && pvcs != "" {
+		summary.PVCs = pvcs
+	} else if err != nil {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("get pvc: %v", err))
+	}
+	if pvcDesc, err := kube.DescribePVCs(ctx, kubeContext, namespace); err == nil && pvcDesc != "" {
+		summary.PVCDescribe = pvcDesc
+	} else if err != nil {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("describe pvc: %v", err))
 	}
 
 	if err := writeDiagnosticsSummary(runDir, summary); err != nil {

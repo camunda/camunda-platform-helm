@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -157,6 +159,22 @@ func TestExtractFailureRecord(t *testing.T) {
 	}
 }
 
+func TestStripANSILeavesNonANSIIntact(t *testing.T) {
+	t.Parallel()
+	// Real ANSI (with ESC) must be stripped; bare "[Nm" text must NOT be touched.
+	cases := map[string]string{
+		"\x1b[90m09:15:24\x1b[0m WARN":            "09:15:24 WARN",
+		"waiting: [1m PodInitializing":            "waiting: [1m PodInitializing",
+		"context deadline exceeded after [20m] x": "context deadline exceeded after [20m] x",
+		"##[error]something failed":               "##[error]something failed",
+	}
+	for in, want := range cases {
+		if got := stripANSI(in); got != want {
+			t.Errorf("stripANSI(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 func TestStripLogNoise(t *testing.T) {
 	t.Parallel()
 	out := stripLogNoise(sampleLog)
@@ -200,6 +218,109 @@ func TestSelectFailedJob(t *testing.T) {
 	if got := selectFailedJob([]ghJob{{ID: 1, Conclusion: "success"}}); got != nil {
 		t.Fatalf("expected nil for all-green jobs, got %+v", got)
 	}
+
+	// timed_out is treated as a failure; cancelled is not.
+	got = selectFailedJob([]ghJob{
+		{ID: 1, Name: "CI Gate", Conclusion: "cancelled"},
+		{ID: 2, Name: "8.10 - keyco - install - pr - gke", Conclusion: "timed_out"},
+	})
+	if got == nil || got.ID != 2 {
+		t.Fatalf("expected the timed_out matrix job (id 2), got %+v", got)
+	}
+	if got := selectFailedJob([]ghJob{{ID: 1, Conclusion: "cancelled"}}); got != nil {
+		t.Fatalf("cancelled-only jobs should not be selected, got %+v", got)
+	}
+}
+
+func TestFetchFailingJobLog(t *testing.T) {
+	ref := runRef{Owner: "camunda", Repo: "camunda-platform-helm", RunID: "42"}
+
+	t.Run("selects failed job then fetches its log", func(t *testing.T) {
+		orig := ghAPI
+		defer func() { ghAPI = orig }()
+		var logJobID string
+		ghAPI = func(_ context.Context, args []string) ([]byte, error) {
+			arg := args[len(args)-1]
+			if strings.Contains(arg, "/runs/42/jobs") {
+				return []byte(`{"total_count":2,"jobs":[
+					{"id":1,"name":"CI Gate","conclusion":"success"},
+					{"id":2,"name":"8.9 - cprst - install - pr - gke","conclusion":"failure"}]}`), nil
+			}
+			if strings.Contains(arg, "/jobs/2/logs") {
+				logJobID = "2"
+				return []byte("some log body\n"), nil
+			}
+			return nil, fmt.Errorf("unexpected api call: %s", arg)
+		}
+		log, job, err := fetchFailingJobLog(context.Background(), ref)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if logJobID != "2" || !strings.Contains(log, "some log body") {
+			t.Errorf("expected log for job 2, got job=%q log=%q", logJobID, log)
+		}
+		if job == nil || job.ID != 2 {
+			t.Errorf("expected selected job 2, got %+v", job)
+		}
+	})
+
+	t.Run("all-green run returns the guidance error", func(t *testing.T) {
+		orig := ghAPI
+		defer func() { ghAPI = orig }()
+		ghAPI = func(_ context.Context, _ []string) ([]byte, error) {
+			return []byte(`{"total_count":1,"jobs":[{"id":1,"name":"CI Gate","conclusion":"success"}]}`), nil
+		}
+		_, _, err := fetchFailingJobLog(context.Background(), ref)
+		if err == nil || !strings.Contains(err.Error(), "no failed job found") {
+			t.Fatalf("expected no-failed-job error, got %v", err)
+		}
+	})
+
+	t.Run("malformed jobs response errors", func(t *testing.T) {
+		orig := ghAPI
+		defer func() { ghAPI = orig }()
+		ghAPI = func(_ context.Context, _ []string) ([]byte, error) {
+			return []byte("not json"), nil
+		}
+		_, _, err := fetchFailingJobLog(context.Background(), ref)
+		if err == nil || !strings.Contains(err.Error(), "parse jobs response") {
+			t.Fatalf("expected parse error, got %v", err)
+		}
+	})
+
+	t.Run("pinned job id bypasses the jobs list", func(t *testing.T) {
+		orig := ghAPI
+		defer func() { ghAPI = orig }()
+		pinned := ref
+		pinned.JobID = "999"
+		var calls []string
+		ghAPI = func(_ context.Context, args []string) ([]byte, error) {
+			arg := args[len(args)-1]
+			calls = append(calls, arg)
+			if strings.Contains(arg, "/jobs/999/logs") {
+				return []byte("pinned log\n"), nil
+			}
+			if strings.Contains(arg, "/jobs/999") {
+				return []byte(`{"id":999,"name":"8.9 - cprst - install - pr - gke","conclusion":"failure"}`), nil
+			}
+			return nil, fmt.Errorf("unexpected api call: %s", arg)
+		}
+		log, job, err := fetchFailingJobLog(context.Background(), pinned)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(log, "pinned log") {
+			t.Errorf("expected pinned log, got %q", log)
+		}
+		if job == nil || job.ID != 999 {
+			t.Errorf("expected pinned job metadata, got %+v", job)
+		}
+		for _, c := range calls {
+			if strings.Contains(c, "/runs/42/jobs") {
+				t.Errorf("pinned path must not list run jobs, but called %s", c)
+			}
+		}
+	})
 }
 
 func TestReproCommand(t *testing.T) {

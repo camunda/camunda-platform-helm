@@ -90,6 +90,10 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "triage" {
 					return nil
 				}
+				// diagnostics is a read-only namespace dump; no chart config needed.
+				if cmd.Name() == "diagnostics" || (cmd.Parent() != nil && cmd.Parent().Name() == "diagnostics") {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -543,6 +547,7 @@ func Execute() error {
 	rootCmd.AddCommand(newAuth0Command())
 	rootCmd.AddCommand(newDoctorCommand())
 	rootCmd.AddCommand(newTriageCommand())
+	rootCmd.AddCommand(newDiagnosticsCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {

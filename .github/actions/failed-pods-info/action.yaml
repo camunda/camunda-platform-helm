@@ -8,32 +8,14 @@ runs:
     shell: bash
     # Structured diagnostics are also uploaded as the `diagnostics-*` artifact by the
     # deploy-camunda matrix runner. This step prints an in-log fast path for the common
-    # failure shapes (crash, image pull, scheduling, and volume-mount/init hangs).
+    # failure shapes. The dump logic lives in Go (`deploy-camunda diagnostics print`,
+    # unit-tested) per AGENTS.md; this is a thin wrapper with a kubectl fallback for
+    # jobs where the CLI is not yet on PATH.
     run: |
-      echo "::group::Pods"
-      kubectl -n $TEST_NAMESPACE get po -o wide || true
-      echo "::endgroup::"
-
-      echo "::group::Events (sorted by lastTimestamp)"
-      kubectl -n $TEST_NAMESPACE get events --sort-by=.lastTimestamp | tail -n 40 || true
-      echo "::endgroup::"
-
-      echo "::group::PersistentVolumeClaims"
-      kubectl -n $TEST_NAMESPACE get pvc -o wide || true
-      kubectl -n $TEST_NAMESPACE describe pvc || true
-      echo "::endgroup::"
-
-      # Match any pod that is not fully ready or not in a terminal-success state. This
-      # catches 0/N (not ready) plus Init:/Pending/CrashLoopBackOff/ImagePullBackOff/
-      # ErrImagePull/PodInitializing/ContainerCreating states that the old `0/` filter missed.
-      kubectl -n $TEST_NAMESPACE get po --no-headers 2>/dev/null \
-        | grep -vE "Completed|Running" \
-        | grep -E "0/|Init:|Pending|CrashLoopBackOff|ImagePullBackOff|ErrImagePull|PodInitializing|ContainerCreating|Error" \
-        | awk '{print $1}' | sort -u | while read pod_name; do
-        [ -z "${pod_name}" ] && continue
-        echo -e "\n###Failed Pod: ${pod_name}###\n";
-        kubectl -n $TEST_NAMESPACE describe po ${pod_name} || true;
-        # Logs are empty for pods still initializing; --previous surfaces a prior crash.
-        kubectl -n $TEST_NAMESPACE logs ${pod_name} --all-containers || true;
-        kubectl -n $TEST_NAMESPACE logs ${pod_name} --all-containers --previous 2>/dev/null || true;
-      done
+      if command -v deploy-camunda >/dev/null 2>&1; then
+        deploy-camunda diagnostics print --namespace "$TEST_NAMESPACE" || true
+      else
+        kubectl -n "$TEST_NAMESPACE" get po -o wide || true
+        kubectl -n "$TEST_NAMESPACE" get events --sort-by=.lastTimestamp | tail -n 40 || true
+        kubectl -n "$TEST_NAMESPACE" get pvc -o wide || true
+      fi

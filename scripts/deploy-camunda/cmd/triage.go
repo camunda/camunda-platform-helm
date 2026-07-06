@@ -72,7 +72,16 @@ type ghJob struct {
 }
 
 type ghJobsResponse struct {
-	Jobs []ghJob `json:"jobs"`
+	TotalCount int     `json:"total_count"`
+	Jobs       []ghJob `json:"jobs"`
+}
+
+// failedConclusions are the job conclusions triage treats as a failure to
+// diagnose. "cancelled" is excluded — cancelled matrix legs are usually victims
+// of another leg's failure, not the root cause.
+var failedConclusions = map[string]bool{
+	"failure":   true,
+	"timed_out": true,
 }
 
 var (
@@ -85,8 +94,10 @@ var (
 	// quotedHelmCmdRe matches a quoted command="helm ..." field, which the matrix
 	// runner emits with the exact failing invocation.
 	quotedHelmCmdRe = regexp.MustCompile(`command="(helm [^"]*)"`)
-	// ansiRe matches ANSI SGR color escapes present in raw gh job logs.
-	ansiRe = regexp.MustCompile("\x1b\\[[0-9;]*m|\\[[0-9]{1,2}m")
+	// ansiRe matches ANSI SGR color escapes present in raw gh job logs. Raw logs
+	// carry the ESC byte, so anchoring on \x1b is sufficient — matching a bare
+	// "[Nm" would corrupt real content like "[20m]" timeouts or "[1m" fragments.
+	ansiRe = regexp.MustCompile("\x1b\\[[0-9;]*m")
 )
 
 // newTriageCommand creates the `triage` subcommand: from a failed integration
@@ -244,6 +255,11 @@ func fetchFailingJobLog(ctx context.Context, ref runRef) (string, *ghJob, error)
 		if err := json.Unmarshal(out, &resp); err != nil {
 			return "", nil, fmt.Errorf("parse jobs response: %w", err)
 		}
+		if resp.TotalCount > len(resp.Jobs) {
+			fmt.Fprintf(os.Stderr,
+				"warning: only the first %d of %d jobs were inspected; if the failure isn't found, pass the failing job's URL or --job <id>\n",
+				len(resp.Jobs), resp.TotalCount)
+		}
 		job := selectFailedJob(resp.Jobs)
 		if job == nil {
 			return "", nil, fmt.Errorf(
@@ -281,7 +297,7 @@ func fetchFailingJobLog(ctx context.Context, ref runRef) (string, *ghJob, error)
 func selectFailedJob(jobs []ghJob) *ghJob {
 	var firstFailed *ghJob
 	for i := range jobs {
-		if jobs[i].Conclusion != "failure" {
+		if !failedConclusions[jobs[i].Conclusion] {
 			continue
 		}
 		if firstFailed == nil {
