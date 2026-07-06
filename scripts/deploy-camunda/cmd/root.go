@@ -206,6 +206,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVarP(&flags.Chart.ChartVersion, "version", "v", "", "Chart version (only valid with --chart; not allowed with --chart-path)")
 	f.StringVarP(&flags.Deployment.Namespace, "namespace", "n", "", "Kubernetes namespace")
 	f.StringVar(&flags.Deployment.NamespacePrefix, "namespace-prefix", "", "Prefix to prepend to namespace (e.g., 'distribution' for EKS results in 'distribution-<namespace>')")
+	f.StringVar(&flags.Deployment.TTL, "ttl", "", "Ephemeral-namespace TTL for the cleaner/janitor (e.g. 60m, 12h). Empty falls back to the DEPLOY_CAMUNDA_TTL env var, then 60m.")
 	f.StringVarP(&flags.Deployment.Release, "release", "r", "", "Helm release name")
 	f.StringVarP(&flags.Deployment.Scenario, "scenario", "s", "", "The name of the scenario to deploy (comma-separated for parallel deployment)")
 	f.StringVar(&flags.Deployment.ScenarioPath, "scenario-path", "", "Path to scenario files")

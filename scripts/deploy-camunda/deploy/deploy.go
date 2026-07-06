@@ -338,6 +338,15 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 			Msg("🔧 [executeDeployment] using specified kubeContext")
 	}
 
+	// TTL precedence: --ttl flag, then DEPLOY_CAMUNDA_TTL env, else 60m default.
+	deployTTL := flags.Deployment.TTL
+	if deployTTL == "" {
+		deployTTL = os.Getenv("DEPLOY_CAMUNDA_TTL")
+	}
+	if deployTTL == "" {
+		deployTTL = "60m"
+	}
+
 	// Build deployment options
 	deployOpts := types.Options{
 		ChartPath:              flags.Chart.ChartPath,
@@ -364,7 +373,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		NamespacePrefix:        flags.Deployment.NamespacePrefix,
 		RepoRoot:               flags.Chart.RepoRoot,
 		Identifier:             identifier,
-		TTL:                    "60m",
+		TTL:                    deployTTL,
 		LoadKeycloakRealm:      true,
 		KeycloakRealmName:      prepared.RealmName,
 		RenderTemplates:        flags.Deployment.RenderTemplates,

@@ -683,6 +683,11 @@ jobs:
             EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
           fi
 
+          # Give deploy-camunda the requested namespace TTL; without this it stamps
+          # its 60m default onto cleaner/janitor, so 12h nightly clusters get reaped
+          # after an hour. Empty falls back to deploy-camunda's 60m default.
+          export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
+
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
@@ -1047,6 +1052,11 @@ jobs:
           if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
             EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
           fi
+
+          # Give deploy-camunda the requested namespace TTL; without this it stamps
+          # its 60m default onto cleaner/janitor, so 12h nightly clusters get reaped
+          # after an hour. Empty falls back to deploy-camunda's 60m default.
+          export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
 
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
