@@ -1,0 +1,31 @@
+# Deprecated optimize keys NOT set (defaults); migration targets supplied via
+# optimize.extraConfiguration. Exercises the effectiveExtraConfigValue gating so
+# extraConfiguration wins over the chart-rendered env / native config.
+identity:
+  enabled: true
+optimize:
+  enabled: true
+  multitenancy:
+    enabled: true
+  extraConfiguration:
+    - file: application-migrated.yaml
+      content: |
+        spring:
+          profiles:
+            active: ccsm,gated
+        logging:
+          level:
+            io.camunda.optimize: debug
+            io.camunda.optimize.upgrade: trace
+            org.elasticsearch: error
+        camunda:
+          optimize:
+            caches:
+              cloud-tenant-authorizations:
+                max-size: 22222
+                min-fetch-interval-seconds: 33333
+    - file: environment-migrated.yaml
+      content: |
+        zeebe:
+          partitionCount: 7
+          name: gated-index

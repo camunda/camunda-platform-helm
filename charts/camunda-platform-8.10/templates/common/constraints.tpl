@@ -600,10 +600,10 @@ The following values inside your values.yaml need to be set but were not:
     {{- $wm := mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict) }}
     {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (not (empty $wm.restapi.mail.fromAddress))
+      "condition" (not (empty .Values.webModeler.restapi.mail.fromAddress))
       "oldName" "webModeler.restapi.mail.fromAddress" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne ($wm.restapi.mail.fromName | toString) "Camunda 8")
+      "condition" (ne (.Values.webModeler.restapi.mail.fromName | toString) "Camunda 8")
       "oldName" "webModeler.restapi.mail.fromName" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $wm.restapi.mail.smtpHost))
@@ -629,17 +629,16 @@ The following values inside your values.yaml need to be set but were not:
     {{- $con := mustMergeOverwrite (deepCopy (.Values.console | default dict)) (.Values.camundaHub.console | default dict) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (dig "keycloak" "realm" "camunda-platform" $con) "camunda-platform")
-      "oldName" "console.keycloak.realm" "migration" "console.extraConfiguration") }}
+      "oldName" "console.keycloak.realm" "migration" "console.env") }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne ($con.nodeEnv | default "prod" | toString) "prod")
       "oldName" "console.nodeEnv" "migration" "console.env") }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $con.logging))
-      "oldName" "console.logging" "migration" "console.extraConfiguration") }}
+      "oldName" "console.logging" "migration" "console.env") }}
   {{- end }}
 
   {{- $componentExtra := "the consuming component's extraConfiguration" }}
-  {{- $componentEnv := "the consuming component's extraEnvVars" }}
   {{ include "camundaPlatform.keyDeprecated" (dict
     "condition" (ne (.Values.global.config.requestBodySize | toString) "10MB")
     "oldName" "global.config.requestBodySize" "migration" $componentExtra) }}
@@ -648,13 +647,13 @@ The following values inside your values.yaml need to be set but were not:
     "oldName" "global.zeebeClusterName" "migration" $componentExtra) }}
   {{ include "camundaPlatform.keyDeprecated" (dict
     "condition" (ne (.Values.global.documentStore.type.aws.storeId | toString) "AWS")
-    "oldName" "global.documentStore.type.aws.storeId" "migration" $componentEnv) }}
+    "oldName" "global.documentStore.type.aws.storeId" "migration" $componentExtra) }}
   {{ include "camundaPlatform.keyDeprecated" (dict
     "condition" (ne (.Values.global.documentStore.type.gcp.storeId | toString) "GCP")
-    "oldName" "global.documentStore.type.gcp.storeId" "migration" $componentEnv) }}
+    "oldName" "global.documentStore.type.gcp.storeId" "migration" $componentExtra) }}
   {{ include "camundaPlatform.keyDeprecated" (dict
     "condition" (ne (.Values.global.documentStore.type.inmemory.storeId | toString) "INMEMORY")
-    "oldName" "global.documentStore.type.inmemory.storeId" "migration" $componentEnv) }}
+    "oldName" "global.documentStore.type.inmemory.storeId" "migration" $componentExtra) }}
 {{- end }}
 
 {{/*

@@ -1,0 +1,13 @@
+# extraConfiguration entry with springImport: false must NOT override the deprecated key.
+identity:
+  enabled: true
+optimize:
+  enabled: true
+  logLevel: warn
+  extraConfiguration:
+    - file: log4j2.xml
+      springImport: false
+      content: |
+        logging:
+          level:
+            io.camunda.optimize: debug

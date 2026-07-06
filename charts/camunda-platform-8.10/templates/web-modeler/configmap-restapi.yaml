@@ -48,7 +48,9 @@ data:
         {{- end }}
 
         mail:
-          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" (or .Values.camundaHub.webModeler.restapi.mail.fromAddress .Values.webModeler.restapi.mail.fromAddress) | quote }}
+          {{- with (or .Values.camundaHub.webModeler.restapi.mail.fromAddress .Values.webModeler.restapi.mail.fromAddress) }}
+          from-address: {{ . | quote }}
+          {{- end }}
           from-name: {{ (or .Values.camundaHub.webModeler.restapi.mail.fromName .Values.webModeler.restapi.mail.fromName) | quote }}
 
         oauth2:

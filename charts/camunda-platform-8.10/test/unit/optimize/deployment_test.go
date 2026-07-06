@@ -1464,3 +1464,52 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *DeploymentTemplateTest) TestOptimizeEnvHonorsExtraConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestEnvResolvedFromExtraConfiguration",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-extraconfig.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "ccsm,gated"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "OPTIMIZE_LOG_LEVEL", Value: "debug"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "UPGRADE_LOG_LEVEL", Value: "trace"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "ES_LOG_LEVEL", Value: "error"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE", Value: "22222"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS", Value: "33333"})
+			},
+		},
+		{
+			Name:        "TestDeprecatedKeyUsedWithoutExtraConfiguration",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-deprecated.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "ccsm,legacy"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "OPTIMIZE_LOG_LEVEL", Value: "warn"})
+			},
+		},
+		{
+			Name:        "TestSpringImportFalseEntryDoesNotOverride",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-noimport.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "OPTIMIZE_LOG_LEVEL", Value: "warn"})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

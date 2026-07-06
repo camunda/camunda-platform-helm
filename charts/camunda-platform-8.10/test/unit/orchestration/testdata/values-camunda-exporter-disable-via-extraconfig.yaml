@@ -1,0 +1,11 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  extraConfiguration:
+    - file: camunda-exporter.yaml
+      content: |
+        camunda:
+          data:
+            secondary-storage:
+              autoconfigure-camunda-exporter: false

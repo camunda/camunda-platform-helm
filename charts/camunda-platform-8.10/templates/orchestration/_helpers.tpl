@@ -274,8 +274,30 @@ Authentication.
 {{- end -}}
 
 
+{{- /*
+NOTE: resolves the effective camunda-exporter toggle. Starts from the deprecated
+orchestration.exporters.camunda.enabled key and lets its migration target,
+camunda.data.secondary-storage.autoconfigure-camunda-exporter supplied through a
+spring-imported orchestration.extraConfiguration file, override it.
+*/ -}}
+{{- define "orchestration.camundaExporterEnabled" -}}
+{{- $enabled := .Values.orchestration.exporters.camunda.enabled -}}
+{{- range .Values.orchestration.extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- $override := dig "camunda" "data" "secondary-storage" "autoconfigure-camunda-exporter" nil $parsed -}}
+      {{- if not (kindIs "invalid" $override) -}}
+        {{- $enabled = $override -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $enabled -}}
+{{- end -}}
+
 {{- define "orchestration.hasCamundaExporter" -}}
-{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) -}}
+{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) (eq (include "orchestration.camundaExporterEnabled" .) "true") (not .Values.orchestration.exporters.rdbms.enabled) -}}
 {{- end -}}
 
 {{- define "orchestration.hasNoExporter" -}}

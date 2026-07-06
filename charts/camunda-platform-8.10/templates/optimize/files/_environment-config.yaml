@@ -9,8 +9,8 @@ container:
 {{- end }}
 zeebe:
   enabled: true
-  partitionCount: {{ .Values.optimize.partitionCount }}
-  name: {{ include "optimize.indexPrefix" . | quote }}
+  partitionCount: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.partitionCount "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "zeebe" "partitionCount")) }}
+  name: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (include "optimize.indexPrefix" .) "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "zeebe" "name")) | quote }}
 es:
   connection:
     nodes:

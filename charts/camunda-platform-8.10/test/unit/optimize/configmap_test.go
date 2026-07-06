@@ -396,3 +396,37 @@ func (s *ConfigMapTemplateTest) TestExtraConfigurationSpringImport() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapTemplateTest) TestOptimizeNativeConfigHonorsExtraConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestPartitionCountAndIndexNameResolvedFromExtraConfiguration",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-extraconfig.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				envConfig := configmap.Data["environment-config.yaml"]
+				s.Require().Contains(envConfig, "partitionCount: 7",
+					"partitionCount should be resolved from extraConfiguration")
+				s.Require().Contains(envConfig, "name: \"gated-index\"",
+					"index name should be resolved from extraConfiguration")
+			},
+		},
+		{
+			Name:        "TestDeprecatedPartitionCountUsedWithoutExtraConfiguration",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-deprecated.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				s.Require().Contains(configmap.Data["environment-config.yaml"], "partitionCount: 9",
+					"deprecated optimize.partitionCount should still apply without extraConfiguration")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

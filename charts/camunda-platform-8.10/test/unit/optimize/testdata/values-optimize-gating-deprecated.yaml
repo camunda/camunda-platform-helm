@@ -1,0 +1,8 @@
+# Deprecated keys set, no extraConfiguration: values must still apply (backward compat).
+identity:
+  enabled: true
+optimize:
+  enabled: true
+  logLevel: warn
+  profiles: ccsm,legacy
+  partitionCount: "9"
