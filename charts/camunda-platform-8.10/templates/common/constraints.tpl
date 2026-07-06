@@ -142,15 +142,16 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
     }}
   {{- end }}
 
-  {{ if and (.Values.webModeler.enabled)
-            (not .Values.webModeler.restapi.pusher.secret.existingSecret) }}
+  {{- $wmPusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.webModeler.restapi.pusher | default dict) }}
+  {{ if and (eq (include "camundaHub.webModelerEnabled" .) "true")
+            (not $wmPusher.secret.existingSecret) }}
     {{- $existingSecretsNotConfigured = append
         $existingSecretsNotConfigured "webModeler.restapi.pusher.secret.existingSecret"
     }}
   {{- end }}
 
-  {{ if and (.Values.webModeler.enabled)
-            (not .Values.webModeler.restapi.pusher.client.secret.existingSecret) }}
+  {{ if and (eq (include "camundaHub.webModelerEnabled" .) "true")
+            (not $wmPusher.client.secret.existingSecret) }}
     {{- $existingSecretsNotConfigured = append
         $existingSecretsNotConfigured "webModeler.restapi.pusher.client.secret.existingSecret"
     }}
@@ -363,7 +364,8 @@ The following values inside your values.yaml need to be set but were not:
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}
+    {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.webModeler.restapi.pusher | default dict) }}
+    {{- $pusherSecret := $pusher.secret }}
     {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
       {{- $warningMessage := printf "%s %s %s %s"
           "[camunda][warning]"
@@ -373,7 +375,7 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
-    {{- $pusherClientSecret := .Values.webModeler.restapi.pusher.client.secret }}
+    {{- $pusherClientSecret := $pusher.client.secret }}
     {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
       {{- $warningMessage := printf "%s %s %s %s"
           "[camunda][warning]"

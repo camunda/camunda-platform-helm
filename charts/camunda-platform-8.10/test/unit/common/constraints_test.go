@@ -209,6 +209,39 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 				}
 			},
 		},
+		{
+			Name: "TestPusherSecretConstraintErrorWhenNotSetViaCamundaHubEnabled",
+			Values: map[string]string{
+				"identity.enabled":                                     "true",
+				"camundaHub.enabled":                                   "true",
+				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+			},
+		},
+		{
+			Name: "TestPusherSecretConstraintDoesNotListSecretsSetUnderCamundaHubKeys",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"camundaHub.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
+				"camundaHub.webModeler.restapi.pusher.secret.existingSecretKey":        "secret-key",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
+				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":                 "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				if err != nil {
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+				}
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -477,6 +510,46 @@ func (s *ConstraintTemplateTest) TestCamundaHubConsolidationDeprecationWarningsR
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestWebModelerExternalDatabaseUserRemovedGate verifies the
+// webModeler.restapi.externalDatabase.user removal check (camundaPlatform.keyRemoved,
+// which calls fail and IS surfaced by helm template) fires on both enablement
+// paths: the legacy webModeler.enabled key and the new camundaHub.enabled key.
+// This locks the gate switch to camundaHub.webModelerEnabled.
+func (s *ConstraintTemplateTest) TestWebModelerExternalDatabaseUserRemovedGate() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRemovedKeyFailsViaCamundaHubEnabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+				"webModeler.restapi.externalDatabase.user": "modeler-user",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "webModeler.restapi.externalDatabase.user")
+				s.Require().ErrorContains(err, "has been removed")
+			},
+		},
+		{
+			Name: "TestRemovedKeyFailsViaLegacyWebModelerEnabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+				"webModeler.restapi.externalDatabase.user": "modeler-user",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "webModeler.restapi.externalDatabase.user")
+				s.Require().ErrorContains(err, "has been removed")
 			},
 		},
 	}
