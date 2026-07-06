@@ -123,6 +123,7 @@
             }
         },
         "console": {
+            "deprecated": true,
             "properties": {
                 "env": {
                     "type": "array",
@@ -879,6 +880,7 @@
             }
         },
         "webModeler": {
+            "deprecated": true,
             "restapi": {
                 "properties": {
                     "env": {

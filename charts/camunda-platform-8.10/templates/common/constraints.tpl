@@ -395,6 +395,16 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+  {{- $console := default (dict) .Values.console }}
+  {{- if $console.enabled }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in a future version."
+        "Console has been consolidated into Camunda Hub as an in-Modeler feature. Please use \"camundaHub.enabled: true\" instead."
+        "Any console-specific overrides can be placed under \"camundaHub.console.*\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 
   {{/*
   *****************************************************************************
@@ -1117,7 +1127,7 @@ Web Modeler
 *******************************************************************************
 */}}
 
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.webModeler.restapi.externalDatabase "user")

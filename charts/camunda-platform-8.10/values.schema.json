@@ -1955,7 +1955,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, the WebModeler deployment and its related resources are deployed via a helm release",
+                    "description": "DEPRECATED (use \"camundaHub.enabled\"): if true, the WebModeler deployment and its related resources are deployed via a helm release. Web Modeler has been consolidated into Camunda Hub; place overrides under \"camundaHub.webModeler.*\". Removed in a future version.",
                     "default": false
                 },
                 "fullnameOverride": {
@@ -3028,6 +3028,7 @@
                     }
                 }
             },
+            "deprecated": true,
             "restapi": {
                 "properties": {
                     "env": {
@@ -6439,6 +6440,7 @@
             }
         },
         "console": {
+            "deprecated": true,
             "properties": {
                 "env": {
                     "type": "array",

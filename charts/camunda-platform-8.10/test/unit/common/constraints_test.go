@@ -448,6 +448,42 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+// TestCamundaHubConsolidationDeprecationWarningsRenderOk exercises the
+// consolidation deprecation-warning branches that fire when the legacy
+// console.enabled / webModeler.enabled keys are set. Both branches must render
+// without failing; the DEPRECATION text is emitted via NOTES.txt and is not
+// surfaced by `helm template`, so content checks live in manual dry-run
+// verification (same constraint as the other deprecation warnings above).
+func (s *ConstraintTemplateTest) TestCamundaHubConsolidationDeprecationWarningsRenderOk() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestLegacyConsoleEnabledRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"console.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestLegacyWebModelerEnabledRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestCaBundleConsoleCertKeyFilenameWarningRendersOk() {
 	testCases := []testhelpers.TestCase{
 		{
