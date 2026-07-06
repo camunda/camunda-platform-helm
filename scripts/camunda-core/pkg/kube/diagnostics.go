@@ -73,6 +73,22 @@ func GetEvents(ctx context.Context, kubeContext, namespace string) (string, erro
 	return runKubectl(ctx, args)
 }
 
+// GetPVCs returns the output of `kubectl get pvc -n <namespace> -o wide`.
+// PVC state (bound/pending, capacity, storage class) is the key evidence for
+// volume-mount and provisioning failures.
+func GetPVCs(ctx context.Context, kubeContext, namespace string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "get", "pvc", "-n", namespace, "-o", "wide")
+	return runKubectl(ctx, args)
+}
+
+// DescribePVCs returns the output of `kubectl describe pvc -n <namespace>`, which
+// includes the events explaining why a claim is stuck (e.g., waiting for a consumer,
+// provisioning errors, multi-attach conflicts).
+func DescribePVCs(ctx context.Context, kubeContext, namespace string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "describe", "pvc", "-n", namespace)
+	return runKubectl(ctx, args)
+}
+
 // GetPodLogs returns the last tailLines of logs from all containers in a pod.
 func GetPodLogs(ctx context.Context, kubeContext, namespace, pod string, tailLines int) (string, error) {
 	args := append(kubectlBaseArgs(kubeContext),
@@ -80,6 +96,25 @@ func GetPodLogs(ctx context.Context, kubeContext, namespace, pod string, tailLin
 		"--tail", fmt.Sprintf("%d", tailLines),
 		"--all-containers",
 	)
+	return runKubectl(ctx, args)
+}
+
+// GetPodLogsPrevious returns the last tailLines of logs from the previous
+// (crashed) container instance. Empty when the pod never restarted.
+func GetPodLogsPrevious(ctx context.Context, kubeContext, namespace, pod string, tailLines int) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext),
+		"logs", pod, "-n", namespace,
+		"--tail", fmt.Sprintf("%d", tailLines),
+		"--all-containers", "--previous",
+	)
+	return runKubectl(ctx, args)
+}
+
+// DescribePod returns the output of `kubectl describe pod <pod> -n <namespace>`.
+// The Events section is the key evidence for scheduling, mount, and image-pull
+// failures on a pod that never became ready.
+func DescribePod(ctx context.Context, kubeContext, namespace, pod string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "describe", "pod", pod, "-n", namespace)
 	return runKubectl(ctx, args)
 }
 

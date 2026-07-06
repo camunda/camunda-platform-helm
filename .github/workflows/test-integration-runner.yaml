@@ -322,10 +322,13 @@ jobs:
           if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
             echo "::add-mask::${INITIAL_CLAIM_VALUE}"
           fi
-          echo "Workflow Inputs:"
+          # Collapse the multi-KB input dump into a log group so it does not bury
+          # the meaningful lines; expand it in the UI when needed.
+          echo "::group::Workflow Inputs"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
+          echo "::endgroup::"
 
       - name: CI Setup - Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -748,6 +751,24 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
+      - name: Compute diagnostics artifact name
+        if: failure()
+        id: diag-artifact
+        shell: bash
+        run: |
+          raw="diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          # Artifact names reject spaces/colons/slashes etc.; normalize to a safe set.
+          echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload deployment diagnostics bundle
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ steps.diag-artifact.outputs.name }}
+          path: diagnostics/
+          retention-days: 14
+          if-no-files-found: ignore
+
   upgrade:
     if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
@@ -784,10 +805,13 @@ jobs:
           if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
             echo "::add-mask::${INITIAL_CLAIM_VALUE}"
           fi
-          echo "Workflow Inputs:"
+          # Collapse the multi-KB input dump into a log group so it does not bury
+          # the meaningful lines; expand it in the UI when needed.
+          echo "::group::Workflow Inputs"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
+          echo "::endgroup::"
 
       - name: CI Setup - Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -1084,6 +1108,24 @@ jobs:
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info
+
+      - name: Compute diagnostics artifact name
+        if: failure()
+        id: diag-artifact
+        shell: bash
+        run: |
+          raw="diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          # Artifact names reject spaces/colons/slashes etc.; normalize to a safe set.
+          echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload deployment diagnostics bundle
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ steps.diag-artifact.outputs.name }}
+          path: diagnostics/
+          retention-days: 14
+          if-no-files-found: ignore
 
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
@@ -1467,6 +1509,19 @@ jobs:
       deployments: write
       packages: read
     steps:
+      # Put deploy-camunda on PATH before failed-pods-info so its Go
+      # `diagnostics print` path runs here too, rather than the reduced kubectl
+      # fallback. download-artifact needs no workspace checkout.
+      - name: Download deploy-camunda binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: ${{ inputs.binary-artifact-name }}
+          path: ${{ runner.temp }}/bin
+      - name: Add deploy-camunda to PATH
+        run: |
+          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
       - name: CI Cleanup - 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info
@@ -1480,16 +1535,6 @@ jobs:
 
       - name: CI Setup - Configure Git safe directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      - name: Download deploy-camunda binary
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: ${{ inputs.binary-artifact-name }}
-          path: ${{ runner.temp }}/bin
-      - name: Add deploy-camunda to PATH
-        run: |
-          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
-          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars

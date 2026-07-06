@@ -1189,6 +1189,8 @@ type diagnosticsSummary struct {
 	PodLogTailLines   int                 `json:"podLogTailLines"`
 	Pods              string              `json:"pods,omitempty"`
 	Events            string              `json:"events,omitempty"`
+	PVCs              string              `json:"pvcs,omitempty"`
+	PVCDescribe       string              `json:"pvcDescribe,omitempty"`
 	PodLogs           []diagnosticsPodLog `json:"podLogs,omitempty"`
 	TestOutputLast200 string              `json:"testOutputLast200,omitempty"`
 	Errors            []string            `json:"errors,omitempty"`
@@ -1319,6 +1321,21 @@ func collectDiagnostics(namespace, kubeContext string) string {
 		}
 	} else {
 		summary.Errors = append(summary.Errors, fmt.Sprintf("list pod names: %v", err))
+	}
+
+	// PVCs: state + describe. Key evidence for volume-mount and provisioning hangs
+	// (pending claims, WaitForFirstConsumer, multi-attach conflicts). Collected
+	// after per-pod logs so that, under the shared collection deadline, the
+	// higher-value pod logs are not starved by the slower `describe pvc`.
+	if pvcs, err := kube.GetPVCs(ctx, kubeContext, namespace); err == nil && pvcs != "" {
+		summary.PVCs = pvcs
+	} else if err != nil {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("get pvc: %v", err))
+	}
+	if pvcDesc, err := kube.DescribePVCs(ctx, kubeContext, namespace); err == nil && pvcDesc != "" {
+		summary.PVCDescribe = pvcDesc
+	} else if err != nil {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("describe pvc: %v", err))
 	}
 
 	if err := writeDiagnosticsSummary(runDir, summary); err != nil {
