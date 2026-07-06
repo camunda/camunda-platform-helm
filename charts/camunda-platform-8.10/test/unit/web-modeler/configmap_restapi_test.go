@@ -652,17 +652,17 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 	mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
 	s.Require().Equal("management-cluster", mgmtCluster.Id)
 
-	var hasIdentity, hasWebModeler bool
+	var hasIdentity, hasHub bool
 	for _, c := range mgmtCluster.Components {
 		if c.Type == "identity" {
 			hasIdentity = true
 		}
-		if c.Type == "webModelerWebApp" {
-			hasWebModeler = true
+		if c.Type == "hub" {
+			hasHub = true
 		}
 	}
 	s.Require().True(hasIdentity, "management-cluster should contain an identity component")
-	s.Require().True(hasWebModeler, "management-cluster should contain a webModelerWebApp component")
+	s.Require().True(hasHub, "management-cluster should contain a hub component")
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
