@@ -16,6 +16,31 @@ Designed for application developers: you do not need deep Kubernetes knowledge �
 
 Repo slug used throughout: `camunda/camunda-platform-helm`.
 
+## Fast path — `deploy-camunda triage`
+
+For a failed run, `deploy-camunda triage` collapses "Step 1 → Step 4" below into one
+command: it resolves the failing job, pulls its log via the jobs API (not
+`gh run view --log-failed`, which is empty for merge-queue runs), strips the env-var
+noise, and prints the matrix cell, the failing helm command, the error/signals, the
+diagnostics-bundle path, and a ready-to-run local-repro command.
+
+```bash
+# Pass the failing job's URL (click into the job on GitHub) — always works,
+# including merge-queue and nested reusable-workflow runs:
+deploy-camunda triage "https://github.com/camunda/camunda-platform-helm/actions/runs/<run-id>/job/<job-id>"
+```
+
+For **deploy** failures, also pull the structured diagnostics bundle the matrix runner
+uploads (pod state, events, PVC state, per-pod logs) — more precise than the raw log:
+
+```bash
+gh run download <run-id> --repo camunda/camunda-platform-helm --name 'diagnostics-*'
+# read summary.json + logs/<pod>.log
+```
+
+The manual steps below remain the reference for E2E (Playwright) failures and for
+cases the fast path doesn't cover.
+
 ## Prerequisites
 
 Two cold-start requirements for anyone new to this workflow:

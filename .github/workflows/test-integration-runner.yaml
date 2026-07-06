@@ -322,10 +322,13 @@ jobs:
           if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
             echo "::add-mask::${INITIAL_CLAIM_VALUE}"
           fi
-          echo "Workflow Inputs:"
+          # Collapse the multi-KB input dump into a log group so it does not bury
+          # the meaningful lines; expand it in the UI when needed.
+          echo "::group::Workflow Inputs"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
+          echo "::endgroup::"
 
       - name: CI Setup - Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -748,6 +751,15 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
+      - name: Upload deployment diagnostics bundle
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: diagnostics/
+          retention-days: 14
+          if-no-files-found: ignore
+
   upgrade:
     if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
@@ -784,10 +796,13 @@ jobs:
           if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
             echo "::add-mask::${INITIAL_CLAIM_VALUE}"
           fi
-          echo "Workflow Inputs:"
+          # Collapse the multi-KB input dump into a log group so it does not bury
+          # the meaningful lines; expand it in the UI when needed.
+          echo "::group::Workflow Inputs"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
+          echo "::endgroup::"
 
       - name: CI Setup - Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -1084,6 +1099,15 @@ jobs:
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
         uses: ./.github/actions/failed-pods-info
+
+      - name: Upload deployment diagnostics bundle
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: diagnostics/
+          retention-days: 14
+          if-no-files-found: ignore
 
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})

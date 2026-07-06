@@ -68,8 +68,9 @@ runs:
       env:
         GITHUB_CONTEXT: ${{ toJson(inputs) }}
       run: |
-        echo "Action Inputs:"
+        echo "::group::Action Inputs"
         echo "${GITHUB_CONTEXT}"
+        echo "::endgroup::"
     - name: Get changed dirs
       id: changed-files
       uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47
