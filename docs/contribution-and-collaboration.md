@@ -134,7 +134,7 @@ Every pull request (PR) related to Helm chart changes must adhere to the followi
 - **Unit tests:** Changes should include or update corresponding unit tests where applicable.
 - **Documentation updates:** User or technical documentation must reflect configuration or behavior changes.
 - **Passing CI:** All CI checks must pass successfully before merge.
-- **Code review:** At least one formal human review must be completed and approved.
+- **Code review:** At least one formal human review must be completed and approved. **Exception:** PRs authored by a maintainer listed in [`.github/auto-approve-allowlist.txt`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/auto-approve-allowlist.txt) may be approved by `distro-ci[bot]` under the team-sanctioned [trusted-author auto-approval](#trusted-author-auto-approval) control. This exception never applies to PRs that modify CI-privileged paths (`.github/workflows/`, `.github/actions/`, `CODEOWNERS`, or the allowlist itself) — those always require a human review.
 - **Atomic changes:** Aim for small, focused PRs that address a single issue or configuration change to simplify review and reduce merge complexity.
 
 ### Automated AI review and escalation
@@ -147,6 +147,18 @@ PRs are automatically reviewed by [`crev`](https://github.com/camunda/crev), an 
 The escalation decision is governed by the [escalation policy](https://github.com/camunda/camunda-platform-helm/blob/main/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. Routine additive changes by familiar authors may be approved with AI review alone.
 
 Contributors should treat the `human-review-required` label as a signal that the Distro team must approve before merge.
+
+### Trusted-author auto-approval
+
+The [`Repo - Auto Approve`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/repo-auto-approve.yaml) workflow lets `distro-ci[bot]` post an approving review on PRs whose author is listed in `.github/auto-approve-allowlist.txt`. This is a Distro-team-sanctioned control that satisfies the human-review requirement above for those authors, on the basis that the allowlist is a small, high-trust set curated by the team.
+
+Guardrails:
+
+- **Approve-only** — the bot never merges; branch protection (required status checks, stale-review dismissal) still gates merge.
+- **CI-privileged paths always need a human** — any PR touching `.github/workflows/`, `.github/actions/`, `CODEOWNERS`, or the allowlist is never auto-approved, so the allowlist itself can only change with human review.
+- **Fail-closed** — if the workflow cannot determine what a PR changed, it does not approve.
+
+Adding or removing allowlist entries requires a normal human-reviewed PR.
 
 ### Helm version
 
