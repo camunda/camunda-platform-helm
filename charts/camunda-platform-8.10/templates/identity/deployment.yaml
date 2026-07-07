@@ -1,4 +1,11 @@
 {{- if .Values.identity.enabled -}}
+{{- $deploymentStrategy := .Values.identity.persistence.deploymentStrategy | default "RollingUpdate" -}}
+{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
+{{- fail "identity.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- end -}}
+{{- if and (eq $deploymentStrategy "Recreate") (not .Values.identity.persistence.enabled) -}}
+{{- fail "identity.persistence.deploymentStrategy: Recreate requires identity.persistence.enabled: true. The default chart-managed path uses a per-pod ephemeral volume with no Multi-Attach contention, so Recreate is only useful when existingClaim points to a ReadWriteOnce volume; without persistence it only adds upgrade downtime" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +14,7 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   strategy:
-    type: RollingUpdate
+    type: {{ $deploymentStrategy }}
   replicas: 1
   selector:
     matchLabels: {{- include "identity.matchLabels" . | nindent 6 }}
@@ -243,8 +250,23 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.identity.persistence.existingClaim }}
           {{- else if .Values.identity.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-identity-data
+          ephemeral:
+            volumeClaimTemplate:
+              {{- with .Values.identity.persistence.annotations }}
+              metadata:
+                annotations: {{- toYaml . | nindent 18 }}
+              {{- end }}
+              spec:
+                accessModes: {{ .Values.identity.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 18 }}
+                {{- with .Values.identity.persistence.storageClassName }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+                {{- with .Values.identity.persistence.selector }}
+                selector: {{- toYaml . | nindent 18 }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ .Values.identity.persistence.size | default "1Gi" | quote }}
           {{- else }}
           emptyDir: {}
           {{- end }}

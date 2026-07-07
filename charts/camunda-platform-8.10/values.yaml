@@ -1067,6 +1067,8 @@ identity:
     annotations: {}
     ## @param identity.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
+    ## @param identity.persistence.deploymentStrategy update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    deploymentStrategy: RollingUpdate
 
 ###############################################################################
 #  #####                                              #     #
@@ -1884,6 +1886,8 @@ connectors:
     annotations: {}
     ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
+    ## @param connectors.persistence.deploymentStrategy update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    deploymentStrategy: RollingUpdate
 
 ####################################################################################
 #######

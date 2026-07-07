@@ -1908,6 +1908,15 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        },
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "description": "update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "default": "RollingUpdate",
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
                         }
                     }
                 }
@@ -3885,6 +3894,15 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        },
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "description": "update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "default": "RollingUpdate",
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
                         }
                     }
                 },

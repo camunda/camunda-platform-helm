@@ -348,6 +348,16 @@
                     "description": "configuration for the Connectors logging, included directly in the connectors configuration YAML file.",
                     "default": {},
                     "additionalProperties": true
+                },
+                "persistence": {
+                    "properties": {
+                        "deploymentStrategy": {
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
+                        }
+                    }
                 }
             }
         },
@@ -465,6 +475,16 @@
                         "level": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                },
+                "persistence": {
+                    "properties": {
+                        "deploymentStrategy": {
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
                         }
                     }
                 }
