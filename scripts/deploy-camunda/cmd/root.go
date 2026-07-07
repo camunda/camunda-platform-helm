@@ -233,6 +233,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Index.OperateIndexPrefix, "operate-index-prefix", "", "Operate Elasticsearch index prefix (auto-generated if not specified)")
 	f.StringVar(&flags.Chart.RepoRoot, "repo-root", "", "Repository root path")
 	f.StringVar(&flags.Deployment.Flow, "flow", "install", "Flow type")
+	f.StringVar(&flags.Deployment.TTL, "ttl", "", "Ephemeral namespace TTL for cleaner/janitor; precedence: --ttl, DEPLOY_CAMUNDA_TTL env, 60m default")
 	f.StringVar(&flags.EnvFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
 	f.BoolVar(&flags.Interactive, "interactive", true, "Enable interactive prompts for missing variables")
 	f.BoolVar(&flags.SkipPreflight, "skip-preflight", false, "Skip the fail-fast secrets/env preflight run before deploying")
