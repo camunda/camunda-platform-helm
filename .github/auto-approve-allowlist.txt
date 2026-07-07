@@ -1,0 +1,6 @@
+# GitHub usernames whose PRs distro-ci auto-approves.
+# One login per line. Lines starting with # are ignored.
+# Everyone NOT listed here requires a human review.
+# Example:
+# alice-camunda
+eamonnmoloney

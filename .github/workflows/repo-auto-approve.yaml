@@ -1,0 +1,85 @@
+name: Repo - Auto Approve
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-approve:
+    name: Auto approve allowlisted authors
+    if: ${{ github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Check author against allowlist
+        id: check
+        env:
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          list=".github/auto-approve-allowlist.txt"
+          allowed=false
+          if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
+            allowed=true
+          fi
+          if [[ "$allowed" == "true" ]] && gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[].filename' \
+              | grep -xF -f <(printf '%s\n' \
+                '.github/auto-approve-allowlist.txt' \
+                '.github/workflows/repo-auto-approve.yaml' \
+                '.github/CODEOWNERS') > /dev/null; then
+            allowed=false
+            echo "::notice::PR modifies auto-approval protected paths; human review is required."
+          fi
+          echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
+          echo "::notice::author=$AUTHOR allowlisted=$allowed"
+
+      - name: Import Vault secrets
+        if: ${{ steps.check.outputs.allowed == 'true' }}
+        id: vault-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+
+      - name: Generate distro-ci token
+        if: ${{ steps.check.outputs.allowed == 'true' }}
+        id: app-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        with:
+          app_id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Approve PR
+        if: ${{ steps.check.outputs.allowed == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          approved=$(gh api "repos/${{ github.repository }}/pulls/${PR}/reviews" \
+            --jq "[.[] | select(.user.login==\"distro-ci[bot]\" and .commit_id==\"${SHA}\" and .state==\"APPROVED\")] | length")
+          if [[ "$approved" -gt 0 ]]; then
+            echo "::notice::Already approved by distro-ci for ${SHA}; skipping."
+            exit 0
+          fi
+          gh pr review "$PR" --approve --body "Auto-approved: author is on .github/auto-approve-allowlist.txt."
