@@ -33,10 +33,15 @@ jobs:
         run: |
           set -euo pipefail
           list=".github/auto-approve-allowlist.txt"
-          protected='^\.github/(workflows/|actions/|CODEOWNERS$|auto-approve-allowlist\.txt$)'
+          protected_file=".github/auto-approve-protected-paths.txt"
           allowed=false
           if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
             allowed=true
+          fi
+          pats=$(grep -vE '^\s*(#|$)' "$protected_file" 2>/dev/null || true)
+          if [[ "$allowed" == "true" && -z "$pats" ]]; then
+            echo "::warning::protected-paths list missing/empty; requiring human review."
+            allowed=false
           fi
           if [[ "$allowed" == "true" ]]; then
             if ! shas=$(gh api "repos/${REPO}/pulls/${PR}/commits" --paginate --jq '.[].sha'); then
@@ -48,8 +53,9 @@ jobs:
                   echo "::warning::Could not list files for ${sha}; requiring human review."
                   allowed=false; break
                 fi
-                if printf '%s\n' "$files" | grep -qE "$protected"; then
-                  echo "::notice::commit ${sha} touches a CI-privileged path; human review is required."
+                if printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' \
+                     | grep -qE -f <(printf '%s\n' "$pats"); then
+                  echo "::notice::commit ${sha} touches a protected path; human review is required."
                   allowed=false; break
                 fi
               done
