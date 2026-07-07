@@ -11,7 +11,7 @@ closer attention is warranted.
 > score and labels are advisory only — humans retain full review responsibility
 > and sign-off authority.
 >
-> **Trusted-author auto-approval:** This advisory-AI requirement is separate from the team-sanctioned [trusted-author auto-approval](https://github.com/camunda/camunda-platform-helm/blob/main/docs/contribution-and-collaboration.md#trusted-author-auto-approval) control, under which `distro-ci[bot]` may satisfy the review requirement for PRs from allowlisted authors that do not touch CI-privileged paths.
+> **Trusted-author auto-approval:** This advisory-AI requirement is separate from the team-sanctioned [trusted-author auto-approval](https://github.com/camunda/camunda-platform-helm/blob/main/docs/contribution-and-collaboration.md#trusted-author-auto-approval) control, under which `distro-ci[bot]` may satisfy the review requirement for PRs from allowlisted authors that do not touch CI-privileged paths or a chart's public API (values, schema, constraints).
 
 ## How It Works
 
