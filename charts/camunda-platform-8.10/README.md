@@ -645,6 +645,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `identity.persistence.existingClaim`                         | can be used to specify an existing PVC instead of creating a new one                                                                                                                                                         | `""`                   |
 | `identity.persistence.annotations`                           | can be used to define annotations to add to the persistent volume claim                                                                                                                                                      | `{}`                   |
 | `identity.persistence.selector`                              | can be used to define a label selector for the persistent volume claim                                                                                                                                                       | `{}`                   |
+| `identity.persistence.deploymentStrategy`                    | update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). | `RollingUpdate`        |
 
 ### CamundaHub Parameters
 
@@ -982,6 +983,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `connectors.persistence.existingClaim`                             | can be used to specify an existing PVC instead of creating a new one                                                                                                                                   | `""`                         |
 | `connectors.persistence.annotations`                               | can be used to define annotations to add to the persistent volume claim                                                                                                                                | `{}`                         |
 | `connectors.persistence.selector`                                  | can be used to define a label selector for the persistent volume claim                                                                                                                                 | `{}`                         |
+| `connectors.persistence.deploymentStrategy`                        | update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). | `RollingUpdate`              |
 
 ### Orchestration Cluster Parameters
 
