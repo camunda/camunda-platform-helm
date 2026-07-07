@@ -893,7 +893,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       webapp: {{ include "camundaPlatform.tasklistExternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
   - name: Orchestration Admin
-    type: orchestrationIdentity
+    type: admin
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
     urls:
       webapp: {{ include "camundaPlatform.orchestrationIdentityExternalURL" . | quote }}

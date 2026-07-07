@@ -647,7 +647,7 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
 
-	// then — management-cluster contains both identity and webModelerWebApp
+	// then — management-cluster contains both identity and hub
 	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Modeler.Clusters), 1)
 	mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
 	s.Require().Equal("management-cluster", mgmtCluster.Id)
