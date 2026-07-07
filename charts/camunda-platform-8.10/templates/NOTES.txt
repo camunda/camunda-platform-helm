@@ -194,8 +194,8 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- else }}
 - autoRollout: off (rotate manually with: kubectl rollout restart deployment/{{ include "optimize.fullname" . }})
 {{- end }}
-- Independent of the client-side `global.elasticsearch.tls.existingSecret` /
-  `global.opensearch.tls.existingSecret` truststore wiring used for the
+- Independent of the client-side `global.elasticsearch.tls.secret.existingSecret` /
+  `global.opensearch.tls.secret.existingSecret` truststore wiring used for the
   Optimize → ES/OS connection direction; both can be configured together.
 {{- if ne (include "camundaPlatform.hasCaBundle" .) "true" }}
 

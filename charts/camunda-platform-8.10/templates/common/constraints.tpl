@@ -173,6 +173,18 @@ SERVER-side identity surface and is independent of the client-side
 `global.elasticsearch.tls.existingSecret` truststore.
 */}}
 {{- if .Values.optimize.enabled }}
+  {{- if .Values.global.tls.optimize.cert.secret.inlineSecret }}
+    {{- $errorMessage := printf "[camunda][error] global.tls.optimize.cert.secret.inlineSecret is not supported; provide the cert via cert.secret.existingSecret." -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
+  {{- if .Values.global.tls.optimize.privateKey.secret.inlineSecret }}
+    {{- $errorMessage := printf "[camunda][error] global.tls.optimize.privateKey.secret.inlineSecret is not supported; provide the private key via privateKey.secret.existingSecret." -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
+  {{- if .Values.global.tls.optimize.proxyVerify.caSecret.secret.inlineSecret }}
+    {{- $errorMessage := printf "[camunda][error] global.tls.optimize.proxyVerify.caSecret.secret.inlineSecret is not supported; provide the CA bundle via proxyVerify.caSecret.secret.existingSecret." -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
   {{- $envNames := list -}}
   {{- range $e := (.Values.optimize.env | default list) -}}
     {{- $envNames = append $envNames ($e.name | default "") -}}

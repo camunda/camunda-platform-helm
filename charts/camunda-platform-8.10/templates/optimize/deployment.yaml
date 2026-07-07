@@ -276,10 +276,14 @@ spec:
             - name: SERVER_SSL_KEY_STORE_TYPE
               value: PKCS12
             - name: SERVER_SSL_KEY_STORE_PASSWORD
+              {{- if .Values.global.tls.optimize.keystorePassword.secret.inlineSecret }}
+              value: {{ .Values.global.tls.optimize.keystorePassword.secret.inlineSecret | quote }}
+              {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ coalesce .Values.global.tls.optimize.keystorePassword.secret.existingSecret .Values.global.tls.optimize.cert.secret.existingSecret }}
                   key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey }}
+              {{- end }}
             {{- with .Values.global.tls.optimize.keyAlias }}
             - name: SERVER_SSL_KEY_ALIAS
               value: {{ . | quote }}
@@ -440,9 +444,26 @@ spec:
         {{- end }}
         {{- if and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret }}
         - name: optimize-server-tls
-          secret:
-            secretName: {{ .Values.global.tls.optimize.cert.secret.existingSecret }}
+          {{- $optimizeTLS := .Values.global.tls.optimize -}}
+          {{- if and (eq ($optimizeTLS.type | default "pkcs12") "pem") $optimizeTLS.privateKey.secret.existingSecret (ne $optimizeTLS.privateKey.secret.existingSecret $optimizeTLS.cert.secret.existingSecret) }}
+          projected:
             defaultMode: 0440
+            sources:
+              - secret:
+                  name: {{ $optimizeTLS.cert.secret.existingSecret }}
+                  items:
+                    - key: {{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+                      path: {{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+              - secret:
+                  name: {{ $optimizeTLS.privateKey.secret.existingSecret }}
+                  items:
+                    - key: {{ $optimizeTLS.privateKey.secret.existingSecretKey }}
+                      path: {{ $optimizeTLS.privateKey.secret.existingSecretKey }}
+          {{- else }}
+          secret:
+            secretName: {{ $optimizeTLS.cert.secret.existingSecret }}
+            defaultMode: 0440
+          {{- end }}
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
