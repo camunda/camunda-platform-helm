@@ -1019,11 +1019,6 @@
                                         "secret": {
                                             "type": "object",
                                             "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the keystore password as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
                                                 "existingSecret": {
                                                     "type": "string",
                                                     "description": "can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.",
