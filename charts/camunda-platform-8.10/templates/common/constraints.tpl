@@ -173,18 +173,6 @@ SERVER-side identity surface and is independent of the client-side
 `global.elasticsearch.tls.existingSecret` truststore.
 */}}
 {{- if .Values.optimize.enabled }}
-  {{- if .Values.global.tls.optimize.cert.secret.inlineSecret }}
-    {{- $errorMessage := printf "[camunda][error] global.tls.optimize.cert.secret.inlineSecret is not supported; provide the cert via cert.secret.existingSecret." -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-  {{- end }}
-  {{- if .Values.global.tls.optimize.privateKey.secret.inlineSecret }}
-    {{- $errorMessage := printf "[camunda][error] global.tls.optimize.privateKey.secret.inlineSecret is not supported; provide the private key via privateKey.secret.existingSecret." -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-  {{- end }}
-  {{- if .Values.global.tls.optimize.proxyVerify.caSecret.secret.inlineSecret }}
-    {{- $errorMessage := printf "[camunda][error] global.tls.optimize.proxyVerify.caSecret.secret.inlineSecret is not supported; provide the CA bundle via proxyVerify.caSecret.secret.existingSecret." -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-  {{- end }}
   {{- $envNames := list -}}
   {{- range $e := (.Values.optimize.env | default list) -}}
     {{- $envNames = append $envNames ($e.name | default "") -}}
@@ -418,6 +406,16 @@ The following values inside your values.yaml need to be set but were not:
         (printf "SECURITY: inlineSecret is set in: [%s]." (join ", " $inlineSecretSections))
         "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
         "For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.optimize.enabled .Values.global.tls.optimize.enabled (ne (include "camundaPlatform.hasCaBundle" .) "true") -}}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "Optimize server TLS is enabled but global.tls.caBundle is not set."
+        "If the Optimize cert is self-signed or from a private/internal CA, in-cluster Java callers will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}

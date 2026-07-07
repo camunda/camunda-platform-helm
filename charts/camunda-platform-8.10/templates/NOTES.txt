@@ -197,13 +197,6 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 - Independent of the client-side `global.elasticsearch.tls.secret.existingSecret` /
   `global.opensearch.tls.secret.existingSecret` truststore wiring used for the
   Optimize → ES/OS connection direction; both can be configured together.
-{{- if ne (include "camundaPlatform.hasCaBundle" .) "true" }}
-
-  WARNING: global.tls.caBundle is not set. If the Optimize cert is self-signed
-  or from a private/internal CA, in-cluster Java callers will fall back to the
-  JVM default truststore and fail TLS handshakes. Set
-  global.tls.caBundle.secret.existingSecret to the CA bundle.
-{{- end }}
 
   NOTE: Optimize in 8.10 is exposed through the Gateway API `HTTPRoute`, not
   via an NGINX ingress. Intra-cluster TLS terminates at the Optimize pod;
