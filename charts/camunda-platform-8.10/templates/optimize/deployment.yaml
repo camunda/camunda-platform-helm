@@ -276,14 +276,10 @@ spec:
             - name: SERVER_SSL_KEY_STORE_TYPE
               value: PKCS12
             - name: SERVER_SSL_KEY_STORE_PASSWORD
-              {{- if .Values.global.tls.optimize.keystorePassword.secret.inlineSecret }}
-              value: {{ .Values.global.tls.optimize.keystorePassword.secret.inlineSecret | quote }}
-              {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ coalesce .Values.global.tls.optimize.keystorePassword.secret.existingSecret .Values.global.tls.optimize.cert.secret.existingSecret }}
                   key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey }}
-              {{- end }}
             {{- with .Values.global.tls.optimize.keyAlias }}
             - name: SERVER_SSL_KEY_ALIAS
               value: {{ . | quote }}
