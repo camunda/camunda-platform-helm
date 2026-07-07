@@ -608,6 +608,17 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
+  {{/* Warn when Optimize proxyVerify is enabled under Gateway API (HTTPRoute) — the
+       proxy-ssl-* annotations this block emits are consumed by NGINX Ingress only. */}}
+  {{- if and .Values.optimize.enabled .Values.global.tls.optimize.proxyVerify.enabled }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "global.tls.optimize.proxyVerify is enabled, but Optimize in 8.10 is routed via Gateway API HTTPRoute — the proxy-ssl-* annotations this block emits are consumed by NGINX Ingress only, not by Gateway implementations."
+        "Your proxyVerify configuration is inert today. For Gateway API backend TLS verification, configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Optimize Service, or your gateway implementation's equivalent."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
     {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}

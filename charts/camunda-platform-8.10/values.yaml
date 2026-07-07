@@ -545,8 +545,6 @@ global:
       keystorePassword:
         ## @extra global.tls.optimize.keystorePassword.secret configuration to provide the keystore password secret.
         secret:
-          ## @param global.tls.optimize.keystorePassword.secret.inlineSecret can be used to provide the keystore password as a plain-text value for non-production usage.
-          inlineSecret: ""
           ## @param global.tls.optimize.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
           existingSecret: ""
           ## @param global.tls.optimize.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
