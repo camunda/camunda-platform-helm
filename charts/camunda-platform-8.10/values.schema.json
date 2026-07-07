@@ -164,6 +164,21 @@
                             "description": "name of the GatewayClass resource that tells the cluster which Gateway controller manages this Gateway.",
                             "default": "nginx"
                         },
+                        "port": {
+                            "type": "number",
+                            "description": "defines the port of the plaintext Gateway listeners.",
+                            "default": 80
+                        },
+                        "httpSectionName": {
+                            "type": "string",
+                            "description": "can be used to override the parentRefs sectionName on HTTPRoutes.",
+                            "default": ""
+                        },
+                        "grpcSectionName": {
+                            "type": "string",
+                            "description": "can be used to override the parentRefs sectionName on the GRPCRoute.",
+                            "default": ""
+                        },
                         "tls": {
                             "type": "object",
                             "properties": {
@@ -176,6 +191,11 @@
                                     "type": "string",
                                     "description": "name of the Kubernetes Secret containing the TLS certificate and private key.",
                                     "default": "camunda-platform"
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "defines the port of the HTTPS Gateway listeners.",
+                                    "default": 443
                                 }
                             }
                         },

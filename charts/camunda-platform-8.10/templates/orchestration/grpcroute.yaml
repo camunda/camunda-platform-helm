@@ -25,7 +25,7 @@ spec:
     {{- if .Values.global.gateway.namespace }}
     namespace: {{ .Values.global.gateway.namespace }}
     {{- end }}
-    sectionName: {{ if .Values.global.gateway.tls.enabled }}grpcs{{ else }}grpc{{ end }}
+    sectionName: {{ .Values.global.gateway.grpcSectionName | default (ternary "grpcs" "grpc" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.orchestration.gateway.grpc.host $ }}
   rules:

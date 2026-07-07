@@ -22,7 +22,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
+    sectionName: {{ .Values.global.gateway.httpSectionName | default (ternary "https" "http" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
   rules:
@@ -59,7 +59,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
+    sectionName: {{ .Values.global.gateway.httpSectionName | default (ternary "https" "http" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
   rules:

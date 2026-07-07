@@ -294,6 +294,39 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "name: camunda-platform")
 			},
 		},
+		{
+			Name: "TestGatewayCustomTLSPort",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
+				"global.gateway.tls.enabled":           "true",
+				"global.gateway.tls.secretName":        "my-tls-secret",
+				"global.gateway.tls.port":              "8443",
+				"orchestration.gateway.grpc.enabled":   "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "port: 8443")
+				require.NotContains(t, output, "port: 443")
+			},
+		},
+		{
+			Name: "TestGatewayCustomHTTPPort",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
+				"global.gateway.tls.enabled":           "false",
+				"global.gateway.port":                  "8000",
+				"orchestration.gateway.grpc.enabled":   "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "port: 8000")
+				require.NotContains(t, output, "port: 80\n")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

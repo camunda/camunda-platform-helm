@@ -25,7 +25,7 @@ spec:
     {{- if .Values.global.gateway.namespace }}
     namespace: {{ .Values.global.gateway.namespace }}
     {{- end }}
-    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
+    sectionName: {{ .Values.global.gateway.httpSectionName | default (ternary "https" "http" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
   rules:
@@ -65,7 +65,7 @@ spec:
     {{- if .Values.global.gateway.namespace }}
     namespace: {{ .Values.global.gateway.namespace }}
     {{- end }}
-    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
+    sectionName: {{ .Values.global.gateway.httpSectionName | default (ternary "https" "http" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
   rules:

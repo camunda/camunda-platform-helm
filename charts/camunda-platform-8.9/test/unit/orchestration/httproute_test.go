@@ -151,6 +151,19 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "gateway-key: gateway-value")
 			},
 		},
+		{
+			Name: "TestHTTPRouteCustomSectionName",
+			Values: map[string]string{
+				"global.gateway.enabled":         "true",
+				"global.host":                    "camunda.example.com",
+				"orchestration.enabled":          "true",
+				"global.gateway.httpSectionName": "web",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "sectionName: web")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

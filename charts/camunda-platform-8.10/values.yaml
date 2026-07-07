@@ -128,6 +128,12 @@ global:
     external: false
     ## @param global.gateway.className name of the GatewayClass resource that tells the cluster which Gateway controller manages this Gateway.
     className: nginx
+    ## @param global.gateway.port defines the port of the plaintext Gateway listeners.
+    port: 80
+    ## @param global.gateway.httpSectionName can be used to override the parentRefs sectionName on HTTPRoutes.
+    httpSectionName: ""
+    ## @param global.gateway.grpcSectionName can be used to override the parentRefs sectionName on the GRPCRoute.
+    grpcSectionName: ""
     ## @param global.gateway.labels [object] labels added to the Gateway and all Route resources.
     labels: {}
     ## @param global.gateway.annotations [object] annotations added to the Gateway and all Route resources.
@@ -138,6 +144,8 @@ global:
       enabled: false
       ## @param global.gateway.tls.secretName name of the Kubernetes Secret containing the TLS certificate and private key.
       secretName: camunda-platform
+      ## @param global.gateway.tls.port defines the port of the HTTPS Gateway listeners.
+      port: 443
     ## @param global.gateway.controllerNamespace answers "where do Routes that point AT my Services come from?". When an external controller or operator creates Routes in its own namespace that route traffic to Camunda services, set this to that namespace. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.
     controllerNamespace: ""
     ## @param global.gateway.namespace answers "where is the Gateway my Routes point TO?". When the Gateway lives in a different namespace than the Camunda components (for example, a shared Gateway in an infrastructure namespace), set this to that namespace. The chart adds namespace: <value> to the parentRefs of every Route so Kubernetes can locate the cross-namespace Gateway. When unset, Kubernetes assumes the Gateway is in the same namespace as the Route. Also set global.gateway.createGatewayResource=false when the Gateway is managed outside this chart.

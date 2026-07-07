@@ -23,7 +23,7 @@ spec:
   listeners:
   {{- if .Values.global.gateway.tls.enabled }}
   - name: https
-    port: 443
+    port: {{ .Values.global.gateway.tls.port }}
     protocol: HTTPS
     hostname: {{ tpl .Values.global.host $ }}
     tls:
@@ -33,7 +33,7 @@ spec:
         name: {{ .Values.global.gateway.tls.secretName }}
   {{- if .Values.orchestration.gateway.grpc.enabled }}
   - name: grpcs
-    port: 443
+    port: {{ .Values.global.gateway.tls.port }}
     protocol: HTTPS
     hostname: {{ tpl .Values.orchestration.gateway.grpc.host $ }}
     tls:
@@ -44,12 +44,12 @@ spec:
   {{- end }}
   {{- else }}
   - name: http
-    port: 80
+    port: {{ .Values.global.gateway.port }}
     protocol: HTTP
     hostname: {{ tpl .Values.global.host $ }}
   {{- if .Values.orchestration.gateway.grpc.enabled }}
   - name: grpc
-    port: 80
+    port: {{ .Values.global.gateway.port }}
     protocol: HTTP
     hostname: {{ tpl .Values.orchestration.gateway.grpc.host $ }}
   {{- end }}
