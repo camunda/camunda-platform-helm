@@ -1,0 +1,19 @@
+name: hub-double-enable
+auth: keycloak
+flows:
+  - upgrade-minor
+identity: keycloak
+persistence: elasticsearch
+features:
+  - hub-double-enable
+  - postgresql-companion
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci
+post-infra: post-infra-bitnami-migration
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql
