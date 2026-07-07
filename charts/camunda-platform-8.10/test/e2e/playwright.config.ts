@@ -46,6 +46,7 @@ export default defineConfig(makeShadowConfig({
   version: "SM-8.10",
   testDir,
   includeSetupProject: true,
+  tasklistV2Header: true,
   extraProjects: [
     {
       // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
