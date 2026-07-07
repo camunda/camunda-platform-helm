@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
 
       - name: Check author against allowlist
         id: check
@@ -35,13 +37,14 @@ jobs:
           if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
             allowed=true
           fi
-          if [[ "$allowed" == "true" ]] && gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[].filename' \
-              | grep -xF -f <(printf '%s\n' \
-                '.github/auto-approve-allowlist.txt' \
-                '.github/workflows/repo-auto-approve.yaml' \
-                '.github/CODEOWNERS') > /dev/null; then
-            allowed=false
-            echo "::notice::PR modifies auto-approval protected paths; human review is required."
+          if [[ "$allowed" == "true" ]]; then
+            if ! changed=$(gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[].filename'); then
+              echo "::warning::Could not list PR files; requiring human review."
+              allowed=false
+            elif printf '%s\n' "$changed" | grep -qE '^\.github/(workflows/|actions/|CODEOWNERS$|auto-approve-allowlist\.txt$)'; then
+              echo "::notice::PR modifies auto-approval or CI-privileged paths; human review is required."
+              allowed=false
+            fi
           fi
           echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
           echo "::notice::author=$AUTHOR allowlisted=$allowed"
@@ -73,10 +76,11 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
           SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          approved=$(gh api "repos/${{ github.repository }}/pulls/${PR}/reviews" \
+          approved=$(gh api "repos/${REPO}/pulls/${PR}/reviews" \
             --jq "[.[] | select(.user.login==\"distro-ci[bot]\" and .commit_id==\"${SHA}\" and .state==\"APPROVED\")] | length")
           if [[ "$approved" -gt 0 ]]; then
             echo "::notice::Already approved by distro-ci for ${SHA}; skipping."
