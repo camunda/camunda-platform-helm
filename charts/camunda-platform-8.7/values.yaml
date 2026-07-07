@@ -415,7 +415,7 @@ global:
       aws:
         ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration.
         enabled: false
-        ## @extra global.documentStore.type.aws.irsa IRSA (IAM Roles for Service Accounts) configuration for AWS authentication.
+        ## @extra global.documentStore.type.aws.irsa Configuration for AWS IAM role authentication, supporting both IRSA (IAM Roles for Service Accounts) and EKS Pod Identity.
         irsa:
           ## @param global.documentStore.type.aws.irsa.enabled When set to true, no static AWS credentials are injected into pods, so the AWS SDK resolves credentials through its default provider chain. Despite its name, this supports both IRSA and EKS Pod Identity. When false (default), credentials are required via existingSecret or accessKeyId/secretAccessKey configuration.
           enabled: false
