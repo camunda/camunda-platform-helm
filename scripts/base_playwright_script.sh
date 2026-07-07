@@ -1079,6 +1079,13 @@ run_playwright_tests() {
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
   [[ -n "${PLAYWRIGHT_E2E_TRACE:-}" ]] && playwright_args+=(--trace="$PLAYWRIGHT_E2E_TRACE")
   [[ -n "${PLAYWRIGHT_E2E_RETRIES:-}" ]] && playwright_args+=(--retries="$PLAYWRIGHT_E2E_RETRIES")
+  # smoke-tests uses a low worker count by default; other projects keep the
+  # config default unless PLAYWRIGHT_E2E_WORKERS is set.
+  if [[ "$project" == "smoke-tests" ]]; then
+    playwright_args+=(--workers="${PLAYWRIGHT_E2E_WORKERS:-2}")
+  elif [[ -n "${PLAYWRIGHT_E2E_WORKERS:-}" ]]; then
+    playwright_args+=(--workers="$PLAYWRIGHT_E2E_WORKERS")
+  fi
   # Namespace-scoped output directory to avoid collisions during parallel matrix runs
   [[ -n "${PLAYWRIGHT_TEST_OUTPUT:-}" ]] && playwright_args+=(--output="$PLAYWRIGHT_TEST_OUTPUT")
 
