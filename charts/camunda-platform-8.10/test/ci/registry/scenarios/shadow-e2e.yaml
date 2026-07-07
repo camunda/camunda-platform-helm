@@ -11,5 +11,5 @@ infra-type:
 skip-e2e: true
 dependencies:
   - keycloak
-  - elasticsearch
+  - elasticsearch-shadow
   - postgresql

@@ -1,0 +1,6 @@
+chart: elastic/elasticsearch
+version: 8.5.1
+release-name: elasticsearch
+values-file: test/integration/companion-values/elasticsearch-shadow.yaml
+repo-name: elastic
+repo-url: https://helm.elastic.co
