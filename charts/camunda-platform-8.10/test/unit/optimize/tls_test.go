@@ -188,6 +188,64 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
+			Name: "PEM mode with private key in a different secret",
+			Values: map[string]string{
+				"optimize.enabled":                                        "true",
+				"global.tls.optimize.enabled":                             "true",
+				"global.tls.optimize.cert.secret.existingSecret":          "optimize-cert",
+				"global.tls.optimize.type":                                "pem",
+				"global.tls.optimize.cert.secret.existingSecretKey":       "server.crt",
+				"global.tls.optimize.privateKey.secret.existingSecret":    "optimize-key",
+				"global.tls.optimize.privateKey.secret.existingSecretKey": "server.key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				container := s.mainContainer(&deployment)
+				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/optimize/server.crt"})
+				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE_PRIVATE_KEY", Value: "/usr/local/camunda/certificates/optimize/server.key"})
+
+				var volume *corev1.Volume
+				for i := range deployment.Spec.Template.Spec.Volumes {
+					if deployment.Spec.Template.Spec.Volumes[i].Name == "optimize-server-tls" {
+						volume = &deployment.Spec.Template.Spec.Volumes[i]
+					}
+				}
+				s.Require().NotNil(volume, "expected optimize-server-tls volume")
+				s.Require().Nil(volume.Secret, "split PEM secrets should use a projected volume")
+				s.Require().NotNil(volume.Projected, "expected projected optimize-server-tls volume")
+				s.Require().NotNil(volume.Projected.DefaultMode)
+				s.Require().Equal(int32(0440), *volume.Projected.DefaultMode)
+				s.Require().Len(volume.Projected.Sources, 2)
+				s.Require().Equal("optimize-cert", volume.Projected.Sources[0].Secret.Name)
+				s.Require().Equal("server.crt", volume.Projected.Sources[0].Secret.Items[0].Key)
+				s.Require().Equal("server.crt", volume.Projected.Sources[0].Secret.Items[0].Path)
+				s.Require().Equal("optimize-key", volume.Projected.Sources[1].Secret.Name)
+				s.Require().Equal("server.key", volume.Projected.Sources[1].Secret.Items[0].Key)
+				s.Require().Equal("server.key", volume.Projected.Sources[1].Secret.Items[0].Path)
+			},
+		},
+		{
+			Name: "PKCS12 mode supports inline keystore password",
+			Values: map[string]string{
+				"optimize.enabled":                                           "true",
+				"global.tls.optimize.enabled":                                "true",
+				"global.tls.optimize.cert.secret.existingSecret":             "optimize-ks",
+				"global.tls.optimize.keystorePassword.secret.inlineSecret":   "changeit",
+				"global.tls.optimize.keystorePassword.secret.existingSecret": "ignored-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				container := s.mainContainer(&deployment)
+				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE_PASSWORD", Value: "changeit"})
+			},
+		},
+		{
 			Name: "Override precedence: explicit optimize.env wins last",
 			Values: map[string]string{
 				"optimize.enabled":                               "true",
@@ -305,6 +363,18 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 				}
 				s.Require().True(foundServerMount, "main container missing optimize-server-tls mount")
 				s.Require().True(foundKeystoreMount, "main container missing client-side keystore mount")
+			},
+		},
+		{
+			Name: "Constraint fails when cert inlineSecret is set",
+			Values: map[string]string{
+				"optimize.enabled": "true",
+				"global.tls.optimize.cert.secret.inlineSecret":   "cert-material",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "global.tls.optimize.cert.secret.inlineSecret is not supported")
 			},
 		},
 		{
