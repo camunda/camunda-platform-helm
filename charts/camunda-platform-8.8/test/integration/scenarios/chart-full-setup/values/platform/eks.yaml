@@ -1,13 +1,14 @@
 # EKS infrastructure configuration for 8.8
 # Layer 6: Infrastructure - AWS EKS specific settings
+# Networking uses Traefik Gateway API applied by the traefik-gateway post-deploy hook
+# (8.8 has no chart Gateway API; see test/ci/registry/hooks/traefik-gateway.yaml).
 
 global:
   commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
   ingress:
-    tls:
-      secretName: aws-camunda-cloud-tls
+    enabled: false
 
 identityKeycloak:
   commonLabels:
@@ -26,8 +27,7 @@ webModelerPostgresql:
 orchestration:
   ingress:
     grpc:
-      tls:
-        secretName: aws-camunda-cloud-tls
+      enabled: false
 
 elasticsearch:
   commonLabels:

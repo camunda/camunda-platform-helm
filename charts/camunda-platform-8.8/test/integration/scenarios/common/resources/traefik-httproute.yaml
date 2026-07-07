@@ -1,0 +1,70 @@
+# HTTP routing for the EKS documentstore scenario, mirroring the 8.8 nginx
+# Ingress path -> Service map (see templates/*/ingress-*.yaml).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: $RELEASE_NAME-camunda-platform
+  namespace: $NAMESPACE
+spec:
+  parentRefs:
+    - name: $RELEASE_NAME-camunda-platform
+      sectionName: https
+  hostnames:
+    - $NAMESPACE.distribution.aws.camunda.cloud
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auth/
+      backendRefs:
+        - name: $RELEASE_NAME-keycloak
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /identity
+      backendRefs:
+        - name: $RELEASE_NAME-identity
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /modeler-ws
+      backendRefs:
+        - name: $RELEASE_NAME-web-modeler-websockets
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /modeler
+      backendRefs:
+        - name: $RELEASE_NAME-web-modeler-webapp
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /orchestration
+      backendRefs:
+        - name: $RELEASE_NAME-zeebe-gateway
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /optimize
+      backendRefs:
+        - name: $RELEASE_NAME-optimize
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /connectors
+      backendRefs:
+        - name: $RELEASE_NAME-connectors
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: $RELEASE_NAME-console
+          port: 80

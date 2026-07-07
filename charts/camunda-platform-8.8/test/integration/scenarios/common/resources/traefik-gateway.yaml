@@ -1,0 +1,39 @@
+# Per-namespace Traefik Gateway for the EKS documentstore scenario (8.8 has no
+# chart Gateway API). Hostnames use $NAMESPACE + the EKS base domain because
+# $CAMUNDA_HOSTNAME is not passed to lifecycle fixtures.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: $RELEASE_NAME-camunda-platform
+  namespace: $NAMESPACE
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: https
+      port: 8443
+      protocol: HTTPS
+      hostname: $NAMESPACE.distribution.aws.camunda.cloud
+      allowedRoutes:
+        kinds:
+          - kind: HTTPRoute
+        namespaces:
+          from: Same
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: aws-camunda-cloud-tls
+    - name: grpcs
+      port: 8443
+      protocol: HTTPS
+      hostname: grpc-$NAMESPACE.distribution.aws.camunda.cloud
+      allowedRoutes:
+        kinds:
+          - kind: GRPCRoute
+        namespaces:
+          from: Same
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: aws-camunda-cloud-tls
