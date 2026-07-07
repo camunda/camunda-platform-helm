@@ -31,7 +31,7 @@ esConfig:
 
 extraEnvs:
   - name: ES_JAVA_OPTS
-    value: "-Xms512m -Xmx512m"
+    value: "-Xms1536m -Xmx1536m"
 
 lifecycle:
   postStart:
@@ -56,11 +56,11 @@ lifecycle:
 
 resources:
   requests:
-    cpu: "500m"
-    memory: "1Gi"
-  limits:
     cpu: "1"
     memory: "2Gi"
+  limits:
+    cpu: "2"
+    memory: "4Gi"
 
 volumeClaimTemplate:
   accessModes: ["ReadWriteOnce"]
