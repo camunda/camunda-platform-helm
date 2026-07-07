@@ -93,7 +93,7 @@ integration:
       enabled: true
     - id: shadow-e2e
       shortname: shde2
-      tier: 2
+      tier: 1
       enabled: true
     - id: hub-legacy-upgrade
       shortname: hublu
