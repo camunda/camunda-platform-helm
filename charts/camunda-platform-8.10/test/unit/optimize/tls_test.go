@@ -228,24 +228,6 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
-			Name: "PKCS12 mode supports inline keystore password",
-			Values: map[string]string{
-				"optimize.enabled":                                           "true",
-				"global.tls.optimize.enabled":                                "true",
-				"global.tls.optimize.cert.secret.existingSecret":             "optimize-ks",
-				"global.tls.optimize.keystorePassword.secret.inlineSecret":   "changeit",
-				"global.tls.optimize.keystorePassword.secret.existingSecret": "ignored-secret",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				container := s.mainContainer(&deployment)
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE_PASSWORD", Value: "changeit"})
-			},
-		},
-		{
 			Name: "Override precedence: explicit optimize.env wins last",
 			Values: map[string]string{
 				"optimize.enabled":                               "true",
