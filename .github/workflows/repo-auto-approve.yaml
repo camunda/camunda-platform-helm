@@ -48,17 +48,27 @@ jobs:
               echo "::warning::Could not list PR commits; requiring human review."
               allowed=false
             else
-              for sha in $shas; do
-                if ! files=$(gh api "repos/${REPO}/commits/${sha}" --jq '.files[].filename'); then
-                  echo "::warning::Could not list files for ${sha}; requiring human review."
-                  allowed=false; break
-                fi
-                if printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' \
-                     | grep -qE -f <(printf '%s\n' "$pats"); then
-                  echo "::notice::commit ${sha} touches a protected path; human review is required."
-                  allowed=false; break
-                fi
-              done
+              n=$(printf '%s\n' "$shas" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')
+              if [[ "$n" -eq 0 || "$n" -ge 250 ]]; then
+                echo "::warning::PR has ${n} commits (empty or >=250 API cap); requiring human review."
+                allowed=false
+              else
+                for sha in $shas; do
+                  nf=$(gh api "repos/${REPO}/commits/${sha}" --jq '(.files // []) | length') || {
+                    echo "::warning::Could not fetch ${sha}; requiring human review."; allowed=false; break; }
+                  if [[ "$nf" -ge 300 ]]; then
+                    echo "::warning::commit ${sha} has ${nf} files (>=300 API cap); requiring human review."
+                    allowed=false; break
+                  fi
+                  files=$(gh api "repos/${REPO}/commits/${sha}" --jq '(.files // [])[] | .filename, (.previous_filename // empty)') || {
+                    echo "::warning::Could not list files for ${sha}; requiring human review."; allowed=false; break; }
+                  if printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' \
+                       | grep -qE -f <(printf '%s\n' "$pats"); then
+                    echo "::notice::commit ${sha} touches a protected path; human review is required."
+                    allowed=false; break
+                  fi
+                done
+              fi
             fi
           fi
           echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
