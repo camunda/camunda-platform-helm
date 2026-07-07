@@ -86,7 +86,7 @@ export default defineConfig({
   fullyParallel: true,
   retries: 2,
   timeout: 12 * 60 * 1000, // match E2E repo timeout (12 minutes); test.slow() triples this
-  workers: "100%",
+  workers: 25,
   //workers: process.env.CI == "true" ? 1 : "50%",
   use: {
     baseURL: getBaseURL(),
