@@ -243,8 +243,23 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.identity.persistence.existingClaim }}
           {{- else if .Values.identity.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-identity-data
+          ephemeral:
+            volumeClaimTemplate:
+              {{- with .Values.identity.persistence.annotations }}
+              metadata:
+                annotations: {{- toYaml . | nindent 18 }}
+              {{- end }}
+              spec:
+                accessModes: {{ .Values.identity.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 18 }}
+                {{- with .Values.identity.persistence.storageClassName }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+                {{- with .Values.identity.persistence.selector }}
+                selector: {{- toYaml . | nindent 18 }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ .Values.identity.persistence.size | default "1Gi" | quote }}
           {{- else }}
           emptyDir: {}
           {{- end }}
