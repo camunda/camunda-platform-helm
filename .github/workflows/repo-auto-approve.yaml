@@ -54,17 +54,21 @@ jobs:
                 allowed=false
               else
                 for sha in $shas; do
-                  nf=$(gh api "repos/${REPO}/commits/${sha}" --jq '(.files // []) | length') || {
+                  commit=$(gh api "repos/${REPO}/commits/${sha}") || {
                     echo "::warning::Could not fetch ${sha}; requiring human review."; allowed=false; break; }
+                  nf=$(printf '%s' "$commit" | jq '(.files // []) | length')
                   if [[ "$nf" -ge 300 ]]; then
                     echo "::warning::commit ${sha} has ${nf} files (>=300 API cap); requiring human review."
                     allowed=false; break
                   fi
-                  files=$(gh api "repos/${REPO}/commits/${sha}" --jq '(.files // [])[] | .filename, (.previous_filename // empty)') || {
-                    echo "::warning::Could not list files for ${sha}; requiring human review."; allowed=false; break; }
-                  if printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' \
-                       | grep -qE -f <(printf '%s\n' "$pats"); then
+                  files=$(printf '%s' "$commit" | jq -r '(.files // [])[] | .filename, (.previous_filename // empty)')
+                  match_rc=0
+                  printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' | grep -qE -f <(printf '%s\n' "$pats") || match_rc=$?
+                  if [[ "$match_rc" -eq 0 ]]; then
                     echo "::notice::commit ${sha} touches a protected path; human review is required."
+                    allowed=false; break
+                  elif [[ "$match_rc" -ge 2 ]]; then
+                    echo "::warning::protected-path check errored (rc=${match_rc}); requiring human review."
                     allowed=false; break
                   fi
                 done
