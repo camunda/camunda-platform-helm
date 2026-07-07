@@ -963,38 +963,88 @@
                                     "description": "enable Optimize TLS — sets `SERVER_SSL_ENABLED=true` on the Optimize main container and switches container probes to HTTPS.",
                                     "default": false
                                 },
-                                "secret": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "one of `pkcs12` or `pem`. `pkcs12` emits `SERVER_SSL_KEY_STORE*` env vars; `pem` emits the Spring Boot `SERVER_SSL_CERTIFICATE` / `SERVER_SSL_CERTIFICATE_PRIVATE_KEY` env vars and is compatible with cert-manager `kubernetes.io/tls` Secrets out of the box.",
+                                    "default": "pkcs12"
+                                },
+                                "keyAlias": {
+                                    "type": "string",
+                                    "description": "for `type=pkcs12` only — optional cert alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias. Ignored when `type=pem`.",
+                                    "default": ""
+                                },
+                                "cert": {
                                     "type": "object",
                                     "properties": {
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "name of an existing Kubernetes secret containing the Optimize server cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via `optimize.extraVolumes` and `optimize.env`.",
-                                            "default": ""
-                                        },
-                                        "type": {
-                                            "type": "string",
-                                            "description": "one of `pkcs12` or `pem`. `pkcs12` emits `SERVER_SSL_KEY_STORE*` env vars; `pem` emits the Spring Boot `SERVER_SSL_CERTIFICATE` / `SERVER_SSL_CERTIFICATE_PRIVATE_KEY` env vars and is compatible with cert-manager `kubernetes.io/tls` Secrets out of the box.",
-                                            "default": "pkcs12"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "for `type=pkcs12`, the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`). For `type=pem`, the key that holds the PEM certificate. When `type=pem` and this field is left at its PKCS12 default, the chart automatically substitutes `tls.crt` so cert-manager `kubernetes.io/tls` Secrets work out of the box.",
-                                            "default": "keystore.p12"
-                                        },
-                                        "existingSecretPrivateKeyKey": {
-                                            "type": "string",
-                                            "description": "for `type=pem` only — key within the same secret that holds the PEM private key (set to `tls.key` for cert-manager-issued secrets). Ignored when `type=pkcs12`.",
-                                            "default": "tls.key"
-                                        },
-                                        "existingSecretPasswordKey": {
-                                            "type": "string",
-                                            "description": "for `type=pkcs12` only — key in the same secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`). Ignored when `type=pem`.",
-                                            "default": "keystore-password"
-                                        },
-                                        "keyAlias": {
-                                            "type": "string",
-                                            "description": "for `type=pkcs12` only — optional cert alias inside the keystore (passed via `SERVER_SSL_KEY_ALIAS`). Leave empty to let Spring Boot pick the first alias. Ignored when `type=pem`.",
-                                            "default": ""
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "defines an inline secret value. Not supported for Optimize; provide the cert via `cert.secret.existingSecret`.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the Optimize server cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via `optimize.extraVolumes` and `optimize.env`.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key in the secret that holds the PKCS12 keystore file (default `keystore.p12`) or PEM certificate. For `type=pem` when left at the PKCS12 default, the chart substitutes `tls.crt` so cert-manager `kubernetes.io/tls` Secrets work out of the box.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "privateKey": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "defines an inline private key value. Not supported for Optimize; provide the private key via `privateKey.secret.existingSecret`.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret. When empty, falls back to `cert.secret.existingSecret`.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the secret that holds the PEM private key (set to `tls.key` for cert-manager-issued Secrets).",
+                                                    "default": "tls.key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "keystorePassword": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "defines an inline keystore password value (not recommended for production).",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret. When empty, falls back to `cert.secret.existingSecret`.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key in the secret that holds the keystore password (consumed via `SERVER_SSL_KEY_STORE_PASSWORD` `secretKeyRef`).",
+                                                    "default": "keystore-password"
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -1003,26 +1053,36 @@
                                     "properties": {
                                         "enabled": {
                                             "type": "boolean",
-                                            "description": "when true, the chart marks the Optimize backend as HTTPS-verified upstream. Currently inert under the Gateway API HTTPRoute used in 8.10 (see proxyVerify @extra docstring above).",
+                                            "description": "if true, the chart marks the Optimize backend as HTTPS-verified upstream. Currently inert under the Gateway API HTTPRoute used in 8.10 (see proxyVerify @extra docstring above).",
                                             "default": false
                                         },
                                         "caSecret": {
                                             "type": "object",
                                             "properties": {
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "name of an existing Kubernetes secret containing the CA bundle.",
-                                                    "default": ""
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "defines an inline CA bundle value. Not supported for Optimize; provide the CA bundle via `proxyVerify.caSecret.secret.existingSecret`.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the secret that holds the PEM-encoded CA bundle.",
+                                                            "default": "ca.crt"
+                                                        }
+                                                    }
                                                 },
                                                 "namespace": {
                                                     "type": "string",
-                                                    "description": "optional namespace of the CA bundle Secret. Defaults to the release namespace.",
+                                                    "description": "can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.",
                                                     "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "key within the secret that holds the PEM-encoded CA bundle.",
-                                                    "default": "ca.crt"
                                                 }
                                             }
                                         },
