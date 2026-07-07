@@ -36,6 +36,7 @@ export function makeShadowConfig(opts: {
   version: ShadowVersion;
   testDir?: string;
   includeSetupProject?: boolean;
+  tasklistV2Header?: boolean;
   extraProjects?: Project[];
 }): ShadowConfig {
   if (!process.env.CAMUNDA_OPTIMIZE_BASE_URL && process.env.BASE_URL) {
@@ -43,6 +44,15 @@ export function makeShadowConfig(opts: {
   }
 
   const includeSetupProject = opts.includeSetupProject ?? true;
+  const tasklistV2Use = opts.tasklistV2Header
+    ? {
+        use: {
+          extraHTTPHeaders: {
+            "X-Test-Tasklist-Version": "v2",
+          },
+        },
+      }
+    : {};
 
   return {
     testDir:
@@ -59,11 +69,7 @@ export function makeShadowConfig(opts: {
               {
                 name: "full-suite-setup",
                 testMatch: ["**/test-setup.spec.{ts,js}"],
-                use: {
-                  extraHTTPHeaders: {
-                    "X-Test-Tasklist-Version": "v2",
-                  },
-                },
+                ...tasklistV2Use,
               },
             ]
           : []
@@ -77,11 +83,7 @@ export function makeShadowConfig(opts: {
           "**/test-setup.spec.{ts,js}",
         ],
         grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
-        use: {
-          extraHTTPHeaders: {
-            "X-Test-Tasklist-Version": "v2",
-          },
-        },
+        ...tasklistV2Use,
       },
       ...(opts.extraProjects ?? []),
     ],
