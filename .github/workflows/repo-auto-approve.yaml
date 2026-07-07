@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -33,17 +33,26 @@ jobs:
         run: |
           set -euo pipefail
           list=".github/auto-approve-allowlist.txt"
+          protected='^\.github/(workflows/|actions/|CODEOWNERS$|auto-approve-allowlist\.txt$)'
           allowed=false
           if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
             allowed=true
           fi
           if [[ "$allowed" == "true" ]]; then
-            if ! changed=$(gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[].filename'); then
-              echo "::warning::Could not list PR files; requiring human review."
+            if ! shas=$(gh api "repos/${REPO}/pulls/${PR}/commits" --paginate --jq '.[].sha'); then
+              echo "::warning::Could not list PR commits; requiring human review."
               allowed=false
-            elif printf '%s\n' "$changed" | grep -qE '^\.github/(workflows/|actions/|CODEOWNERS$|auto-approve-allowlist\.txt$)'; then
-              echo "::notice::PR modifies auto-approval or CI-privileged paths; human review is required."
-              allowed=false
+            else
+              for sha in $shas; do
+                if ! files=$(gh api "repos/${REPO}/commits/${sha}" --jq '.files[].filename'); then
+                  echo "::warning::Could not list files for ${sha}; requiring human review."
+                  allowed=false; break
+                fi
+                if printf '%s\n' "$files" | grep -qE "$protected"; then
+                  echo "::notice::commit ${sha} touches a CI-privileged path; human review is required."
+                  allowed=false; break
+                fi
+              done
             fi
           fi
           echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
