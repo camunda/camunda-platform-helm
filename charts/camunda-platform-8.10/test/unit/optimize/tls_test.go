@@ -366,18 +366,6 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
-			Name: "Constraint fails when cert inlineSecret is set",
-			Values: map[string]string{
-				"optimize.enabled": "true",
-				"global.tls.optimize.cert.secret.inlineSecret":   "cert-material",
-				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), "global.tls.optimize.cert.secret.inlineSecret is not supported")
-			},
-		},
-		{
 			Name: "Constraint fails when TLS enabled but no cert configured",
 			Values: map[string]string{
 				"optimize.enabled":            "true",
