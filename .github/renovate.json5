@@ -199,7 +199,7 @@
     {
       matchPackageNames: [
         'scripts/camunda-core',
-'scripts/prepare-helm-values',
+        'scripts/prepare-helm-values',
         'scripts/vault-secret-mapper',
       ],
       enabled: false,

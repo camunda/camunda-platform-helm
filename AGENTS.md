@@ -29,7 +29,6 @@ make install.dx-tooling
 make build.dx-tooling
 
 # Build individual Go tools
-make build.deployer
 make build.prepare-helm-values
 make build.deploy-camunda
 make build.vault-secret-mapper
