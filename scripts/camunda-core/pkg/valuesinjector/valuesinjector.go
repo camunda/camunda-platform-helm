@@ -138,9 +138,18 @@ func MergeImageTags89(valuesYAML string, overrides *ValuesYAML89) (string, error
 	return MergeImageTags88(valuesYAML, overrides)
 }
 
-// MergeImageTags810 applies the 8.10 overrides (same structure as 8.8).
+// MergeImageTags810 applies the 8.10 image-tag overrides; no standalone console component.
 func MergeImageTags810(valuesYAML string, overrides *ValuesYAML810) (string, error) {
-	return MergeImageTags88(valuesYAML, overrides)
+	if overrides == nil {
+		return valuesYAML, nil
+	}
+	return applyOverrides(valuesYAML, []override{
+		{"identity", overrides.Identity},
+		{"webModeler", overrides.WebModeler},
+		{"connectors", overrides.Connectors},
+		{"orchestration", overrides.Orchestration},
+		{"optimize", overrides.Optimize},
+	})
 }
 
 // replaceImageTag validates that componentName.image.tag exists, then replaces
