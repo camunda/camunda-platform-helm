@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -364,7 +365,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		NamespacePrefix:        flags.Deployment.NamespacePrefix,
 		RepoRoot:               flags.Chart.RepoRoot,
 		Identifier:             identifier,
-		TTL:                    "60m",
+		TTL:                    resolveDeployTTL(flags.Deployment.TTL, os.Getenv("DEPLOY_CAMUNDA_TTL")),
 		LoadKeycloakRealm:      true,
 		KeycloakRealmName:      prepared.RealmName,
 		RenderTemplates:        flags.Deployment.RenderTemplates,
@@ -484,6 +485,16 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Msg("Scenario deployment completed successfully")
 
 	return result
+}
+
+func resolveDeployTTL(flagTTL, envTTL string) string {
+	if strings.TrimSpace(flagTTL) != "" {
+		return flagTTL
+	}
+	if strings.TrimSpace(envTTL) != "" {
+		return envTTL
+	}
+	return "60m"
 }
 
 // deleteNamespace deletes a Kubernetes namespace.
