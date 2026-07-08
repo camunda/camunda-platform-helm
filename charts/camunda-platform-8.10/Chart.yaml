@@ -51,6 +51,8 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: changed
+      description: "docs: remove stale Console/Web Modeler references after Camunda Hub consolidation"
     - kind: added
       description: "Deprecate app-config proxy keys in favor of extraConfiguration"
     - kind: added

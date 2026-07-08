@@ -8,8 +8,7 @@ The camundaHub component consolidates Console and WebModeler into a single
 logical unit. The backward-compatibility shim helpers that bridge the legacy
 console.* / webModeler.* keys to the new camundaHub.* key live in
 templates/common/_helpers.tpl (see "camundaHub.consoleEnabled",
-"camundaHub.webModelerEnabled", "camundaHub.consoleValues",
-"camundaHub.webModelerValues").
+"camundaHub.webModelerEnabled").
 
 This file is reserved for any camundaHub-specific helpers that do NOT belong
 in the common shim layer. For now, no additional helpers are needed because:
