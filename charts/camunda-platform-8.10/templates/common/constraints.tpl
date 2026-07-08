@@ -104,6 +104,12 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
+{{/*
+camunda.constraints.warnings
+Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgrade) and by
+configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
+(helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
+*/}}
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
@@ -706,8 +712,9 @@ Usage:
 camundaPlatform.keyDeprecated
 Emit a non-fatal DEPRECATION warning when a deprecated values file key is set.
 Unlike camundaPlatform.keyRemoved/keyRenamed this does NOT fail; it returns a
-warning string, so it must be called from within "camunda.constraints.warnings"
-(included by NOTES.txt) to surface on install/upgrade. Per the Breaking Changes
+warning string, so it must be called from within "camunda.constraints.warnings",
+which surfaces on install/upgrade (NOTES.txt) and on the GitOps render path via the
+"<release>-warnings" ConfigMap (templates/common/configmap-warnings.yaml). Per the Breaking Changes
 & Deprecation Policy (docs/policies/breaking-changes.md): warn when the key is
 set, name the replacement and the removal version.
 Usage:

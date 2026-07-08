@@ -86,6 +86,12 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
+{{/*
+camunda.constraints.warnings
+Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgrade) and by
+configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
+(helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
+*/}}
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
