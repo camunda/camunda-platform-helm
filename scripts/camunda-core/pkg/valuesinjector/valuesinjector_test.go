@@ -107,6 +107,42 @@ optimize:
     tag: 8.8.3
 `
 
+// Sample values.yaml content for testing chart 8.10 (no standalone console component).
+const sampleValues810 = `
+global:
+  image:
+    tag: ""
+identity:
+  enabled: false
+  image:
+    registry: ""
+    repository: camunda/identity
+    tag: 8.10.0
+webModeler:
+  enabled: false
+  image:
+    registry: ""
+    tag: 8.10.0
+connectors:
+  enabled: true
+  image:
+    registry: ""
+    repository: camunda/connectors-bundle
+    tag: 8.10.0
+orchestration:
+  enabled: true
+  image:
+    registry: ""
+    repository: camunda/camunda
+    tag: 8.10.0
+optimize:
+  enabled: false
+  image:
+    registry: ""
+    repository: camunda/optimize
+    tag: 8.10.0
+`
+
 func TestMergeImageTags86_SingleComponent(t *testing.T) {
 	overrides := &ValuesYAML86{
 		Console: &ComponentImage{
@@ -352,7 +388,7 @@ func TestMergeImageTags89_UsesChart88Logic(t *testing.T) {
 	}
 }
 
-func TestMergeImageTags810_UsesChart88Logic(t *testing.T) {
+func TestMergeImageTags810_UpdatesOrchestration(t *testing.T) {
 	overrides := &ValuesYAML810{
 		Orchestration: &ComponentImage{
 			Image: ImageTag{Tag: "8.10-test"},
@@ -366,6 +402,29 @@ func TestMergeImageTags810_UsesChart88Logic(t *testing.T) {
 
 	if !strings.Contains(result, "8.10-test") {
 		t.Errorf("expected orchestration tag to be updated")
+	}
+}
+
+func TestMergeImageTags810_IgnoresConsole(t *testing.T) {
+	overrides := &ValuesYAML810{
+		Console: &ComponentImage{
+			Image: ImageTag{Tag: "console-should-be-ignored"},
+		},
+		WebModeler: &ComponentImage{
+			Image: ImageTag{Tag: "wm-810"},
+		},
+	}
+
+	result, err := MergeImageTags810(sampleValues810, overrides)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "wm-810") {
+		t.Errorf("expected webModeler tag to be updated to wm-810, got:\n%s", result)
+	}
+	if strings.Contains(result, "console-should-be-ignored") {
+		t.Errorf("expected console override to be ignored, got:\n%s", result)
 	}
 }
 
