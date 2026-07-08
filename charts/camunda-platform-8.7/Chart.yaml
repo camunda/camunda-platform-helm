@@ -72,5 +72,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Source vendor-ee Bitnami images from the published datasource"
+    - kind: fixed
+      description: "Repair failing scheduled workflows for docs links, lychee, and values-latest"
+    - kind: fixed
+      description: "Surface deprecation warnings on the gitops render path"
