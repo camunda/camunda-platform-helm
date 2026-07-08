@@ -73,4 +73,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Repair failing scheduled workflows for docs links, lychee, and values-latest"
+      description: "Fail clearly when an image override has an empty tag and no digest"
+    - kind: fixed
+      description: "Surface deprecation warnings on the gitops render path"
