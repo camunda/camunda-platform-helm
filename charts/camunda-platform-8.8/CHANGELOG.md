@@ -1,5 +1,22 @@
 # Changelog
 
+## [13.12.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.1...camunda-platform-8.8-13.12.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* fail clearly when an image override has an empty tag and no digest ([#6462](https://github.com/camunda/camunda-platform-helm/issues/6462)) ([3fdbe6e](https://github.com/camunda/camunda-platform-helm/commit/3fdbe6eee6541121329b2cb03d848963ffeaa143))
+* surface deprecation warnings on the gitops render path ([#6530](https://github.com/camunda/camunda-platform-helm/issues/6530)) ([7dd8905](https://github.com/camunda/camunda-platform-helm/commit/7dd89052c300a0c5146f0cc6f49b69a8be810271))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6515](https://github.com/camunda/camunda-platform-helm/issues/6515)) ([6de8336](https://github.com/camunda/camunda-platform-helm/commit/6de8336137e7098e7e0c82d7ee3d70f757691785))
+* update camunda-platform-images (patch) ([#6527](https://github.com/camunda/camunda-platform-helm/issues/6527)) ([8eaa968](https://github.com/camunda/camunda-platform-helm/commit/8eaa968cb3a587644edaf9e600915a71d147f9c4))
+* update minor-updates (minor) ([#6471](https://github.com/camunda/camunda-platform-helm/issues/6471)) ([7ca27f1](https://github.com/camunda/camunda-platform-helm/commit/7ca27f1eb2ae094af80d6e9189d4f163d5fc03d5))
+* update module golang.org/x/net to v0.55.0 [security] ([#6504](https://github.com/camunda/camunda-platform-helm/issues/6504)) ([0014dfb](https://github.com/camunda/camunda-platform-helm/commit/0014dfbf7757e665ccaaf6049d8811e94a8b75be))
+* update registry.camunda.cloud/keycloak-ee/keycloak docker tag to v26.6.4 ([#6502](https://github.com/camunda/camunda-platform-helm/issues/6502)) ([a58c147](https://github.com/camunda/camunda-platform-helm/commit/a58c147cc7caffea0c4237f0ce30b5489fcdbab6))
+
 ## [13.12.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.0...camunda-platform-8.8-13.12.1) (2026-07-02)
 
 
