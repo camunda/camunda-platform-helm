@@ -15,10 +15,6 @@ releaseName = camunda-platform-test
 #
 # Binaries.
 #
-.PHONY: build.deployer
-build.deployer:
-	cd scripts/camunda-deployer && go mod tidy && go build .
-
 .PHONY: build.prepare-helm-values
 build.prepare-helm-values:
 	cd scripts/prepare-helm-values && go mod tidy && go build .
@@ -26,10 +22,6 @@ build.prepare-helm-values:
 .PHONY: build.deploy-camunda
 build.deploy-camunda:
 	cd scripts/deploy-camunda && go mod tidy && go build .
-
-.PHONY: install.deployer
-install.deployer:
-	cd scripts/camunda-deployer && go mod tidy && go install .
 
 .PHONY: install.prepare-helm-values
 install.prepare-helm-values:
@@ -65,7 +57,6 @@ install.release-tools:
 
 .PHONY: build.dx-tooling
 build.dx-tooling:
-	make build.deployer
 	make build.prepare-helm-values
 	make build.deploy-camunda
 	make build.vault-secret-mapper
@@ -73,7 +64,6 @@ build.dx-tooling:
 
 .PHONY: install.dx-tooling
 install.dx-tooling:
-	make install.deployer
 	make install.prepare-helm-values
 	make install.deploy-camunda
 	make install.vault-secret-mapper

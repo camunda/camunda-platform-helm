@@ -13,8 +13,8 @@ import (
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
-	"scripts/camunda-deployer/pkg/deployer"
-	"scripts/camunda-deployer/pkg/types"
+	"scripts/deploy-camunda/pkg/deployer"
+	"scripts/deploy-camunda/pkg/types"
 	"scripts/deploy-camunda/config"
 )
 

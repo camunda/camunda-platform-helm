@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"scripts/camunda-core/pkg/versionmatrix"
 
-	"scripts/camunda-deployer/pkg/deployer"
+	"scripts/deploy-camunda/pkg/deployer"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 )

@@ -58,7 +58,6 @@ charts/
 
 scripts/
   deploy-camunda/            # Primary deployment CLI (Go, Cobra)
-  camunda-deployer/          # Deployment orchestrator
   prepare-helm-values/       # Values preparation/merging
   vault-secret-mapper/       # Vault-to-K8s secret mapping
   camunda-core/              # Shared Go packages (scenario resolution, kube client)

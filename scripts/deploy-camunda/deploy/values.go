@@ -11,7 +11,7 @@ import (
 
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
-	"scripts/camunda-deployer/pkg/deployer"
+	"scripts/deploy-camunda/pkg/deployer"
 	"scripts/deploy-camunda/config"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"

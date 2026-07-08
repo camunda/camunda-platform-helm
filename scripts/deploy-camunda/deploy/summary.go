@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"scripts/camunda-core/pkg/logging"
-	"scripts/camunda-deployer/pkg/types"
+	"scripts/deploy-camunda/pkg/types"
 	"scripts/deploy-camunda/config"
 
 	"github.com/jwalton/gchalk"

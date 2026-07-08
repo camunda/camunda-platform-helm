@@ -199,8 +199,7 @@
     {
       matchPackageNames: [
         'scripts/camunda-core',
-        'scripts/camunda-deployer',
-        'scripts/prepare-helm-values',
+'scripts/prepare-helm-values',
         'scripts/vault-secret-mapper',
       ],
       enabled: false,

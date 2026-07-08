@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/logging"
-	"scripts/camunda-deployer/pkg/types"
+	"scripts/deploy-camunda/pkg/types"
 )
 
 // renderTemplates builds and executes `helm template` to render manifests to disk.

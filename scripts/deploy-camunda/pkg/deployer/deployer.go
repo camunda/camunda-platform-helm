@@ -9,7 +9,7 @@ import (
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/utils"
-	"scripts/camunda-deployer/pkg/types"
+	"scripts/deploy-camunda/pkg/types"
 )
 
 func Deploy(ctx context.Context, o types.Options) error {

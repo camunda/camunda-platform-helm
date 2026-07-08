@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"scripts/camunda-deployer/pkg/types"
+	"scripts/deploy-camunda/pkg/types"
 	"strings"
 	"sync/atomic"
 	"testing"
