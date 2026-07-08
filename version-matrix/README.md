@@ -22,6 +22,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.10](./camunda-8.10)
 
+### [Helm chart 15.0.0-alpha3](./camunda-8.10/#helm-chart-1500-alpha3)
 ### [Helm chart 15.0.0-alpha2](./camunda-8.10/#helm-chart-1500-alpha2)
 ### [Helm chart 15.0.0-alpha1](./camunda-8.10/#helm-chart-1500-alpha1)
 
