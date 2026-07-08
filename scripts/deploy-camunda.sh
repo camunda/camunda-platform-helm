@@ -281,7 +281,7 @@ if [[ -n "$KEYCLOAK_EXT_HOST" ]]; then
   info "  ${KEYCLOAK_PROTOCOL_VAR}=${KEYCLOAK_EXT_PROTOCOL}"
 fi
 # --- Step 1: Prepare Helm values ---
-info "Step 1/1: Preparing Helm values with prepare-helm-values..."
+info "Preparing Helm values with prepare-helm-values..."
 
 # Build prepare-helm-values arguments
 PREPARE_ARGS=(
