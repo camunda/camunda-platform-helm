@@ -81,7 +81,7 @@ If the "overlay" values exist, they will override the "base" values, otherwise t
 Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 */}}
 {{- define "camundaPlatform.imageTagByParams" -}}
-    {{- .overlay.image.tag | default .base.image.tag -}}
+    {{- .overlay.image.tag | default .base.image.tag | default "" -}}
 {{- end -}}
 
 {{/*
@@ -104,11 +104,15 @@ Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "o
     -}}
   {{- else }}
     {{- /* original tag path */ -}}
+    {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
+    {{- if not $imageTag -}}
+      {{- fail (printf "camundaPlatform.imageByParams: image %q has neither a tag nor a digest; set image.tag or image.digest" $imageRepository) -}}
+    {{- end -}}
     {{- printf "%s%s%s:%s"
         $imageRegistry
         (empty $imageRegistry | ternary "" "/")
         $imageRepository
-        (include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay))
+        $imageTag
     -}}
   {{- end }}
 {{- end -}}
