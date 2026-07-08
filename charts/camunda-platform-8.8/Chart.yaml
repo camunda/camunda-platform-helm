@@ -53,14 +53,14 @@ dependencies:
     repository: "file://../common-2"
     version: 2.x.x
 maintainers:
-  - name: aabouzaid
-    email: ahmed.abouzaid@camunda.com
-  - name: drodriguez-305
-    email: daniel.rodriguez@camunda.com
-  - name: hamza-m-masood
-    email: hamza.masood@camunda.com
-  - name: jessesimpson36
-    email: jesse.simpson@camunda.com
+  - name: eamonnmoloney
+    email: eamonn.moloney@camunda.com
+  - name: Ian-wang-liyang
+    email: ian.wang@camunda.com
+  - name: hisImminence
+    email: immanuel.monma@camunda.com
+  - name: bkenez
+    email: balazs.kenez@camunda.com
 annotations:
   camunda.io/helmCLIVersion: "3.20.2"
   artifacthub.io/links: |

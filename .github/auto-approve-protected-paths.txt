@@ -1,0 +1,16 @@
+# Paths that ALWAYS require a human review — distro-ci never auto-approves a PR
+# whose commits touch any of these. One grep -E (extended regex) pattern per line;
+# blank lines and # comments are ignored. Matched against every file in every commit
+# of the PR, AFTER chart test fixtures (charts/<chart>/test/**) are excluded.
+
+# --- CI-privileged paths (.github) ---
+^\.github/workflows/
+^\.github/actions/
+^\.github/CODEOWNERS$
+^\.github/auto-approve-allowlist\.txt$
+^\.github/auto-approve-protected-paths\.txt$
+
+# --- Chart public API (the user-facing contract) ---
+^charts/.+/values\.yaml$
+^charts/.+/values\.schema(\.extra)?\.json$
+^charts/.+/constraints\.tpl$

@@ -1,0 +1,118 @@
+name: Repo - Auto Approve
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  auto-approve:
+    name: Auto approve allowlisted authors
+    if: ${{ github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Check author against allowlist
+        id: check
+        env:
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          list=".github/auto-approve-allowlist.txt"
+          protected_file=".github/auto-approve-protected-paths.txt"
+          allowed=false
+          if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
+            allowed=true
+          fi
+          pats=$(grep -vE '^\s*(#|$)' "$protected_file" 2>/dev/null || true)
+          if [[ "$allowed" == "true" && -z "$pats" ]]; then
+            echo "::warning::protected-paths list missing/empty; requiring human review."
+            allowed=false
+          fi
+          if [[ "$allowed" == "true" ]]; then
+            if ! shas=$(gh api "repos/${REPO}/pulls/${PR}/commits" --paginate --jq '.[].sha'); then
+              echo "::warning::Could not list PR commits; requiring human review."
+              allowed=false
+            else
+              n=$(printf '%s\n' "$shas" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')
+              if [[ "$n" -eq 0 || "$n" -ge 250 ]]; then
+                echo "::warning::PR has ${n} commits (empty or >=250 API cap); requiring human review."
+                allowed=false
+              else
+                for sha in $shas; do
+                  commit=$(gh api "repos/${REPO}/commits/${sha}") || {
+                    echo "::warning::Could not fetch ${sha}; requiring human review."; allowed=false; break; }
+                  nf=$(printf '%s' "$commit" | jq '(.files // []) | length')
+                  if [[ "$nf" -ge 300 ]]; then
+                    echo "::warning::commit ${sha} has ${nf} files (>=300 API cap); requiring human review."
+                    allowed=false; break
+                  fi
+                  files=$(printf '%s' "$commit" | jq -r '(.files // [])[] | .filename, (.previous_filename // empty)')
+                  match_rc=0
+                  printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' | grep -qE -f <(printf '%s\n' "$pats") || match_rc=$?
+                  if [[ "$match_rc" -eq 0 ]]; then
+                    echo "::notice::commit ${sha} touches a protected path; human review is required."
+                    allowed=false; break
+                  elif [[ "$match_rc" -ge 2 ]]; then
+                    echo "::warning::protected-path check errored (rc=${match_rc}); requiring human review."
+                    allowed=false; break
+                  fi
+                done
+              fi
+            fi
+          fi
+          echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
+          echo "::notice::author=$AUTHOR allowlisted=$allowed"
+
+      - name: Import Vault secrets
+        if: ${{ steps.check.outputs.allowed == 'true' }}
+        id: vault-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+
+      - name: Generate distro-ci token
+        if: ${{ steps.check.outputs.allowed == 'true' }}
+        id: app-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        with:
+          app_id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Approve PR
+        if: ${{ steps.check.outputs.allowed == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          approved=$(gh api "repos/${REPO}/pulls/${PR}/reviews" \
+            --jq "[.[] | select(.user.login==\"distro-ci[bot]\" and .commit_id==\"${SHA}\" and .state==\"APPROVED\")] | length")
+          if [[ "$approved" -gt 0 ]]; then
+            echo "::notice::Already approved by distro-ci for ${SHA}; skipping."
+            exit 0
+          fi
+          gh pr review "$PR" --approve --body "Auto-approved: author is on .github/auto-approve-allowlist.txt."

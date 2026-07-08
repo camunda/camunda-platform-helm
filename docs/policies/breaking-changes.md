@@ -94,7 +94,7 @@ Major chart releases follow Camunda's release cycle.
 
 1. **Deprecate (keep compatibility):**
    - Add a `values.yaml` comment: `DEPRECATED since vX.Y.Z; remove in vNextMajor; use instead: ...`.
-   - On install/upgrade, warn if the deprecated key is set (old key, replacement, removal version).
+   - Warn if the deprecated key is set (old key, replacement, removal version). Warnings are collected by the `camunda.constraints.warnings` helper, which surfaces them on both the CLI path (`NOTES.txt` on install/upgrade) and the GitOps render path (the `<release>-warnings` ConfigMap rendered by `configmap-warnings.yaml`, visible to `helm template` / Argo CD / Flux). Feed new deprecation warnings through that helper rather than wiring them directly into `NOTES.txt`.
    - If both old and new are set: new wins + warning.
 
 2. **Document:**

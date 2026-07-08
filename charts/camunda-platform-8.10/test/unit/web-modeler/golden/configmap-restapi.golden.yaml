@@ -70,7 +70,7 @@ data:
                 webapp: "http://localhost:8080"
                 readiness: "http://camunda-platform-test-identity.camunda-platform:82/actuator/health"
             - name: WebModeler
-              type: webModelerWebApp
+              type: hub
               version: "8.10.0-alpha3-rc1"
               urls:
                 webapp: "http://localhost:8070"
@@ -97,7 +97,7 @@ data:
             components:
             - name: Connectors
               type: connectors
-              version: "8.10.0-alpha2"
+              version: "8.10.0-alpha3"
               urls:
                 rest: "http://camunda-platform-test-connectors.camunda-platform:8080"
                 readiness: "http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness"
@@ -114,7 +114,7 @@ data:
                 webapp: "http://localhost:8080/tasklist"
                 readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
             - name: Orchestration Admin
-              type: orchestrationIdentity
+              type: admin
               version: "8.10.0-alpha3"
               urls:
                 webapp: "http://localhost:8080/admin"

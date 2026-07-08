@@ -1,0 +1,13 @@
+{{- $warnings := include "camunda.constraints.warnings" . | trim -}}
+{{- if $warnings }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-warnings
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  warnings: |-
+    {{- $warnings | nindent 4 }}
+{{- end }}

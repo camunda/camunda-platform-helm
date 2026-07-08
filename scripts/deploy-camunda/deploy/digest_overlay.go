@@ -46,6 +46,7 @@ func neutralizeOverriddenDigests(overlayPath string, extraValues []string, tempD
 	// Collect the dotted image-paths overridden by --extra-values: an image block
 	// that sets registry/repository/tag but does not pin its own digest.
 	overridden := map[string]bool{}
+	var emptyTagOverrides []string
 	for _, f := range extraValues {
 		doc, readErr := loadValuesDoc(f)
 		if readErr != nil {
@@ -55,10 +56,21 @@ func neutralizeOverriddenDigests(overlayPath string, extraValues []string, tempD
 			if _, hasDigest := img["digest"]; hasDigest {
 				return // caller pinned an explicit digest — let it win via merge
 			}
+			// Present-but-empty tag with no digest: stripping the overlay digest
+			// would render a version-less "<repository>:" (invalid YAML). Flag it.
+			if tag, hasTag := img["tag"]; hasTag && isBlankScalar(tag) {
+				emptyTagOverrides = append(emptyTagOverrides, path)
+				return
+			}
 			if img["registry"] != nil || img["repository"] != nil || img["tag"] != nil {
 				overridden[path] = true
 			}
 		})
+	}
+	if len(emptyTagOverrides) > 0 {
+		sort.Strings(emptyTagOverrides)
+		return "", fmt.Errorf("--extra-values image override for %v sets registry/repository with an empty tag and no digest; "+
+			"set image.tag or image.digest for these component(s)", emptyTagOverrides)
 	}
 	if len(overridden) == 0 {
 		return overlayPath, nil
@@ -94,6 +106,12 @@ func neutralizeOverriddenDigests(overlayPath string, extraValues []string, tempD
 		Msg("Stripped digest overlay pins shadowed by --extra-values image overrides")
 
 	return sanitizedPath, nil
+}
+
+// isBlankScalar reports whether a YAML scalar is unset: a nil value (a bare
+// "tag:" key) or an empty string ("tag: \"\"").
+func isBlankScalar(v any) bool {
+	return v == nil || v == ""
 }
 
 // walkImageBlocks recursively walks a values document and invokes fn for every
