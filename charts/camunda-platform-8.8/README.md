@@ -1,5 +1,16 @@
 # Camunda 8 Helm Chart
 
+> [!IMPORTANT]
+> **Disabling Optimize or the legacy Elasticsearch/OpenSearch exporter via Helm values does not stop the running exporter.**
+> Setting `optimize.enabled: false` (or `orchestration.exporters.zeebe.enabled: false`) only removes the legacy exporter from
+> the broker's *static* configuration. The broker reconciles that removal into its *dynamic* cluster configuration, but the
+> reconciliation runs only on partition leaders and relies on cluster gossip to converge across all brokers. If it does not
+> converge, the exporter can remain stuck in an `UNKNOWN` / `CONFIG_NOT_FOUND` state, which halts log compaction and grows the
+> Zeebe PVC. After disabling Optimize or the legacy exporter, explicitly disable the running exporter on each broker via
+> `POST /actuator/exporters/{elasticsearch|opensearch}/disable` and confirm convergence with `GET /actuator/exporters`
+> (every broker should report `DISABLED`). Ensure your Camunda version includes the exporter-state reconciliation fix
+> ([camunda/camunda#52260](https://github.com/camunda/camunda/issues/52260), backported to 8.8.25).
+
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
 
 - [Architecture](#architecture)
