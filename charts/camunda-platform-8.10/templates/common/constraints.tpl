@@ -600,10 +600,10 @@ The following values inside your values.yaml need to be set but were not:
     {{- $wm := mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict) }}
     {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (not (empty .Values.webModeler.restapi.mail.fromAddress))
+      "condition" (not (empty $wm.restapi.mail.fromAddress))
       "oldName" "webModeler.restapi.mail.fromAddress" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (.Values.webModeler.restapi.mail.fromName | toString) "Camunda 8")
+      "condition" (ne ($wm.restapi.mail.fromName | toString) "Camunda 8")
       "oldName" "webModeler.restapi.mail.fromName" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $wm.restapi.mail.smtpHost))

@@ -1557,7 +1557,11 @@ migration target (supplied through a spring-imported <component>.extraConfigurat
 override it. Same transitional gating as orchestration.camundaExporterEnabled: the
 deprecated key is the fallback and is removed in chart v16 (8.11). Later extraConfiguration
 entries win; entries with springImport: false are skipped. "path" is the key list to dig in
-each parsed file (keys may themselves contain dots, e.g. "io.camunda.optimize").
+each parsed file (keys may themselves contain dots, e.g. "io.camunda.optimize"). Keys match
+literally on nested map keys: flat dotted keys ("camunda.document.x: y"), relaxed-binding
+camelCase, and keys outside the first YAML document are not matched, so the migration file
+must use the nested YAML form. Non-scalar (map/list) and null nodes are ignored and the
+deprecated default is kept; whole-number floats render as integers.
 Usage:
 {{ include "camundaPlatform.effectiveExtraConfigValue" (dict
   "default" (.Values.optimize.logLevel)
@@ -1580,8 +1584,12 @@ Usage:
           {{- $found = false -}}
         {{- end -}}
       {{- end -}}
-      {{- if $found -}}
-        {{- $value = $node -}}
+      {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
+        {{- if and (kindIs "float64" $node) (eq $node (floor $node)) -}}
+          {{- $value = (int64 $node) -}}
+        {{- else -}}
+          {{- $value = $node -}}
+        {{- end -}}
       {{- end -}}
     {{- end -}}
   {{- end -}}
@@ -1594,6 +1602,10 @@ NOTE: reports "true" when a spring-imported <component>.extraConfiguration file 
 given key path (any subkey counts). Used to gate chart-rendered env that would otherwise
 shadow the migration target — e.g. suppress the -documentstore-env-vars envFrom for a
 component that owns document config via camunda.document.* in its extraConfiguration.
+Because any subkey matches, the whole -documentstore-env-vars envFrom is dropped, so a
+component that supplies any camunda.document.* via extraConfiguration owns all of its
+document config (default store id, per-store class/bucket, region). Keys match literally on
+nested map keys (see effectiveExtraConfigValue for the accepted YAML form).
 Usage:
 {{ if eq (include "camundaPlatform.extraConfigHasPath" (dict
   "extraConfiguration" .Values.orchestration.extraConfiguration

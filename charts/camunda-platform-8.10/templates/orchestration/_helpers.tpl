@@ -281,19 +281,11 @@ camunda.data.secondary-storage.autoconfigure-camunda-exporter supplied through a
 spring-imported orchestration.extraConfiguration file, override it.
 */ -}}
 {{- define "orchestration.camundaExporterEnabled" -}}
-{{- $enabled := .Values.orchestration.exporters.camunda.enabled -}}
-{{- range .Values.orchestration.extraConfiguration -}}
-  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
-    {{- $parsed := (.content | default "" | fromYaml) -}}
-    {{- if kindIs "map" $parsed -}}
-      {{- $override := dig "camunda" "data" "secondary-storage" "autoconfigure-camunda-exporter" nil $parsed -}}
-      {{- if not (kindIs "invalid" $override) -}}
-        {{- $enabled = $override -}}
-      {{- end -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-{{- $enabled -}}
+{{- include "camundaPlatform.effectiveExtraConfigValue" (dict
+  "default" .Values.orchestration.exporters.camunda.enabled
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "data" "secondary-storage" "autoconfigure-camunda-exporter")
+) -}}
 {{- end -}}
 
 {{- define "orchestration.hasCamundaExporter" -}}

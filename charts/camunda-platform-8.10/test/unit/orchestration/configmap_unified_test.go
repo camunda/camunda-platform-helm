@@ -741,6 +741,14 @@ func (s *ConfigmapTemplateTest) TestCamundaExporterHonorsAutoconfigureFromExtraC
 				require.Contains(t, output, "camundaexporter:")
 			},
 		},
+		{
+			Name:        "TestScalarIntermediateDoesNotAbortRender",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-camunda-exporter-scalar-intermediate.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "autoconfigure-camunda-exporter: true")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

@@ -426,6 +426,21 @@ func (s *ConfigMapTemplateTest) TestOptimizeNativeConfigHonorsExtraConfiguration
 					"deprecated optimize.partitionCount should still apply without extraConfiguration")
 			},
 		},
+		{
+			Name:        "TestLargeNumberRendersAsIntegerNotScientificNotation",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-nonscalar.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				envConfig := configmap.Data["environment-config.yaml"]
+				s.Require().Contains(envConfig, "partitionCount: 10000000",
+					"a whole-number float must render as an integer")
+				s.Require().NotContains(envConfig, "1e+07",
+					"a large number must not render in scientific notation")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

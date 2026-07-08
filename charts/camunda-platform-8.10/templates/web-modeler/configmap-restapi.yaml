@@ -48,8 +48,12 @@ data:
         {{- end }}
 
         mail:
-          {{- with (or .Values.camundaHub.webModeler.restapi.mail.fromAddress .Values.webModeler.restapi.mail.fromAddress) }}
-          from-address: {{ . | quote }}
+          {{- $fromAddress := or .Values.camundaHub.webModeler.restapi.mail.fromAddress .Values.webModeler.restapi.mail.fromAddress }}
+          {{- $restapiExtraConfig := or .Values.camundaHub.webModeler.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration }}
+          {{- if $fromAddress }}
+          from-address: {{ $fromAddress | quote }}
+          {{- else if ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" "modeler" "mail" "from-address"))) "true" }}
+          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required (or supply camunda.modeler.mail.from-address via webModeler.restapi.extraConfiguration)" "" | quote }}
           {{- end }}
           from-name: {{ (or .Values.camundaHub.webModeler.restapi.mail.fromName .Values.webModeler.restapi.mail.fromName) | quote }}
 

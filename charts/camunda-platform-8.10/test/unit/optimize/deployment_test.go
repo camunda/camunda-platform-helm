@@ -1513,3 +1513,50 @@ func (s *DeploymentTemplateTest) TestOptimizeEnvHonorsExtraConfiguration() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *DeploymentTemplateTest) TestOptimizeEnvGuardsNonScalarExtraConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestNonScalarAndNullNodesFallBackToDeprecatedDefault",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-nonscalar.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SPRING_PROFILES_ACTIVE", Value: "myprofile"},
+					"a list node must not render as Go slice syntax; fall back to the deprecated default")
+				s.Require().Contains(env, corev1.EnvVar{Name: "OPTIMIZE_LOG_LEVEL", Value: "mylevel"},
+					"a null leaf must not render as an empty string; fall back to the deprecated default")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *DeploymentTemplateTest) TestOptimizeMountsSpringImportWithoutAuth() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestApplicationCcsmMountedWhenExtraConfigurationSetAndAuthDisabled",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/optimize/testdata/values-optimize-gating-extraconfig.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				mounted := false
+				for _, vm := range deployment.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if vm.MountPath == "/optimize/config/application-ccsm.yaml" {
+						mounted = true
+					}
+				}
+				s.Require().True(mounted,
+					"application-ccsm.yaml carries spring.config.import and must be mounted whenever extraConfiguration is set, even with auth disabled, otherwise the migration file is never imported")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
