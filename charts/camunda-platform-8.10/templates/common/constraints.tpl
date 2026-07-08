@@ -148,7 +148,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
     }}
   {{- end }}
 
-  {{- $wmPusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.webModeler.restapi.pusher | default dict) }}
+  {{- $wmPusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}
   {{ if and (eq (include "camundaHub.webModelerEnabled" .) "true")
             (not $wmPusher.secret.existingSecret) }}
     {{- $existingSecretsNotConfigured = append
@@ -351,7 +351,7 @@ The following values inside your values.yaml need to be set but were not:
         (dict "comp" "optimize" "env" .Values.optimize.env)
         (dict "comp" "connectors" "env" .Values.connectors.env)
         (dict "comp" "identity" "env" .Values.identity.env)
-        (dict "comp" "webModeler.restapi" "env" (or .Values.camundaHub.webModeler.restapi.env .Values.webModeler.restapi.env))
+        (dict "comp" "webModeler.restapi" "env" (or .Values.camundaHub.restapi.env .Values.webModeler.restapi.env))
     }}
     {{- range $c := $envComponents }}
       {{- range $e := $c.env }}
@@ -370,7 +370,7 @@ The following values inside your values.yaml need to be set but were not:
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.webModeler.restapi.pusher | default dict) }}
+    {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}
     {{- $pusherSecret := $pusher.secret }}
     {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
       {{- $warningMessage := printf "%s %s %s %s"
@@ -399,7 +399,7 @@ The following values inside your values.yaml need to be set but were not:
         "[camunda][warning]"
         "DEPRECATION: \"webModeler.enabled\" is deprecated and will be removed in a future version."
         "Web Modeler has been consolidated into Camunda Hub. Please use \"camundaHub.enabled: true\" instead."
-        "Any web-modeler-specific overrides can be placed under \"camundaHub.webModeler.*\"."
+        "Any web-modeler-specific overrides can be placed under \"camundaHub.*\"."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -409,7 +409,7 @@ The following values inside your values.yaml need to be set but were not:
         "[camunda][warning]"
         "DEPRECATION: \"console.enabled\" is deprecated and will be removed in a future version."
         "Console has been consolidated into Camunda Hub as an in-Modeler feature. Please use \"camundaHub.enabled: true\" instead."
-        "Any console-specific overrides can be placed under \"camundaHub.console.*\"."
+        "Any console-specific overrides can be placed under the legacy \"console.*\" keys."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -597,7 +597,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $wm := mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict) }}
+    {{- $wm := mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub | default dict) }}
     {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $wm.restapi.mail.fromAddress))
@@ -626,7 +626,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-    {{- $con := mustMergeOverwrite (deepCopy (.Values.console | default dict)) (.Values.camundaHub.console | default dict) }}
+    {{- $con := .Values.console | default dict }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (dig "keycloak" "realm" "camunda-platform" $con) "camunda-platform")
       "oldName" "console.keycloak.realm" "migration" "console.env") }}

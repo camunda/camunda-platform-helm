@@ -1,22 +1,17 @@
-# OIDC auth configuration for 8.10 (Entra ID)
-# Layer 2: Auth method - External OIDC provider (Microsoft Entra)
-
 global:
   annotations:
-    keycloak-token-url: "https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/token"
+    keycloak-token-url: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/token
   elasticsearch:
     enabled: true
-  host: "$CAMUNDA_HOSTNAME"
+  host: $CAMUNDA_HOSTNAME
   ingress:
     enabled: true
     className: nginx
     tls:
       enabled: true
-      # A wildcard certificate will be used.
-      
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
-      external-dns.alpha.kubernetes.io/ttl: "60"
+      external-dns.alpha.kubernetes.io/hostname: '{{ .Values.global.host }}'
+      external-dns.alpha.kubernetes.io/ttl: '60'
   security:
     authentication:
       method: oidc
@@ -29,28 +24,28 @@ global:
       jwksUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
       authUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/authorize
       publicIssuerUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
-      type: "MICROSOFT"
+      type: MICROSOFT
       orchestration:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
-        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
+        redirectUrl: https://{{ .Values.global.host }}/orchestration
       identity:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
-        secret: 
+        secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
         initialClaimValue: $ENTRA_APP_OBJECT_ID
-        redirectUrl: "https://{{ .Values.global.host }}/identity"
+        redirectUrl: https://{{ .Values.global.host }}/identity
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
-        redirectUrl: "https://{{ .Values.global.host }}/optimize"
+        redirectUrl: https://{{ .Values.global.host }}/optimize
       connectors:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
@@ -64,7 +59,7 @@ global:
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         publicApiAudience: $ENTRA_APP_CLIENT_ID
-        redirectUrl: "https://{{ .Values.global.host }}/modeler"
+        redirectUrl: https://{{ .Values.global.host }}/modeler
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
         clientId: $ENTRA_APP_CLIENT_ID
@@ -73,14 +68,7 @@ global:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
-        redirectUrl: "https://{{ .Values.global.host }}/"
-
-camundaHub:
-  console:
-    env:
-      - name: CAMUNDA_IDENTITY_JWKS_URL
-        value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
-
+        redirectUrl: https://{{ .Values.global.host }}/
 connectors:
   security:
     authentication:
@@ -92,40 +80,39 @@ connectors:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
-
 orchestration:
   security:
     authentication:
       unprotectedApi: false
       oidc:
         backwardsCompatibleAudiences:
-          - operate-api
-          - tasklist-api
-          - zeebe-api
+        - operate-api
+        - tasklist-api
+        - zeebe-api
         usernameClaim: oid
-        groupsClaim: ""
+        groupsClaim: ''
     authorizations:
       enabled: true
   env:
-    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
-      value: "false"
-    # Mapping rules for OIDC (Entra ID) - these override base-qa.yaml mapping rules
-    # because Helm replaces arrays, so this orchestration.env replaces base-qa.yaml's entirely.
-    # In Entra v2.0 tokens, the application (client) ID is in the "azp" claim,
-    # not "client_id" (which Keycloak uses). The value is the app's GUID.
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "azp"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: "$VENOM_CLIENT_ID"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "azp"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "$ENTRA_APP_CLIENT_ID"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "connectors-client-mapping-rule"
+  - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+    value: 'false'
+  - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+    value: venom-client-mapping-rule
+  - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+    value: azp
+  - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+    value: $VENOM_CLIENT_ID
+  - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+    value: connectors-client-mapping-rule
+  - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+    value: azp
+  - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+    value: $ENTRA_APP_CLIENT_ID
+  - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+    value: venom-client-mapping-rule
+  - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+    value: connectors-client-mapping-rule
+console:
+  env:
+  - name: CAMUNDA_IDENTITY_JWKS_URL
+    value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys

@@ -1,84 +1,48 @@
-# Auth0 OIDC configuration for 8.10
-# Layer 2: Auth method - External OIDC provider (Auth0)
-#
-# Per-component clientIds and the OIDC client_secrets are provisioned at runtime
-# by 'deploy-camunda auth0 ensure-clients'. That command:
-#   1. Creates 6 first-party Auth0 clients named "<namespace>-<component>" via
-#      the Management API (4 confidential: identity, orchestration, optimize,
-#      connectors; 2 SPA: Web Modeler, Console).
-#   2. Grants each confidential client access to AUTH0_AUDIENCE.
-#   3. Writes a K8s secret "client-secret-for-components" with keys
-#      auth0-{identity,orchestration,optimize,connectors}.
-# The matrix runner injects AUTH0_<COMPONENT>_CLIENT_ID env vars per-entry, so
-# the same scenario file works for parallel CI runs against distinct clients.
-#
-# Tenant prerequisites (one-time setup, NOT done by ensure-clients):
-#   - An API ("resource server") whose Identifier matches AUTH0_AUDIENCE
-#     (default: distribution-team-oidc) must exist in the tenant.
-#   - A Post-Login Action that adds the user's email to both ID and access
-#     tokens under "https://camunda.com/claims/email" must be in the
-#     post-login flow. Suggested code:
-#       exports.onExecutePostLogin = async (event, api) => {
-#         const ns = 'https://camunda.com/claims/';
-#         if (event.user.email) {
-#           api.idToken.setCustomClaim(ns + 'email', event.user.email);
-#           api.accessToken.setCustomClaim(ns + 'email', event.user.email);
-#         }
-#       };
-#     Without this Action, Identity bootstrap and orchestration usernameClaim
-#     resolution will both fail (the standard `email` claim is NOT in Auth0
-#     access tokens by default).
-
 global:
   elasticsearch:
     enabled: true
-  host: "$CAMUNDA_HOSTNAME"
+  host: $CAMUNDA_HOSTNAME
   ingress:
     enabled: true
     className: nginx
     tls:
       enabled: true
-      # A wildcard certificate will be used.
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
-      external-dns.alpha.kubernetes.io/ttl: "60"
+      external-dns.alpha.kubernetes.io/hostname: '{{ .Values.global.host }}'
+      external-dns.alpha.kubernetes.io/ttl: '60'
   security:
     authentication:
       method: oidc
   identity:
     auth:
       enabled: true
-      type: "GENERIC"
-      # AUTH0_ISSUER_URL is injected WITHOUT a trailing slash. Issuer-only
-      # fields explicitly append `/` to match Auth0's canonical iss-claim
-      # form ("https://tenant/"); path-bearing URLs append `/<path>` and so
-      # avoid the `//` that earlier double-slashed concatenation produced.
-      issuer: "$AUTH0_ISSUER_URL/"
-      issuerBackendUrl: "$AUTH0_ISSUER_URL/"
-      publicIssuerUrl: "$AUTH0_ISSUER_URL/"
-      tokenUrl: "$AUTH0_ISSUER_URL/oauth/token"
-      jwksUrl: "$AUTH0_ISSUER_URL/.well-known/jwks.json"
-      authUrl: "$AUTH0_ISSUER_URL/authorize"
+      type: GENERIC
+      issuer: $AUTH0_ISSUER_URL/
+      issuerBackendUrl: $AUTH0_ISSUER_URL/
+      publicIssuerUrl: $AUTH0_ISSUER_URL/
+      tokenUrl: $AUTH0_ISSUER_URL/oauth/token
+      jwksUrl: $AUTH0_ISSUER_URL/.well-known/jwks.json
+      authUrl: $AUTH0_ISSUER_URL/authorize
       identity:
         clientId: $AUTH0_IDENTITY_CLIENT_ID
         audience: $AUTH0_AUDIENCE
         initialClaimName: https://camunda.com/claims/email
         initialClaimValue: $AUTH0_INITIAL_ADMIN_EMAIL
-        redirectUrl: "https://{{ .Values.global.host }}/identity"
+        redirectUrl: https://{{ .Values.global.host }}/identity
         secret:
           existingSecret: client-secret-for-components
           existingSecretKey: auth0-identity
       orchestration:
         clientId: $AUTH0_ORCHESTRATION_CLIENT_ID
         audience: $AUTH0_AUDIENCE
-        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
+        redirectUrl: https://{{ .Values.global.host }}/orchestration
         secret:
           existingSecret: client-secret-for-components
           existingSecretKey: auth0-orchestration
       optimize:
         clientId: $AUTH0_OPTIMIZE_CLIENT_ID
         audience: $AUTH0_AUDIENCE
-        redirectUrl: "https://{{ .Values.global.host }}/optimize"
+        redirectUrl: https://{{ .Values.global.host }}/optimize
         secret:
           existingSecret: client-secret-for-components
           existingSecretKey: auth0-optimize
@@ -92,18 +56,12 @@ global:
         clientId: $AUTH0_WEB_MODELER_CLIENT_ID
         clientApiAudience: $AUTH0_AUDIENCE
         publicApiAudience: $AUTH0_AUDIENCE
-        redirectUrl: "https://{{ .Values.global.host }}/modeler"
+        redirectUrl: https://{{ .Values.global.host }}/modeler
       console:
-        wellKnown: "$AUTH0_ISSUER_URL/.well-known/openid-configuration"
+        wellKnown: $AUTH0_ISSUER_URL/.well-known/openid-configuration
         clientId: $AUTH0_CONSOLE_CLIENT_ID
         audience: $AUTH0_AUDIENCE
-        redirectUrl: "https://{{ .Values.global.host }}/"
-
-# Identity + WebModeler external DBs point at the `postgresql` companion chart
-# (internal-postgresql) deployed via the scenario's `postgresql` profile. The
-# bundled Bitnami subcharts (identityKeycloak/identityPostgresql/
-# webModelerPostgresql) were dropped from 8.10 in #6146; setting their `enabled`
-# keys now trips the keyRemoved constraint in templates/common/constraints.tpl.
+        redirectUrl: https://{{ .Values.global.host }}/
 identity:
   externalDatabase:
     enabled: true
@@ -113,7 +71,6 @@ identity:
     username: $RDBMS_POSTGRESQL_USERNAME
     secret:
       inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
-
 webModeler:
   restapi:
     externalDatabase:
@@ -124,7 +81,6 @@ webModeler:
       username: $RDBMS_POSTGRESQL_USERNAME
       secret:
         inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
-
 connectors:
   security:
     authentication:
@@ -134,36 +90,19 @@ connectors:
         secret:
           existingSecret: client-secret-for-components
           existingSecretKey: auth0-connectors
-
-# Pusher key/secret refs are overridden onto client-secret-for-components.
-# Reasoning:
-#   - base.yaml defaults pusher.{client.,}secret.existingSecret to
-#     "integration-test-credentials" (CI's vault-backed shared secret), but
-#     the auth0 flow already manages a per-namespace secret —
-#     client-secret-for-components — and ensure-clients writes the
-#     webmodeler-pusher-app-{key,secret} keys into it (they have to exist
-#     somewhere; the chart's auto-gen path in secret-shared.yaml is gated on
-#     .Values.webModeler.enabled, which is false in 8.10's camundaHub
-#     consolidation, so the chart can't auto-gen for us).
-#   - This keeps the auth0 scenario self-contained: every key it depends on
-#     either lives in integration-test-credentials (postgres passwords, CI
-#     vault-managed) or in client-secret-for-components (auth0 client_secrets
-#     + pusher, runtime-managed by ensure-clients).
 camundaHub:
-  webModeler:
-    security:
-      authentication:
-        method: oidc
-    restapi:
-      pusher:
+  security:
+    authentication:
+      method: oidc
+  restapi:
+    pusher:
+      secret:
+        existingSecret: client-secret-for-components
+        existingSecretKey: webmodeler-pusher-app-secret
+      client:
         secret:
           existingSecret: client-secret-for-components
-          existingSecretKey: webmodeler-pusher-app-secret
-        client:
-          secret:
-            existingSecret: client-secret-for-components
-            existingSecretKey: webmodeler-pusher-app-key
-
+          existingSecretKey: webmodeler-pusher-app-key
 orchestration:
   security:
     authentication:
@@ -172,27 +111,24 @@ orchestration:
       oidc:
         clientId: $AUTH0_ORCHESTRATION_CLIENT_ID
         audience: $AUTH0_AUDIENCE
-        # Auth0 puts the calling client_id under the standard "azp" claim on
-        # both user-flow and M2M tokens — no Auth0 Action needed for client_id.
-        # For email, see the Action snippet at the top of this file.
         clientIdClaim: azp
         usernameClaim: https://camunda.com/claims/email
         preferUsernameClaim: true
-        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
+        redirectUrl: https://{{ .Values.global.host }}/orchestration
         secret:
           existingSecret: client-secret-for-components
           existingSecretKey: auth0-orchestration
         backwardsCompatibleAudiences:
-          - operate-api
-          - tasklist-api
-          - zeebe-api
+        - operate-api
+        - tasklist-api
+        - zeebe-api
     authorizations:
       enabled: true
     initialization:
       defaultRoles:
         admin:
           users:
-            - $AUTH0_INITIAL_ADMIN_EMAIL
+          - $AUTH0_INITIAL_ADMIN_EMAIL
         connectors:
           clients:
-            - $AUTH0_CONNECTORS_CLIENT_ID
+          - $AUTH0_CONNECTORS_CLIENT_ID

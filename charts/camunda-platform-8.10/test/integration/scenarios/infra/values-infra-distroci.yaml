@@ -1,6 +1,3 @@
-# GKE distroci nodes need nodeSelector and tolerations config.
-
-# Auth.
 identity:
   nodeSelector:
     workload: distroci
@@ -9,10 +6,8 @@ identity:
     key: workload
     operator: Equal
     value: distroci
-
-# Camunda Hub.
 camundaHub:
-  console:
+  restapi:
     nodeSelector:
       workload: distroci
     tolerations:
@@ -20,23 +15,14 @@ camundaHub:
       key: workload
       operator: Equal
       value: distroci
-  webModeler:
-    restapi:
-      nodeSelector:
-        workload: distroci
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: distroci
-    websockets:
-      nodeSelector:
-        workload: distroci
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: distroci
+  websockets:
+    nodeSelector:
+      workload: distroci
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: distroci
 connectors:
   nodeSelector:
     workload: distroci
@@ -69,9 +55,6 @@ optimize:
     key: workload
     operator: Equal
     value: distroci
-
-
-# Zeebe.
 orchestration:
   nodeSelector:
     workload: distroci
@@ -88,4 +71,11 @@ zeebeGateway:
     key: workload
     operator: Equal
     value: distroci
-
+console:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci

@@ -214,12 +214,12 @@ func (s *CamundaHubShimTemplateTest) TestDoubleEnableRendersSingleWebModelerWork
 
 func (s *CamundaHubShimTemplateTest) TestCamundaHubValuesTakePrecedenceOverLegacyValues() {
 	values := map[string]string{
-		"camundaHub.enabled":                             "true",
-		"camundaHub.webModeler.restapi.replicas":         "3",
-		"camundaHub.webModeler.restapi.mail.fromAddress": "hub@example.com",
-		"webModeler.enabled":                             "true",
-		"webModeler.restapi.replicas":                    "1",
-		"webModeler.restapi.mail.fromAddress":            "legacy@example.com",
+		"camundaHub.enabled":                  "true",
+		"camundaHub.restapi.replicas":         "3",
+		"camundaHub.restapi.mail.fromAddress": "hub@example.com",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.replicas":         "1",
+		"webModeler.restapi.mail.fromAddress": "legacy@example.com",
 	}
 	output, err := s.renderWebModelerRestAPI(values)
 	s.Require().NoError(err)
@@ -244,8 +244,8 @@ func (s *CamundaHubShimTemplateTest) TestLegacyOnlyValuesStillApply() {
 
 func (s *CamundaHubShimTemplateTest) TestFalsyCamundaHubOverrideDoesNotOverrideTruthyLegacyValue() {
 	values := map[string]string{
-		"camundaHub.enabled": "true",
-		"camundaHub.webModeler.restapi.readinessProbe.enabled": "false",
+		"camundaHub.enabled":                        "true",
+		"camundaHub.restapi.readinessProbe.enabled": "false",
 		"webModeler.enabled":                        "true",
 		"webModeler.restapi.readinessProbe.enabled": "true",
 		"webModeler.restapi.mail.fromAddress":       "example@example.com",

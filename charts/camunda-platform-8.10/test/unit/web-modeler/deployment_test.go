@@ -69,11 +69,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerOverrideAppName",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.nameOverride":             "foo",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.nameOverride":             "foo",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -85,11 +85,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverrideAppFullname",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.fullnameOverride":         "foo",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.fullnameOverride":         "foo",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -101,11 +101,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":          "example@example.com",
-				"camundaHub.webModeler." + s.component + ".podLabels.foo": "bar",
-				"global.elasticsearch.enabled":                            "true",
+				"identity.enabled":                             "true",
+				"webModeler.enabled":                           "true",
+				"camundaHub.restapi.mail.fromAddress":          "example@example.com",
+				"camundaHub." + s.component + ".podLabels.foo": "bar",
+				"global.elasticsearch.enabled":                 "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -117,12 +117,12 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":               "example@example.com",
-				"camundaHub.webModeler." + s.component + ".podAnnotations.foo": "bar",
-				"camundaHub.webModeler." + s.component + ".podAnnotations.foz": "baz",
-				"global.elasticsearch.enabled":                                 "true",
+				"identity.enabled":                                  "true",
+				"webModeler.enabled":                                "true",
+				"camundaHub.restapi.mail.fromAddress":               "example@example.com",
+				"camundaHub." + s.component + ".podAnnotations.foo": "bar",
+				"camundaHub." + s.component + ".podAnnotations.foz": "baz",
+				"global.elasticsearch.enabled":                      "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -146,11 +146,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"global.annotations.foo":                         "bar",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"global.annotations.foo":              "bar",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -162,14 +162,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":             "example@example.com",
-				"global.image.registry":                                      "global.custom.registry.io",
-				"camundaHub.webModeler.image.registry":                       "subchart.custom.registry.io",
-				"camundaHub.webModeler.image.tag":                            "snapshot",
-				"camundaHub.webModeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
-				"global.elasticsearch.enabled":                               "true",
+				"identity.enabled":                                "true",
+				"webModeler.enabled":                              "true",
+				"camundaHub.restapi.mail.fromAddress":             "example@example.com",
+				"global.image.registry":                           "global.custom.registry.io",
+				"camundaHub.image.registry":                       "subchart.custom.registry.io",
+				"camundaHub.image.tag":                            "snapshot",
+				"camundaHub." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
+				"global.elasticsearch.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -182,14 +182,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameGlobalRegistry",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":             "example@example.com",
-				"global.image.registry":                                      "global.custom.registry.io",
-				"camundaHub.webModeler.image.registry":                       "",
-				"camundaHub.webModeler.image.tag":                            "snapshot",
-				"camundaHub.webModeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
-				"global.elasticsearch.enabled":                               "true",
+				"identity.enabled":                                "true",
+				"webModeler.enabled":                              "true",
+				"camundaHub.restapi.mail.fromAddress":             "example@example.com",
+				"global.image.registry":                           "global.custom.registry.io",
+				"camundaHub.image.registry":                       "",
+				"camundaHub.image.tag":                            "snapshot",
+				"camundaHub." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
+				"global.elasticsearch.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -202,11 +202,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsGlobal",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"global.image.pullSecrets[0].name":               "SecretName",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"global.image.pullSecrets[0].name":    "SecretName",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -218,13 +218,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":  "example@example.com",
-				"global.image.pullSecrets[0].name":                "SecretName",
-				"camundaHub.webModeler.image.pullSecrets[0].name": "SecretNameSubChart",
-				"camundaHub.webModeler.image.tag":                 "snapshot",
-				"global.elasticsearch.enabled":                    "true",
+				"identity.enabled":                     "true",
+				"webModeler.enabled":                   "true",
+				"camundaHub.restapi.mail.fromAddress":  "example@example.com",
+				"global.image.pullSecrets[0].name":     "SecretName",
+				"camundaHub.image.pullSecrets[0].name": "SecretNameSubChart",
+				"camundaHub.image.tag":                 "snapshot",
+				"global.elasticsearch.enabled":         "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -238,8 +238,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":   "true",
 				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.image.repository":         "camunda/custom-web-modeler",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.image.repository":         "camunda/custom-web-modeler",
 				"global.elasticsearch.enabled":                   "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -249,11 +249,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTag",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.image.tag":                "a.b.c",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.image.tag":                "a.b.c",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -268,11 +268,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.image.tag":                "a.b.c",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.image.tag":                "a.b.c",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -287,11 +287,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetContainerCommand",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":       "example@example.com",
-				"camundaHub.webModeler." + s.component + ".command[0]": "printenv",
-				"global.elasticsearch.enabled":                         "true",
+				"identity.enabled":                          "true",
+				"webModeler.enabled":                        "true",
+				"camundaHub.restapi.mail.fromAddress":       "example@example.com",
+				"camundaHub." + s.component + ".command[0]": "printenv",
+				"global.elasticsearch.enabled":              "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -306,21 +306,21 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumes",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                                  "example@example.com",
-				"camundaHub.webModeler." + s.component + ".extraVolumes[0].name":                  "extraVolume",
-				"camundaHub.webModeler." + s.component + ".extraVolumes[0].configMap.name":        "otherConfigMap",
-				"camundaHub.webModeler." + s.component + ".extraVolumes[0].configMap.defaultMode": "744",
-				"global.elasticsearch.enabled":                                                    "true",
+				"identity.enabled":                                                     "true",
+				"webModeler.enabled":                                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                                  "example@example.com",
+				"camundaHub." + s.component + ".extraVolumes[0].name":                  "extraVolume",
+				"camundaHub." + s.component + ".extraVolumes[0].configMap.name":        "otherConfigMap",
+				"camundaHub." + s.component + ".extraVolumes[0].configMap.defaultMode": "744",
+				"global.elasticsearch.enabled":                                         "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
 				optionsBefore := &helm.Options{
 					SetValues: map[string]string{
-						"webModeler.enabled":                             "true",
-						"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-						"global.elasticsearch.enabled":                   "true",
+						"webModeler.enabled":                  "true",
+						"camundaHub.restapi.mail.fromAddress": "example@example.com",
+						"global.elasticsearch.enabled":        "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
@@ -343,20 +343,20 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumeMounts",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                           "example@example.com",
-				"camundaHub.webModeler." + s.component + ".extraVolumeMounts[0].name":      "otherConfigMap",
-				"camundaHub.webModeler." + s.component + ".extraVolumeMounts[0].mountPath": "/usr/local/config",
-				"global.elasticsearch.enabled":                                             "true",
+				"identity.enabled":                                              "true",
+				"webModeler.enabled":                                            "true",
+				"camundaHub.restapi.mail.fromAddress":                           "example@example.com",
+				"camundaHub." + s.component + ".extraVolumeMounts[0].name":      "otherConfigMap",
+				"camundaHub." + s.component + ".extraVolumeMounts[0].mountPath": "/usr/local/config",
+				"global.elasticsearch.enabled":                                  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				optionsBefore := &helm.Options{
 					SetValues: map[string]string{
-						"webModeler.enabled":                             "true",
-						"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-						"global.elasticsearch.enabled":                   "true",
+						"webModeler.enabled":                  "true",
+						"camundaHub.restapi.mail.fromAddress": "example@example.com",
+						"global.elasticsearch.enabled":        "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
@@ -381,11 +381,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetServiceAccountName",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.serviceAccount.name":      "accName",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.serviceAccount.name":      "accName",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -398,11 +398,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                         "example@example.com",
-				"camundaHub.webModeler." + s.component + ".podSecurityContext.runAsUser": "1000",
-				"global.elasticsearch.enabled":                                           "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub." + s.component + ".podSecurityContext.runAsUser": "1000",
+				"global.elasticsearch.enabled":                                "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -415,11 +415,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSecurityContext",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                                "example@example.com",
-				"camundaHub.webModeler." + s.component + ".containerSecurityContext.privileged": "true",
-				"global.elasticsearch.enabled":                                                  "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub." + s.component + ".containerSecurityContext.privileged": "true",
+				"global.elasticsearch.enabled":                                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -433,12 +433,12 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 			Name: "TestContainerSetNodeSelector",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                  "example@example.com",
-				"camundaHub.webModeler." + s.component + ".nodeSelector.disktype": "ssd",
-				"camundaHub.webModeler." + s.component + ".nodeSelector.cputype":  "arm",
-				"global.elasticsearch.enabled":                                    "true",
+				"identity.enabled":                                     "true",
+				"webModeler.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "example@example.com",
+				"camundaHub." + s.component + ".nodeSelector.disktype": "ssd",
+				"camundaHub." + s.component + ".nodeSelector.cputype":  "arm",
+				"global.elasticsearch.enabled":                         "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -470,17 +470,17 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//		   - another-node-label-value
 			Name: "TestContainerSetAffinity",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
-				"camundaHub.webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+				"camundaHub." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
 				"global.elasticsearch.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -517,14 +517,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//  effect: "NoSchedule"
 			Name: "TestContainerSetTolerations",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                    "example@example.com",
-				"camundaHub.webModeler." + s.component + ".tolerations[0].key":      "key1",
-				"camundaHub.webModeler." + s.component + ".tolerations[0].operator": "Equal",
-				"camundaHub.webModeler." + s.component + ".tolerations[0].value":    "Value1",
-				"camundaHub.webModeler." + s.component + ".tolerations[0].effect":   "NoSchedule",
-				"global.elasticsearch.enabled":                                      "true",
+				"identity.enabled":                                       "true",
+				"webModeler.enabled":                                     "true",
+				"camundaHub.restapi.mail.fromAddress":                    "example@example.com",
+				"camundaHub." + s.component + ".tolerations[0].key":      "key1",
+				"camundaHub." + s.component + ".tolerations[0].operator": "Equal",
+				"camundaHub." + s.component + ".tolerations[0].value":    "Value1",
+				"camundaHub." + s.component + ".tolerations[0].effect":   "NoSchedule",
+				"global.elasticsearch.enabled":                           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -543,11 +543,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldOverwriteGlobalImagePullPolicy",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"global.image.pullPolicy":                        "Always",
-				"global.elasticsearch.enabled":                   "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"global.image.pullPolicy":             "Always",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -563,16 +563,16 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerStartupProbe",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                             "example@example.com",
-				"camundaHub.webModeler." + s.component + ".startupProbe.enabled":             "true",
-				"camundaHub.webModeler." + s.component + ".startupProbe.initialDelaySeconds": "5",
-				"camundaHub.webModeler." + s.component + ".startupProbe.periodSeconds":       "10",
-				"camundaHub.webModeler." + s.component + ".startupProbe.successThreshold":    "1",
-				"camundaHub.webModeler." + s.component + ".startupProbe.failureThreshold":    "5",
-				"camundaHub.webModeler." + s.component + ".startupProbe.timeoutSeconds":      "1",
-				"global.elasticsearch.enabled":                                               "true",
+				"identity.enabled":                                                "true",
+				"webModeler.enabled":                                              "true",
+				"camundaHub.restapi.mail.fromAddress":                             "example@example.com",
+				"camundaHub." + s.component + ".startupProbe.enabled":             "true",
+				"camundaHub." + s.component + ".startupProbe.initialDelaySeconds": "5",
+				"camundaHub." + s.component + ".startupProbe.periodSeconds":       "10",
+				"camundaHub." + s.component + ".startupProbe.successThreshold":    "1",
+				"camundaHub." + s.component + ".startupProbe.failureThreshold":    "5",
+				"camundaHub." + s.component + ".startupProbe.timeoutSeconds":      "1",
+				"global.elasticsearch.enabled":                                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -590,16 +590,16 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerReadinessProbe",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                               "example@example.com",
-				"camundaHub.webModeler." + s.component + ".readinessProbe.enabled":             "true",
-				"camundaHub.webModeler." + s.component + ".readinessProbe.initialDelaySeconds": "5",
-				"camundaHub.webModeler." + s.component + ".readinessProbe.periodSeconds":       "10",
-				"camundaHub.webModeler." + s.component + ".readinessProbe.successThreshold":    "1",
-				"camundaHub.webModeler." + s.component + ".readinessProbe.failureThreshold":    "5",
-				"camundaHub.webModeler." + s.component + ".readinessProbe.timeoutSeconds":      "1",
-				"global.elasticsearch.enabled":                                                 "true",
+				"identity.enabled":                                                  "true",
+				"webModeler.enabled":                                                "true",
+				"camundaHub.restapi.mail.fromAddress":                               "example@example.com",
+				"camundaHub." + s.component + ".readinessProbe.enabled":             "true",
+				"camundaHub." + s.component + ".readinessProbe.initialDelaySeconds": "5",
+				"camundaHub." + s.component + ".readinessProbe.periodSeconds":       "10",
+				"camundaHub." + s.component + ".readinessProbe.successThreshold":    "1",
+				"camundaHub." + s.component + ".readinessProbe.failureThreshold":    "5",
+				"camundaHub." + s.component + ".readinessProbe.timeoutSeconds":      "1",
+				"global.elasticsearch.enabled":                                      "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -617,16 +617,16 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerLivenessProbe",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                              "example@example.com",
-				"camundaHub.webModeler." + s.component + ".livenessProbe.enabled":             "true",
-				"camundaHub.webModeler." + s.component + ".livenessProbe.initialDelaySeconds": "5",
-				"camundaHub.webModeler." + s.component + ".livenessProbe.periodSeconds":       "10",
-				"camundaHub.webModeler." + s.component + ".livenessProbe.successThreshold":    "1",
-				"camundaHub.webModeler." + s.component + ".livenessProbe.failureThreshold":    "5",
-				"camundaHub.webModeler." + s.component + ".livenessProbe.timeoutSeconds":      "1",
-				"global.elasticsearch.enabled":                                                "true",
+				"identity.enabled":                                                 "true",
+				"webModeler.enabled":                                               "true",
+				"camundaHub.restapi.mail.fromAddress":                              "example@example.com",
+				"camundaHub." + s.component + ".livenessProbe.enabled":             "true",
+				"camundaHub." + s.component + ".livenessProbe.initialDelaySeconds": "5",
+				"camundaHub." + s.component + ".livenessProbe.periodSeconds":       "10",
+				"camundaHub." + s.component + ".livenessProbe.successThreshold":    "1",
+				"camundaHub." + s.component + ".livenessProbe.failureThreshold":    "5",
+				"camundaHub." + s.component + ".livenessProbe.timeoutSeconds":      "1",
+				"global.elasticsearch.enabled":                                     "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -644,13 +644,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerExtraConfigurationCreatesVolumeMount",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":               "example@example.com",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].file":     "testFile",
-				"camundaHub.webModeler.restapi.extraConfiguration[0].content":  "this is a test",
-				"camundaHub.webModeler.websockets.extraConfiguration.testFile": "this is a test",
-				"global.elasticsearch.enabled":                                 "true",
+				"identity.enabled":                                  "true",
+				"webModeler.enabled":                                "true",
+				"camundaHub.restapi.mail.fromAddress":               "example@example.com",
+				"camundaHub.restapi.extraConfiguration[0].file":     "testFile",
+				"camundaHub.restapi.extraConfiguration[0].content":  "this is a test",
+				"camundaHub.websockets.extraConfiguration.testFile": "this is a test",
+				"global.elasticsearch.enabled":                      "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -676,11 +676,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPusherSecretRefIsUsed",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress":                "example@example.com",
-				"camundaHub.webModeler.restapi.pusher.secret.existingSecret":    "web-modeler-custom-secret",
-				"camundaHub.webModeler.restapi.pusher.secret.existingSecretKey": "custom-password",
+				"identity.enabled":                                   "true",
+				"webModeler.enabled":                                 "true",
+				"camundaHub.restapi.mail.fromAddress":                "example@example.com",
+				"camundaHub.restapi.pusher.secret.existingSecret":    "web-modeler-custom-secret",
+				"camundaHub.restapi.pusher.secret.existingSecretKey": "custom-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

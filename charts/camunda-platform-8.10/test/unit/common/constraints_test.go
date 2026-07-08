@@ -226,14 +226,14 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 		{
 			Name: "TestPusherSecretConstraintDoesNotListSecretsSetUnderCamundaHubKeys",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"camundaHub.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
-				"camundaHub.webModeler.restapi.pusher.secret.existingSecretKey":        "secret-key",
-				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
-				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":                 "error",
+				"identity.enabled":                                          "true",
+				"camundaHub.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"camundaHub.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
+				"camundaHub.restapi.pusher.secret.existingSecretKey":        "secret-key",
+				"camundaHub.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
+				"camundaHub.restapi.pusher.client.secret.existingSecretKey": "client-key",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":      "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				if err != nil {
