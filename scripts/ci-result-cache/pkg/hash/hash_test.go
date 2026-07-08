@@ -158,7 +158,7 @@ func TestCompute_WorkflowFilesIncluded(t *testing.T) {
 	}
 }
 
-func TestCompute_DeployerAndCorePackagesIncluded(t *testing.T) {
+func TestCompute_DeployCamundaAndCorePackagesIncluded(t *testing.T) {
 	for _, pkg := range []string{
 		filepath.Join("scripts", "deploy-camunda"),
 		filepath.Join("scripts", "camunda-core"),

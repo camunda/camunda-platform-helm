@@ -308,10 +308,8 @@ debug "Command: $PREPARE_HELM_VALUES ${PREPARE_ARGS[*]}"
 
 "$PREPARE_HELM_VALUES" "${PREPARE_ARGS[@]}"
 
-success "Helm values prepared successfully"
-
 success "Helm values prepared. Use the deploy-camunda CLI to deploy."
-info "Deployment details:"
+info "Prepared values details:"
 info "  Namespace: $NAMESPACE"
 info "  Release: $RELEASE"
 info "  Realm: $REALM_NAME"
