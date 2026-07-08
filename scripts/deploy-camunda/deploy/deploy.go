@@ -13,9 +13,9 @@ import (
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
+	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/pkg/deployer"
 	"scripts/deploy-camunda/pkg/types"
-	"scripts/deploy-camunda/config"
 )
 
 // runFailFastPreflight runs the secrets/env preflight before a deploy and
