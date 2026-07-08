@@ -171,12 +171,12 @@
                         },
                         "httpSectionName": {
                             "type": "string",
-                            "description": "can be used to override the parentRefs sectionName on HTTPRoutes.",
+                            "description": "can be used to override the parentRefs sectionName on HTTPRoutes. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to http/https, so only set this for an externally-managed Gateway.",
                             "default": ""
                         },
                         "grpcSectionName": {
                             "type": "string",
-                            "description": "can be used to override the parentRefs sectionName on the GRPCRoute.",
+                            "description": "can be used to override the parentRefs sectionName on the GRPCRoute. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to grpc/grpcs, so only set this for an externally-managed Gateway.",
                             "default": ""
                         },
                         "tls": {
@@ -184,7 +184,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.",
+                                    "description": "if true, configures the Gateway listener for HTTPS (on global.gateway.tls.port, default 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.",
                                     "default": false
                                 },
                                 "secretName": {

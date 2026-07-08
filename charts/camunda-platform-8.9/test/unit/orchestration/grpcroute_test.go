@@ -247,6 +247,23 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "sectionName: h2c")
 			},
 		},
+		{
+			Name: "TestGRPCRouteCustomSectionNameOverridesTLS",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+				"global.gateway.tls.enabled":         "true",
+				"global.gateway.grpcSectionName":     "h2c",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "sectionName: h2c")
+				require.NotContains(t, output, "sectionName: grpcs")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

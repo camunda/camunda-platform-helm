@@ -305,13 +305,13 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				"global.gateway.createGatewayResource": "true",
 				"global.host":                          "camunda.example.com",
 				"global.gateway.tls.enabled":           "false",
-				"global.gateway.port":                  "8000",
+				"global.gateway.port":                  "9000",
 				"orchestration.gateway.grpc.enabled":   "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "port: 8000")
-				require.NotContains(t, output, "port: 80\n")
+				require.Contains(t, output, "port: 9000")
+				require.NotContains(t, output, "port: 80")
 			},
 		},
 	}

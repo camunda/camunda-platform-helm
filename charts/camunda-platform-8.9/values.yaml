@@ -131,9 +131,9 @@ global:
     className: nginx
     ## @param global.gateway.port defines the port of the plaintext Gateway listeners.
     port: 80
-    ## @param global.gateway.httpSectionName can be used to override the parentRefs sectionName on HTTPRoutes.
+    ## @param global.gateway.httpSectionName can be used to override the parentRefs sectionName on HTTPRoutes. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to http/https, so only set this for an externally-managed Gateway.
     httpSectionName: ""
-    ## @param global.gateway.grpcSectionName can be used to override the parentRefs sectionName on the GRPCRoute.
+    ## @param global.gateway.grpcSectionName can be used to override the parentRefs sectionName on the GRPCRoute. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to grpc/grpcs, so only set this for an externally-managed Gateway.
     grpcSectionName: ""
     ## @param global.gateway.labels [object] can be used to define labels which will be applied to the global HTTP gateway resource
     labels: {}

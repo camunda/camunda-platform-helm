@@ -130,9 +130,9 @@ global:
     className: nginx
     ## @param global.gateway.port defines the port of the plaintext Gateway listeners.
     port: 80
-    ## @param global.gateway.httpSectionName can be used to override the parentRefs sectionName on HTTPRoutes.
+    ## @param global.gateway.httpSectionName can be used to override the parentRefs sectionName on HTTPRoutes. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to http/https, so only set this for an externally-managed Gateway.
     httpSectionName: ""
-    ## @param global.gateway.grpcSectionName can be used to override the parentRefs sectionName on the GRPCRoute.
+    ## @param global.gateway.grpcSectionName can be used to override the parentRefs sectionName on the GRPCRoute. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to grpc/grpcs, so only set this for an externally-managed Gateway.
     grpcSectionName: ""
     ## @param global.gateway.labels [object] labels added to the Gateway and all Route resources.
     labels: {}
@@ -140,7 +140,7 @@ global:
     annotations: {}
     ## @extra global.gateway.tls TLS configuration for the Gateway listener. See https://kubernetes.io/docs/concepts/services-networking/gateway/#tls
     tls:
-      ## @param global.gateway.tls.enabled if true, configures the Gateway listener for HTTPS (port 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.
+      ## @param global.gateway.tls.enabled if true, configures the Gateway listener for HTTPS (on global.gateway.tls.port, default 443) and sets sectionName: https on HTTPRoutes and sectionName: grpcs on GRPCRoutes. Requires global.gateway.tls.secretName to be set.
       enabled: false
       ## @param global.gateway.tls.secretName name of the Kubernetes Secret containing the TLS certificate and private key.
       secretName: camunda-platform
