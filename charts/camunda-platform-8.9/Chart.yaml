@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.6.0
+version: 14.6.1
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -74,13 +74,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Source vendor-ee Bitnami images from the published datasource"
     - kind: fixed
-      description: "Remove obsolete backup.webapps workaround when RDBMS is enabled"
+      description: "Repair failing scheduled workflows for docs links, lychee, and values-latest"
     - kind: fixed
-      description: "Align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10"
+      description: "Fail clearly when an image override has an empty tag and no digest"
     - kind: fixed
-      description: "Configure index replicas for the legacy Zeebe ES/OS exporter"
-    - kind: fixed
-      description: "Cover keys shipped by default values.yaml across 8.8/8.9/8.10"
+      description: "Surface deprecation warnings on the gitops render path"
