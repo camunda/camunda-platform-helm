@@ -58,6 +58,14 @@ jobs:
           go vet ./...
           go test ./...
 
+
+      - name: auto-approve-gate — vet + test
+        # Gates the auto-approve security logic (allowlist + protected-path matching).
+        working-directory: scripts/auto-approve-gate
+        run: |
+          go vet ./...
+          go test ./...
+
       - name: validate-values-schema — vet + test
         working-directory: scripts/validate-values-schema
         run: |
