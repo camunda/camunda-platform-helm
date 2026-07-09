@@ -413,6 +413,15 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+  {{- $con := default (dict) .Values.console }}
+  {{- if gt (len (keys (omit $con "enabled"))) 0 }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: console.* configuration keys have no effect in 8.10 — Console has been consolidated into Camunda Hub."
+        "Remove them; \"console.enabled\" still toggles the in-Modeler Console feature, and Console runs inside Web Modeler (configure via camundaHub.* / webModeler.* where applicable)."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
   {{ include "camundaPlatform.keyDeprecated" (dict
     "condition" (hasKey .Values.global.identity.auth "console")
     "oldName" "global.identity.auth.console"
