@@ -7746,6 +7746,117 @@ entries:
     version: 13.0.0-alpha2
   - annotations:
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "Repair failing scheduled workflows for docs links, lychee, and values-latest"
+        - kind: fixed
+          description: "Surface deprecation warnings on the gitops render path"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/bitnamilegacy/elasticsearch:8.17.4
+        docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+        docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+        docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+        docker.io/camunda/connectors-bundle:8.7.22
+        docker.io/camunda/console:8.7.106
+        docker.io/camunda/identity:8.7.22
+        docker.io/camunda/operate:8.7.35
+        docker.io/camunda/optimize:8.7.25
+        docker.io/camunda/tasklist:8.7.35
+        docker.io/camunda/web-modeler-restapi:8.7.24
+        docker.io/camunda/web-modeler-webapp:8.7.24
+        docker.io/camunda/web-modeler-websockets:8.7.24
+        docker.io/camunda/zeebe:8.7.35
+        registry.camunda.cloud/camunda/keycloak:26.3.3
+      camunda.io/component-image-versions: |
+        zeebe: 8.7.35
+        operate: 8.7.35
+        tasklist: 8.7.35
+        identity: 8.7.22
+        optimize: 8.7.25
+        webModeler: 8.7.24
+        connectors: 8.7.22
+        console: 8.7.106
+      camunda.io/helmCLIVersion: 3.20.2
+      camunda.io/imageOverrides: |
+        zeebe: 8.7.35
+        operate: 8.7.35
+        tasklist: 8.7.35
+        console: 8.7.106
+        modeler: 8.7.24
+        connectors: 8.7.22
+        optimize: 8.7.25
+        identity: 8.7.22
+    apiVersion: v2
+    appVersion: 8.7.x
+    created: "2026-07-09T09:38:19.389134847Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: ca9378c6aebd3894a6e7ac691510c9bf4503679e48049a5fce098d4664e38ddf
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: eamonn.moloney@camunda.com
+      name: eamonnmoloney
+    - email: ian.wang@camunda.com
+      name: Ian-wang-liyang
+    - email: immanuel.monma@camunda.com
+      name: hisImminence
+    - email: balazs.kenez@camunda.com
+      name: bkenez
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.7-12.13.1/camunda-platform-12.13.1.tgz
+    version: 12.13.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Source vendor-ee Bitnami images from the published datasource"
       artifacthub.io/containsSecurityUpdates: "false"
@@ -30114,4 +30225,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-07-09T08:35:03.270127611Z"
+generated: "2026-07-09T09:38:19.390291625Z"
