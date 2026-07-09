@@ -4,6 +4,109 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Deprecate app-config proxy keys in favor of extraConfiguration"
+        - kind: added
+          description: "Adjust modeler cluster defaults for console migration"
+        - kind: added
+          description: "Rename cluster config types webModelerWebApp→hub, orchestrationIdentity→admin"
+        - kind: fixed
+          description: "Harden caBundle truststore init container for air-gapped & OpenShift"
+        - kind: fixed
+          description: "Support Orchestration gRPC TLS endpoints"
+        - kind: fixed
+          description: "Trust caBundle CA in console via NODE_EXTRA_CA_CERTS + CRLF-safe init"
+        - kind: fixed
+          description: "Remove obsolete backup.webapps workaround when RDBMS is enabled"
+        - kind: fixed
+          description: "Align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10"
+        - kind: fixed
+          description: "Configure index replicas for the legacy Zeebe ES/OS exporter"
+        - kind: fixed
+          description: "Cover keys shipped by default values.yaml across 8.8/8.9/8.10"
+        - kind: fixed
+          description: "Back Web Modeler restapi /tmp with a per-pod ephemeral volume"
+        - kind: fixed
+          description: "Complete Camunda Hub consolidation deprecations for console/webModeler"
+        - kind: fixed
+          description: "Fail clearly when an image override has an empty tag and no digest"
+        - kind: fixed
+          description: "Surface deprecation warnings on the gitops render path"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/chart-images: |
+        docker.io/camunda/camunda:8.10.0-alpha3
+        docker.io/camunda/connectors-bundle:8.10.0-alpha3
+        docker.io/camunda/hub-websockets:8.10.0-alpha3
+        docker.io/camunda/hub:8.10.0-alpha3
+        docker.io/camunda/identity:8.10.0-alpha3
+        docker.io/camunda/optimize:8.10.0-alpha3
+      camunda.io/component-image-versions: |
+        camunda: 8.10.0-alpha3
+        managementIdentity: 8.10.0-alpha3
+        optimize: 8.10.0-alpha3
+        webModeler: 8.10.0-alpha3
+        connectors: 8.10.0-alpha3
+        console: N/A
+      camunda.io/helmCLIVersion: 4.2.2
+      camunda.io/imageOverrides: |
+        orchestration: 8.10.0-alpha3
+        console: 8.10.0-alpha3
+        modeler: 8.10.0-alpha3
+        connectors: 8.10.0-alpha3
+        optimize: 8.10.0-alpha3
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-07-09T08:35:03.269117859Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: b8c5d8b17cb45fa2b4a9fe31b0a188a4fd0943e0d5a10c84d5af0e7be980b301
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: eamonn.moloney@camunda.com
+      name: eamonnmoloney
+    - email: ian.wang@camunda.com
+      name: Ian-wang-liyang
+    - email: immanuel.monma@camunda.com
+      name: hisImminence
+    - email: balazs.kenez@camunda.com
+      name: bkenez
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.0.0-alpha3/camunda-platform-15.0.0-alpha3.tgz
+    version: 15.0.0-alpha3
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Fail early when Helm CLI < v4 is used with chart 15.x"
         - kind: added
           description: "Add orchestration.hostNetwork value"
@@ -30011,4 +30114,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-07-08T16:16:28.471938803Z"
+generated: "2026-07-09T08:35:03.270127611Z"
