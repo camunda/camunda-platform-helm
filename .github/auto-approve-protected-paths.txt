@@ -24,3 +24,6 @@
 ^\.github/copilot-instructions\.md$
 ^\.github/instructions/
 ^\.github/escalation-policy\.md$
+
+# --- Auto-approve gate implementation ---
+^scripts/auto-approve-gate/

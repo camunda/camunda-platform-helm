@@ -11,3 +11,4 @@
 # --- Chart public API Renovate never legitimately edits ---
 ^charts/.+/values\.schema(\.extra)?\.json$
 ^charts/.+/constraints\.tpl$
+^scripts/auto-approve-gate/
