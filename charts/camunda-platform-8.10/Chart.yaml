@@ -78,6 +78,8 @@ annotations:
     - kind: changed
       description: "Remove inert console app-config-proxy deprecation warnings; Console is consolidated into Camunda Hub and these keys have no effect."
     - kind: changed
+      description: "Warn once when any console.* configuration key other than enabled is set; Console is consolidated into Camunda Hub and these keys have no effect."
+    - kind: changed
       description: "Warn when the removed global.identity.auth.console.* keys are set; configure Console auth via the web-modeler client instead."
     - kind: fixed
       description: "Update image tags to 8.10.0-alpha1"
