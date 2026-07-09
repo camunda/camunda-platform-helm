@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+---
+name: "Chart - Notify Values Migrator"
+
+# Fires the camunda/helm-values-migrator rolling release-train (release-train.yml,
+# repository_dispatch) whenever a chart release is published here AND its
+# values.yaml / values.schema.json changed since the previous release on the
+# same chart line. Pins the migrator's regen to this exact release commit
+# instead of upstream main. Does not touch the migrator's semver channel.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+env:
+  VAULT_DISTRO_CI_PATH: secret/data/products/distribution/ci
+
+jobs:
+  dispatch:
+    # Only stable chart releases (skip non-chart tags/releases and prereleases).
+    if: startsWith(github.event.release.tag_name, 'camunda-platform-') && github.event.release.prerelease == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release commit + previous tag on this chart line
+        id: rel
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-list -n1 "$TAG")"
+          # Tag shape: camunda-platform-{appVersion}-{chartVersion}, e.g.
+          # camunda-platform-8.8-13.4.0 -> prefix camunda-platform-8.8
+          PREFIX="$(echo "$TAG" | sed -E 's/^(camunda-platform-[0-9]+\.[0-9]+)-.*/\1/')"
+          PREV="$(git tag -l "${PREFIX}-*" --sort=-v:refname | grep -v "^${TAG}$" | head -1 || true)"
+          echo "sha=$SHA"     >> "$GITHUB_OUTPUT"
+          echo "prefix=$PREFIX" >> "$GITHUB_OUTPUT"
+          echo "prev=$PREV"   >> "$GITHUB_OUTPUT"
+
+      - name: Gate on values change
+        id: diff
+        run: |
+          set -euo pipefail
+          if [ -z "${{ steps.rel.outputs.prev }}" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --quiet "${{ steps.rel.outputs.prev }}" "${{ steps.rel.outputs.sha }}" \
+               -- 'charts/camunda-platform-*/values.yaml' 'charts/camunda-platform-*/values.schema.json'; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true"  >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import distro-ci App creds from Vault
+        if: steps.diff.outputs.changed == 'true'
+        id: vault
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            ${{ env.VAULT_DISTRO_CI_PATH }} GH_APP_ID_DISTRO_CI;
+            ${{ env.VAULT_DISTRO_CI_PATH }} GH_APP_PRIVATE_KEY_DISTRO_CI;
+
+      - name: Generate cross-repo token
+        if: steps.diff.outputs.changed == 'true'
+        id: token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        with:
+          app_id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Dispatch release-train with the release commit
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          SHA: ${{ steps.rel.outputs.sha }}
+          CHART_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh api repos/camunda/helm-values-migrator/dispatches \
+            -f event_type=release-train \
+            -f "client_payload[sha]=${SHA}" \
+            -f "client_payload[chart_tag]=${CHART_TAG}"
