@@ -57,6 +57,8 @@ annotations:
       description: "Adjust modeler cluster defaults for console migration"
     - kind: added
       description: "Rename cluster config types webModelerWebApp→hub, orchestrationIdentity→admin"
+    - kind: changed
+      description: "Remove inert console app-config-proxy deprecation warnings; Console is consolidated into Camunda Hub and these keys have no effect."
     - kind: fixed
       description: "Harden caBundle truststore init container for air-gapped & OpenShift"
     - kind: fixed
