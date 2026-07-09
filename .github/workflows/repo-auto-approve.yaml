@@ -38,37 +38,37 @@ jobs:
           if [[ "$AUTHOR" == "renovate[bot]" ]]; then
             lane="renovate"
             allowed=true
+            protected_file=".github/auto-approve-protected-paths-renovate.txt"
+          elif [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
+            allowed=true
           fi
-          if [[ "$lane" == "human" ]]; then
-            if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
-              allowed=true
-            fi
+          if [[ "$allowed" == "true" ]]; then
             pats=$(grep -vE '^\s*(#|$)' "$protected_file" 2>/dev/null || true)
-            if [[ "$allowed" == "true" && -z "$pats" ]]; then
+            if [[ -z "$pats" ]]; then
               echo "::warning::protected-paths list missing/empty; requiring human review."
               allowed=false
             fi
+          fi
+          if [[ "$allowed" == "true" ]]; then
+            cf=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.changed_files') || {
+              echo "::warning::Could not read PR metadata; requiring human review."; allowed=false; cf=0; }
+            if [[ "$allowed" == "true" && "$cf" -ge 3000 ]]; then
+              echo "::warning::PR changes ${cf} files (>=3000 API cap); requiring human review."
+              allowed=false
+            fi
             if [[ "$allowed" == "true" ]]; then
-              cf=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.changed_files') || {
-                echo "::warning::Could not read PR metadata; requiring human review."; allowed=false; cf=0; }
-              if [[ "$allowed" == "true" && "$cf" -ge 3000 ]]; then
-                echo "::warning::PR changes ${cf} files (>=3000 API cap); requiring human review."
+              if ! files=$(gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)'); then
+                echo "::warning::Could not list PR files; requiring human review."
                 allowed=false
-              fi
-              if [[ "$allowed" == "true" ]]; then
-                if ! files=$(gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)'); then
-                  echo "::warning::Could not list PR files; requiring human review."
+              else
+                match_rc=0
+                printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' | grep -qE -f <(printf '%s\n' "$pats") || match_rc=$?
+                if [[ "$match_rc" -eq 0 ]]; then
+                  echo "::notice::PR touches a protected path; human review is required."
                   allowed=false
-                else
-                  match_rc=0
-                  printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' | grep -qE -f <(printf '%s\n' "$pats") || match_rc=$?
-                  if [[ "$match_rc" -eq 0 ]]; then
-                    echo "::notice::PR touches a protected path; human review is required."
-                    allowed=false
-                  elif [[ "$match_rc" -ge 2 ]]; then
-                    echo "::warning::protected-path check errored (rc=${match_rc}); requiring human review."
-                    allowed=false
-                  fi
+                elif [[ "$match_rc" -ge 2 ]]; then
+                  echo "::warning::protected-path check errored (rc=${match_rc}); requiring human review."
+                  allowed=false
                 fi
               fi
             fi
