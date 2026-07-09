@@ -23,68 +23,22 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check author against allowlist
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: scripts/auto-approve-gate/go.mod
+          cache: false
+
+      - name: Check author and changed files
         id: check
         env:
-          AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           EVENT_ACTOR: ${{ github.actor }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          list=".github/auto-approve-allowlist.txt"
-          protected_file=".github/auto-approve-protected-paths.txt"
-          allowed=false
-          lane="human"
-          if [[ "$AUTHOR" == "renovate[bot]" ]]; then
-            lane="renovate"
-            allowed=true
-            protected_file=".github/auto-approve-protected-paths-renovate.txt"
-            case "$EVENT_ACTOR" in
-              "renovate[bot]"|"distro-ci[bot]") ;;
-              *)
-                echo "::warning::event actor ${EVENT_ACTOR} is not a trusted renovate-lane pusher; requiring human review."
-                allowed=false
-                ;;
-            esac
-          elif [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
-            allowed=true
-          fi
-          if [[ "$allowed" == "true" ]]; then
-            pats=$(grep -vE '^\s*(#|$)' "$protected_file" 2>/dev/null || true)
-            if [[ -z "$pats" ]]; then
-              echo "::warning::protected-paths list missing/empty; requiring human review."
-              allowed=false
-            fi
-          fi
-          if [[ "$allowed" == "true" ]]; then
-            cf=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.changed_files') || {
-              echo "::warning::Could not read PR metadata; requiring human review."; allowed=false; cf=0; }
-            if [[ "$allowed" == "true" && "$cf" -ge 3000 ]]; then
-              echo "::warning::PR changes ${cf} files (>=3000 API cap); requiring human review."
-              allowed=false
-            fi
-            if [[ "$allowed" == "true" ]]; then
-              if ! files=$(gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)'); then
-                echo "::warning::Could not list PR files; requiring human review."
-                allowed=false
-              else
-                match_rc=0
-                printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' | grep -qE -f <(printf '%s\n' "$pats") || match_rc=$?
-                if [[ "$match_rc" -eq 0 ]]; then
-                  echo "::notice::PR touches a protected path; human review is required."
-                  allowed=false
-                elif [[ "$match_rc" -ge 2 ]]; then
-                  echo "::warning::protected-path check errored (rc=${match_rc}); requiring human review."
-                  allowed=false
-                fi
-              fi
-            fi
-          fi
-          echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
-          echo "lane=$lane" >> "$GITHUB_OUTPUT"
-          echo "::notice::author=$AUTHOR lane=$lane allowlisted=$allowed"
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        working-directory: scripts/auto-approve-gate
+        run: go run .
 
       - name: Import Vault secrets
         if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'human' }}
@@ -157,4 +111,3 @@ jobs:
               -f event="DISMISS"
             echo "::notice::dismissed stale bot approval ${id}"
           done
-
