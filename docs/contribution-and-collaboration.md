@@ -156,6 +156,7 @@ Guardrails:
 
 - **Approve-only** — the bot never merges; branch protection (required status checks, stale-review dismissal) still gates merge.
 - **Privileged & public-API paths always need a human** — any PR whose commits touch a CI-privileged path (`.github/workflows/`, `.github/actions/`, `CODEOWNERS`, the allowlist) or a chart's public API (`values.yaml`, `values.schema.json`, `constraints.tpl`; chart `test/` fixtures excluded) is never auto-approved. The exact set lives in [`.github/auto-approve-protected-paths.txt`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/auto-approve-protected-paths.txt).
+- **Renovate PRs use a narrower protected set** — `renovate[bot]`-authored PRs are auto-approved on every push but may never touch the approval trust machinery (the allowlist, the protected-path lists, the auto-approve workflow, `CODEOWNERS`), per [`.github/auto-approve-protected-paths-renovate.txt`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/auto-approve-protected-paths-renovate.txt). Renovate's routine changes (workflow action pins, chart image tags) remain governed by the `renovate.json5` automerge policy.
 - **Fail-closed** — if the workflow cannot determine what a PR changed, it does not approve.
 
 Adding or removing allowlist entries requires a normal human-reviewed PR.

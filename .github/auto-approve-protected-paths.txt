@@ -9,6 +9,7 @@
 ^\.github/CODEOWNERS$
 ^\.github/auto-approve-allowlist\.txt$
 ^\.github/auto-approve-protected-paths\.txt$
+^\.github/auto-approve-protected-paths-renovate\.txt$
 
 # --- Chart public API (the user-facing contract) ---
 ^charts/.+/values\.yaml$
