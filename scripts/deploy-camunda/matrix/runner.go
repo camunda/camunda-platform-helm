@@ -22,11 +22,11 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-core/pkg/versionmatrix"
-	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/entra"
+	"scripts/deploy-camunda/pkg/deployer"
 	"scripts/prepare-helm-values/pkg/env"
 )
 

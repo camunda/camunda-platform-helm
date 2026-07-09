@@ -83,7 +83,6 @@ KEYCLOAK_EXT_PROTOCOL="${KEYCLOAK_EXT_PROTOCOL:-https}"
 
 # Binary paths
 PREPARE_HELM_VALUES="${PREPARE_HELM_VALUES:-$SCRIPT_DIR/prepare-helm-values/prepare-helm-values}"
-CAMUNDA_DEPLOYER="${CAMUNDA_DEPLOYER:-$SCRIPT_DIR/camunda-deployer/camunda-deployer}"
 
 # --- Helper functions ---
 print_usage() {
@@ -236,7 +235,7 @@ fi
 CHART_PATH="$(cd "$CHART_PATH" && pwd)"
 
 # Check binaries exist
-for binary in "$PREPARE_HELM_VALUES" "$CAMUNDA_DEPLOYER"; do
+for binary in "$PREPARE_HELM_VALUES"; do
   if [[ ! -x "$binary" ]]; then
     error "Binary not found or not executable: $binary"
     exit 1
@@ -282,7 +281,7 @@ if [[ -n "$KEYCLOAK_EXT_HOST" ]]; then
   info "  ${KEYCLOAK_PROTOCOL_VAR}=${KEYCLOAK_EXT_PROTOCOL}"
 fi
 # --- Step 1: Prepare Helm values ---
-info "Step 1/2: Preparing Helm values with prepare-helm-values..."
+info "Preparing Helm values with prepare-helm-values..."
 
 # Build prepare-helm-values arguments
 PREPARE_ARGS=(
@@ -309,41 +308,8 @@ debug "Command: $PREPARE_HELM_VALUES ${PREPARE_ARGS[*]}"
 
 "$PREPARE_HELM_VALUES" "${PREPARE_ARGS[@]}"
 
-success "Helm values prepared successfully"
-
-# --- Step 2: Deploy with camunda-deployer ---
-info "Step 2/2: Deploying with camunda-deployer..."
-
-DEPLOYER_ARGS=(
-  --chart "$CHART_PATH"
-  --namespace "$NAMESPACE"
-  --release "$RELEASE"
-  --scenario "$SCENARIO"
-  --auth "$AUTH"
-  --scenario-dir "$TEMP_VALUES_DIR"
-  --platform "$PLATFORM"
-  --repo-root "$REPO_ROOT"
-  --log-level "$LOG_LEVEL"
-  --load-keycloak-realm
-  --keycloak-realm-name "$REALM_NAME"
-  --flow "$FLOW"
-)
-
-# Add boolean flags
-if [[ "$SKIP_DEPENDENCY_UPDATE" == "true" ]]; then
-  DEPLOYER_ARGS+=(--skip-dependency-update)
-fi
-
-if [[ "$EXTERNAL_SECRETS_ENABLED" == "true" ]]; then
-  DEPLOYER_ARGS+=(--external-secrets-enabled)
-fi
-
-debug "Command: $CAMUNDA_DEPLOYER ${DEPLOYER_ARGS[*]}"
-
-"$CAMUNDA_DEPLOYER" "${DEPLOYER_ARGS[@]}"
-
-success "Deployment completed successfully!"
-info "Deployment details:"
+success "Helm values prepared. Use the deploy-camunda CLI to deploy."
+info "Prepared values details:"
 info "  Namespace: $NAMESPACE"
 info "  Release: $RELEASE"
 info "  Realm: $REALM_NAME"

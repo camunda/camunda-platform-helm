@@ -13,7 +13,6 @@ require (
 	golang.org/x/term v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
 	scripts/camunda-core v0.0.0
-	scripts/camunda-deployer v0.0.0
 	scripts/prepare-helm-values v0.0.0
 	scripts/vault-secret-mapper v0.0.0
 )
@@ -80,8 +79,6 @@ require (
 )
 
 replace scripts/camunda-core => ../camunda-core
-
-replace scripts/camunda-deployer => ../camunda-deployer
 
 replace scripts/prepare-helm-values => ../prepare-helm-values
 
