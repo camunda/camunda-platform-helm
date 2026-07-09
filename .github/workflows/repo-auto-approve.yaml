@@ -10,7 +10,7 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   auto-approve:
@@ -35,43 +35,51 @@ jobs:
           list=".github/auto-approve-allowlist.txt"
           protected_file=".github/auto-approve-protected-paths.txt"
           allowed=false
-          if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
+          lane="human"
+          if [[ "$AUTHOR" == "renovate[bot]" ]]; then
+            lane="renovate"
             allowed=true
           fi
-          pats=$(grep -vE '^\s*(#|$)' "$protected_file" 2>/dev/null || true)
-          if [[ "$allowed" == "true" && -z "$pats" ]]; then
-            echo "::warning::protected-paths list missing/empty; requiring human review."
-            allowed=false
-          fi
-          if [[ "$allowed" == "true" ]]; then
-            cf=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.changed_files') || {
-              echo "::warning::Could not read PR metadata; requiring human review."; allowed=false; cf=0; }
-            if [[ "$allowed" == "true" && "$cf" -ge 3000 ]]; then
-              echo "::warning::PR changes ${cf} files (>=3000 API cap); requiring human review."
+          if [[ "$lane" == "human" ]]; then
+            if [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
+              allowed=true
+            fi
+            pats=$(grep -vE '^\s*(#|$)' "$protected_file" 2>/dev/null || true)
+            if [[ "$allowed" == "true" && -z "$pats" ]]; then
+              echo "::warning::protected-paths list missing/empty; requiring human review."
               allowed=false
             fi
             if [[ "$allowed" == "true" ]]; then
-              if ! files=$(gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)'); then
-                echo "::warning::Could not list PR files; requiring human review."
+              cf=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.changed_files') || {
+                echo "::warning::Could not read PR metadata; requiring human review."; allowed=false; cf=0; }
+              if [[ "$allowed" == "true" && "$cf" -ge 3000 ]]; then
+                echo "::warning::PR changes ${cf} files (>=3000 API cap); requiring human review."
                 allowed=false
-              else
-                match_rc=0
-                printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' | grep -qE -f <(printf '%s\n' "$pats") || match_rc=$?
-                if [[ "$match_rc" -eq 0 ]]; then
-                  echo "::notice::PR touches a protected path; human review is required."
+              fi
+              if [[ "$allowed" == "true" ]]; then
+                if ! files=$(gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)'); then
+                  echo "::warning::Could not list PR files; requiring human review."
                   allowed=false
-                elif [[ "$match_rc" -ge 2 ]]; then
-                  echo "::warning::protected-path check errored (rc=${match_rc}); requiring human review."
-                  allowed=false
+                else
+                  match_rc=0
+                  printf '%s\n' "$files" | grep -vE '^charts/[^/]+/test/' | grep -qE -f <(printf '%s\n' "$pats") || match_rc=$?
+                  if [[ "$match_rc" -eq 0 ]]; then
+                    echo "::notice::PR touches a protected path; human review is required."
+                    allowed=false
+                  elif [[ "$match_rc" -ge 2 ]]; then
+                    echo "::warning::protected-path check errored (rc=${match_rc}); requiring human review."
+                    allowed=false
+                  fi
                 fi
               fi
             fi
           fi
           echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
-          echo "::notice::author=$AUTHOR allowlisted=$allowed"
+          echo "lane=$lane" >> "$GITHUB_OUTPUT"
+          echo "::notice::author=$AUTHOR lane=$lane allowlisted=$allowed"
 
       - name: Import Vault secrets
-        if: ${{ steps.check.outputs.allowed == 'true' }}
+        if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'human' }}
         id: vault-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
@@ -85,15 +93,15 @@ jobs:
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
 
       - name: Generate distro-ci token
-        if: ${{ steps.check.outputs.allowed == 'true' }}
+        if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'human' }}
         id: app-token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         with:
           app_id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
-      - name: Approve PR
-        if: ${{ steps.check.outputs.allowed == 'true' }}
+      - name: Approve PR (allowlisted author)
+        if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'human' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR: ${{ github.event.pull_request.number }}
@@ -108,3 +116,20 @@ jobs:
             exit 0
           fi
           gh pr review "$PR" --approve --body "Auto-approved: author is on .github/auto-approve-allowlist.txt."
+
+      - name: Approve PR (renovate)
+        if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'renovate' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          approved=$(gh api "repos/${REPO}/pulls/${PR}/reviews" \
+            --jq "[.[] | select(.user.login==\"github-actions[bot]\" and .commit_id==\"${SHA}\" and .state==\"APPROVED\")] | length")
+          if [[ "$approved" -gt 0 ]]; then
+            echo "::notice::Already approved by github-actions for ${SHA}; skipping."
+            exit 0
+          fi
+          gh pr review "$PR" --approve --body "Auto-approved: Renovate PR (re-approved on every push)."
