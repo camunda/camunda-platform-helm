@@ -39,8 +39,10 @@ deployments:
     # --- Required -----------------------------------------------------------
     namespace: camunda                       # CHANGE-ME: k8s namespace to deploy into
     release: camunda                         # Helm release name
-    chartPath: charts/camunda-platform-8.10  # Latest stable chart. Bump when
-                                             # upgrading Camunda 8 versions.
+    chartPath: charts/camunda-platform-8.9   # Latest chart on standard support.
+                                             # (8.10 is currently on `alpha:` in
+                                             # charts/chart-versions.yaml.)
+                                             # Bump when upgrading Camunda 8 versions.
 
     # --- Cluster access -----------------------------------------------------
     # kubectl context to use. Run `kubectl config current-context` to find
