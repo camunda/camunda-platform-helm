@@ -1550,3 +1550,87 @@ Release highlights.
 - Please refer to the official docs for more details.
 https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-890-8100/
 {{- end -}}
+
+{{- /*
+NOTE: resolves the effective value of a deprecated app-config-proxy key, letting its
+migration target (supplied through a spring-imported <component>.extraConfiguration file)
+override it. Same transitional gating as orchestration.camundaExporterEnabled: the
+deprecated key is the fallback and is removed in chart v16 (8.11). Later extraConfiguration
+entries win; entries with springImport: false are skipped. "path" is the key list to dig in
+each parsed file (keys may themselves contain dots, e.g. "io.camunda.optimize"). Keys match
+literally on nested map keys: flat dotted keys ("camunda.document.x: y"), relaxed-binding
+camelCase, and keys outside the first YAML document are not matched, so the migration file
+must use the nested YAML form. Non-scalar (map/list) and null nodes are ignored and the
+deprecated default is kept; whole-number floats render as integers.
+Usage:
+{{ include "camundaPlatform.effectiveExtraConfigValue" (dict
+  "default" (.Values.optimize.logLevel)
+  "extraConfiguration" .Values.optimize.extraConfiguration
+  "path" (list "logging" "level" "io.camunda.optimize")
+) }}
+*/ -}}
+{{- define "camundaPlatform.effectiveExtraConfigValue" -}}
+{{- $value := .default -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- $node := $parsed -}}
+      {{- $found := true -}}
+      {{- range $key := $.path -}}
+        {{- if and $found (kindIs "map" $node) (hasKey $node $key) -}}
+          {{- $node = index $node $key -}}
+        {{- else -}}
+          {{- $found = false -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
+        {{- if and (kindIs "float64" $node) (eq $node (floor $node)) -}}
+          {{- $value = (int64 $node) -}}
+        {{- else -}}
+          {{- $value = $node -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $value -}}
+{{- end -}}
+
+{{- /*
+NOTE: reports "true" when a spring-imported <component>.extraConfiguration file sets the
+given key path (any subkey counts). Used to gate chart-rendered env that would otherwise
+shadow the migration target — e.g. suppress the -documentstore-env-vars envFrom for a
+component that owns document config via camunda.document.* in its extraConfiguration.
+Because any subkey matches, the whole -documentstore-env-vars envFrom is dropped, so a
+component that supplies any camunda.document.* via extraConfiguration owns all of its
+document config (default store id, per-store class/bucket, region). Keys match literally on
+nested map keys (see effectiveExtraConfigValue for the accepted YAML form).
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasPath" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "document"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasPath" -}}
+{{- $found := "" -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- $node := $parsed -}}
+      {{- $ok := true -}}
+      {{- range $key := $.path -}}
+        {{- if and $ok (kindIs "map" $node) (hasKey $node $key) -}}
+          {{- $node = index $node $key -}}
+        {{- else -}}
+          {{- $ok = false -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if $ok -}}
+        {{- $found = "true" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}

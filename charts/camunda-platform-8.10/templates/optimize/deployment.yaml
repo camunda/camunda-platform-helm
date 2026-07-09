@@ -125,7 +125,7 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
-            {{- if .Values.global.identity.auth.enabled }}
+            {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
             - mountPath: /optimize/config/application-ccsm.yaml
               subPath: application-ccsm.yaml
               name: environment-config
@@ -216,7 +216,7 @@ spec:
             {{- end }}
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
-              value: {{ .Values.optimize.profiles | default "ccsm" | quote }}
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.profiles | default "ccsm") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "spring" "profiles" "active")) | quote }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
@@ -227,20 +227,20 @@ spec:
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
               value: "true"
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
-              value: {{ .Values.optimize.caches.cloudTenantAuthorizations.maxSize | default "10000" | quote }}
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.caches.cloudTenantAuthorizations.maxSize | default "10000") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "camunda" "optimize" "caches" "cloud-tenant-authorizations" "max-size")) | quote }}
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
-              value: {{ .Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | default "600000" | quote }}
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | default "600000") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "camunda" "optimize" "caches" "cloud-tenant-authorizations" "min-fetch-interval-seconds")) | quote }}
             {{- end }}
             {{- if or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
             - name: OPTIMIZE_LOG_LEVEL
-              value: {{ .Values.optimize.logLevel | quote }}
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.logLevel "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "logging" "level" "io.camunda.optimize")) | quote }}
             - name: UPGRADE_LOG_LEVEL
-              value: {{ .Values.optimize.upgradeLogLevel | quote }}
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.upgradeLogLevel "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "logging" "level" "io.camunda.optimize.upgrade")) | quote }}
             - name: ES_LOG_LEVEL
-              value: {{ .Values.optimize.esLogLevel | quote }}
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.esLogLevel "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "logging" "level" "org.elasticsearch")) | quote }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
@@ -263,15 +263,20 @@ spec:
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- $documentStoreEnvFrom := ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "camunda" "document"))) "true" }}
+          {{- if or .Values.global.identity.auth.enabled $documentStoreEnvFrom .Values.optimize.envFrom }}
           envFrom:
           {{- if .Values.global.identity.auth.enabled }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
+          {{- if $documentStoreEnvFrom }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- end }}
           {{- if .Values.optimize.envFrom -}}
            {{ .Values.optimize.envFrom | toYaml | nindent 12 }}
+          {{- end }}
           {{- end }}
           {{- if .Values.optimize.command }}
           command: {{ toYaml .Values.optimize.command | nindent 10 }}
@@ -329,7 +334,7 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
-            {{- if .Values.global.identity.auth.enabled }}
+            {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
             - mountPath: /optimize/config/application-ccsm.yaml
               subPath: application-ccsm.yaml
               name: environment-config

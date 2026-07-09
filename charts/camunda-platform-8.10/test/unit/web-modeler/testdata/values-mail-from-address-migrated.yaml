@@ -1,0 +1,18 @@
+# from-address migrated to restapi.extraConfiguration (camunda.modeler.mail.from-address);
+# the deprecated webModeler.restapi.mail.fromAddress is left unset. The chart-rendered
+# from-address must be omitted (so the imported file wins) and helm install must not fail.
+identity:
+  enabled: true
+global:
+  elasticsearch:
+    enabled: true
+webModeler:
+  enabled: true
+  restapi:
+    extraConfiguration:
+      - file: mail.yaml
+        content: |
+          camunda:
+            modeler:
+              mail:
+                from-address: migrated@example.com

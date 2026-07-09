@@ -1109,3 +1109,55 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfigurationMigration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestFromAddressRequiredWhenUnsetAndNotMigrated",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"webModeler.enabled":           "true",
+				"global.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "webModeler.restapi.mail.fromAddress' is required",
+					"a fresh install with no from-address anywhere must fail fast, not render an incomplete config")
+			},
+		},
+		{
+			Name: "TestFromAddressMigratedViaExtraConfiguration",
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-mail-from-address-migrated.yaml"),
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().NotContains(applicationYaml, "from-address:",
+					"from-address must be omitted so the imported extraConfiguration file supplies it")
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/mail.yaml",
+					"extraConfiguration file must be imported")
+			},
+		},
+		{
+			Name: "TestDeprecatedFromAddressStillRenders",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"global.elasticsearch.enabled":        "true",
+				"webModeler.restapi.mail.fromAddress": "deprecated@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "from-address: \"deprecated@example.com\"",
+					"the deprecated key must still render its value when set")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

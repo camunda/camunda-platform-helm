@@ -1,0 +1,13 @@
+# A scalar where the exporter helper expects a map on its lookup path
+# (camunda.data.secondary-storage). The helper must tolerate this and fall back to the
+# default instead of aborting the whole render (sprig dig panics on a scalar intermediate).
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  extraConfiguration:
+    - file: camunda-exporter.yaml
+      content: |
+        camunda:
+          data:
+            secondary-storage: elasticsearch

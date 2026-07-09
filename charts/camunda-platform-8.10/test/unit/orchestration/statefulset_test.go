@@ -1143,3 +1143,43 @@ func (s *StatefulSetTest) TestJKSDoesNotFireForSecondaryStorageOnlyTLS() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *StatefulSetTest) TestDocumentStoreEnvFromGatedByExtraConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestEnvFromSuppressedWhenCamundaDocumentInExtraConfiguration",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-documentstore-via-extraconfig.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				for _, ef := range statefulSet.Spec.Template.Spec.Containers[0].EnvFrom {
+					if ef.ConfigMapRef != nil {
+						s.Require().NotContains(ef.ConfigMapRef.Name, "documentstore-env-vars",
+							"documentstore envFrom must be suppressed when camunda.document is set via extraConfiguration")
+					}
+				}
+				// When the only envFrom entry is suppressed, the whole envFrom key must be
+				// omitted rather than rendered as `envFrom:`/`envFrom: null` (invalid under
+				// a strict schema). Unmarshalling can't tell null from omitted, so assert on
+				// the raw manifest that the key is absent for this orchestration-only render.
+				s.Require().NotContains(output, "envFrom:",
+					"envFrom key must be omitted when it would be empty, not rendered as null")
+			},
+		},
+		{
+			Name: "TestEnvFromPresentWithoutCamundaDocument",
+			Values: map[string]string{
+				"orchestration.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-documentstore-env-vars",
+					"documentstore envFrom must remain when camunda.document is not set via extraConfiguration")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

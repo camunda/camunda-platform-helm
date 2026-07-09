@@ -155,11 +155,16 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- $documentStoreEnvFrom := ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" .Values.identity.extraConfiguration "path" (list "camunda" "document"))) "true" }}
+          {{- if or $documentStoreEnvFrom .Values.identity.envFrom }}
           envFrom:
+          {{- if $documentStoreEnvFrom }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- end }}
           {{- if .Values.identity.envFrom }}
             {{- .Values.identity.envFrom | toYaml | nindent 12 }}
+          {{- end }}
           {{- end }}
           {{- if .Values.identity.command}}
           command: {{ toYaml .Values.identity.command | nindent 10 }}

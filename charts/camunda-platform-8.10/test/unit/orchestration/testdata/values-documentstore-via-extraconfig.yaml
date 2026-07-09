@@ -1,0 +1,13 @@
+# camunda.document.* supplied via orchestration.extraConfiguration: the shadowing
+# -documentstore-env-vars envFrom must be suppressed so the extraConfiguration wins.
+orchestration:
+  enabled: true
+  extraConfiguration:
+    - file: document-store.yaml
+      content: |
+        camunda:
+          document:
+            default-store-id: s3main
+            aws:
+              s3main:
+                bucket-name: my-bucket

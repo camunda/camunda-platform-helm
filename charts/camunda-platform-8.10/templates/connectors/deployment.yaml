@@ -82,15 +82,20 @@ spec:
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
+          {{- $documentStoreEnvFrom := ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" .Values.connectors.extraConfiguration "path" (list "camunda" "document"))) "true" }}
+          {{- if or .Values.global.identity.auth.enabled $documentStoreEnvFrom .Values.connectors.envFrom }}
           envFrom:
           {{- if .Values.global.identity.auth.enabled }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
           {{- end }}
+          {{- if $documentStoreEnvFrom }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- end }}
           {{- if .Values.connectors.envFrom -}}
             {{ .Values.connectors.envFrom | toYaml | nindent 12 }}
+          {{- end }}
           {{- end }}
           {{- if .Values.connectors.command}}
           command: {{ toYaml .Values.connectors.command | nindent 12 }}
