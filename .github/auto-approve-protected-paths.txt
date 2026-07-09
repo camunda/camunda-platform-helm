@@ -15,3 +15,6 @@
 ^charts/.+/values\.yaml$
 ^charts/.+/values\.schema(\.extra)?\.json$
 ^charts/.+/constraints\.tpl$
+
+# --- Auto-approve gate implementation ---
+^scripts/auto-approve-gate/

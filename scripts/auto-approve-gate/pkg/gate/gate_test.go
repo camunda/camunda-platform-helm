@@ -36,12 +36,14 @@ var defaultProtected = []string{
 	`^charts/.+/values\.yaml$`,
 	`^charts/.+/values\.schema(\.extra)?\.json$`,
 	`^charts/.+/constraints\.tpl$`,
+	`^scripts/auto-approve-gate/`,
 }
 
 var defaultRenovateProtected = []string{
 	`^\.github/auto-approve-`,
 	`^\.github/workflows/repo-auto-approve\.yaml$`,
 	`^\.github/CODEOWNERS$`,
+	`^scripts/auto-approve-gate/`,
 }
 
 func TestDecide_renovateLane(t *testing.T) {
@@ -203,6 +205,19 @@ func TestDecide_table(t *testing.T) {
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
 				PRFiles:           []PRFile{{Filename: ".github/auto-approve-protected-paths.txt"}},
+			},
+			allowed: false,
+			lane:    LaneHuman,
+			notices: []string{"PR touches a protected path; human review is required."},
+		},
+		{
+			name: "blocked auto-approve gate implementation",
+			in: Inputs{
+				Author:            "eamonnmoloney",
+				Allowlist:         []string{"eamonnmoloney"},
+				ProtectedPatterns: defaultProtected,
+				PRMeta:            metaOK,
+				PRFiles:           []PRFile{{Filename: "scripts/auto-approve-gate/pkg/gate/gate.go"}},
 			},
 			allowed: false,
 			lane:    LaneHuman,
@@ -410,6 +425,14 @@ func TestRun_renovateLane(t *testing.T) {
 		{
 			name:        "blocked CODEOWNERS",
 			files:       []PRFile{{Filename: ".github/CODEOWNERS"}},
+			wantAllowed: false,
+			wantNotice:  "PR touches a protected path",
+			metaCalls:   1,
+			filesCalls:  1,
+		},
+		{
+			name:        "blocked auto-approve gate go.mod",
+			files:       []PRFile{{Filename: "scripts/auto-approve-gate/go.mod"}},
 			wantAllowed: false,
 			wantNotice:  "PR touches a protected path",
 			metaCalls:   1,
