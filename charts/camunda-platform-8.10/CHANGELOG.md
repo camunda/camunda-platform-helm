@@ -1,5 +1,45 @@
 # Changelog
 
+## [15.0.0-alpha3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha2...camunda-platform-8.10-15.0.0-alpha3) (2026-07-08)
+
+
+### Features
+
+* **8.10:** deprecate app-config proxy keys in favor of extraConfiguration ([#6317](https://github.com/camunda/camunda-platform-helm/issues/6317)) ([7428e1d](https://github.com/camunda/camunda-platform-helm/commit/7428e1d9ecb975faf091ba5deed39d92d4752231))
+* adjust modeler cluster defaults for console migration ([#6390](https://github.com/camunda/camunda-platform-helm/issues/6390)) ([1182d76](https://github.com/camunda/camunda-platform-helm/commit/1182d76492c57a08422015660e4a1425acd0b80c))
+* rename cluster config types webModelerWebApp→hub, orchestrationIdentity→admin ([#6490](https://github.com/camunda/camunda-platform-helm/issues/6490)) ([6f4ffc7](https://github.com/camunda/camunda-platform-helm/commit/6f4ffc75a11ac47eba3f6f3357574b07c8a12e77))
+
+
+### Bug Fixes
+
+* **8.10:** back Web Modeler restapi /tmp with a per-pod ephemeral volume ([#6406](https://github.com/camunda/camunda-platform-helm/issues/6406)) ([c7f2916](https://github.com/camunda/camunda-platform-helm/commit/c7f2916f3a1c8e01692945c4fe79df814dc1c08e))
+* **8.10:** complete Camunda Hub consolidation deprecations for console/webModeler ([#6511](https://github.com/camunda/camunda-platform-helm/issues/6511)) ([d558901](https://github.com/camunda/camunda-platform-helm/commit/d558901fbc9ce490d46d5ba5c6ba0ab8099ff001))
+* **8.10:** harden caBundle truststore init container for air-gapped & OpenShift ([#6292](https://github.com/camunda/camunda-platform-helm/issues/6292)) ([38f6791](https://github.com/camunda/camunda-platform-helm/commit/38f6791fb2645e834fc79cfb91bf5d6adf00d1ec))
+* **8.10:** trust caBundle CA in console via NODE_EXTRA_CA_CERTS + CRLF-safe init ([#6371](https://github.com/camunda/camunda-platform-helm/issues/6371)) ([3e8d2b4](https://github.com/camunda/camunda-platform-helm/commit/3e8d2b45a97391bd30b58b1a09d6716f81b1b756))
+* align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10 ([#5887](https://github.com/camunda/camunda-platform-helm/issues/5887)) ([13e5438](https://github.com/camunda/camunda-platform-helm/commit/13e54382292c63dfbf366141843eb040a4d2d91a))
+* configure index replicas for the legacy Zeebe ES/OS exporter ([#6431](https://github.com/camunda/camunda-platform-helm/issues/6431)) ([367cb08](https://github.com/camunda/camunda-platform-helm/commit/367cb08b9574b5c719e065a3c4ec6df115d04abf))
+* fail clearly when an image override has an empty tag and no digest ([#6462](https://github.com/camunda/camunda-platform-helm/issues/6462)) ([3fdbe6e](https://github.com/camunda/camunda-platform-helm/commit/3fdbe6eee6541121329b2cb03d848963ffeaa143))
+* remove obsolete backup.webapps workaround when RDBMS is enabled ([#6396](https://github.com/camunda/camunda-platform-helm/issues/6396)) ([0806cad](https://github.com/camunda/camunda-platform-helm/commit/0806cad46af841f9c4332e44eaeef50e425af15d))
+* **schema:** cover keys shipped by default values.yaml across 8.8/8.9/8.10 ([#6402](https://github.com/camunda/camunda-platform-helm/issues/6402)) ([e7091f2](https://github.com/camunda/camunda-platform-helm/commit/e7091f272484711d426d0d1bb86713fe833dfc0a))
+* support Orchestration gRPC TLS endpoints ([#6280](https://github.com/camunda/camunda-platform-helm/issues/6280)) ([faa57dd](https://github.com/camunda/camunda-platform-helm/commit/faa57dd935ddc382655a52f52a4fba790db1dcc0))
+* surface deprecation warnings on the gitops render path ([#6530](https://github.com/camunda/camunda-platform-helm/issues/6530)) ([7dd8905](https://github.com/camunda/camunda-platform-helm/commit/7dd89052c300a0c5146f0cc6f49b69a8be810271))
+
+
+### Documentation
+
+* clarify disabling Optimize/legacy exporter requires an actuator disable ([#6455](https://github.com/camunda/camunda-platform-helm/issues/6455)) ([c3537ef](https://github.com/camunda/camunda-platform-helm/commit/c3537ef4443c02d21d7c0cf222675163ee887e04))
+* clarify irsa.enabled disables static credential injection for IRSA and Pod Identity [ready] ([#6519](https://github.com/camunda/camunda-platform-helm/issues/6519)) ([5dc663a](https://github.com/camunda/camunda-platform-helm/commit/5dc663abda080863fd743e290e14f7619acccca0))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6154](https://github.com/camunda/camunda-platform-helm/issues/6154)) ([2598594](https://github.com/camunda/camunda-platform-helm/commit/2598594cff5b3936e3f4478c679d4f8b4087235a))
+* update camunda-platform-images (patch) ([#6515](https://github.com/camunda/camunda-platform-helm/issues/6515)) ([6de8336](https://github.com/camunda/camunda-platform-helm/commit/6de8336137e7098e7e0c82d7ee3d70f757691785))
+* update camunda-platform-images (patch) ([#6534](https://github.com/camunda/camunda-platform-helm/issues/6534)) ([c5f4544](https://github.com/camunda/camunda-platform-helm/commit/c5f45448579968dd0a543743db63eb23d1c9ec0b))
+* update camunda-platform-images to v8.10.0-alpha3 ([#6517](https://github.com/camunda/camunda-platform-helm/issues/6517)) ([d5848ce](https://github.com/camunda/camunda-platform-helm/commit/d5848ce7c925f048758aefb68b64dd7ccb8450dc))
+* update module golang.org/x/net to v0.55.0 [security] ([#6504](https://github.com/camunda/camunda-platform-helm/issues/6504)) ([0014dfb](https://github.com/camunda/camunda-platform-helm/commit/0014dfbf7757e665ccaaf6049d8811e94a8b75be))
+* update patch-updates (patch) ([#6289](https://github.com/camunda/camunda-platform-helm/issues/6289)) ([2164f17](https://github.com/camunda/camunda-platform-helm/commit/2164f176bc967536bb9c9b1f279d9201f0711f50))
+
 ## [15.0.0-alpha2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha1...camunda-platform-8.10-15.0.0-alpha2) (2026-06-04)
 
 

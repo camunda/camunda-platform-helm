@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.0.0-alpha2
+version: 15.0.0-alpha3
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -41,7 +41,7 @@ maintainers:
     email: balazs.kenez@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "4.1.4"
+  camunda.io/helmCLIVersion: "4.2.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -52,40 +52,30 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Fail early when Helm CLI < v4 is used with chart 15.x"
+      description: "Deprecate app-config proxy keys in favor of extraConfiguration"
     - kind: added
-      description: "Add orchestration.hostNetwork value"
+      description: "Adjust modeler cluster defaults for console migration"
     - kind: added
-      description: "[TLS B1] add global.tls.caBundle helper for OS-level CA injection part 1 of helm#3498"
-    - kind: added
-      description: "[TLS B2] add init-container truststore import — closes helm#3498 for JVM clients"
-    - kind: added
-      description: "[TLS D] add values-tls.yaml customer overlay + quickstart doc"
-    - kind: added
-      description: "[TLS F] deprecate legacy per-component JKS truststore fields"
-    - kind: added
-      description: "Add global.gateway.namespace to support cross-namespace Gateway parentRefs"
-    - kind: added
-      description: "Added service account labels"
-    - kind: changed
-      description: "Drop camundaPlatform.toYamlPretty helm v3 compat wrapper"
-    - kind: changed
-      description: "Migrate console and webModeler values under camundaHub namespace [1/6]"
-    - kind: changed
-      description: "Drop bundled Bitnami subcharts"
-    - kind: changed
-      description: "Drop orphan helpers and guard keycloak release info"
+      description: "Rename cluster config types webModelerWebApp→hub, orchestrationIdentity→admin"
     - kind: fixed
-      description: "Update image tags to 8.10.0-alpha1"
+      description: "Harden caBundle truststore init container for air-gapped & OpenShift"
     - kind: fixed
-      description: "Expose cpu keys in connectors/console resources schema"
+      description: "Support Orchestration gRPC TLS endpoints"
     - kind: fixed
-      description: "Allow multiregion, env valueFrom subkeys, and sub-chart imagePullSecrets"
+      description: "Trust caBundle CA in console via NODE_EXTRA_CA_CERTS + CRLF-safe init"
     - kind: fixed
-      description: "Allow Recreate strategy for Web Modeler persistence"
+      description: "Remove obsolete backup.webapps workaround when RDBMS is enabled"
     - kind: fixed
-      description: "Guard legacy ES exporter on global.elasticsearch.enabled"
+      description: "Align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10"
     - kind: fixed
-      description: "Align camunda hub service account gating"
+      description: "Configure index replicas for the legacy Zeebe ES/OS exporter"
     - kind: fixed
-      description: "Align upload size with Zeebe message limits"
+      description: "Cover keys shipped by default values.yaml across 8.8/8.9/8.10"
+    - kind: fixed
+      description: "Back Web Modeler restapi /tmp with a per-pod ephemeral volume"
+    - kind: fixed
+      description: "Complete Camunda Hub consolidation deprecations for console/webModeler"
+    - kind: fixed
+      description: "Fail clearly when an image override has an empty tag and no digest"
+    - kind: fixed
+      description: "Surface deprecation warnings on the gitops render path"
