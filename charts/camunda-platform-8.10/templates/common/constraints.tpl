@@ -439,6 +439,10 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (hasKey .Values.global.identity.auth "console")
+    "oldName" "global.identity.auth.console"
+    "migration" "global.identity.auth.webModeler.* / global.identity.auth.camundaHub.*") }}
 
   {{/*
   *****************************************************************************
