@@ -1,0 +1,85 @@
+# ============================================================================
+# deploy-camunda — Getting Started (single-scenario starter config)
+# ============================================================================
+#
+# WHO THIS IS FOR
+#   External / first-time users deploying Camunda 8 Self-Managed to a single
+#   Kubernetes namespace. If you're setting up CI matrix runs across multiple
+#   chart versions, use `.camunda-deploy.yaml.template` at the repo root
+#   instead — it documents every field.
+#
+# HOW TO USE
+#   1. Copy this file to the repo root as `.camunda-deploy.yaml`:
+#        cp scripts/deploy-camunda/examples/getting-started.camunda-deploy.yaml \
+#           .camunda-deploy.yaml
+#   2. Fill in the placeholders below (search for CHANGE-ME).
+#   3. Scaffold secrets & credentials:
+#        deploy-camunda config init          # interactive; writes .env
+#      Or, if you prefer to keep this file as the single source of truth,
+#      set the required env vars in `.env` yourself. See
+#      scripts/deploy-camunda/README.md for the full env-var precedence model.
+#   4. Verify: `deploy-camunda doctor`
+#   5. Deploy:  `deploy-camunda`
+#
+# RELATIONSHIP TO OTHER CONFIG FILES
+#   * `.camunda-deploy.yaml.template` — comprehensive template with every field
+#     and matrix configuration. Reference this for advanced options.
+#   * `charts/chart-versions.yaml`, `charts/<v>/test/ci-test-config.yaml`
+#     — CI-internal. Do NOT edit these to deploy your own scenario.
+#   * `test/integration/companion-values/` — per-dependency values files;
+#     see the README there for which are external-user defaults vs CI-only.
+# ============================================================================
+
+# Active deployment profile — matches a key under `deployments:` below.
+current: local-dev
+
+deployments:
+
+  local-dev:
+    # --- Required -----------------------------------------------------------
+    namespace: camunda                       # CHANGE-ME: k8s namespace to deploy into
+    release: camunda                         # Helm release name
+    chartPath: charts/camunda-platform-8.10  # Latest stable chart. Bump when
+                                             # upgrading Camunda 8 versions.
+
+    # --- Cluster access -----------------------------------------------------
+    # kubectl context to use. Run `kubectl config current-context` to find
+    # yours, or `kubectl config get-contexts` to list all.
+    kubeContext: CHANGE-ME-my-cluster-context
+
+    # --- Selection model ----------------------------------------------------
+    # Compose your deployment by picking layers. Values below are the most
+    # common combo (bundled Keycloak + bundled Elasticsearch).
+    identity: keycloak                       # keycloak | keycloak-external |
+                                             # oidc | basic | hybrid
+    persistence: elasticsearch               # elasticsearch | opensearch |
+                                             # rdbms | rdbms-oracle
+
+    # --- Ingress ------------------------------------------------------------
+    # Base domain for the deployment. Required — `deploy-camunda` computes
+    # `CAMUNDA_HOSTNAME` from `<namespace>.<ingressBaseDomain>` and injects
+    # it into scenario values files.
+    ingressBaseDomain: CHANGE-ME.example.com
+
+    # --- Secrets ------------------------------------------------------------
+    # Generate random passwords/client-secrets locally on first deploy. Keeps
+    # you off Vault and out of shared credential files for local development.
+    autoGenerateSecrets: true
+
+    # --- Environment file ---------------------------------------------------
+    # Placeholder vars in scenario values files (e.g. $RDBMS_POSTGRESQL_*)
+    # resolve from this file, then from process env. `deploy-camunda config
+    # init` writes it for you; commit only redacted examples, never the real
+    # `.env` (it typically contains registry credentials).
+    envFile: .env
+
+# ============================================================================
+# Next steps
+#   deploy-camunda doctor                    # Preflight checklist (safe, dry)
+#   deploy-camunda config env --show-origin  # Show effective env + provenance
+#   deploy-camunda                           # Deploy to the cluster
+#
+# When things go wrong, `doctor --fix` will prompt for any missing env vars
+# and persist them to `.env`. See scripts/deploy-camunda/README.md for the
+# full precedence rules, secret model, and troubleshooting notes.
+# ============================================================================

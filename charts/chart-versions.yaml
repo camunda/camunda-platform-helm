@@ -1,5 +1,14 @@
-# This file contains the supported versions of the chart.
-# Check the README for more information on how to update this file.
+# ─── CI-internal ────────────────────────────────────────────────────────────
+# This file lists the supported Camunda chart versions and is consumed by CI,
+# release tooling, and Renovate. External users deploying Camunda 8
+# Self-Managed do NOT need to edit it — read it via
+# `deploy-camunda matrix list` if you need to know which versions are active.
+#
+# Start here instead:
+#   scripts/deploy-camunda/examples/getting-started.camunda-deploy.yaml
+#
+# See the README for the maintainer update procedure.
+# ────────────────────────────────────────────────────────────────────────────
 camundaVersions:
   alpha:
     - "8.10"

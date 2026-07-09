@@ -1,6 +1,13 @@
 # ============================================================================
-# deploy-camunda Configuration File
+# deploy-camunda Configuration File (comprehensive / advanced reference)
 # ============================================================================
+#
+# NEW HERE? For a minimal, single-scenario starter, copy this file instead:
+#   scripts/deploy-camunda/examples/getting-started.camunda-deploy.yaml
+#
+# This template documents every supported field, including multiple deployment
+# profiles and full matrix-runner configuration. Use it when you need an
+# option the starter doesn't cover.
 #
 # Copy this file and customize for your environment:
 #   cp .camunda-deploy.yaml.template .camunda-deploy.yaml

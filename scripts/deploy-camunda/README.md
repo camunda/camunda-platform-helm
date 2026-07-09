@@ -14,6 +14,11 @@ deploy-camunda doctor           # re-run the checklist any time
 deploy-camunda config env       # show the effective env and where each value came from (secrets masked)
 ```
 
+> Prefer a file you can commit? Copy
+> [`examples/getting-started.camunda-deploy.yaml`](examples/getting-started.camunda-deploy.yaml)
+> as your `.camunda-deploy.yaml` — a minimal, single-scenario starter that
+> complements the interactive `config init` flow.
+
 A normal `deploy-camunda` run now runs the same preflight automatically and
 **fails fast** if a required input is missing — before creating a namespace or
 calling helm — so you no longer wait for an `ImagePullBackOff` to discover a
