@@ -2595,7 +2595,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.63"
+                            "default": "8.9.64"
                         },
                         "digest": {
                             "type": "string",
