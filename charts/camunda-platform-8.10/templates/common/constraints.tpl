@@ -625,19 +625,6 @@ The following values inside your values.yaml need to be set but were not:
       "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
   {{- end }}
 
-  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-    {{- $con := mustMergeOverwrite (deepCopy (.Values.console | default dict)) (.Values.camundaHub.console | default dict) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (dig "keycloak" "realm" "camunda-platform" $con) "camunda-platform")
-      "oldName" "console.keycloak.realm" "migration" "console.extraConfiguration") }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne ($con.nodeEnv | default "prod" | toString) "prod")
-      "oldName" "console.nodeEnv" "migration" "console.env") }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (not (empty $con.logging))
-      "oldName" "console.logging" "migration" "console.extraConfiguration") }}
-  {{- end }}
-
   {{- $componentExtra := "the consuming component's extraConfiguration" }}
   {{- $componentEnv := "the consuming component's extraEnvVars" }}
   {{ include "camundaPlatform.keyDeprecated" (dict

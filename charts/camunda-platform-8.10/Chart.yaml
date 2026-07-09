@@ -75,6 +75,8 @@ annotations:
       description: "Drop bundled Bitnami subcharts"
     - kind: changed
       description: "Drop orphan helpers and guard keycloak release info"
+    - kind: changed
+      description: "Remove inert console app-config-proxy deprecation warnings; Console is consolidated into Camunda Hub and these keys have no effect."
     - kind: fixed
       description: "Update image tags to 8.10.0-alpha1"
     - kind: fixed
