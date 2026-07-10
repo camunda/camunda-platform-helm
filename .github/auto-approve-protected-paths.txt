@@ -1,7 +1,7 @@
 # Paths that ALWAYS require a human review — distro-ci never auto-approves a PR
-# whose commits touch any of these. One grep -E (extended regex) pattern per line;
-# blank lines and # comments are ignored. Matched against every file in every commit
-# of the PR, AFTER chart test fixtures (charts/<chart>/test/**) are excluded.
+# whose net diff touches any of these. One grep -E (extended regex) pattern per line;
+# blank lines and # comments are ignored. Matched against every file in the PR net
+# diff (new paths and rename sources), AFTER chart test fixtures (charts/<chart>/test/**) are excluded.
 
 # --- CI-privileged paths (.github) ---
 ^\.github/workflows/
