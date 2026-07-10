@@ -27,6 +27,7 @@ jobs:
         id: check
         env:
           AUTHOR: ${{ github.event.pull_request.user.login }}
+          EVENT_ACTOR: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
@@ -40,6 +41,13 @@ jobs:
             lane="renovate"
             allowed=true
             protected_file=".github/auto-approve-protected-paths-renovate.txt"
+            case "$EVENT_ACTOR" in
+              "renovate[bot]"|"distro-ci[bot]") ;;
+              *)
+                echo "::warning::event actor ${EVENT_ACTOR} is not a trusted renovate-lane pusher; requiring human review."
+                allowed=false
+                ;;
+            esac
           elif [[ -f "$list" ]] && grep -vE '^\s*(#|$)' "$list" | grep -qxF "$AUTHOR"; then
             allowed=true
           fi
@@ -133,3 +141,20 @@ jobs:
             exit 0
           fi
           gh pr review "$PR" --approve --body "Auto-approved: Renovate PR (re-approved on every push)."
+      - name: Dismiss stale bot approvals
+        if: ${{ steps.check.outputs.allowed != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ids=$(gh api "repos/${REPO}/pulls/${PR}/reviews" --paginate \
+            --jq '[.[] | select((.user.login=="github-actions[bot]" or .user.login=="distro-ci[bot]") and .state=="APPROVED")] | .[].id')
+          for id in $ids; do
+            gh api -X PUT "repos/${REPO}/pulls/${PR}/reviews/${id}/dismissals" \
+              -f message="Head is no longer auto-approvable; dismissing stale bot approval." \
+              -f event="DISMISS"
+            echo "::notice::dismissed stale bot approval ${id}"
+          done
+
