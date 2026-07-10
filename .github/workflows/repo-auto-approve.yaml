@@ -95,7 +95,7 @@ jobs:
           fi
           gh pr review "$PR" --approve --body "Auto-approved: Renovate PR (re-approved on every push)."
       - name: Dismiss stale bot approvals
-        if: ${{ steps.check.outputs.allowed != 'true' }}
+        if: ${{ !cancelled() && steps.check.outputs.allowed != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           ids=$(gh api "repos/${REPO}/pulls/${PR}/reviews" --paginate \
-            --jq '[.[] | select((.user.login=="github-actions[bot]" or .user.login=="distro-ci[bot]") and .state=="APPROVED")] | .[].id')
+            --jq '[.[] | select((.user.login=="github-actions[bot]" or .user.login=="distro-ci[bot]" or .user.login=="renovate-approve[bot]") and .state=="APPROVED")] | .[].id')
           for id in $ids; do
             gh api -X PUT "repos/${REPO}/pulls/${PR}/reviews/${id}/dismissals" \
               -f message="Head is no longer auto-approvable; dismissing stale bot approval." \
