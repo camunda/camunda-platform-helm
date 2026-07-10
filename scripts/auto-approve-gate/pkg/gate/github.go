@@ -27,6 +27,14 @@ type GitHubClient struct {
 	Token      string
 	Repository string
 	HTTPClient *http.Client
+	baseURL    string
+}
+
+func (c *GitHubClient) apiBaseURL() string {
+	if c.baseURL != "" {
+		return c.baseURL
+	}
+	return "https://api.github.com"
 }
 
 func NewGitHubClientFromEnv() (*GitHubClient, error) {
@@ -60,7 +68,7 @@ type pullRequestFileResponse struct {
 }
 
 func (c *GitHubClient) GetPullRequest(pr int) (PRMeta, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/pulls/%d", c.Repository, pr)
+	url := fmt.Sprintf("%s/repos/%s/pulls/%d", c.apiBaseURL(), c.Repository, pr)
 	var resp pullRequestResponse
 	if err := c.getJSON(url, &resp); err != nil {
 		return PRMeta{}, err
@@ -72,8 +80,8 @@ func (c *GitHubClient) ListPullRequestFiles(pr int) ([]PRFile, error) {
 	var all []PRFile
 	page := 1
 	for {
-		url := fmt.Sprintf("https://api.github.com/repos/%s/pulls/%d/files?per_page=100&page=%d",
-			c.Repository, pr, page)
+		url := fmt.Sprintf("%s/repos/%s/pulls/%d/files?per_page=100&page=%d",
+			c.apiBaseURL(), c.Repository, pr, page)
 		var batch []pullRequestFileResponse
 		if err := c.getJSON(url, &batch); err != nil {
 			return nil, err
