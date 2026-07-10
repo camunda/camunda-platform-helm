@@ -5,13 +5,13 @@
 # WHO THIS IS FOR
 #   External / first-time users deploying Camunda 8 Self-Managed to a single
 #   Kubernetes namespace. If you're setting up CI matrix runs across multiple
-#   chart versions, use `.camunda-deploy.yaml.template` at the repo root
+#   chart versions, use `.deploy-camunda.yaml.template` at the repo root
 #   instead — it documents every field.
 #
 # HOW TO USE
-#   1. Copy this file to the repo root as `.camunda-deploy.yaml`:
-#        cp scripts/deploy-camunda/examples/getting-started.camunda-deploy.yaml \
-#           .camunda-deploy.yaml
+#   1. Copy this file to the repo root as `.deploy-camunda.yaml`:
+#        cp scripts/deploy-camunda/examples/getting-started.deploy-camunda.yaml \
+#           .deploy-camunda.yaml
 #   2. Fill in the placeholders below (search for CHANGE-ME).
 #   3. Scaffold secrets & credentials:
 #        deploy-camunda config init          # interactive; writes .env
@@ -22,7 +22,7 @@
 #   5. Deploy:  `deploy-camunda`
 #
 # RELATIONSHIP TO OTHER CONFIG FILES
-#   * `.camunda-deploy.yaml.template` — comprehensive template with every field
+#   * `.deploy-camunda.yaml.template` — comprehensive template with every field
 #     and matrix configuration. Reference this for advanced options.
 #   * `charts/chart-versions.yaml`, `charts/<v>/test/ci-test-config.yaml`
 #     — CI-internal. Do NOT edit these to deploy your own scenario.
@@ -31,11 +31,12 @@
 # ============================================================================
 
 # Active deployment profile — matches a key under `deployments:` below.
-current: local-dev
+# Named "local" to match the default profile created by `deploy-camunda config init`.
+current: local
 
 deployments:
 
-  local-dev:
+  local:
     # --- Required -----------------------------------------------------------
     namespace: camunda                       # CHANGE-ME: k8s namespace to deploy into
     release: camunda                         # Helm release name

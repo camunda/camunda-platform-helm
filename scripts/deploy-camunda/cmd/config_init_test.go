@@ -16,7 +16,7 @@ func TestConfigInitWizard(t *testing.T) {
 	t.Setenv("PATH", "")
 
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 
 	// Point the shared config path at our temp file and restore afterward.
 	prev := configFile
@@ -84,7 +84,7 @@ func TestConfigInitWizard(t *testing.T) {
 func TestConfigInitScaffoldsRDBMS(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 	envPath := filepath.Join(tmp, ".env")
 	prev := configFile
 	configFile = cfgPath
@@ -126,7 +126,7 @@ func TestConfigInitScaffoldsRDBMS(t *testing.T) {
 func TestConfigInitNonInteractiveRequiresConfig(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 	prev := configFile
 	configFile = cfgPath
 	t.Cleanup(func() { configFile = prev })

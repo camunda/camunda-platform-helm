@@ -642,7 +642,7 @@ func missingFieldError(what, configKey, flagHint string, res *ConfigResolution) 
 			fmt.Fprintf(&b, "    - %s\n", p)
 		}
 		b.WriteString("\n  To fix, either:\n")
-		fmt.Fprintf(&b, "    - Create .camunda-deploy.yaml in the repo root (run: deploy-camunda config create <name>)\n")
+		fmt.Fprintf(&b, "    - Create .deploy-camunda.yaml in the repo root (run: deploy-camunda config create <name>)\n")
 		fmt.Fprintf(&b, "    - Provide %s on the command line", flagHint)
 	} else if res != nil {
 		fmt.Fprintf(&b, "\n\n  Config loaded from: %s\n", res.Path)

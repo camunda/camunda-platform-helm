@@ -221,7 +221,7 @@ Docker registry credentials are required for cluster deployments. Before running
 - **Harbor** (`registry.camunda.cloud`): `TEST_DOCKER_USERNAME_CAMUNDA_CLOUD` and `TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD`
 - **Docker Hub**: `TEST_DOCKER_USERNAME` and `TEST_DOCKER_PASSWORD`
 
-Both are needed when `ensureDockerHub` and `ensureDockerRegistry` are `true` in `.camunda-deploy.yaml`. Do not attempt to extract credentials automatically — ask the user to set them up.
+Both are needed when `ensureDockerHub` and `ensureDockerRegistry` are `true` in `.deploy-camunda.yaml`. Do not attempt to extract credentials automatically — ask the user to set them up.
 
 ## Development tips
 

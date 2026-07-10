@@ -206,7 +206,7 @@ func NewRootCommand() *cobra.Command {
 	}
 
 	// Persistent flags
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "F", "", "Path to config file (.camunda-deploy.yaml or ~/.config/camunda/deploy.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "F", "", "Path to config file (.deploy-camunda.yaml or ~/.config/camunda/deploy.yaml)")
 
 	// Deployment flags
 	f := rootCmd.Flags()

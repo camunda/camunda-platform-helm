@@ -5,7 +5,7 @@
 # do NOT need to edit it.
 #
 # Start here instead:
-#   scripts/deploy-camunda/examples/getting-started.camunda-deploy.yaml
+#   scripts/deploy-camunda/examples/getting-started.deploy-camunda.yaml
 # ────────────────────────────────────────────────────────────────────────────
 # Used in the GitHub Actions unit test CI workflow.
 # auth can be the following values: basic, keycloak, oidc

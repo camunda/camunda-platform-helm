@@ -5,7 +5,7 @@
 # `deploy-camunda matrix list` if you need to know which versions are active.
 #
 # Start here instead:
-#   scripts/deploy-camunda/examples/getting-started.camunda-deploy.yaml
+#   scripts/deploy-camunda/examples/getting-started.deploy-camunda.yaml
 #
 # See the README for the maintainer update procedure.
 # ────────────────────────────────────────────────────────────────────────────
