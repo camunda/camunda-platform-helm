@@ -217,6 +217,15 @@ any prompting — useful when you want a file you can edit and commit. Run with
 	cmd.Flags().StringVar(&fromExample, "from-example", "", "Non-interactively write the named embedded starter config to the config path (e.g. `getting-started`). See --list-examples.")
 	cmd.Flags().BoolVar(&listExamples, "list-examples", false, "List the embedded example names and exit")
 	cmd.Flags().BoolVar(&force, "force", false, "Overwrite an existing config file when using --from-example")
+
+	// The three exit paths (list, template-drop, wizard/doctor) are mutually
+	// exclusive by design: combining them would silently prefer one and drop
+	// the other's contract (e.g. --non-interactive's doctor preflight is
+	// skipped if --from-example short-circuits first).
+	cmd.MarkFlagsMutuallyExclusive("from-example", "non-interactive")
+	cmd.MarkFlagsMutuallyExclusive("list-examples", "non-interactive")
+	cmd.MarkFlagsMutuallyExclusive("list-examples", "from-example")
+
 	return cmd
 }
 

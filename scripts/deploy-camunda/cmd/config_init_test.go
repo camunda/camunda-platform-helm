@@ -246,6 +246,42 @@ func TestConfigInitFromExampleUnknownName(t *testing.T) {
 	}
 }
 
+func TestConfigInitRejectsConflictingModeFlags(t *testing.T) {
+	t.Setenv("PATH", "")
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	prev := configFile
+	configFile = cfgPath
+	t.Cleanup(func() { configFile = prev })
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{"from-example + non-interactive", []string{"--from-example", "getting-started", "--non-interactive"}},
+		{"list-examples + non-interactive", []string{"--list-examples", "--non-interactive"}},
+		{"list-examples + from-example", []string{"--list-examples", "--from-example", "getting-started"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newInitCommand()
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetErr(&out)
+			cmd.SetArgs(tc.args)
+
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatalf("expected mutual-exclusion error for %v; output:\n%s", tc.args, out.String())
+			}
+			if !strings.Contains(err.Error(), "none of the others can be") {
+				t.Errorf("expected mutual-exclusion error text; got: %v", err)
+			}
+		})
+	}
+}
+
 func TestConfigInitListExamples(t *testing.T) {
 	t.Setenv("PATH", "")
 	cmd := newInitCommand()
