@@ -168,8 +168,23 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.connectors.persistence.existingClaim }}
           {{- else if .Values.connectors.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-connectors-data
+          ephemeral:
+            volumeClaimTemplate:
+              {{- with .Values.connectors.persistence.annotations }}
+              metadata:
+                annotations: {{- toYaml . | nindent 18 }}
+              {{- end }}
+              spec:
+                accessModes: {{ .Values.connectors.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 18 }}
+                {{- with .Values.connectors.persistence.storageClassName }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+                {{- with .Values.connectors.persistence.selector }}
+                selector: {{- toYaml . | nindent 18 }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ .Values.connectors.persistence.size | default "1Gi" | quote }}
           {{- else }}
           emptyDir: {}
           {{- end }}
