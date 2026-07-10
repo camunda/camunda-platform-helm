@@ -266,7 +266,8 @@ top, use one of the ready-made `hcs-only-*` scenarios:
 
 Both declare `dependencies: []`, so the matrix runner deploys **no**
 companion Helm releases. Point the Camunda chart at your
-operator-provisioned Elasticsearch via env vars:
+operator-provisioned Elasticsearch via env vars (see the full wiring
+reference below for all supported components — Keycloak, PostgreSQL, OIDC):
 
 ```bash
 export EXTERNAL_ELASTICSEARCH_HOST=my-eck-cluster-es-http.eck.svc
@@ -274,14 +275,68 @@ export EXTERNAL_ELASTICSEARCH_PORT=9200
 export EXTERNAL_ELASTICSEARCH_SCHEME=https
 deploy-camunda matrix run \
   --repo-root . --versions 8.10 --shortname-filter hcso \
-  --ingress-base-domain <your-zone>
+  --include-disabled \
+  --ingress-base-domain-gke <your-zone>
 ```
+
+Note `--include-disabled` — both scenarios ship disabled in the manifest,
+so the runner ignores them unless you opt in explicitly.
 
 Both scenarios ship **disabled** (no CI slot). Discover them via
 `deploy-camunda matrix list --include-disabled --shortname-filter hcs-only`.
 For anything more complex than "point at a running ES" — e.g. an
 in-scenario `pre-install` hook that provisions the ECK `Elasticsearch`
 CR — see the lifecycle-hooks pattern below.
+
+### Wiring external endpoints — env-var reference
+
+Each external component reads a fixed set of env vars (from `.env`, process
+env, or per-entry `ExtraEnv` overrides). Set them before running
+`deploy-camunda`. `deploy-camunda config env --show-origin` prints which
+layer each variable resolved from.
+
+**Elasticsearch** (`persistence: elasticsearch-external`):
+
+| Var | Example | Notes |
+|---|---|---|
+| `EXTERNAL_ELASTICSEARCH_HOST` | `my-cluster-es-http.eck.svc` | ECK service DNS, or any reachable ES hostname. |
+| `EXTERNAL_ELASTICSEARCH_PORT` | `9200` | The ES HTTP port your endpoint listens on. |
+| `EXTERNAL_ELASTICSEARCH_SCHEME` | `http` or `https` | `https` if your operator terminates TLS on the ES service. |
+
+**PostgreSQL** (`persistence: rdbms-external` — used for secondary storage):
+
+| Var | Example | Notes |
+|---|---|---|
+| `POSTGRESQL_JDBC_URL` | `jdbc:postgresql://mypg.cnpg.svc:5432/postgres` | Base JDBC URL; the scenario appends `/${GITHUB_WORKFLOW_JOB_ID}` for isolation. Drop that suffix by fixing the scenario if you're deploying interactively. |
+| `RDBMS_POSTGRESQL_USERNAME` | `camunda` | Role with `CREATEDB` or an existing database referenced by the URL. |
+| `RDBMS_POSTGRESQL_PASSWORD` | *(random)* | `deploy-camunda config init` scaffolds a random value if you want a local dev credential. |
+
+**External Keycloak** (`identity: keycloak-external`):
+
+| Var / flag | Example | Notes |
+|---|---|---|
+| `CAMUNDA_KEYCLOAK_HOST` / `--keycloak-host` | `keycloak.internal.example.com` | Fully-qualified host reachable from Camunda pods and from user browsers (issuer URLs are baked from it). |
+| `CAMUNDA_KEYCLOAK_PROTOCOL` / `--keycloak-protocol` | `https` | Default: `https`. |
+| `CAMUNDA_KEYCLOAK_REALM` / `--keycloak-realm` | `camunda-platform` | Auto-generated if unset — set explicitly if pointing at a pre-provisioned realm. |
+
+**OIDC** (`identity: oidc` — Entra-flavoured by default):
+
+The shipped `oidc.yaml` layer hard-codes Microsoft Entra URLs. If you have
+a generic OIDC IdP (Auth0, Okta, self-hosted Keycloak as an IdP, …),
+override with an `--extra-values` overlay that replaces the `issuer`,
+`authUrl`, `jwksUrl`, `tokenUrl`, and `publicIssuerUrl` fields under
+`global.identity.auth`. Env vars used by the Entra path:
+
+| Var | Notes |
+|---|---|
+| `ENTRA_APP_DIRECTORY_ID` | Tenant / directory GUID. |
+| `ENTRA_APP_CLIENT_ID` | Registered application (client) GUID. |
+| `ENTRA_APP_CLIENT_SECRET` | Client secret for the identity component. |
+| `ENTRA_APP_OBJECT_ID` | Object ID used for initial-claim seed. |
+
+For a fully generic OIDC IdP the cleanest path is to author a companion
+values file (e.g. `custom-oidc.yaml`) and reference it via
+`extraValues:` in your config profile.
 
 ### Lifecycle hooks
 

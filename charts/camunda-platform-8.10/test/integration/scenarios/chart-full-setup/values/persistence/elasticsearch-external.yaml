@@ -12,20 +12,48 @@
 #   EXTERNAL_ELASTICSEARCH_HOST   — e.g. `my-eck-cluster-es-http.my-ns.svc`
 #   EXTERNAL_ELASTICSEARCH_PORT   — usually `9200`
 #   EXTERNAL_ELASTICSEARCH_SCHEME — `http` or `https`
+#
+# Note on port: the chart schema types `global.elasticsearch.url.port` as
+# `number`, and layered-values env substitution can only produce strings.
+# We therefore leave the port unset in the global block (chart default is
+# 9200 and the vast majority of ES deployments serve there). The port env
+# var is used only in the full URL under
+# `orchestration.data.secondaryStorage.elasticsearch` where it is a string.
+# Override with `--extra-values` if you run ES on a non-9200 port and
+# Optimize/legacy exporter need it too.
+
+# The Camunda `identity` and `web-modeler` components each need their own
+# PostgreSQL for user/model storage — the chart ships bundled PGs for them
+# by default. For a bring-your-own-operators deploy (which is what this
+# persistence layer signals) users typically don't want those either.
+# Turn both off so the deploy doesn't crashloop trying to reach a PG that
+# was never provisioned. Users who DO want them can re-enable via
+# `--extra-values` and point them at their own PostgreSQL.
+identity:
+  enabled: false
+
+# Camunda Hub bundles Web Modeler + Console; base.yaml enables it. The
+# chart's own constraint (`Web Modeler is enabled but management Identity
+# is not enabled`) blocks helm install if Hub is on while Identity is off.
+# Disabling both is the coherent "just the engine" shape.
+camundaHub:
+  enabled: false
+
+webModeler:
+  enabled: false
 
 global:
   elasticsearch:
     url:
-      host: "$EXTERNAL_ELASTICSEARCH_HOST"
-      port: "$EXTERNAL_ELASTICSEARCH_PORT"
-      protocol: "$EXTERNAL_ELASTICSEARCH_SCHEME"
+      host: "${EXTERNAL_ELASTICSEARCH_HOST}"
+      protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
 
 orchestration:
   data:
     secondaryStorage:
       type: elasticsearch
       elasticsearch:
-        url: "$EXTERNAL_ELASTICSEARCH_SCHEME://$EXTERNAL_ELASTICSEARCH_HOST:$EXTERNAL_ELASTICSEARCH_PORT"
+        url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
   env:
     # Security mapping rules — identical to the bundled `elasticsearch.yaml`
     # so authorization defaults behave the same regardless of ES origin.
