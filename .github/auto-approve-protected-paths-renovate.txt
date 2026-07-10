@@ -7,3 +7,7 @@
 ^\.github/auto-approve-
 ^\.github/workflows/repo-auto-approve\.yaml$
 ^\.github/CODEOWNERS$
+
+# --- Chart public API Renovate never legitimately edits ---
+^charts/.+/values\.schema(\.extra)?\.json$
+^charts/.+/constraints\.tpl$
