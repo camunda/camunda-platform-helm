@@ -128,11 +128,14 @@ The most common starting points on chart 8.10:
 | `auth0.yaml` | Auth0 as the IdP. | auth0 | elasticsearch | install |
 | `keycloak-mt.yaml` | Multi-tenancy enabled. | keycloak | elasticsearch | upgrade-minor |
 | `keycloak-rba.yaml` | Role-based authorization enabled. | keycloak | elasticsearch | upgrade-minor |
-| `documentstore.yaml` | Document store feature enabled. | keycloak | elasticsearch | — |
+| `documentstore.yaml` | Document store feature enabled. | keycloak | elasticsearch | install [^flow-empty] |
 | `gateway-keycloak.yaml` | Gateway-API based Keycloak (post-deploy hook installs the CRD). | keycloak | elasticsearch | install |
 | `orchestration-tls.yaml` | Full mTLS between orchestration components. | keycloak | elasticsearch | install |
 | `no-secondary-storage.yaml` | Camunda without an Elasticsearch back-end. | keycloak | no-elasticsearch | install |
 | `alwaysgreen.yaml` | Canary/smoke scenario. | keycloak | elasticsearch | install |
+
+[^flow-empty]: `documentstore.yaml` declares `flows: [""]`, which the
+    runner normalises to `install` — see `matrix/runner.go`.
 
 The `qa-*` variants (many of them) mirror these onto the QA node pool
 (via `nodeSelector` / `tolerations` in the companion values files under
@@ -232,7 +235,10 @@ To add a scenario for a shape you frequently deploy:
    `charts/<v>/test/integration/scenarios/chart-full-setup/values/` and
    reference it via the registry entry's identity/persistence keys.
 3. Re-run `make go.update-registry-golden` to refresh the CI registry
-   snapshot so `TestLifecycleFixtures` stays green.
+   snapshot so `TestRegistryGolden` (`matrix/registry_golden_test.go`)
+   stays green. `TestRegistryValidator*` in
+   `matrix/registry_test.go` additionally validates that any fixture
+   or script your new scenario references actually exists on disk.
 
 `deploy-camunda matrix run --shortname-filter my-scenario` now picks it
 up. When you're done iterating, if it's useful to more than one person,
@@ -248,11 +254,19 @@ dependency without leaking that logic into the platform chart.
 
 ### Lifecycle hooks
 
-Every scenario or flow can declare one of three hooks, each shaped
-either as a set of `fixtures:` (YAML manifests server-side-applied by
-the runner) or a `script:` (bash run with a curated env). All three
-run **inside the deploy for a single matrix entry**, scoped to that
-entry's namespace:
+Every scenario or flow can declare one of four hooks. Hook **bodies**
+live in `charts/<v>/test/ci/registry/hooks/<hook-id>.yaml` as either a
+set of `fixtures:` (YAML manifests server-side-applied by the runner)
+or a `script:` (bash run with a curated env). Scenarios reference a
+hook by its **string ID**, not by inlining the struct:
+
+```yaml
+# in charts/<v>/test/ci/registry/scenarios/<my-scenario>.yaml
+pre-install: eck-elasticsearch     # ← bare string, matches hooks/eck-elasticsearch.yaml
+```
+
+All four run **inside the deploy for a single matrix entry**, scoped
+to that entry's namespace:
 
 | Hook | When it runs | Declared at | Typical use |
 |---|---|---|---|
@@ -262,11 +276,18 @@ entry's namespace:
 | `pre-upgrade` | Between step 1 and step 2 of a two-step upgrade flow. | Flow (`charts/<v>/test/ci/registry/manifest.yaml` under `integration.flows.<flow>`) | Delete stateful resources that must be recreated on upgrade (e.g. StatefulSets + PVCs on major version bumps). |
 
 Hooks are executed by
-[`scripts/deploy-camunda/matrix/lifecycle_hook.go`](matrix/lifecycle_hook.go);
-scripts receive `TEST_NAMESPACE`, `KUBE_CONTEXT`, and the same
-env-var passthrough the runner uses elsewhere:
-`RDBMS_POSTGRESQL_USERNAME`, `RDBMS_POSTGRESQL_PASSWORD`,
-`GITHUB_WORKFLOW_JOB_ID`, `POSTGRESQL_JDBC_URL`.
+[`scripts/deploy-camunda/matrix/lifecycle_hook.go`](matrix/lifecycle_hook.go).
+Environment exposed to each hook type differs:
+
+- **Script hooks** (`script: my-hook.sh`): receive `TEST_NAMESPACE`,
+  `KUBE_CONTEXT`, `NAMESPACE`, `RELEASE_NAME`, plus the passthrough vars
+  the runner surfaces to every hook: `RDBMS_POSTGRESQL_USERNAME`,
+  `RDBMS_POSTGRESQL_PASSWORD`, `GITHUB_WORKFLOW_JOB_ID`,
+  `POSTGRESQL_JDBC_URL`.
+- **Fixture hooks** (`fixtures: [x.yaml]`): manifests get
+  `$NAMESPACE` / `$RELEASE_NAME` substituted before server-side apply,
+  plus the same passthrough list. They don't see `TEST_NAMESPACE` or
+  `KUBE_CONTEXT` — the runner supplies the target context directly.
 
 ### Wiring the Elastic (ECK) operator as a fixture
 
@@ -283,6 +304,7 @@ The path to add one:
    Use `$NAMESPACE` / `$RELEASE_NAME` for substitution:
 
    ```yaml
+   # charts/<v>/test/integration/scenarios/common/resources/eck-elasticsearch.yaml
    apiVersion: elasticsearch.k8s.elastic.co/v1
    kind: Elasticsearch
    metadata:
@@ -296,9 +318,22 @@ The path to add one:
          config:
            node.store.allow_mmap: false
    ```
-3. Reference it from a new scenario file with a `pre-install` hook:
+3. Declare the hook that applies that fixture — the hook **body** lives
+   in a dedicated file under `hooks/`, not inline in the scenario:
 
    ```yaml
+   # charts/<v>/test/ci/registry/hooks/eck-elasticsearch.yaml
+   fixtures:
+     - eck-elasticsearch.yaml
+   description: |
+     Provisions an ECK-managed Elasticsearch cluster in the scenario
+     namespace before helm-installing the Camunda chart. Requires the
+     ECK operator's CRDs to be installed cluster-wide already.
+   ```
+4. Reference the hook by ID from your new scenario file:
+
+   ```yaml
+   # charts/<v>/test/ci/registry/scenarios/elasticsearch-eck.yaml
    name: elasticsearch-eck
    auth: keycloak
    flows: [install]
@@ -310,15 +345,9 @@ The path to add one:
    dependencies:
      - keycloak
      - postgresql
-   pre-install:
-     fixtures:
-       - eck-elasticsearch.yaml
-     description: |
-       Provisions an ECK-managed Elasticsearch cluster in the scenario
-       namespace before helm-installing the Camunda chart. Requires the
-       ECK operator's CRDs to be installed cluster-wide already.
+   pre-install: eck-elasticsearch     # string ID → hooks/eck-elasticsearch.yaml
    ```
-4. Point the Camunda chart at the ECK service via a companion values
+5. Point the Camunda chart at the ECK service via a companion values
    file overlay (`persistence: elasticsearch-external`).
 
 For a full worked example of a load-tested ECK setup, see
@@ -327,12 +356,22 @@ For a full worked example of a load-tested ECK setup, see
 
 ### Testing an operator-scenario locally
 
-Because operators provision resources async, the pre-install hook is
-just fire-and-forget from the runner's perspective. Add a readiness
-gate to the manifest (e.g. an `Elasticsearch.status.health: green`
-polling loop) if your Camunda chart install fails against a not-yet-ready
-ECK cluster. The runner logs from `lifecycle_hook.go` show applied
-resources under the `hook:` log prefix.
+Pre-install hooks are **synchronous and fail-fast**: the runner
+executes them before `helm install` and aborts the deploy if a hook
+returns non-zero. However, because operators provision their custom
+resources asynchronously, the runner's server-side apply of a fixture
+returns as soon as the CR is accepted — well before the operator has
+finished provisioning it. If your Camunda chart install races the
+provisioning, either:
+
+- add a readiness gate **inside the hook** (a `script:` hook that polls
+  `kubectl wait --for=jsonpath='{.status.health}'=green
+  Elasticsearch/$RELEASE_NAME -n $NAMESPACE`), or
+- ship an `initContainer` on the chart's dependent components that
+  polls the operator resource until it's ready.
+
+The runner logs from `lifecycle_hook.go` show applied resources under
+the `hook:` log prefix.
 
 ## Registry & credentials
 
@@ -507,11 +546,18 @@ Symptom: preflight reports `CAMUNDA_HOSTNAME` unresolved, or Keycloak
 issues callbacks to `null` / `localhost`.
 
 Fix: `--ingress-base-domain` (or `ingressBaseDomain:` in the config
-file) is required. deploy-camunda computes
-`CAMUNDA_HOSTNAME = <namespace>.<ingress-base-domain>` (or
-`<ingress-subdomain>.<base>` when both are set) and feeds it into
-scenario values, Keycloak issuer URLs, and the ingress objects
-themselves. Set it to the DNS zone your cluster's ingress controller
+file) is required, and how the runner turns it into a hostname
+depends on which subcommand you're using:
+
+- **`deploy-camunda matrix run`** auto-uses each matrix entry's
+  namespace as the subdomain, so `CAMUNDA_HOSTNAME` becomes
+  `<namespace>.<ingress-base-domain>` automatically.
+- **Root `deploy-camunda`** (single deploy) requires **both**
+  `ingressSubdomain` and `ingressBaseDomain` — see
+  [`config/merge.go`'s `ResolveIngressHostname`](config/merge.go). Set
+  either both fields, or `ingressHostname` as a full FQDN override.
+
+Set the base domain to the DNS zone your cluster's ingress controller
 serves — for example `ci.distro.ultrawombat.com` in Camunda CI or
 `apps.mycompany.example` in your own cluster.
 
@@ -548,7 +594,9 @@ For a full command reference and operational patterns, see
 | `deploy-camunda` | Deploy a single scenario using the active profile in `.deploy-camunda.yaml` (or CLI flags). |
 | `deploy-camunda matrix list` | Preview the matrix of `(version, scenario, flow)` combinations without deploying. |
 | `deploy-camunda matrix run` | Deploy every entry the matrix would generate (filter with `--versions`, `--shortname-filter`, `--flow-filter`). |
-| `deploy-camunda config init [--from-example <name>]` | Interactive first-run setup, or drop an embedded starter file into place. |
+| `deploy-camunda config init` | Interactive first-run setup (wizard). |
+| `deploy-camunda config init --from-example <name>` | Non-interactively drop an embedded starter file into place. |
+| `deploy-camunda config init --non-interactive` | Verify an existing config file + run `doctor` without any prompting. Suitable for CI. |
 | `deploy-camunda config init --list-examples` | List the embedded starter templates. |
 | `deploy-camunda doctor [--fix]` | Preflight checklist. |
 | `deploy-camunda config env [--show-origin] [--unmask]` | Show effective env variables with provenance. |
