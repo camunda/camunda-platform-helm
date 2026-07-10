@@ -1,12 +1,14 @@
 # External Elasticsearch backend configuration for 8.10
 # Layer 3: Backend - Elasticsearch (external, e.g. ECK-provisioned)
 #
-# Points Camunda at an Elasticsearch cluster the user provisions themselves
-# (typically via the Elastic Cloud on Kubernetes / ECK operator, or any
-# external ES reachable from the cluster network). Deploy-camunda does NOT
-# deploy a companion ES Helm release when this persistence layer is used —
-# pair it with a scenario whose `dependencies:` list omits `elasticsearch`
-# (see charts/<v>/test/ci/registry/scenarios/hcs-only-*.yaml).
+# Points Camunda at an Elasticsearch cluster the user provisions
+# themselves — any external ES reachable from the cluster network:
+# operator-managed (ECK, ES on OpenShift, …), managed cloud (Elastic
+# Cloud, AWS OpenSearch-as-ES-endpoint, …), or bare-metal / VM.
+# deploy-camunda does NOT deploy a companion ES Helm release when this
+# persistence layer is used — pair it with a scenario whose
+# `dependencies:` list omits `elasticsearch`, or use plain `deploy-camunda`
+# with `--persistence elasticsearch-external`.
 #
 # Required env vars (set in .env or your CI env):
 #   EXTERNAL_ELASTICSEARCH_HOST   — e.g. `my-eck-cluster-es-http.my-ns.svc`

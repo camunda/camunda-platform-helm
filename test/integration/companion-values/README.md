@@ -41,10 +41,13 @@ instead:
 That starter drives `deploy-camunda`, which picks the appropriate companion
 values file for you based on your `identity` and `persistence` selections.
 
-## Bring-your-own operators (skip all companion charts)
+## Bring your own backends (skip all companion charts)
 
-If you run your own operator-managed Elasticsearch (ECK), PostgreSQL
-(CNPG), or Keycloak, the `hcs-only-oidc` and `hcs-only-basic` scenarios
-deploy the Camunda chart alone — no companion Helm releases from this
-directory get applied. See the [Using operators](../../../scripts/deploy-camunda/README.md#using-operators)
+If your backends live outside the chart — cluster operators (ECK,
+CNPG), managed cloud services (RDS, Cloud SQL, Elastic Cloud), or a
+third-party IdP (Auth0, Okta, Entra, external Keycloak) — use the
+`elasticsearch-external` persistence layer + `--identity basic` or
+`--identity oidc` to deploy the Camunda chart alone. No companion Helm
+releases from this directory get applied. See the [Using operators →
+Skip companion Helm releases entirely](../../../scripts/deploy-camunda/README.md#skip-companion-helm-releases-entirely-bring-your-own-backends)
 section of the CLI README for the wiring pattern.

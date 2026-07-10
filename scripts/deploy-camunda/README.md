@@ -133,8 +133,6 @@ The most common starting points on chart 8.10:
 | `orchestration-tls.yaml` | Full mTLS between orchestration components. | keycloak | elasticsearch | install |
 | `no-secondary-storage.yaml` | Camunda without an Elasticsearch back-end. | keycloak | no-elasticsearch | install |
 | `alwaysgreen.yaml` | Canary/smoke scenario. | keycloak | elasticsearch | install |
-| `hcs-only-oidc.yaml` | **Camunda chart only, no companion Helm releases.** OIDC-flavoured. External ES via env vars. Disabled in CI — external-composition reference. | oidc | elasticsearch-external | install |
-| `hcs-only-basic.yaml` | Same as above but basic auth. Simplest possible external-composition. | basic | elasticsearch-external | install |
 
 [^flow-empty]: `documentstore.yaml` declares `flows: [""]`, which the
     runner normalises to `install` — see `matrix/runner.go`.
@@ -153,7 +151,7 @@ one from scratch:
 - *"I use PostgreSQL as secondary storage."* → `rdbms` or `rdbms-external`.
 - *"I use OpenSearch with our own certs."* → `opensearch-self-signed`.
 - *"I need multi-tenancy."* → `keycloak-mt`.
-- *"I have my own operators (ECK / CNPG / external Keycloak) and just want the Camunda chart."* → `hcs-only-oidc` or `hcs-only-basic`.
+- *"I have my own backends (operators, managed cloud DBs, third-party IdP) and just want the Camunda chart."* → `--persistence elasticsearch-external` + your identity flavour; see [Skip companion Helm releases entirely](#skip-companion-helm-releases-entirely-bring-your-own-backends) below.
 
 Full list (47 scenarios on 8.10):
 
@@ -255,32 +253,62 @@ Some persistence and IdP options are best provisioned by a Kubernetes
 lifecycle hook types so a scenario can wire an operator-managed
 dependency without leaking that logic into the platform chart.
 
-### Skip companion Helm releases entirely (`hcs-only-*`)
+### Skip companion Helm releases entirely (bring your own backends)
 
-If your operators already stand up Elasticsearch, PostgreSQL, and
-Keycloak/OIDC in your cluster and you only need the Camunda chart on
-top, use one of the ready-made `hcs-only-*` scenarios:
+Works whether your backends are:
 
-- `hcs-only-oidc` — external OIDC IdP (Entra ID, external Keycloak, …).
-- `hcs-only-basic` — no IdP (basic auth), simplest possible.
+- **Kubernetes operators** in-cluster (ECK Elasticsearch, CNPG
+  PostgreSQL, Zalando Postgres, Strimzi, …),
+- **Managed cloud services** (AWS RDS / Aurora, Google Cloud SQL,
+  Elastic Cloud, Azure Database), or
+- **Third-party IdPs** (Auth0, Okta, Microsoft Entra, external Keycloak).
 
-Both declare `dependencies: []`, so the matrix runner deploys **no**
-companion Helm releases. Point the Camunda chart at your
-operator-provisioned Elasticsearch via env vars (see the full wiring
-reference below for all supported components — Keycloak, PostgreSQL, OIDC):
+If the endpoints your Camunda chart needs are already reachable from the
+cluster network, compose the deploy locally — no shipped scenario
+needed. The building blocks are all in the chart already:
+
+- **`--persistence elasticsearch-external`** — points the chart at any
+  external Elasticsearch (operator-managed, managed cloud, or bare
+  metal) via env vars
+  (`EXTERNAL_ELASTICSEARCH_HOST/PORT/SCHEME`). Also disables the chart's
+  `identity`, `camundaHub`, and `webModeler` components — each of those
+  bundles its own PostgreSQL, which you don't want in a
+  bring-your-own-infra deploy.
+- **`--identity basic`** — no IdP. Simplest possible.
+- **`--identity oidc`** — external OIDC (Entra by default; use
+  `--extra-values` to override the issuer URLs for a different IdP).
+
+Live-verified end-to-end recipe (basic auth, single-scenario matrix
+entry, no companion Helm releases):
 
 ```bash
+# Point at your external ES (operator, managed service, whichever).
 export EXTERNAL_ELASTICSEARCH_HOST=my-eck-cluster-es-http.eck.svc
 export EXTERNAL_ELASTICSEARCH_PORT=9200
 export EXTERNAL_ELASTICSEARCH_SCHEME=https
-deploy-camunda matrix run \
-  --repo-root . --versions 8.10 --shortname-filter hcso \
-  --include-disabled \
-  --ingress-base-domain-gke <your-zone>
+
+# Author a one-off overlay if you want anything scenario-shaped
+# (extra-values, custom OIDC endpoints, …). Skip if you don't need it.
+
+deploy-camunda \
+  --repo-root . \
+  --chart-path charts/camunda-platform-8.10 \
+  --identity basic \
+  --persistence elasticsearch-external \
+  --test-platform gke \
+  --namespace my-hcs-only \
+  --release camunda \
+  --ingress-base-domain <your-zone>
 ```
 
-Note `--include-disabled` — both scenarios ship disabled in the manifest,
-so the runner ignores them unless you opt in explicitly.
+Result: one Helm release (the Camunda chart), three pods —
+`connectors`, `optimize`, `zeebe`. No `identity` / `camundaHub` /
+`web-modeler` (each needs its own PG). No companion Helm releases from
+`test/integration/companion-values/`.
+
+For OIDC (Entra) instead of basic auth, swap `--identity basic` for
+`--identity oidc` and set `ENTRA_APP_*` env vars (see the wiring
+reference below).
 
 Both scenarios ship **disabled** (no CI slot). Discover them via
 `deploy-camunda matrix list --include-disabled --shortname-filter hcs-only`.

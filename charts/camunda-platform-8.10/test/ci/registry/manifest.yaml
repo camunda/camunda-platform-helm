@@ -173,14 +173,3 @@ integration:
     - id: qa-license
       shortname: lic
       enabled: false
-    # External-composition reference scenarios: HCS chart only, no companion
-    # Helm releases. External teams point their operator-managed
-    # Elasticsearch + (optionally) Keycloak / OIDC at deploy-camunda via
-    # env-var overrides. Disabled in CI — discovery via
-    # `deploy-camunda matrix list --include-disabled --shortname-filter hcs-only`.
-    - id: hcs-only-oidc
-      shortname: hcso
-      enabled: false
-    - id: hcs-only-basic
-      shortname: hcsb
-      enabled: false

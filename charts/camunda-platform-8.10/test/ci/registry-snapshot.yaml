@@ -1547,30 +1547,6 @@ integration:
               values-file: test/integration/companion-values/elasticsearch-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-        - name: hcs-only-oidc
-          enabled: false
-          shortname: hcso
-          auth: oidc
-          flow: install
-          platforms:
-            - gke
-          exclude: []
-          infra-type:
-            gke: distroci
-          identity: oidc
-          persistence: elasticsearch-external
-        - name: hcs-only-basic
-          enabled: false
-          shortname: hcsb
-          auth: basic
-          flow: install
-          platforms:
-            - gke
-          exclude: []
-          infra-type:
-            gke: distroci
-          identity: basic
-          persistence: elasticsearch-external
     nightly:
       scenario: []
   flows:
