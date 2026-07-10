@@ -191,6 +191,10 @@ For detailed documentation on how scenario resolution works, see `docs/integrati
 
 Each chart version has a `test/ci-test-config.yaml` defining scenarios (e.g., `elasticsearch`, `opensearch`). Each scenario specifies identity, persistence, platforms, and allowed flows. The matrix is filtered by `.github/config/permitted-flows.yaml` which denies specific flows per version (e.g., 8.9 denies `upgrade-patch` but allows `upgrade-minor`).
 
+**Tier split:** `pull_request` runs **tier-1 only** — `test-chart-version.yaml` passes `tier: 1` on PR events. The **full matrix** (tier-2 plus untiered scenarios) runs on `merge_group` (merge queue). A PR that adds or changes a tier-2 scenario gets no CI signal until merge is clicked; validate tier-2 changes locally before merge. See [SKILLS.md → Verifying tier-2 scenarios before merge](../SKILLS.md#verifying-tier-2-scenarios-before-merge).
+
+Scenarios and tiers for 8.7–8.10 live in the composable registry `test/ci/registry/manifest.yaml`; only 8.6 uses `test/ci-test-config.yaml`. Use `deploy-camunda matrix list --tier 2 --versions <v>` to re-derive the current set regardless of source.
+
 Upgrade flows are two-step: install the previous version's chart from the Helm repo, then `helm upgrade` to the local chart. The `base-upgrade.yaml` layer is included only in Step 2.
 
 ## Operational Skills
