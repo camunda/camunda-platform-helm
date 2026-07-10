@@ -12,6 +12,10 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -23,6 +27,9 @@ jobs:
     # Only stable chart releases (skip non-chart tags/releases and prereleases).
     if: startsWith(github.event.release.tag_name, 'camunda-platform-') && github.event.release.prerelease == false
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
