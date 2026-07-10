@@ -16,6 +16,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
+	"scripts/deploy-camunda/examples"
 	"scripts/prepare-helm-values/pkg/env"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,9 @@ import (
 func newInitCommand() *cobra.Command {
 	var nonInteractive bool
 	var envFile string
+	var fromExample string
+	var listExamples bool
+	var force bool
 
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -41,7 +45,11 @@ scaffolds the random test secrets, then runs the doctor preflight so you finish
 with a ✓/✗ checklist instead of guessing what is missing.
 
 Use --non-interactive in CI to ensure a config file exists and print the
-checklist without prompting.`,
+checklist without prompting.
+
+Use --from-example <name> to drop a static starter config into place without
+any prompting — useful when you want a file you can edit and commit. Run with
+--list-examples to see the available templates.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -54,11 +62,29 @@ checklist without prompting.`,
 				return err
 			}
 
+			out := cmd.OutOrStdout()
+
+			if listExamples {
+				names := examples.Names()
+				if len(names) == 0 {
+					fmt.Fprintln(out, "No examples embedded.")
+					return nil
+				}
+				fmt.Fprintln(out, "Available examples:")
+				for _, n := range names {
+					fmt.Fprintf(out, "  %s\n", n)
+				}
+				return nil
+			}
+
 			cfgRes, err := config.ResolvePath(configFile)
 			if err != nil {
 				return err
 			}
-			out := cmd.OutOrStdout()
+
+			if fromExample != "" {
+				return writeExampleConfig(out, cfgRes.Path, fromExample, force)
+			}
 
 			if nonInteractive {
 				if !cfgRes.Found {
@@ -188,7 +214,40 @@ checklist without prompting.`,
 
 	cmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "Don't prompt; require an existing config and just run doctor")
 	cmd.Flags().StringVar(&envFile, "env-file", ".env", "Path to the .env file to write secrets/credentials into")
+	cmd.Flags().StringVar(&fromExample, "from-example", "", "Non-interactively write the named embedded starter config to the config path (e.g. `getting-started`). See --list-examples.")
+	cmd.Flags().BoolVar(&listExamples, "list-examples", false, "List the embedded example names and exit")
+	cmd.Flags().BoolVar(&force, "force", false, "Overwrite an existing config file when using --from-example")
+
+	// The three exit paths (list, template-drop, wizard/doctor) are mutually
+	// exclusive by design: combining them would silently prefer one and drop
+	// the other's contract (e.g. --non-interactive's doctor preflight is
+	// skipped if --from-example short-circuits first).
+	cmd.MarkFlagsMutuallyExclusive("from-example", "non-interactive")
+	cmd.MarkFlagsMutuallyExclusive("list-examples", "non-interactive")
+	cmd.MarkFlagsMutuallyExclusive("list-examples", "from-example")
+
 	return cmd
+}
+
+// writeExampleConfig drops the named embedded starter at the resolved config
+// path. Refuses to overwrite an existing file unless force is true; the whole
+// point of the flag is safe onboarding, so silent clobbering is off by default.
+func writeExampleConfig(out io.Writer, path, name string, force bool) error {
+	content, err := examples.Load(name)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(path); err == nil && !force {
+		return fmt.Errorf("config already exists at %s; re-run with --force to overwrite", path)
+	} else if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", path, err)
+	}
+	fmt.Fprintf(out, "Wrote starter config to %s (from example %q).\n", path, name)
+	fmt.Fprintln(out, "Next: edit the CHANGE-ME fields, then run `deploy-camunda doctor`.")
+	return nil
 }
 
 // runDoctorAfterInit loads the freshly-written config and prints a preflight

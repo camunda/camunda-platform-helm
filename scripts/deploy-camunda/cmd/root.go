@@ -252,7 +252,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringSliceVar(&flags.Deployment.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
 	f.StringSliceVar(&flags.Chart.ChartRootOverlays, "values-preset", nil, "Chart-root overlay files to apply (comma-separated or repeatable): enterprise, digest, latest, local, bitnami-legacy (resolves to values-{name}.yaml)")
 	f.StringVar(&flags.Ingress.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (requires --ingress-base-domain)")
-	f.StringVar(&flags.Ingress.IngressBaseDomain, "ingress-base-domain", "", "Base domain for ingress (ci.distro.ultrawombat.com or distribution.aws.camunda.cloud)")
+	f.StringVar(&flags.Ingress.IngressBaseDomain, "ingress-base-domain", "", "Base DNS zone used to compute the deploy's public URL — deploy-camunda joins <ingress-subdomain>.<base> (or the namespace if no subdomain is set) into CAMUNDA_HOSTNAME, which feeds Keycloak issuers, callback URLs, and every scenario values file. Set to the DNS zone your cluster's ingress controller serves, e.g. `ci.distro.ultrawombat.com` (Camunda CI) or `apps.mycompany.example`. Required for anything that reaches the cluster over HTTPS.")
 	f.StringVar(&flags.Ingress.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Deployment.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
 	f.StringSliceVar(&debugFlagsRaw, "debug", nil, "Enable JVM remote debugging for component (repeatable, e.g., --debug orchestration:5005 --debug connectors:5006)")
@@ -298,6 +298,8 @@ func NewRootCommand() *cobra.Command {
 	registerIngressBaseDomainCompletion(rootCmd)
 	registerSelectionCompletion(rootCmd)
 	registerLayeredValuesCompletion(rootCmd)
+
+	annotateFlagGroups(rootCmd, rootFlagGroups())
 
 	return rootCmd
 }

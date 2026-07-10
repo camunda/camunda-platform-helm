@@ -140,3 +140,159 @@ func TestConfigInitNonInteractiveRequiresConfig(t *testing.T) {
 		t.Fatal("expected error when --non-interactive and no config exists")
 	}
 }
+
+func TestConfigInitFromExample(t *testing.T) {
+	t.Setenv("PATH", "")
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
+	prev := configFile
+	configFile = cfgPath
+	t.Cleanup(func() { configFile = prev })
+
+	cmd := newInitCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--from-example", "getting-started"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("--from-example returned error: %v\n%s", err, out.String())
+	}
+
+	raw, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatalf("config file not written: %v", err)
+	}
+	if !strings.Contains(string(raw), "Getting Started") {
+		t.Errorf("written config missing banner from getting-started template; content:\n%s", string(raw))
+	}
+	if !strings.Contains(out.String(), "Wrote starter config") {
+		t.Errorf("expected user-facing 'Wrote starter config' message; got:\n%s", out.String())
+	}
+}
+
+func TestConfigInitFromExampleRefusesToOverwrite(t *testing.T) {
+	t.Setenv("PATH", "")
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
+	if err := os.WriteFile(cfgPath, []byte("existing: true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	prev := configFile
+	configFile = cfgPath
+	t.Cleanup(func() { configFile = prev })
+
+	cmd := newInitCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--from-example", "getting-started"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error when writing over existing config without --force")
+	}
+	if !strings.Contains(err.Error(), "--force") {
+		t.Errorf("expected error to mention --force; got: %v", err)
+	}
+	raw, _ := os.ReadFile(cfgPath)
+	if string(raw) != "existing: true\n" {
+		t.Errorf("original config was clobbered without --force; new content:\n%s", string(raw))
+	}
+}
+
+func TestConfigInitFromExampleForceOverwrite(t *testing.T) {
+	t.Setenv("PATH", "")
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
+	if err := os.WriteFile(cfgPath, []byte("existing: true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	prev := configFile
+	configFile = cfgPath
+	t.Cleanup(func() { configFile = prev })
+
+	cmd := newInitCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--from-example", "getting-started", "--force"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("--force overwrite failed: %v", err)
+	}
+	raw, _ := os.ReadFile(cfgPath)
+	if strings.Contains(string(raw), "existing: true") {
+		t.Errorf("--force did not overwrite existing config; content:\n%s", string(raw))
+	}
+}
+
+func TestConfigInitFromExampleUnknownName(t *testing.T) {
+	t.Setenv("PATH", "")
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
+	prev := configFile
+	configFile = cfgPath
+	t.Cleanup(func() { configFile = prev })
+
+	cmd := newInitCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--from-example", "does-not-exist"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown example name")
+	}
+	if !strings.Contains(err.Error(), "does-not-exist") {
+		t.Errorf("error should name the missing example; got: %v", err)
+	}
+}
+
+func TestConfigInitRejectsConflictingModeFlags(t *testing.T) {
+	t.Setenv("PATH", "")
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
+	prev := configFile
+	configFile = cfgPath
+	t.Cleanup(func() { configFile = prev })
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{"from-example + non-interactive", []string{"--from-example", "getting-started", "--non-interactive"}},
+		{"list-examples + non-interactive", []string{"--list-examples", "--non-interactive"}},
+		{"list-examples + from-example", []string{"--list-examples", "--from-example", "getting-started"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newInitCommand()
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetErr(&out)
+			cmd.SetArgs(tc.args)
+
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatalf("expected mutual-exclusion error for %v; output:\n%s", tc.args, out.String())
+			}
+			if !strings.Contains(err.Error(), "none of the others can be") {
+				t.Errorf("expected mutual-exclusion error text; got: %v", err)
+			}
+		})
+	}
+}
+
+func TestConfigInitListExamples(t *testing.T) {
+	t.Setenv("PATH", "")
+	cmd := newInitCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--list-examples"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("--list-examples returned error: %v", err)
+	}
+	if !strings.Contains(out.String(), "getting-started") {
+		t.Errorf("--list-examples did not include getting-started; output:\n%s", out.String())
+	}
+}

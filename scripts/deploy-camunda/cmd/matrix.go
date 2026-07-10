@@ -196,12 +196,58 @@ func newMatrixRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run the CI test matrix against a live cluster",
-		Long: `Run the full CI test matrix, deploying each scenario + flow combination sequentially.
-Each entry gets its own namespace (<prefix>-<version>-<shortname>).
+		Long: `Deploy the CI test matrix — the cartesian product of chart versions,
+scenarios, and flows declared in charts/<v>/test/ci-test-config.yaml — to a
+live cluster. Each entry gets its own namespace (<prefix>-<version>-<shortname>)
+so entries stay isolated and can run in parallel with --max-parallel.
 
-Use --cleanup to automatically delete each entry's namespace after its deployment and tests complete.
+FILTER FIRST. Without --shortname-filter or --versions the runner attempts
+every enabled scenario across every active chart version, which is not what
+you want interactively. Common first-run pattern:
 
-This command calls deploy.Execute() for each matrix entry.`,
+  # Deploy a single 8.10 scenario, scoping by shortname:
+  deploy-camunda matrix run \
+    --repo-root . \
+    --versions 8.10 \
+    --shortname-filter keyco \
+    --ingress-base-domain ci.distro.ultrawombat.com \
+    --platform gke
+
+Docker Hub is required whenever a scenario pulls from docker.io — supply
+credentials via env or flags, and set --ensure-docker-hub so the pull
+secret is created before the deploy:
+
+  DOCKERHUB_USERNAME=... DOCKERHUB_PASSWORD=... \
+  deploy-camunda matrix run \
+    --repo-root . --versions 8.10 --shortname-filter keyco \
+    --ingress-base-domain ci.distro.ultrawombat.com \
+    --ensure-docker-hub
+
+Prefer a config file over a long flag list — copy the getting-started
+starter and iterate from there:
+
+  deploy-camunda config init --from-example getting-started
+  # edit .deploy-camunda.yaml to set kubeContext / ingressBaseDomain
+  deploy-camunda matrix run --versions 8.10 --shortname-filter keyco
+
+Use --cleanup to delete each entry's namespace after its deployment and
+tests complete, or --delete-namespace to start clean before each entry.
+
+Under the hood this invokes deploy.Execute() for each matrix entry.`,
+		Example: `  # Minimal single-scenario run:
+  deploy-camunda matrix run \
+    --repo-root . --versions 8.10 --shortname-filter keyco \
+    --ingress-base-domain ci.distro.ultrawombat.com --platform gke
+
+  # With Docker Hub credentials for docker.io images:
+  DOCKERHUB_USERNAME=... DOCKERHUB_PASSWORD=... \
+  deploy-camunda matrix run \
+    --repo-root . --versions 8.10 --shortname-filter keyco \
+    --ingress-base-domain ci.distro.ultrawombat.com --ensure-docker-hub
+
+  # Config-file driven (recommended for repeat use):
+  deploy-camunda config init --from-example getting-started
+  deploy-camunda matrix run --versions 8.10 --shortname-filter keyco`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return validateChartRefFlags(chartRef, chartRefVersion)
 		},
@@ -580,7 +626,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&kubeContext, "kube-context", "", "Default Kubernetes context for all platforms (overridden by --kube-context-gke/--kube-context-eks)")
 	f.StringVar(&kubeContextGKE, "kube-context-gke", "", "Kubernetes context for GKE entries")
 	f.StringVar(&kubeContextEKS, "kube-context-eks", "", "Kubernetes context for EKS entries")
-	f.StringVar(&ingressBaseDomain, "ingress-base-domain", "", "Fallback base domain for ingress hosts (overridden by --ingress-base-domain-gke/--ingress-base-domain-eks)")
+	f.StringVar(&ingressBaseDomain, "ingress-base-domain", "", "Fallback base DNS zone used to compute each entry's public URL — joined into CAMUNDA_HOSTNAME as <namespace>.<base>. Set to the DNS zone the target cluster's ingress controller serves, e.g. `ci.distro.ultrawombat.com` (Camunda CI) or `apps.mycompany.example`. Overridden per-platform by --ingress-base-domain-gke/--ingress-base-domain-eks.")
 	f.StringVar(&ingressBaseDomainGKE, "ingress-base-domain-gke", "", "Ingress base domain for GKE entries (e.g., ci.distro.ultrawombat.com)")
 	f.StringVar(&ingressBaseDomainEKS, "ingress-base-domain-eks", "", "Ingress base domain for EKS entries (e.g., distribution.aws.camunda.cloud)")
 	f.IntVar(&maxParallel, "max-parallel", 1, "Maximum number of entries to run concurrently (1 = sequential)")
@@ -629,6 +675,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 	_ = cmd.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return completeLogLevels(toComplete)
 	})
+
+	annotateFlagGroups(cmd, matrixRunFlagGroups())
 
 	return cmd
 }
