@@ -43,6 +43,8 @@ var defaultRenovateProtected = []string{
 	`^\.github/auto-approve-`,
 	`^\.github/workflows/repo-auto-approve\.yaml$`,
 	`^\.github/CODEOWNERS$`,
+	`^charts/.+/values\.schema(\.extra)?\.json$`,
+	`^charts/.+/constraints\.tpl$`,
 	`^scripts/auto-approve-gate/`,
 }
 
@@ -50,6 +52,7 @@ func TestDecide_renovateLane(t *testing.T) {
 	dec := Decide(Inputs{
 		Lane:              LaneRenovate,
 		Author:            RenovateAuthor,
+		EventActor:        RenovateAuthor,
 		ProtectedPatterns: defaultRenovateProtected,
 		PRMeta:            &PRMeta{ChangedFiles: 3},
 		PRFiles: []PRFile{
@@ -68,6 +71,60 @@ func TestDecide_imposterRenovate(t *testing.T) {
 		Allowlist: []string{"eamonnmoloney"},
 	})
 	assert.False(t, dec.Allowed)
+	assert.Equal(t, LaneHuman, dec.Lane)
+}
+
+func TestDecide_renovateUntrustedActor(t *testing.T) {
+	dec := Decide(Inputs{
+		Lane:              LaneRenovate,
+		Author:            RenovateAuthor,
+		EventActor:        "mallory",
+		ProtectedPatterns: defaultRenovateProtected,
+		PRMeta:            &PRMeta{ChangedFiles: 1},
+		PRFiles:           []PRFile{{Filename: "go.mod"}},
+	})
+	assert.False(t, dec.Allowed)
+	assert.Equal(t, LaneRenovate, dec.Lane)
+	assert.Equal(t, []string{"event actor mallory is not a trusted renovate-lane pusher; requiring human review."}, dec.Warnings)
+}
+
+func TestDecide_renovateTrustedDistroCIActor(t *testing.T) {
+	dec := Decide(Inputs{
+		Lane:              LaneRenovate,
+		Author:            RenovateAuthor,
+		EventActor:        DistroCIAuthor,
+		ProtectedPatterns: defaultRenovateProtected,
+		PRMeta:            &PRMeta{ChangedFiles: 1},
+		PRFiles:           []PRFile{{Filename: "go.mod"}},
+	})
+	assert.True(t, dec.Allowed)
+	assert.Equal(t, LaneRenovate, dec.Lane)
+}
+
+func TestDecide_renovateBlockedValuesSchema(t *testing.T) {
+	dec := Decide(Inputs{
+		Lane:              LaneRenovate,
+		Author:            RenovateAuthor,
+		EventActor:        RenovateAuthor,
+		ProtectedPatterns: defaultRenovateProtected,
+		PRMeta:            &PRMeta{ChangedFiles: 1},
+		PRFiles:           []PRFile{{Filename: "charts/camunda-platform-8.10/values.schema.json"}},
+	})
+	assert.False(t, dec.Allowed)
+	assert.Equal(t, LaneRenovate, dec.Lane)
+	assert.Equal(t, []string{"PR touches a protected path; human review is required."}, dec.Notices)
+}
+
+func TestDecide_humanLaneIgnoresEventActor(t *testing.T) {
+	dec := Decide(Inputs{
+		Author:            "mallory",
+		EventActor:        "mallory",
+		Allowlist:         []string{"mallory"},
+		ProtectedPatterns: defaultProtected,
+		PRMeta:            &PRMeta{ChangedFiles: 1},
+		PRFiles:           []PRFile{{Filename: "README.md"}},
+	})
+	assert.True(t, dec.Allowed)
 	assert.Equal(t, LaneHuman, dec.Lane)
 }
 
@@ -378,6 +435,7 @@ func TestRun_renovateLane(t *testing.T) {
 
 	tests := []struct {
 		name        string
+		eventActor  string
 		files       []PRFile
 		filesErr    error
 		protected   string
@@ -388,7 +446,8 @@ func TestRun_renovateLane(t *testing.T) {
 		filesCalls  int
 	}{
 		{
-			name: "pin and tag bumps allowed",
+			name:       "pin and tag bumps allowed",
+			eventActor: RenovateAuthor,
 			files: []PRFile{
 				{Filename: ".github/workflows/chart-chores.yaml"},
 				{Filename: "charts/camunda-platform-8.10/values.yaml"},
@@ -399,7 +458,34 @@ func TestRun_renovateLane(t *testing.T) {
 			filesCalls:  1,
 		},
 		{
+			name:        "distro-ci actor proceeds",
+			eventActor:  DistroCIAuthor,
+			files:       []PRFile{{Filename: "go.mod"}},
+			wantAllowed: true,
+			metaCalls:   1,
+			filesCalls:  1,
+		},
+		{
+			name:        "untrusted actor blocked",
+			eventActor:  "mallory",
+			files:       []PRFile{{Filename: "go.mod"}},
+			wantAllowed: false,
+			wantWarning: "event actor mallory is not a trusted renovate-lane pusher",
+			metaCalls:   0,
+			filesCalls:  0,
+		},
+		{
+			name:        "blocked values.schema.json",
+			eventActor:  RenovateAuthor,
+			files:       []PRFile{{Filename: "charts/camunda-platform-8.10/values.schema.json"}},
+			wantAllowed: false,
+			wantNotice:  "PR touches a protected path",
+			metaCalls:   1,
+			filesCalls:  1,
+		},
+		{
 			name:        "blocked allowlist",
+			eventActor:  RenovateAuthor,
 			files:       []PRFile{{Filename: ".github/auto-approve-allowlist.txt"}},
 			wantAllowed: false,
 			wantNotice:  "PR touches a protected path",
@@ -408,6 +494,7 @@ func TestRun_renovateLane(t *testing.T) {
 		},
 		{
 			name:        "blocked renovate protected list self-protection",
+			eventActor:  RenovateAuthor,
 			files:       []PRFile{{Filename: ".github/auto-approve-protected-paths-renovate.txt"}},
 			wantAllowed: false,
 			wantNotice:  "PR touches a protected path",
@@ -416,6 +503,7 @@ func TestRun_renovateLane(t *testing.T) {
 		},
 		{
 			name:        "blocked repo-auto-approve workflow",
+			eventActor:  RenovateAuthor,
 			files:       []PRFile{{Filename: ".github/workflows/repo-auto-approve.yaml"}},
 			wantAllowed: false,
 			wantNotice:  "PR touches a protected path",
@@ -424,6 +512,7 @@ func TestRun_renovateLane(t *testing.T) {
 		},
 		{
 			name:        "blocked CODEOWNERS",
+			eventActor:  RenovateAuthor,
 			files:       []PRFile{{Filename: ".github/CODEOWNERS"}},
 			wantAllowed: false,
 			wantNotice:  "PR touches a protected path",
@@ -432,6 +521,7 @@ func TestRun_renovateLane(t *testing.T) {
 		},
 		{
 			name:        "blocked auto-approve gate go.mod",
+			eventActor:  RenovateAuthor,
 			files:       []PRFile{{Filename: "scripts/auto-approve-gate/go.mod"}},
 			wantAllowed: false,
 			wantNotice:  "PR touches a protected path",
@@ -439,7 +529,8 @@ func TestRun_renovateLane(t *testing.T) {
 			filesCalls:  1,
 		},
 		{
-			name: "blocked rename evasion",
+			name:       "blocked rename evasion",
+			eventActor: RenovateAuthor,
 			files: []PRFile{
 				{Filename: "safe.txt", PreviousFilename: ".github/auto-approve-allowlist.txt"},
 			},
@@ -450,6 +541,7 @@ func TestRun_renovateLane(t *testing.T) {
 		},
 		{
 			name:        "fail closed files API error",
+			eventActor:  RenovateAuthor,
 			filesErr:    errors.New("api down"),
 			wantAllowed: false,
 			wantWarning: "Could not list PR files",
@@ -458,6 +550,7 @@ func TestRun_renovateLane(t *testing.T) {
 		},
 		{
 			name:        "fail closed missing renovate list",
+			eventActor:  RenovateAuthor,
 			protected:   "missing",
 			wantAllowed: false,
 			wantWarning: "protected-paths list missing/empty",
@@ -466,6 +559,7 @@ func TestRun_renovateLane(t *testing.T) {
 		},
 		{
 			name:        "fail closed empty renovate list",
+			eventActor:  RenovateAuthor,
 			protected:   "empty",
 			wantAllowed: false,
 			wantWarning: "protected-paths list missing/empty",
@@ -496,8 +590,13 @@ func TestRun_renovateLane(t *testing.T) {
 			var buf bytes.Buffer
 			t.Setenv("GITHUB_OUTPUT", filepath.Join(t.TempDir(), "out"))
 
+			eventActor := tt.eventActor
+			if eventActor == "" {
+				eventActor = RenovateAuthor
+			}
 			err := Run(Config{
 				Author:                     RenovateAuthor,
+				EventActor:                 eventActor,
 				PRNumber:                   1,
 				AllowlistPath:              filepath.Join(t.TempDir(), "missing"),
 				ProtectedPathsPath:         filepath.Join(t.TempDir(), "missing"),
@@ -542,6 +641,7 @@ func TestRun_paginationBothPagesScanned(t *testing.T) {
 
 	err := Run(Config{
 		Author:             "eamonnmoloney",
+		EventActor:         "mallory",
 		PRNumber:           42,
 		AllowlistPath:      filepath.Join(dir, "allowlist.txt"),
 		ProtectedPathsPath: filepath.Join(dir, "protected.txt"),
@@ -572,6 +672,7 @@ func TestRun_integrationFromFiles(t *testing.T) {
 
 	err := Run(Config{
 		Author:             "eamonnmoloney",
+		EventActor:         "mallory",
 		PRNumber:           6525,
 		AllowlistPath:      filepath.Join(dir, "allowlist.txt"),
 		ProtectedPathsPath: filepath.Join(dir, "protected.txt"),
@@ -646,6 +747,7 @@ func TestRun_notAllowlistedSkipsAPI(t *testing.T) {
 
 	err := Run(Config{
 		Author:             "mallory",
+		EventActor:         "mallory",
 		PRNumber:           1,
 		AllowlistPath:      filepath.Join(dir, "allowlist.txt"),
 		ProtectedPathsPath: filepath.Join(dir, "protected.txt"),
@@ -673,6 +775,7 @@ func TestRun_missingProtectedFileFailClosed(t *testing.T) {
 
 	err := Run(Config{
 		Author:             "eamonnmoloney",
+		EventActor:         "eamonnmoloney",
 		PRNumber:           1,
 		AllowlistPath:      filepath.Join(dir, "allowlist.txt"),
 		ProtectedPathsPath: filepath.Join(dir, "missing-protected.txt"),
