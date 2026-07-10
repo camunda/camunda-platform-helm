@@ -1,0 +1,58 @@
+# External Elasticsearch backend configuration for 8.10
+# Layer 3: Backend - Elasticsearch (external, e.g. ECK-provisioned)
+#
+# Points Camunda at an Elasticsearch cluster the user provisions themselves
+# (typically via the Elastic Cloud on Kubernetes / ECK operator, or any
+# external ES reachable from the cluster network). Deploy-camunda does NOT
+# deploy a companion ES Helm release when this persistence layer is used —
+# pair it with a scenario whose `dependencies:` list omits `elasticsearch`
+# (see charts/<v>/test/ci/registry/scenarios/hcs-only-*.yaml).
+#
+# Required env vars (set in .env or your CI env):
+#   EXTERNAL_ELASTICSEARCH_HOST   — e.g. `my-eck-cluster-es-http.my-ns.svc`
+#   EXTERNAL_ELASTICSEARCH_PORT   — usually `9200`
+#   EXTERNAL_ELASTICSEARCH_SCHEME — `http` or `https`
+
+global:
+  elasticsearch:
+    url:
+      host: "$EXTERNAL_ELASTICSEARCH_HOST"
+      port: "$EXTERNAL_ELASTICSEARCH_PORT"
+      protocol: "$EXTERNAL_ELASTICSEARCH_SCHEME"
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "$EXTERNAL_ELASTICSEARCH_SCHEME://$EXTERNAL_ELASTICSEARCH_HOST:$EXTERNAL_ELASTICSEARCH_PORT"
+  env:
+    # Security mapping rules — identical to the bundled `elasticsearch.yaml`
+    # so authorization defaults behave the same regardless of ES origin.
+    # $VENOM_CLIENT_ID / $CONNECTORS_CLIENT_ID resolve to keycloak client
+    # IDs by default; OIDC deploys override them with the provisioned app
+    # GUIDs via per-entry ExtraEnv.
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+      value: "$VENOM_CLIENT_ID"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
+      value: "$CONNECTORS_CLIENT_ID"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"

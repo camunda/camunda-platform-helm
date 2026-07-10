@@ -1,0 +1,11 @@
+name: hcs-only-basic
+auth: basic
+flows:
+  - install
+identity: basic
+persistence: elasticsearch-external
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+dependencies: []

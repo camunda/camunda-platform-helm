@@ -133,6 +133,8 @@ The most common starting points on chart 8.10:
 | `orchestration-tls.yaml` | Full mTLS between orchestration components. | keycloak | elasticsearch | install |
 | `no-secondary-storage.yaml` | Camunda without an Elasticsearch back-end. | keycloak | no-elasticsearch | install |
 | `alwaysgreen.yaml` | Canary/smoke scenario. | keycloak | elasticsearch | install |
+| `hcs-only-oidc.yaml` | **Camunda chart only, no companion Helm releases.** OIDC-flavoured. External ES via env vars. Disabled in CI — external-composition reference. | oidc | elasticsearch-external | install |
+| `hcs-only-basic.yaml` | Same as above but basic auth. Simplest possible external-composition. | basic | elasticsearch-external | install |
 
 [^flow-empty]: `documentstore.yaml` declares `flows: [""]`, which the
     runner normalises to `install` — see `matrix/runner.go`.
@@ -151,6 +153,7 @@ one from scratch:
 - *"I use PostgreSQL as secondary storage."* → `rdbms` or `rdbms-external`.
 - *"I use OpenSearch with our own certs."* → `opensearch-self-signed`.
 - *"I need multi-tenancy."* → `keycloak-mt`.
+- *"I have my own operators (ECK / CNPG / external Keycloak) and just want the Camunda chart."* → `hcs-only-oidc` or `hcs-only-basic`.
 
 Full list (47 scenarios on 8.10):
 
@@ -251,6 +254,34 @@ Some persistence and IdP options are best provisioned by a Kubernetes
 `elastic/elasticsearch` Helm chart). deploy-camunda exposes three
 lifecycle hook types so a scenario can wire an operator-managed
 dependency without leaking that logic into the platform chart.
+
+### Skip companion Helm releases entirely (`hcs-only-*`)
+
+If your operators already stand up Elasticsearch, PostgreSQL, and
+Keycloak/OIDC in your cluster and you only need the Camunda chart on
+top, use one of the ready-made `hcs-only-*` scenarios:
+
+- `hcs-only-oidc` — external OIDC IdP (Entra ID, external Keycloak, …).
+- `hcs-only-basic` — no IdP (basic auth), simplest possible.
+
+Both declare `dependencies: []`, so the matrix runner deploys **no**
+companion Helm releases. Point the Camunda chart at your
+operator-provisioned Elasticsearch via env vars:
+
+```bash
+export EXTERNAL_ELASTICSEARCH_HOST=my-eck-cluster-es-http.eck.svc
+export EXTERNAL_ELASTICSEARCH_PORT=9200
+export EXTERNAL_ELASTICSEARCH_SCHEME=https
+deploy-camunda matrix run \
+  --repo-root . --versions 8.10 --shortname-filter hcso \
+  --ingress-base-domain <your-zone>
+```
+
+Both scenarios ship **disabled** (no CI slot). Discover them via
+`deploy-camunda matrix list --include-disabled --shortname-filter hcs-only`.
+For anything more complex than "point at a running ES" — e.g. an
+in-scenario `pre-install` hook that provisions the ECK `Elasticsearch`
+CR — see the lifecycle-hooks pattern below.
 
 ### Lifecycle hooks
 
