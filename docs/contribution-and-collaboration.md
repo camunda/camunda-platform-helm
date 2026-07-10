@@ -154,11 +154,13 @@ The [`Repo - Auto Approve`](https://github.com/camunda/camunda-platform-helm/blo
 
 Guardrails:
 
-- **Approve-only** — the bot never merges; branch protection (required status checks, stale-review dismissal) still gates merge.
+- **Approve-only** — the bot never merges; branch protection (required status checks, merge queue) still gates merge.
 - **Privileged & public-API paths always need a human** — any PR whose commits touch a CI-privileged path (`.github/workflows/`, `.github/actions/`, `CODEOWNERS`, the allowlist) or a chart's public API (`values.yaml`, `values.schema.json`, `constraints.tpl`; chart `test/` fixtures excluded) is never auto-approved. The exact set lives in [`.github/auto-approve-protected-paths.txt`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/auto-approve-protected-paths.txt).
 - **Fail-closed** — if the workflow cannot determine what a PR changed, it does not approve.
 
 Adding or removing allowlist entries requires a normal human-reviewed PR.
+
+**Ruleset constraint:** the `main` ruleset must keep `require_last_push_approval` and `dismiss_stale_reviews_on_push` **off**. Both break the release-please and Renovate bot-merge flows (a bot approval is dismissed or disqualified by the follow-up commit those flows push), and neither adds real protection to this control: the allowlist is a subset of the ruleset's bypass actors, so an allowlisted author can already merge without review regardless.
 
 ### Helm version
 
