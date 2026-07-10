@@ -9,10 +9,15 @@ deploy.** For the full command reference and operational patterns, see
 ## TL;DR — first run
 
 ```bash
-deploy-camunda config init      # interactive: scaffolds .camunda-deploy.yaml + .env, ends with a checklist
+deploy-camunda config init      # interactive: scaffolds .deploy-camunda.yaml + .env, ends with a checklist
 deploy-camunda doctor           # re-run the checklist any time
 deploy-camunda config env       # show the effective env and where each value came from (secrets masked)
 ```
+
+> Prefer a file you can commit? Copy
+> [`examples/getting-started.deploy-camunda.yaml`](examples/getting-started.deploy-camunda.yaml)
+> as your `.deploy-camunda.yaml` — a minimal, single-scenario starter that
+> complements the interactive `config init` flow.
 
 A normal `deploy-camunda` run now runs the same preflight automatically and
 **fails fast** if a required input is missing — before creating a namespace or
@@ -31,8 +36,8 @@ CLI flags  >  active deployment in config file  >  root config  >  built-in defa
 The config file is resolved in this order (first that exists wins):
 
 1. `--config <path>` if given
-2. `.camunda-deploy.yaml` in the current directory
-3. `.camunda-deploy.yaml` in the repo root
+2. `.deploy-camunda.yaml` in the current directory
+3. `.deploy-camunda.yaml` in the repo root
 4. `~/.config/camunda/deploy.yaml`
 
 `CAMUNDA_*` environment variables override config-file values (e.g.

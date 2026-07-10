@@ -119,7 +119,7 @@ Layered values live in: `charts/<version>/test/integration/scenarios/chart-full-
 
 ### Configuration Profiles
 
-Create a config file at `.camunda-deploy.yaml` (project root) or `~/.config/camunda/deploy.yaml`:
+Create a config file at `.deploy-camunda.yaml` (project root) or `~/.config/camunda/deploy.yaml`:
 
 ```yaml
 current: dev

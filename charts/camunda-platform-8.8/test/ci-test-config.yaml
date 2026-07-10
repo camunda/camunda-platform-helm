@@ -1,3 +1,12 @@
+# ─── CI-internal ────────────────────────────────────────────────────────────
+# This file defines the CI scenario matrix and unit-test packages for this
+# chart version. It is consumed by GitHub Actions and by
+# `deploy-camunda matrix`. External users deploying Camunda 8 Self-Managed
+# do NOT need to edit it.
+#
+# Start here instead:
+#   scripts/deploy-camunda/examples/getting-started.deploy-camunda.yaml
+# ────────────────────────────────────────────────────────────────────────────
 # Used in the GitHub Actions unit test CI workflow.
 # auth can be the following values: basic, keycloak, oidc
 #

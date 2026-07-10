@@ -214,7 +214,7 @@ func ResolvePath(explicit string) (*ConfigResolution, error) {
 	}
 
 	var searched []string
-	local := ".camunda-deploy.yaml"
+	local := ".deploy-camunda.yaml"
 
 	// prefer local project file if present
 	cwd, _ := os.Getwd()
