@@ -310,11 +310,9 @@ For OIDC (Entra) instead of basic auth, swap `--identity basic` for
 `--identity oidc` and set `ENTRA_APP_*` env vars (see the wiring
 reference below).
 
-Both scenarios ship **disabled** (no CI slot). Discover them via
-`deploy-camunda matrix list --include-disabled --shortname-filter hcs-only`.
 For anything more complex than "point at a running ES" — e.g. an
 in-scenario `pre-install` hook that provisions the ECK `Elasticsearch`
-CR — see the lifecycle-hooks pattern below.
+CR from within the deploy flow — see the lifecycle-hooks pattern below.
 
 ### Wiring external endpoints — env-var reference
 
