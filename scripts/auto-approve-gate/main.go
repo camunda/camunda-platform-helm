@@ -47,6 +47,11 @@ func run(stdout io.Writer) error {
 	if prStr == "" {
 		return fmt.Errorf("PR_NUMBER environment variable is required")
 	}
+	eventActor := os.Getenv("EVENT_ACTOR")
+	if eventActor == "" {
+		return fmt.Errorf("EVENT_ACTOR environment variable is required")
+	}
+
 	prNumber, err := strconv.Atoi(prStr)
 	if err != nil {
 		return fmt.Errorf("parse PR_NUMBER %q: %w", prStr, err)
@@ -54,6 +59,7 @@ func run(stdout io.Writer) error {
 
 	cfg := gate.Config{
 		Author:                     author,
+		EventActor:                 eventActor,
 		PRNumber:                   prNumber,
 		AllowlistPath:              resolveListPath("AUTO_APPROVE_ALLOWLIST", defaultAllowlistPath),
 		ProtectedPathsPath:         resolveListPath("AUTO_APPROVE_PROTECTED_PATHS", defaultProtectedPathsPath),

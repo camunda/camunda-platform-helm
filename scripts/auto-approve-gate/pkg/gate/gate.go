@@ -27,6 +27,7 @@ const (
 	LaneRenovate = "renovate"
 
 	RenovateAuthor  = "renovate[bot]"
+	DistroCIAuthor  = "distro-ci[bot]"
 	changedFilesCap = 3000
 )
 
@@ -34,6 +35,7 @@ var chartTestExclude = regexp.MustCompile(`^charts/[^/]+/test/`)
 
 type Config struct {
 	Author                     string
+	EventActor                 string
 	PRNumber                   int
 	AllowlistPath              string
 	ProtectedPathsPath         string
@@ -59,12 +61,17 @@ type Decision struct {
 type Inputs struct {
 	Lane              string
 	Author            string
+	EventActor        string
 	Allowlist         []string
 	ProtectedPatterns []string
 	PRMeta            *PRMeta
 	PRMetaErr         error
 	PRFiles           []PRFile
 	PRFilesErr        error
+}
+
+func isTrustedRenovateActor(actor string) bool {
+	return actor == RenovateAuthor || actor == DistroCIAuthor
 }
 
 func Decide(in Inputs) Decision {
@@ -80,6 +87,16 @@ func Decide(in Inputs) Decision {
 	if lane == LaneHuman {
 		if !containsExact(in.Allowlist, in.Author) {
 			return Decision{Allowed: false, Lane: LaneHuman}
+		}
+	}
+
+	if lane == LaneRenovate && !isTrustedRenovateActor(in.EventActor) {
+		return Decision{
+			Allowed: false,
+			Lane:    LaneRenovate,
+			Warnings: []string{
+				fmt.Sprintf("event actor %s is not a trusted renovate-lane pusher; requiring human review.", in.EventActor),
+			},
 		}
 	}
 
@@ -201,11 +218,12 @@ func Run(cfg Config, client Client, stdout io.Writer) error {
 	in := Inputs{
 		Lane:              lane,
 		Author:            cfg.Author,
+		EventActor:        cfg.EventActor,
 		Allowlist:         allowlist,
 		ProtectedPatterns: protected,
 	}
 
-	proceed := lane == LaneRenovate || containsExact(allowlist, cfg.Author)
+	proceed := (lane == LaneRenovate && isTrustedRenovateActor(cfg.EventActor)) || containsExact(allowlist, cfg.Author)
 	if proceed && len(protected) > 0 {
 		meta, metaErr := client.GetPullRequest(cfg.PRNumber)
 		in.PRMeta = &meta
