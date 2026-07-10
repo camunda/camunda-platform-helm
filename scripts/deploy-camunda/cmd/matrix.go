@@ -227,7 +227,7 @@ Prefer a config file over a long flag list — copy the getting-started
 starter and iterate from there:
 
   deploy-camunda config init --from-example getting-started
-  # edit .camunda-deploy.yaml to set kubeContext / ingressBaseDomain
+  # edit .deploy-camunda.yaml to set kubeContext / ingressBaseDomain
   deploy-camunda matrix run --versions 8.10 --shortname-filter keyco
 
 Use --cleanup to delete each entry's namespace after its deployment and

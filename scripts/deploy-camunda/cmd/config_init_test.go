@@ -144,7 +144,7 @@ func TestConfigInitNonInteractiveRequiresConfig(t *testing.T) {
 func TestConfigInitFromExample(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 	prev := configFile
 	configFile = cfgPath
 	t.Cleanup(func() { configFile = prev })
@@ -173,7 +173,7 @@ func TestConfigInitFromExample(t *testing.T) {
 func TestConfigInitFromExampleRefusesToOverwrite(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 	if err := os.WriteFile(cfgPath, []byte("existing: true\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestConfigInitFromExampleRefusesToOverwrite(t *testing.T) {
 func TestConfigInitFromExampleForceOverwrite(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 	if err := os.WriteFile(cfgPath, []byte("existing: true\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestConfigInitFromExampleForceOverwrite(t *testing.T) {
 func TestConfigInitFromExampleUnknownName(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 	prev := configFile
 	configFile = cfgPath
 	t.Cleanup(func() { configFile = prev })
@@ -249,7 +249,7 @@ func TestConfigInitFromExampleUnknownName(t *testing.T) {
 func TestConfigInitRejectsConflictingModeFlags(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".camunda-deploy.yaml")
+	cfgPath := filepath.Join(tmp, ".deploy-camunda.yaml")
 	prev := configFile
 	configFile = cfgPath
 	t.Cleanup(func() { configFile = prev })

@@ -10,13 +10,13 @@ import (
 	"strings"
 )
 
-const suffix = ".camunda-deploy.yaml"
+const suffix = ".deploy-camunda.yaml"
 
-//go:embed *.camunda-deploy.yaml
+//go:embed *.deploy-camunda.yaml
 var files embed.FS
 
 // Load returns the raw bytes of the named example. The name is the base file
-// name with the `.camunda-deploy.yaml` suffix stripped, e.g. "getting-started".
+// name with the `.deploy-camunda.yaml` suffix stripped, e.g. "getting-started".
 func Load(name string) ([]byte, error) {
 	b, err := files.ReadFile(name + suffix)
 	if err != nil {
