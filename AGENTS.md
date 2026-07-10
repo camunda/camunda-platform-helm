@@ -280,7 +280,7 @@ Before deploying, confirm these requirements — they are the most common source
    (e.g., `gke_camunda-distribution_europe-west1-b_distro-ci`).
 3. **Helm dependencies are up to date** — `make helm.dependency-update chartPath=charts/camunda-platform-<version>`.
 4. **Ingress hostname** — for non-matrix deploys, set `CAMUNDA_HOSTNAME` or use `--ingress-hostname`.
-   The matrix runner computes this automatically from the namespace prefix and base domain.
+   Matrix runs require `--ingress-base-domain-gke ci.distro.ultrawombat.com` (host computed per-namespace from that base domain; without it, values substitution fails on `CAMUNDA_HOSTNAME`).
 
 ### Use `deploy-camunda watch` for live diagnosis
 
@@ -291,11 +291,14 @@ on a short cadence and surfaces diagnoses in real time — far better than manua
 ```bash
 # Terminal 1: deploy
 deploy-camunda matrix run --repo-root . --versions 8.10 --shortname-filter keyco \
-  --platform gke --delete-namespace --timeout 10 --yes
+  --platform gke --ingress-base-domain-gke ci.distro.ultrawombat.com \
+  --delete-namespace --timeout 10 --yes
 
 # Terminal 2: watch (start immediately after deploy begins)
 deploy-camunda watch --namespace matrix-810-keyco-inst-gke --release integration --interval 30
 ```
+
+To validate tier-2 scenarios a PR adds or changes before merge, see [SKILLS.md → Verifying tier-2 scenarios before merge](SKILLS.md#verifying-tier-2-scenarios-before-merge).
 
 The watcher exits automatically when all pods reach Running/Ready. If a pod enters
 CrashLoopBackOff or ImagePullBackOff, the watcher diagnoses the root cause and prints it

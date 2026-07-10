@@ -726,11 +726,10 @@ PR CI runs **tier-1 only** (~5 deploys, the `eske` baseline). The full matrix (~
 
 ### Tier Reference
 
-Authoritative source: `charts/camunda-platform-<v>/test/ci-test-config.yaml` (`tier:`, `enabled:`). The table below is a snapshot — re-derive with:
+Authoritative source depends on chart version: 8.7–8.10 define `tier:` and `enabled:` in the composable registry `charts/camunda-platform-<v>/test/ci/registry/manifest.yaml`; only 8.6 uses the legacy `charts/camunda-platform-8.6/test/ci-test-config.yaml`. The table below is a snapshot — re-derive with the source-agnostic CLI:
 
 ```bash
-awk '/shortname:/{s=$2} /enabled:/{e=$2} /tier:/{t=$2; print s, e, "tier", t}' \
-  charts/camunda-platform-<v>/test/ci-test-config.yaml | grep "true tier 2"
+deploy-camunda matrix list --tier 2 --versions <v>
 ```
 
 **Tier 1:** `eske` on every version. 8.9 covers both `install` and `upgrade-minor`.
@@ -793,16 +792,55 @@ asdf reshim golang   # if using asdf
 # PR-CI baseline
 deploy-camunda matrix list --tier 1 --versions 8.10
 
-# Full merge-queue set
+# Tier-2 merge-queue set
+deploy-camunda matrix list --tier 2 --versions 8.10
+
+# Full merge-queue set (tier-2 plus untiered)
 deploy-camunda matrix list --versions 8.10
 
 # Run one scenario
 deploy-camunda matrix run \
-  --versions 8.10 --shortname-filter eske \
-  --flow-filter install --platform gke
+  --versions 8.10 --shortname-filter eske --shortname-exact \
+  --flow-filter install --platform gke \
+  --ingress-base-domain-gke ci.distro.ultrawombat.com
 
 # CI-parity overrides: --extra-helm-arg, --extra-helm-set, --namespace-override
 ```
+
+GKE matrix runs require `--ingress-base-domain-gke` — the host is computed per-namespace from that base domain; without it, `${CAMUNDA_HOSTNAME}` substitution in `base.yaml` fails with `missing required environment variables: CAMUNDA_HOSTNAME`.
+
+### Verifying tier-2 scenarios before merge
+
+**When:** your PR adds or changes a tier-2 scenario (or a diff exercises one). PR CI runs tier-1 only; the merge queue runs tier-2. Validate locally before merge to avoid a slow, expensive red merge queue.
+
+**The loop:**
+
+1. `deploy-camunda matrix list --tier 2 --versions <v>` — confirm your scenarios, tier, and `enabled` status.
+2. `deploy-camunda matrix run … --dry-run` — offline gate: layers resolve, exactly the expected entries, no template errors.
+3. Real run (comma-separated `--shortname-filter` runs several in one invocation; per-entry PASS/FAIL summary at the end):
+
+```bash
+deploy-camunda matrix run \
+  --versions 8.10 --shortname-filter <sn1>,<sn2> --shortname-exact \
+  --flow-filter upgrade-minor --platform gke \
+  --ingress-base-domain-gke ci.distro.ultrawombat.com \
+  --delete-namespace --timeout 25 --yes
+```
+
+4. Fix failures, then re-run just the failing shortname. Upgrade flows re-install the prior minor each run (~10–15 min/scenario).
+
+**Credentials:** export (or place in `.env`) before running:
+
+- `TEST_DOCKER_USERNAME_CAMUNDA_CLOUD` / `TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD` — Harbor pull secret.
+- For `postgresql-companion` scenarios: `RDBMS_POSTGRESQL_USERNAME` / `RDBMS_POSTGRESQL_PASSWORD`.
+
+Obtain values from your team's secret store. `deploy-camunda doctor` and `matrix run --dry-run` validate presence per entry.
+
+**Local-run gotchas:**
+
+- **`--ingress-base-domain-gke` required** on GKE — else `CAMUNDA_HOSTNAME` substitution fails.
+- **`post-infra` migration hooks and asdf:** hooks like `post-infra-bitnami-migration` clone `camunda-deployment-references` and run under *its* `.tool-versions`; an uninstalled pinned tool (e.g. `jq 1.7.1`) makes the asdf shim exit 126. Fix: `asdf install <tool> <version>` for the versions that clone pins. This is a local-env issue, not a chart bug.
+- A tier-2 failure that is clearly local-environment (exit 126, missing creds) is **not** a merge-queue signal — fix the environment and re-run.
 
 #### Flow Semantics
 
@@ -839,7 +877,7 @@ crev <pr-url> --single --dry-run
 - Treating PR CI green as sufficient when the diff exercises a non-baseline variant; the merge queue will reject the PR.
 - Hand-editing golden files instead of running `make go.update-golden-only`.
 - Adding speculative tier-2 entries not exercised by the diff (consumes local capacity without coverage gain).
-- Reading the tier list above without re-checking `ci-test-config.yaml`; the YAML is authoritative.
+- Reading the tier list above without re-checking via `deploy-camunda matrix list --tier 2` (or the version-appropriate YAML/registry source).
 - Using the merge queue as a discovery mechanism for predictable variant breakage.
 - Running the matrix on PRs that change no rendering output (workflow, Dockerfile, compose, docs, Go-tooling).
 
