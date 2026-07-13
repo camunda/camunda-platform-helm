@@ -227,6 +227,8 @@ For PRs that touch only non-chart files, use:
 - `build:` — Makefile, tooling, dependency, or other build-system changes
 - `test:` — test files only
 
+**Corollary — the `artifacthub.io/changes` block in `Chart.yaml`:** this is the release-notes changelog. Add an entry ONLY for the same user-facing chart changes that justify a `feat/fix/refactor/docs/revert` title. Do NOT add one for a `test:`/`chore:`/`ci:`/`build:` PR — those are excluded from release notes, and editing `Chart.yaml` to add an entry itself makes an otherwise test-only PR touch a user-facing chart file, defeating the classification. Such PRs should leave `Chart.yaml` untouched.
+
 See [Contribution & Collaboration](docs/contribution-and-collaboration.md) for the full PR checklist.
 
 ### PR body and opening workflow (overrides Claude Code defaults)
