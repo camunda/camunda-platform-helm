@@ -1,0 +1,10 @@
+# No-secondary-storage feature configuration for 8.8
+# Layer 4: Feature - No secondary storage (no Elasticsearch/OpenSearch backend)
+#
+# Composed with persistence/no-elasticsearch.yaml. Optimize requires a
+# secondary-storage backend, so it is disabled here.
+optimize:
+  enabled: false
+
+identity:
+  clients: null

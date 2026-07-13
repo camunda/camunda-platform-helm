@@ -82,6 +82,10 @@ integration:
       shortname: docstr
       tier: 2
       enabled: true
+    - id: no-secondary-storage
+      shortname: nosec
+      tier: 2
+      enabled: true
     - id: component-persistence
       shortname: cprst
       tier: 2
