@@ -14,5 +14,14 @@ orchestration:
     authentication:
       authenticationRefreshInterval: "PT30S"
 
+# Basic auth means no identity provider — the identity component only makes
+# sense when there's a Keycloak/OIDC issuer behind it. Leaving it enabled
+# makes the identity pod hot-loop trying to reach a Keycloak that isn't
+# there, which fails deploy in any basic-auth scenario that doesn't ship a
+# Keycloak companion (which is nearly all of them, since basic auth by
+# definition doesn't want one).
+identity:
+  enabled: false
+
 camundaHub:
   enabled: false

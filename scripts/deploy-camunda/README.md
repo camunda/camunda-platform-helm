@@ -151,6 +151,7 @@ one from scratch:
 - *"I use PostgreSQL as secondary storage."* → `rdbms` or `rdbms-external`.
 - *"I use OpenSearch with our own certs."* → `opensearch-self-signed`.
 - *"I need multi-tenancy."* → `keycloak-mt`.
+- *"I have my own backends (operators, managed cloud DBs, third-party IdP) and just want the Camunda chart."* → `--persistence elasticsearch-external` + your identity flavour; see [Skip companion Helm releases entirely](#skip-companion-helm-releases-entirely-bring-your-own-backends) below.
 
 Full list (47 scenarios on 8.10):
 
@@ -251,6 +252,117 @@ Some persistence and IdP options are best provisioned by a Kubernetes
 `elastic/elasticsearch` Helm chart). deploy-camunda exposes three
 lifecycle hook types so a scenario can wire an operator-managed
 dependency without leaking that logic into the platform chart.
+
+### Skip companion Helm releases entirely (bring your own backends)
+
+Works whether your backends are:
+
+- **Kubernetes operators** in-cluster (ECK Elasticsearch, CNPG
+  PostgreSQL, Zalando Postgres, Strimzi, …),
+- **Managed cloud services** (AWS RDS / Aurora, Google Cloud SQL,
+  Elastic Cloud, Azure Database), or
+- **Third-party IdPs** (Auth0, Okta, Microsoft Entra, external Keycloak).
+
+If the endpoints your Camunda chart needs are already reachable from the
+cluster network, compose the deploy locally — no shipped scenario
+needed. The building blocks are all in the chart already:
+
+- **`--persistence elasticsearch-external`** — points the chart at any
+  external Elasticsearch (operator-managed, managed cloud, or bare
+  metal) via env vars
+  (`EXTERNAL_ELASTICSEARCH_HOST/PORT/SCHEME`). Also disables the chart's
+  `identity`, `camundaHub`, and `webModeler` components — each of those
+  bundles its own PostgreSQL, which you don't want in a
+  bring-your-own-infra deploy.
+- **`--identity basic`** — no IdP. Simplest possible.
+- **`--identity oidc`** — external OIDC (Entra by default; use
+  `--extra-values` to override the issuer URLs for a different IdP).
+
+Live-verified end-to-end recipe (basic auth, plain `deploy-camunda`, no
+`matrix run`, no companion Helm releases):
+
+```bash
+# Point at your external ES (operator, managed service, whichever).
+export EXTERNAL_ELASTICSEARCH_HOST=my-eck-cluster-es-http.eck.svc
+export EXTERNAL_ELASTICSEARCH_PORT=9200
+export EXTERNAL_ELASTICSEARCH_SCHEME=https
+
+# Author a one-off overlay if you want anything scenario-shaped
+# (extra-values, custom OIDC endpoints, …). Skip if you don't need it.
+
+deploy-camunda \
+  --repo-root . \
+  --chart-path charts/camunda-platform-8.10 \
+  --identity basic \
+  --persistence elasticsearch-external \
+  --test-platform gke \
+  --namespace my-hcs-only \
+  --release camunda \
+  --ingress-base-domain <your-zone>
+```
+
+Result: one Helm release (the Camunda chart), three pods —
+`connectors`, `optimize`, `zeebe`. No `identity` / `camundaHub` /
+`web-modeler` (each needs its own PG). No companion Helm releases from
+`test/integration/companion-values/`.
+
+For OIDC (Entra) instead of basic auth, swap `--identity basic` for
+`--identity oidc` and set `ENTRA_APP_*` env vars (see the wiring
+reference below).
+
+For anything more complex than "point at a running ES" — e.g. an
+in-scenario `pre-install` hook that provisions the ECK `Elasticsearch`
+CR from within the deploy flow — see the lifecycle-hooks pattern below.
+
+### Wiring external endpoints — env-var reference
+
+Each external component reads a fixed set of env vars (from `.env`, process
+env, or per-entry `ExtraEnv` overrides). Set them before running
+`deploy-camunda`. `deploy-camunda config env --show-origin` prints which
+layer each variable resolved from.
+
+**Elasticsearch** (`persistence: elasticsearch-external`):
+
+| Var | Example | Notes |
+|---|---|---|
+| `EXTERNAL_ELASTICSEARCH_HOST` | `my-cluster-es-http.eck.svc` | ECK service DNS, or any reachable ES hostname. |
+| `EXTERNAL_ELASTICSEARCH_PORT` | `9200` | The ES HTTP port your endpoint listens on. |
+| `EXTERNAL_ELASTICSEARCH_SCHEME` | `http` or `https` | `https` if your operator terminates TLS on the ES service. |
+
+**PostgreSQL** (`persistence: rdbms-external` — used for secondary storage):
+
+| Var | Example | Notes |
+|---|---|---|
+| `POSTGRESQL_JDBC_URL` | `jdbc:postgresql://mypg.cnpg.svc:5432/postgres` | Base JDBC URL; the shipped `rdbms-external.yaml` persistence layer appends `/${GITHUB_WORKFLOW_JOB_ID}` for CI isolation. Override with an `--extra-values` layer to drop the suffix when deploying interactively. |
+| `RDBMS_POSTGRESQL_USERNAME` | `camunda` | Role with `CREATEDB` or an existing database referenced by the URL. |
+| `RDBMS_POSTGRESQL_PASSWORD` | *(random)* | `deploy-camunda config init` scaffolds a random value if you want a local dev credential. |
+
+**External Keycloak** (`identity: keycloak-external`):
+
+| Var / flag | Example | Notes |
+|---|---|---|
+| `CAMUNDA_KEYCLOAK_HOST` / `--keycloak-host` | `keycloak.internal.example.com` | Fully-qualified host reachable from Camunda pods and from user browsers (issuer URLs are baked from it). |
+| `CAMUNDA_KEYCLOAK_PROTOCOL` / `--keycloak-protocol` | `https` | Default: `https`. |
+| `CAMUNDA_KEYCLOAK_REALM` / `--keycloak-realm` | `camunda-platform` | Auto-generated if unset — set explicitly if pointing at a pre-provisioned realm. |
+
+**OIDC** (`identity: oidc` — Entra-flavoured by default):
+
+The shipped `oidc.yaml` layer hard-codes Microsoft Entra URLs. If you have
+a generic OIDC IdP (Auth0, Okta, self-hosted Keycloak as an IdP, …),
+override with an `--extra-values` overlay that replaces the `issuer`,
+`authUrl`, `jwksUrl`, `tokenUrl`, and `publicIssuerUrl` fields under
+`global.identity.auth`. Env vars used by the Entra path:
+
+| Var | Notes |
+|---|---|
+| `ENTRA_APP_DIRECTORY_ID` | Tenant / directory GUID. |
+| `ENTRA_APP_CLIENT_ID` | Registered application (client) GUID. |
+| `ENTRA_APP_CLIENT_SECRET` | Client secret for the identity component. |
+| `ENTRA_APP_OBJECT_ID` | Object ID used for initial-claim seed. |
+
+For a fully generic OIDC IdP the cleanest path is to author a companion
+values file (e.g. `custom-oidc.yaml`) and reference it via
+`extraValues:` in your config profile.
 
 ### Lifecycle hooks
 

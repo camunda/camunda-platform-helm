@@ -40,3 +40,16 @@ instead:
 
 That starter drives `deploy-camunda`, which picks the appropriate companion
 values file for you based on your `identity` and `persistence` selections.
+
+## Bring your own backends (skip all companion charts)
+
+If your backends live outside the chart — cluster operators (ECK,
+CNPG), managed cloud services (RDS, Cloud SQL, Elastic Cloud), or a
+third-party IdP (Auth0, Okta, Entra, external Keycloak) — run plain
+`deploy-camunda` (not `matrix run`) with `--persistence
+elasticsearch-external` + `--identity basic` (or `oidc`) to deploy the
+Camunda chart alone. The plain-CLI path never consults scenario
+`dependencies:` lists, so no companion Helm release from this directory
+is ever installed. See the [Using operators → Skip companion Helm
+releases entirely](../../../scripts/deploy-camunda/README.md#skip-companion-helm-releases-entirely-bring-your-own-backends)
+section of the CLI README for the wiring pattern.
