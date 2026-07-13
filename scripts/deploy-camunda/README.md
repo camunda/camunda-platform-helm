@@ -278,8 +278,8 @@ needed. The building blocks are all in the chart already:
 - **`--identity oidc`** — external OIDC (Entra by default; use
   `--extra-values` to override the issuer URLs for a different IdP).
 
-Live-verified end-to-end recipe (basic auth, single-scenario matrix
-entry, no companion Helm releases):
+Live-verified end-to-end recipe (basic auth, plain `deploy-camunda`, no
+`matrix run`, no companion Helm releases):
 
 ```bash
 # Point at your external ES (operator, managed service, whichever).
@@ -333,7 +333,7 @@ layer each variable resolved from.
 
 | Var | Example | Notes |
 |---|---|---|
-| `POSTGRESQL_JDBC_URL` | `jdbc:postgresql://mypg.cnpg.svc:5432/postgres` | Base JDBC URL; the scenario appends `/${GITHUB_WORKFLOW_JOB_ID}` for isolation. Drop that suffix by fixing the scenario if you're deploying interactively. |
+| `POSTGRESQL_JDBC_URL` | `jdbc:postgresql://mypg.cnpg.svc:5432/postgres` | Base JDBC URL; the shipped `rdbms-external.yaml` persistence layer appends `/${GITHUB_WORKFLOW_JOB_ID}` for CI isolation. Override with an `--extra-values` layer to drop the suffix when deploying interactively. |
 | `RDBMS_POSTGRESQL_USERNAME` | `camunda` | Role with `CREATEDB` or an existing database referenced by the URL. |
 | `RDBMS_POSTGRESQL_PASSWORD` | *(random)* | `deploy-camunda config init` scaffolds a random value if you want a local dev credential. |
 
