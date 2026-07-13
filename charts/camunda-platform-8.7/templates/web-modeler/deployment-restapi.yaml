@@ -41,11 +41,13 @@ spec:
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: JAVA_OPTIONS
               value: {{ .Values.webModeler.restapi.javaOpts | default "-XX:MaxRAMPercentage=80.0" | quote }}
+            {{- if or .Values.postgresql.enabled (include "webModeler.restapi.externalDatabasePasswordDefined" .) }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "webModeler.restapi.databaseSecretName" . }}
                   key: {{ include "webModeler.restapi.databaseSecretKey" . }}
+            {{- end }}
             {{- $smtpSecretName := (include "webModeler.restapi.smtpSecretName" .) }}
             {{- if $smtpSecretName }}
             - name: RESTAPI_MAIL_PASSWORD

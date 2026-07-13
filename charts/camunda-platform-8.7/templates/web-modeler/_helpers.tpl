@@ -211,16 +211,27 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{/*
+[web-modeler] Whether a rest-api external-database password source is configured: plaintext password, legacy non-empty string existingSecret, or object existingSecret.
+*/}}
+{{- define "webModeler.restapi.externalDatabasePasswordDefined" -}}
+  {{- $existingSecret := .Values.webModeler.restapi.externalDatabase.existingSecret -}}
+  {{- if or .Values.webModeler.restapi.externalDatabase.password (and (typeIs "string" $existingSecret) (ne $existingSecret "")) (typeIs "map[string]interface {}" $existingSecret) -}}
+    {{- true -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 [web-modeler] Get the name of the secret that contains the database password, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseSecretName" -}}
   {{- if .Values.postgresql.enabled }}
     {{- .Values.postgresql.auth.existingSecret | default (include "webModeler.postgresql.fullname" .) }}
   {{- else }}
-    {{- if or (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) .Values.webModeler.restapi.externalDatabase.password }}
+    {{- $existingSecret := .Values.webModeler.restapi.externalDatabase.existingSecret }}
+    {{- if or .Values.webModeler.restapi.externalDatabase.password (and (typeIs "string" $existingSecret) (ne $existingSecret "")) }}
       {{- include "webModeler.restapi.fullname" . }}
-    {{- else if typeIs "map[string]interface {}" .Values.webModeler.restapi.externalDatabase.existingSecret }}
-      {{- .Values.webModeler.restapi.externalDatabase.existingSecret.name | default (include "webModeler.restapi.fullname" .) }}
+    {{- else if typeIs "map[string]interface {}" $existingSecret }}
+      {{- $existingSecret.name | default (include "webModeler.restapi.fullname" .) }}
     {{- end }}
   {{- end }}
 {{- end -}}
