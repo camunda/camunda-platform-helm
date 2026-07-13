@@ -1,0 +1,21 @@
+# Hub Console-Only feature layer - simulates customer who enabled Console without Web Modeler.
+# Layer 6: Feature - Validates upgrade when only Console is deployed through legacy keys.
+#
+# Some 8.9 customers enabled Console Self-Managed but did not deploy Web Modeler.
+# After upgrade to 8.10, the camundaHub shim must preserve that legacy shape:
+# console.enabled=true must stay render-safe while webModeler.enabled=false prevents
+# Web Modeler restapi/websockets workloads from being rendered.
+
+camundaHub:
+  enabled: false
+
+console:
+  enabled: true
+  contextPath: "/"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+
+webModeler:
+  enabled: false

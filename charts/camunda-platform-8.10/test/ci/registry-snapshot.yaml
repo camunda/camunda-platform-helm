@@ -812,6 +812,82 @@ integration:
               env-vars:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-console-only
+          enabled: true
+          shortname: hubco
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-console-only
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-double-enable
+          enabled: true
+          shortname: hubde
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-double-enable
+            - postgresql-companion
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          post-infra:
+            script: post-infra-bitnami-migration.sh
+            description: |
+              After the companion PostgreSQL/Keycloak/Elasticsearch are deployed but before
+              the chart upgrade to 8.10, migrate the bundled (Bitnami) Keycloak realm and the
+              Elasticsearch authorization indices off the bundled backends onto the companion
+              services. Uses the camunda-deployment-references migration scripts in external
+              mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
+              chart upgrade). This keeps users/realm alive across the upgrade that removes the
+              bundled Bitnami subcharts.
         - name: hub-pinned-images
           enabled: true
           shortname: hubpi
