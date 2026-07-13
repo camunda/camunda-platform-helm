@@ -164,6 +164,21 @@
                             "description": "Gateway.className defines the class or configuration of gateway which should be used by the controller",
                             "default": "nginx"
                         },
+                        "port": {
+                            "type": "number",
+                            "description": "defines the port of the plaintext Gateway listeners.",
+                            "default": 80
+                        },
+                        "httpSectionName": {
+                            "type": "string",
+                            "description": "can be used to override the parentRefs sectionName on HTTPRoutes. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to http/https, so only set this for an externally-managed Gateway.",
+                            "default": ""
+                        },
+                        "grpcSectionName": {
+                            "type": "string",
+                            "description": "can be used to override the parentRefs sectionName on the GRPCRoute. It must match a listener name on the target Gateway. When the chart creates the Gateway (global.gateway.createGatewayResource=true) the listener names are fixed to grpc/grpcs, so only set this for an externally-managed Gateway.",
+                            "default": ""
+                        },
                         "tls": {
                             "type": "object",
                             "properties": {
@@ -176,6 +191,11 @@
                                     "type": "string",
                                     "description": "defines the secret name which contains the TLS private key and certificate",
                                     "default": "camunda-platform"
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "defines the port of the HTTPS Gateway listeners.",
+                                    "default": 443
                                 }
                             }
                         },
