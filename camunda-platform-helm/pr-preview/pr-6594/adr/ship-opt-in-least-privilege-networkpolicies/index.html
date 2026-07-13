@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-adr/ship-opt-in-least-privilege-networkpolicies" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">Ship opt-in least-privilege NetworkPolicies as a first-class chart feature | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Ship opt-in least-privilege NetworkPolicies as a first-class chart feature | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6594/assets/css/styles.3f6cd398.css">
+<script src="/camunda-platform-helm/pr-preview/pr-6594/assets/js/runtime~main.7edc2f50.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6594/assets/js/main.ba5d7f0d.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda-platform-helm/pr-preview/pr-6594/"><div class="navbar__logo"><img src="/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Helm Charts</b></a><a class="navbar__item navbar__link" href="/camunda-platform-helm/pr-preview/pr-6594/">Docs</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Ship opt-in least-privilege NetworkPolicies as a first-class chart feature</h1></header>
+<ul>
+<li class="">Status: proposed</li>
+<li class="">Date: 2026-07-13</li>
+<li class="">Decision-makers: Distribution team</li>
+<li class="">Builds on: <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart">ADR 0094</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context-and-problem-statement">Context and Problem Statement<a href="#context-and-problem-statement" class="hash-link" aria-label="Direct link to Context and Problem Statement" title="Direct link to Context and Problem Statement" translate="no">​</a></h2>
+<p>Enterprise and regulated customers (e.g. HSBC, Telstra) moving to Zero-Trust
+require least-privilege Kubernetes <code>NetworkPolicy</code> resources so Camunda pods
+only communicate with the components they need. The chart ships none today:
+customers either run with allow-all defaults or maintain hand-crafted,
+consultant-authored policies that drift and break across upgrades, and there is
+no official, tested traffic baseline. This is the <a href="https://github.com/camunda/product-hub/issues/3519" target="_blank" rel="noopener noreferrer" class="">PDP #3519</a>
+epic (Define→Implement).</p>
+<p>The problem is not &quot;add a config knob&quot; — it is defining a chart-wide,
+cross-component networking contract: which components may talk to which, on
+which ports, and how egress to customer-owned datastores is expressed. Per
+<code>docs/maintainer-guide.md</code>, a change that &quot;alters a shared contract (auth,
+storage, <strong>networking</strong>)&quot; requires an ADR.</p>
+<p>The available signal is deliberately minimal. The Define-stage solution proposal
+(closed PR <a href="https://github.com/camunda/camunda-platform-helm/pull/6459" target="_blank" rel="noopener noreferrer" class="">#6459</a>)
+predates <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart">ADR 0094</a>
+and assumed bundled datastores and 8.9/8.10 structural parity; it is reference
+only, not the basis for this decision.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
+<ul>
+<li class=""><strong>8.10 (chart 15.x, primary).</strong> Per <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart">ADR 0094</a>
+the chart bundles no datastores: Elasticsearch/OpenSearch, Keycloak, and
+PostgreSQL are always external. Datastore egress is therefore CIDR/<code>ipBlock</code>
+based, never pod-selector based. Workloads: the <code>orchestration</code> StatefulSet
+plus <code>identity</code>, <code>connectors</code>, <code>optimize</code>, and Web Modeler <code>restapi</code>/<code>websockets</code>
+Deployments (no standalone <code>console</code>/<code>webapp</code> pod, per <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/consolidate-web-modeler-into-a-single-container">ADR 0085</a>
+and the Camunda Hub consolidation).</li>
+<li class=""><strong>8.9 (chart 14.x, committed backport).</strong> 8.9 is the current GA version and
+the designated Helm 3→4 migration landing point; 8.10 is in alpha, and the
+enterprise customers driving this epic run GA or older. The backport is
+therefore committed, not optional — an 8.10-only feature would reach no
+production deployment until 8.10 GA plus enterprise upgrade lag. It is a
+distinct design, not a copy of 8.10: 8.9 still bundles the Bitnami
+Elasticsearch/Keycloak/PostgreSQL subcharts (each already shipping its own
+<code>networkPolicy.enabled</code>, default off) and has standalone <code>console</code> and
+Web Modeler <code>webapp</code> workloads, so datastore egress needs a bundled
+(pod-selector) branch in addition to the external (CIDR) branch. Designed and
+implemented via <a href="https://github.com/camunda/camunda-platform-helm/issues/6593" target="_blank" rel="noopener noreferrer" class="">#6593</a>
+after the 8.10 traffic matrix is validated; the values surface stays identical
+to 8.10 wherever possible.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Networking is a shared contract.</strong> A policy must track the exact ports and
+workload labels of every component; a wrong or drifted selector silently
+breaks traffic. This is inherently cross-component and needs one governing
+decision, not per-component ad-hoc choices.</li>
+<li class=""><strong>Small configuration surface.</strong> The epic explicitly asks to avoid
+over-parameterizing policy rules.</li>
+<li class=""><strong>Zero default impact.</strong> Existing deployments must be unaffected; the feature
+is opt-in and disabled by default.</li>
+<li class=""><strong>Selectors must not drift.</strong> Policies must reuse the existing
+<code>&lt;component&gt;.matchLabels</code> helpers so they cannot diverge from the workloads
+they target (consistent with <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/remove-image-version-tags-from-kubernetes-matchlabels">ADR 0034</a>).</li>
+<li class=""><strong>External-infrastructure-first.</strong> Post-0094 the chart owns the workloads and
+the customer owns datastores; egress policy must reflect that boundary rather
+than assume in-cluster datastore pods.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="considered-options">Considered Options<a href="#considered-options" class="hash-link" aria-label="Direct link to Considered Options" title="Direct link to Considered Options" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration-surface">Configuration surface<a href="#configuration-surface" class="hash-link" aria-label="Direct link to Configuration surface" title="Direct link to Configuration surface" translate="no">​</a></h3>
+<ul>
+<li class=""><strong>Per-component toggles only</strong> (<code>&lt;component&gt;.networkPolicy.enabled</code> each, no
+global switch) — rejected: no single audit/enable point, and shared inputs
+(ingress-controller/monitoring selectors, external CIDRs) would be duplicated
+per component.</li>
+<li class=""><strong>Single monolithic top-level block</strong> (everything under <code>networkPolicy.*</code>) —
+rejected: does not match the chart&#x27;s per-component layout and cannot cheaply
+gate on each component&#x27;s own <code>.enabled</code>.</li>
+<li class=""><strong>Hybrid: <code>global.networkPolicy.*</code> master switch + shared config, plus
+per-component <code>&lt;component&gt;.networkPolicy.*</code> (chosen)</strong> — one enable/audit
+point and one home for shared inputs, while per-component blocks follow the
+established <code>&lt;component&gt;.podDisruptionBudget.enabled</code> idiom and gate naturally
+with each component.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="packaging">Packaging<a href="#packaging" class="hash-link" aria-label="Direct link to Packaging" title="Direct link to Packaging" translate="no">​</a></h3>
+<ul>
+<li class=""><strong>Single <code>network-policies.yaml</code></strong> rendering all components — rejected: renders
+policies for disabled components and fights the per-component template layout.</li>
+<li class=""><strong>Per-component template files reusing existing selectors (chosen)</strong> — one
+policy template per component, gated by the global switch AND the component&#x27;s
+own <code>.enabled</code>, with shared rule fragments in a <code>templates/common/_networkpolicy.tpl</code>
+helper.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="datastore-egress">Datastore egress<a href="#datastore-egress" class="hash-link" aria-label="Direct link to Datastore egress" title="Direct link to Datastore egress" translate="no">​</a></h3>
+<ul>
+<li class=""><strong>Pod-selector egress to bundled datastore pods</strong> — rejected for 8.10: there
+are no bundled datastores post-0094.</li>
+<li class=""><strong>CIDR/<code>ipBlock</code> egress from explicit external-endpoint config (chosen)</strong> —
+matches the external-infrastructure boundary; the customer supplies datastore
+CIDRs.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="backport-scope">Backport scope<a href="#backport-scope" class="hash-link" aria-label="Direct link to Backport scope" title="Direct link to Backport scope" translate="no">​</a></h3>
+<ul>
+<li class=""><strong>8.10 only</strong> — rejected: 8.10 is in alpha and the enterprise customers
+driving the epic run the GA version or older; the feature would reach no
+production deployment until 8.10 GA plus enterprise upgrade lag.</li>
+<li class=""><strong>Backport to 8.9 and 8.8</strong> — rejected: 8.8 predates the Helm 3→4 migration
+landing point and would triple the bundled-datastore design surface for a
+version customers are already expected to leave.</li>
+<li class=""><strong>Backport to 8.9, after 8.10 validation (chosen)</strong> — 8.9 is the current GA
+and migration landing point; the 8.10 implementation validates the model on a
+policy-enforcing cluster first, then 8.9 adds the bundled-datastore branch.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="default-deny">Default-deny<a href="#default-deny" class="hash-link" aria-label="Direct link to Default-deny" title="Direct link to Default-deny" translate="no">​</a></h3>
+<ul>
+<li class=""><strong>Defer default-deny to a follow-up</strong> — rejected: without a deny baseline the
+allow-rules are inert on most CNIs, so v1 would not deliver least-privilege.</li>
+<li class=""><strong>Ship an optional default-deny in v1 (chosen)</strong> — a separate, off-by-default
+toggle so the least-privilege story is complete when opted into, with zero
+default blast radius.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
+<p>The chart ships opt-in, disabled-by-default <code>NetworkPolicy</code> resources as a
+first-class feature, starting with 8.10. Normative constraints:</p>
+<ol>
+<li class="">The feature MUST be gated by a master switch <code>global.networkPolicy.enabled</code>
+(default <code>false</code>). With it off, the chart MUST render zero <code>NetworkPolicy</code>
+objects and existing render output MUST be byte-identical.</li>
+<li class="">Each component policy MUST gate on
+<code>and .Values.&lt;component&gt;.enabled .Values.global.networkPolicy.enabled .Values.&lt;component&gt;.networkPolicy.enabled</code>,
+where <code>&lt;component&gt;.networkPolicy.enabled</code> defaults to <code>true</code> (so the master
+switch alone enables the full set).</li>
+<li class="">Every <code>podSelector</code> and cross-component <code>from</code>/<code>to</code> selector MUST reuse the
+existing <code>&lt;component&gt;.matchLabels</code> helpers — no hand-written label maps. A
+cross-component rule MUST be conditional on the referenced component&#x27;s
+<code>.enabled</code>.</li>
+<li class="">Policy rules MUST match container (target) ports, verified against each
+component&#x27;s workload template — not Service ports.</li>
+<li class="">Datastore egress (Elasticsearch/OpenSearch, Keycloak, PostgreSQL) MUST be
+expressed as <code>ipBlock</code> rules from <code>global.networkPolicy.external.&lt;store&gt;.{cidrs,ports}</code>;
+on 8.10 it MUST NOT assume in-cluster datastore pods. The 8.9 backport MUST
+additionally provide pod-selector egress to the bundled datastore pods when
+the corresponding subchart is enabled (<code>elasticsearch.enabled</code>,
+<code>identityKeycloak.enabled</code>, <code>identityPostgresql.enabled</code>,
+<code>webModelerPostgresql.enabled</code>), so the default bundled topology works with
+policies and default-deny enabled.</li>
+<li class="">Shared rule fragments (DNS egress to kube-dns on 53/UDP+TCP, &quot;from monitoring&quot;,
+&quot;from ingress controller&quot;, external-endpoint egress) MUST live in a single
+<code>templates/common/_networkpolicy.tpl</code> helper and be reused across component
+templates.</li>
+<li class="">An optional default-deny (Ingress+Egress) policy MUST be provided behind
+<code>global.networkPolicy.defaultDeny.enabled</code> (default <code>false</code>), scoped to the
+release&#x27;s Camunda pods via <code>camundaPlatform.matchLabels</code> so co-located
+non-Camunda workloads are untouched.</li>
+<li class="">Each component policy MUST expose <code>extraIngress</code>/<code>extraEgress</code> escape hatches
+appended verbatim to the generated rules. Connectors outbound-internet egress
+MUST NOT be a permissive default; it MUST be shipped as a documented
+<code>extraEgress</code> example. Web Modeler SMTP egress is handled the same way.</li>
+<li class="">Multi-namespace topologies MUST be served by the
+<code>ingressControllerNamespaceSelector</code>/<code>monitoringNamespaceSelector</code> values and
+the per-component escape hatches — no separate multi-namespace toggle.</li>
+<li class="">Every template MUST have golden + negative unit tests; goldens MUST be
+regenerated via <code>make go.update-golden-only</code> and never hand-edited.</li>
+</ol>
+<p>All new <code>networkPolicy</code> keys are Tier 2 (infrastructure/connectivity) per
+<a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism">ADR 0091</a>
+— allowed in <code>values.yaml</code> and backport-eligible.</p>
+<p>Applicability: 8.10 (chart 15.x) first, landing across foundation +
+per-component + CI-validation PRs tracked by
+<a href="https://github.com/camunda/camunda-platform-helm/issues/6585" target="_blank" rel="noopener noreferrer" class="">#6585–#6591</a>;
+docs in <a href="https://github.com/camunda/camunda-platform-helm/issues/6592" target="_blank" rel="noopener noreferrer" class="">#6592</a>;
+the committed 8.9 backport (including the bundled-datastore egress branch,
+console, and Web Modeler webapp policies) designed and implemented via
+<a href="https://github.com/camunda/camunda-platform-helm/issues/6593" target="_blank" rel="noopener noreferrer" class="">#6593</a> after
+8.10 validation.
+The traffic matrix MUST be validated on a policy-enforcing cluster before the
+defaults are locked — the shared <code>distro-ci</code> GKE cluster does not enforce
+NetworkPolicies (no Dataplane V2/Calico), so a green run there does not
+constitute validation (see <a href="https://github.com/camunda/camunda-platform-helm/issues/6591" target="_blank" rel="noopener noreferrer" class="">#6591</a>).</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">Turns &quot;lock down Camunda network traffic&quot; into a configuration switch plus a
+review step, with a vendor-supported, tested baseline (drives the epic&#x27;s
+time-to-secure-install and support-load goals).</li>
+<li class="">Selector reuse and golden tests keep policies correct across upgrades; drift
+surfaces as a failing test rather than as silently blocked traffic.</li>
+<li class="">Opt-in, disabled-by-default means zero impact on existing deployments.</li>
+<li class="">The external-endpoint egress model matches the post-0094 ownership boundary,
+so the networking story is consistent with how 8.10 already handles datastores.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative-consequences">Negative Consequences<a href="#negative-consequences" class="hash-link" aria-label="Direct link to Negative Consequences" title="Direct link to Negative Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">Ongoing maintenance burden: the traffic matrix must be revalidated whenever a
+component&#x27;s ports or dependencies change; golden tests mitigate but do not
+eliminate drift.</li>
+<li class="">External-endpoint egress (datastore CIDRs, connector targets, SMTP) cannot be
+defaulted and remains a customer responsibility — a documentation and support
+surface even with the baseline shipped.</li>
+<li class="">Enforcement is CNI-dependent. On clusters without NetworkPolicy enforcement the
+policies are inert; the feature can give a false sense of security if operators
+do not confirm their CNI enforces. Docs must call this out.</li>
+<li class="">The committed 8.9 backport carries extra design cost: the bundled-datastore
+egress branch and the console/webapp policies are 8.9-only code, partially
+throwaway given the Bitnami deprecation path
+(<a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/deprecate-bitnami-subcharts-in-camunda-platform-helm-chart">ADR 0083</a>),
+and version parity is still delayed until 8.10 validation completes.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="links">Links<a href="#links" class="hash-link" aria-label="Direct link to Links" title="Direct link to Links" translate="no">​</a></h2>
+<ul>
+<li class="">Builds on <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/remove-bundled-bitnami-subcharts-from-the-8-10-chart">ADR 0094</a> — the 8.10 external-infrastructure boundary that makes datastore egress CIDR-based.</li>
+<li class="">Relates to <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism">ADR 0091</a> — Tier 1/2 key classification (these keys are Tier 2).</li>
+<li class="">Relates to <a class="" href="/camunda-platform-helm/pr-preview/pr-6594/adr/adopt-kubernetes-gateway-api-as-a-first-class-routing">ADR 0080</a> — ingress/Gateway API routing, the trusted north-south source these policies admit.</li>
+<li class="">Epic <a href="https://github.com/camunda/product-hub/issues/3519" target="_blank" rel="noopener noreferrer" class="">product-hub#3519</a>; implementation issues #6585–#6593.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda-platform-helm/edit/main/../docs/adr/0095-ship-opt-in-least-privilege-networkpolicies.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context-and-problem-statement" class="table-of-contents__link toc-highlight">Context and Problem Statement</a><ul><li><a href="#applicability-by-version" class="table-of-contents__link toc-highlight">Applicability by version</a></li></ul></li><li><a href="#decision-drivers" class="table-of-contents__link toc-highlight">Decision Drivers</a></li><li><a href="#considered-options" class="table-of-contents__link toc-highlight">Considered Options</a><ul><li><a href="#configuration-surface" class="table-of-contents__link toc-highlight">Configuration surface</a></li><li><a href="#packaging" class="table-of-contents__link toc-highlight">Packaging</a></li><li><a href="#datastore-egress" class="table-of-contents__link toc-highlight">Datastore egress</a></li><li><a href="#backport-scope" class="table-of-contents__link toc-highlight">Backport scope</a></li><li><a href="#default-deny" class="table-of-contents__link toc-highlight">Default-deny</a></li></ul></li><li><a href="#decision-outcome" class="table-of-contents__link toc-highlight">Decision Outcome</a><ul><li><a href="#positive-consequences" class="table-of-contents__link toc-highlight">Positive Consequences</a></li><li><a href="#negative-consequences" class="table-of-contents__link toc-highlight">Negative Consequences</a></li></ul></li><li><a href="#links" class="table-of-contents__link toc-highlight">Links</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6594/reference/release-process">Release Process</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6594/reference/github-actions-workflows">GitHub Actions Workflows</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6594/contribution-and-collaboration">Contribution &amp; Collaboration</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm/issues" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub Issues<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://docs.camunda.io" target="_blank" rel="noopener noreferrer" class="footer__link-item">Camunda Docs<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://artifacthub.io/packages/helm/camunda/camunda-platform" target="_blank" rel="noopener noreferrer" class="footer__link-item">Artifact Hub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda Services GmbH. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
