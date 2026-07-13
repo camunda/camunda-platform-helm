@@ -33,12 +33,6 @@ data:
   {{- if ne (kindOf .Values.global.documentStore.type.aws.supportLegacyMd5) "invalid" }}
   DOCUMENT_STORE_{{ $awsPrefix }}_SUPPORT_LEGACY_MD5: {{ .Values.global.documentStore.type.aws.supportLegacyMd5 | quote }}
   {{- end }}
-  {{- if .Values.global.documentStore.type.aws.requestChecksumCalculation }}
-  AWS_REQUEST_CHECKSUM_CALCULATION: {{ .Values.global.documentStore.type.aws.requestChecksumCalculation | quote }}
-  {{- end }}
-  {{- if .Values.global.documentStore.type.aws.responseChecksumValidation }}
-  AWS_RESPONSE_CHECKSUM_VALIDATION: {{ .Values.global.documentStore.type.aws.responseChecksumValidation | quote }}
-  {{- end }}
   {{- else if eq $active "gcp" }}
     {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_CLASS: {{ .Values.global.documentStore.type.gcp.class | quote }}

@@ -1015,16 +1015,6 @@
                                             "default": null,
                                             "nullable": true
                                         },
-                                        "requestChecksumCalculation": {
-                                            "type": "string",
-                                            "description": "(Optional) AWS SDK request checksum calculation mode. Set to WHEN_REQUIRED for AWS checksum backward compatibility.",
-                                            "default": ""
-                                        },
-                                        "responseChecksumValidation": {
-                                            "type": "string",
-                                            "description": "(Optional) AWS SDK response checksum validation mode. Set to WHEN_REQUIRED for AWS checksum backward compatibility.",
-                                            "default": ""
-                                        },
                                         "class": {
                                             "type": "string",
                                             "description": "Fully qualified class name for the AWS document store provider.",

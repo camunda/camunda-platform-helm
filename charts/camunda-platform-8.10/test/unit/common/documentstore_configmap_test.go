@@ -69,6 +69,11 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"DOCUMENT_STORE_AWS_BUCKET":      "aws-bucket",
 				"DOCUMENT_STORE_AWS_BUCKET_PATH": "/aws/path",
 			},
+			Unexpected: []string{
+				"DOCUMENT_STORE_AWS_FORCE_PATH_STYLE",
+				"DOCUMENT_STORE_AWS_CHUNKED_ENCODING_ENABLED",
+				"DOCUMENT_STORE_AWS_SUPPORT_LEGACY_MD5",
+			},
 		},
 		{
 			Name: "Document Handling: GCP",
@@ -149,7 +154,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name: "Document Handling: AWS ECS compatibility (supportLegacyMd5 + checksum vars)",
+			Name: "Document Handling: AWS ECS compatibility (supportLegacyMd5)",
 			Values: map[string]string{
 				"global.documentStore.activeStoreId":                               "aws",
 				"global.documentStore.type.aws.enabled":                            "true",
@@ -157,8 +162,6 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.aws.class":                              "io.camunda.document.store.aws.AwsDocumentStoreProvider",
 				"global.documentStore.type.aws.bucket":                             "ecs-bucket",
 				"global.documentStore.type.aws.supportLegacyMd5":                   "true",
-				"global.documentStore.type.aws.requestChecksumCalculation":         "WHEN_REQUIRED",
-				"global.documentStore.type.aws.responseChecksumValidation":         "WHEN_REQUIRED",
 				"identity.enabled":                                                 "true",
 				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
 				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
@@ -168,8 +171,26 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"DOCUMENT_STORE_AWS_CLASS":              "io.camunda.document.store.aws.AwsDocumentStoreProvider",
 				"DOCUMENT_STORE_AWS_BUCKET":             "ecs-bucket",
 				"DOCUMENT_STORE_AWS_SUPPORT_LEGACY_MD5": "true",
-				"AWS_REQUEST_CHECKSUM_CALCULATION":      "WHEN_REQUIRED",
-				"AWS_RESPONSE_CHECKSUM_VALIDATION":      "WHEN_REQUIRED",
+			},
+		},
+		{
+			Name: "Document Handling: AWS with forcePathStyle=false (explicit opt-out)",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                               "aws",
+				"global.documentStore.type.aws.enabled":                            "true",
+				"global.documentStore.type.aws.storeId":                            "AWS",
+				"global.documentStore.type.aws.class":                              "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"global.documentStore.type.aws.bucket":                             "compat-bucket",
+				"global.documentStore.type.aws.forcePathStyle":                     "false",
+				"identity.enabled":                                                 "true",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+			},
+			Expected: map[string]string{
+				"DOCUMENT_DEFAULT_STORE_ID":           "aws",
+				"DOCUMENT_STORE_AWS_CLASS":            "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"DOCUMENT_STORE_AWS_BUCKET":           "compat-bucket",
+				"DOCUMENT_STORE_AWS_FORCE_PATH_STYLE": "false",
 			},
 		},
 	}
