@@ -236,11 +236,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerImageWithoutTagOrDigestFails",
 			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
 				"camundaHub.restapi.mail.fromAddress": "example@example.com",
 				"camundaHub.image.repository":         "camunda/custom-web-modeler",
-				"global.elasticsearch.enabled":                   "true",
+				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
