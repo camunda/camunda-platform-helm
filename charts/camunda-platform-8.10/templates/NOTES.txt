@@ -46,10 +46,10 @@
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag }}
     {{- end }}
   {{- end }}
-- Web Modeler:
+- Camunda Hub:
   - Enabled: {{ eq (include "camundaHub.webModelerEnabled" .) "true" }}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-  - Docker images used for Web Modeler:
+  - Docker images used for Camunda Hub:
     - {{ include "webModeler.restapi.image" . }}
     - {{ include "webModeler.websockets.image" . }}
   {{- end }}
@@ -79,7 +79,7 @@ Optimize:
 > kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
 {{ if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
-Web Modeler:
+Camunda Hub:
 > kubectl port-forward svc/{{ include "webModeler.restapi.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
@@ -115,8 +115,8 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
   - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
   {{ if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
-  - WebModeler: {{ include "camundaPlatform.webModelerExternalURL" . }}
-  - WebModeler WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
+  - Camunda Hub: {{ include "camundaPlatform.webModelerExternalURL" . }}
+  - Camunda Hub WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
   {{- end }}
 {{- end }}
 {{- end }}
@@ -132,7 +132,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 
 {{ if .Values.global.createReleaseInfo -}}
 
-## Console configuration
+## Release information
 
 {{ include "camundaPlatform.releaseInfo" . }}
 

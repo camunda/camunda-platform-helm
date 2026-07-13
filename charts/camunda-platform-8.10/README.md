@@ -49,7 +49,6 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Identity Parameters](#identity-parameters)
   - [Identity - PostgreSQL Parameters](#identity---postgresql-parameters)
   - [Identity - Keycloak Parameters](#identity---keycloak-parameters)
-  - [Console Parameters](#console-parameters)
   - [WebModeler Parameters](#webmodeler-parameters)
   - [WebModeler - RestAPI Parameters](#webmodeler---restapi-parameters)
   - [WebModeler - WebSockets Parameters](#webmodeler---websockets-parameters)

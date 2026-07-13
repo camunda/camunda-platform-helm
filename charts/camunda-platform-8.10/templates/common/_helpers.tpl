@@ -114,7 +114,7 @@ app.kubernetes.io/component: {{ .componentName }}
 {{/*
 Get image tag according the values of "base" or "overlay" values.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
-Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
 */}}
 {{- define "camundaPlatform.imageTagByParams" -}}
     {{- .overlay.image.tag | default .base.image.tag | default "" -}}
@@ -123,7 +123,7 @@ Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global
 {{/*
 Get image according the values of "base" or "overlay" values.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
-Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
 */}}
 {{- define "camundaPlatform.imageByParams" -}}
   {{- $imageRegistry    := .overlay.image.registry | default .base.image.registry -}}
@@ -308,7 +308,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 {{- end -}}
 
 {{/*
-Get the externally-reachable Keycloak URL for display in Console and NOTES.txt.
+Get the externally-reachable Keycloak URL for display in Camunda Hub and NOTES.txt.
 When the chart proxies Keycloak through its combined Ingress (internal: true), use
 the chart host + contextPath. Otherwise return the configured external Keycloak URL.
 */}}
@@ -1324,12 +1324,7 @@ Emits env vars pointing at the mounted CA bundle so both native and
 Node.js TLS stacks can resolve trust:
   - SSL_CERT_FILE: honoured by the OpenSearch client (post-8.6.7) and many
     native HTTP/TLS libraries that resolve trust through the OS.
-  - NODE_EXTRA_CA_CERTS: honoured by Node.js (Web Modeler websockets,
-    Console, etc.)
-
-Note: Console gates its own NODE_EXTRA_CA_CERTS behind
-`ne (include "camundaPlatform.hasCaBundle" .) "true"` to avoid
-duplication when this helper is also included.
+  - NODE_EXTRA_CA_CERTS: honoured by Node.js (web-modeler websockets, etc.)
 
 Usage (inside an env: list):
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
@@ -1520,7 +1515,7 @@ Usage (inside an env: list, after computing the trustStore branch):
 caBundleJavaToolOptionsEnv
 Emits a JAVA_TOOL_OPTIONS env var pre-populated with caBundleJavaOpts.
 Use on components that do NOT already render their own JAVA_TOOL_OPTIONS
-(connectors, identity, console, web-modeler websockets) so the chart-built
+(connectors, identity, web-modeler websockets) so the chart-built
 truststore takes effect with no per-component branching.
 
 Components that already render JAVA_TOOL_OPTIONS conditionally
