@@ -51,8 +51,6 @@ func renderTemplates(ctx context.Context, o types.Options) error {
 	}
 	args = append(args, "--output-dir", outputDir)
 
-	args = append(args, "--debug")
-
 	logging.Logger.Info().
 		Str("outputDir", outputDir).
 		Str("release", o.ReleaseName).

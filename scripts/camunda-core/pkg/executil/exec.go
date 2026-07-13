@@ -3,6 +3,7 @@ package executil
 import (
 	"bufio"
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,6 +29,19 @@ func getBufferFromContext(ctx context.Context) bufferCallback {
 		}
 	}
 	return nil
+}
+
+func streamLines(r io.Reader, onLine func(string)) {
+	br := bufio.NewReader(r)
+	for {
+		line, err := br.ReadString('\n')
+		if len(line) > 0 {
+			onLine(strings.TrimRight(line, "\r\n"))
+		}
+		if err != nil {
+			return
+		}
+	}
 }
 
 func RunCommand(ctx context.Context, name string, args []string, env []string, workingDir string) error {
@@ -59,17 +73,15 @@ func RunCommand(ctx context.Context, name string, args []string, env []string, w
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			sc := bufio.NewScanner(stdout)
-			for sc.Scan() {
-				bufferCB("info", sc.Text())
-			}
+			streamLines(stdout, func(line string) {
+				bufferCB("info", line)
+			})
 		}()
 		go func() {
 			defer wg.Done()
-			sc := bufio.NewScanner(stderr)
-			for sc.Scan() {
-				bufferCB("warn", sc.Text())
-			}
+			streamLines(stderr, func(line string) {
+				bufferCB("warn", line)
+			})
 		}()
 		wg.Wait()
 		return cmd.Wait()
@@ -89,21 +101,17 @@ func RunCommand(ctx context.Context, name string, args []string, env []string, w
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stdout)
-		for sc.Scan() {
-			line := sc.Text()
+		streamLines(stdout, func(line string) {
 			prefix := logging.PrefixFromContext(ctx, name)
 			baseLogger.Info().Msg(prefix + line)
-		}
+		})
 	}()
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stderr)
-		for sc.Scan() {
-			line := sc.Text()
+		streamLines(stderr, func(line string) {
 			prefix := logging.PrefixFromContext(ctx, name)
 			baseLogger.Warn().Msg(prefix + line)
-		}
+		})
 	}()
 
 	wg.Wait()
@@ -161,17 +169,15 @@ func RunCommandWithStdin(ctx context.Context, name string, args []string, env []
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			sc := bufio.NewScanner(stdout)
-			for sc.Scan() {
-				bufferCB("info", sc.Text())
-			}
+			streamLines(stdout, func(line string) {
+				bufferCB("info", line)
+			})
 		}()
 		go func() {
 			defer wg.Done()
-			sc := bufio.NewScanner(stderr)
-			for sc.Scan() {
-				bufferCB("warn", sc.Text())
-			}
+			streamLines(stderr, func(line string) {
+				bufferCB("warn", line)
+			})
 		}()
 		wg.Wait()
 		return cmd.Wait()
@@ -190,19 +196,17 @@ func RunCommandWithStdin(ctx context.Context, name string, args []string, env []
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stdout)
-		for sc.Scan() {
+		streamLines(stdout, func(line string) {
 			prefix := logging.PrefixFromContext(ctx, name)
-			baseLogger.Info().Msg(prefix + sc.Text())
-		}
+			baseLogger.Info().Msg(prefix + line)
+		})
 	}()
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stderr)
-		for sc.Scan() {
+		streamLines(stderr, func(line string) {
 			prefix := logging.PrefixFromContext(ctx, name)
-			baseLogger.Warn().Msg(prefix + sc.Text())
-		}
+			baseLogger.Warn().Msg(prefix + line)
+		})
 	}()
 	wg.Wait()
 	return cmd.Wait()
@@ -245,18 +249,16 @@ func RunCommandBuffered(ctx context.Context, name string, args []string, env []s
 
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stdout)
-		for sc.Scan() {
-			stdoutLines = append(stdoutLines, sc.Text())
-		}
+		streamLines(stdout, func(line string) {
+			stdoutLines = append(stdoutLines, line)
+		})
 	}()
 
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stderr)
-		for sc.Scan() {
-			stderrLines = append(stderrLines, sc.Text())
-		}
+		streamLines(stderr, func(line string) {
+			stderrLines = append(stderrLines, line)
+		})
 	}()
 
 	wg.Wait()
@@ -303,20 +305,17 @@ func RunCommandCaptureStderr(ctx context.Context, name string, args []string, en
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			sc := bufio.NewScanner(stdout)
-			for sc.Scan() {
-				bufferCB("info", sc.Text())
-			}
+			streamLines(stdout, func(line string) {
+				bufferCB("info", line)
+			})
 		}()
 		go func() {
 			defer wg.Done()
-			sc := bufio.NewScanner(stderrPipe)
-			for sc.Scan() {
-				line := sc.Text()
+			streamLines(stderrPipe, func(line string) {
 				bufferCB("warn", line)
 				stderrBuf.WriteString(line)
 				stderrBuf.WriteByte('\n')
-			}
+			})
 		}()
 		wg.Wait()
 		return stderrBuf.String(), cmd.Wait()
@@ -335,22 +334,19 @@ func RunCommandCaptureStderr(ctx context.Context, name string, args []string, en
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stdout)
-		for sc.Scan() {
+		streamLines(stdout, func(line string) {
 			prefix := logging.PrefixFromContext(ctx, name)
-			baseLogger.Info().Msg(prefix + sc.Text())
-		}
+			baseLogger.Info().Msg(prefix + line)
+		})
 	}()
 	go func() {
 		defer wg.Done()
-		sc := bufio.NewScanner(stderrPipe)
-		for sc.Scan() {
-			line := sc.Text()
+		streamLines(stderrPipe, func(line string) {
 			prefix := logging.PrefixFromContext(ctx, name)
 			baseLogger.Warn().Msg(prefix + line)
 			stderrBuf.WriteString(line)
 			stderrBuf.WriteByte('\n')
-		}
+		})
 	}()
 
 	wg.Wait()
