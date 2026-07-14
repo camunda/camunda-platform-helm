@@ -24,10 +24,9 @@ bash or standalone bash scripts. Commit messages from automated workflow steps f
   SHA with a `# vX.Y.Z` comment.
 - **NEVER** store secrets in workflow files, environment variables in plain text, or repository
   variables. All secrets come from Vault via `hashicorp/vault-action`.
-- **NEVER** write inline bash scripts longer than ~20 lines — implement as a Go script with tests
-  in `scripts/` instead.
-- **NEVER** add new bash business-logic scripts in `scripts/` for workflow automation when logic
-  exceeds ~20 lines, includes branching, calls APIs, or parses JSON.
+- **NEVER** put automation logic longer than ~20 lines (or anything with branching, API calls,
+  or JSON parsing) in inline bash or new `scripts/*.sh` — implement as a Go script with tests
+  in `scripts/<feature>/` (see `scripting.instructions.md`).
 - **NEVER** omit `concurrency:` on workflows triggered by `push` or `pull_request` — duplicate
   runs waste CI resources.
 - **NEVER** use `strategy.fail-fast: true` for integration test matrices — one flaky test must
@@ -104,7 +103,9 @@ Give the step an `id:` and pass each secret only into the specific step that con
 Why `exportEnv: false`: the action default (`true`) injects every imported secret into
 `$GITHUB_ENV`, making it readable by **all** subsequent steps in the job — including
 third-party actions that have no need for it. Scoping each secret to its consumer keeps the
-blast radius minimal.
+blast radius minimal. **Exception:** the per-scenario mapping step in `integration-test-setup`
+keeps `exportEnv: true` because the following `vault-secret-mapper` `go run` resolves the
+mapped secrets through `os.Getenv`; `exportEnv: false` there would yield an empty Secret manifest.
 
 For composite actions: secrets cannot be handed to the calling job via `$GITHUB_ENV` without
 leaking them job-wide. Expose them as the composite's `outputs:` and let the caller wire each
@@ -253,41 +254,17 @@ jobs:
 
 ## Common Mistakes
 
-1. **Mutable action tags** — `uses: actions/checkout@v4` is mutable and a supply-chain risk.
-   Always use the full commit SHA pinned to a specific version tag comment.
+For SHA pinning, Vault-only secrets, `exportEnv: false` (and its one exception), bash >20 lines,
+`fail-fast: false`, and `concurrency:`, see Critical Rules and Pattern 2 above. Additional pitfalls:
 
-2. **Hardcoded secrets** — putting `password: ${{ secrets.MY_SECRET }}` directly in a step
-   instead of importing from Vault makes secret rotation harder and violates the security model.
-
-3. **Inline bash >20 lines** — complex logic in `run:` blocks has no tests and is hard to
-   maintain. Move it to a Go script in `scripts/` with unit tests.
-
-4. **Standalone bash automation scripts for business logic** — adding new `scripts/*.sh` files
-  that perform API orchestration, JSON parsing, and branching duplicates logic that should live in
-  Go and be testable.
-
-5. **Missing `fail-fast: false`** — default is `true`, which cancels all matrix jobs when one
-   fails. This is almost never wanted for test matrices.
-
-6. **Skipping `concurrency:`** — PR workflows without concurrency run duplicate jobs on rapid
-   force-pushes, wasting CI minutes.
-
-7. **Not using `make` targets** — running `go test ./...` directly instead of `make go.test`
+1. **Not using `make` targets** — running `go test ./...` directly instead of `make go.test`
    skips pre-test steps (license checks, formatting, dependency updates).
 
-8. **Missing `id-token: write`** — OIDC-based Vault auth requires `permissions.id-token: write`
+2. **Missing `id-token: write`** — OIDC-based Vault auth requires `permissions.id-token: write`
    at job or workflow level.
 
-9. **Skipping debug output** — add an info step (`echo "output: ${{ steps.id.outputs.val }}"`)
+3. **Skipping debug output** — add an info step (`echo "output: ${{ steps.id.outputs.val }}"`)
    after complex composite actions so failures are easier to diagnose.
-
-10. **`exportEnv: true` on `vault-action`** — the default injects every imported secret into
-    job-wide `$GITHUB_ENV`, exposing it to all subsequent steps (and any third-party action)
-    in the job. Always set `exportEnv: false` and consume via `${{ steps.<id>.outputs.<NAME> }}`
-    in the consuming step's `with:` input or a step-scoped `env:` block (see Pattern 2).
-    **Exception:** the per-scenario mapping step in `integration-test-setup` keeps
-    `exportEnv: true` because the following `vault-secret-mapper` `go run` resolves the mapped
-    secrets through `os.Getenv`; `exportEnv: false` there would yield an empty Secret manifest.
 
 ---
 

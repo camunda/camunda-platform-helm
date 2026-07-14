@@ -14,3 +14,12 @@
 ^charts/.+/values\.yaml$
 ^charts/.+/values\.schema(\.extra)?\.json$
 ^charts/.+/constraints\.tpl$
+
+# --- Agent instruction files (steer AI behavior; always human-reviewed) ---
+(^|/)AGENTS\.md$
+(^|/)CLAUDE\.md$
+^SKILLS\.md$
+^\.claude/
+^\.github/copilot-instructions\.md$
+^\.github/instructions/
+^\.github/escalation-policy\.md$

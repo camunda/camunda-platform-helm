@@ -178,132 +178,14 @@ make tools.asdf-install
 
 ## Tests
 
-:::note
-For more details about Helm chart testing, read the blog post: [Advanced Test Practices For Helm Charts](https://medium.com/@zelldon91/advanced-test-practices-for-helm-charts-587caeeb4cb).
-:::
+New contributions are expected to include unit tests (golden file tests for defaults/toggles, property tests for non-default values), but no integration tests. Run them with `make go.test` at the repository root; new Go test files need Apache license headers (`make go.addlicense-run`).
 
-In order to make sure that the Helm charts work properly and that further development doesn't break anything, we have introduced tests for the Helm charts.
-
-The tests are written in Go, using the [Terratest framework](https://terratest.gruntwork.io/).
-
-We separate our tests into two parts, with different targets and goals.
-
-- **Template tests (unit tests)** verify the general structure. Is it YAML-conformant, does it have the right value/structure if set, do the default values not change or are they set at all?
-- **Integration tests** verify whether the charts can be installed and used. This means: are the manifests accepted by the K8s API, and do they work? Can the services reach each other and are they working?
-
-For new contributions it is expected to write new unit tests, but no integration tests. We keep the count of integration tests to a minimum, and the knowledge for writing them is not expected for contributors.
-
-Tests can be found in the chart directory under `test/`. For each component we have a sub-directory in the `test/` directory.
-
-To run the tests, execute `make go.test` at the repository root.
-
-### Unit tests
-
-As mentioned earlier, we expect unit tests on new contributions. The unit tests (template tests) are divided into two parts: golden file tests and explicit property tests. In this section we explain when which test type should be used.
-
-#### Golden files
-
-We write new golden file tests for default values, where we can compare a complete manifest with its properties.
-
-Most of the golden file tests are part of `goldenfiles_test.go` in the corresponding sub-chart testing directory. For an example see `/test/zeebe/goldenfiles_test.go`.
-
-If the complete manifest can be enabled by a toggle, we also write a golden file test. This test is part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename in the sub-chart templates dir.
-
-For example, the Prometheus `templates/service-monitor.yaml` can be enabled by a toggle, so we write a golden file test in `test/servicemonitor_test.go`.
-
-To generate the golden files, run `go.test-golden-updated` at the repository root. This will add a new golden file in a `golden` sub-dir and run the corresponding test. The golden files should be named related to the manifest.
-
-#### Properties tests
-
-For things that are not enabled or set by default, we write a property test. Here we directly set the specific property/variable and verify that the Helm chart can be rendered and the property is set correctly on the object.
-
-This kind of test should be part of a `<manifestFileName>_test.go` file. The `<manifestFileName>` corresponds to the template filename in the sub-chart templates dir.
-
-For example, for the Zeebe StatefulSet manifest we have the test `test/zeebe/statefulset_test.go` under the zeebe sub-dir.
-
-It is always helpful to check existing tests to get a better understanding of how to write new tests, so do not hesitate to read and copy from them.
-
-### Test license headers
-
-Make sure that new Go tests contain the Apache license headers, otherwise the CI license check will fail.
-
-For adding and checking the license we use [addlicense](https://github.com/google/addlicense). To install it locally, run `make go.addlicense-install`. Afterward, you can run `make go.addlicense-run` to add the missing license header to a new Go file.
+The full testing reference — test types, golden file vs property test guidance, examples, and license tooling — is [Testing](./reference/testing.md).
 
 ---
 
 ## Backporting Policy
 
-Backports exist to deliver critical fixes and stability improvements to actively supported Camunda Helm chart releases, while minimizing regression risk and avoiding surprising changes for users.
+Backports exist to deliver critical fixes and stability improvements to actively supported Camunda Helm chart releases, while minimizing regression risk and avoiding surprising changes for users. **Golden rule:** if upgrading to a patch release changes a user's deployment in an unexpected way, the backport failed.
 
-**Golden rule:** If upgrading to a patch release changes a user's deployment in an unexpected way, the backport failed.
-
-Backporting must only be performed within actively supported versions as defined by the [Standard and Extended Support Periods](https://confluence.camunda.com/spaces/HAN/pages/245400921/Standard+and+Extended+Support+Periods).
-
-### Quick decision flow
-
-```
-graph TD
-  Start([Backport candidate]) --> V{Supported version?}
-  V -- No --> End([Archive: not supported])
-  V -- Yes --> R{New key in values.yaml?}
-  R -- Yes --> Reject([Reject: structural change])
-  R -- No --> M{Rendered output changes?}
-  M -- Yes --> B{Fixes documented bug?}
-  B -- No --> Reject
-  B -- Yes --> Approval([Maintainer approval])
-  M -- No --> Test{Golden tests match?}
-  Test -- No --> Reject
-  Test -- Yes --> Approval
-```
-
-### What we backport
-
-We backport only changes that are safe and predictable:
-
-- **Vital:** security fixes and "won't install / won't start" problems.
-- **Functional:** logic/template fixes or documentation fixes that do not change the chart API.
-
-### What we do not backport
-
-We reject backports that are likely to surprise users:
-
-- **Structural:** anything that adds/changes the config surface (especially new keys/toggles in `values.yaml`) or big dependency upgrades.
-- **Anything requiring manual intervention:** if users must run commands or edit/delete resources, it's a migration and must wait for a minor/major release.
-- **Unexpected manifest changes:** if the rendered output changes in places unrelated to the bug fix, it's blocked.
-
-### General backporting guidance
-
-- Backports must be minimal and focused on corrective action. Prefer smaller PRs targeting specific issues.
-- All backports should maintain consistent behavior across supported versions to ensure predictability during upgrades.
-- Each backport PR should include clear labeling (for example, `backport/<release>`) and link to the original fix or discussion for traceability.
-- Backported changes follow the same testing and documentation requirements as any mainline contribution. CI must pass and any altered functionality must be covered by tests.
-
-### Backporting commits in subdirectory versioning
-
-#### `format-patch`
-
-`git format-patch` will export the git commits to a series of patch files that can be applied to a different branch or a different sub-directory.
-
-To export the last 3 commits as patch files, run:
-
-```bash
-git format-patch HEAD^3
-```
-
-New files will be created starting with `0001-`, `0002-`, etc.
-
-#### Applying patch files without AI
-
-Suppose you have a patch file `0001-refactor-web-modeler-make-webapp-memory-config-dynam.patch` that you want to apply to the `charts/camunda-platform-8.7` directory:
-
-```bash
-git apply -p3 --directory=charts/camunda-platform-8.7 0001-refactor-web-modeler-make-webapp-memory-config-dynam.patch
-```
-
-In many cases, this will apply cleanly. If the command does not work, you can try using OpenCode or your editor's AI integration.
-
-#### Applying patch files with AI
-
-If you have an AI tool integrated into your IDE, a query you can use is:
-
-> I have exported commits as patch files starting with `000*.patch` using `git format-patch`. Please apply the patch to the `charts/camunda-platform-8.7` directory.
+The canonical policy — supported versions, the Tier 1/Tier 2 three-way logic, decision diagram, what is and is not backported, the backport-PR process, and the `format-patch` workflow for subdirectory versioning — is [Backporting Policy](./policies/backporting.md).

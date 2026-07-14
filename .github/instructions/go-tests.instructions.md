@@ -24,7 +24,8 @@ file. Run `make go.test chartPath=charts/camunda-platform-8.10` to execute tests
   or the `utils.TemplateGoldenTest` suite for consistency.
 - **NEVER** use `assert.NoError` for setup/chart-path steps that must abort the test on failure —
   use `require.NoError` so the test stops immediately.
-- **NEVER** commit golden files generated from an outdated chart dependency state. Always run
+- **NEVER** commit golden files generated from an outdated chart dependency state — stale
+  sub-chart `charts/` directories cause checksum mismatches. Always run
   `make helm.dependency-update` before regenerating golden files.
 - **NEVER** name a suite entry function anything other than `Test<Resource>Template` — CI relies
   on this naming to discover and run tests.
@@ -202,30 +203,7 @@ go test ./orchestration/... -run TestStatefulSetTemplate
 go test ./orchestration/... -run TestStatefulSetTemplate/TestContainerSetPodLabels
 ```
 
-### 7. Import Grouping (gofmt order)
-
-```go
-import (
-    // stdlib
-    "path/filepath"
-    "strings"
-    "testing"
-
-    // third-party
-    "github.com/gruntwork-io/terratest/modules/helm"
-    "github.com/gruntwork-io/terratest/modules/random"
-    "github.com/stretchr/testify/require"
-    "github.com/stretchr/testify/suite"
-    appsv1 "k8s.io/api/apps/v1"
-    corev1 "k8s.io/api/core/v1"
-
-    // local
-    "camunda-platform/test/unit/testhelpers"
-    "camunda-platform/test/unit/utils"
-)
-```
-
-### 8. Asserting on Nested Kubernetes Fields
+### 7. Asserting on Nested Kubernetes Fields
 
 ```go
 Verifier: func(t *testing.T, output string, err error) {
@@ -248,27 +226,22 @@ Verifier: func(t *testing.T, output string, err error) {
 
 ## Common Mistakes
 
-1. **Using `assert` instead of `require` for fatal setup** — `assert.NoError` on `filepath.Abs` lets
-   the test continue with a bad path; use `require.NoError`.
+For assert-vs-require, `t.Parallel()`, stale-dependency golden files, and license headers, see
+Critical Rules above. Additional pitfalls:
 
-2. **Forgetting `t.Parallel()`** — omitting it serializes tests and dramatically slows CI.
-
-3. **Committing golden files without updating dependencies** — stale sub-chart `charts/` directories
-   cause checksum mismatches. Always run `make helm.dependency-update` first.
-
-4. **Asserting on raw string output** — parsing with `helm.UnmarshalK8SYaml` and asserting on typed
+1. **Asserting on raw string output** — parsing with `helm.UnmarshalK8SYaml` and asserting on typed
    fields is more resilient than `strings.Contains(output, "foo: bar")`.
 
-5. **Missing license header** — `make go.addlicense-check` will fail in CI. Add headers before commit.
-
-6. **Not using `IgnoredLines` for volatile content** — checksums, chart versions, and random namespaces
+2. **Not using `IgnoredLines` for volatile content** — checksums, chart versions, and random namespaces
    must be excluded from golden files via regex patterns in `IgnoredLines`.
 
-7. **Suite method not starting with `Test`** — testify/suite only discovers methods prefixed with `Test`.
+3. **Suite method not starting with `Test`** — testify/suite only discovers methods prefixed with `Test`.
    Non-prefixed helpers are fine but won't run as tests.
 
-8. **Mutating shared `Values` map** — each `TestCase` gets its own rendering, but if `Values` is a
+4. **Mutating shared `Values` map** — each `TestCase` gets its own rendering, but if `Values` is a
    reference shared across cases it can cause flaky tests. Declare values inline per case.
+
+Imports are gofmt-managed (stdlib → third-party → local); let `make go.fmt` handle grouping.
 
 ---
 

@@ -714,3 +714,38 @@ For a full command reference and operational patterns, see
 | `deploy-camunda config env [--show-origin] [--unmask]` | Show effective env variables with provenance. |
 | `deploy-camunda config set/get/list/use/create/show` | Manage deployment profiles. |
 | `deploy-camunda watch --namespace <ns>` | Poll a running deploy and diagnose CrashLoopBackOff / ImagePullBackOff live. |
+
+## Watch internals
+
+`deploy-camunda watch` usage lives in `.claude/skills/deploy-camunda/SKILL.md`. This section documents the mechanics.
+
+**What the watcher does each tick:**
+
+1. `kubectl get pods,events,pvcs -n <ns> -o json` + `helm status -o json`.
+2. Pipes the snapshot JSON to the agent CLI (`claude` or `opencode`, whichever is on `PATH`) in headless mode with the `debug-failing-pods` skill prompt. The watcher does not call any API directly — it uses that CLI's existing auth and model configuration.
+3. Parses the verdict JSON. Acts on `recommended_action`:
+   - `wait` — keep polling silently.
+   - `investigate` — print diagnosis, keep polling.
+   - `abort` — print diagnosis; auto-exit non-zero only if `confidence` is at or above `--abort-confidence` (default 0 disables auto-abort).
+
+**Verdict schema** (the skill must produce exactly this shape):
+
+```json
+{
+  "diagnosis": "<one paragraph>",
+  "causal_chain": ["t+12s FailedMount(secret/...)", "t+30s CrashLoopBackOff"],
+  "confidence": 0.92,
+  "recommended_action": "abort",
+  "evidence": ["pod=keycloak-0", "event=FailedMount"]
+}
+```
+
+**Eval workflow.** When `--corpus-dir` is set, every tick is persisted as a JSON file containing the snapshot, raw agent output, and parsed verdict. Replay a saved corpus to regression-test prompt or model changes:
+
+```bash
+deploy-camunda watch replay ~/eval/snapshots
+# Prints a per-tick diff between recorded and freshly-replayed verdicts.
+# Exits non-zero (with --strict, default) if any action class regresses.
+```
+
+Build the corpus by running `watch --corpus-dir` on at least 5 deliberately broken installs (delete a referenced secret, mistype an image tag, undersize a quota, set too-small JVM heap, break a CRD reference) before promoting auto-abort to actionable.
