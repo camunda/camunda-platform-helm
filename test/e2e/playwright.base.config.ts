@@ -39,6 +39,10 @@ export function makeShadowConfig(opts: {
   extraTestIgnore?: Array<string | RegExp>;
   tasklistV2Header?: boolean;
   extraProjects?: Project[];
+  fullyParallel?: boolean;
+  retries?: number;
+  timeout?: number;
+  workers?: number | string;
 }): ShadowConfig {
   if (!process.env.CAMUNDA_OPTIMIZE_BASE_URL && process.env.BASE_URL) {
     process.env.CAMUNDA_OPTIMIZE_BASE_URL = `https://${process.env.BASE_URL}/optimize`;
@@ -89,10 +93,10 @@ export function makeShadowConfig(opts: {
       },
       ...(opts.extraProjects ?? []),
     ],
-    fullyParallel: false,
-    retries: 1,
-    timeout: 12 * 60 * 1000,
-    workers: workerCount(opts.version),
+    fullyParallel: opts.fullyParallel ?? false,
+    retries: opts.retries ?? 1,
+    timeout: opts.timeout ?? 12 * 60 * 1000,
+    workers: opts.workers ?? workerCount(opts.version),
     use: {
       baseURL: getBaseURL(),
       actionTimeout: 10000,
