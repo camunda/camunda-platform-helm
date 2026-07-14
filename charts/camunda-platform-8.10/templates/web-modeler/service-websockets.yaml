@@ -19,6 +19,9 @@ spec:
       name: http
       targetPort: 8060
       protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http") "appProtocols" (or .Values.camundaHub.webModeler.websockets.service.appProtocols .Values.webModeler.websockets.service.appProtocols)) }}
+      appProtocol: {{ . }}
+      {{- end }}
   selector:
     {{- include "webModeler.websockets.matchLabels" . | nindent 4 }}
 {{- end }}
