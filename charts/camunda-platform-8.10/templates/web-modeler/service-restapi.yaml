@@ -19,10 +19,16 @@ spec:
       name: http
       targetPort: 8081
       protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http" "http-management") "appProtocols" (or .Values.camundaHub.restapi.service.appProtocols .Values.webModeler.restapi.service.appProtocols)) }}
+      appProtocol: {{ . }}
+      {{- end }}
     - port: {{ (or .Values.camundaHub.restapi.service.managementPort .Values.webModeler.restapi.service.managementPort) }}
       name: http-management
       targetPort: 8091
       protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http-management" "knownPorts" (list "http" "http-management") "appProtocols" (or .Values.camundaHub.restapi.service.appProtocols .Values.webModeler.restapi.service.appProtocols)) }}
+      appProtocol: {{ . }}
+      {{- end }}
   selector:
     {{- include "webModeler.restapi.matchLabels" . | nindent 4 }}
 {{- end }}
