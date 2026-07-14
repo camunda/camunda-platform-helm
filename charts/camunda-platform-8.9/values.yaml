@@ -2258,7 +2258,7 @@ connectors:
     ## Authentication configuration
     ## @extra connectors.security.authentication
     authentication:
-      ## @param connectors.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      ## @param connectors.security.authentication.method defines the authentication method which should be used. Possible values: `basic` or `oidc`. It could be used to override `global.security.authentication.method`.
       # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
       # When set to "oidc", also configure oidc.clientId, audience, and secret below.
       method: ""
@@ -2522,7 +2522,7 @@ orchestration:
     ## Authentication configuration
     ## @extra orchestration.security.authentication
     authentication:
-      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic` or `oidc`. It could be used to override `global.security.authentication.method`.
       # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
       # When set to "oidc", also configure oidc.clientId, audience, and secret below.
       method: ""
