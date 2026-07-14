@@ -10,11 +10,6 @@ orchestration:
         username: ${POSTGRESQL_USERNAME}
         secret:
           inlineSecret: ${POSTGRESQL_PASSWORD}
-  security:
-    authorizations:
-      enabled: false
-    authentication:
-      unprotectedApi: true
   exporters:
     rdbms:
       enabled: true
