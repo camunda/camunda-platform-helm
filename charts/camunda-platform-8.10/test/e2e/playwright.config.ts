@@ -47,6 +47,9 @@ export default defineConfig(makeShadowConfig({
   testDir,
   includeSetupProject: true,
   tasklistV2Header: true,
+  fullyParallel: true,
+  retries: 2,
+  workers: "100%",
   extraProjects: [
     {
       // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
