@@ -15,11 +15,6 @@ orchestration:
         username: ${RDBMS_POSTGRESQL_USERNAME}
         secret:
           inlineSecret: ${RDBMS_POSTGRESQL_PASSWORD}
-  security:
-    authorizations:
-      enabled: false
-    authentication:
-      unprotectedApi: true
   exporters:
     rdbms:
       enabled: true
