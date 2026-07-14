@@ -19,6 +19,9 @@ spec:
       port: {{ .Values.connectors.service.serverPort }}
       targetPort: {{ .Values.connectors.service.serverPort }}
       protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "server" "knownPorts" (list "server") "appProtocols" .Values.connectors.service.appProtocols) }}
+      appProtocol: {{ . }}
+      {{- end }}
   selector:
     {{- include "connectors.matchLabels" . | nindent 4 }}
 {{- end }}

@@ -19,10 +19,16 @@ spec:
       name: http
       targetPort: 8090
       protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http" "management") "appProtocols" .Values.optimize.service.appProtocols) }}
+      appProtocol: {{ . }}
+      {{- end }}
     - port: {{ .Values.optimize.service.managementPort }}
       name: management
       targetPort: 8092
       protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "management" "knownPorts" (list "http" "management") "appProtocols" .Values.optimize.service.appProtocols) }}
+      appProtocol: {{ . }}
+      {{- end }}
   selector:
     {{- include "optimize.matchLabels" . | nindent 4 }}
 {{- end }}
