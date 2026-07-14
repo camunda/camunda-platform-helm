@@ -78,8 +78,8 @@ spec:
       urlRewrite:
         hostname: {{ .Values.global.host }}
         path:
-          type: ReplaceFullPath
-          replaceFullPath: {{ trimSuffix "/" .Values.identity.contextPath }}/
+          type: ReplacePrefixMatch
+          replacePrefixMatch: {{ trimSuffix "/" .Values.identity.contextPath }}/
     backendRefs:
       - name: {{ template "identity.fullname" . }}
         namespace: {{ .Release.Namespace }}
