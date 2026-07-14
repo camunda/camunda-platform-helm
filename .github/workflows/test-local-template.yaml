@@ -148,7 +148,7 @@ jobs:
             echo "OK: $svc port $port appProtocol=$expected"
           }
           check camunda-platform-zeebe-gateway grpc kubernetes.io/h2c
-          check camunda-platform-zeebe-gateway management http
+          check camunda-platform-zeebe-gateway server http
       - name: Get Pods
         if: failure()
         run: |
