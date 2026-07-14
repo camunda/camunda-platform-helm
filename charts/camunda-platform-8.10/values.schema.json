@@ -993,7 +993,7 @@
                                                 "boolean",
                                                 "null"
                                             ],
-                                            "description": "(Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, path-style is auto-enabled if an endpoint is configured, otherwise the SDK default is used.",
+                                            "description": "(Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, the env var is not emitted and the SDK default (virtual-hosted style) is used; set to true when using a custom endpoint that requires path-style addressing (e.g. MinIO, Ceph RGW).",
                                             "default": null,
                                             "nullable": true
                                         },
