@@ -109,6 +109,45 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 				// then
 				s.Require().Equal(coreV1.ServiceTypeClusterIP, service.Spec.Type)
 			},
+		}, {
+			Name: "TestAppProtocolsDefaultEmpty",
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol by default", port.Name)
+				}
+			},
+		}, {
+			Name: "TestAppProtocolsSetsInternalAndCommandPorts",
+			Values: map[string]string{
+				"orchestration.service.appProtocols.internal": "kubernetes.io/h2c",
+				"orchestration.service.appProtocols.command":  "kubernetes.io/h2c",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					if port.Name == "internal" || port.Name == "command" {
+						s.Require().NotNil(port.AppProtocol)
+						s.Require().Equal("kubernetes.io/h2c", *port.AppProtocol)
+					} else {
+						s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol", port.Name)
+					}
+				}
+			},
+		}, {
+			Name: "TestAppProtocolsUnknownPortNameFails",
+			Values: map[string]string{
+				"orchestration.service.appProtocols.gprc": "kubernetes.io/h2c",
+			},
+			Expected: map[string]string{
+				"ERROR": "unknown port name",
+			},
 		},
 	}
 
