@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Ship opt-in least-privilege NetworkPolicies as a first-class chart feature | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Ship opt-in least-privilege NetworkPolicies as a first-class chart feature | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6594/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6594/adr/ship-opt-in-least-privilege-networkpolicies" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6594/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6594/assets/js/runtime~main.7edc2f50.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6594/assets/js/main.ba5d7f0d.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6594/assets/js/runtime~main.09b3f4ac.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6594/assets/js/main.d19eef12.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -184,9 +184,11 @@ console, and Web Modeler webapp policies) designed and implemented via
 <a href="https://github.com/camunda/camunda-platform-helm/issues/6593" target="_blank" rel="noopener noreferrer" class="">#6593</a> after
 8.10 validation.
 The traffic matrix MUST be validated on a policy-enforcing cluster before the
-defaults are locked — the shared <code>distro-ci</code> GKE cluster does not enforce
-NetworkPolicies (no Dataplane V2/Calico), so a green run there does not
-constitute validation (see <a href="https://github.com/camunda/camunda-platform-helm/issues/6591" target="_blank" rel="noopener noreferrer" class="">#6591</a>).</p>
+defaults are locked. This assumes the CI cluster used for
+<a href="https://github.com/camunda/camunda-platform-helm/issues/6591" target="_blank" rel="noopener noreferrer" class="">#6591</a> enforces
+NetworkPolicies (Dataplane V2 or Calico); a canary check (deny-all, confirm
+traffic is actually blocked) MUST precede trusting a green run, since a
+non-enforcing cluster accepts policy objects without acting on them.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
 <ul>
 <li class="">Turns &quot;lock down Camunda network traffic&quot; into a configuration switch plus a
