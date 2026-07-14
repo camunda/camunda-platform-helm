@@ -126,7 +126,9 @@ jobs:
           if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" ]]; then
             TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} \
               --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c \
-              --set orchestration.service.appProtocols.management=http"
+              --set orchestration.service.appProtocols.management=http \
+              --set orchestration.service.appProtocols.internal=kubernetes.io/h2c \
+              --set orchestration.service.appProtocols.command=kubernetes.io/h2c"
           fi
           helm install camunda-platform *.tgz --wait --timeout 10m0s \
             --namespace ${{ env.TEST_NAMESPACE }} \
@@ -149,6 +151,12 @@ jobs:
           }
           check camunda-platform-zeebe-gateway grpc kubernetes.io/h2c
           check camunda-platform-zeebe-gateway server http
+          # camunda-platform-zeebe (headless) shares the same orchestration.service.appProtocols
+          # map as camunda-platform-zeebe-gateway above, with a wider knownPorts allow-list
+          # (internal/command are headless-only ports) -- exercise both to guard against the
+          # two manifests validating against divergent port allow-lists.
+          check camunda-platform-zeebe internal kubernetes.io/h2c
+          check camunda-platform-zeebe command kubernetes.io/h2c
       - name: Get Pods
         if: failure()
         run: |
