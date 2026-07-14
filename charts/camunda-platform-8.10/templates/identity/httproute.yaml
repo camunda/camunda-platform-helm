@@ -71,15 +71,15 @@ spec:
   rules:
   - matches:
     - path:
-        type: PathPrefix
+        type: Exact
         value: {{ trimSuffix "/" .Values.identity.contextPath }}
     filters:
     - type: URLRewrite
       urlRewrite:
         hostname: {{ .Values.global.host }}
         path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: {{ trimSuffix "/" .Values.identity.contextPath }}/
+          type: ReplaceFullPath
+          replaceFullPath: {{ trimSuffix "/" .Values.identity.contextPath }}/
     backendRefs:
       - name: {{ template "identity.fullname" . }}
         namespace: {{ .Release.Namespace }}
