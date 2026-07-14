@@ -274,6 +274,22 @@ integration:
           features:
             - documentstore
           helmVersion: 3.20.2
+        - name: noSecondaryStorage
+          enabled: true
+          shortname: nosec
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: no-elasticsearch
+          features:
+            - no-secondary-storage
+          skip-e2e: true
         - name: component-persistence
           enabled: true
           shortname: cprst

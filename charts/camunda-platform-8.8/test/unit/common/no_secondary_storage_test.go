@@ -71,6 +71,8 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 				require.Contains(t, output, "agenticai:\n          enabled: false")
 				// Optimize should not be rendered
 				require.NotContains(t, output, "templates/optimize")
+				// Operate and Tasklist profiles should be excluded (no secondary storage to serve them)
+				require.Contains(t, output, `active: "broker,identity,consolidated-auth"`)
 			},
 		},
 	}
