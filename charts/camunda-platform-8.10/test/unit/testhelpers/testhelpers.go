@@ -61,6 +61,9 @@ type TestCase struct {
 	// For ConfigMap tests, keys can be direct data keys or dot-notation paths into application.yaml
 	Expected map[string]string
 
+	// Unexpected contains direct ConfigMap data keys that must NOT be present in the rendered output
+	Unexpected []string
+
 	// Verifier is a custom function for complex validation scenarios
 	// When provided, it overrides the default validation logic
 	// It receives the rendered output and any error that occurred during rendering
@@ -171,13 +174,14 @@ func RunTestCases(t *testing.T, chartPath, release, namespace string, templates 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(tct *testing.T) {
 			configmap := renderTemplate(tct, chartPath, release, namespace, templates, tc.Values, tc.ValuesFiles)
-			verifyConfigMap(tct, tc.Name, configmap, tc.Expected)
+			verifyConfigMap(tct, tc.Name, configmap, tc.Expected, tc.Unexpected)
 		})
 	}
 }
 
 // verifyConfigMap checks whether the generated ConfigMap contains the expected key-value pairs
-func verifyConfigMap(t *testing.T, testCase string, configmap corev1.ConfigMap, expectedValues map[string]string) {
+// and does not contain any of the unexpected keys
+func verifyConfigMap(t *testing.T, testCase string, configmap corev1.ConfigMap, expectedValues map[string]string, unexpectedKeys []string) {
 	for keyPath, expectedValue := range expectedValues {
 		var actualValue string
 		if strings.HasPrefix(keyPath, "configmapApplication.") {
@@ -189,6 +193,10 @@ func verifyConfigMap(t *testing.T, testCase string, configmap corev1.ConfigMap, 
 			actualValue = strings.TrimSpace(configmap.Data[keyPath])
 		}
 		require.Equal(t, expectedValue, actualValue, "Test case '%s': Expected key '%s' to have value '%s', but got '%s'", testCase, keyPath, expectedValue, actualValue)
+	}
+	for _, keyPath := range unexpectedKeys {
+		_, found := configmap.Data[keyPath]
+		require.False(t, found, "Test case '%s': key '%s' should NOT be present in the ConfigMap", testCase, keyPath)
 	}
 }
 

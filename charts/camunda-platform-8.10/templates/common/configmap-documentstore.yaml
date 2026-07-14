@@ -21,6 +21,18 @@ data:
   {{- if .Values.global.documentStore.type.aws.region }}
   AWS_REGION: {{ .Values.global.documentStore.type.aws.region | quote }}
   {{- end }}
+  {{- if .Values.global.documentStore.type.aws.endpoint }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_ENDPOINT: {{ .Values.global.documentStore.type.aws.endpoint | quote }}
+  {{- end }}
+  {{- if ne (kindOf .Values.global.documentStore.type.aws.forcePathStyle) "invalid" }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_FORCE_PATH_STYLE: {{ .Values.global.documentStore.type.aws.forcePathStyle | quote }}
+  {{- end }}
+  {{- if ne (kindOf .Values.global.documentStore.type.aws.chunkedEncodingEnabled) "invalid" }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_CHUNKED_ENCODING_ENABLED: {{ .Values.global.documentStore.type.aws.chunkedEncodingEnabled | quote }}
+  {{- end }}
+  {{- if ne (kindOf .Values.global.documentStore.type.aws.supportLegacyMd5) "invalid" }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_SUPPORT_LEGACY_MD5: {{ .Values.global.documentStore.type.aws.supportLegacyMd5 | quote }}
+  {{- end }}
   {{- else if eq $active "gcp" }}
     {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_CLASS: {{ .Values.global.documentStore.type.gcp.class | quote }}

@@ -983,6 +983,38 @@
                                             "description": "(Optional) Time-to-live for documents in the S3 bucket (number in days).",
                                             "default": 0
                                         },
+                                        "endpoint": {
+                                            "type": "string",
+                                            "description": "(Optional) Endpoint URL for an S3-compatible object store (e.g. http://garage.local:3900). When unset, the AWS SDK default endpoint is used.",
+                                            "default": ""
+                                        },
+                                        "forcePathStyle": {
+                                            "type": [
+                                                "boolean",
+                                                "null"
+                                            ],
+                                            "description": "(Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, the env var is not emitted and the SDK default (virtual-hosted style) is used; set to true when using a custom endpoint that requires path-style addressing (e.g. MinIO, Ceph RGW).",
+                                            "default": null,
+                                            "nullable": true
+                                        },
+                                        "chunkedEncodingEnabled": {
+                                            "type": [
+                                                "boolean",
+                                                "null"
+                                            ],
+                                            "description": "(Optional) Enable AWS chunked transfer encoding. Set to false for S3-compatible backends that do not support it (e.g. Garage). When unset, the SDK default (true) is used.",
+                                            "default": null,
+                                            "nullable": true
+                                        },
+                                        "supportLegacyMd5": {
+                                            "type": [
+                                                "boolean",
+                                                "null"
+                                            ],
+                                            "description": "(Optional) Add MD5 checksum plugin to the S3 client for MD5 checksum backward compatibility. Set to true to enable. When unset, the plugin is not added.",
+                                            "default": null,
+                                            "nullable": true
+                                        },
                                         "class": {
                                             "type": "string",
                                             "description": "Fully qualified class name for the AWS document store provider.",

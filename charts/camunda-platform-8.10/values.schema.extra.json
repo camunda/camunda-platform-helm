@@ -2,6 +2,33 @@
     "properties": {
         "global": {
             "properties": {
+                "documentStore": {
+                    "properties": {
+                        "type": {
+                            "properties": {
+                                "aws": {
+                                    "properties": {
+                                        "forcePathStyle": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, the env var is not emitted and the SDK default (virtual-hosted style) is used; set to true when using a custom endpoint that requires path-style addressing (e.g. MinIO, Ceph RGW).",
+                                            "default": null
+                                        },
+                                        "chunkedEncodingEnabled": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Enable AWS chunked transfer encoding. Set to false for S3-compatible backends that do not support it (e.g. Garage). When unset, the SDK default (true) is used.",
+                                            "default": null
+                                        },
+                                        "supportLegacyMd5": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Add MD5 checksum plugin to the S3 client for MD5 checksum backward compatibility. Set to true to enable. When unset, the plugin is not added.",
+                                            "default": null
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "ingress": {
                     "properties": {
                         "annotations": {
