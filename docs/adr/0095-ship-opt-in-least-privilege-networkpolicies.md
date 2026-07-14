@@ -178,9 +178,11 @@ console, and Web Modeler webapp policies) designed and implemented via
 [#6593](https://github.com/camunda/camunda-platform-helm/issues/6593) after
 8.10 validation.
 The traffic matrix MUST be validated on a policy-enforcing cluster before the
-defaults are locked — the shared `distro-ci` GKE cluster does not enforce
-NetworkPolicies (no Dataplane V2/Calico), so a green run there does not
-constitute validation (see [#6591](https://github.com/camunda/camunda-platform-helm/issues/6591)).
+defaults are locked. This assumes the CI cluster used for
+[#6591](https://github.com/camunda/camunda-platform-helm/issues/6591) enforces
+NetworkPolicies (Dataplane V2 or Calico); a canary check (deny-all, confirm
+traffic is actually blocked) MUST precede trusting a green run, since a
+non-enforcing cluster accepts policy objects without acting on them.
 
 ### Positive Consequences
 
