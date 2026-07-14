@@ -5157,7 +5157,7 @@
                             "properties": {
                                 "method": {
                                     "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "description": "defines the authentication method which should be used. Possible values: `basic` or `oidc`. It could be used to override `global.security.authentication.method`.",
                                     "default": ""
                                 },
                                 "oidc": {
@@ -5822,7 +5822,7 @@
                             "properties": {
                                 "method": {
                                     "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "description": "defines the authentication method which should be used. Possible values: `basic` or `oidc`. It could be used to override `global.security.authentication.method`.",
                                     "default": ""
                                 },
                                 "unprotectedApi": {
