@@ -357,7 +357,7 @@
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
-      prCreation: 'immediate',
+      minimumReleaseAge: '6 hours',
     },
     {
       matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
