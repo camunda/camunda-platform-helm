@@ -146,6 +146,22 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Expected: map[string]string{
 				"ERROR": "unknown port name",
 			},
+		}, {
+			Name: "TestAppProtocolsHeadlessOnlyPortNamesDoNotBreakRender",
+			Values: map[string]string{
+				"orchestration.service.appProtocols.internal": "kubernetes.io/h2c",
+				"orchestration.service.appProtocols.command":  "kubernetes.io/h2c",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then: internal/command are valid orchestration.service.appProtocols keys
+				// (used by service-headless.yaml) but this Service has no such ports.
+				for _, port := range service.Spec.Ports {
+					s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol", port.Name)
+				}
+			},
 		},
 	}
 
