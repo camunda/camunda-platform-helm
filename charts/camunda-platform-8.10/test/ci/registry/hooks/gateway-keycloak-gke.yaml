@@ -1,0 +1,9 @@
+fixtures:
+  - gateway-gke-healthchecks.yaml
+description: |
+  Applies GKE HealthCheckPolicy resources for Identity (port 8082) and
+  Zeebe Gateway (port 9600), among other components. Required after helm
+  install because GKE's auto-detected health checks default to port 80,
+  causing the GLB to mark backends unhealthy. Replaces the NGINX
+  ProxySettingsPolicy used in the gatkc scenario, which has no equivalent
+  on GKE.

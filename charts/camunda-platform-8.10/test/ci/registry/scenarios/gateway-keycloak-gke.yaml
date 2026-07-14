@@ -1,0 +1,17 @@
+name: gateway-keycloak-gke
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - gateway-gke
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+post-deploy: gateway-keycloak-gke
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql
