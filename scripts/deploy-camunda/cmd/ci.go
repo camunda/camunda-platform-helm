@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"os"
 
 	"scripts/camunda-core/pkg/ciworkflow"
@@ -21,6 +22,7 @@ func newCICommand() *cobra.Command {
 
 	ciCmd.AddCommand(newCITestTypeVarsCommand())
 	ciCmd.AddCommand(newCIWorkflowVarsCommand())
+	ciCmd.AddCommand(newCIIntegrationMatrixCommand())
 
 	return ciCmd
 }
@@ -116,6 +118,53 @@ Environment variables:
 	_ = cmd.MarkFlagRequired("platform")
 	_ = cmd.MarkFlagRequired("chart-dir")
 	_ = cmd.MarkFlagRequired("run-id")
+
+	return cmd
+}
+
+// newCIIntegrationMatrixCommand creates the "ci integration-matrix"
+// subcommand. It replaces the string-built yq select() filter in
+// test-integration-template.yaml: the platform × flow matrix from
+// .github/config/test-integration-matrix.yaml is filtered and written to
+// $GITHUB_OUTPUT as 'matrix'.
+func newCIIntegrationMatrixCommand() *cobra.Command {
+	var (
+		configPath string
+		platforms  string
+		flows      string
+		matrixData string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "integration-matrix",
+		Short: "Filter the integration-test platform × flow matrix",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var (
+				matrixJSON string
+				err        error
+			)
+			if matrixData != "" {
+				matrixJSON, err = ciworkflow.CompactJSON(matrixData)
+			} else {
+				matrixJSON, err = ciworkflow.FilterIntegrationMatrix(configPath, platforms, flows)
+			}
+			if err != nil {
+				return err
+			}
+			out := ghactions.NewGitHubOutput()
+			if out.Path != "" {
+				fmt.Fprintf(os.Stdout, "matrix=%s\n", matrixJSON)
+			}
+			return out.Set("matrix", matrixJSON)
+		},
+	}
+
+	cmd.Flags().StringVar(&configPath, "config", ".github/config/test-integration-matrix.yaml", "path to the integration matrix config")
+	cmd.Flags().StringVar(&platforms, "platforms", "", "comma-separated platforms to keep, e.g. gke,eks")
+	cmd.Flags().StringVar(&flows, "flows", "", "comma-separated flows to keep, e.g. install,upgrade-patch")
+	cmd.Flags().StringVar(&matrixData, "matrix-data", "", "explicit matrix JSON override; skips filtering when set")
+	_ = cmd.MarkFlagRequired("platforms")
+	_ = cmd.MarkFlagRequired("flows")
 
 	return cmd
 }
