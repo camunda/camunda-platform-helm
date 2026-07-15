@@ -23,7 +23,7 @@ PR CI runs **tier-1 only** (~5 deploys, the `eske` baseline). The full matrix (~
 
 ## Tier Reference
 
-Authoritative source depends on chart version: 8.7–8.10 define `tier:` and `enabled:` in the composable registry `charts/camunda-platform-<v>/test/ci/registry/manifest.yaml`; only 8.6 uses the legacy `charts/camunda-platform-8.6/test/ci-test-config.yaml`. The table below is a snapshot — re-derive with the source-agnostic CLI:
+Authoritative source: `tier:` and `enabled:` live in the composable registry `charts/camunda-platform-<v>/test/ci/registry/manifest.yaml` (8.6 predates the registry and has no active CI). The table below is a snapshot — re-derive with the source-agnostic CLI:
 
 ```bash
 deploy-camunda matrix list --tier 2 --versions <v>

@@ -97,7 +97,7 @@ Each chart version has a `test/ci-test-config.yaml` defining scenarios (e.g., `e
 
 **Tier split:** `pull_request` runs **tier-1 only** — `test-chart-version.yaml` passes `tier: 1` on PR events. The **full matrix** (tier-2 plus untiered scenarios) runs on `merge_group` (merge queue). A PR that adds or changes a tier-2 scenario gets no CI signal until merge is clicked; validate tier-2 changes locally before merge — see the `rfr-validation` skill (`.claude/skills/rfr-validation/SKILL.md`).
 
-Scenarios and tiers for 8.7–8.10 live in the composable registry `test/ci/registry/manifest.yaml`; only 8.6 uses `test/ci-test-config.yaml`. Use `deploy-camunda matrix list --tier 2 --versions <v>` to re-derive the current set regardless of source.
+Scenarios and tiers live in the composable registry `test/ci/registry/manifest.yaml` (8.6 predates the registry, keeps the legacy inline `test/ci-test-config.yaml`, and has no active CI — manual `workflow_dispatch` only). Use `deploy-camunda matrix list --tier 2 --versions <v>` to re-derive the current set regardless of source.
 
 Upgrade flows are two-step: install the previous version's chart from the Helm repo, then `helm upgrade` to the local chart. The `base-upgrade.yaml` layer is included only in Step 2.
 

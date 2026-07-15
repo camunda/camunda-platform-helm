@@ -152,7 +152,7 @@ Manage profiles: `deploy-camunda config create|use|show|set`.
 
 ## Matrix Operations
 
-The matrix manages the CI test matrix — all scenario/version/platform combinations defined per chart version (composable registry for 8.7+, `ci-test-config.yaml` for 8.6).
+The matrix manages the CI test matrix — all scenario/version/platform combinations defined per chart version in the composable registry (`test/ci/registry/`).
 
 ```bash
 # List all scenarios

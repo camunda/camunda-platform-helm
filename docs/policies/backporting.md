@@ -84,7 +84,7 @@ For whether a proposed change qualifies as non-breaking, refer to [Breaking Chan
 To export the last 3 commits as patch files, run:
 
 ```bash
-git format-patch HEAD^3
+git format-patch -3
 ```
 
 New files will be created starting with `0001-`, `0002-`, etc.
