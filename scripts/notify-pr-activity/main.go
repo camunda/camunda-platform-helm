@@ -50,6 +50,14 @@ func mustEnv(key string) string {
 	return v
 }
 
+// userMapPath returns the slack-user-map.json path, overridable via SLACK_USER_MAP_PATH.
+func userMapPath() string {
+	if p := os.Getenv("SLACK_USER_MAP_PATH"); p != "" {
+		return p
+	}
+	return "slack-user-map.json"
+}
+
 func shortRepo(name string) string {
 	return strings.TrimPrefix(name, "camunda-platform-")
 }
@@ -70,8 +78,33 @@ func formatDuration(from, to time.Time) string {
 	}
 }
 
-// parseReviewers decodes a JSON array of GitHub user objects and returns "@login, ..." string.
-func parseReviewers(raw string) string {
+// loadUserMap reads a GitHub-login -> Slack-user-ID JSON map. A missing or
+// unreadable file yields an empty map, so reviewers fall back to "@login".
+func loadUserMap(path string) map[string]string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ℹ️  no user map at %s: %v (falling back to @login)\n", path, err)
+		return map[string]string{}
+	}
+	var m map[string]string
+	if err := json.Unmarshal(data, &m); err != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  invalid user map %s: %v (falling back to @login)\n", path, err)
+		return map[string]string{}
+	}
+	return m
+}
+
+// slackMention resolves a GitHub login to a Slack "<@UID>" mention, or "@login" when unmapped.
+func slackMention(login string, userMap map[string]string) string {
+	if uid, ok := userMap[login]; ok && uid != "" {
+		return "<@" + uid + ">"
+	}
+	return "@" + login
+}
+
+// parseReviewers decodes a JSON array of GitHub user objects and returns a
+// comma-separated list of Slack mentions (or "@login" fallbacks).
+func parseReviewers(raw string, userMap map[string]string) string {
 	var users []struct {
 		Login string `json:"login"`
 	}
@@ -80,7 +113,7 @@ func parseReviewers(raw string) string {
 	}
 	names := make([]string, 0, len(users))
 	for _, u := range users {
-		names = append(names, "@"+u.Login)
+		names = append(names, slackMention(u.Login, userMap))
 	}
 	return strings.Join(names, ", ")
 }
@@ -113,7 +146,8 @@ func buildMessage() string {
 
 	switch action {
 	case "opened", "ready_for_review":
-		reviewers := parseReviewers(os.Getenv("PR_REVIEWERS_JSON"))
+		userMap := loadUserMap(userMapPath())
+		reviewers := parseReviewers(os.Getenv("PR_REVIEWERS_JSON"), userMap)
 		if reviewers != "" {
 			return fmt.Sprintf("↗ [%s] %s — review: %s", repo, link, reviewers)
 		}

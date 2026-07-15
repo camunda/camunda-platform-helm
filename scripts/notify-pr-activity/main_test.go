@@ -15,7 +15,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 	"time"
 )
@@ -115,12 +114,46 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
-// TestParseReviewers checks the reviewer JSON parsing helper.
+// TestParseReviewers checks reviewer resolution with and without a Slack user map.
 func TestParseReviewers(t *testing.T) {
-	os.Setenv("PR_REVIEWERS_JSON", `[{"login":"alice"},{"login":"bob"}]`)
-	got := parseReviewers(`[{"login":"alice"},{"login":"bob"}]`)
-	want := "@alice, @bob"
-	if got != want {
-		t.Errorf("got %q, want %q", got, want)
+	userMap := map[string]string{"alice": "U123"}
+	cases := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{"mapped and fallback", `[{"login":"alice"},{"login":"bob"}]`, "<@U123>, @bob"},
+		{"all fallback", `[{"login":"bob"}]`, "@bob"},
+		{"empty", `[]`, ""},
+	}
+	for _, c := range cases {
+		if got := parseReviewers(c.raw, userMap); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// TestSlackMention checks mapped resolution and the @login fallback.
+func TestSlackMention(t *testing.T) {
+	userMap := map[string]string{"alice": "U123", "empty": ""}
+	cases := []struct {
+		login string
+		want  string
+	}{
+		{"alice", "<@U123>"},
+		{"bob", "@bob"},
+		{"empty", "@empty"},
+	}
+	for _, c := range cases {
+		if got := slackMention(c.login, userMap); got != c.want {
+			t.Errorf("login=%s: got %q, want %q", c.login, got, c.want)
+		}
+	}
+}
+
+// TestLoadUserMap_Missing returns an empty map for an absent file.
+func TestLoadUserMap_Missing(t *testing.T) {
+	if m := loadUserMap("does-not-exist.json"); len(m) != 0 {
+		t.Errorf("expected empty map for missing file, got %v", m)
 	}
 }
