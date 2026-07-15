@@ -45,7 +45,7 @@ When adding a new page, also add its `id` to [`helm-docs-site/sidebars.js`](./he
 
 For more details about the Camunda 8 Helm chart versioning, please read the [versioning scheme](https://docs.camunda.io/docs/self-managed/setup/install/#versioning).
 
-Also, check the [chart release cycles](./charts/README.md#release-cycles) for more details.
+Also, check the [release process reference](./docs/reference/release-process.md) for more details.
 
 ## Installation
 

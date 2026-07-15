@@ -15,31 +15,13 @@ templates — never assume paths or component names are identical across version
 live in `templates/common/_helpers.tpl` and `templates/common/_utilz.tpl`; component-specific
 helpers live in `templates/<component>/_helpers.tpl`.
 
-### Chart Design Principles (from `docs/index.md`)
+### Chart Design Principles
 
-Every template change must respect these principles:
-
-- **Minimal & common** — expose configuration that is common, minimal, and useful. Every new
-  field or behaviour must result from a conscious, user-driven decision.
-- **1:1 mapping** — maintain a 1:1 mapping between application configuration and Helm values
-  wherever possible. Do not invent extra abstraction layers.
-- **Generic extensibility** — provide generic, composable mechanisms (`extraConfiguration`,
-  `extraEnv`, `extraVolumes`) rather than embedding opinionated solutions for monitoring,
-  security, or identity management.
-- **Reasonable defaults** — establish sensible defaults that cover common deployment scenarios
-  without exposing unnecessary complexity.
-
-### What the Chart is NOT
-
-Do not introduce templates that:
-
-- Expose arbitrary or exhaustive Camunda application configuration.
-- Implement opinionated solutions from individual engineers (e.g., bundled monitoring stacks,
-  hard-coded security policies).
-- Bundle or depend on external components not part of Camunda's core product.
-- Abstract away or bypass the intrinsic complexity of Camunda's architecture.
-- Patch or work around application-level issues or technical debt.
-- Override core application defaults unless the change aligns with Camunda's default behaviour.
+Every template change must respect the chart design principles and "What the Chart is NOT"
+boundaries in `docs/index.md` (canonical): minimal & common, user-driven, generic extensibility
+(`extraConfiguration`/`extraEnv`/`extraVolumes` over opinionated integrations), 1:1 mapping to
+application config, reasonable defaults; no external-component bundling, no workarounds for
+application-level issues.
 
 ---
 
@@ -242,32 +224,17 @@ hand-rolling the warning; it must be called from within `camunda.constraints.war
 
 ## Common Mistakes
 
-1. **Missing `-` on block directives** — `{{- if ... }}` without the leading `-` emits an empty line before the block,
-   producing invalid YAML in certain contexts.
+For anything restating a Critical Rule above (whitespace trimming, `nindent`, `enabled` guards,
+hardcoded names, `kindIs "slice"`, NOTES.txt warnings), see Critical Rules — the failure modes
+are: spurious blank lines / un-indented output breaking YAML, install failures for disabled
+components, template panics on list-form `extraConfiguration`, and leading-newline YAML parse
+errors from `indent` without `trim`. Additional pitfalls:
 
-2. **`indent` without `trim` on multi-line strings** — always pair: `{{ .Values.foo.configuration | indent 4 | trim }}`.
-   Without `trim`, a leading newline causes YAML parse errors.
-
-3. **`include` without `nindent`** — `{{- include "foo.labels" . }}` without `| nindent N` produces un-indented output
-   that breaks YAML structure.
-
-4. **Hardcoding component names** — writing `name: zeebe` instead of `name: {{ include "orchestration.fullname" . }}`
-   breaks `nameOverride` / `fullnameOverride` support.
-
-5. **Skipping backward-compat comments** — when a helper uses a legacy name (e.g., `"zeebe"` for orchestration),
+1. **Skipping backward-compat comments** — when a helper uses a legacy name (e.g., `"zeebe"` for orchestration),
    always add a `{{- /* NOTE: ... */ -}}` comment explaining why.
 
-6. **Checking only map form of `extraConfiguration`** — callers that do `range $k, $v := .extraConfig` without first
-   checking `kindIs "slice"` will panic when the user passes a list.
-
-7. **Using `$.Template.BasePath` outside `include`** — `print $.Template.BasePath "/foo/bar.yaml"` only works inside
+2. **Using `$.Template.BasePath` outside `include`** — `print $.Template.BasePath "/foo/bar.yaml"` only works inside
    `include`; don't use it to construct file paths for other purposes.
-
-8. **Missing `enabled` guard** — resources emitted when a component is disabled cause Helm install failures.
-
-9. **Writing a warning into `NOTES.txt`** — install/upgrade warnings belong in the
-   `camunda.constraints.warnings` define in `constraints.tpl`, not as hand-written prose in
-   `NOTES.txt`. `NOTES.txt` only renders them via the `include` (see Pattern 10).
 
 ---
 

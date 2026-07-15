@@ -15,23 +15,13 @@ accompanied by updated golden files and that new values fields are documented. C
 test coverage exists for any new template behaviour. Flag concerns about cross-version
 compatibility (8.7 vs 8.8+ layouts differ).
 
-### Chart Design Principles (from `docs/index.md`)
+### Chart Design Principles
 
-These are first-class review criteria. Flag PRs that violate them:
+The chart design principles in `docs/index.md` (canonical) are first-class review criteria —
+flag PRs that violate them: minimal & common, user-driven, generic extensibility
+(`extraConfiguration`/`extraEnv`/`extraVolumes` over embedded integrations), no external-component
+bundling, no workarounds for application-level issues, 1:1 mapping to application config.
 
-- **Minimal & common** — only expose configuration that is common, minimal, and useful. Reject
-  additions that expose arbitrary or exhaustive application configuration.
-- **User-driven** — every new field or feature must stem from a conscious, user-driven decision
-  validated by product management. Reject opinionated solutions from individual engineers.
-- **Generic extensibility** — provide generic, composable mechanisms (`extraConfiguration`,
-  `extraEnv`, `extraVolumes`) rather than embedding specific integrations (monitoring stacks,
-  custom security policies, identity management solutions).
-- **No external bundling** — do not add dependencies on external components not part of Camunda
-  core (e.g., OpenSearch, Bitnami sub-charts beyond what already exists).
-- **No workarounds** — the chart must not patch or work around application-level issues or
-  technical debt. If an application bug requires a workaround, fix the application instead.
-- **1:1 mapping** — maintain a 1:1 mapping between application configuration and Helm values
-  wherever possible. Do not add Helm-only abstraction that has no equivalent in the app.
 ---
 
 ## Critical Rules
@@ -201,38 +191,13 @@ func TestDeploymentTemplate(t *testing.T) {
 
 ## Common Mistakes to Flag in PRs
 
-1. **Chart principle violations** — PRs that add opinionated integrations, arbitrary config
-   fields, or external component dependencies violate `docs/index.md`. These should be flagged
-   with a clear explanation of which principle is violated and why.
+Most flag-worthy mistakes restate the rules and checklists above (principle violations, golden
+files not regenerated — CI fails, undocumented `@param` fields — invisible in generated docs,
+`kindIs "slice"` panics on list input, `indent` without `trim` — YAML parse errors at install
+time, cross-version scope creep, bash >20 lines). Additional pitfalls not covered above:
 
-2. **Golden files not updated** — when a template changes but golden files are not regenerated,
-   CI will fail. Check that `test/unit/<component>/golden/*.golden.yaml` files are committed
-   alongside template changes.
-
-3. **Undocumented values field** — a new `values.yaml` field without `## @param` will be
-   invisible in generated docs. Flag as a required fix.
-
-4. **Missing `kindIs "slice"` check on `extraConfiguration`** — the field supports both map
-   and list forms. Handlers that only loop with `range $k, $v := ...` will panic on list input.
-
-5. **`indent` without `trim` on multiline strings** — produces a leading newline before the
-   content block, causing YAML parse errors at helm install time.
-
-6. **Cross-version scope creep** — a fix applied to `8.10` templates may also be needed in
-   `8.8` and `8.9`. Flag if the PR description doesn't address this.
-
-7. **Inline bash >20 lines** — complex shell logic without tests. Flag and suggest moving to
-   a Go script in `scripts/` with unit tests per `.github/AGENTS.md` policy.
-
-8. **`fail-fast: true` (or default) on test matrix** — in GitHub Actions workflows, the default
+1. **`fail-fast: true` (or default) on test matrix** — in GitHub Actions workflows, the default
    for `fail-fast` is `true`. Test matrices should set `fail-fast: false`.
-
-9. **Using `assert` instead of `require` for fatal Go test setup** — allows tests to continue
-   with bad state and produces confusing failure messages.
-
-10. **Non-trivial workflow automation in Bash** — API orchestration, JSON parsing, and branching
-    added in `run:` blocks or `scripts/*.sh` should be flagged and migrated to Go for testability
-    and maintainability.
 
 ---
 

@@ -1,44 +1,8 @@
-# Agent Instructions
+# Agent Instructions — CI/CD Architecture
 
 This is the **Camunda 8 Self-Managed Helm Charts** repository. It contains Helm charts for deploying the Camunda Platform on Kubernetes, along with Go-based CLI tooling for deployment automation, integration testing, and CI/CD.
 
-## State File
-
-Use `STATE.md` (repo root) to persist session context across conversations. This file is gitignored.
-
-**On session start:** Read `STATE.md` if it exists. Use it to understand the current goal, what has been done, what remains, and any discoveries or decisions made so far.
-
-**During work:** Update `STATE.md` whenever you make meaningful progress — after completing a task, discovering something important, or making a decision. Do not wait until the end of the session.
-
-**Format:**
-
-```markdown
-## Goal
-
-One-line summary of what we are working on.
-
-## Instructions
-
-Constraints, preferences, or standing orders from the user that apply across sessions.
-
-## Discoveries
-
-Key findings, root causes, gotchas, and architectural decisions made during investigation.
-
-## Accomplished
-
-Numbered list of completed items with enough detail to not repeat work.
-
-## Not Yet Done
-
-Numbered list of remaining items, in priority order.
-
-## Relevant Files
-
-Files and directories that are central to the current task, with brief annotations.
-```
-
-Keep it concise. The file should be useful to a fresh agent session that has never seen prior conversation history.
+This file covers repository structure and CI architecture. Coding rules, commands, conventions, and the `STATE.md` session-continuity protocol live in the root `AGENTS.md`; operational runbooks live in `.claude/skills/` (index: `SKILLS.md`).
 
 ## Repository Structure
 
@@ -97,65 +61,7 @@ Each chart version depends on: Bitnami Keycloak (local sub-chart), Bitnami Postg
 
 ## Conventions
 
-Path-scoped chart-coding conventions live in `.github/instructions/*.instructions.md` (values.yaml authoring, Helm templates, code review, Go tests, scripting, GitHub Actions). Their `applyTo:` globs are not auto-applied by Claude Code — read the matching guide explicitly before editing files in that path.
-
-### Commits and PRs
-
-Commit messages and PR titles use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format:
-
-```
-<type>[optional scope]: <description>
-```
-
-Valid types: `feat`, `fix`, `refactor`, `revert`, `test`, `docs`, `style`, `build`, `ci`, `cd`, `chore`, `chore(deps)`, `chore(release)`, `deps`, `perf`.
-
-Keep the header under 120 chars (prefer under 72). The description should be in present tense.
-
-### Go Code
-
-- Complex CI logic (>20 lines) must be implemented as Go scripts in `scripts/`, not bash.
-- All Go scripts must have unit tests.
-- Go code uses the golden file (snapshot) testing pattern. After changes that affect rendered output, run:
-
-  ```bash
-  make go.update-golden-only        # full regeneration (cleanup before re-render)
-  make go.update-golden-only-lite   # faster iteration (skips cleanup)
-  ```
-
-### Branches
-
-Branch naming: `issueId-description` (e.g., `123-adding-bpel-support`).
-
-## Tool Versions
-
-Pinned in `.tool-versions` (managed by `asdf`). Install all with: `asdf install`
-
-| Tool      | Version | Notes                                |
-| --------- | ------- | ------------------------------------ |
-| Go        | 1.26    | Required for all `scripts/` tooling  |
-| Helm      | 3.20    | Chart rendering, linting, deployment |
-| kubectl   | 1.27.16 | Matches CI cluster version           |
-| kind      | 0.31    | Local Kubernetes clusters            |
-| yq        | 4.52.4  | YAML processing                      |
-| jq        | 1.8.1   | JSON processing                      |
-| kustomize | 5.8.1   | Test suite deployment                |
-| bats      | 1.11.0  | Bash testing                         |
-
-## Common Development Tasks
-
-```bash
-make install.dx-tooling          # Build and install all Go CLI tools to $GOPATH/bin
-make go.test                     # Run unit tests (checks against golden files)
-make go.update-golden-only       # Update golden files after template changes
-make go.update-golden-only-lite  # Faster update during iteration (skips cleanup)
-make helm.lint                   # Lint all Helm charts
-make helm.dependency-update      # Update chart dependencies
-make precommit.chores            # Pre-commit chores (lint + readme + schema + golden files)
-make helm.template chartPath=charts/camunda-platform-8.10  # Template a chart (inspect output)
-make helm.dry-run chartPath=charts/camunda-platform-8.10   # Dry-run an install
-```
-
-Most `make` targets accept `chartPath` to target a specific version (e.g., `make go.test chartPath=charts/camunda-platform-8.10`).
+Commit/branch/PR conventions: root `AGENTS.md`. Path-scoped chart-coding conventions live in `.github/instructions/*.instructions.md` — their `applyTo:` globs are not auto-applied by Claude Code, so read the matching guide explicitly before editing files in that path. Tool versions: `.tool-versions` (kubectl is pinned to match the CI cluster version).
 
 ### Values Files
 
@@ -179,56 +85,32 @@ For chart versions 8.6+, integration test values use a layered composition model
 base.yaml -> base-upgrade.yaml (if upgrade flow) -> identity -> persistence -> platform -> features -> QA -> image-tags
 ```
 
-These live in `test/integration/scenarios/chart-full-setup/values/` per chart version. The `deploy-camunda` CLI handles resolution and merging automatically.
+These live in `test/integration/scenarios/chart-full-setup/values/` per chart version. The `deploy-camunda` CLI handles resolution and merging automatically — array merging is name-keyed, unlike raw Helm (see root `AGENTS.md` → Subchart Values Gotchas).
 
-**Note on array merging:** The `deploy-camunda` CLI uses a deep merge strategy (`scripts/deploy-camunda/deploy/merge.go`) that intelligently merges arrays with `name`-keyed elements (like `env` arrays). Entries with matching `name` keys get their values overridden, and new entries are appended. This means feature layers do NOT need to re-include env vars from base.yaml — the merge logic handles it. This is different from raw Helm behavior (which replaces arrays entirely).
+**Image-tag activation:** The image-tags layer (`base-image-tags.yaml`) is enabled by setting `image-tags: true` in `ci-test-config.yaml`. All `qa-*` scenarios have this set because they always receive SNAPSHOT versions from nightly CI. When active, neither `values-digest.yaml` nor `values-latest.yaml` is applied — image versions come entirely from `base-image-tags.yaml` with placeholder substitution from the `.env` file (loaded by `buildScenarioEnv()`). In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file and passes it via `--env-file`.
 
-**Image-tag activation:** The image-tags layer (`base-image-tags.yaml`) is enabled by setting `image-tags: true` in `ci-test-config.yaml`. All `qa-*` scenarios have this set because they always receive SNAPSHOT versions from nightly CI. When active, neither `values-digest.yaml` nor `values-latest.yaml` is applied — image versions come entirely from `base-image-tags.yaml` with placeholder substitution from the `.env` file (loaded by `buildScenarioEnv()`). In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file and passes it via `--env-file`. See `docs/integration-test-scenario-resolution.md` for the full data flow.
-
-For detailed documentation on how scenario resolution works, see `docs/integration-test-scenario-resolution.md`.
+For the full data flow and per-version resolution, see `docs/skills/integration-test-scenario-resolution.md`.
 
 ## CI Test Matrix
 
 Each chart version has a `test/ci-test-config.yaml` defining scenarios (e.g., `elasticsearch`, `opensearch`). Each scenario specifies identity, persistence, platforms, and allowed flows. The matrix is filtered by `.github/config/permitted-flows.yaml` which denies specific flows per version (e.g., 8.9 denies `upgrade-patch` but allows `upgrade-minor`).
 
-**Tier split:** `pull_request` runs **tier-1 only** — `test-chart-version.yaml` passes `tier: 1` on PR events. The **full matrix** (tier-2 plus untiered scenarios) runs on `merge_group` (merge queue). A PR that adds or changes a tier-2 scenario gets no CI signal until merge is clicked; validate tier-2 changes locally before merge. See [SKILLS.md → Verifying tier-2 scenarios before merge](../SKILLS.md#verifying-tier-2-scenarios-before-merge).
+**Tier split:** `pull_request` runs **tier-1 only** — `test-chart-version.yaml` passes `tier: 1` on PR events. The **full matrix** (tier-2 plus untiered scenarios) runs on `merge_group` (merge queue). A PR that adds or changes a tier-2 scenario gets no CI signal until merge is clicked; validate tier-2 changes locally before merge — see the `rfr-validation` skill (`.claude/skills/rfr-validation/SKILL.md`).
 
-Scenarios and tiers for 8.7–8.10 live in the composable registry `test/ci/registry/manifest.yaml`; only 8.6 uses `test/ci-test-config.yaml`. Use `deploy-camunda matrix list --tier 2 --versions <v>` to re-derive the current set regardless of source.
+Scenarios and tiers live in the composable registry `test/ci/registry/manifest.yaml` (8.6 predates the registry, keeps the legacy inline `test/ci-test-config.yaml`, and has no active CI — manual `workflow_dispatch` only). Use `deploy-camunda matrix list --tier 2 --versions <v>` to re-derive the current set regardless of source.
 
 Upgrade flows are two-step: install the previous version's chart from the Helm repo, then `helm upgrade` to the local chart. The `base-upgrade.yaml` layer is included only in Step 2.
 
-## Operational Skills
-
-See `SKILLS.md` for instructions on using:
-
-- **`deploy-camunda` CLI** — Deploy Camunda to Kubernetes, manage configs, run test matrices
-- **`kubectl`** — Debug deployments, check pod health, access services, manage secrets
-
 ## Testing
 
-### Unit Tests
-
-Located in each chart: `charts/camunda-platform-<version>/test/unit/`. Uses terratest + testify with golden file snapshots. Run with `make go.test`.
-
-### Integration Tests
-
-Deploy to real Kubernetes clusters using predefined scenarios. Managed by `deploy-camunda` CLI. See `SKILLS.md` for operational details.
-
-### E2E Tests
-
-Playwright-based, located in `charts/camunda-platform-<version>/test/e2e/`. Run via `deploy-camunda --test-e2e`.
+- **Unit tests:** `charts/camunda-platform-<version>/test/unit/` — terratest + testify with golden file snapshots; `make go.test`.
+- **Integration tests:** deploy to real Kubernetes clusters using predefined scenarios, managed by the `deploy-camunda` CLI (see the `deploy-camunda` skill).
+- **E2E tests:** Playwright-based, `charts/camunda-platform-<version>/test/e2e/`; run via `deploy-camunda --test-e2e` (see the `e2e-testing` skill).
 
 ## Credentials
 
-Docker registry credentials are required for cluster deployments. Before running `deploy-camunda matrix run` or any deployment that needs image pulling, ask the user to ensure the following environment variables are set:
-
-- **Harbor** (`registry.camunda.cloud`): `TEST_DOCKER_USERNAME_CAMUNDA_CLOUD` and `TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD`
-- **Docker Hub**: `TEST_DOCKER_USERNAME` and `TEST_DOCKER_PASSWORD`
-
-Both are needed when `ensureDockerHub` and `ensureDockerRegistry` are `true` in `.deploy-camunda.yaml`. Do not attempt to extract credentials automatically — ask the user to set them up.
+Docker registry credentials are required for cluster deployments — the exact env vars, expected values, and pre-flight checks are in the `gke-verification` skill (`.claude/skills/gke-verification/SKILL.md`). Do not attempt to extract credentials automatically — ask the user to set them up.
 
 ## Development tips
 
 - When debugging CI deployment failures, **always check the `diagnostics/` folder at the repo root first**. It contains output from the last `deploy-camunda matrix run` with pod status, events, and logs from failing pods. The folder is gitignored, so `glob` may not find it — use `read` on the repo root directory to see it.
-- Complex logic for CI pipelines (>20 lines) should be implemented as golang scripts inside the scripts directory and then called with github actions. Do not implement this in bash.
-- When writing any golang, the scripts must have unit tests

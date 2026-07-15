@@ -50,7 +50,8 @@ STATE.md
 
 **/.omc
 
-.claude/
+.claude/*
+!.claude/skills/
 c8e2e-results/
 
 # crev (code-review tool) local run artifacts
