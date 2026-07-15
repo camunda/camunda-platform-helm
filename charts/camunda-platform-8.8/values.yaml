@@ -2851,7 +2851,7 @@ orchestration:
     #   value: TRACE
   ## @param orchestration.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
-  ## @extra orchestration.configMap configuration which will be applied to the mounted config map.
+  ## @extra orchestration.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
     ## @param orchestration.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
@@ -3279,7 +3279,7 @@ optimize:
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @extra optimize.configMap configuration which will be applied to the mounted config map.
+  ## @extra optimize.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
     ## @param optimize.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623

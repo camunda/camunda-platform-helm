@@ -771,7 +771,7 @@ zeebe:
   env: []
   ## @param zeebe.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
-  ## @extra zeebe.configMap configuration which will be applied to the mounted config map.
+  ## @extra zeebe.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
      ## @param zeebe.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
@@ -1078,7 +1078,7 @@ zeebeGateway:
   env: []
   ## @param zeebeGateway.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
-  ## @extra zeebeGateway.configMap configuration which will be applied to the mounted config map.
+  ## @extra zeebeGateway.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
     ## @param zeebeGateway.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
@@ -1449,7 +1449,7 @@ operate:
   env: []
   ## @param operate.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
-  ## @extra operate.configMap configuration which will be applied to the mounted config map.
+  ## @extra operate.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
     ## @param operate.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
@@ -1667,7 +1667,7 @@ tasklist:
   ## @param tasklist.podLabels can be used to define extra tasklist pod labels
   podLabels: {}
 
-  ## @extra tasklist.configMap configuration which will be applied to the mounted config map.
+  ## @extra tasklist.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
     ## @param tasklist.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
@@ -1932,7 +1932,7 @@ optimize:
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @extra optimize.configMap configuration which will be applied to the mounted config map.
+  ## @extra optimize.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
     ## @param optimize.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
