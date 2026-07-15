@@ -1,0 +1,50 @@
+name: Setup deploy-camunda
+description: Restore or build the deploy-camunda binary and add it to PATH.
+
+runs:
+  using: composite
+  steps:
+    - name: Check runner deploy-camunda binary
+      id: runner-binary
+      shell: bash
+      run: echo "present=$([ -n "${RUNNER_TEMP:-}" ] && [ -x "$RUNNER_TEMP/bin/deploy-camunda" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+    - name: Restore deploy-camunda binary
+      if: steps.runner-binary.outputs.present != 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: .local-bin/deploy-camunda
+        key: deploy-camunda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/actions/setup-deploy-camunda/action.yaml', 'scripts/deploy-camunda/**/*.go', 'scripts/deploy-camunda/go.mod', 'scripts/deploy-camunda/go.sum', 'scripts/deploy-camunda/deploy/data/**', 'scripts/deploy-camunda/examples/*.deploy-camunda.yaml', 'scripts/camunda-core/**/*.go', 'scripts/camunda-core/go.mod', 'scripts/camunda-core/go.sum', 'scripts/prepare-helm-values/**/*.go', 'scripts/prepare-helm-values/go.mod', 'scripts/prepare-helm-values/go.sum', 'scripts/vault-secret-mapper/**/*.go', 'scripts/vault-secret-mapper/go.mod', 'scripts/vault-secret-mapper/go.sum') }}
+    - name: Check deploy-camunda binary
+      id: binary-check
+      shell: bash
+      run: echo "present=$([ -x "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+    - name: Setup Go
+      if: steps.runner-binary.outputs.present != 'true' && steps.binary-check.outputs.present != 'true'
+      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      env:
+        GOROOT: ""
+      with:
+        go-version-file: scripts/deploy-camunda/go.mod
+        cache: true
+        cache-dependency-path: |
+          scripts/deploy-camunda/go.sum
+          scripts/camunda-core/go.sum
+          scripts/prepare-helm-values/go.sum
+          scripts/vault-secret-mapper/go.sum
+    - name: Build deploy-camunda
+      if: steps.runner-binary.outputs.present != 'true' && steps.binary-check.outputs.present != 'true'
+      shell: bash
+      env:
+        GOROOT: ""
+      run: |
+        mkdir -p "$GITHUB_WORKSPACE/.local-bin"
+        # CGO_ENABLED=0 produces a static binary for host and container jobs.
+        (cd scripts/deploy-camunda && CGO_ENABLED=0 go build -o "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" .)
+    - name: Export deploy-camunda to PATH
+      shell: bash
+      run: |
+        if [[ "${{ steps.runner-binary.outputs.present }}" == "true" ]]; then
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        else
+          echo "$GITHUB_WORKSPACE/.local-bin" >> "$GITHUB_PATH"
+        fi
