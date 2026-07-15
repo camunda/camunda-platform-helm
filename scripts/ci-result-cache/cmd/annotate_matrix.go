@@ -15,15 +15,16 @@ import (
 var annotateMatrixCmd = &cobra.Command{
 	Use:   "annotate-matrix",
 	Short: "Annotate a CI matrix JSON with cached/uncached flags",
-	Long: `Annotate-matrix reads the matrix JSON from stdin (as produced by
-generate-chart-matrix.sh), checks each entry against cached results,
-and outputs an annotated matrix with a "cached" field on each entry.
+	Long: `Annotate-matrix reads raw matrix JSON from stdin, checks each entry
+against cached results, and outputs an annotated matrix with a "cached" field
+on each entry. The input is the value of the matrix output emitted by
+deploy-camunda matrix plan.
 
 Entries where cached=true can be routed to a fast-path job that skips
 the full GKE deploy+test cycle.
 
 Usage:
-  generate-chart-matrix.sh ... | ci-result-cache annotate-matrix --sha <SHA> --repo-root .`,
+  printf '%s\n' "$MATRIX_JSON" | ci-result-cache annotate-matrix --sha <SHA> --repo-root .`,
 	RunE: runAnnotateMatrix,
 }
 

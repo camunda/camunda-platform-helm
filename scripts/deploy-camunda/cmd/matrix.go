@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"scripts/camunda-core/pkg/ghactions"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/matrix"
 	"scripts/prepare-helm-values/pkg/env"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -29,8 +31,104 @@ func newMatrixCommand() *cobra.Command {
 
 	matrixCmd.AddCommand(newMatrixListCommand())
 	matrixCmd.AddCommand(newMatrixRunCommand())
+	matrixCmd.AddCommand(newMatrixPlanCommand())
 
 	return matrixCmd
+}
+
+// newMatrixPlanCommand creates the "matrix plan" subcommand. It replaces
+// scripts/generate-chart-matrix.sh + generate-chart-matrix.jq: it decides
+// which chart versions a change set affects and emits the GitHub Actions
+// build matrix to $GITHUB_OUTPUT (stdout on local runs).
+func newMatrixPlanCommand() *cobra.Command {
+	var (
+		activeVersions   string
+		allModifiedFiles string
+		manualTrigger    string
+		manualScenario   string
+		manualFlow       string
+		tier             string
+		repoRoot         string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "plan",
+		Short: "Compute the chart build matrix for a change set",
+		Long: `Compute the chart build matrix for a change set and write it to
+$GITHUB_OUTPUT as 'matrix' ({"include": [...]}) and 'camunda-versions'
+(unique version array).
+
+Which versions build: a manual trigger ("all" or a single version) wins;
+otherwise changed files under .github/workflows, .github/actions,
+.github/config (except release-please), or scripts/ build every active
+version, and chart-only changes build just the affected versions.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoRoot == "" {
+				detected, err := config.DetectRepoRoot()
+				if err != nil {
+					return err
+				}
+				repoRoot = detected
+			}
+			if repoRoot == "" {
+				return fmt.Errorf("--repo-root is required (or run from within the repo)")
+			}
+
+			tierValue := 0
+			if tier != "" {
+				parsed, err := strconv.Atoi(tier)
+				if err != nil {
+					return fmt.Errorf("invalid --tier %q: %w", tier, err)
+				}
+				tierValue = parsed
+			}
+
+			result, err := matrix.Plan(repoRoot, matrix.PlanOptions{
+				ActiveVersions: strings.Fields(strings.ReplaceAll(activeVersions, ",", " ")),
+				ChangedFiles:   allModifiedFiles,
+				ManualTrigger:  manualTrigger,
+				ManualScenario: manualScenario,
+				ManualFlow:     manualFlow,
+				Tier:           tierValue,
+			})
+			if err != nil {
+				return err
+			}
+
+			matrixJSON, err := result.MatrixJSON()
+			if err != nil {
+				return err
+			}
+			versionsJSON, err := result.VersionsJSON()
+			if err != nil {
+				return err
+			}
+			if len(result.Include) == 0 {
+				fmt.Fprintln(os.Stdout, "No matching chart changes detected; emitting empty matrix and skipping downstream jobs.")
+			}
+
+			out := ghactions.NewGitHubOutput()
+			if out.Path != "" {
+				fmt.Fprintf(os.Stdout, "matrix=%s\ncamunda-versions=%s\n", matrixJSON, versionsJSON)
+			}
+			if err := out.Set("matrix", matrixJSON); err != nil {
+				return err
+			}
+			return out.Set("camunda-versions", versionsJSON)
+		},
+	}
+
+	f := cmd.Flags()
+	f.StringVar(&activeVersions, "active-versions", "", "active chart versions (space- or comma-separated, e.g. \"8.7 8.8 8.9 8.10\")")
+	f.StringVar(&allModifiedFiles, "all-modified-files", "", "changed files/dirs (whitespace-separated, as emitted by tj-actions/changed-files)")
+	f.StringVar(&manualTrigger, "manual-trigger", "none", "\"none\", \"all\", or a single chart version to build")
+	f.StringVar(&manualScenario, "manual-scenario", "none", "keep only this exact scenario (\"none\"/\"all\" keep everything)")
+	f.StringVar(&manualFlow, "manual-flow", "none", "override flows (comma-separated: install, upgrade-patch, upgrade-minor)")
+	f.StringVar(&tier, "tier", "", "filter scenarios by tier (1=PR CI, 2=merge-queue only; empty or 0=all)")
+	f.StringVar(&repoRoot, "repo-root", "", "repository root path (default: auto-detect)")
+	_ = cmd.MarkFlagRequired("active-versions")
+
+	return cmd
 }
 
 // newMatrixListCommand creates the "matrix list" subcommand.

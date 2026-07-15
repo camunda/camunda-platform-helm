@@ -59,7 +59,7 @@ outputs:
     description: |
       JSON array of changed Camunda versions (e.g., [8.4, 8.5]),
       which will be used as and input for GHA workflow matrix.
-    value: ${{ steps.set-camunda-versions.outputs.camunda-versions }}
+    value: ${{ steps.set-chart-versions.outputs.camunda-versions }}
 runs:
   using: composite
   steps:
@@ -87,16 +87,10 @@ runs:
       env:
         ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
       run: |
-        bash scripts/generate-chart-matrix.sh \
+        deploy-camunda matrix plan \
           --manual-trigger "${{ inputs.manual-trigger }}" \
           --manual-scenario "${{ inputs.manual-scenario }}" \
           --manual-flow "${{ inputs.manual-flow }}" \
           --tier "${{ inputs.tier }}" \
           --active-versions "${{ steps.get-chart-versions.outputs.active }}" \
-          --all-modified-files "${{ steps.changed-files.outputs.all_modified_files }}"
-    - name: Generate matrix Camunda versions
-      shell: bash
-      id: set-camunda-versions
-      run: |
-        camunda_versions="$(echo '${{ steps.set-chart-versions.outputs.matrix }}' | jq -c '[.include.[].version] | unique')"
-        echo "camunda-versions=${camunda_versions}" | tee -a $GITHUB_OUTPUT
+          --all-modified-files "$ALL_MODIFIED_FILES"
