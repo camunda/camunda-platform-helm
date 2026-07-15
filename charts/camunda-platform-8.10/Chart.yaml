@@ -51,8 +51,6 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "refactor: hoist camundaHub.webModeler.* and console overrides to the camundaHub.* parent"
     - kind: added
       description: "Deprecate app-config proxy keys in favor of extraConfiguration"
     - kind: added
