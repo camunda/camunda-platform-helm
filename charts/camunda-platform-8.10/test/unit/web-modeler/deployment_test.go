@@ -234,7 +234,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("SecretNameSubChart", deployment.Spec.Template.Spec.ImagePullSecrets[0].Name)
 			},
 		}, {
-			Name: "TestContainerImageWithoutTagOrDigestFails",
+			Name: "TestContainerRootImageRepositoryOverrideKeepsDefaultImage",
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
@@ -243,8 +243,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "neither a tag nor a digest")
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().Equal(s.imageRepo()+":8.10.0-alpha3-rc1", deployment.Spec.Template.Spec.Containers[0].Image)
 			},
 		}, {
 			Name: "TestContainerOverwriteImageTag",

@@ -1,3 +1,9 @@
+# GKE alwaysgreen nodes need nodeSelector and tolerations config.
+# NOTE: Bitnami subcharts (identityKeycloak, identityPostgresql, webModelerPostgresql,
+# elasticsearch) were removed in 8.10. Companion chart scheduling is handled via
+# dedicated companion-values files (e.g., keycloak-alwaysgreen.yaml, elasticsearch-alwaysgreen.yaml).
+
+# Auth.
 identity:
   nodeSelector:
     workload: alwaysgreen
@@ -6,6 +12,8 @@ identity:
     key: workload
     operator: Equal
     value: alwaysgreen
+
+# Camunda Hub.
 camundaHub:
   restapi:
     nodeSelector:
@@ -55,6 +63,8 @@ optimize:
     key: workload
     operator: Equal
     value: alwaysgreen
+
+# Zeebe.
 orchestration:
   nodeSelector:
     workload: alwaysgreen
@@ -71,6 +81,7 @@ zeebeGateway:
     key: workload
     operator: Equal
     value: alwaysgreen
+
 console:
   nodeSelector:
     workload: alwaysgreen

@@ -10,6 +10,32 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- fail (printf "[camunda][error] Camunda chart 15.x (8.10) requires Helm CLI v4 or later. Detected Helm CLI version: %s. Please upgrade to Helm v4: https://helm.sh/docs/topics/v4_migration/" .Capabilities.HelmVersion.Version) -}}
 {{- end -}}
 
+{{- $values := .Values | toYaml | fromYaml }}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (ne nil (dig "camundaHub" "webModeler" "persistence" "deploymentStrategy" nil $values))
+  "oldName" "camundaHub.webModeler.persistence.deploymentStrategy"
+  "newName" "camundaHub.persistence.deploymentStrategy"
+) }}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (ne nil (dig "camundaHub" "webModeler" "contextPath" nil $values))
+  "oldName" "camundaHub.webModeler.contextPath"
+  "newName" "camundaHub.contextPath"
+) }}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (ne nil (dig "camundaHub" "webModeler" "restapi" "mail" "fromAddress" nil $values))
+  "oldName" "camundaHub.webModeler.restapi.mail.fromAddress"
+  "newName" "camundaHub.restapi.mail.fromAddress"
+) }}
+
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (ne nil (dig "global" "identity" "auth" "camundaHub" "webModeler" "redirectUrl" nil $values))
+  "oldName" "global.identity.auth.camundaHub.webModeler.redirectUrl"
+  "newName" "global.identity.auth.camundaHub.redirectUrl"
+) }}
+
 {{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 

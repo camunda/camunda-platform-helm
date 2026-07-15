@@ -1,28 +1,36 @@
+# Base values for all 8.10 integration test deployments
+# Layer 1: Common configuration shared across all scenarios
+
 global:
   imagePullSecrets:
-  - index-docker-io
-  - registry-camunda-cloud
+    - index-docker-io
+    - registry-camunda-cloud
   elasticsearch:
     enabled: true
   exporter:
     zeebe:
       enabled: false
-  host: $CAMUNDA_HOSTNAME
+  host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: true
     className: nginx
     tls:
       enabled: true
+      # A wildcard certificate will be used.
+
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: '{{ .Values.global.host }}'
-      external-dns.alpha.kubernetes.io/ttl: '60'
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+
+# Context paths for all components
 identity:
   enabled: true
   image:
     pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
-  contextPath: /identity
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  contextPath: "/identity"
+  # Right-sized for CI: "camunda-platform" container P99 mem 849Mi (from 400Mi default).
   resources:
     requests:
       cpu: 600m
@@ -49,38 +57,40 @@ identity:
     timeoutSeconds: 1
   firstUser:
     secret:
-      existingSecret: integration-test-credentials
-      existingSecretKey: identity-user-password
+      existingSecret: "integration-test-credentials"
+      existingSecretKey: "identity-user-password"
   clients:
-  - id: venom
-    name: Venom
-    secret:
-      existingSecret: integration-test-credentials
-      existingSecretKey: identity-admin-client-password
-    redirectUris: /dummy
-    rootUrl: http://dummy
-    type: confidential
-    permissions:
-    - resourceServerId: camunda-identity-resource-server
-      definition: read
-    - resourceServerId: camunda-identity-resource-server
-      definition: write
-    - resourceServerId: orchestration-api
-      definition: read:*
-    - resourceServerId: orchestration-api
-      definition: write:*
-    - resourceServerId: optimize-api
-      definition: write:*
-    - resourceServerId: web-modeler-api
-      definition: write:*
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+
 optimize:
   enabled: true
   image:
     pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
-  contextPath: /optimize
-  partitionCount: '1'
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  contextPath: "/optimize"
+  partitionCount: "1"
+  # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
   resources:
     requests:
       cpu: 475m
@@ -105,12 +115,14 @@ optimize:
     periodSeconds: 10
     failureThreshold: 3
     timeoutSeconds: 5
+
 connectors:
   image:
     pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
-  contextPath: /connectors
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  contextPath: "/connectors"
+  # Right-sized for CI: CPU P99 389m (from 1000m default), memory P99 531Mi (from 1Gi default).
   resources:
     requests:
       cpu: 500m
@@ -136,10 +148,12 @@ connectors:
     periodSeconds: 10
     failureThreshold: 5
     timeoutSeconds: 5
+
 camundaHub:
   enabled: true
-  contextPath: /modeler
+  contextPath: "/modeler"
   restapi:
+    # Right-sized for CI: CPU P99 640m INCREASE (from 500m default), memory P99 1132Mi INCREASE (from 1Gi default).
     resources:
       requests:
         cpu: 850m
@@ -155,15 +169,16 @@ camundaHub:
       timeoutSeconds: 1
     pusher:
       secret:
-        existingSecret: integration-test-credentials
-        existingSecretKey: webmodeler-pusher-app-secret
+        existingSecret: "integration-test-credentials"
+        existingSecretKey: "webmodeler-pusher-app-secret"
       client:
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: webmodeler-pusher-app-key
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "webmodeler-pusher-app-key"
     mail:
       fromAddress: noreply@example.com
   webapp:
+    # Right-sized for CI: CPU P99 47m (from 400m default), memory P99 216Mi INCREASE (from 256Mi default).
     resources:
       requests:
         cpu: 60m
@@ -172,6 +187,7 @@ camundaHub:
         cpu: 400m
         memory: 512Mi
   websockets:
+    # Right-sized for CI: CPU P99 3m (from 100m default), memory P99 33Mi (from 64Mi default).
     resources:
       requests:
         cpu: 25m
@@ -179,23 +195,29 @@ camundaHub:
       limits:
         cpu: 100m
         memory: 128Mi
+
+# NOTE: Keep pullSecrets on the legacy path; camundaHub.image.* is additive (merged, not `or`) as of PR #6539.
 webModeler:
   image:
     pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+
 orchestration:
   image:
     pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   data:
     secondaryStorage:
       type: elasticsearch
-  contextPath: /orchestration
-  clusterSize: '1'
-  partitionCount: '1'
-  replicationFactor: '1'
+  contextPath: "/orchestration"
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
+  # JVM startup optimizations: TieredStopAtLevel=1 skips C2 compiler for ~30-50% faster startup,
+  # pre-sized heap avoids resizing overhead, G1GC with string deduplication for efficiency.
+  # Right-sized for CI: CPU P99 481m (from 2000m), memory P99 1012Mi (from 2000Mi).
   resources:
     requests:
       cpu: 600m
@@ -220,19 +242,22 @@ orchestration:
     grpc:
       enabled: true
       className: nginx
-      host: grpc-{{ .Values.global.host }}
+      host: "grpc-{{ .Values.global.host }}"
       tls:
         enabled: true
         secretName: camunda-platform-zeebe-gateway
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: orchestration-{{ .Values.global.host }}
-        external-dns.alpha.kubernetes.io/ttl: '60'
+        external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.host }}"
+        external-dns.alpha.kubernetes.io/ttl: "60"
+
 prometheusServiceMonitor:
   enabled: true
   labels:
     release: kube-prometheus-stack
+
 console:
-  contextPath: /
+  contextPath: "/"
+  # Right-sized for CI: "camunda-platform" container CPU P99 493m (from 1000m default), memory P99 849Mi INCREASE (from 1Gi default).
   resources:
     requests:
       cpu: 650m
@@ -242,5 +267,5 @@ console:
       memory: 2Gi
   image:
     pullSecrets:
-    - name: index-docker-io
-    - name: registry-camunda-cloud
+      - name: index-docker-io
+      - name: registry-camunda-cloud

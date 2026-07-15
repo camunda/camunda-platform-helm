@@ -60,7 +60,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"global.elasticsearch.enabled":        "true",
-				"webModeler.enabled":                  "true",
+				"camundaHub.enabled":                  "true",
 				"camundaHub.restapi.mail.fromAddress": "example@example.com",
 				// persistence.enabled defaults to false
 			},
@@ -88,7 +88,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Values: map[string]string{
 				"identity.enabled":                      "true",
 				"global.elasticsearch.enabled":          "true",
-				"webModeler.enabled":                    "true",
+				"camundaHub.enabled":                    "true",
 				"camundaHub.restapi.mail.fromAddress":   "example@example.com",
 				"camundaHub.persistence.enabled":        "true",
 				"camundaHub.persistence.size":           "5Gi",
@@ -122,7 +122,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Values: map[string]string{
 				"identity.enabled":                     "true",
 				"global.elasticsearch.enabled":         "true",
-				"webModeler.enabled":                   "true",
+				"camundaHub.enabled":                   "true",
 				"camundaHub.restapi.mail.fromAddress":  "example@example.com",
 				"camundaHub.persistence.enabled":       "true",
 				"camundaHub.persistence.existingClaim": "my-existing-pvc",
@@ -255,7 +255,9 @@ func TestDeploymentStrategyInvalidValueFails(t *testing.T) {
 		},
 		Verifier: func(t *testing.T, output string, err error) {
 			require.Error(t, err)
-			require.Contains(t, err.Error(), "value must be one of 'RollingUpdate', 'Recreate'")
+			require.Contains(t, err.Error(), "must be one of")
+			require.Contains(t, err.Error(), "RollingUpdate")
+			require.Contains(t, err.Error(), "Recreate")
 		},
 	}
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})

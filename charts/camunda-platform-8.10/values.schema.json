@@ -879,6 +879,19 @@
                                         }
                                     }
                                 },
+                                "camundaHub": {
+                                    "type": "object",
+                                    "properties": {
+                                        "redirectUrl": {
+                                            "type": "string",
+                                            "description": "defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.",
+                                            "default": ""
+                                        }
+                                    },
+                                    "description": "auth configuration for Camunda Hub; overrides the legacy webModeler auth section when set.",
+                                    "default": {},
+                                    "additionalProperties": true
+                                },
                                 "optimize": {
                                     "type": "object",
                                     "properties": {
@@ -918,12 +931,6 @@
                                             "default": "http://localhost:8083"
                                         }
                                     }
-                                },
-                                "camundaHub": {
-                                    "type": "object",
-                                    "description": "auth configuration for Camunda Hub; overrides the legacy webModeler auth section when set.",
-                                    "default": {},
-                                    "additionalProperties": true
                                 }
                             }
                         }
@@ -1973,6 +1980,11 @@
                     "description": "if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.",
                     "default": false
                 },
+                "contextPath": {
+                    "type": "string",
+                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
+                    "default": ""
+                },
                 "persistence": {
                     "properties": {
                         "deploymentStrategy": {
@@ -2032,7 +2044,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
+                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 alpha Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.",
                     "default": ""
                 },
                 "security": {
@@ -3059,7 +3071,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 alpha Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",

@@ -98,21 +98,26 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the image pull secrets.
 */}}
 {{- define "webModeler.imagePullSecrets" -}}
-  {{- include "camundaPlatform.componentImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" (or .Values.camundaHub.image .Values.webModeler.image))) }}
+  {{- $image := mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict) }}
+  {{- include "camundaPlatform.componentImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" $image)) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the restapi Docker image
 */}}
 {{- define "webModeler.restapi.image" -}}
-  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.image .Values.webModeler.image) | merge (or .Values.camundaHub.restapi.image .Values.webModeler.restapi.image)))) }}
+  {{- $image := mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict) }}
+  {{- $image = mustMergeOverwrite $image (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.image) (.Values.camundaHub.restapi.image | default dict)) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" $image)) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the websockets Docker image
 */}}
 {{- define "webModeler.websockets.image" -}}
-  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.image .Values.webModeler.image) | merge (or .Values.camundaHub.websockets.image .Values.webModeler.websockets.image)))) }}
+  {{- $image := mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict) }}
+  {{- $image = mustMergeOverwrite $image (mustMergeOverwrite (deepCopy .Values.webModeler.websockets.image) (.Values.camundaHub.websockets.image | default dict)) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" $image)) }}
 {{- end }}
 
 {{/*

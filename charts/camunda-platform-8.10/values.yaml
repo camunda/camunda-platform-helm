@@ -614,8 +614,9 @@ global:
       ## @extra global.identity.auth.camundaHub auth configuration for Camunda Hub.
       ## When camundaHub.enabled is true, these values override the legacy webModeler auth
       ## section above. If not set, falls back to the legacy section.
-      ## @skip global.identity.auth.camundaHub
-      camundaHub: {}
+      camundaHub:
+        ## @param global.identity.auth.camundaHub.redirectUrl defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.
+        redirectUrl: ""
 
       #####################
       # Optimize
@@ -1102,6 +1103,9 @@ camundaHub:
   ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
   enabled: false
 
+  ## @param camundaHub.contextPath can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.
+  contextPath: ""
+
   ## Any values set here take precedence over the legacy top-level webModeler.* values.
   ## Only intermediate maps are defined so `or` falls through to legacy values by default.
   ## To override a value, set it explicitly under camundaHub (e.g. camundaHub.contextPath: /modeler).
@@ -1173,7 +1177,7 @@ webModeler:
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
   # contextPath: "/modeler"
-  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
+  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 alpha Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.
   contextPath: ""
 
   security:
@@ -1646,7 +1650,7 @@ webModeler:
     annotations: {}
     ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
-    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 alpha Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.
     deploymentStrategy: RollingUpdate
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to

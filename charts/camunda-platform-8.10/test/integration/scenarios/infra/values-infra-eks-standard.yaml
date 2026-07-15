@@ -1,99 +1,106 @@
+# See https://confluence.camunda.com/spaces/HAN/pages/252085796/Access+to+CI+EKS+Clusters+for+extended+tests+AWS for node types
+
 identity:
   tolerations:
-  - key: t-core-16-unstable
-    operator: Exists
-    effect: NoSchedule
+    - key: t-core-16-unstable
+      operator: Exists
+      effect: NoSchedule
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
-        - matchExpressions:
-          - key: nodegroup
-            operator: In
-            values:
-            - t-core-16-unstable
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-16-unstable
+
 camundaHub:
   restapi:
     tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
+      - key: t-core-16-unstable
+        operator: Exists
+        effect: NoSchedule
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
-          - matchExpressions:
-            - key: nodegroup
-              operator: In
-              values:
-              - t-core-16-unstable
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-16-unstable
   websockets:
     tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
+      - key: t-core-16-unstable
+        operator: Exists
+        effect: NoSchedule
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
-          - matchExpressions:
-            - key: nodegroup
-              operator: In
-              values:
-              - t-core-16-unstable
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-16-unstable
+
 orchestration:
   tolerations:
-  - key: t-core-16-unstable
-    operator: Exists
-    effect: NoSchedule
+    - key: t-core-16-unstable
+      operator: Exists
+      effect: NoSchedule
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
-        - matchExpressions:
-          - key: nodegroup
-            operator: In
-            values:
-            - t-core-16-unstable
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-16-unstable
+
 optimize:
   tolerations:
-  - key: t-core-16-unstable
-    operator: Exists
-    effect: NoSchedule
+    - key: t-core-16-unstable
+      operator: Exists
+      effect: NoSchedule
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
-        - matchExpressions:
-          - key: nodegroup
-            operator: In
-            values:
-            - t-core-16-unstable
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-16-unstable
+
 connectors:
   tolerations:
-  - key: t-core-16-unstable
-    operator: Exists
-    effect: NoSchedule
+    - key: t-core-16-unstable
+      operator: Exists
+      effect: NoSchedule
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
-        - matchExpressions:
-          - key: nodegroup
-            operator: In
-            values:
-            - t-core-16-unstable
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                    - t-core-16-unstable
+
 console:
   tolerations:
-  - key: t-core-16-unstable
-    operator: Exists
-    effect: NoSchedule
+    - key: t-core-16-unstable
+      operator: Exists
+      effect: NoSchedule
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
-        - matchExpressions:
-          - key: nodegroup
-            operator: In
-            values:
-            - t-core-16-unstable
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-16-unstable

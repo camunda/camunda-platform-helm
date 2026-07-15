@@ -1,3 +1,6 @@
+# GKE stable nodes need nodeSelector and tolerations config.
+
+# Auth.
 identity:
   nodeSelector:
     workload: standard
@@ -6,6 +9,8 @@ identity:
     key: workload
     operator: Equal
     value: standard
+
+# Camunda Hub.
 camundaHub:
   restapi:
     nodeSelector:
@@ -55,6 +60,9 @@ optimize:
     key: workload
     operator: Equal
     value: standard
+
+
+# Zeebe.
 orchestration:
   nodeSelector:
     workload: standard
@@ -71,6 +79,7 @@ zeebeGateway:
     key: workload
     operator: Equal
     value: standard
+
 console:
   nodeSelector:
     workload: standard
