@@ -14,7 +14,7 @@ permissions:
 jobs:
   auto-approve:
     name: Auto approve allowlisted authors
-    if: ${{ github.event.pull_request.draft == false }}
+    if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
