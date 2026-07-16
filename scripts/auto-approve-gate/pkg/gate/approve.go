@@ -15,6 +15,7 @@
 package gate
 
 import (
+	"errors"
 	"fmt"
 	"io"
 )
@@ -79,13 +80,15 @@ func Dismiss(prNumber int, client ApproveClient, stdout io.Writer) error {
 		return err
 	}
 
+	var errs []error
 	for _, r := range reviews {
 		if r.State == "APPROVED" && botLogins[r.UserLogin] {
 			if err := client.DismissReview(prNumber, r.ID, "Head is no longer auto-approvable; dismissing stale bot approval."); err != nil {
-				return err
+				errs = append(errs, err)
+				continue
 			}
 			fmt.Fprintf(stdout, "::notice::dismissed stale bot approval %d\n", r.ID)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }

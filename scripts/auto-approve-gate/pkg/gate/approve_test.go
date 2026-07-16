@@ -17,6 +17,7 @@ package gate
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,9 +36,11 @@ type fakeApproveClient struct {
 	reviews    []Review
 	revErr     error
 	dismissErr error
+	failIDs    map[int64]bool
 
 	createCalls  []createCall
 	dismissedIDs []int64
+	attemptedIDs []int64
 }
 
 func (f *fakeApproveClient) GetPullRequestHeadSHA(pr int) (string, error) {
@@ -54,8 +57,12 @@ func (f *fakeApproveClient) CreateReview(pr int, commitID, event, body string) e
 }
 
 func (f *fakeApproveClient) DismissReview(pr int, reviewID int64, message string) error {
+	f.attemptedIDs = append(f.attemptedIDs, reviewID)
 	if f.dismissErr != nil {
 		return f.dismissErr
+	}
+	if f.failIDs[reviewID] {
+		return fmt.Errorf("dismiss failed for review %d", reviewID)
 	}
 	f.dismissedIDs = append(f.dismissedIDs, reviewID)
 	return nil
@@ -187,4 +194,20 @@ func TestDismiss_listReviewsError(t *testing.T) {
 	err := Dismiss(1, client, &buf)
 	require.Error(t, err)
 	assert.Empty(t, client.dismissedIDs)
+}
+
+func TestDismiss_bestEffortAttemptsAllOnError(t *testing.T) {
+	client := &fakeApproveClient{
+		reviews: []Review{
+			{ID: 1, UserLogin: "github-actions[bot]", State: "APPROVED"},
+			{ID: 2, UserLogin: DistroCIAuthor, State: "APPROVED"},
+		},
+		failIDs: map[int64]bool{1: true},
+	}
+	var buf bytes.Buffer
+
+	err := Dismiss(1, client, &buf)
+	require.Error(t, err)
+	assert.ElementsMatch(t, []int64{1, 2}, client.attemptedIDs)
+	assert.ElementsMatch(t, []int64{2}, client.dismissedIDs)
 }
