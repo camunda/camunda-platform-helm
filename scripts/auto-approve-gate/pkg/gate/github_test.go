@@ -151,3 +151,114 @@ func TestGitHubClient_getJSON_errors(t *testing.T) {
 		})
 	}
 }
+
+func TestGitHubClient_GetPullRequestHeadSHA(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/repos/camunda/camunda-platform-helm/pulls/7", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+			"head": map[string]string{"sha": "abc123"},
+		}))
+	}))
+	defer srv.Close()
+
+	sha, err := testGitHubClient(t, srv).GetPullRequestHeadSHA(7)
+	require.NoError(t, err)
+	assert.Equal(t, "abc123", sha)
+}
+
+func TestGitHubClient_ListReviews_pagination(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/repos/camunda/camunda-platform-helm/pulls/9/reviews", r.URL.Path)
+		assert.Equal(t, "100", r.URL.Query().Get("per_page"))
+
+		page := r.URL.Query().Get("page")
+		w.Header().Set("Content-Type", "application/json")
+
+		switch page {
+		case "1":
+			require.NoError(t, json.NewEncoder(w).Encode([]reviewResponse{
+				{ID: 1, User: struct {
+					Login string `json:"login"`
+				}{Login: "github-actions[bot]"}, CommitID: "sha1", State: "APPROVED"},
+				{ID: 2, User: struct {
+					Login string `json:"login"`
+				}{Login: "distro-ci[bot]"}, CommitID: "sha2", State: "APPROVED"},
+			}))
+		case "2":
+			require.NoError(t, json.NewEncoder(w).Encode([]reviewResponse{}))
+		default:
+			t.Errorf("unexpected page query: %q", page)
+			http.Error(w, "unexpected page", http.StatusBadRequest)
+		}
+	}))
+	defer srv.Close()
+
+	reviews, err := testGitHubClient(t, srv).ListReviews(9)
+	require.NoError(t, err)
+	require.Len(t, reviews, 2)
+	assert.Equal(t, Review{ID: 1, UserLogin: "github-actions[bot]", CommitID: "sha1", State: "APPROVED"}, reviews[0])
+	assert.Equal(t, Review{ID: 2, UserLogin: "distro-ci[bot]", CommitID: "sha2", State: "APPROVED"}, reviews[1])
+}
+
+func TestGitHubClient_CreateReview(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/repos/camunda/camunda-platform-helm/pulls/5/reviews", r.URL.Path)
+		assert.Equal(t, "token test-token", r.Header.Get("Authorization"))
+		assert.Equal(t, "application/vnd.github+json", r.Header.Get("Accept"))
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		var body map[string]string
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+		assert.Equal(t, map[string]string{
+			"commit_id": "abc123",
+			"event":     "APPROVE",
+			"body":      "Auto-approved",
+		}, body)
+
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer srv.Close()
+
+	err := testGitHubClient(t, srv).CreateReview(5, "abc123", "APPROVE", "Auto-approved")
+	require.NoError(t, err)
+}
+
+func TestGitHubClient_CreateReview_error(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte("commit sha mismatch"))
+	}))
+	defer srv.Close()
+
+	err := testGitHubClient(t, srv).CreateReview(5, "abc123", "APPROVE", "Auto-approved")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "GitHub API returned 422")
+}
+
+func TestGitHubClient_DismissReview(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPut, r.Method)
+		assert.Equal(t, "/repos/camunda/camunda-platform-helm/pulls/5/reviews/42/dismissals", r.URL.Path)
+		assert.Equal(t, "token test-token", r.Header.Get("Authorization"))
+		assert.Equal(t, "application/vnd.github+json", r.Header.Get("Accept"))
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		var body map[string]string
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+		assert.Equal(t, map[string]string{
+			"message": "stale approval",
+			"event":   "DISMISS",
+		}, body)
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	err := testGitHubClient(t, srv).DismissReview(5, 42, "stale approval")
+	require.NoError(t, err)
+}

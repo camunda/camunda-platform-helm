@@ -31,7 +31,24 @@ const (
 )
 
 func main() {
-	if err := run(os.Stdout); err != nil {
+	sub := "check"
+	if len(os.Args) > 1 && os.Args[1] != "" {
+		sub = os.Args[1]
+	}
+
+	var err error
+	switch sub {
+	case "check":
+		err = run(os.Stdout)
+	case "apply":
+		err = runApply(os.Stdout)
+	case "dismiss":
+		err = runDismiss(os.Stdout)
+	default:
+		err = fmt.Errorf("unknown subcommand: %s", sub)
+	}
+
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
@@ -72,6 +89,52 @@ func run(stdout io.Writer) error {
 	}
 
 	return gate.Run(cfg, gh, stdout)
+}
+
+func runApply(stdout io.Writer) error {
+	prStr := os.Getenv("PR_NUMBER")
+	if prStr == "" {
+		return fmt.Errorf("PR_NUMBER environment variable is required")
+	}
+	prNumber, err := strconv.Atoi(prStr)
+	if err != nil {
+		return fmt.Errorf("parse PR_NUMBER %q: %w", prStr, err)
+	}
+
+	lane := os.Getenv("LANE")
+	if lane != gate.LaneHuman && lane != gate.LaneRenovate {
+		return fmt.Errorf("LANE environment variable must be %q or %q, got %q", gate.LaneHuman, gate.LaneRenovate, lane)
+	}
+
+	vettedSHA := os.Getenv("VETTED_SHA")
+	if vettedSHA == "" {
+		return fmt.Errorf("VETTED_SHA environment variable is required")
+	}
+
+	gh, err := gate.NewGitHubClientFromEnv()
+	if err != nil {
+		return err
+	}
+
+	return gate.Apply(lane, prNumber, vettedSHA, gh, stdout)
+}
+
+func runDismiss(stdout io.Writer) error {
+	prStr := os.Getenv("PR_NUMBER")
+	if prStr == "" {
+		return fmt.Errorf("PR_NUMBER environment variable is required")
+	}
+	prNumber, err := strconv.Atoi(prStr)
+	if err != nil {
+		return fmt.Errorf("parse PR_NUMBER %q: %w", prStr, err)
+	}
+
+	gh, err := gate.NewGitHubClientFromEnv()
+	if err != nil {
+		return err
+	}
+
+	return gate.Dismiss(prNumber, gh, stdout)
 }
 
 func resolveListPath(envKey, defaultPath string) string {

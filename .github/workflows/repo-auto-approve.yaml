@@ -65,60 +65,28 @@ jobs:
         if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'human' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          approved=$(gh api "repos/${REPO}/pulls/${PR}/reviews" \
-            --jq "[.[] | select(.user.login==\"distro-ci[bot]\" and .commit_id==\"${SHA}\" and .state==\"APPROVED\")] | length")
-          if [[ "$approved" -gt 0 ]]; then
-            echo "::notice::Already approved by distro-ci for ${SHA}; skipping."
-            exit 0
-          fi
-          current=$(gh api "repos/${REPO}/pulls/${PR}" --jq .head.sha)
-          if [[ "$current" != "$SHA" ]]; then
-            echo "::notice::head advanced from ${SHA} to ${current}; skipping approval (a newer run will evaluate it)."
-            exit 0
-          fi
-          gh api -X POST "repos/${REPO}/pulls/${PR}/reviews" \
-            -f commit_id="${SHA}" -f event="APPROVE" -f body="Auto-approved: author is on .github/auto-approve-allowlist.txt."
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          LANE: human
+          VETTED_SHA: ${{ github.event.pull_request.head.sha }}
+        working-directory: scripts/auto-approve-gate
+        run: go run . apply
 
       - name: Approve PR (renovate)
         if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'renovate' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          approved=$(gh api "repos/${REPO}/pulls/${PR}/reviews" \
-            --jq "[.[] | select(.user.login==\"github-actions[bot]\" and .commit_id==\"${SHA}\" and .state==\"APPROVED\")] | length")
-          if [[ "$approved" -gt 0 ]]; then
-            echo "::notice::Already approved by github-actions for ${SHA}; skipping."
-            exit 0
-          fi
-          current=$(gh api "repos/${REPO}/pulls/${PR}" --jq .head.sha)
-          if [[ "$current" != "$SHA" ]]; then
-            echo "::notice::head advanced from ${SHA} to ${current}; skipping approval (a newer run will evaluate it)."
-            exit 0
-          fi
-          gh api -X POST "repos/${REPO}/pulls/${PR}/reviews" \
-            -f commit_id="${SHA}" -f event="APPROVE" -f body="Auto-approved: Renovate PR (re-approved on every push)."
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          LANE: renovate
+          VETTED_SHA: ${{ github.event.pull_request.head.sha }}
+        working-directory: scripts/auto-approve-gate
+        run: go run . apply
       - name: Dismiss stale bot approvals
         if: ${{ !cancelled() && steps.check.outputs.allowed != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          ids=$(gh api "repos/${REPO}/pulls/${PR}/reviews" --paginate \
-            --jq '[.[] | select((.user.login=="github-actions[bot]" or .user.login=="distro-ci[bot]" or .user.login=="renovate-approve[bot]") and .state=="APPROVED")] | .[].id')
-          for id in $ids; do
-            gh api -X PUT "repos/${REPO}/pulls/${PR}/reviews/${id}/dismissals" \
-              -f message="Head is no longer auto-approvable; dismissing stale bot approval." \
-              -f event="DISMISS"
-            echo "::notice::dismissed stale bot approval ${id}"
-          done
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        working-directory: scripts/auto-approve-gate
+        run: go run . dismiss
