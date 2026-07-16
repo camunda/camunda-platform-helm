@@ -64,7 +64,7 @@ maintainers:
 annotations:
   # Comma-separated list of supported Helm CLI versions; first entry is the minimum.
   # 8.9 is the last chart minor that supports Helm v3 — listed alongside v4.
-  camunda.io/helmCLIVersion: "3.20.2,4.2.2"
+  camunda.io/helmCLIVersion: "3.20.2,4.2.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -74,9 +74,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Make Gateway API listener port and route sectionName configurable"
     - kind: fixed
-      description: "Repair failing scheduled workflows for docs links, lychee, and values-latest"
-    - kind: fixed
-      description: "Fail clearly when an image override has an empty tag and no digest"
-    - kind: fixed
-      description: "Surface deprecation warnings on the gitops render path"
+      description: "Omit empty zeebe.broker.exporters map for no-exporter scenarios"
