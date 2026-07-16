@@ -1,0 +1,102 @@
+name: "Test - Integration Diagnostics - Template"
+
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        required: true
+        type: string
+      platform:
+        required: true
+        type: string
+      camunda-helm-git-ref:
+        default: main
+        type: string
+      binary-artifact-name:
+        default: ''
+        type: string
+      teleport-token:
+        default: infra-ci-prod-github-action-qa
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    name: Collect Diagnostics
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with:
+        repository: camunda/camunda-platform-helm
+        ref: ${{ inputs.camunda-helm-git-ref }}
+    - name: Download deploy-camunda binary
+      if: inputs.binary-artifact-name != ''
+      continue-on-error: true
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ inputs.binary-artifact-name }}
+        path: ${{ runner.temp }}/bin
+    - name: Make deploy-camunda binary executable
+      if: inputs.binary-artifact-name != ''
+      continue-on-error: true
+      shell: bash
+      run: |
+        chmod +x "${{ runner.temp }}/bin/deploy-camunda" || true
+        echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+    - name: Import Vault secrets
+      if: inputs.platform == 'gke'
+      id: test-credentials-secret
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+          secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+          secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+          secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+        exportEnv: false
+    - name: Resolve EKS cluster name
+      if: inputs.platform == 'eks'
+      shell: bash
+      run: echo "INFRA_CLUSTER_NAME=$(yq '.eks.cluster-name' .github/config/infra.yaml)" >> "$GITHUB_ENV"
+    - name: Authenticate to cluster
+      uses: ./.github/actions/cluster-auth
+      env:
+        GH_APP_ID: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+        GH_APP_KEY: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+        GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+        GKE_CLUSTER_LOC: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+        GKE_WIP: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        GKE_SA: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+        ROSA_URL: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_URL }}
+        ROSA_USER: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME }}
+        ROSA_PASS: ${{ secrets.DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD }}
+        CLUSTER_NAME: ${{ env.INFRA_CLUSTER_NAME }}
+        TELEPORT_TOKEN: ${{ inputs.teleport-token }}
+      with:
+        platform: ${{ inputs.platform }}
+    - name: Print cluster diagnostics
+      env:
+        TEST_NAMESPACE: ${{ inputs.namespace }}
+      run: |
+        mkdir -p diagnostics/e2e-readiness
+        deploy-camunda diagnostics print --namespace "$TEST_NAMESPACE" | tee -a diagnostics/e2e-readiness/cluster-diagnostics.txt || true
+    - name: Get failed Pods info
+      env:
+        TEST_NAMESPACE: ${{ inputs.namespace }}
+      uses: ./.github/actions/failed-pods-info
+    - name: Upload cluster diagnostics
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: e2e-readiness-cluster-diagnostics-${{ inputs.namespace }}
+        path: diagnostics/**
+        if-no-files-found: ignore
+        retention-days: 14
