@@ -21,7 +21,10 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ include "camundaPlatform.fullname" . }}
+  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
+    {{- if .Values.global.gateway.namespace }}
+    namespace: {{ .Values.global.gateway.namespace }}
+    {{- end }}
     sectionName: {{ .Values.global.gateway.grpcSectionName | default (ternary "grpcs" "grpc" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.orchestration.gateway.grpc.host $ }}

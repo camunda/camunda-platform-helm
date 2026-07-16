@@ -98,6 +98,42 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConstraintTemplateTest) TestAuthenticationMethodConstraints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConnectorsRejectsUnsupportedAuthenticationMethod",
+			Values: map[string]string{
+				"connectors.security.authentication.method": "none",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "The Connectors authentication method must be either \"basic\" or \"oidc\"")
+			},
+		},
+		{
+			Name: "TestOrchestrationRejectsUnsupportedAuthenticationMethod",
+			Values: map[string]string{
+				"orchestration.security.authentication.method": "none",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "The Orchestration authentication method must be either \"basic\" or \"oidc\"")
+			},
+		},
+		{
+			Name: "TestDisabledComponentsIgnoreGlobalAuthenticationMethod",
+			Values: map[string]string{
+				"connectors.enabled":                    "false",
+				"orchestration.enabled":                 "false",
+				"global.security.authentication.method": "none",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -155,6 +191,37 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 				"global.elasticsearch.enabled":             "false",
 				"elasticsearch.enabled":                    "false",
 				"global.opensearch.enabled":                "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestGatewayConstraints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGatewayNamespaceWithCreateGatewayResourceFails",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.namespace":             "shared-infra",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "global.gateway.namespace and global.gateway.createGatewayResource=true cannot be set together")
+			},
+		},
+		{
+			Name: "TestGatewayNamespaceWithoutCreateGatewayResourceSucceeds",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.namespace":             "shared-infra",
+				"global.gateway.createGatewayResource": "false",
+				"global.host":                          "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
