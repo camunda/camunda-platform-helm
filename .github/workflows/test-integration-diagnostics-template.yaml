@@ -16,7 +16,7 @@ on:
         default: ''
         type: string
       teleport-token:
-        default: infra-ci-prod-github-action-qa
+        default: infra-ci-prod-github-action-distribution
         type: string
 
 permissions:
@@ -93,6 +93,7 @@ jobs:
       with:
         platform: ${{ inputs.platform }}
     - name: Print cluster diagnostics
+      if: always()
       env:
         TEST_NAMESPACE: ${{ inputs.namespace }}
       run: |
@@ -109,10 +110,12 @@ jobs:
           } | tee -a diagnostics/e2e-readiness/cluster-diagnostics.txt || true
         fi
     - name: Get failed Pods info
+      if: always()
       env:
         TEST_NAMESPACE: ${{ inputs.namespace }}
       uses: ./.github/actions/failed-pods-info
     - name: Upload cluster diagnostics
+      if: always()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: e2e-readiness-cluster-diagnostics-${{ inputs.namespace }}
