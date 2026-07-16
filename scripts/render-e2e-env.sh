@@ -358,6 +358,7 @@ render_env_file() {
     echo "KEYCLOAK_URL=$keycloak_protocol://$keycloak_host"
     echo "KEYCLOAK_REALM=${keycloak_realm}"
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
+    echo "CAMUNDA_OPTIMIZE_BASE_URL=https://$hostname/optimize"
     echo "CLUSTER_ENDPOINT=http://integration-zeebe-gateway:26500"
     echo "CLUSTER_VERSION=8"
     echo "MINOR_VERSION=$minor_version_value"
