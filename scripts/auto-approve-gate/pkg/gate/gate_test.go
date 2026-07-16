@@ -115,17 +115,28 @@ func TestDecide_renovateBlockedValuesSchema(t *testing.T) {
 	assert.Equal(t, []string{"PR touches a protected path; human review is required."}, dec.Notices)
 }
 
-func TestDecide_humanLaneIgnoresEventActor(t *testing.T) {
+func TestDecide_humanLaneRequiresTrustedPusher(t *testing.T) {
 	dec := Decide(Inputs{
-		Author:            "mallory",
+		Author:            "eamonnmoloney",
 		EventActor:        "mallory",
-		Allowlist:         []string{"mallory"},
+		Allowlist:         []string{"eamonnmoloney"},
 		ProtectedPatterns: defaultProtected,
 		PRMeta:            &PRMeta{ChangedFiles: 1},
 		PRFiles:           []PRFile{{Filename: "README.md"}},
 	})
-	assert.True(t, dec.Allowed)
+	assert.False(t, dec.Allowed)
 	assert.Equal(t, LaneHuman, dec.Lane)
+
+	decTrusted := Decide(Inputs{
+		Author:            "eamonnmoloney",
+		EventActor:        "eamonnmoloney",
+		Allowlist:         []string{"eamonnmoloney"},
+		ProtectedPatterns: defaultProtected,
+		PRMeta:            &PRMeta{ChangedFiles: 1},
+		PRFiles:           []PRFile{{Filename: "README.md"}},
+	})
+	assert.True(t, decTrusted.Allowed)
+	assert.Equal(t, LaneHuman, decTrusted.Lane)
 }
 
 func TestDecide_table(t *testing.T) {
@@ -143,6 +154,7 @@ func TestDecide_table(t *testing.T) {
 			name: "human allowlisted docs only",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -167,6 +179,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked values.yaml",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -180,6 +193,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked values.schema.json",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -193,6 +207,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked values.schema.extra.json",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -206,6 +221,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked constraints.tpl",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -219,6 +235,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked workflow",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -232,6 +249,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked CODEOWNERS",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -245,6 +263,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked allowlist file",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -258,6 +277,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked protected paths file",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -271,6 +291,7 @@ func TestDecide_table(t *testing.T) {
 			name: "blocked auto-approve gate implementation",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -284,6 +305,7 @@ func TestDecide_table(t *testing.T) {
 			name: "rename evasion CODEOWNERS",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -297,6 +319,7 @@ func TestDecide_table(t *testing.T) {
 			name: "chart test fixtures allowed",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -311,6 +334,7 @@ func TestDecide_table(t *testing.T) {
 			name: "docs github workflows not anchored blocked path",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -323,6 +347,7 @@ func TestDecide_table(t *testing.T) {
 			name: "CODEOWNERS.bak not anchored",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -335,6 +360,7 @@ func TestDecide_table(t *testing.T) {
 			name: "fail closed empty protected patterns",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: nil,
 				PRMeta:            metaOK,
@@ -347,6 +373,7 @@ func TestDecide_table(t *testing.T) {
 			name: "fail closed invalid regex",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: []string{"["},
 				PRMeta:            metaOK,
@@ -360,6 +387,7 @@ func TestDecide_table(t *testing.T) {
 			name: "fail closed changed_files cap",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            &PRMeta{ChangedFiles: 3000},
@@ -372,6 +400,7 @@ func TestDecide_table(t *testing.T) {
 			name: "fail closed PR meta API error",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMetaErr:         errors.New("api down"),
@@ -384,6 +413,7 @@ func TestDecide_table(t *testing.T) {
 			name: "fail closed PR files API error",
 			in: Inputs{
 				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
 				Allowlist:         []string{"eamonnmoloney"},
 				ProtectedPatterns: defaultProtected,
 				PRMeta:            metaOK,
@@ -641,7 +671,7 @@ func TestRun_paginationBothPagesScanned(t *testing.T) {
 
 	err := Run(Config{
 		Author:             "eamonnmoloney",
-		EventActor:         "mallory",
+		EventActor:         "eamonnmoloney",
 		PRNumber:           42,
 		AllowlistPath:      filepath.Join(dir, "allowlist.txt"),
 		ProtectedPathsPath: filepath.Join(dir, "protected.txt"),
@@ -672,7 +702,7 @@ func TestRun_integrationFromFiles(t *testing.T) {
 
 	err := Run(Config{
 		Author:             "eamonnmoloney",
-		EventActor:         "mallory",
+		EventActor:         "eamonnmoloney",
 		PRNumber:           6525,
 		AllowlistPath:      filepath.Join(dir, "allowlist.txt"),
 		ProtectedPathsPath: filepath.Join(dir, "protected.txt"),
@@ -755,6 +785,28 @@ func TestRun_notAllowlistedSkipsAPI(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, client.metaCalls)
 	assert.Equal(t, 0, client.filesCalls)
+}
+
+func TestRun_untrustedPusherSkipsAPI(t *testing.T) {
+	dir := t.TempDir()
+	writeList(t, filepath.Join(dir, "allowlist.txt"), "eamonnmoloney\n")
+	writeList(t, filepath.Join(dir, "protected.txt"), `^foo$`+"\n")
+
+	client := &fakeClient{t: t, meta: PRMeta{ChangedFiles: 1}}
+	var buf bytes.Buffer
+	t.Setenv("GITHUB_OUTPUT", filepath.Join(t.TempDir(), "out"))
+
+	err := Run(Config{
+		Author:             "eamonnmoloney",
+		EventActor:         "mallory",
+		PRNumber:           1,
+		AllowlistPath:      filepath.Join(dir, "allowlist.txt"),
+		ProtectedPathsPath: filepath.Join(dir, "protected.txt"),
+	}, client, &buf)
+	require.NoError(t, err)
+	assert.Equal(t, 0, client.metaCalls)
+	assert.Equal(t, 0, client.filesCalls)
+	assert.Contains(t, buf.String(), "allowlisted=false")
 }
 
 func TestCollectPaths(t *testing.T) {

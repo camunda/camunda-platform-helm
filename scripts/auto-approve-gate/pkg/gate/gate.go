@@ -74,6 +74,16 @@ func isTrustedRenovateActor(actor string) bool {
 	return actor == RenovateAuthor || actor == DistroCIAuthor
 }
 
+func passesTrustCheck(lane, author, eventActor string, allowlist []string) bool {
+	switch lane {
+	case LaneRenovate:
+		return isTrustedRenovateActor(eventActor)
+	case LaneHuman:
+		return containsExact(allowlist, author) && containsExact(allowlist, eventActor)
+	}
+	return false
+}
+
 func Decide(in Inputs) Decision {
 	lane := in.Lane
 	if lane == "" {
@@ -88,9 +98,18 @@ func Decide(in Inputs) Decision {
 		if !containsExact(in.Allowlist, in.Author) {
 			return Decision{Allowed: false, Lane: LaneHuman}
 		}
+		if !passesTrustCheck(lane, in.Author, in.EventActor, in.Allowlist) {
+			return Decision{
+				Allowed: false,
+				Lane:    LaneHuman,
+				Warnings: []string{
+					fmt.Sprintf("event actor %s is not on the auto-approve allowlist; requiring human review.", in.EventActor),
+				},
+			}
+		}
 	}
 
-	if lane == LaneRenovate && !isTrustedRenovateActor(in.EventActor) {
+	if lane == LaneRenovate && !passesTrustCheck(lane, in.Author, in.EventActor, in.Allowlist) {
 		return Decision{
 			Allowed: false,
 			Lane:    LaneRenovate,
@@ -223,7 +242,7 @@ func Run(cfg Config, client Client, stdout io.Writer) error {
 		ProtectedPatterns: protected,
 	}
 
-	proceed := (lane == LaneRenovate && isTrustedRenovateActor(cfg.EventActor)) || containsExact(allowlist, cfg.Author)
+	proceed := passesTrustCheck(lane, cfg.Author, cfg.EventActor, allowlist)
 	if proceed && len(protected) > 0 {
 		meta, metaErr := client.GetPullRequest(cfg.PRNumber)
 		in.PRMeta = &meta

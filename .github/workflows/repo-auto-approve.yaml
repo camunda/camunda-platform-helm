@@ -76,7 +76,8 @@ jobs:
             echo "::notice::Already approved by distro-ci for ${SHA}; skipping."
             exit 0
           fi
-          gh pr review "$PR" --approve --body "Auto-approved: author is on .github/auto-approve-allowlist.txt."
+          gh api -X POST "repos/${REPO}/pulls/${PR}/reviews" \
+            -f commit_id="${SHA}" -f event="APPROVE" -f body="Auto-approved: author is on .github/auto-approve-allowlist.txt."
 
       - name: Approve PR (renovate)
         if: ${{ steps.check.outputs.allowed == 'true' && steps.check.outputs.lane == 'renovate' }}
@@ -93,7 +94,8 @@ jobs:
             echo "::notice::Already approved by github-actions for ${SHA}; skipping."
             exit 0
           fi
-          gh pr review "$PR" --approve --body "Auto-approved: Renovate PR (re-approved on every push)."
+          gh api -X POST "repos/${REPO}/pulls/${PR}/reviews" \
+            -f commit_id="${SHA}" -f event="APPROVE" -f body="Auto-approved: Renovate PR (re-approved on every push)."
       - name: Dismiss stale bot approvals
         if: ${{ !cancelled() && steps.check.outputs.allowed != 'true' }}
         env:
