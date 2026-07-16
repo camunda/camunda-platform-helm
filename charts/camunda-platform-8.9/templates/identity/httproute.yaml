@@ -21,7 +21,10 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ include "camundaPlatform.fullname" . }}
+  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
+    {{- if .Values.global.gateway.namespace }}
+    namespace: {{ .Values.global.gateway.namespace }}
+    {{- end }}
     sectionName: {{ .Values.global.gateway.httpSectionName | default (ternary "https" "http" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
@@ -58,7 +61,10 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ include "camundaPlatform.fullname" . }}
+  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
+    {{- if .Values.global.gateway.namespace }}
+    namespace: {{ .Values.global.gateway.namespace }}
+    {{- end }}
     sectionName: {{ .Values.global.gateway.httpSectionName | default (ternary "https" "http" .Values.global.gateway.tls.enabled) }}
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
