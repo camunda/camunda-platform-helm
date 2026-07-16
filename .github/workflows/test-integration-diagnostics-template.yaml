@@ -88,7 +88,17 @@ jobs:
         TEST_NAMESPACE: ${{ inputs.namespace }}
       run: |
         mkdir -p diagnostics/e2e-readiness
-        deploy-camunda diagnostics print --namespace "$TEST_NAMESPACE" | tee -a diagnostics/e2e-readiness/cluster-diagnostics.txt || true
+        if command -v deploy-camunda >/dev/null 2>&1; then
+          deploy-camunda diagnostics print --namespace "$TEST_NAMESPACE" \
+            | tee -a diagnostics/e2e-readiness/cluster-diagnostics.txt || true
+        else
+          {
+            echo "deploy-camunda unavailable; kubectl fallback"
+            kubectl -n "$TEST_NAMESPACE" get pods -o wide
+            kubectl -n "$TEST_NAMESPACE" get events --sort-by=.lastTimestamp | tail -n 40
+            kubectl -n "$TEST_NAMESPACE" get pvc -o wide
+          } | tee -a diagnostics/e2e-readiness/cluster-diagnostics.txt || true
+        fi
     - name: Get failed Pods info
       env:
         TEST_NAMESPACE: ${{ inputs.namespace }}
