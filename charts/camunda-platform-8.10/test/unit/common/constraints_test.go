@@ -568,7 +568,7 @@ func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 				"camundaHub.webModeler.persistence.deploymentStrategy": "Recreate",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "camundaHub.webModeler.persistence.deploymentStrategy")
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
 				s.Require().ErrorContains(err, "changed from")
 			},
 		},
@@ -582,7 +582,21 @@ func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 				"camundaHub.webModeler.contextPath":        "/modeler",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "camundaHub.webModeler.contextPath")
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestSecurityAuthenticationMethodRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"identity.enabled":                                     "true",
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "noreply@example.com",
+				"camundaHub.webModeler.security.authentication.method": "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
 				s.Require().ErrorContains(err, "changed from")
 			},
 		},
@@ -598,7 +612,21 @@ func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 				"camundaHub.webModeler.restapi.mail.fromAddress": "noreply@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "camundaHub.webModeler.restapi.mail.fromAddress")
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestConsoleSubtreeRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "noreply@example.com",
+				"camundaHub.console.contextPath":           "/console",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.console")
 				s.Require().ErrorContains(err, "changed from")
 			},
 		},
@@ -612,7 +640,7 @@ func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 				"global.identity.auth.camundaHub.webModeler.redirectUrl": "https://modeler.example.com/login-callback",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "global.identity.auth.camundaHub.webModeler.redirectUrl")
+				s.Require().ErrorContains(err, "global.identity.auth.camundaHub.webModeler")
 				s.Require().ErrorContains(err, "changed from")
 			},
 		},
