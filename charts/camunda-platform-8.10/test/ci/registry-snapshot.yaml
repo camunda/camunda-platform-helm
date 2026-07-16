@@ -149,6 +149,43 @@ integration:
               Generates a self-signed certificate/key pair for the Connectors HTTP
               endpoint and packages it as a PKCS12 keystore in a `connectors-tls-keystore`
               Secret consumed by `global.tls.connectors.secret.existingSecret`.
+        - name: optimize-tls
+          enabled: true
+          shortname: optls
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - optimize-tls
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            script: pre-install-optimize-tls.sh
+            description: |
+              Generates a self-signed certificate/key pair for the Optimize HTTP
+              endpoint and packages it as a PKCS12 keystore in an `optimize-tls-keystore`
+              Secret consumed by `global.tls.optimize.cert.secret.existingSecret`.
         - name: opensearch
           enabled: true
           shortname: oske

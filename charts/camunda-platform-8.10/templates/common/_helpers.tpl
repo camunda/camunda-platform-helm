@@ -778,6 +778,52 @@ entry in connectors.env.
   {{- $enabled -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Returns "true" when Optimize server-side TLS is enabled via
+global.tls.optimize.enabled or via an explicit SERVER_SSL_ENABLED=true entry in
+optimize.env. Disambiguated from the legacy optimize.hasTlsConfig helper, which
+governs the OPTIMIZE-AS-CLIENT path (truststore for ES/OS connections).
+*/}}
+{{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
+  {{- if eq (include "camundaPlatform.optimizeServerEnvHasKey" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+    {{- include "camundaPlatform.optimizeServerEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- else if .Values.global.tls.optimize.enabled -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when optimize.env contains at least one entry for name.
+*/}}
+{{- define "camundaPlatform.optimizeServerEnvHasKey" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $found := false -}}
+  {{- range $env := $ctx.Values.optimize.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- $found = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $found -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns true when the last optimize.env entry for name has value true.
+*/}}
+{{- define "camundaPlatform.optimizeServerEnvIsTrue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $enabled := false -}}
+  {{- range $env := $ctx.Values.optimize.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- $enabled = (eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true") -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $enabled -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -1402,6 +1448,76 @@ it has no caller. See the TLS modes guide for the Gateway API caveat.
 {{- define "camundaPlatform.connectorsProxyVerifyAnnotations" -}}
 {{- $ctx := .context | default . -}}
 {{- $pv := $ctx.Values.global.tls.connectors.proxyVerify -}}
+{{- if and $pv.enabled $pv.caSecret.secret.existingSecret -}}
+{{- $ns := $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
+nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ns $pv.caSecret.secret.existingSecret | quote }}
+{{- with $pv.sniHost }}
+nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+optimizeServerSecretCertKey
+Returns the Secret data key that holds the Optimize SERVER certificate. When
+`type` is `pem` and `cert.secret.existingSecretKey` is empty or still the
+chart PKCS12 default (`keystore.p12`), substitutes `tls.crt` so cert-manager
+`kubernetes.io/tls` Secrets work out of the box. Any explicit key other than
+the PKCS12 default wins verbatim. Distinct from the legacy
+`camundaPlatform.getTlsSecretKey`, which resolves the Optimize-as-CLIENT
+truststore key for ES/OS.
+*/}}
+{{- define "camundaPlatform.optimizeServerSecretCertKey" -}}
+{{- $o := .Values.global.tls.optimize -}}
+{{- $type := $o.type | default "pkcs12" -}}
+{{- $key := $o.cert.secret.existingSecretKey -}}
+{{- if and (eq $type "pem") (or (eq $key "") (eq $key "keystore.p12")) -}}
+tls.crt
+{{- else if $key -}}
+{{ $key }}
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+optimizeServerTLSChecksumAnnotation
+Emits a checksum/optimize-tls pod annotation from the cert content of the
+Optimize server TLS Secret when global.tls.optimize.autoRollout is true.
+Opt-in shape and lookup-during-template caveats match
+camundaPlatform.caBundleChecksumAnnotation.
+
+Usage (inside the Optimize pod template's metadata.annotations):
+  {{- include "camundaPlatform.optimizeServerTLSChecksumAnnotation" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.optimizeServerTLSChecksumAnnotation" -}}
+{{- if .Values.global.tls.optimize.autoRollout -}}
+{{- $o := .Values.global.tls.optimize -}}
+{{- if and $o.enabled $o.cert.secret.existingSecret -}}
+{{- include "camundaPlatform.tlsChecksumAnnotation" (dict
+    "context" .
+    "annotation" "checksum/optimize-tls"
+    "secretName" $o.cert.secret.existingSecret
+    "certKey" (include "camundaPlatform.optimizeServerSecretCertKey" .)) }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+optimizeServerProxyVerifyAnnotations
+Renders the NGINX upstream-TLS-verification annotations for the Optimize
+ingress based on global.tls.optimize.proxyVerify. Returns nothing when
+proxyVerify.enabled is false or caSecret.secret.existingSecret is empty.
+
+Optimize in 8.10 is exposed via Gateway API `HTTPRoute`, not via an NGINX
+ingress, so this helper is reserved for parity / future NGINX users; today
+it has no caller. See the TLS modes guide for the Gateway API caveat.
+*/}}
+{{- define "camundaPlatform.optimizeServerProxyVerifyAnnotations" -}}
+{{- $ctx := .context | default . -}}
+{{- $pv := $ctx.Values.global.tls.optimize.proxyVerify -}}
 {{- if and $pv.enabled $pv.caSecret.secret.existingSecret -}}
 {{- $ns := $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
 nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"

@@ -24,6 +24,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/optimize/configmap.yaml") . | sha256sum }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (include "camundaPlatform.optimizeServerTLSChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.optimize.podAnnotations }}
         {{- tpl (toYaml .Values.optimize.podAnnotations) $ | nindent 8 }}
       {{- end }}
@@ -260,6 +261,32 @@ spec:
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
+            {{- if .Values.global.tls.optimize.enabled }}
+            - name: SERVER_SSL_ENABLED
+              value: "true"
+            {{- if .Values.global.tls.optimize.cert.secret.existingSecret }}
+            {{- if eq (.Values.global.tls.optimize.type | default "pkcs12") "pem" }}
+            - name: SERVER_SSL_CERTIFICATE
+              value: /usr/local/camunda/certificates/optimize/{{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+            - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
+              value: /usr/local/camunda/certificates/optimize/{{ .Values.global.tls.optimize.privateKey.secret.existingSecretKey }}
+            {{- else }}
+            - name: SERVER_SSL_KEY_STORE
+              value: file:/usr/local/camunda/certificates/optimize/{{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+            - name: SERVER_SSL_KEY_STORE_TYPE
+              value: PKCS12
+            - name: SERVER_SSL_KEY_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ coalesce .Values.global.tls.optimize.keystorePassword.secret.existingSecret .Values.global.tls.optimize.cert.secret.existingSecret }}
+                  key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey }}
+            {{- with .Values.global.tls.optimize.keyAlias }}
+            - name: SERVER_SSL_KEY_ALIAS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -289,7 +316,7 @@ spec:
           startupProbe:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.startupProbe.probePath) }}
-              scheme: {{ .Values.optimize.startupProbe.scheme }}
+              scheme: {{ ternary "HTTPS" .Values.optimize.startupProbe.scheme (and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (eq .Values.optimize.startupProbe.scheme "HTTP")) }}
               port: http
             initialDelaySeconds: {{ .Values.optimize.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.optimize.startupProbe.periodSeconds }}
@@ -301,7 +328,7 @@ spec:
           readinessProbe:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath) }}
-              scheme: {{ .Values.optimize.readinessProbe.scheme }}
+              scheme: {{ ternary "HTTPS" .Values.optimize.readinessProbe.scheme (and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (eq .Values.optimize.readinessProbe.scheme "HTTP")) }}
               port: http
             initialDelaySeconds: {{ .Values.optimize.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.optimize.readinessProbe.periodSeconds }}
@@ -313,7 +340,7 @@ spec:
           livenessProbe:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.livenessProbe.probePath) }}
-              scheme: {{ .Values.optimize.livenessProbe.scheme }}
+              scheme: {{ ternary "HTTPS" .Values.optimize.livenessProbe.scheme (and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (eq .Values.optimize.livenessProbe.scheme "HTTP")) }}
               port: http
             initialDelaySeconds: {{ .Values.optimize.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.optimize.livenessProbe.periodSeconds }}
@@ -345,6 +372,11 @@ spec:
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret }}
+            - name: optimize-server-tls
+              mountPath: /usr/local/camunda/certificates/optimize
+              readOnly: true
             {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
@@ -405,6 +437,29 @@ spec:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret }}
+        - name: optimize-server-tls
+          {{- $optimizeTLS := .Values.global.tls.optimize -}}
+          {{- if and (eq ($optimizeTLS.type | default "pkcs12") "pem") $optimizeTLS.privateKey.secret.existingSecret (ne $optimizeTLS.privateKey.secret.existingSecret $optimizeTLS.cert.secret.existingSecret) }}
+          projected:
+            defaultMode: 0440
+            sources:
+              - secret:
+                  name: {{ $optimizeTLS.cert.secret.existingSecret }}
+                  items:
+                    - key: {{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+                      path: {{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+              - secret:
+                  name: {{ $optimizeTLS.privateKey.secret.existingSecret }}
+                  items:
+                    - key: {{ $optimizeTLS.privateKey.secret.existingSecretKey }}
+                      path: {{ $optimizeTLS.privateKey.secret.existingSecretKey }}
+          {{- else }}
+          secret:
+            secretName: {{ $optimizeTLS.cert.secret.existingSecret }}
+            defaultMode: 0440
+          {{- end }}
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
