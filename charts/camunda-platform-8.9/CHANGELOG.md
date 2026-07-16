@@ -1,5 +1,34 @@
 # Changelog
 
+## [14.7.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.6.1...camunda-platform-8.9-14.7.0) (2026-07-16)
+
+
+### Features
+
+* make Gateway API listener port and route sectionName configurable ([#6535](https://github.com/camunda/camunda-platform-helm/issues/6535)) ([c3b1a7c](https://github.com/camunda/camunda-platform-helm/commit/c3b1a7c9ab1d157857ae3f35ceb0e42444f35b8c))
+
+
+### Bug Fixes
+
+* omit empty zeebe.broker.exporters map for no-exporter scenarios ([#6582](https://github.com/camunda/camunda-platform-helm/issues/6582)) ([1ce1363](https://github.com/camunda/camunda-platform-helm/commit/1ce13630306d9cfe3d76aea5720818117d070056))
+
+
+### Documentation
+
+* clarify configMap describes the mounted ConfigMap volume settings, not config content ([#6604](https://github.com/camunda/camunda-platform-helm/issues/6604)) ([5713ac4](https://github.com/camunda/camunda-platform-helm/commit/5713ac44724416a3703d3114e728b871c5ce6bf9))
+* clarify irsa.enabled disables static credential injection for IRSA and Pod Identity [ready] ([#6519](https://github.com/camunda/camunda-platform-helm/issues/6519)) ([5dc663a](https://github.com/camunda/camunda-platform-helm/commit/5dc663abda080863fd743e290e14f7619acccca0))
+* signpost deploy-camunda config surface for external users ([#6564](https://github.com/camunda/camunda-platform-helm/issues/6564)) ([9d850bc](https://github.com/camunda/camunda-platform-helm/commit/9d850bc0ee25d5aebfcebf4685f5ec190a0e50f8))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6547](https://github.com/camunda/camunda-platform-helm/issues/6547)) ([ff84e7c](https://github.com/camunda/camunda-platform-helm/commit/ff84e7c5c8f09cf7df9c07e970f4642805eaeb75))
+* update camunda/console docker tag to v8.9.64 ([#6556](https://github.com/camunda/camunda-platform-helm/issues/6556)) ([a9904ab](https://github.com/camunda/camunda-platform-helm/commit/a9904abe1b2e719e98c2fddd559b2a3e4769512a))
+* update camunda/console docker tag to v8.9.65 ([#6580](https://github.com/camunda/camunda-platform-helm/issues/6580)) ([7cd32a2](https://github.com/camunda/camunda-platform-helm/commit/7cd32a20637ff8e5eea675b1fbd5086aaf76e416))
+* update minor-updates (minor) ([#6574](https://github.com/camunda/camunda-platform-helm/issues/6574)) ([3c346fd](https://github.com/camunda/camunda-platform-helm/commit/3c346fd1e6ffa130edae21b3e814c4202beed63d))
+* update module golang.org/x/crypto to v0.52.0 [security] ([#6538](https://github.com/camunda/camunda-platform-helm/issues/6538)) ([619ea17](https://github.com/camunda/camunda-platform-helm/commit/619ea17cf0b69ba9bc5eedcf15d9cc9c7b771266))
+* update patch-updates (patch) ([#6575](https://github.com/camunda/camunda-platform-helm/issues/6575)) ([ba9b3e6](https://github.com/camunda/camunda-platform-helm/commit/ba9b3e6b07eb7a754bc47636d8033cbcfb8b0ab0))
+
 ## [14.6.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.6.0...camunda-platform-8.9-14.6.1) (2026-07-08)
 
 
