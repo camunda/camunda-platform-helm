@@ -49,7 +49,8 @@ The `Multi-Attach` premise requires a chart-managed PVC on a `Deployment`, which
   - **Optimize** uses a single PVC (`<release>-optimize-data`) in 8.9/8.10 but **two** PVCs
     (`<release>-optimize-data-tmp` and `<release>-optimize-data-camunda`) in 8.8.
   - **Web Modeler** restapi mounts `<release>-webmodeler-data` in all three; 8.10 additionally resolves
-    its values through the `camundaHub.*` override layer (see constraint 1).
+    its values through the `camundaHub.*` override layer (see constraint 1); in 8.10 those overrides live
+    under `camundaHub.persistence.*` after the namespace hoist (PR #6539).
 - **8.7 and earlier** — these components do **not** mount a chart-managed PVC (only the Zeebe
   `StatefulSet` uses `volumeClaimTemplates`, which is not subject to `Deployment`-style `Multi-Attach`
   rollout deadlock). The premise does not exist, so this amendment does **not** apply; ADR 0043 remains
@@ -84,10 +85,13 @@ Web Modeler restapi, Connectors, Identity, and Optimize. The following constrain
 1. **Location.** The value lives under the component's persistence block as
    `<component>.persistence.deploymentStrategy` (e.g. `webModeler.persistence.deploymentStrategy`). It
    MUST NOT be exposed as a top-level component value, so it cannot exist independently of a PVC. In
-   8.10, where components are configurable through the `camundaHub.*` override layer, the value resolves
-   as `(or .Values.camundaHub.<component>.persistence.deploymentStrategy
-   .Values.<component>.persistence.deploymentStrategy)`, matching every other 8.10 override, with the
-   same default and guard.
+   8.10, Web Modeler is consolidated into the Camunda Hub component, so its persistence values resolve
+   through the hoisted `camundaHub.*` override layer directly — `(or
+   .Values.camundaHub.persistence.deploymentStrategy .Values.webModeler.persistence.deploymentStrategy)` —
+   with no intermediate `webModeler` segment, matching every other 8.10 Hub override. The pre-hoist path
+   `camundaHub.webModeler.persistence.deploymentStrategy` is retired and guarded by a
+   `camundaPlatform.keyRenamed` error (PR #6539, camunda/camunda-platform-helm); the same default and
+   guard otherwise apply.
 2. **Allowed values.** `RollingUpdate` and `Recreate` only, enforced by a `values.schema.json` enum
    **and** a Helm template guard that fails with a clear message if schema validation is bypassed.
 3. **Default.** `RollingUpdate` for components whose pre-amendment hardcoded strategy was
