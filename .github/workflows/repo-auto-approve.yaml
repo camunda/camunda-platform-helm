@@ -5,7 +5,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -76,6 +76,11 @@ jobs:
             echo "::notice::Already approved by distro-ci for ${SHA}; skipping."
             exit 0
           fi
+          current=$(gh api "repos/${REPO}/pulls/${PR}" --jq .head.sha)
+          if [[ "$current" != "$SHA" ]]; then
+            echo "::notice::head advanced from ${SHA} to ${current}; skipping approval (a newer run will evaluate it)."
+            exit 0
+          fi
           gh api -X POST "repos/${REPO}/pulls/${PR}/reviews" \
             -f commit_id="${SHA}" -f event="APPROVE" -f body="Auto-approved: author is on .github/auto-approve-allowlist.txt."
 
@@ -92,6 +97,11 @@ jobs:
             --jq "[.[] | select(.user.login==\"github-actions[bot]\" and .commit_id==\"${SHA}\" and .state==\"APPROVED\")] | length")
           if [[ "$approved" -gt 0 ]]; then
             echo "::notice::Already approved by github-actions for ${SHA}; skipping."
+            exit 0
+          fi
+          current=$(gh api "repos/${REPO}/pulls/${PR}" --jq .head.sha)
+          if [[ "$current" != "$SHA" ]]; then
+            echo "::notice::head advanced from ${SHA} to ${current}; skipping approval (a newer run will evaluate it)."
             exit 0
           fi
           gh api -X POST "repos/${REPO}/pulls/${PR}/reviews" \
