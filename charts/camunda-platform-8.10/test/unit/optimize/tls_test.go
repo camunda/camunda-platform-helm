@@ -256,6 +256,33 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
+			Name: "Probe scheme honors optimize.env SERVER_SSL_ENABLED=false override even when global TLS is enabled",
+			Values: map[string]string{
+				"optimize.enabled":                               "true",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+				"optimize.startupProbe.enabled":                  "true",
+				"optimize.livenessProbe.enabled":                 "true",
+				"optimize.env[0].name":                           "SERVER_SSL_ENABLED",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "optimize.env[0].value=false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				container := s.mainContainer(&deployment)
+				s.Require().NotNil(container.StartupProbe)
+				s.Require().Equal(corev1.URIScheme("HTTP"), container.StartupProbe.HTTPGet.Scheme)
+				s.Require().NotNil(container.ReadinessProbe)
+				s.Require().Equal(corev1.URIScheme("HTTP"), container.ReadinessProbe.HTTPGet.Scheme)
+				s.Require().NotNil(container.LivenessProbe)
+				s.Require().Equal(corev1.URIScheme("HTTP"), container.LivenessProbe.HTTPGet.Scheme)
+			},
+		},
+		{
 			Name: "cert block is inert when global.tls.optimize.enabled is false",
 			Values: map[string]string{
 				"optimize.enabled": "true",

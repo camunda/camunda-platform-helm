@@ -785,13 +785,28 @@ optimize.env. Disambiguated from the legacy optimize.hasTlsConfig helper, which
 governs the OPTIMIZE-AS-CLIENT path (truststore for ES/OS connections).
 */}}
 {{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
-  {{- if .Values.global.tls.optimize.enabled -}}
-    true
-  {{- else if eq (include "camundaPlatform.optimizeServerEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+  {{- if eq (include "camundaPlatform.optimizeServerEnvHasKey" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+    {{- include "camundaPlatform.optimizeServerEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- else if .Values.global.tls.optimize.enabled -}}
     true
   {{- else -}}
     false
   {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when optimize.env contains at least one entry for name.
+*/}}
+{{- define "camundaPlatform.optimizeServerEnvHasKey" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $found := false -}}
+  {{- range $env := $ctx.Values.optimize.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- $found = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $found -}}
 {{- end -}}
 
 {{/*
