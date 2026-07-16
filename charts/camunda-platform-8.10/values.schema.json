@@ -851,6 +851,86 @@
                                     }
                                 }
                             }
+                        },
+                        "connectors": {
+                            "type": "object",
+                            "properties": {
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "opt-in automatic pod rollout on Connectors cert rotation. When true, the chart stamps a `checksum/connectors-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Connectors when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.",
+                                    "default": false
+                                },
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, TLS is terminated at the Connectors HTTP server.",
+                                    "default": false
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "defines the secret format. One of: pkcs12, pem.",
+                                    "default": "pkcs12"
+                                },
+                                "keyAlias": {
+                                    "type": "string",
+                                    "description": "can be used to specify the cert alias within a PKCS12 keystore.",
+                                    "default": ""
+                                },
+                                "cert": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via connectors.extraVolumes and connectors.env.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "privateKey": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object. In PEM mode, the cert and private key must live in the SAME Secret referenced by global.tls.connectors.cert.secret.existingSecret.",
+                                                    "default": "tls.key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "keystorePassword": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": "keystore-password"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -4389,8 +4469,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Connectors TLS is enabled (global.tls.connectors), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -4434,8 +4514,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Connectors TLS is enabled (global.tls.connectors), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -4479,8 +4559,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe scheme used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Connectors TLS is enabled (global.tls.connectors), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
