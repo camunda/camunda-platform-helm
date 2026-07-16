@@ -47,8 +47,9 @@ identity:
   enabled: true
   contextPath: "/identity"
   firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
+    secret:
+      existingSecret: "integration-test-credentials"
+      existingSecretKey: "identity-user-password"
 
 identityKeycloak:
   enabled: true

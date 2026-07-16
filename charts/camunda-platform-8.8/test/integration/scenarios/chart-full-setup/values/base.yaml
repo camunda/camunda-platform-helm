@@ -57,8 +57,9 @@ identity:
     failureThreshold: 5
     timeoutSeconds: 1
   firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
+    secret:
+      existingSecret: "integration-test-credentials"
+      existingSecretKey: "identity-user-password"
   clients:
     - id: venom
       name: Venom
