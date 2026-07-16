@@ -437,7 +437,7 @@ Connectors templates.
 [camunda-platform] Connectors external URL.
 */}}
 {{- define "camundaPlatform.connectorsExternalURL" }}
-  {{- $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
+  {{- $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace -}}
   {{- printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath "")) | trimSuffix "/" -}}
 {{- end -}}
@@ -764,6 +764,36 @@ Usage:
   {{- $result -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Returns "true" when Connectors TLS is enabled via
+global.tls.connectors.enabled or via an explicit SERVER_SSL_ENABLED=true
+entry in connectors.env.
+*/}}
+{{- define "camundaPlatform.connectorsTLSEnabled" -}}
+  {{- if .Values.global.tls.connectors.enabled -}}
+    true
+  {{- else if eq (include "camundaPlatform.connectorsEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns true when the last connectors.env entry for name has value true.
+*/}}
+{{- define "camundaPlatform.connectorsEnvIsTrue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $enabled := false -}}
+  {{- range $env := $ctx.Values.connectors.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- $enabled = (eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true") -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $enabled -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -821,7 +851,7 @@ Release templates.
   {{- end }}
 
   {{- if .Values.connectors.enabled }}
-  {{-  $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
+  {{-  $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
     id: connectors
@@ -933,7 +963,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) | quote }}
   {{- end }}
   {{- if .Values.connectors.enabled }}
-  {{- $proto := (lower .Values.connectors.readinessProbe.scheme) }}
+  {{- $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true"))) }}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
     type: connectors
@@ -1559,6 +1589,32 @@ Usage (inside the Orchestration pod template's metadata.annotations):
   {{- $s := lookup "v1" "Secret" $.Release.Namespace $certRef.name -}}
   {{- $data := ($s | default dict).data | default dict -}}
   {{- $hashes = append $hashes (get $data $certRef.key) -}}
+{{- end -}}
+
+{{/* Returns the Secret data key that holds the Connectors server certificate. */}}
+{{- define "camundaPlatform.connectorsSecretCertKey" -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- $type := $c.type | default "pkcs12" -}}
+{{- $key := $c.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/* Emits a checksum annotation for the configured Connectors TLS certificate. */}}
+{{- define "camundaPlatform.connectorsTLSChecksumAnnotation" -}}
+{{- if .Values.global.tls.connectors.autoRollout -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- if and $c.enabled $c.cert.secret.existingSecret -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $c.cert.secret.existingSecret -}}
+{{- $data := ($secret | default dict).data | default dict -}}
+checksum/connectors-tls: {{ get $data (include "camundaPlatform.connectorsSecretCertKey" .) | sha256sum }}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- if $tls.privateKey.secret.inlineSecret -}}
   {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
