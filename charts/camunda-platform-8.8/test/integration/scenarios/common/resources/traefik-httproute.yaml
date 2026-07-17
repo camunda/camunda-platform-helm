@@ -21,6 +21,20 @@ spec:
           port: 80
     - matches:
         - path:
+            type: Exact
+            value: /identity
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            hostname: $NAMESPACE.distribution.aws.camunda.cloud
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /identity/
+      backendRefs:
+        - name: $RELEASE_NAME-identity
+          port: 80
+    - matches:
+        - path:
             type: PathPrefix
             value: /identity
       backendRefs:
