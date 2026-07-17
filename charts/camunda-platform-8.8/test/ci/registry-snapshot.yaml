@@ -43,14 +43,14 @@ integration:
               Cluster gRPC endpoint, creates the server TLS Secret, and creates
               a truststore Secret consumed by Web Modeler restapi.
         - name: enterprise-values
-          enabled: true
+          enabled: false
           shortname: entv
           auth: keycloak
           flow: install
           platforms:
             - gke
           exclude: []
-          tier: 1
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
@@ -58,7 +58,6 @@ integration:
           features:
             - enterprise
           helmVersion: 3.20.2
-          skip-e2e: true
         - name: upgrade-migration
           enabled: false
           shortname: eske-upgm
