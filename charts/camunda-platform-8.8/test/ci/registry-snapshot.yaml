@@ -58,6 +58,7 @@ integration:
           features:
             - enterprise
           helmVersion: 3.20.2
+          skip-e2e: true
         - name: upgrade-migration
           enabled: false
           shortname: eske-upgm

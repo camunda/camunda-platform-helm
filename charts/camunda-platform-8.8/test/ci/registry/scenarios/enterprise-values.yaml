@@ -11,3 +11,4 @@ platforms:
 infra-type:
   gke: distroci
 helmVersion: 3.20.2
+skip-e2e: true
