@@ -5,11 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
-	"strings"
 	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
 type PlatformSecretsProvider interface {
@@ -144,16 +140,18 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 }
 
 func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, namespacePrefix, externalSecretsStore string) error {
-	srcNamespace := computeEKSSourceNamespace(namespacePrefix)
-
 	logging.Logger.Debug().
-		Str("srcNamespace", srcNamespace).
-		Str("destNamespace", namespace).
+		Str("namespace", namespace).
 		Str("secret", secretNameTLS).
-		Msg("copying TLS secret for EKS")
+		Msg("applying replicate-from stub and waiting for pulled TLS secret for EKS")
 
-	if err := copySecretBetweenNamespaces(ctx, client, srcNamespace, secretNameTLS, namespace); err != nil {
-		return fmt.Errorf("copy TLS secret from %s to %s: %w", srcNamespace, namespace, err)
+	replicateFromStub := filepath.Join(repoRoot, ".github", "config", "replicate-from", "replicate-from-eks-tls.yaml")
+	if err := applyManifestFile(ctx, client, namespace, replicateFromStub); err != nil {
+		return fmt.Errorf("apply replicate-from stub %s in namespace %s: %w", replicateFromStub, namespace, err)
+	}
+
+	if err := waitForSecret(ctx, client, namespace, secretNameTLS, []string{"tls.crt", "tls.key"}, externalSecretsReadyTimeout); err != nil {
+		return fmt.Errorf("wait for replicated TLS secret %s in namespace %s: %w", secretNameTLS, namespace, err)
 	}
 
 	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace, externalSecretsStore); err != nil {
@@ -168,42 +166,3 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 }
 
 const externalSecretsReadyTimeout = 600 * time.Second
-
-func copySecretBetweenNamespaces(ctx context.Context, client *Client, srcNamespace, secretName, destNamespace string) error {
-	logging.Logger.Debug().
-		Str("srcNamespace", srcNamespace).
-		Str("destNamespace", destNamespace).
-		Str("secret", secretName).
-		Msg("copying secret between namespaces")
-
-	secret, err := client.clientset.CoreV1().Secrets(srcNamespace).Get(ctx, secretName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get secret %s in namespace %s: %w", secretName, srcNamespace, err)
-	}
-
-	logging.Logger.Debug().
-		Str("secret", secretName).
-		Str("destNamespace", destNamespace).
-		Msg("applying copied secret to destination namespace")
-
-	secretApply := corev1apply.Secret(secretName, destNamespace).
-		WithLabels(secret.Labels).
-		WithAnnotations(secret.Annotations).
-		WithType(secret.Type).
-		WithData(secret.Data)
-
-	_, err = client.clientset.CoreV1().Secrets(destNamespace).Apply(
-		ctx,
-		secretApply,
-		defaultApplyOptions(),
-	)
-	if err != nil {
-		// Check if error is due to namespace termination
-		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
-			return fmt.Errorf("failed to apply copied secret %q to namespace %q: namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, destNamespace, err)
-		}
-		return fmt.Errorf("failed to apply copied secret %q to namespace %q: %w", secretName, destNamespace, err)
-	}
-
-	return nil
-}

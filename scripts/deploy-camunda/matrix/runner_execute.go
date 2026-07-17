@@ -210,9 +210,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Secrets: config.SecretsFlags{
 			// When the caller pre-creates the namespace (--namespace-override) it
 			// also pre-applies platform secrets/TLS via cluster-setup-secrets. Skip
-			// the runner's ExternalSecrets path in that case — re-running it on
-			// EKS would try to read aws-camunda-cloud-tls from the global "certs"
-			// namespace, which CI service accounts don't have RBAC for.
+			// the runner's ExternalSecrets path in that case — on EKS the runner
+			// would otherwise wait again for aws-camunda-cloud-tls, which is
+			// replicated into the test namespace by the mittwald replicator and
+			// requires no cross-namespace read or extra RBAC.
 			ExternalSecrets:       opts.NamespaceOverride == "",
 			AutoGenerateSecrets:   true,
 			UseVaultBackedSecrets: useVault,

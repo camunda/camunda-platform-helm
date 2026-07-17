@@ -745,14 +745,6 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 	return provider.Apply(ctx, client, namespace)
 }
 
-func computeEKSSourceNamespace(namespacePrefix string) string {
-	prefix := strings.TrimSpace(namespacePrefix)
-	if prefix == "" {
-		return "certs"
-	}
-	return prefix + "-certs"
-}
-
 func applyManifestIfExists(ctx context.Context, client *Client, namespace, filePath, description string) error {
 	if !fileExists(filePath) {
 		logging.Logger.Debug().Str("file", filePath).Msgf("%s manifest not found (skipping)", description)
@@ -1022,6 +1014,38 @@ func waitExternalSecretsReady(ctx context.Context, client *Client, namespace str
 		if err != nil {
 			return fmt.Errorf("ExternalSecret %s not ready: %w", name, err)
 		}
+	}
+
+	return nil
+}
+
+func waitForSecret(ctx context.Context, client *Client, namespace, name string, keys []string, timeout time.Duration) error {
+	logging.Logger.Debug().
+		Str("namespace", namespace).
+		Str("secret", name).
+		Strs("keys", keys).
+		Msg("waiting for secret to be present")
+
+	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+		secret, err := client.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+
+		for _, key := range keys {
+			value, ok := secret.Data[key]
+			if !ok || len(value) == 0 {
+				return false, nil
+			}
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("secret %q in namespace %q not present with expected keys after %s: %w", name, namespace, timeout, err)
 	}
 
 	return nil
