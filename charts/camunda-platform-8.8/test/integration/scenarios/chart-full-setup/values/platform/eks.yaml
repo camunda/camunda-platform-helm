@@ -2,13 +2,15 @@
 # Layer 6: Infrastructure - AWS EKS specific settings
 # Networking uses Traefik Gateway API applied by the traefik-gateway post-deploy hook
 # (8.8 has no chart Gateway API; see test/ci/registry/hooks/traefik-gateway.yaml).
+# Keep external URL generation enabled while suppressing Ingress resources.
 
 global:
   commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
   ingress:
-    enabled: false
+    enabled: true
+    external: true
 
 identityKeycloak:
   commonLabels:
