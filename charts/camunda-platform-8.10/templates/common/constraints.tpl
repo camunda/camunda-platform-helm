@@ -117,6 +117,38 @@ gRPC server to crash on startup. Fail loudly at render time instead.
 {{- end }}
 
 {{/*
+global.tls.connectors footgun: enabling Connectors TLS without providing
+the server cert material (either via the chart-managed `secret.existingSecret`
+or via an explicit cert path in `connectors.env`) causes Spring Boot to crash
+on startup. Fail loudly at render time instead.
+*/}}
+{{- if .Values.connectors.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.connectors.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
+    {{- $chartMountsCert := and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret -}}
+    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{- if not (or $chartMountsCert $handWiredCert) }}
+      {{- $errorMessage := printf "%s %s %s"
+          "[camunda][error] Connectors TLS is enabled but no server cert is configured."
+          "Set global.tls.connectors.enabled: true together with global.tls.connectors.cert.secret.existingSecret (recommended) so the chart mounts the cert -- note that existingSecret alone is NOT mounted unless global.tls.connectors.enabled is also true (e.g. when TLS is enabled only via connectors.env's SERVER_SSL_ENABLED=true),"
+          "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching connectors.extraVolumes / extraVolumeMounts entries."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") .Values.global.tls.connectors.cert.secret.existingSecret }}
+    {{- $t := .Values.global.tls.connectors.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.connectors.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}
@@ -477,6 +509,29 @@ The following values inside your values.yaml need to be set but were not:
         "Set global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.)."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{/* Warn when Connectors server TLS is enabled but no caBundle is set. */}}
+  {{- if and (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") (ne (include "camundaPlatform.hasCaBundle" .) "true") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "global.tls.caBundle is not set. If the Connectors cert is self-signed or from a private/internal CA, in-cluster Java callers will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.)."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{/* Warn when Connectors TLS is enabled but the chart's own Gateway API HTTPRoute
+       still forwards cleartext HTTP to the Connectors Service (see templates/connectors/httproute.yaml). */}}
+  {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+    {{- if and .Values.connectors.enabled (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "Connectors TLS is enabled (the Connectors pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Connectors Service's serverPort."
+          "Inbound routing to Connectors (e.g. external webhooks) will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Connectors Service, so the gateway re-encrypts traffic to the TLS-only pod."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}

@@ -21,6 +21,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/connectors/configmap.yaml") . | sha256sum }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (include "camundaPlatform.connectorsTLSChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.connectors.podAnnotations }}
       {{- tpl (toYaml .Values.connectors.podAnnotations) $ | nindent 8 }}
       {{- end }}
@@ -79,6 +80,32 @@ spec:
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
           {{- end }}
+            {{- if .Values.global.tls.connectors.enabled }}
+            - name: SERVER_SSL_ENABLED
+              value: "true"
+            {{- if .Values.global.tls.connectors.cert.secret.existingSecret }}
+            {{- if eq (.Values.global.tls.connectors.type | default "pkcs12") "pem" }}
+            - name: SERVER_SSL_CERTIFICATE
+              value: /usr/local/camunda/certificates/connectors/{{ include "camundaPlatform.connectorsSecretCertKey" . }}
+            - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
+              value: /usr/local/camunda/certificates/connectors/{{ .Values.global.tls.connectors.privateKey.secret.existingSecretKey }}
+            {{- else }}
+            - name: SERVER_SSL_KEY_STORE
+              value: file:/usr/local/camunda/certificates/connectors/{{ include "camundaPlatform.connectorsSecretCertKey" . }}
+            - name: SERVER_SSL_KEY_STORE_TYPE
+              value: PKCS12
+            - name: SERVER_SSL_KEY_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.tls.connectors.keystorePassword.secret.existingSecret | default .Values.global.tls.connectors.cert.secret.existingSecret }}
+                  key: {{ .Values.global.tls.connectors.keystorePassword.secret.existingSecretKey }}
+            {{- with .Values.global.tls.connectors.keyAlias }}
+            - name: SERVER_SSL_KEY_ALIAS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
@@ -102,7 +129,7 @@ spec:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.startupProbe.probePath) }}
               port: {{ .Values.connectors.service.serverName }}
-              scheme: {{ default "HTTP" .Values.connectors.scheme }}
+              scheme: {{ .Values.connectors.startupProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")) }}
             initialDelaySeconds: {{ .Values.connectors.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.startupProbe.periodSeconds }}
             successThreshold: {{ .Values.connectors.startupProbe.successThreshold }}
@@ -114,7 +141,7 @@ spec:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath) }}
               port: {{ .Values.connectors.service.serverName }}
-              scheme: {{ default "HTTP" .Values.connectors.scheme }}
+              scheme: {{ .Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")) }}
             initialDelaySeconds: {{ .Values.connectors.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.readinessProbe.periodSeconds }}
             successThreshold: {{ .Values.connectors.readinessProbe.successThreshold }}
@@ -126,7 +153,7 @@ spec:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.livenessProbe.probePath) }}
               port: {{ .Values.connectors.service.serverName }}
-              scheme: {{ default "HTTP" .Values.connectors.scheme }}
+              scheme: {{ .Values.connectors.livenessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")) }}
             initialDelaySeconds: {{ .Values.connectors.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.connectors.livenessProbe.periodSeconds }}
             successThreshold: {{ .Values.connectors.livenessProbe.successThreshold }}
@@ -151,6 +178,11 @@ spec:
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
           {{- end }}
+            {{- if and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret }}
+            - name: connectors-tls
+              mountPath: /usr/local/camunda/certificates/connectors
+              readOnly: true
+            {{- end }}
           {{- if .Values.connectors.extraVolumeMounts }}
             {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -182,6 +214,12 @@ spec:
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
       {{- end }}
+        {{- if and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret }}
+        - name: connectors-tls
+          secret:
+            secretName: {{ .Values.global.tls.connectors.cert.secret.existingSecret }}
+            defaultMode: 0440
+        {{- end }}
       {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
