@@ -42,6 +42,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Web Modeler](#web-modeler)
   - [Elasticsearch](#elasticsearch)
   - [Keycloak](#keycloak)
+  - [Zeebe Message Size](#zeebe-message-size)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
@@ -232,6 +233,14 @@ it, copy the theme into your own Keycloak deployment — for example via an init
 mounts the Identity image's theme directory into your Keycloak themes path. The exact themes
 path depends on the Keycloak image you run.
 
+### Zeebe Message Size
+
+Zeebe now always uses its engine default maximum message size (4MB) and is no longer tied to
+`global.config.requestBodySize`, which governs only HTTP upload and form-post size (e.g. for
+process deployments through REST endpoints). To raise the maximum message size Zeebe accepts,
+configure it directly via the component's `extraConfiguration`, the supported mechanism per
+[ADR 91](../../docs/adr/0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md).
+
 ## Development
 
 For development purposes, you might want to deploy and test the charts without creating a new helm chart release.
@@ -291,7 +300,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `global.compatibility`                                  | Compatibility adaptations in the chart.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |                                     |
 | `global.compatibility.openshift.adaptSecurityContext`   | Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)                                                                                                                                                                                                                                   | `disabled`                          |
 | `global.config`                                         | Config used in various places.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                                     |
-| `global.config.requestBodySize`                         | defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.                                                                                                                                                                                                                                                                                                                                                                                                                                               | `10MB`                              |
+| `global.config.requestBodySize`                         | defines the maximum request body size for file uploads and HTTP form posts.                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `10MB`                              |
 | `global.multitenancy`                                   |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                     |
 | `global.multitenancy.enabled`                           | if true, then enable multitenancy in all applicable components.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `false`                             |
 | `global.security`                                       |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                     |

@@ -57,4 +57,3 @@ data:
         network:
           host: 0.0.0.0
           port: "26500"
-          maxMessageSize: "10MB"

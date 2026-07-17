@@ -100,8 +100,45 @@ func (s *configmapTemplateTest) TestRequestBodySizeConfiguresBrokerMessageSize()
 				helm.UnmarshalK8SYaml(t, output, &configmap)
 				applicationYaml := configmap.Data["application.yaml"]
 
-				require.Contains(t, applicationYaml, "maxMessageSize: \"50MB\"")
-				require.Equal(t, 1, strings.Count(applicationYaml, "maxMessageSize:"))
+				require.NotContains(t, applicationYaml, "maxMessageSize: \"50MB\"")
+				require.Equal(t, 0, strings.Count(applicationYaml, "maxMessageSize:"))
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapTemplateTest) TestZeebeMaxMessageSizeUsesEngineDefault() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestZeebeMaxMessageSizeUsesEngineDefaultWithDefaultValues",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// the chart must never render a Zeebe message-size key, keeping the engine's 4MB default
+				require.Equal(t, 0, strings.Count(applicationYaml, "maxMessageSize:"))
+			},
+		},
+		{
+			Name: "TestZeebeMaxMessageSizeUsesEngineDefaultWithRequestBodySizeOverride",
+			Values: map[string]string{
+				"global.config.requestBodySize": "50MB",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// requestBodySize must not leak into a Zeebe message-size key
+				require.Equal(t, 0, strings.Count(applicationYaml, "maxMessageSize:"))
 			},
 		},
 	}
