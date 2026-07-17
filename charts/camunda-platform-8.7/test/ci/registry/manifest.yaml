@@ -11,7 +11,7 @@ integration:
     - id: enterprise-values
       shortname: entv
       tier: 2
-      enabled: true
+      enabled: false
     - id: keycloak-mt
       shortname: kemt
       tier: 2

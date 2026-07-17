@@ -24,7 +24,7 @@ integration:
     - id: enterprise-values
       shortname: entv
       tier: 2
-      enabled: true
+      enabled: false
     - id: opensearch
       shortname: oske
       tier: 2
