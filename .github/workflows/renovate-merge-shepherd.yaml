@@ -72,18 +72,12 @@ jobs:
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
           exportEnv: false
 
-      - name: Generate GitHub token
-        id: generate-github-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        with:
-          app_id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ steps.secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-
       - name: Shepherd PR through merge queue
         uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@305de9730455a10c1df97262d42ced69855f2b16 # main
         with:
           pr-number: ${{ matrix.pr }}
-          app-token: ${{ steps.generate-github-token.outputs.token }}
+          app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ steps.secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
           repository-owner: ${{ github.repository_owner }}
           repository-name: ${{ github.event.repository.name }}
           merge-method: squash
