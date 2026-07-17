@@ -741,7 +741,7 @@ Release templates.
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (or .Values.camundaHub.restapi.service.managementPort .Values.webModeler.restapi.service.managementPort) }}
   - name: WebModeler
     id: hub
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub | default dict))) }}
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" (mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict)))) }}
     url: {{ include "camundaPlatform.webModelerExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) }}
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.metrics.prometheus .Values.webModeler.restapi.metrics.prometheus))) }}
@@ -813,7 +813,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- if or .Values.identity.enabled (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - id: "management-cluster"
   name: "management"
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub | default dict))) | quote }}
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" (mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict)))) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false
@@ -833,7 +833,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (or .Values.camundaHub.restapi.service.managementPort .Values.webModeler.restapi.service.managementPort) }}
   - name: WebModeler
     type: hub
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub | default dict))) | quote }}
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" (mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict)))) | quote }}
     urls:
       webapp: {{ include "camundaPlatform.webModelerExternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}

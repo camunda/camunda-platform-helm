@@ -30,6 +30,12 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
+{{ include "camundaPlatform.keyRenamed" (dict
+  "condition" (ne nil (dig "identity" "auth" "camundaHub" "console" nil .Values.global))
+  "oldName" "global.identity.auth.camundaHub.console.*"
+  "newName" "global.identity.auth.console.*"
+) }}
+
 {{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 

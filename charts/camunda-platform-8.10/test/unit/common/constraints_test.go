@@ -644,6 +644,20 @@ func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 				s.Require().ErrorContains(err, "changed from")
 			},
 		},
+		{
+			Name: "TestConsoleRedirectUrlRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":            "elasticsearch",
+				"identity.enabled":                                    "true",
+				"camundaHub.enabled":                                  "true",
+				"camundaHub.restapi.mail.fromAddress":                 "noreply@example.com",
+				"global.identity.auth.camundaHub.console.redirectUrl": "https://console.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "global.identity.auth.camundaHub.console")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

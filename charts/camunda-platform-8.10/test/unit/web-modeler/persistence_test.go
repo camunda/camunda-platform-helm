@@ -278,7 +278,7 @@ func TestDeploymentStrategyRecreateRequiresPersistence(t *testing.T) {
 		},
 		Verifier: func(t *testing.T, output string, err error) {
 			require.Error(t, err)
-			require.Contains(t, err.Error(), "Recreate requires webModeler.persistence.enabled: true")
+			require.Contains(t, err.Error(), "Recreate requires persistence.enabled: true on the same values path")
 		},
 	}
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})

@@ -1,10 +1,10 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 {{- $deploymentStrategy := (or .Values.camundaHub.persistence.deploymentStrategy .Values.webModeler.persistence.deploymentStrategy) | default "RollingUpdate" -}}
 {{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
-{{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- fail "webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy) value must be one of 'RollingUpdate', 'Recreate'" -}}
 {{- end -}}
 {{- if and (eq $deploymentStrategy "Recreate") (not (or .Values.camundaHub.persistence.enabled .Values.webModeler.persistence.enabled)) -}}
-{{- fail "webModeler.persistence.deploymentStrategy: Recreate requires webModeler.persistence.enabled: true. The default chart-managed path uses a per-pod ephemeral volume with no Multi-Attach contention, so Recreate is only useful when existingClaim points to a ReadWriteOnce volume; without persistence it only adds upgrade downtime" -}}
+{{- fail "webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy): Recreate requires persistence.enabled: true on the same values path. The default chart-managed path uses a per-pod ephemeral volume with no Multi-Attach contention, so Recreate is only useful when existingClaim points to a ReadWriteOnce volume; without persistence it only adds upgrade downtime" -}}
 {{- end -}}
 apiVersion: apps/v1
 kind: Deployment

@@ -1122,6 +1122,7 @@ camundaHub:
   ## camundaHub.restapi.readinessProbe.enabled=false will NOT disable the probe
   ## if the legacy webModeler.restapi.readinessProbe.enabled is true. Use the legacy keys
   ## directly for falsy overrides.
+  ## Exception: camundaHub.image.* (and the per-component restapi/websockets image maps) are merged additively over the legacy image maps, so partial overrides (e.g. only registry) keep the legacy tag.
   ## @skip camundaHub.image
   image: {}
   ## @skip camundaHub.security
