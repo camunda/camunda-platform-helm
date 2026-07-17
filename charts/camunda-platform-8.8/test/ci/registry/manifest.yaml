@@ -36,8 +36,8 @@ integration:
       enabled: true
     - id: enterprise-values
       shortname: entv
-      tier: 2
-      enabled: false
+      tier: 1
+      enabled: true
     - id: upgrade-migration
       shortname: eske-upgm
       tier: 2
