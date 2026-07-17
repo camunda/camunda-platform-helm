@@ -612,9 +612,16 @@ global:
       #####################
 
       ## @extra global.identity.auth.camundaHub auth configuration for Camunda Hub.
-      ## When camundaHub.enabled is true, these values override the legacy webModeler auth
-      ## section above. If not set, falls back to the legacy section.
+      ## Any value set here takes precedence over the legacy webModeler auth section above,
+      ## regardless of whether Camunda Hub is enabled via camundaHub.enabled or the legacy
+      ## webModeler.enabled flag. Unset values fall back to the legacy section.
       camundaHub:
+        ## @param global.identity.auth.camundaHub.clientId defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientId.
+        clientId: ""
+        ## @param global.identity.auth.camundaHub.clientApiAudience defines the audience which is used by Camunda Hub's client API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.
+        clientApiAudience: ""
+        ## @param global.identity.auth.camundaHub.publicApiAudience defines the audience which is used by Camunda Hub's public API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.
+        publicApiAudience: ""
         ## @param global.identity.auth.camundaHub.redirectUrl defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.
         redirectUrl: ""
 
