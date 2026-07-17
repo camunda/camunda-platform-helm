@@ -24,8 +24,10 @@ import (
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -90,6 +92,7 @@ type Client struct {
 	clientset       kubernetes.Interface
 	dynamicClient   dynamic.Interface
 	discoveryClient discovery.DiscoveryInterface
+	restMapper      meta.RESTMapper
 	kubeconfig      string
 	kubeContext     string
 }
@@ -127,6 +130,7 @@ func NewClient(kubeconfig, kubeContext string) (*Client, error) {
 		clientset:       clientset,
 		dynamicClient:   dynamicClient,
 		discoveryClient: discoveryClient,
+		restMapper:      restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient)),
 		kubeconfig:      kubeconfig,
 		kubeContext:     kubeContext,
 	}, nil
@@ -830,9 +834,10 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 		unstructuredObj.SetNamespace(namespace)
 	}
 
-	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
-	gvr.Group = gvk.Group
-	gvr.Version = gvk.Version
+	gvr, err := client.resourceForGVK(gvk)
+	if err != nil {
+		return fmt.Errorf("failed to resolve resource for %s (document %d): %w", gvk.String(), docNum, err)
+	}
 
 	logging.Logger.Debug().
 		Str("kind", gvk.Kind).
@@ -919,6 +924,14 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 
 	// This should not be reached, but handle it just in case
 	return fmt.Errorf("failed to apply %s %q in namespace %q (document %d): %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, lastErr)
+}
+
+func (c *Client) resourceForGVK(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+	mapping, err := c.restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return schema.GroupVersionResource{}, err
+	}
+	return mapping.Resource, nil
 }
 
 // isWebhookNotReadyError checks if the error is due to a webhook not being ready.
