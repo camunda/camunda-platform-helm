@@ -24,6 +24,7 @@ var lifecycleVarPassthrough = []string{
 	"RDBMS_POSTGRESQL_PASSWORD",
 	"GITHUB_WORKFLOW_JOB_ID",
 	"POSTGRESQL_JDBC_URL",
+	"CAMUNDA_HOSTNAME",
 }
 
 // resolveLifecycleEnv builds the env map used to resolve lifecycle hook

@@ -1,0 +1,18 @@
+# gRPC routing for the EKS documentstore scenario (Zeebe gateway), mirroring the
+# 8.8 nginx gRPC Ingress. DNS for this host needs the external-dns
+# gateway-grpcroute source on camunda-ci-eks (tracked in camunda/infra-core).
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: $RELEASE_NAME-camunda-platform-grpc
+  namespace: $NAMESPACE
+spec:
+  parentRefs:
+    - name: $RELEASE_NAME-camunda-platform
+      sectionName: grpcs
+  hostnames:
+    - grpc-$CAMUNDA_HOSTNAME
+  rules:
+    - backendRefs:
+        - name: $RELEASE_NAME-zeebe-gateway
+          port: 26500

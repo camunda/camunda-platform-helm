@@ -1,0 +1,10 @@
+fixtures:
+  - traefik-gateway.yaml
+  - traefik-httproute.yaml
+  - traefik-grpcroute.yaml
+description: |
+  Applies a per-namespace Traefik Gateway (class traefik, https + grpcs
+  listeners on 8443, TLS from aws-camunda-cloud-tls) plus the HTTPRoute and
+  GRPCRoute that mirror the chart's nginx Ingress routing. 8.8 has no chart
+  Gateway API, so the harness supplies these resources. Runs post-deploy so
+  the component Services and the TLS secret already exist in the namespace.

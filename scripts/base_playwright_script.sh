@@ -107,7 +107,8 @@ get_ingress_hostname() {
   if [[ -z "$hostname" ]]; then
     # might be using the Gateway api
     log "No matching Ingress found, trying Gateway API..."
-    hostname=$($kubectl_cmd -n "$namespace" get gateway -o json | jq -r '.items[].spec.listeners[].hostname')
+    hostname=$($kubectl_cmd -n "$namespace" get httproute -o json | jq -r '
+      [.items[].spec.hostnames[]?] | unique | if length == 1 then .[0] else empty end')
   fi
 
   if [[ -z "$hostname" || "$hostname" == "null" ]]; then

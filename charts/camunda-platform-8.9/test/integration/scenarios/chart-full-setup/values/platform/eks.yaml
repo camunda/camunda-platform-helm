@@ -1,13 +1,22 @@
 # EKS infrastructure configuration for 8.9
 # Layer 6: Infrastructure - AWS EKS specific settings
+# Networking uses the chart-native Traefik Gateway API (global.gateway.*, listeners on 8443).
 
 global:
+  host: "$CAMUNDA_HOSTNAME"
   commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
   ingress:
+    enabled: false
+  gateway:
+    enabled: true
+    createGatewayResource: true
+    className: traefik
     tls:
+      enabled: true
       secretName: aws-camunda-cloud-tls
+      port: 8443
 
 identityKeycloak:
   commonLabels:
@@ -26,8 +35,10 @@ webModelerPostgresql:
 orchestration:
   ingress:
     grpc:
-      tls:
-        secretName: aws-camunda-cloud-tls
+      enabled: false
+  gateway:
+    grpc:
+      enabled: true
 
 elasticsearch:
   commonLabels:
