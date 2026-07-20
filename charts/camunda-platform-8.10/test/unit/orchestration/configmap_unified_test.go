@@ -20,9 +20,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ConfigmapTemplateTest struct {
@@ -492,6 +495,70 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// requireNestedKeyAbsent walks a decoded YAML document by key path and fails the
+// test if the full path resolves to a present key, regardless of indentation/formatting.
+func requireNestedKeyAbsent(t *testing.T, root map[string]any, path ...string) {
+	current := root
+	for i, key := range path {
+		value, ok := current[key]
+		if !ok {
+			return
+		}
+		if i == len(path)-1 {
+			require.Failf(t, "unexpected property present", "path %q should not be set, got: %#v", strings.Join(path, "."), value)
+			return
+		}
+		nested, ok := value.(map[string]any)
+		if !ok {
+			return
+		}
+		current = nested
+	}
+}
+
+func (s *ConfigmapTemplateTest) TestRDBMSDoesNotUseExporterProperties() {
+	rdbmsValues := map[string]string{
+		"orchestration.exporters.rdbms.enabled":                              "true",
+		"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://localhost:5432/camunda",
+		"orchestration.data.secondaryStorage.rdbms.username":                 "camunda",
+		"orchestration.data.secondaryStorage.rdbms.secret.existingSecret":    "camunda-rdbms-credentials",
+		"orchestration.data.secondaryStorage.rdbms.secret.existingSecretKey": "password",
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestConfigmapShouldNotUseRDBMSExporterProperties",
+			Values: rdbmsValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				var applicationYaml map[string]any
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &applicationYaml))
+
+				requireNestedKeyAbsent(t, applicationYaml, "zeebe", "broker", "exporters", "rdbms")
+				requireNestedKeyAbsent(t, applicationYaml, "camunda", "data", "exporters", "rdbms")
+			},
+		},
+		{
+			Name:     "TestStatefulSetShouldNotUseRDBMSExporterEnvVarNames",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values:   rdbmsValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "ZEEBE_BROKER_EXPORTERS_RDBMS_",
+					"the RDBMS password must be injected as VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD, not a ZEEBE_BROKER_EXPORTERS_RDBMS_* env var")
+				require.NotContains(t, output, "CAMUNDA_DATA_EXPORTERS_RDBMS_",
+					"the RDBMS password must be injected as VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD, not a CAMUNDA_DATA_EXPORTERS_RDBMS_* env var")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
 func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
