@@ -79,30 +79,8 @@ runs:
     - name: Get chart versions
       id: get-chart-versions
       uses: ./.github/actions/get-chart-versions
-    - name: Restore deploy-camunda binary
-      id: binary-cache
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-      with:
-        path: ~/.local/bin/deploy-camunda
-        key: deploy-camunda-v2-${{ runner.os }}-${{ hashFiles('scripts/deploy-camunda/**/*.go', 'scripts/deploy-camunda/go.sum') }}
-    - name: Setup Go
-      if: steps.binary-cache.outputs.cache-hit != 'true'
-      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-      with:
-        go-version-file: scripts/deploy-camunda/go.mod
-        cache: true
-        cache-dependency-path: scripts/deploy-camunda/go.sum
-    - name: Build deploy-camunda
-      if: steps.binary-cache.outputs.cache-hit != 'true'
-      shell: bash
-      run: |
-        mkdir -p "$HOME/.local/bin"
-        # CGO_ENABLED=0 produces a static binary so it runs unchanged inside the
-        # ci-runner container used by downstream matrix jobs.
-        (cd scripts/deploy-camunda && CGO_ENABLED=0 go build -o "$HOME/.local/bin/deploy-camunda" .)
-    - name: Export deploy-camunda to PATH
-      shell: bash
-      run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+    - name: Setup deploy-camunda
+      uses: ./.github/actions/setup-deploy-camunda
     - name: Generate matrix
       shell: bash
       id: set-chart-versions
