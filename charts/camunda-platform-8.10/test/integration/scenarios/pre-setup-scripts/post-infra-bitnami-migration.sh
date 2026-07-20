@@ -115,13 +115,17 @@ cd "${migration_dir}"
 source ./env.sh
 bash 1-deploy-targets.sh --yes
 bash 2-backup.sh --yes
+
+# Stop JDBC_PING writes while the realm database is restored.
+echo "Stopping companion Keycloak for realm migration ..."
+kubectl scale deployment/keycloak -n "${NS}" --replicas=0
+kubectl rollout status deployment/keycloak -n "${NS}" --timeout=300s
+
 bash 3-cutover.sh --yes
 
-# The companion Keycloak has been running against an empty realm; restart it so
-# it loads the realm just restored into its database, before the chart upgrade
-# points Camunda at it.
-echo "Restarting companion Keycloak to load the migrated realm ..."
-kubectl rollout restart deployment/keycloak -n "${NS}"
+# Start one fresh pod to load the restored realm before the chart upgrade.
+echo "Starting companion Keycloak with the migrated realm ..."
+kubectl scale deployment/keycloak -n "${NS}" --replicas=1
 kubectl rollout status deployment/keycloak -n "${NS}" --timeout=300s
 
 echo "post-infra migration complete — realm moved to companion Keycloak; chart upgrade to 8.10 is the runner's job."
