@@ -138,6 +138,7 @@ jobs:
         with:
           ref: ${{ steps.parse.outputs.sha }}
           fetch-depth: 0
+          token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Validate commit is on main
         run: |
