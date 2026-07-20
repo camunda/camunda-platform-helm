@@ -317,6 +317,10 @@ jobs:
     steps:
       - name: Check job results
         run: |
+          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            echo "merge_group: verdict owned by the 'gate' check; not failing here."
+            exit 0
+          fi
           results=(
             "${{ needs.init.result }}"
             "${{ needs.unit-testing.result }}"
