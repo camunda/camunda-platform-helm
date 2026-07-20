@@ -100,6 +100,31 @@ func TestGoldenConfigmapWithHistoryRetentionEnabled(t *testing.T) {
 	})
 }
 
+func TestGoldenConfigmapWithRDBMSEnabled(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "configmap-rdbms",
+		Templates:      []string{"templates/orchestration/configmap.yaml"},
+		SetValues: map[string]string{
+			"global.elasticsearch.enabled":                                       "false",
+			"elasticsearch.enabled":                                              "false",
+			"orchestration.exporters.rdbms.enabled":                              "true",
+			"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://rdbms:5432/camunda",
+			"orchestration.data.secondaryStorage.rdbms.username":                 "camunda",
+			"orchestration.data.secondaryStorage.rdbms.aws.enabled":              "true",
+			"orchestration.data.secondaryStorage.rdbms.secret.existingSecret":    "camunda-rdbms-credentials",
+			"orchestration.data.secondaryStorage.rdbms.secret.existingSecretKey": "password",
+		},
+	})
+}
+
 func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
