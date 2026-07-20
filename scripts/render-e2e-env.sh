@@ -297,6 +297,7 @@ render_env_file() {
 
     {
       echo "PLAYWRIGHT_BASE_URL=https://$hostname"
+      echo "BASE_URL=https://$hostname"
       echo "CI=${is_ci}"
       echo "CLUSTER_NAME=integration"
       echo "IS_AUTH0=true"
@@ -358,6 +359,7 @@ render_env_file() {
     echo "KEYCLOAK_URL=$keycloak_protocol://$keycloak_host"
     echo "KEYCLOAK_REALM=${keycloak_realm}"
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
+    echo "BASE_URL=https://$hostname"
     echo "CAMUNDA_OPTIMIZE_BASE_URL=https://$hostname/optimize"
     echo "CLUSTER_ENDPOINT=http://integration-zeebe-gateway:26500"
     echo "CLUSTER_VERSION=8"
