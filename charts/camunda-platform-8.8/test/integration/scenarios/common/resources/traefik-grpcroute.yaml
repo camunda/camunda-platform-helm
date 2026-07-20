@@ -11,7 +11,7 @@ spec:
     - name: $RELEASE_NAME-camunda-platform
       sectionName: grpcs
   hostnames:
-    - grpc-$NAMESPACE.distribution.aws.camunda.cloud
+    - grpc-$CAMUNDA_HOSTNAME
   rules:
     - backendRefs:
         - name: $RELEASE_NAME-zeebe-gateway

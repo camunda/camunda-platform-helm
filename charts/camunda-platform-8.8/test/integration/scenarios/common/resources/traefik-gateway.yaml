@@ -1,6 +1,6 @@
 # Per-namespace Traefik Gateway for the EKS documentstore scenario (8.8 has no
-# chart Gateway API). Hostnames use $NAMESPACE + the EKS base domain because
-# $CAMUNDA_HOSTNAME is not passed to lifecycle fixtures.
+# chart Gateway API). Hostnames use $CAMUNDA_HOSTNAME (global.host) so the
+# external URLs the apps generate resolve through this Gateway.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -12,7 +12,7 @@ spec:
     - name: https
       port: 8443
       protocol: HTTPS
-      hostname: $NAMESPACE.distribution.aws.camunda.cloud
+      hostname: $CAMUNDA_HOSTNAME
       allowedRoutes:
         kinds:
           - kind: HTTPRoute
@@ -26,7 +26,7 @@ spec:
     - name: grpcs
       port: 8443
       protocol: HTTPS
-      hostname: grpc-$NAMESPACE.distribution.aws.camunda.cloud
+      hostname: grpc-$CAMUNDA_HOSTNAME
       allowedRoutes:
         kinds:
           - kind: GRPCRoute

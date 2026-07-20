@@ -10,7 +10,7 @@ spec:
     - name: $RELEASE_NAME-camunda-platform
       sectionName: https
   hostnames:
-    - $NAMESPACE.distribution.aws.camunda.cloud
+    - $CAMUNDA_HOSTNAME
   rules:
     - matches:
         - path:
@@ -26,7 +26,7 @@ spec:
       filters:
         - type: URLRewrite
           urlRewrite:
-            hostname: $NAMESPACE.distribution.aws.camunda.cloud
+            hostname: $CAMUNDA_HOSTNAME
             path:
               type: ReplaceFullPath
               replaceFullPath: /identity/
