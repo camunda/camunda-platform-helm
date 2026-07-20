@@ -129,7 +129,7 @@ func TestGoldenConfigmapWithRDBMSEnabled(t *testing.T) {
 func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:   "TestContainerShouldContainExporterClassPerDefault",
+			Name:   "TestExportersShouldBeEmptyByDefault",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -137,8 +137,11 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 
-				// then
-				s.Require().Equal("io.camunda.exporter.CamundaExporter", configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
+				// CamundaExporter is auto-registered via autoconfigure-camunda-exporter: true;
+				// the legacy zeebe.broker.exporters.camundaexporter entry must not be present.
+				s.Require().Empty(configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
+
+				s.Require().NotContains(configmap.Data["application.yaml"], "exporters: {}")
 			},
 		},
 	}
