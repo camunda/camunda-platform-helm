@@ -437,3 +437,58 @@ func (s *ConstraintTemplateTest) TestCaBundleConsoleCertKeyFilenameWarningRender
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestManagementIdentityExternalServiceUrl() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "WebModelerWithExternalManagementIdentityRenders",
+			Values: map[string]string{
+				"orchestration.enabled":               "false",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "test@example.com",
+				"identity.enabled":                    "false",
+				"global.identity.service.url":         "http://identity.other-ns.svc:8080",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "WebModelerWithoutManagementIdentityFails",
+			Values: map[string]string{
+				"orchestration.enabled":               "false",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "test@example.com",
+				"identity.enabled":                    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Web Modeler is enabled but management Identity is not configured")
+			},
+		},
+		{
+			Name: "ConsoleWithExternalManagementIdentityRenders",
+			Values: map[string]string{
+				"orchestration.enabled":       "false",
+				"console.enabled":             "true",
+				"identity.enabled":            "false",
+				"global.identity.service.url": "http://identity.other-ns.svc:8080",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "ConsoleWithoutManagementIdentityFails",
+			Values: map[string]string{
+				"orchestration.enabled": "false",
+				"console.enabled":       "true",
+				"identity.enabled":      "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Console is enabled but management Identity is not configured")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

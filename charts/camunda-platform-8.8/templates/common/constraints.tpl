@@ -112,10 +112,10 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{/*
 Fail with a message if Console is enabled but management Identity is not enabled.
 */}}
-{{- if and .Values.console.enabled (not .Values.identity.enabled) }}
+{{- if and .Values.console.enabled (not $identityEnabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Console is enabled but management Identity is not enabled."
-      "Please ensure that if Console is enabled, management Identity must also be enabled."
+      "Console is enabled but management Identity is not configured."
+      "Enable local management Identity with \"identity.enabled: true\", or point to an external management Identity via \"global.identity.service.url\"."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
@@ -123,10 +123,10 @@ Fail with a message if Console is enabled but management Identity is not enabled
 {{/*
 Fail with a message if Web Modeler is enabled but management Identity is not enabled.
 */}}
-{{- if and .Values.webModeler.enabled (not .Values.identity.enabled) }}
+{{- if and .Values.webModeler.enabled (not $identityEnabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Web Modeler is enabled but management Identity is not enabled."
-      "Please ensure that if Web Modeler is enabled, management Identity must also be enabled."
+      "Web Modeler is enabled but management Identity is not configured."
+      "Enable local management Identity with \"identity.enabled: true\", or point to an external management Identity via \"global.identity.service.url\"."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}

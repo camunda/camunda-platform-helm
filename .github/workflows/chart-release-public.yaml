@@ -523,28 +523,45 @@ jobs:
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
           exportEnv: false
 
-      - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-github-token
-        with:
-          app_id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ steps.secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@578da31683cd0f8956900e29db94fc0919b4ad35 # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@305de9730455a10c1df97262d42ced69855f2b16 # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
-          app-token: ${{ steps.generate-github-token.outputs.token }}
+          app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ steps.secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
           repository-owner: ${{ github.repository_owner }}
           repository-name: ${{ github.event.repository.name }}
           merge-method: squash
-          timeout-minutes: "90"
+          timeout-minutes: "120"
           max-evictions: "3"
 
+      - name: Notice if monitor ended with PR still queued
+        if: >-
+          ${{ steps.merge-queue.outputs.result == 'timeout' &&
+              steps.merge-queue.outputs.queue-state != 'NOT_IN_QUEUE' &&
+              steps.merge-queue.outputs.queue-state != 'UNKNOWN' }}
+        continue-on-error: true
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    :hourglass_flowing_sand: *Helm Chart ${{ needs.release.outputs.version }}* was published; its release-please PR was still in the merge queue (state: `${{ steps.merge-queue.outputs.queue-state }}`, position: `${{ steps.merge-queue.outputs.queue-position }}`) when the 120-minute monitor window ended. It should merge on its own — verify it landed so `main` syncs with the released artifact.
+                    <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
+
       - name: Alert if release-please PR did not merge
-        if: ${{ steps.merge-queue.outputs.result != 'merged' }}
+        if: >-
+          ${{ steps.merge-queue.outputs.result != 'merged' &&
+              (steps.merge-queue.outputs.result != 'timeout' ||
+               steps.merge-queue.outputs.queue-state == 'NOT_IN_QUEUE' ||
+               steps.merge-queue.outputs.queue-state == 'UNKNOWN') }}
         continue-on-error: true
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
@@ -557,7 +574,7 @@ jobs:
                   type: mrkdwn
                   text: |
                     <!subteam^S05K9BK6RTK> :rotating_light:
-                    *Helm Chart ${{ needs.release.outputs.version }}* was published, but its release-please PR is *not merged* (merge-queue result: `${{ steps.merge-queue.outputs.result || 'unknown' }}`).
+                    *Helm Chart ${{ needs.release.outputs.version }}* was published, but its release-please PR did *not* merge (result: `${{ steps.merge-queue.outputs.result || 'unknown' }}`, last queue state: `${{ steps.merge-queue.outputs.queue-state || 'unknown' }}`).
                     Please merge it so `main` syncs with the released artifact.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
 

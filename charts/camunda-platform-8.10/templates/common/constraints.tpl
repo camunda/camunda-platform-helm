@@ -96,10 +96,10 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{/*
 Fail with a message if Web Modeler is enabled but management Identity is not enabled.
 */}}
-{{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (not .Values.identity.enabled) }}
+{{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (not $identityEnabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Web Modeler is enabled but management Identity is not enabled."
-      "Please ensure that if Web Modeler is enabled, management Identity must also be enabled."
+      "Web Modeler is enabled but management Identity is not configured."
+      "Enable local management Identity with \"identity.enabled: true\", or point to an external management Identity via \"global.identity.service.url\"."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
