@@ -138,8 +138,8 @@ spec:
             {{- $hasOpenSearchConsumer := or
               (eq (include "orchestration.secondaryStorage" .) "opensearch")
               (and
-                (ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
-                (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+                (ne (include "orchestration.hasElasticsearchExporter" .) "true")
+                (eq (include "orchestration.hasOpenSearchExporter" .) "true")
               )
               $hasTasklistGlobalOpenSearchReader
             -}}
