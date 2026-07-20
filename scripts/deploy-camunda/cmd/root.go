@@ -94,6 +94,11 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "diagnostics" || (cmd.Parent() != nil && cmd.Parent().Name() == "diagnostics") {
 					return nil
 				}
+				// ci subcommands compute GitHub Actions step variables; no
+				// chart/namespace config needed.
+				if cmd.Name() == "ci" || (cmd.Parent() != nil && cmd.Parent().Name() == "ci") {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -551,6 +556,7 @@ func Execute() error {
 	rootCmd.AddCommand(newDoctorCommand())
 	rootCmd.AddCommand(newTriageCommand())
 	rootCmd.AddCommand(newDiagnosticsCommand())
+	rootCmd.AddCommand(newCICommand())
 
 	err := rootCmd.Execute()
 	if err != nil {
