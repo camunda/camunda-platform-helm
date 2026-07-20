@@ -539,6 +539,8 @@ func requireNestedKeyAbsent(t *testing.T, root map[string]any, path ...string) {
 
 func (s *ConfigmapTemplateTest) TestRDBMSDoesNotUseExporterProperties() {
 	rdbmsValues := map[string]string{
+		"global.elasticsearch.enabled":                                       "false",
+		"elasticsearch.enabled":                                              "false",
 		"orchestration.exporters.rdbms.enabled":                              "true",
 		"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://localhost:5432/camunda",
 		"orchestration.data.secondaryStorage.rdbms.username":                 "camunda",
