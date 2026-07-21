@@ -2,6 +2,7 @@ package deployer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
@@ -285,6 +286,19 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	// Values file (optional)
 	if cc.ValuesFile != "" {
 		args = append(args, "-f", cc.ValuesFile)
+	}
+
+	if len(o.CompanionNodeSelector) > 0 {
+		b, err := json.Marshal(o.CompanionNodeSelector)
+		if err == nil {
+			args = append(args, "--set-json", "nodeSelector="+string(b))
+		}
+	}
+	if len(o.CompanionTolerations) > 0 {
+		b, err := json.Marshal(o.CompanionTolerations)
+		if err == nil {
+			args = append(args, "--set-json", "tolerations="+string(b))
+		}
 	}
 
 	_, runErr := helmRunWithRetry(ctx, args)

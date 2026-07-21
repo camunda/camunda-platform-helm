@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
@@ -17,6 +19,51 @@ import (
 	"scripts/deploy-camunda/pkg/deployer"
 	"scripts/deploy-camunda/pkg/types"
 )
+
+// companionSchedulingFromInfra reads the infra values file for the given
+// infra type and returns the pool nodeSelector + tolerations to apply to
+// companion chart installs (they need top-level scheduling; the infra file
+// only sets it per main-chart component). Returns nil,nil when infraType is
+// empty or the file/keys are absent (best-effort, never fails the deploy).
+func companionSchedulingFromInfra(scenarioPath, infraType string) (map[string]string, []map[string]interface{}) {
+	if infraType == "" || scenarioPath == "" {
+		return nil, nil
+	}
+	path := filepath.Join(filepath.Dir(scenarioPath), "infra", "values-infra-"+infraType+".yaml")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, nil
+	}
+	var doc map[string]interface{}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, nil
+	}
+	// Every component in the infra file shares the same pool scheduling; use the first component that has both keys.
+	for _, v := range doc {
+		comp, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		ns, hasNS := comp["nodeSelector"].(map[string]interface{})
+		tol, hasTol := comp["tolerations"].([]interface{})
+		if hasNS && hasTol {
+			nodeSel := map[string]string{}
+			for k, vv := range ns {
+				if s, ok := vv.(string); ok {
+					nodeSel[k] = s
+				}
+			}
+			tols := make([]map[string]interface{}, 0, len(tol))
+			for _, t := range tol {
+				if tm, ok := t.(map[string]interface{}); ok {
+					tols = append(tols, tm)
+				}
+			}
+			return nodeSel, tols
+		}
+	}
+	return nil, nil
+}
 
 // runFailFastPreflight runs the secrets/env preflight before a deploy and
 // returns an error when a required input is missing. It skips the cluster
@@ -340,6 +387,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	}
 
 	// Build deployment options
+	compNS, compTol := companionSchedulingFromInfra(flags.Deployment.ScenarioPath, flags.Selection.InfraType)
 	deployOpts := types.Options{
 		ChartPath:              flags.Chart.ChartPath,
 		Chart:                  flags.Chart.Chart,
@@ -382,6 +430,8 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		PreInstallHooks:       flags.PreInstallHooks,
 		CompanionCharts:       toDeployerCompanionCharts(prepared.CompanionCharts),
 		PostInfraHooks:        flags.PostInfraHooks,
+		CompanionNodeSelector: compNS,
+		CompanionTolerations:  compTol,
 	}
 
 	// Log deployment options (redact sensitive fields)
