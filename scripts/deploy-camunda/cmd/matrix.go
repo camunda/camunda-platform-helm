@@ -1072,11 +1072,10 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	// MGMT_HOST is the management release ingress host (<mgmt-namespace>.<base-domain>),
 	// used by orchestration values to point the browser-facing OIDC issuer at the
-	// management Keycloak. Mirrors how BuildEntryFlags derives the per-release host.
-	baseDomain := opts.IngressBaseDomains[platform]
-	if baseDomain == "" {
-		baseDomain = opts.IngressBaseDomain
-	}
+	// management Keycloak. Uses the same base-domain resolution BuildEntryFlags
+	// uses for the per-release host (including the INFRA_INGRESS_HOSTNAME_BASE
+	// env var fallback CI relies on — see matrix.ResolveIngressBaseDomain).
+	baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
 	if baseDomain != "" {
 		crossRefEnv["MGMT_HOST"] = contexts[managementIdx].Namespace + "." + baseDomain
 	}
