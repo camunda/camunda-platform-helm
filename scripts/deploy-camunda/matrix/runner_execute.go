@@ -18,6 +18,23 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 )
 
+// CompanionChartsForEntry is the exported form of companionChartsForEntry,
+// for callers outside the matrix package (e.g. cmd's topology deploy path)
+// that need the same ChartDependency→config.CompanionChart conversion without
+// duplicating it.
+func CompanionChartsForEntry(entry Entry, repoRoot string) []config.CompanionChart {
+	return companionChartsForEntry(entry, repoRoot)
+}
+
+// ResolveNamespace is the exported form of resolveNamespace, for callers
+// outside the matrix package that need the same "what namespace would a
+// normal (single-namespace) matrix entry get" computation — e.g. the
+// topology deploy driver derives each release's namespace as
+// "<this>-<namespace-suffix>" rather than deploying into it directly.
+func ResolveNamespace(opts RunOptions, entry Entry) string {
+	return resolveNamespace(opts, entry)
+}
+
 // companionChartsForEntry builds the companion chart list for a matrix entry
 // from its ci-test-config dependencies. Values file paths are resolved relative
 // to the repo root; chart references are resolved to absolute paths when they
@@ -67,18 +84,30 @@ func appendScenarioExtraValues(base []string, entry Entry, scenarioDir string) [
 	return base
 }
 
-// executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
-// The flow determines the execution strategy:
-//   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
-//   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
-//   - Install (default): Single-step fresh install.
-func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
-	start := time.Now()
-	namespace := resolveNamespace(opts, entry)
+// BuildEntryFlags is the exported, reusable form of the per-entry RuntimeFlags
+// assembly executeEntry uses: namespace/platform/kubeContext resolution,
+// companion charts (from entry.Dependencies), and the vault secret mapping
+// used by the fail-fast preflight. It does NOT cover OIDC/Auth0 provisioning,
+// two-step-upgrade lifecycle hooks, or per-entry log-file redirection — those
+// remain specific to executeEntry's own orchestration.
+//
+// Exported so callers outside the matrix package (the topology deploy driver
+// in deploy.ExecuteTopology / cmd's runTopologyEntry) can synthesize a
+// per-release matrix.Entry and get the exact same flags/companion-chart/
+// vault-mapping assembly a normal matrix entry gets, instead of hand-rolling
+// a partial RuntimeFlags that silently omits companion charts or the
+// per-entry ingress hostname.
+//
+// The caller MUST invoke the returned cleanup func once flags are no longer
+// needed (mirrors sanitizeEnvFileForOCIImmutability's contract — safe to call
+// even on error).
+func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, namespace string, kubeCtx string, envFile string, cleanup func(), err error) {
+	namespace = resolveNamespace(opts, entry)
 	baseNamespace := buildBaseNamespace(entry)
-	// When the caller overrides the namespace (per-scenario CI workflow), feed
-	// the override directly into RuntimeFlags and clear the prefix so
-	// EffectiveNamespace() resolves to the override verbatim.
+	// When the caller overrides the namespace (per-scenario CI workflow, or a
+	// topology release's own namespace), feed the override directly into
+	// RuntimeFlags and clear the prefix so EffectiveNamespace() resolves to
+	// the override verbatim.
 	flagsNamespace := baseNamespace
 	flagsNamespacePrefix := opts.NamespacePrefix
 	if opts.NamespaceOverride != "" {
@@ -86,24 +115,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		flagsNamespacePrefix = ""
 	}
 
-	if opts.OnEntryStart != nil {
-		opts.OnEntryStart(entry, namespace)
-	}
-
-	// Fire "preparing" phase and wire flags.OnPhase so deploy/test callbacks
-	// propagate back to the status display.
-	if opts.OnPhaseChange != nil {
-		opts.OnPhaseChange(entry, "preparing")
-	}
-
-	// Determine platform and kube context
 	platform := resolvePlatform(opts, entry)
-	kubeCtx := resolveKubeContext(opts, platform)
-	envFile := resolveEnvFile(opts, entry.Version)
-	envFile, cleanupEnvFile, err := sanitizeEnvFileForOCIImmutability(envFile, opts)
-	defer cleanupEnvFile() // safe: cleanup is always a valid no-op func even on error
+	kubeCtx = resolveKubeContext(opts, platform)
+	envFile = resolveEnvFile(opts, entry.Version)
+	envFile, cleanup, err = sanitizeEnvFileForOCIImmutability(envFile, opts)
 	if err != nil {
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+		return nil, namespace, kubeCtx, envFile, cleanup, err
 	}
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
 
@@ -128,8 +145,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	keycloakHost := config.FirstNonEmpty(opts.KeycloakHost, config.DefaultKeycloakHost)
 	keycloakProtocol := config.FirstNonEmpty(opts.KeycloakProtocol, config.DefaultKeycloakProtocol)
 
-	// Build the base flags (used for single-step install or as Step 2 for upgrades).
-	flags := &config.RuntimeFlags{
+	flags = &config.RuntimeFlags{
 		LogLevel:    logLevel,
 		Interactive: false,
 		EnvFile:     envFile,
@@ -248,12 +264,43 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// Populate the vault secret mapping up front so the fail-fast preflight sees
 	// it; prepareScenarioValues otherwise resolves it only after preflight runs.
 	if flags.Secrets.AutoGenerateSecrets {
-		if mapping, err := deploy.TestSecretMapping(); err == nil {
+		if mapping, mErr := deploy.TestSecretMapping(); mErr == nil {
 			flags.Secrets.VaultSecretMapping = mapping
 		} else {
-			logging.Logger.Warn().Err(err).Msg("Could not load embedded vault secret mapping for preflight validation")
+			logging.Logger.Warn().Err(mErr).Msg("Could not load embedded vault secret mapping for preflight validation")
 		}
 	}
+
+	return flags, namespace, kubeCtx, envFile, cleanup, nil
+}
+
+// executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
+// The flow determines the execution strategy:
+//   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
+//   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
+//   - Install (default): Single-step fresh install.
+func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
+	start := time.Now()
+	namespace := resolveNamespace(opts, entry)
+
+	if opts.OnEntryStart != nil {
+		opts.OnEntryStart(entry, namespace)
+	}
+
+	// Fire "preparing" phase and wire flags.OnPhase so deploy/test callbacks
+	// propagate back to the status display.
+	if opts.OnPhaseChange != nil {
+		opts.OnPhaseChange(entry, "preparing")
+	}
+
+	flags, namespace, kubeCtx, envFile, cleanupEnvFile, err := BuildEntryFlags(entry, opts)
+	defer cleanupEnvFile() // safe: cleanup is always a valid no-op func even on error
+	if err != nil {
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+	}
+	platform := resolvePlatform(opts, entry)
+	useVault := resolveUseVaultBackedSecrets(opts, platform)
+	logLevel := flags.LogLevel
 
 	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
 	// which we forward to the matrix-level OnPhaseChange callback.

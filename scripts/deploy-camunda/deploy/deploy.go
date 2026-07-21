@@ -528,6 +528,36 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	return result
 }
 
+// BuildTopologyCrossRefEnv derives the cross-namespace env vars every release
+// in a multi-namespace topology needs to reach back into the management
+// release: its namespace (for the Identity/Keycloak FQDNs baked into the
+// external-Keycloak identity layer), its Keycloak realm, and the shared
+// secondary-storage backend's FQDN (Service lives in the management
+// namespace, reachable cluster-wide via <service>.<namespace>.svc.cluster.local).
+//
+// Exported so the topology deploy driver (cmd's runTopologyEntry) can compute
+// this UP FRONT — every release's namespace/realm is known before any
+// release is deployed (see GenerateTopologyContexts) — and inject it into
+// EVERY release's ExtraEnv (including the management release itself, whose
+// inherited placeholders then resolve harmlessly) before render/preflight,
+// rather than only after the management release finishes deploying.
+func BuildTopologyCrossRefEnv(managementCtx *ScenarioContext, sharedStorageServiceName, sharedStoragePort, sharedStorageScheme string) map[string]string {
+	env := map[string]string{
+		"MGMT_NAMESPACE": managementCtx.Namespace,
+		"KEYCLOAK_REALM": managementCtx.KeycloakRealm,
+	}
+	if sharedStorageServiceName != "" {
+		env["EXTERNAL_ELASTICSEARCH_HOST"] = fmt.Sprintf("%s.%s.svc.cluster.local", sharedStorageServiceName, managementCtx.Namespace)
+	}
+	if sharedStoragePort != "" {
+		env["EXTERNAL_ELASTICSEARCH_PORT"] = sharedStoragePort
+	}
+	if sharedStorageScheme != "" {
+		env["EXTERNAL_ELASTICSEARCH_SCHEME"] = sharedStorageScheme
+	}
+	return env
+}
+
 func resolveDeployTTL(flagTTL, envTTL string) string {
 	if strings.TrimSpace(flagTTL) != "" {
 		return flagTTL

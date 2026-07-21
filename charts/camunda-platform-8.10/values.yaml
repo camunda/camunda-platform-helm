@@ -648,6 +648,24 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Optimize is created to 8083.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8083"
+        ## @param global.identity.auth.optimize.registerInIdentity if true, Identity provisions Optimize's Keycloak client and resource server (audience) even if optimize.enabled is false in this release. Use for multi-namespace deployments where a central Identity registers audiences for components running in other namespaces.
+        registerInIdentity: false
+
+      #####################
+      # Orchestration
+      #####################
+      ## @extra global.identity.auth.orchestration configuration to configure Orchestration authentication specifics on global level, which can be accessed by other components
+      orchestration:
+        ## @param global.identity.auth.orchestration.registerInIdentity if true, Identity provisions the Orchestration Cluster's Keycloak client and resource server (audience) even if the Orchestration Cluster's OIDC auth method is not active in this release. Use for multi-namespace deployments where a central Identity registers audiences for components running in other namespaces.
+        registerInIdentity: false
+
+      #####################
+      # Connectors
+      #####################
+      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
+      connectors:
+        ## @param global.identity.auth.connectors.registerInIdentity if true, Identity provisions the Connectors Keycloak client even if Connectors OIDC auth is not active in this release. Use for multi-namespace deployments where a central Identity registers clients for components running in other namespaces.
+        registerInIdentity: false
 
   # Multiregion options for Zeebe
   #

@@ -43,7 +43,7 @@ data:
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
       {{- end }}
       component-presets:
-        {{- if eq (include "connectors.authMethod" .) "oidc" }}
+        {{- if or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.registerInIdentity }}
         connectors:
           applications:
             - name: Connectors
@@ -73,7 +73,7 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if .Values.optimize.enabled }}
+        {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.registerInIdentity }}
         optimize:
           applications:
             - name: Optimize
@@ -98,7 +98,7 @@ data:
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         {{- end }}
-        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.registerInIdentity }}
         orchestration:
           applications:
             - name: Orchestration
@@ -187,15 +187,15 @@ data:
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       {{- end }}
       init:
-        {{- if eq (include "connectors.authMethod" .) "oidc" }}
+        {{- if or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.registerInIdentity }}
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         {{- end }}
-        {{- if .Values.optimize.enabled }}
+        {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.registerInIdentity }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         {{- end }}
-        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.registerInIdentity }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
@@ -214,13 +214,13 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.registerInIdentity }}
             - resourceServerId: orchestration-api
               definition: read:*
             - resourceServerId: orchestration-api
               definition: write:*
             {{- end }}
-            {{- if .Values.optimize.enabled }}
+            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.registerInIdentity }}
             - resourceServerId: optimize-api
               definition: write:*
             {{- end }}
@@ -253,14 +253,14 @@ data:
           {{- if .Values.global.identity.auth.enabled }}
           roles:
             - ManagementIdentity
-            {{- if .Values.optimize.enabled }}
+            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.registerInIdentity }}
             - Optimize
             {{- end }}
             {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
             - Web Modeler
             - Web Modeler Admin
             {{- end }}
-            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.registerInIdentity }}
             - Orchestration
             {{- end }}
           {{- end }}

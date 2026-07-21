@@ -1043,6 +1043,73 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						"Optimize client ID should not be present when optimize.enabled=false")
 				}
 			},
+		}, {
+			// Test: registerInIdentity=true must still emit the VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
+			// env var even though optimize is disabled — otherwise Identity's
+			// ClientInitializationService crashes with "Please supply a valid client
+			// secret for Optimize" because the configmap now provisions the Optimize
+			// resource server (see configmap.yaml's registerInIdentity gates) but the
+			// secret env var it references was never populated.
+			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesOptimizeSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"global.identity.auth.enabled":                           "true",
+				"global.security.authentication.method":                  "oidc",
+				"optimize.enabled":                                       "false",
+				"global.identity.auth.optimize.registerInIdentity":       "true",
+				"global.identity.auth.optimize.secret.existingSecret":    "optimize-oidc-secret",
+				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "optimize-oidc-secret"},
+								Key:                  "identity-optimize-client-token",
+							},
+						},
+					},
+					"VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET should be present when registerInIdentity=true, even though optimize.enabled=false")
+			},
+		}, {
+			// Test: registerInIdentity=true must still emit the VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
+			// env var even though orchestration is disabled — same root cause as the
+			// Optimize case above.
+			Name:                 "TestOrchestrationDisabledWithRegisterInIdentityIncludesOrchestrationSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                                    "true",
+				"global.identity.auth.enabled":                                        "true",
+				"global.security.authentication.method":                               "oidc",
+				"orchestration.enabled":                                               "false",
+				"global.identity.auth.orchestration.registerInIdentity":               "true",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "orchestration-oidc-secret"},
+								Key:                  "identity-orchestration-client-token",
+							},
+						},
+					},
+					"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should be present when registerInIdentity=true, even though orchestration.enabled=false")
+			},
 		},
 	}
 

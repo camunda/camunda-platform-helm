@@ -944,6 +944,31 @@
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Optimize.",
                                             "default": "http://localhost:8083"
+                                        },
+                                        "registerInIdentity": {
+                                            "type": "boolean",
+                                            "description": "if true, Identity provisions Optimize's Keycloak client and resource server (audience) even if optimize.enabled is false in this release. Use for multi-namespace deployments where a central Identity registers audiences for components running in other namespaces.",
+                                            "default": false
+                                        }
+                                    }
+                                },
+                                "orchestration": {
+                                    "type": "object",
+                                    "properties": {
+                                        "registerInIdentity": {
+                                            "type": "boolean",
+                                            "description": "if true, Identity provisions the Orchestration Cluster's Keycloak client and resource server (audience) even if the Orchestration Cluster's OIDC auth method is not active in this release. Use for multi-namespace deployments where a central Identity registers audiences for components running in other namespaces.",
+                                            "default": false
+                                        }
+                                    }
+                                },
+                                "connectors": {
+                                    "type": "object",
+                                    "properties": {
+                                        "registerInIdentity": {
+                                            "type": "boolean",
+                                            "description": "if true, Identity provisions the Connectors Keycloak client even if Connectors OIDC auth is not active in this release. Use for multi-namespace deployments where a central Identity registers clients for components running in other namespaces.",
+                                            "default": false
                                         }
                                     }
                                 }

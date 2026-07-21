@@ -1,0 +1,91 @@
+# External-Keycloak identity layer for the multinamespace topology (8.10)
+# Layer 2 (auth method), per-release override: used ONLY by orchestration
+# releases in the multinamespace topology. Unlike identity/keycloak.yaml
+# (which points at a companion Keycloak deployed in the SAME namespace via
+# the bare "keycloak" service name), this layer points at the bundled
+# Keycloak/Identity running in the MANAGEMENT namespace, reached
+# cross-namespace by FQDN.
+#
+# Cross-namespace env placeholders (resolved at deploy time — every release's
+# namespace/realm is computed up front by deploy.GenerateTopologyContexts and
+# injected via ExtraEnv before render/preflight, see
+# scripts/deploy-camunda/cmd/matrix.go's runTopologyEntry):
+#   MGMT_NAMESPACE   — the management release's namespace
+#   KEYCLOAK_REALM   — the realm name provisioned in the management release
+#
+# This release deploys no Identity, Keycloak, Web Modeler, or Camunda Hub of
+# its own — auth and modeling are centralized in the management namespace.
+
+identity:
+  enabled: false
+
+webModeler:
+  enabled: false
+
+camundaHub:
+  enabled: false
+
+global:
+  host: "$CAMUNDA_HOSTNAME"
+  ingress:
+    enabled: true
+    className: nginx
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+  identity:
+    service:
+      url: "http://integration-identity.${MGMT_NAMESPACE}.svc.cluster.local:80/identity"
+    auth:
+      type: KEYCLOAK
+      issuerBackendUrl: "http://keycloak.${MGMT_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://{{ .Values.global.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
+  security:
+    authentication:
+      method: oidc
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: true
+  contextPath: "/optimize"
+  livenessProbe:
+    enabled: true
+
+connectors:
+  security:
+    authentication:
+      oidc:
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
+
+orchestration:
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api

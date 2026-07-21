@@ -48,19 +48,19 @@ spec:
             ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
-            {{- if eq (include "connectors.authMethod" .) "oidc" }}
+            {{- if or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.registerInIdentity }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
                 "config"        .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
-            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.registerInIdentity }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
                 "config"        .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
-            {{- if .Values.optimize.enabled }}
+            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.registerInIdentity }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize

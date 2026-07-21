@@ -1,0 +1,121 @@
+package deploy
+
+import (
+	"testing"
+
+	"scripts/deploy-camunda/config"
+)
+
+func topologyTestReleases() []TopologyRelease {
+	return []TopologyRelease{
+		{Role: "management", NamespaceSuffix: "mgmt", Values: "multinamespace/management.yaml"},
+		{Role: "orchestration", NamespaceSuffix: "orcha", Values: "multinamespace/orchestration.yaml", DependsOn: "management"},
+		{Role: "orchestration", NamespaceSuffix: "orchb", Values: "multinamespace/orchestration.yaml", DependsOn: "management"},
+	}
+}
+
+func TestGenerateTopologyContexts_ThreeContexts(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-810-mns",
+		},
+	}
+
+	contexts, err := generateTopologyContexts("multinamespace", topologyTestReleases(), flags)
+	if err != nil {
+		t.Fatalf("generateTopologyContexts returned error: %v", err)
+	}
+	if len(contexts) != 3 {
+		t.Fatalf("expected 3 contexts, got %d", len(contexts))
+	}
+}
+
+func TestGenerateTopologyContexts_DistinctNamespaces(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-810-mns",
+		},
+	}
+
+	contexts, err := generateTopologyContexts("multinamespace", topologyTestReleases(), flags)
+	if err != nil {
+		t.Fatalf("generateTopologyContexts returned error: %v", err)
+	}
+
+	seen := map[string]bool{}
+	for _, c := range contexts {
+		if seen[c.Namespace] {
+			t.Fatalf("duplicate namespace %q across topology contexts", c.Namespace)
+		}
+		seen[c.Namespace] = true
+		if c.Release != "integration" {
+			t.Errorf("expected release \"integration\", got %q for namespace %q", c.Release, c.Namespace)
+		}
+	}
+
+	want := map[string]bool{
+		"matrix-810-mns-mgmt":  true,
+		"matrix-810-mns-orcha": true,
+		"matrix-810-mns-orchb": true,
+	}
+	for ns := range want {
+		if !seen[ns] {
+			t.Errorf("expected namespace %q, not found in %v", ns, seen)
+		}
+	}
+}
+
+func TestGenerateTopologyContexts_DistinctOrchestrationPrefixes(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-810-mns",
+		},
+	}
+
+	contexts, err := generateTopologyContexts("multinamespace", topologyTestReleases(), flags)
+	if err != nil {
+		t.Fatalf("generateTopologyContexts returned error: %v", err)
+	}
+
+	prefixes := map[string]bool{}
+	for _, c := range contexts {
+		if prefixes[c.OrchestrationIndexPrefix] {
+			t.Fatalf("duplicate orchestration index prefix %q across topology contexts", c.OrchestrationIndexPrefix)
+		}
+		prefixes[c.OrchestrationIndexPrefix] = true
+	}
+	if len(prefixes) != 3 {
+		t.Fatalf("expected 3 distinct orchestration index prefixes, got %d: %v", len(prefixes), prefixes)
+	}
+}
+
+func TestGenerateTopologyContexts_EmptyReleasesErrors(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{Namespace: "matrix-810-mns"},
+	}
+	if _, err := generateTopologyContexts("multinamespace", nil, flags); err == nil {
+		t.Fatal("expected error for empty topology releases")
+	}
+}
+
+// TestGenerateScenarioContext_Unaffected pins down that the existing
+// single-namespace path is untouched by the topology addition.
+func TestGenerateScenarioContext_Unaffected(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{
+			Namespace: "matrix-810-eske",
+			Scenarios: []string{"elasticsearch"},
+		},
+	}
+
+	ctx, err := generateScenarioContext("elasticsearch", flags)
+	if err != nil {
+		t.Fatalf("generateScenarioContext returned error: %v", err)
+	}
+	if ctx.Namespace != "matrix-810-eske" {
+		t.Errorf("expected single-namespace path to keep the base namespace, got %q", ctx.Namespace)
+	}
+	if ctx.Release != "integration" {
+		t.Errorf("expected release \"integration\", got %q", ctx.Release)
+	}
+}

@@ -1623,6 +1623,43 @@ integration:
               values-file: test/integration/companion-values/elasticsearch-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
+        - name: multinamespace
+          enabled: false
+          shortname: mns
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          skip-e2e: true
+          topology:
+            name: mgmt-2orch
+            releases:
+              - role: management
+                namespace-suffix: mgmt
+                values: features/multinamespace-management.yaml
+                identity: keycloak
+                dependencies:
+                  - keycloak
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                values: features/multinamespace-orchestration.yaml
+                depends-on: management
+                identity: keycloak-external
+                persistence: elasticsearch-external
+              - role: orchestration
+                namespace-suffix: orchb
+                values: features/multinamespace-orchestration.yaml
+                depends-on: management
+                identity: keycloak-external
+                persistence: elasticsearch-external
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
     nightly:
       scenario: []
   flows:

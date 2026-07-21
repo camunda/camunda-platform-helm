@@ -448,6 +448,167 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(applicationYaml, "optimize-api",
 					"Optimize API should not be present when optimize.enabled=false")
 			},
+		}, {
+			// Test: registerInIdentity=true forces the Optimize preset (applications + apis +
+			// roles) to render even though optimize is disabled — multi-namespace deployments
+			// where a central Identity registers audiences for components running elsewhere.
+			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesOptimizeConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                 "true",
+				"global.identity.auth.enabled":                     "true",
+				"global.security.authentication.method":            "oidc",
+				"optimize.enabled":                                 "false",
+				"global.identity.auth.optimize.registerInIdentity": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().Contains(applicationYaml, "optimize-api",
+					"Optimize API should be present when registerInIdentity=true, even though optimize.enabled=false")
+				s.Require().Contains(applicationYaml, "name: Optimize API",
+					"Optimize apis preset should render when registerInIdentity=true")
+				// keycloak.init is the selector that makes Identity actually CREATE the
+				// component's Keycloak client + resource server — without this entry,
+				// findResourceServerByAudience("optimize-api") 404s even though the
+				// component-presets apis block above rendered.
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET",
+					"keycloak.init.optimize should render when registerInIdentity=true, even though optimize.enabled=false")
+				s.Require().Contains(applicationYaml, "- Optimize",
+					"first-user Optimize role should render when registerInIdentity=true, even though optimize.enabled=false")
+			},
+		}, {
+			// Backward compat: registerInIdentity=false (the default) + optimize disabled must
+			// behave exactly as before this feature — no Optimize preset rendered.
+			Name:                 "TestOptimizeDisabledWithRegisterInIdentityDefaultExcludesOptimizeConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"optimize.enabled":                      "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "optimize-api",
+					"Optimize API should not be present when registerInIdentity defaults to false and optimize.enabled=false")
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET",
+					"keycloak.init.optimize should not render when registerInIdentity defaults to false and optimize.enabled=false")
+				s.Require().NotContains(applicationYaml, "- Optimize",
+					"first-user Optimize role should not render when registerInIdentity defaults to false and optimize.enabled=false")
+			},
+		}, {
+			// Test: registerInIdentity=true forces the Connectors preset (application) to
+			// render even though connectors is disabled — multi-namespace deployments where
+			// a central Identity registers audiences for components running elsewhere.
+			Name:                 "TestConnectorsDisabledWithRegisterInIdentityIncludesConnectorsConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                   "true",
+				"global.identity.auth.enabled":                       "true",
+				"global.security.authentication.method":              "oidc",
+				"connectors.enabled":                                 "false",
+				"global.identity.auth.connectors.registerInIdentity": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().Contains(applicationYaml, "name: Connectors",
+					"Connectors component-preset should render when registerInIdentity=true, even though connectors.enabled=false")
+				// keycloak.init is the selector that makes Identity actually CREATE the
+				// component's Keycloak client + resource server — without this entry,
+				// the Connectors client is never provisioned even though the
+				// component-presets application block above rendered.
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET",
+					"keycloak.init.connectors should render when registerInIdentity=true, even though connectors.enabled=false")
+			},
+		}, {
+			// Backward compat: registerInIdentity=false (the default) + connectors disabled must
+			// behave exactly as before this feature — no Connectors preset rendered.
+			Name:                 "TestConnectorsDisabledWithRegisterInIdentityDefaultExcludesConnectorsConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"connectors.enabled":                    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "name: Connectors",
+					"Connectors component-preset should not render when registerInIdentity defaults to false and connectors.enabled=false")
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET",
+					"keycloak.init.connectors should not render when registerInIdentity defaults to false and connectors.enabled=false")
+			},
+		}, {
+			// Test: registerInIdentity=true forces the Orchestration preset (applications + apis
+			// + roles) to render even though orchestration is disabled.
+			Name:                 "TestOrchestrationDisabledWithRegisterInIdentityIncludesOrchestrationConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                      "true",
+				"global.identity.auth.enabled":                          "true",
+				"global.security.authentication.method":                 "oidc",
+				"orchestration.enabled":                                 "false",
+				"global.identity.auth.orchestration.registerInIdentity": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().Contains(applicationYaml, "orchestration-api",
+					"Orchestration API should be present when registerInIdentity=true, even though orchestration.enabled=false")
+				s.Require().Contains(applicationYaml, "name: \"Orchestration API\"",
+					"Orchestration apis preset should render when registerInIdentity=true")
+				// keycloak.init is the selector that makes Identity actually CREATE the
+				// component's Keycloak client + resource server — without this entry,
+				// findResourceServerByAudience("orchestration-api") 404s even though the
+				// component-presets apis block above rendered.
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+					"keycloak.init.orchestration should render when registerInIdentity=true, even though orchestration.enabled=false")
+				s.Require().Contains(applicationYaml, "- Orchestration",
+					"first-user Orchestration role should render when registerInIdentity=true, even though orchestration.enabled=false")
+			},
+		}, {
+			// Backward compat: registerInIdentity=false (the default) + orchestration disabled
+			// must behave exactly as before this feature — no Orchestration preset rendered.
+			Name:                 "TestOrchestrationDisabledWithRegisterInIdentityDefaultExcludesOrchestrationConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"orchestration.enabled":                 "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "orchestration:",
+					"Orchestration config should not be present when registerInIdentity defaults to false and orchestration.enabled=false")
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+					"keycloak.init.orchestration should not render when registerInIdentity defaults to false and orchestration.enabled=false")
+				s.Require().NotContains(applicationYaml, "- Orchestration",
+					"first-user Orchestration role should not render when registerInIdentity defaults to false and orchestration.enabled=false")
+			},
 		},
 	}
 
