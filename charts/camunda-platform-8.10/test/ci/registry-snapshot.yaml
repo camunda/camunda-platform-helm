@@ -426,6 +426,47 @@ integration:
               Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
               sizes. Runs after helm install because the Gateway API CRD is only
               registered by the chart itself.
+        - name: gateway-keycloak-gke
+          enabled: false
+          shortname: gkgkc
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - gateway-gke
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          post-deploy:
+            fixtures:
+              - gateway-gke-healthchecks.yaml
+            description: |
+              Applies GKE HealthCheckPolicy resources for Identity (port 8082) and
+              Zeebe Gateway (port 9600), among other components. Required after helm
+              install because GKE's auto-detected health checks default to port 80,
+              causing the GLB to mark backends unhealthy. Replaces the NGINX
+              ProxySettingsPolicy used in the gatkc scenario, which has no equivalent
+              on GKE.
         - name: elasticsearch-arm
           enabled: true
           shortname: esarm
