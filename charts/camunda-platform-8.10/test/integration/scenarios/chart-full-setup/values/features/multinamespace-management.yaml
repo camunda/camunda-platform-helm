@@ -35,6 +35,13 @@
 
 orchestration:
   enabled: false
+  # The management Identity registers the single orchestration Keycloak
+  # client; its root-url must be the orchestration cluster host (ORCH_HOST,
+  # injected by runTopologyEntry) so browser-login redirect URIs are accepted.
+  security:
+    authentication:
+      oidc:
+        redirectUrl: "https://${ORCH_HOST}/orchestration"
 
 optimize:
   enabled: false

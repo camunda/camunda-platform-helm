@@ -1081,6 +1081,18 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		crossRefEnv["MGMT_HOST"] = contexts[managementIdx].Namespace + "." + baseDomain
 	}
 
+	// ORCH_HOST: the single orchestration release's ingress host, consumed by
+	// the management feature layer to register the orchestration Keycloak
+	// client's root-url at the orchestration host (see #6651).
+	if baseDomain != "" {
+		for i, r := range entry.Topology.Releases {
+			if r.Role == "orchestration" {
+				crossRefEnv["ORCH_HOST"] = contexts[i].Namespace + "." + baseDomain
+				break
+			}
+		}
+	}
+
 	// Deploy order: management first, then every other release in
 	// declaration order.
 	order := make([]int, 0, len(entry.Topology.Releases))
