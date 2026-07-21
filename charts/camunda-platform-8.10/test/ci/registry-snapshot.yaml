@@ -1636,7 +1636,7 @@ integration:
             gke: distroci
           skip-e2e: true
           topology:
-            name: mgmt-2orch
+            name: mgmt-1orch
             releases:
               - role: management
                 namespace-suffix: mgmt
@@ -1648,12 +1648,6 @@ integration:
                   - elasticsearch
               - role: orchestration
                 namespace-suffix: orcha
-                values: features/multinamespace-orchestration.yaml
-                depends-on: management
-                identity: keycloak-external
-                persistence: elasticsearch-external
-              - role: orchestration
-                namespace-suffix: orchb
                 values: features/multinamespace-orchestration.yaml
                 depends-on: management
                 identity: keycloak-external

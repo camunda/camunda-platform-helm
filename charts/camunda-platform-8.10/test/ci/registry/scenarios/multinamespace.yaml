@@ -8,7 +8,7 @@ platforms:
 infra-type:
   gke: distroci
 topology:
-  name: mgmt-2orch
+  name: mgmt-1orch
   shared-storage: elasticsearch
   shared-storage-service: elasticsearch-master
   releases:
@@ -22,13 +22,6 @@ topology:
       values: features/multinamespace-management.yaml
     - role: orchestration
       namespace-suffix: orcha
-      identity: keycloak-external
-      persistence: elasticsearch-external
-      dependencies: []
-      values: features/multinamespace-orchestration.yaml
-      depends-on: management
-    - role: orchestration
-      namespace-suffix: orchb
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []
