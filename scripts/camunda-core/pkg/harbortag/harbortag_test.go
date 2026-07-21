@@ -30,6 +30,10 @@ func TestIsRolling(t *testing.T) {
 		{"13-rc-latest", RC, true},
 		{"13.4.0-rc", RC, false},
 		{"13-dev-latest", RC, false},
+		{"13-rc-dryrun-latest", RCDryRun, true},
+		{"13-rc-dryrun-latest", RC, false},
+		{"13-rc-latest", RCDryRun, false},
+		{"13.4.0-rc-dryrun", RCDryRun, false},
 	}
 	for _, tt := range tests {
 		if got := IsRolling(tt.tag, tt.kind); got != tt.want {
@@ -50,6 +54,15 @@ func TestResolveConcrete(t *testing.T) {
 	if _, err := ResolveConcrete([]string{"13-dev-latest"}, Dev); err == nil {
 		t.Error("expected error when no concrete dev tag present")
 	}
+
+	dryRunTags := []string{"13-rc-dryrun-latest", "13.4.0-rc", "13.4.0-rc-dryrun"}
+	got, err = ResolveConcrete(dryRunTags, RCDryRun)
+	if err != nil {
+		t.Fatalf("ResolveConcrete rc-dryrun: %v", err)
+	}
+	if got != "13.4.0-rc-dryrun" {
+		t.Errorf("ResolveConcrete rc-dryrun = %q, want 13.4.0-rc-dryrun", got)
+	}
 }
 
 func TestParseDevTag(t *testing.T) {
@@ -59,11 +72,19 @@ func TestParseDevTag(t *testing.T) {
 	}{
 		{
 			"13.4.0-dev-abc1234",
-			DevTag{ResolvedTag: "13.4.0-dev-abc1234", Version: "13.4.0", SHA: "abc1234", ChartMajor: "13", RCTag: "13.4.0-rc", RCLatestTag: "13-rc-latest"},
+			DevTag{
+				ResolvedTag: "13.4.0-dev-abc1234", Version: "13.4.0", SHA: "abc1234", ChartMajor: "13",
+				RCTag: "13.4.0-rc", RCLatestTag: "13-rc-latest",
+				RCDryRunTag: "13.4.0-rc-dryrun", RCDryRunLatestTag: "13-rc-dryrun-latest",
+			},
 		},
 		{
 			"14.0.0-alpha2-dev-deadbeef",
-			DevTag{ResolvedTag: "14.0.0-alpha2-dev-deadbeef", Version: "14.0.0-alpha2", SHA: "deadbeef", ChartMajor: "14", RCTag: "14.0.0-alpha2-rc", RCLatestTag: "14-rc-latest"},
+			DevTag{
+				ResolvedTag: "14.0.0-alpha2-dev-deadbeef", Version: "14.0.0-alpha2", SHA: "deadbeef", ChartMajor: "14",
+				RCTag: "14.0.0-alpha2-rc", RCLatestTag: "14-rc-latest",
+				RCDryRunTag: "14.0.0-alpha2-rc-dryrun", RCDryRunLatestTag: "14-rc-dryrun-latest",
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -93,6 +114,42 @@ func TestParseRcTag(t *testing.T) {
 	}
 	if _, err := ParseRcTag("13.4.0-dev-abc1234"); err == nil {
 		t.Error("expected error for dev tag passed to ParseRcTag")
+	}
+	if _, err := ParseRcTag("13.4.0-rc-dryrun"); err == nil {
+		t.Error("expected error for dry-run rc tag passed to ParseRcTag")
+	}
+}
+
+func TestParseRcDryRunTag(t *testing.T) {
+	got, err := ParseRcDryRunTag("14.0.0-alpha2-rc-dryrun")
+	if err != nil {
+		t.Fatalf("ParseRcDryRunTag: %v", err)
+	}
+	want := RcTag{ResolvedTag: "14.0.0-alpha2-rc-dryrun", Version: "14.0.0-alpha2", ChartMajor: "14"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ParseRcDryRunTag=%+v want %+v", got, want)
+	}
+	for _, bad := range []string{"13.4.0-rc", "13-rc-dryrun-latest", "13.4.0-dev-abc1234"} {
+		if _, err := ParseRcDryRunTag(bad); err == nil {
+			t.Errorf("ParseRcDryRunTag(%q) expected error", bad)
+		}
+	}
+}
+
+func TestIsRcDryRunTag(t *testing.T) {
+	tests := []struct {
+		tag  string
+		want bool
+	}{
+		{"13.4.0-rc-dryrun", true},
+		{"14.0.0-alpha2-rc-dryrun", true},
+		{"13.4.0-rc", false},
+		{"13-rc-dryrun-latest", false},
+	}
+	for _, tt := range tests {
+		if got := IsRcDryRunTag(tt.tag); got != tt.want {
+			t.Errorf("IsRcDryRunTag(%q)=%v want %v", tt.tag, got, tt.want)
+		}
 	}
 }
 

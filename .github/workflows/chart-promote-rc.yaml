@@ -12,6 +12,15 @@ on:
           Or rolling tag: {chart-major}-dev-latest (e.g., "13-dev-latest")
         required: true
         type: string
+      dry-run:
+        description: |
+          Dry run: validate the dev package and stage real RC tags to isolated
+          {version}-rc-dryrun / {major}-rc-dryrun-latest Harbor tags, exercise
+          release-notes/matrix generation locally, but skip the release-please
+          PR, branch push, and project-board add. The internal dryrun tags are
+          deletable residue.
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.dev-tag }}
@@ -95,6 +104,7 @@ jobs:
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
           HARBOR_REGISTRY_USER: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_USER }}
           HARBOR_REGISTRY_PASSWORD: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry-run }}
         run: |
           input_tag="${{ inputs.dev-tag }}"
 
@@ -107,6 +117,12 @@ jobs:
               -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
               --retry 3 --retry-delay 5 --retry-all-errors > /tmp/dev-tags.json
             tags_args=(--tags-file /tmp/dev-tags.json)
+          fi
+
+          # With --dry-run, rc_tag/rc_latest_tag carry the isolated
+          # {version}-rc-dryrun / {major}-rc-dryrun-latest names.
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            tags_args+=(--dry-run)
           fi
 
           # Resolve + validate the dev tag; emit resolved_tag/version/chart_major/
@@ -202,10 +218,16 @@ jobs:
         id: release-please
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          DRY_RUN: ${{ inputs.dry-run }}
         run: |
           set -euo pipefail
           chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
           head_ref="release-please--branches--main--components--camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
+
+          dry_run_args=()
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            dry_run_args=(--dry-run)
+          fi
 
           # Always pass --release-as with the version from the dev tag. This ensures
           # the release-please PR version matches exactly what the dev build computed.
@@ -221,12 +243,21 @@ jobs:
             --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
             --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
             --release-as="${{ steps.parse.outputs.version }}" \
+            "${dry_run_args[@]}" \
             --debug 2>&1 | tee release-please.log
 
           if grep -qiE 'aborting|untagged, merged release PRs outstanding' release-please.log; then
             echo "::error::release-please aborted (likely due to a merged release PR still labeled as pending)."
             echo "::error::Fix the outstanding release PR labels (e.g., set 'autorelease: published') and re-run this workflow."
             exit 1
+          fi
+
+          echo "head_ref=${head_ref}" | tee -a "$GITHUB_OUTPUT"
+
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            echo "::notice::[dry run] release-please ran with --dry-run; no PR was created or updated."
+            echo "pr_url=" | tee -a "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           # Determine the release-please PR for this component deterministically.
@@ -238,13 +269,13 @@ jobs:
             exit 1
           fi
           echo "pr_url=${pr_url}" | tee -a "$GITHUB_OUTPUT"
-          echo "head_ref=${head_ref}" | tee -a "$GITHUB_OUTPUT"
-          
+
           echo "::notice::Release-please PR: ${pr_url}"
 
       - name: Generate release files on the release-please PR
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          DRY_RUN: ${{ inputs.dry-run }}
         run: |
           set -euo pipefail
 
@@ -252,8 +283,13 @@ jobs:
           app_version="${{ steps.package.outputs.camunda_version }}"
           chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
           head_ref="${{ steps.release-please.outputs.head_ref }}"
-          git fetch origin "${head_ref}"
-          git checkout "${head_ref}"
+
+          # In dry-run no release-please branch exists; generate against the
+          # dev-SHA checkout instead to keep real coverage of the generators.
+          if [[ "${DRY_RUN}" != "true" ]]; then
+            git fetch origin "${head_ref}"
+            git checkout "${head_ref}"
+          fi
 
           make helm.repos-add
           make helm.dependency-update chartPath="${chart_path}"
@@ -270,6 +306,12 @@ jobs:
             --matrix-file "${version_matrix_file}"
           /tmp/release-tools version-matrix --readme "${app_version}" --chart-version "${chart_version}"
           /tmp/release-tools version-matrix --index
+
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            echo "::notice::[dry run] Generated release files locally; skipping commit, push, and project-board add. Changes:"
+            git status --short -- "${chart_path}" version-matrix
+            exit 0
+          fi
 
           git config user.name "distro-ci[bot]"
           git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
@@ -303,6 +345,9 @@ jobs:
           # idempotently (no-op if already there, else move). Untagging uses the
           # deleteTag endpoint (DELETE .../tags/{tag}) so only the tag is removed,
           # never the shared artifact. Auth is HARBOR_REGISTRY_USER/PASSWORD (env).
+          # In dry-run, rc_tag/rc_latest_tag are the isolated {version}-rc-dryrun /
+          # {major}-rc-dryrun-latest names, so real tags land in a deletable
+          # namespace and the normal rc tags are never touched.
           api="${HARBOR_API}"
           repo="${HARBOR_REPO}"
 
@@ -322,6 +367,8 @@ jobs:
           echo "✅ RC tags added successfully"
 
       - name: Summary
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
         run: |
           VERSION="${{ steps.parse.outputs.version }}"
           RC_TAG="${{ steps.parse.outputs.rc_tag }}"
@@ -333,8 +380,13 @@ jobs:
 
           COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
 
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            echo "## 🧪 DRY RUN 🧪 RC Promotion Rehearsal: ${VERSION}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ RC Promoted: ${VERSION}" >> $GITHUB_STEP_SUMMARY
+          fi
+
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## ✅ RC Promoted: ${VERSION}
 
           | | |
           |---|---|
@@ -364,7 +416,17 @@ jobs:
             echo "[${PR_URL}](${PR_URL})" >> $GITHUB_STEP_SUMMARY
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ### Dry Run Notes
+
+          - No release-please PR was created or updated.
+          - Harbor tags \`${RC_TAG}\` and \`${{ steps.parse.outputs.rc_latest_tag }}\` are real but isolated dry-run residue — deletable at any time.
+          - To rehearse the next stage: run **Chart - Release - Pipeline - 3 - Public** with \`${RC_TAG}\` and dry-run enabled.
+          EOF
+          else
+            cat >> $GITHUB_STEP_SUMMARY << EOF
 
           ### Next Steps
 
@@ -372,11 +434,12 @@ jobs:
           2. Review release-please PR
           3. Run **Chart - Release - Pipeline - 3 - Public** with \`${RC_TAG}\`
           EOF
+          fi
 
   notify-on-failure:
     name: Notify on Failure
     needs: [promote-rc]
-    if: failure()
+    if: ${{ failure() && !inputs.dry-run }}
     runs-on: ubuntu-latest
     steps:
       - name: Import Vault secrets

@@ -12,6 +12,15 @@ on:
           Or rolling tag: {chart-major}-rc-latest (e.g., "13-rc-latest")
         required: true
         type: string
+      dry-run:
+        description: |
+          Dry run: pull and validate the RC package from Harbor, extract
+          metadata, then LOG (not execute) the GitHub release, index push,
+          cosign signing, and post-release PR automation. Accepts dry-run RC
+          tags ({version}-rc-dryrun / {major}-rc-dryrun-latest) in addition to
+          the plain rc forms. Nothing public is written.
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.rc-tag }}
@@ -85,13 +94,14 @@ jobs:
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
           HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
           HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry-run }}
         run: |
           input_tag="${{ inputs.rc-tag }}"
 
           # Fetch the artifact's tag list. All of an artifact's tags (rc/dev/
           # rolling) live on the one artifact, so a single GET resolves both the
           # concrete RC tag and (for traceability) the source dev tag.
-          if [[ "$input_tag" =~ ^[0-9]+-rc-latest$ ]]; then
+          if [[ "$input_tag" =~ ^[0-9]+-rc(-dryrun)?-latest$ ]]; then
             echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual RC tag..."
             # Rolling resolution needs the tag list — fatal on failure.
             curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
@@ -105,9 +115,16 @@ jobs:
               --retry 3 --retry-delay 5 --retry-all-errors > /tmp/rc-tags.json 2>/dev/null || echo "[]" > /tmp/rc-tags.json
           fi
 
+          # With --dry-run, -rc-dryrun tags (staged by a dry-run RC promotion)
+          # are accepted in addition to the plain rc forms.
+          dry_run_args=()
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            dry_run_args=(--dry-run)
+          fi
+
           # Resolve + validate the RC tag; emit resolved_tag/version and
           # (best-effort) dev_tag/commit_sha to $GITHUB_OUTPUT.
-          /tmp/release-tools resolve-tag --kind rc --input-tag "$input_tag" --tags-file /tmp/rc-tags.json
+          /tmp/release-tools resolve-tag --kind rc --input-tag "$input_tag" --tags-file /tmp/rc-tags.json "${dry_run_args[@]}"
 
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -158,9 +175,11 @@ jobs:
             exit 1
           fi
 
-          # drop -rc from filename
+          # drop -rc (or -rc-dryrun) from filename
           filename=$(ls .cr-release-packages/camunda-platform-*-rc*.tgz)
-          mv "$filename" "${filename/-rc/}"
+          target="${filename/-rc-dryrun/}"
+          target="${target/-rc/}"
+          mv "$filename" "$target"
 
           echo "Downloaded package:"
           ls -la .cr-release-packages/
@@ -183,6 +202,7 @@ jobs:
             --chart-versions "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml"
 
       - name: Check if release already exists
+        if: ${{ !inputs.dry-run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -194,6 +214,7 @@ jobs:
           fi
 
       - name: Run Chart Releaser - Tagging/Uploading
+        if: ${{ !inputs.dry-run }}
         env:
           CR_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
@@ -205,6 +226,7 @@ jobs:
             --release-name-template "${{ steps.metadata.outputs.release_tag }}"
 
       - name: Run Chart Releaser - Indexing
+        if: ${{ !inputs.dry-run }}
         env:
           CR_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
@@ -214,7 +236,10 @@ jobs:
             --git-repo "$(basename ${{ github.repository }})" \
             --release-name-template "${{ steps.metadata.outputs.release_tag }}"
 
+      # Cosign keyless signing is gated too: it writes a permanent entry to the
+      # public Rekor transparency log, so it is a public side effect.
       - name: Sign Helm chart with Cosign
+        if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         run: |
           cosign sign-blob -y "${{ steps.metadata.outputs.package_file }}" \
@@ -222,6 +247,7 @@ jobs:
 
       - name: Get Cosign Rekor log index
         id: rekor
+        if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         run: |
           # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex
@@ -229,6 +255,7 @@ jobs:
           echo "log_index=${rekor_log_index}" | tee -a $GITHUB_OUTPUT
 
       - name: Create Cosign verify script
+        if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         run: |
           cat << EOF > "${{ steps.metadata.outputs.cosign_verify }}"
@@ -244,11 +271,13 @@ jobs:
           EOF
 
       - name: Verify signed Helm chart
+        if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         run: |
           bash "${{ steps.metadata.outputs.cosign_verify }}"
 
       - name: Upload Cosign bundle to release
+        if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -258,6 +287,7 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
 
       - name: Upload Cosign verify script to release
+        if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -266,7 +296,18 @@ jobs:
             "${{ steps.metadata.outputs.cosign_verify }}" \
             --repo "${GITHUB_REPOSITORY}"
 
+      - name: Dry run - log skipped public publishes
+        if: ${{ inputs.dry-run }}
+        run: |
+          echo "::notice::[dry run] Public publishes were skipped. Plan:"
+          echo "::notice::[dry run] - GitHub release '${{ steps.metadata.outputs.release_tag }}' with chart package '${{ steps.metadata.outputs.package_file }}' (make-release-latest: ${{ steps.metadata.outputs.is_latest_stable }})"
+          echo "::notice::[dry run] - Push '${{ steps.metadata.outputs.package_file }}' entry to the gh-pages index.yaml (helm repo)"
+          echo "::notice::[dry run] - Cosign keyless signing of the package (public Rekor transparency log entry)"
+          echo "::notice::[dry run] - Upload cosign bundle + verify script to the GitHub release"
+          echo "::notice::[dry run] - Post-release: version-label PRs/issues, mark release-please PR published, approve + auto-merge it"
+
       - name: Add release info to workflow summary
+        if: ${{ !inputs.dry-run }}
         run: |
           VERSION="${{ steps.metadata.outputs.version }}"
           APP_VERSION="${{ steps.metadata.outputs.app_version }}"
@@ -332,9 +373,27 @@ jobs:
           \`\`\`
           EOF
 
+      - name: Add dry-run info to workflow summary
+        if: ${{ inputs.dry-run }}
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🧪 DRY RUN 🧪 Helm Chart ${{ steps.metadata.outputs.version }} Release Rehearsal
+
+          | | |
+          |---|---|
+          | **RC Tag** | \`${{ steps.parse.outputs.resolved_tag }}\` |
+          | **Would release** | \`${{ steps.metadata.outputs.release_tag }}\` |
+          | **Camunda** | \`${{ steps.metadata.outputs.app_version }}\` |
+          | **Latest stable** | ${{ steps.metadata.outputs.is_latest_stable }} |
+
+          Validated: Harbor pull, package metadata extraction.
+          Skipped (logged above): GitHub release, index.yaml push, cosign signing + uploads, post-release PR automation.
+          EOF
+
   post-release:
     name: Post-Release
     needs: release
+    if: ${{ !inputs.dry-run }}
     runs-on: ubuntu-latest
     outputs:
       pr-number: ${{ steps.mark-published.outputs.pr_number }}
@@ -581,7 +640,7 @@ jobs:
   notify-on-failure:
     name: Notify on Failure
     needs: [release, post-release]
-    if: failure()
+    if: ${{ failure() && !inputs.dry-run }}
     runs-on: ubuntu-latest
     steps:
       - name: Import Vault secrets

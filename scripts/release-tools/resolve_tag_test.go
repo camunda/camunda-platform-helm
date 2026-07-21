@@ -143,6 +143,57 @@ func TestResolveTagRcNoDevTag(t *testing.T) {
 	}
 }
 
+func TestResolveTagDevDryRun(t *testing.T) {
+	out, stdout, err := runResolveTagCapture(t, []string{"--kind", "dev", "--input-tag", "13.4.0-dev-abc1234", "--dry-run"})
+	if err != nil {
+		t.Fatalf("runResolveTag: %v", err)
+	}
+	if out["rc_tag"] != "13.4.0-rc-dryrun" || out["rc_latest_tag"] != "13-rc-dryrun-latest" {
+		t.Errorf("dry-run rc tags = %q/%q want 13.4.0-rc-dryrun/13-rc-dryrun-latest", out["rc_tag"], out["rc_latest_tag"])
+	}
+	if out["resolved_tag"] != "13.4.0-dev-abc1234" || out["version"] != "13.4.0" || stdout != "abc1234" {
+		t.Errorf("unexpected dev dry-run output: %v stdout=%q", out, stdout)
+	}
+}
+
+func TestResolveTagRcDryRun(t *testing.T) {
+	// Concrete dry-run tag.
+	out, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13.4.0-rc-dryrun", "--dry-run"})
+	if err != nil {
+		t.Fatalf("runResolveTag concrete dryrun: %v", err)
+	}
+	if out["resolved_tag"] != "13.4.0-rc-dryrun" || out["version"] != "13.4.0" {
+		t.Errorf("unexpected rc dry-run output: %v", out)
+	}
+
+	// Rolling dry-run tag resolves against -rc-dryrun concretes only.
+	tags := writeTags(t, "13-rc-dryrun-latest", "13.4.0-rc", "13.4.0-rc-dryrun", "13.4.0-dev-abc1234")
+	out, _, err = runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13-rc-dryrun-latest", "--tags-file", tags, "--dry-run"})
+	if err != nil {
+		t.Fatalf("runResolveTag rolling dryrun: %v", err)
+	}
+	if out["resolved_tag"] != "13.4.0-rc-dryrun" || out["dev_tag"] != "13.4.0-dev-abc1234" {
+		t.Errorf("unexpected rolling rc dry-run output: %v", out)
+	}
+
+	// Plain rc tags stay valid in dry-run.
+	out, _, err = runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13.4.0-rc", "--dry-run"})
+	if err != nil {
+		t.Fatalf("runResolveTag plain rc in dryrun: %v", err)
+	}
+	if out["resolved_tag"] != "13.4.0-rc" || out["version"] != "13.4.0" {
+		t.Errorf("unexpected plain rc output in dry-run: %v", out)
+	}
+
+	// Without --dry-run, dryrun tags are rejected.
+	if _, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13.4.0-rc-dryrun"}); err == nil {
+		t.Error("expected error for dryrun tag without --dry-run")
+	}
+	if _, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13-rc-dryrun-latest", "--tags-file", tags}); err == nil {
+		t.Error("expected error for rolling dryrun tag without --dry-run")
+	}
+}
+
 func TestResolveTagErrors(t *testing.T) {
 	// rolling without tags-file
 	if _, _, err := runResolveTagCapture(t, []string{"--kind", "dev", "--input-tag", "13-dev-latest"}); err == nil {

@@ -19,10 +19,12 @@
 //
 // Tag forms:
 //
-//	dev:          {version}-dev-{sha}        e.g. 13.4.0-dev-abc1234, 14.0.0-alpha2-dev-abc1234
-//	dev rolling:  {major}-dev-latest         e.g. 13-dev-latest
-//	rc:           {version}-rc               e.g. 13.4.0-rc, 14.0.0-alpha2-rc
-//	rc rolling:   {major}-rc-latest          e.g. 13-rc-latest
+//	dev:               {version}-dev-{sha}        e.g. 13.4.0-dev-abc1234, 14.0.0-alpha2-dev-abc1234
+//	dev rolling:       {major}-dev-latest         e.g. 13-dev-latest
+//	rc:                {version}-rc               e.g. 13.4.0-rc, 14.0.0-alpha2-rc
+//	rc rolling:        {major}-rc-latest          e.g. 13-rc-latest
+//	rc dryrun:         {version}-rc-dryrun        e.g. 13.4.0-rc-dryrun
+//	rc dryrun rolling: {major}-rc-dryrun-latest   e.g. 13-rc-dryrun-latest
 package harbortag
 
 import (
@@ -34,16 +36,19 @@ import (
 type Kind string
 
 const (
-	Dev Kind = "dev"
-	RC  Kind = "rc"
+	Dev      Kind = "dev"
+	RC       Kind = "rc"
+	RCDryRun Kind = "rc-dryrun"
 )
 
 var (
-	devRollingRe = regexp.MustCompile(`^[0-9]+-dev-latest$`)
-	rcRollingRe  = regexp.MustCompile(`^[0-9]+-rc-latest$`)
+	devRollingRe      = regexp.MustCompile(`^[0-9]+-dev-latest$`)
+	rcRollingRe       = regexp.MustCompile(`^[0-9]+-rc-latest$`)
+	rcDryRunRollingRe = regexp.MustCompile(`^[0-9]+-rc-dryrun-latest$`)
 	// Concrete tag patterns.
-	devTagRe = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$`)
-	rcTagRe  = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-rc$`)
+	devTagRe      = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$`)
+	rcTagRe       = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-rc$`)
+	rcDryRunTagRe = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-rc-dryrun$`)
 )
 
 // IsRolling reports whether inputTag is a rolling tag ({major}-{kind}-latest)
@@ -54,6 +59,8 @@ func IsRolling(inputTag string, kind Kind) bool {
 		return devRollingRe.MatchString(inputTag)
 	case RC:
 		return rcRollingRe.MatchString(inputTag)
+	case RCDryRun:
+		return rcDryRunRollingRe.MatchString(inputTag)
 	}
 	return false
 }
@@ -72,20 +79,25 @@ func ResolveConcrete(tags []string, kind Kind) (string, error) {
 }
 
 func concreteRe(kind Kind) *regexp.Regexp {
-	if kind == RC {
+	switch kind {
+	case RC:
 		return rcTagRe
+	case RCDryRun:
+		return rcDryRunTagRe
 	}
 	return devTagRe
 }
 
 // DevTag is the parsed form of a concrete dev tag.
 type DevTag struct {
-	ResolvedTag string // {version}-dev-{sha}
-	Version     string // {version}
-	SHA         string // {sha} (may be short; the workflow expands it via the GitHub API)
-	ChartMajor  string // major of {version}
-	RCTag       string // {version}-rc
-	RCLatestTag string // {major}-rc-latest
+	ResolvedTag       string // {version}-dev-{sha}
+	Version           string // {version}
+	SHA               string // {sha} (may be short; the workflow expands it via the GitHub API)
+	ChartMajor        string // major of {version}
+	RCTag             string // {version}-rc
+	RCLatestTag       string // {major}-rc-latest
+	RCDryRunTag       string // {version}-rc-dryrun
+	RCDryRunLatestTag string // {major}-rc-dryrun-latest
 }
 
 // ParseDevTag validates a concrete dev tag and extracts its parts.
@@ -99,12 +111,14 @@ func ParseDevTag(tag string) (DevTag, error) {
 	}
 	major := majorOf(version)
 	return DevTag{
-		ResolvedTag: tag,
-		Version:     version,
-		SHA:         sha,
-		ChartMajor:  major,
-		RCTag:       version + "-rc",
-		RCLatestTag: major + "-rc-latest",
+		ResolvedTag:       tag,
+		Version:           version,
+		SHA:               sha,
+		ChartMajor:        major,
+		RCTag:             version + "-rc",
+		RCLatestTag:       major + "-rc-latest",
+		RCDryRunTag:       version + "-rc-dryrun",
+		RCDryRunLatestTag: major + "-rc-dryrun-latest",
 	}, nil
 }
 
@@ -121,6 +135,22 @@ func ParseRcTag(tag string) (RcTag, error) {
 		return RcTag{}, fmt.Errorf("invalid rc tag format %q: expected {version}-rc (e.g. 13.4.0-rc or 14.0.0-alpha2-rc)", tag)
 	}
 	version := tag[:len(tag)-len("-rc")]
+	return RcTag{ResolvedTag: tag, Version: version, ChartMajor: majorOf(version)}, nil
+}
+
+// IsRcDryRunTag reports whether tag is a concrete dry-run rc tag
+// ({version}-rc-dryrun).
+func IsRcDryRunTag(tag string) bool {
+	return rcDryRunTagRe.MatchString(tag)
+}
+
+// ParseRcDryRunTag validates a concrete dry-run rc tag ({version}-rc-dryrun,
+// staged by a dry-run RC promotion) and extracts its parts.
+func ParseRcDryRunTag(tag string) (RcTag, error) {
+	if !rcDryRunTagRe.MatchString(tag) {
+		return RcTag{}, fmt.Errorf("invalid dry-run rc tag format %q: expected {version}-rc-dryrun (e.g. 13.4.0-rc-dryrun)", tag)
+	}
+	version := tag[:len(tag)-len("-rc-dryrun")]
 	return RcTag{ResolvedTag: tag, Version: version, ChartMajor: majorOf(version)}, nil
 }
 
