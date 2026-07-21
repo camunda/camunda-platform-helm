@@ -1070,6 +1070,17 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	crossRefEnv := deploy.BuildTopologyCrossRefEnv(contexts[managementIdx], sharedStorageService, "9200", "http")
 
+	// MGMT_HOST is the management release ingress host (<mgmt-namespace>.<base-domain>),
+	// used by orchestration values to point the browser-facing OIDC issuer at the
+	// management Keycloak. Mirrors how BuildEntryFlags derives the per-release host.
+	baseDomain := opts.IngressBaseDomains[platform]
+	if baseDomain == "" {
+		baseDomain = opts.IngressBaseDomain
+	}
+	if baseDomain != "" {
+		crossRefEnv["MGMT_HOST"] = contexts[managementIdx].Namespace + "." + baseDomain
+	}
+
 	// Deploy order: management first, then every other release in
 	// declaration order.
 	order := make([]int, 0, len(entry.Topology.Releases))

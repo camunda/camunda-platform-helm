@@ -11,6 +11,7 @@
 # injected via ExtraEnv before render/preflight, see
 # scripts/deploy-camunda/cmd/matrix.go's runTopologyEntry):
 #   MGMT_NAMESPACE   — the management release's namespace
+#   MGMT_HOST        — the management release's ingress host
 #   KEYCLOAK_REALM   — the realm name provisioned in the management release
 #
 # This release deploys no Identity, Keycloak, Web Modeler, or Camunda Hub of
@@ -42,7 +43,7 @@ global:
     auth:
       type: KEYCLOAK
       issuerBackendUrl: "http://keycloak.${MGMT_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
-      publicIssuerUrl: "https://{{ .Values.global.host }}/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://${MGMT_HOST}/auth/realms/camunda-platform"
       admin:
         enabled: true
         secret:
