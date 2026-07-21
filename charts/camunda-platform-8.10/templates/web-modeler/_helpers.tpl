@@ -12,11 +12,14 @@ Create a default fully qualified app name.
 */}}
 {{- define "webModeler.fullname" -}}
   {{/* mustMergeOverwrite is used instead of or because camundaHub has intermediate
-       sub-maps that make it truthy even when no overrides are set. Deep-merging empty maps
-       is a no-op, preserving all legacy values. */}}
+       sub-maps that make it truthy even when no overrides are set. Only merge the
+       fields consumed by componentFullname and versionLabel. */}}
   {{- include "camundaPlatform.componentFullname" (dict
       "componentName" "web-modeler"
-      "componentValues" (mustMergeOverwrite (deepCopy .Values.webModeler) .Values.camundaHub)
+      "componentValues" (mustMergeOverwrite (deepCopy .Values.webModeler) (dict
+          "fullnameOverride" .Values.camundaHub.fullnameOverride
+          "nameOverride" .Values.camundaHub.nameOverride
+          "image" .Values.camundaHub.image))
       "context" $
   ) -}}
 {{- end -}}

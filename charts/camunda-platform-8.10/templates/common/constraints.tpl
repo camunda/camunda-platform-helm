@@ -435,7 +435,7 @@ The following values inside your values.yaml need to be set but were not:
         "[camunda][warning]"
         "DEPRECATION: \"console.enabled\" is deprecated and will be removed in a future version."
         "Console has been consolidated into Camunda Hub as an in-Modeler feature. Please use \"camundaHub.enabled: true\" instead."
-        "Any console-specific overrides can be placed under the legacy \"console.*\" keys."
+        "Any console-specific overrides should use the top-level \"console.*\" keys."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -623,7 +623,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $wm := mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub | default dict) }}
+    {{- $wm := deepCopy .Values.webModeler }}
     {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $wm.restapi.mail.fromAddress))
