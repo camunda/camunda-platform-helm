@@ -1392,7 +1392,10 @@
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, metrics), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
@@ -2557,7 +2560,10 @@
                                 "appProtocols": {
                                     "type": "object",
                                     "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         },
@@ -2952,7 +2958,10 @@
                                 "appProtocols": {
                                     "type": "object",
                                     "description": "can be used to set the Kubernetes Service appProtocol hint per port (http), e.g. {http: \"kubernetes.io/ws\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         },
@@ -3434,7 +3443,10 @@
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (server), e.g. {server: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
@@ -4500,7 +4512,10 @@
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (management, http, internal, command, grpc), e.g. {grpc: \"kubernetes.io/h2c\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
@@ -5980,7 +5995,10 @@
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },

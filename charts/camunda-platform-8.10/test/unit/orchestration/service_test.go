@@ -144,7 +144,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"orchestration.service.appProtocols.gprc": "kubernetes.io/h2c",
 			},
 			Expected: map[string]string{
-				"ERROR": "unknown port name",
+				"ERROR": "is not a valid appProtocols key",
 			},
 		}, {
 			Name: "TestAppProtocolsHeadlessOnlyPortNamesDoNotBreakRender",
