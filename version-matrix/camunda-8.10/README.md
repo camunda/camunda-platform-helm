@@ -1,17 +1,17 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
-🔙 [Back to version matrix index](../)
+[Back to version matrix index](../)
 
 # Camunda 8.10 Helm Chart Version Matrix
 
-🚧 Alpha
+Alpha
 
 > Deploys Camunda Hub (the management plane replacing Web Modeler and Console SM). For the Orchestration Cluster versions Hub can manage, see the [Hub documentation](https://docs.camunda.io/docs/next/self-managed/components/hub/configuration/properties/).
 
-| Helm Chart | Camunda | Released | Stability | Helm CLI | Helm Values | Release Notes |
-|---|---|---|---|---|---|---|
-| [15.0.0-alpha3](#helm-chart-1500-alpha3) | 8.10.0-alpha3 | 2026-07-09 | Alpha | [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha3#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha3) |
-| [15.0.0-alpha2](#helm-chart-1500-alpha2) | 8.10.0-alpha2 | 2026-06-05 | Alpha | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha2) |
-| [15.0.0-alpha1](#helm-chart-1500-alpha1) | 8.10.0-alpha1 | 2026-05-12 | Alpha | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha1) |
+| Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
+|---|---|---|---|---|---|
+| [15.0.0-alpha3](#helm-chart-1500-alpha3) | 8.10.0-alpha3 | 2026-07-09 | [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha3#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha3) |
+| [15.0.0-alpha2](#helm-chart-1500-alpha2) | 8.10.0-alpha2 | 2026-06-05 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha2) |
+| [15.0.0-alpha1](#helm-chart-1500-alpha1) | 8.10.0-alpha1 | 2026-05-12 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha1) |
 
 _Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when using Camunda Enterprise registry access — mirror the set that matches your configuration._
 

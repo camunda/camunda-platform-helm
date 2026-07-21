@@ -105,21 +105,6 @@ func TestReadmeAnchor(t *testing.T) {
 	}
 }
 
-func TestStabilityLabel(t *testing.T) {
-	cases := map[string]string{
-		"14.4.0":         "Stable",
-		"15.0.0-alpha2":  "Alpha",
-		"15.0.0-alpha10": "Alpha",
-		"14.0.0-rc1":     "RC",
-		"14.0.0-beta1":   "Pre-release",
-	}
-	for v, want := range cases {
-		if got := StabilityLabel(v); got != want {
-			t.Errorf("StabilityLabel(%q)=%q want %q", v, got, want)
-		}
-	}
-}
-
 func TestSplitHelmCLI(t *testing.T) {
 	got := SplitHelmCLI(" 3.20.2 , 4.1.4 ")
 	if len(got) != 2 || got[0] != "3.20.2" || got[1] != "4.1.4" {
@@ -166,7 +151,7 @@ func TestChartTableRow(t *testing.T) {
 		ReleaseTag:   "camunda-platform-8.9-14.4.0",
 	}
 	got := chartTableRow("./camunda-8.9/", e)
-	want := "| [14.4.0](./camunda-8.9/#helm-chart-1440) | 8.9.7 | 2026-06-04 | Stable | " +
+	want := "| [14.4.0](./camunda-8.9/#helm-chart-1440) | 8.9.7 | 2026-06-04 | " +
 		"[3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | " +
 		"[ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.4.0#parameters) | " +
 		"[Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.4.0) |\n"
@@ -196,9 +181,6 @@ func TestChartTableRowMissingFacts(t *testing.T) {
 	got := chartTableRow("", ChartEntry{ChartVersion: "15.0.0-alpha3"})
 	if !strings.Contains(got, "| _pending_ |") {
 		t.Errorf("chartTableRow: missing release date should render _pending_: %q", got)
-	}
-	if !strings.Contains(got, "| Alpha |") {
-		t.Errorf("chartTableRow: pre-release should render Alpha: %q", got)
 	}
 	if !strings.Contains(got, "| N/A |") {
 		t.Errorf("chartTableRow: missing helm_cli should render N/A: %q", got)
@@ -255,19 +237,19 @@ func TestRenderIndex(t *testing.T) {
 		"# Camunda 8 Helm Chart Version Matrix",
 		"helm search repo camunda/camunda-platform --versions",
 		// Active minors: lifecycle heading + table + all-versions link.
-		"## Camunda 8.10 — 🚧 Alpha",
+		"## Camunda 8.10 — Alpha",
 		"> Deploys Camunda Hub — see the [Hub documentation](https://example.invalid/hub).",
-		"## Camunda 8.9 — ✅ Standard support until 2027-10-13",
-		"| Helm Chart | Camunda | Released | Stability | Helm CLI | Helm Values | Release Notes |",
+		"## Camunda 8.9 — Standard support until 2027-10-13",
+		"| Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |",
 		"| [14.7.0](./camunda-8.9/#helm-chart-1470) |",
 		"[All 7 chart versions for Camunda 8.9 →](./camunda-8.9/)",
-		"## Camunda 8.8 — ✅ Standard support until 2027-04-13",
+		"## Camunda 8.8 — Standard support until 2027-04-13",
 		// Extended support: one compact row per minor.
-		"## Extended support — 🔒 contact your CSM",
+		"## Extended support — contact your CSM",
 		"| Camunda | Released | Latest chart | Full matrix |",
 		"| 8.6 | 2024-10-08 | [11.12.3](./camunda-8.6/#helm-chart-11123) | [camunda-8.6](./camunda-8.6/) |",
 		// EOL: compact row from lifecycle data (no JSON needed).
-		"## End of life — ⛔ no longer supported",
+		"## End of life — no longer supported",
 		"| Camunda | EOL since | Last chart | Full matrix |",
 		"| 8.2 | 2024-10-08 | [8.2.34](./camunda-8.2/#helm-chart-8234) | [camunda-8.2](./camunda-8.2/) |",
 	}
@@ -302,7 +284,7 @@ func TestRenderIndexPlaceholderForEmptyActiveMinor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderIndex: %v", err)
 	}
-	if !strings.Contains(got, "## Camunda 8.8 — ✅ Standard support until 2027-04-13") {
+	if !strings.Contains(got, "## Camunda 8.8 — Standard support until 2027-04-13") {
 		t.Errorf("empty active minor lost its section heading")
 	}
 	if !strings.Contains(got, "_No chart releases for Camunda 8.8 yet._") {
@@ -325,10 +307,10 @@ func TestRenderMinorReadme(t *testing.T) {
 
 	checks := []string{
 		"<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->",
-		"🔙 [Back to version matrix index](../)",
+		"[Back to version matrix index](../)",
 		"# Camunda 8.9 Helm Chart Version Matrix",
-		"✅ Standard support until 2027-10-13",
-		"| Helm Chart | Camunda | Released | Stability | Helm CLI | Helm Values | Release Notes |",
+		"Standard support until 2027-10-13",
+		"| Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |",
 		// Summary rows link in-page and are sorted newest-first.
 		"| [14.7.0](#helm-chart-1470) |",
 		"| [14.6.1](#helm-chart-1461) |",
@@ -360,7 +342,7 @@ func TestRenderMinorReadme(t *testing.T) {
 func TestRenderMinorReadmeEOLStatus(t *testing.T) {
 	lc := Lifecycle{Released: "2022-10-11", EOLSince: "2024-10-08"}
 	got := RenderMinorReadme("8.2", []ChartEntry{{ChartVersion: "8.2.34"}}, BucketEndOfLife, lc, nil)
-	if !strings.Contains(got, "⛔ End of life since 2024-10-08") {
+	if !strings.Contains(got, "End of life since 2024-10-08") {
 		t.Errorf("RenderMinorReadme: missing EOL status line:\n%q", got[:200])
 	}
 }

@@ -25,30 +25,33 @@ import (
 // index page; the per-minor page carries the full history.
 const indexTableLimit = 5
 
-// indexHeader is the fixed overview prose for version-matrix/README.md.
+// indexHeader is the fixed lead of version-matrix/README.md: title plus one
+// orientation line — the tables follow immediately (details live in
+// indexNotes at the bottom of the page).
 const indexHeader = "" +
 	"<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->\n" +
 	"# Camunda 8 Helm Chart Version Matrix\n\n" +
-	"Camunda 8 Self-Managed is deployed via Helm charts. Use this page to find which Helm chart version deploys which Camunda 8 release, when it was released, and which Helm CLI it supports.\n\n" +
-	"- The Camunda `application version` (`appVersion` in the chart) is different from the Helm `chart version` (`version` in the chart). List both from the live Helm repository:\n\n" +
+	"Use this page to find which Helm chart version deploys which Camunda 8 release, when it was released, and which Helm CLI it supports. See the [notes](#notes) below for how to read the tables.\n"
+
+// indexNotes is the reference section rendered after the tables.
+const indexNotes = "" +
+	"\n## Notes\n\n" +
+	"- The `Camunda` column is the chart's core application version — find your exact Camunda patch (for example, 8.8.5) there. Pre-release charts carry an `-alpha`/`-rc` suffix in the chart version: previews, not for production use and without a support SLA.\n" +
+	"- The Camunda `application version` (`appVersion` in the chart) is different from the Helm `chart version` (`version` in the chart). List both from the live Helm repository (without `--devel`, Helm hides the pre-release charts listed on this page):\n\n" +
 	"  ```\n" +
 	"  helm repo add camunda https://helm.camunda.io\n" +
 	"  helm repo update\n" +
 	"  helm search repo camunda/camunda-platform --versions --devel\n" +
 	"  ```\n\n" +
-	"  Without `--devel`, Helm hides the pre-release (alpha/RC) charts listed on this page.\n\n" +
-	"- This page is generated automatically when a chart release is promoted — do not edit it manually.\n" +
-	"- `Stability`: `Stable` charts are production releases; `Alpha`/`RC` charts are pre-release previews — not for production use and without a support SLA.\n" +
 	"- Standard support for a Camunda minor lasts 18 months from its release; fixes ship in the newest chart of each supported minor, so stay current within your minor. Extended support is available under contract — contact your Customer Success Manager (CSM).\n" +
-	"- The `Camunda` column is the chart's core application version — find your exact Camunda patch (for example, 8.8.5) there.\n" +
-	"- The `Helm CLI` column lists the Helm CLI version(s) each chart was released and tested with (recorded at release in the chart annotation `camunda.io/helmCLIVersion`). The per-minor v3/v4 support boundary is stated below; older CLI versions may lack template functions the chart uses (for example, `toYamlPretty` requires 3.17+).\n" +
-	"- Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3. Camunda 8.10 (chart 15.x) and later require Helm v4.\n" +
-	"- When upgrading across minor versions, go one minor at a time (do not skip minors) using the newest chart of each hop, and review the [upgrade instructions](https://docs.camunda.io/docs/self-managed/upgrade/) first. For a rollback option, take a [backup](https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/) before each hop.\n\n"
+	"- The `Helm CLI` column lists the Helm CLI version(s) each chart was released and tested with (recorded at release in the chart annotation `camunda.io/helmCLIVersion`). Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3; Camunda 8.10 (chart 15.x) and later require Helm v4. Older CLI versions may lack template functions the chart uses (for example, `toYamlPretty` requires 3.17+).\n" +
+	"- When upgrading across minor versions, go one minor at a time (do not skip minors) using the newest chart of each hop, and review the [upgrade instructions](https://docs.camunda.io/docs/self-managed/upgrade/) first. For a rollback option, take a [backup](https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/) before each hop.\n" +
+	"- This page is generated automatically when a chart release is promoted — do not edit it manually.\n"
 
 // chartTableHeader is the column set shared by the index and per-minor tables.
 const chartTableHeader = "" +
-	"| Helm Chart | Camunda | Released | Stability | Helm CLI | Helm Values | Release Notes |\n" +
-	"|---|---|---|---|---|---|---|\n"
+	"| Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |\n" +
+	"|---|---|---|---|---|---|\n"
 
 // coreCamundaVersion derives the chart's core Camunda application version
 // from its image set (the camunda/camunda tag on 8.8+, the zeebe tag on older
@@ -81,24 +84,7 @@ func SortEntriesDescending(entries []ChartEntry) []ChartEntry {
 // readmeHeader is the fixed preamble of a per-app version-matrix README, up to
 // and including the back-link. The title and summary table follow.
 const readmeHeader = "<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->\n" +
-	"🔙 [Back to version matrix index](../)\n\n"
-
-// StabilityLabel classifies a chart version for the Stability column by its
-// SemVer pre-release identifier: "Alpha", "RC", generic "Pre-release", or
-// "Stable" for versions without a suffix.
-func StabilityLabel(chartVersion string) string {
-	if IsStableVersion(chartVersion) {
-		return "Stable"
-	}
-	suffix := strings.ToLower(preReleaseSuffix(chartVersion))
-	switch {
-	case strings.HasPrefix(suffix, "alpha"):
-		return "Alpha"
-	case strings.HasPrefix(suffix, "rc"):
-		return "RC"
-	}
-	return "Pre-release"
-}
+	"[Back to version matrix index](../)\n\n"
 
 // SplitHelmCLI splits the comma-separated helm_cli field into its versions,
 // trimming whitespace.
@@ -150,11 +136,10 @@ func chartTableRow(linkPrefix string, e ChartEntry) string {
 	if e.ReleaseTag != "" {
 		notes = fmt.Sprintf("[Changelog](%s)", releaseURL(e.ReleaseTag))
 	}
-	return fmt.Sprintf("| [%s](%s#helm-chart-%s) | %s | %s | %s | %s | [ArtifactHub](%s) | %s |\n",
+	return fmt.Sprintf("| [%s](%s#helm-chart-%s) | %s | %s | %s | [ArtifactHub](%s) | %s |\n",
 		e.ChartVersion, linkPrefix, readmeAnchor(e.ChartVersion),
 		camunda,
 		released,
-		StabilityLabel(e.ChartVersion),
 		helmCLILinks(SplitHelmCLI(e.HelmCLI)),
 		artifactHubURL(e.ChartVersion),
 		notes)
@@ -178,9 +163,9 @@ func chartTable(linkPrefix string, entries []ChartEntry, limit int) string {
 func minorHeading(app, bucket string, lc Lifecycle) string {
 	switch bucket {
 	case BucketAlpha:
-		return fmt.Sprintf("## Camunda %s — 🚧 Alpha", app)
+		return fmt.Sprintf("## Camunda %s — Alpha", app)
 	default:
-		return fmt.Sprintf("## Camunda %s — ✅ Standard support until %s", app, lc.StdSupportUntil)
+		return fmt.Sprintf("## Camunda %s — Standard support until %s", app, lc.StdSupportUntil)
 	}
 }
 
@@ -189,13 +174,13 @@ func minorHeading(app, bucket string, lc Lifecycle) string {
 func minorStatusLine(bucket string, lc Lifecycle) string {
 	switch bucket {
 	case BucketAlpha:
-		return "🚧 Alpha"
+		return "Alpha"
 	case BucketSupportStandard:
-		return fmt.Sprintf("✅ Standard support until %s", lc.StdSupportUntil)
+		return fmt.Sprintf("Standard support until %s", lc.StdSupportUntil)
 	case BucketSupportExtended:
-		return "🔒 Extended support — contact your CSM"
+		return "Extended support — contact your CSM"
 	case BucketEndOfLife:
-		return fmt.Sprintf("⛔ End of life since %s", lc.EOLSince)
+		return fmt.Sprintf("End of life since %s", lc.EOLSince)
 	}
 	return ""
 }
@@ -246,7 +231,7 @@ func RenderIndex(cfg *ChartVersionsConfig, entriesByApp map[string][]ChartEntry)
 	}
 
 	if minors := cfg.CamundaVersions.SupportExtended; len(minors) > 0 {
-		b.WriteString("\n## Extended support — 🔒 contact your CSM\n\n")
+		b.WriteString("\n## Extended support — contact your CSM\n\n")
 		b.WriteString("| Camunda | Released | Latest chart | Full matrix |\n|---|---|---|---|\n")
 		for _, app := range SortAppVersionsDescending(minors) {
 			lc := cfg.CamundaSupportLifecycle[app]
@@ -256,7 +241,7 @@ func RenderIndex(cfg *ChartVersionsConfig, entriesByApp map[string][]ChartEntry)
 	}
 
 	if minors := cfg.CamundaVersions.EndOfLife; len(minors) > 0 {
-		b.WriteString("\n## End of life — ⛔ no longer supported\n\n")
+		b.WriteString("\n## End of life — no longer supported\n\n")
 		b.WriteString("| Camunda | EOL since | Last chart | Full matrix |\n|---|---|---|---|\n")
 		for _, app := range SortAppVersionsDescending(minors) {
 			lc := cfg.CamundaSupportLifecycle[app]
@@ -265,6 +250,7 @@ func RenderIndex(cfg *ChartVersionsConfig, entriesByApp map[string][]ChartEntry)
 		}
 	}
 
+	b.WriteString(indexNotes)
 	return b.String(), nil
 }
 
