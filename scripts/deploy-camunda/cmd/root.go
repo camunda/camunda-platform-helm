@@ -99,6 +99,11 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "ci" || (cmd.Parent() != nil && cmd.Parent().Name() == "ci") {
 					return nil
 				}
+				// e2e-env subcommands take their own --absolute-chart-path and
+				// namespace flags; no chart/namespace/release config needed.
+				if cmd.Name() == "e2e-env" || (cmd.Parent() != nil && cmd.Parent().Name() == "e2e-env") {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {

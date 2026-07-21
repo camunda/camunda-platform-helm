@@ -34,6 +34,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 		baseDomain             string
 		renderScript           string
 		kubeContext            string
+		ci                     bool
 	)
 
 	cmd := &cobra.Command{
@@ -45,7 +46,10 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				"--absolute-chart-path", chartPath,
 				"--namespace", orchestrationNamespace,
 				"--output", output,
-				"--not-ci", "--run-smoke-tests",
+				"--run-smoke-tests",
+			}
+			if !ci {
+				renderArgs = append(renderArgs, "--not-ci")
 			}
 			if kubeContext != "" {
 				renderArgs = append(renderArgs, "--kube-context", kubeContext)
@@ -104,6 +108,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	cmd.Flags().StringVar(&baseDomain, "base-domain", "ci.distro.ultrawombat.com", "ingress base domain")
 	cmd.Flags().StringVar(&renderScript, "render-script", "scripts/render-e2e-env.sh", "path to render-e2e-env.sh")
 	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kube context (optional)")
+	cmd.Flags().BoolVar(&ci, "ci", false, "set CI=true in the merged .env (matches render-e2e-env.sh's default; pass when running in an actual CI job)")
 	_ = cmd.MarkFlagRequired("orchestration-namespace")
 	_ = cmd.MarkFlagRequired("management-namespace")
 	_ = cmd.MarkFlagRequired("absolute-chart-path")
