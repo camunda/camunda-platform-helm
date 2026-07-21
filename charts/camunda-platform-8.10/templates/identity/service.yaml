@@ -20,14 +20,14 @@ spec:
       targetPort: 8084
       protocol: TCP
       {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http" "metrics") "appProtocols" .Values.identity.service.appProtocols) }}
-      appProtocol: {{ . }}
+      appProtocol: {{ . | quote }}
       {{- end }}
     - port: {{ .Values.identity.service.metricsPort }}
       name: {{ .Values.identity.service.metricsName }}
       targetPort: 8082
       protocol: TCP
       {{- with include "camundaPlatform.appProtocol" (dict "portName" "metrics" "knownPorts" (list "http" "metrics") "appProtocols" .Values.identity.service.appProtocols) }}
-      appProtocol: {{ . }}
+      appProtocol: {{ . | quote }}
       {{- end }}
   selector:
     {{- include "identity.matchLabels" . | nindent 4 }}

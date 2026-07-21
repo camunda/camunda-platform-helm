@@ -28,19 +28,19 @@ spec:
       protocol: TCP
       name: {{ default "management" .Values.orchestration.service.managementName }}
       {{- with include "camundaPlatform.appProtocol" (dict "portName" "management" "knownPorts" (list "management" "internal" "command" "http" "grpc") "appProtocols" .Values.orchestration.service.appProtocols) }}
-      appProtocol: {{ . }}
+      appProtocol: {{ . | quote }}
       {{- end }}
     - port: {{ .Values.orchestration.service.httpPort }}
       protocol: TCP
       name: {{ default "http" .Values.orchestration.service.httpName  }}
       {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "management" "internal" "command" "http" "grpc") "appProtocols" .Values.orchestration.service.appProtocols) }}
-      appProtocol: {{ . }}
+      appProtocol: {{ . | quote }}
       {{- end }}
     - port: {{ .Values.orchestration.service.grpcPort }}
       protocol: TCP
       name: {{ default "grpc" .Values.orchestration.service.grpcName }}
       {{- with include "camundaPlatform.appProtocol" (dict "portName" "grpc" "knownPorts" (list "management" "internal" "command" "http" "grpc") "appProtocols" .Values.orchestration.service.appProtocols) }}
-      appProtocol: {{ . }}
+      appProtocol: {{ . | quote }}
       {{- end }}
     {{- if .Values.orchestration.service.extraPorts }}
     {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
