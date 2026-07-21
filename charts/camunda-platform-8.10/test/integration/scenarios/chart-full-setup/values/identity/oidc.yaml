@@ -75,11 +75,10 @@ global:
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.host }}/"
 
-camundaHub:
-  console:
-    env:
-      - name: CAMUNDA_IDENTITY_JWKS_URL
-        value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+console:
+  env:
+    - name: CAMUNDA_IDENTITY_JWKS_URL
+      value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
 
 connectors:
   security:

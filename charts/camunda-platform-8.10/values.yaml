@@ -608,17 +608,22 @@ global:
         redirectUrl: "http://localhost:8070"
 
       #####################
-      # Camunda Hub (alias for Console + WebModeler auth)
+      # Camunda Hub auth
       #####################
 
-      ## @extra global.identity.auth.camundaHub auth configuration alias for Camunda Hub.
-      ## When camundaHub.enabled is true, these values override the legacy console and webModeler
-      ## auth sections above. If not set, falls back to the legacy sections.
+      ## @extra global.identity.auth.camundaHub auth configuration for Camunda Hub.
+      ## Any value set here takes precedence over the legacy webModeler auth section above,
+      ## regardless of whether Camunda Hub is enabled via camundaHub.enabled or the legacy
+      ## webModeler.enabled flag. Unset values fall back to the legacy section.
       camundaHub:
-        ## @skip global.identity.auth.camundaHub.console Console auth overrides when using camundaHub.
-        console: {}
-        ## @skip global.identity.auth.camundaHub.webModeler WebModeler auth overrides when using camundaHub.
-        webModeler: {}
+        ## @param global.identity.auth.camundaHub.clientId defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientId.
+        clientId: ""
+        ## @param global.identity.auth.camundaHub.clientApiAudience defines the audience which is used by Camunda Hub's client API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.
+        clientApiAudience: ""
+        ## @param global.identity.auth.camundaHub.publicApiAudience defines the audience which is used by Camunda Hub's public API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.
+        publicApiAudience: ""
+        ## @param global.identity.auth.camundaHub.redirectUrl defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.
+        redirectUrl: ""
 
       #####################
       # Optimize
@@ -1105,40 +1110,48 @@ camundaHub:
   ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
   enabled: false
 
-  ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
+  ## @param camundaHub.contextPath can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.
+  contextPath: ""
+
   ## Any values set here take precedence over the legacy top-level webModeler.* values.
   ## Only intermediate maps are defined so `or` falls through to legacy values by default.
-  ## To override a value, set it explicitly under camundaHub.webModeler (e.g. camundaHub.webModeler.contextPath: /modeler).
+  ## To override a value, set it explicitly under camundaHub (e.g. camundaHub.contextPath: /modeler).
   ##
   ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
   ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
-  ## camundaHub.webModeler.restapi.readinessProbe.enabled=false will NOT disable the probe
+  ## camundaHub.restapi.readinessProbe.enabled=false will NOT disable the probe
   ## if the legacy webModeler.restapi.readinessProbe.enabled is true. Use the legacy keys
   ## directly for falsy overrides.
-  webModeler:
+  ## Exception: camundaHub.image.* (and the per-component restapi/websockets image maps) are merged additively over the legacy image maps, so partial overrides (e.g. only registry) keep the legacy tag.
+  ## @skip camundaHub.image
+  image: {}
+  ## @skip camundaHub.security
+  security:
+    authentication: {}
+  ## @skip camundaHub.restapi
+  restapi:
     image: {}
-    security:
-      authentication: {}
-    restapi:
-      image: {}
-      externalDatabase: {}
-      mail: {}
-      pusher:
-        client: {}
-      startupProbe: {}
-      readinessProbe: {}
-      livenessProbe: {}
-      metrics: {}
-      service: {}
-      logging: {}
-    websockets:
-      image: {}
-      startupProbe: {}
-      readinessProbe: {}
-      livenessProbe: {}
-      service: {}
-    serviceAccount: {}
-    persistence: {}
+    externalDatabase: {}
+    mail: {}
+    pusher:
+      client: {}
+    startupProbe: {}
+    readinessProbe: {}
+    livenessProbe: {}
+    metrics: {}
+    service: {}
+    logging: {}
+  ## @skip camundaHub.websockets
+  websockets:
+    image: {}
+    startupProbe: {}
+    readinessProbe: {}
+    livenessProbe: {}
+    service: {}
+  ## @skip camundaHub.serviceAccount
+  serviceAccount: {}
+  ## @skip camundaHub.persistence
+  persistence: {}
 
 #######################################################################
 #     #               #     #
@@ -1152,7 +1165,7 @@ camundaHub:
 ## @section WebModeler Parameters
 # WebModeler configuration of the WebModeler deployment
 webModeler:
-  ## @param webModeler.enabled if true, the WebModeler deployment and its related resources are deployed via a helm release. DEPRECATED: Web Modeler has been consolidated into Camunda Hub; use "camundaHub.enabled" instead and place overrides under "camundaHub.webModeler.*". Removed in a future version.
+  ## @param webModeler.enabled if true, the WebModeler deployment and its related resources are deployed via a helm release. DEPRECATED: Web Modeler has been consolidated into Camunda Hub; use "camundaHub.enabled" instead and place overrides under "camundaHub.*". Removed in a future version.
   enabled: false
 
   ## @param webModeler.fullnameOverride can be used to override the full name of the WebModeler resources
@@ -1172,7 +1185,7 @@ webModeler:
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
   # contextPath: "/modeler"
-  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
+  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 alpha Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.
   contextPath: ""
 
   security:
@@ -1645,7 +1658,7 @@ webModeler:
     annotations: {}
     ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
-    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 alpha Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.
     deploymentStrategy: RollingUpdate
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to

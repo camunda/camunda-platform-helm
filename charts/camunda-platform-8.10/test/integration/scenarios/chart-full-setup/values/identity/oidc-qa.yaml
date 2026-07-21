@@ -75,8 +75,7 @@ connectors:
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
-camundaHub:
-  console:
-    env:
-      - name: CAMUNDA_IDENTITY_JWKS_URL
-        value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+console:
+  env:
+    - name: CAMUNDA_IDENTITY_JWKS_URL
+      value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys

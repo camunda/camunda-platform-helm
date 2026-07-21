@@ -150,19 +150,18 @@ connectors:
 #     vault-managed) or in client-secret-for-components (auth0 client_secrets
 #     + pusher, runtime-managed by ensure-clients).
 camundaHub:
-  webModeler:
-    security:
-      authentication:
-        method: oidc
-    restapi:
-      pusher:
+  security:
+    authentication:
+      method: oidc
+  restapi:
+    pusher:
+      secret:
+        existingSecret: client-secret-for-components
+        existingSecretKey: webmodeler-pusher-app-secret
+      client:
         secret:
           existingSecret: client-secret-for-components
-          existingSecretKey: webmodeler-pusher-app-secret
-        client:
-          secret:
-            existingSecret: client-secret-for-components
-            existingSecretKey: webmodeler-pusher-app-key
+          existingSecretKey: webmodeler-pusher-app-key
 
 orchestration:
   security:

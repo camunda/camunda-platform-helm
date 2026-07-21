@@ -134,7 +134,7 @@ data:
             - name: "Web Modeler"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
-              root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.webModeler.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
+              root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
               redirect-uris:
                 - "/login-callback"
           apis:
@@ -200,7 +200,7 @@ data:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
         webmodeler:
-          root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.webModeler.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
+          root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
       clients:
       {{- if .Values.global.identity.auth.admin.enabled }}
         - id: {{ .Values.global.identity.auth.admin.clientId }}

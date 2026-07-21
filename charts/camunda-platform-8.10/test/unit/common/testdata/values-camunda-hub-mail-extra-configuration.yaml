@@ -1,0 +1,9 @@
+camundaHub:
+  restapi:
+    extraConfiguration:
+      - file: mail.yaml
+        content: |
+          camunda:
+            modeler:
+              mail:
+                from-address: migrated@example.com

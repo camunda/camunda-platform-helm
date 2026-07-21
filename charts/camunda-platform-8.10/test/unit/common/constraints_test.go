@@ -226,14 +226,14 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 		{
 			Name: "TestPusherSecretConstraintDoesNotListSecretsSetUnderCamundaHubKeys",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"camundaHub.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
-				"camundaHub.webModeler.restapi.pusher.secret.existingSecretKey":        "secret-key",
-				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
-				"camundaHub.webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":                 "error",
+				"identity.enabled":                                          "true",
+				"camundaHub.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"camundaHub.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
+				"camundaHub.restapi.pusher.secret.existingSecretKey":        "secret-key",
+				"camundaHub.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
+				"camundaHub.restapi.pusher.client.secret.existingSecretKey": "client-key",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":      "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				if err != nil {
@@ -549,6 +549,113 @@ func (s *ConstraintTemplateTest) TestWebModelerExternalDatabaseUserRemovedGate()
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().ErrorContains(err, "webModeler.restapi.externalDatabase.user")
 				s.Require().ErrorContains(err, "has been removed")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDeploymentStrategyRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"identity.enabled":                                     "true",
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "noreply@example.com",
+				"camundaHub.webModeler.persistence.deploymentStrategy": "Recreate",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestContextPathRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "noreply@example.com",
+				"camundaHub.webModeler.contextPath":        "/modeler",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestSecurityAuthenticationMethodRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"identity.enabled":                                     "true",
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "noreply@example.com",
+				"camundaHub.webModeler.security.authentication.method": "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestMailFromAddressRenamedKeyFails",
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/common/testdata/values-camunda-hub-mail-extra-configuration.yaml"),
+			},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":       "elasticsearch",
+				"identity.enabled":                               "true",
+				"camundaHub.enabled":                             "true",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestConsoleSubtreeRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "noreply@example.com",
+				"camundaHub.console.contextPath":           "/console",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.console")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestRedirectUrlRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":               "elasticsearch",
+				"identity.enabled":                                       "true",
+				"camundaHub.enabled":                                     "true",
+				"camundaHub.restapi.mail.fromAddress":                    "noreply@example.com",
+				"global.identity.auth.camundaHub.webModeler.redirectUrl": "https://modeler.example.com/login-callback",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "global.identity.auth.camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestConsoleRedirectUrlRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":            "elasticsearch",
+				"identity.enabled":                                    "true",
+				"camundaHub.enabled":                                  "true",
+				"camundaHub.restapi.mail.fromAddress":                 "noreply@example.com",
+				"global.identity.auth.camundaHub.console.redirectUrl": "https://console.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "global.identity.auth.camundaHub.console")
+				s.Require().ErrorContains(err, "changed from")
 			},
 		},
 	}

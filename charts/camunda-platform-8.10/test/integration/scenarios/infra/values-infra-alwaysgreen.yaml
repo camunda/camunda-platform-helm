@@ -15,7 +15,7 @@ identity:
 
 # Camunda Hub.
 camundaHub:
-  console:
+  restapi:
     nodeSelector:
       workload: alwaysgreen
     tolerations:
@@ -23,23 +23,14 @@ camundaHub:
       key: workload
       operator: Equal
       value: alwaysgreen
-  webModeler:
-    restapi:
-      nodeSelector:
-        workload: alwaysgreen
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: alwaysgreen
-    websockets:
-      nodeSelector:
-        workload: alwaysgreen
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: alwaysgreen
+  websockets:
+    nodeSelector:
+      workload: alwaysgreen
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: alwaysgreen
 connectors:
   nodeSelector:
     workload: alwaysgreen
@@ -83,6 +74,15 @@ orchestration:
     operator: Equal
     value: alwaysgreen
 zeebeGateway:
+  nodeSelector:
+    workload: alwaysgreen
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: alwaysgreen
+
+console:
   nodeSelector:
     workload: alwaysgreen
   tolerations:

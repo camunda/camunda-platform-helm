@@ -16,7 +16,7 @@ identity:
                   - t-core-16-unstable
 
 camundaHub:
-  console:
+  restapi:
     tolerations:
       - key: t-core-16-unstable
         operator: Exists
@@ -30,35 +30,20 @@ camundaHub:
                   operator: In
                   values:
                     - t-core-16-unstable
-  webModeler:
-    restapi:
-      tolerations:
-        - key: t-core-16-unstable
-          operator: Exists
-          effect: NoSchedule
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nodegroup
-                    operator: In
-                    values:
-                      - t-core-16-unstable
-    websockets:
-      tolerations:
-        - key: t-core-16-unstable
-          operator: Exists
-          effect: NoSchedule
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nodegroup
-                    operator: In
-                    values:
-                      - t-core-16-unstable
+  websockets:
+    tolerations:
+      - key: t-core-16-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-16-unstable
 
 orchestration:
   tolerations:
@@ -105,3 +90,17 @@ connectors:
                 values:
                     - t-core-16-unstable
 
+console:
+  tolerations:
+    - key: t-core-16-unstable
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodegroup
+                operator: In
+                values:
+                  - t-core-16-unstable

@@ -14,13 +14,13 @@ spec:
   template:
     metadata:
       labels: {{- include "webModeler.websockets.labels" . | nindent 8 }}
-      {{- if (or .Values.camundaHub.webModeler.websockets.podLabels .Values.webModeler.websockets.podLabels) }}
-      {{- tpl (toYaml (or .Values.camundaHub.webModeler.websockets.podLabels .Values.webModeler.websockets.podLabels)) $ | nindent 8 }}
+      {{- if (or .Values.camundaHub.websockets.podLabels .Values.webModeler.websockets.podLabels) }}
+      {{- tpl (toYaml (or .Values.camundaHub.websockets.podLabels .Values.webModeler.websockets.podLabels)) $ | nindent 8 }}
       {{- end }}
-      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) (or .Values.camundaHub.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
       annotations:
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
-        {{- with (or .Values.camundaHub.webModeler.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
+        {{- with (or .Values.camundaHub.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
         {{- tpl (toYaml .) $ | nindent 8 }}
         {{- end }}
       {{- end }}
@@ -28,13 +28,13 @@ spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((or .Values.camundaHub.webModeler.websockets.initContainers .Values.webModeler.websockets.initContainers) | default list | toYaml | nindent 8) $ }}
+        {{- tpl ((or .Values.camundaHub.websockets.initContainers .Values.webModeler.websockets.initContainers) | default list | toYaml | nindent 8) $ }}
       containers:
         - name: {{ include "webModeler.name" . }}-websockets
           image: {{ include "webModeler.websockets.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-          {{- if (or .Values.camundaHub.webModeler.websockets.containerSecurityContext .Values.webModeler.websockets.containerSecurityContext) }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (or .Values.camundaHub.webModeler.websockets.containerSecurityContext .Values.webModeler.websockets.containerSecurityContext) "context" $) | nindent 12 }}
+          {{- if (or .Values.camundaHub.websockets.containerSecurityContext .Values.webModeler.websockets.containerSecurityContext) }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (or .Values.camundaHub.websockets.containerSecurityContext .Values.webModeler.websockets.containerSecurityContext) "context" $) | nindent 12 }}
           {{- end }}
           env:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -50,90 +50,90 @@ spec:
                   key: pusher-app-id
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "PUSHER_APP_KEY"
-                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher.client) .Values.camundaHub.webModeler.restapi.pusher.client)
+                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher.client) .Values.camundaHub.restapi.pusher.client)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-key"
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "PUSHER_APP_SECRET"
-                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) .Values.camundaHub.webModeler.restapi.pusher)
+                "config" (mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) .Values.camundaHub.restapi.pusher)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
-            {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
+            {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
             - name: PUSHER_APP_PATH
               value: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
           {{- end }}
-          {{- with (or .Values.camundaHub.webModeler.websockets.env .Values.webModeler.websockets.env) }}
+          {{- with (or .Values.camundaHub.websockets.env .Values.webModeler.websockets.env) }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          {{- if (or .Values.camundaHub.webModeler.websockets.envFrom .Values.webModeler.websockets.envFrom) }}
+          {{- if (or .Values.camundaHub.websockets.envFrom .Values.webModeler.websockets.envFrom) }}
           envFrom:
-            {{- (or .Values.camundaHub.webModeler.websockets.envFrom .Values.webModeler.websockets.envFrom) | toYaml | nindent 12 }}
+            {{- (or .Values.camundaHub.websockets.envFrom .Values.webModeler.websockets.envFrom) | toYaml | nindent 12 }}
           {{- end }}
-          {{- if (or .Values.camundaHub.webModeler.websockets.command .Values.webModeler.websockets.command)}}
-          command: {{ toYaml (or .Values.camundaHub.webModeler.websockets.command .Values.webModeler.websockets.command) | nindent 10 }}
+          {{- if (or .Values.camundaHub.websockets.command .Values.webModeler.websockets.command)}}
+          command: {{ toYaml (or .Values.camundaHub.websockets.command .Values.webModeler.websockets.command) | nindent 10 }}
           {{- end }}
           resources:
-            {{- toYaml (or .Values.camundaHub.webModeler.websockets.resources .Values.webModeler.websockets.resources) | nindent 12 }}
+            {{- toYaml (or .Values.camundaHub.websockets.resources .Values.webModeler.websockets.resources) | nindent 12 }}
           ports:
             - containerPort: 8060
               name: http
               protocol: TCP
-          {{- if (or .Values.camundaHub.webModeler.websockets.startupProbe.enabled .Values.webModeler.websockets.startupProbe.enabled) }}
+          {{- if (or .Values.camundaHub.websockets.startupProbe.enabled .Values.webModeler.websockets.startupProbe.enabled) }}
           startupProbe:
             httpGet:
-              path: {{ (or .Values.camundaHub.webModeler.websockets.startupProbe.probePath .Values.webModeler.websockets.startupProbe.probePath) }}
-              scheme: {{ (or .Values.camundaHub.webModeler.websockets.startupProbe.scheme .Values.webModeler.websockets.startupProbe.scheme) }}
+              path: {{ (or .Values.camundaHub.websockets.startupProbe.probePath .Values.webModeler.websockets.startupProbe.probePath) }}
+              scheme: {{ (or .Values.camundaHub.websockets.startupProbe.scheme .Values.webModeler.websockets.startupProbe.scheme) }}
               port: http
-            initialDelaySeconds: {{ (or .Values.camundaHub.webModeler.websockets.startupProbe.initialDelaySeconds .Values.webModeler.websockets.startupProbe.initialDelaySeconds) }}
-            periodSeconds: {{ (or .Values.camundaHub.webModeler.websockets.startupProbe.periodSeconds .Values.webModeler.websockets.startupProbe.periodSeconds) }}
-            successThreshold: {{ (or .Values.camundaHub.webModeler.websockets.startupProbe.successThreshold .Values.webModeler.websockets.startupProbe.successThreshold) }}
-            failureThreshold: {{ (or .Values.camundaHub.webModeler.websockets.startupProbe.failureThreshold .Values.webModeler.websockets.startupProbe.failureThreshold) }}
-            timeoutSeconds: {{ (or .Values.camundaHub.webModeler.websockets.startupProbe.timeoutSeconds .Values.webModeler.websockets.startupProbe.timeoutSeconds) }}
+            initialDelaySeconds: {{ (or .Values.camundaHub.websockets.startupProbe.initialDelaySeconds .Values.webModeler.websockets.startupProbe.initialDelaySeconds) }}
+            periodSeconds: {{ (or .Values.camundaHub.websockets.startupProbe.periodSeconds .Values.webModeler.websockets.startupProbe.periodSeconds) }}
+            successThreshold: {{ (or .Values.camundaHub.websockets.startupProbe.successThreshold .Values.webModeler.websockets.startupProbe.successThreshold) }}
+            failureThreshold: {{ (or .Values.camundaHub.websockets.startupProbe.failureThreshold .Values.webModeler.websockets.startupProbe.failureThreshold) }}
+            timeoutSeconds: {{ (or .Values.camundaHub.websockets.startupProbe.timeoutSeconds .Values.webModeler.websockets.startupProbe.timeoutSeconds) }}
           {{- end }}
-          {{- if (or .Values.camundaHub.webModeler.websockets.readinessProbe.enabled .Values.webModeler.websockets.readinessProbe.enabled) }}
+          {{- if (or .Values.camundaHub.websockets.readinessProbe.enabled .Values.webModeler.websockets.readinessProbe.enabled) }}
           readinessProbe:
             httpGet:
-              path: {{ (or .Values.camundaHub.webModeler.websockets.readinessProbe.probePath .Values.webModeler.websockets.readinessProbe.probePath) }}
-              scheme: {{ (or .Values.camundaHub.webModeler.websockets.readinessProbe.scheme .Values.webModeler.websockets.readinessProbe.scheme) }}
+              path: {{ (or .Values.camundaHub.websockets.readinessProbe.probePath .Values.webModeler.websockets.readinessProbe.probePath) }}
+              scheme: {{ (or .Values.camundaHub.websockets.readinessProbe.scheme .Values.webModeler.websockets.readinessProbe.scheme) }}
               port: http
-            initialDelaySeconds: {{ (or .Values.camundaHub.webModeler.websockets.readinessProbe.initialDelaySeconds .Values.webModeler.websockets.readinessProbe.initialDelaySeconds) }}
-            periodSeconds: {{ (or .Values.camundaHub.webModeler.websockets.readinessProbe.periodSeconds .Values.webModeler.websockets.readinessProbe.periodSeconds) }}
-            successThreshold: {{ (or .Values.camundaHub.webModeler.websockets.readinessProbe.successThreshold .Values.webModeler.websockets.readinessProbe.successThreshold) }}
-            failureThreshold: {{ (or .Values.camundaHub.webModeler.websockets.readinessProbe.failureThreshold .Values.webModeler.websockets.readinessProbe.failureThreshold) }}
-            timeoutSeconds: {{ (or .Values.camundaHub.webModeler.websockets.readinessProbe.timeoutSeconds .Values.webModeler.websockets.readinessProbe.timeoutSeconds) }}
+            initialDelaySeconds: {{ (or .Values.camundaHub.websockets.readinessProbe.initialDelaySeconds .Values.webModeler.websockets.readinessProbe.initialDelaySeconds) }}
+            periodSeconds: {{ (or .Values.camundaHub.websockets.readinessProbe.periodSeconds .Values.webModeler.websockets.readinessProbe.periodSeconds) }}
+            successThreshold: {{ (or .Values.camundaHub.websockets.readinessProbe.successThreshold .Values.webModeler.websockets.readinessProbe.successThreshold) }}
+            failureThreshold: {{ (or .Values.camundaHub.websockets.readinessProbe.failureThreshold .Values.webModeler.websockets.readinessProbe.failureThreshold) }}
+            timeoutSeconds: {{ (or .Values.camundaHub.websockets.readinessProbe.timeoutSeconds .Values.webModeler.websockets.readinessProbe.timeoutSeconds) }}
           {{- end }}
-          {{- if (or .Values.camundaHub.webModeler.websockets.livenessProbe.enabled .Values.webModeler.websockets.livenessProbe.enabled) }}
+          {{- if (or .Values.camundaHub.websockets.livenessProbe.enabled .Values.webModeler.websockets.livenessProbe.enabled) }}
           livenessProbe:
             httpGet:
-              path: {{ (or .Values.camundaHub.webModeler.websockets.livenessProbe.probePath .Values.webModeler.websockets.livenessProbe.probePath) }}
-              scheme: {{ (or .Values.camundaHub.webModeler.websockets.livenessProbe.scheme .Values.webModeler.websockets.livenessProbe.scheme) }}
+              path: {{ (or .Values.camundaHub.websockets.livenessProbe.probePath .Values.webModeler.websockets.livenessProbe.probePath) }}
+              scheme: {{ (or .Values.camundaHub.websockets.livenessProbe.scheme .Values.webModeler.websockets.livenessProbe.scheme) }}
               port: http
-            initialDelaySeconds: {{ (or .Values.camundaHub.webModeler.websockets.livenessProbe.initialDelaySeconds .Values.webModeler.websockets.livenessProbe.initialDelaySeconds) }}
-            periodSeconds: {{ (or .Values.camundaHub.webModeler.websockets.livenessProbe.periodSeconds .Values.webModeler.websockets.livenessProbe.periodSeconds) }}
-            successThreshold: {{ (or .Values.camundaHub.webModeler.websockets.livenessProbe.successThreshold .Values.webModeler.websockets.livenessProbe.successThreshold) }}
-            failureThreshold: {{ (or .Values.camundaHub.webModeler.websockets.livenessProbe.failureThreshold .Values.webModeler.websockets.livenessProbe.failureThreshold) }}
-            timeoutSeconds: {{ (or .Values.camundaHub.webModeler.websockets.livenessProbe.timeoutSeconds .Values.webModeler.websockets.livenessProbe.timeoutSeconds) }}
+            initialDelaySeconds: {{ (or .Values.camundaHub.websockets.livenessProbe.initialDelaySeconds .Values.webModeler.websockets.livenessProbe.initialDelaySeconds) }}
+            periodSeconds: {{ (or .Values.camundaHub.websockets.livenessProbe.periodSeconds .Values.webModeler.websockets.livenessProbe.periodSeconds) }}
+            successThreshold: {{ (or .Values.camundaHub.websockets.livenessProbe.successThreshold .Values.webModeler.websockets.livenessProbe.successThreshold) }}
+            failureThreshold: {{ (or .Values.camundaHub.websockets.livenessProbe.failureThreshold .Values.webModeler.websockets.livenessProbe.failureThreshold) }}
+            timeoutSeconds: {{ (or .Values.camundaHub.websockets.livenessProbe.timeoutSeconds .Values.webModeler.websockets.livenessProbe.timeoutSeconds) }}
           {{- end }}
           volumeMounts:
             - name: config
               mountPath: /home/webapp/config/application.yaml
               subPath: application.yaml
-          {{- with (or .Values.camundaHub.webModeler.websockets.extraConfiguration .Values.webModeler.websockets.extraConfiguration) }}
+          {{- with (or .Values.camundaHub.websockets.extraConfiguration .Values.webModeler.websockets.extraConfiguration) }}
           {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
           {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
           {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
           {{- end }}
-          {{- if (or .Values.camundaHub.webModeler.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) }}
-          {{- (or .Values.camundaHub.webModeler.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) | toYaml | nindent 12 }}
+          {{- if (or .Values.camundaHub.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) }}
+          {{- (or .Values.camundaHub.websockets.extraVolumeMounts .Values.webModeler.websockets.extraVolumeMounts) | toYaml | nindent 12 }}
           {{- end }}
-        {{- if (or .Values.camundaHub.webModeler.websockets.sidecars .Values.webModeler.websockets.sidecars) }}
-        {{- (or .Values.camundaHub.webModeler.websockets.sidecars .Values.webModeler.websockets.sidecars) | toYaml | nindent 8 }}
+        {{- if (or .Values.camundaHub.websockets.sidecars .Values.webModeler.websockets.sidecars) }}
+        {{- (or .Values.camundaHub.websockets.sidecars .Values.webModeler.websockets.sidecars) | toYaml | nindent 8 }}
         {{- end }}
       volumes:
         - name: config
@@ -142,28 +142,28 @@ spec:
       {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
       {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
       {{- end }}
-      {{- if (or .Values.camundaHub.webModeler.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) }}
-      {{- (or .Values.camundaHub.webModeler.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) | toYaml | nindent 8 }}
+      {{- if (or .Values.camundaHub.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) }}
+      {{- (or .Values.camundaHub.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
-      {{- if (or .Values.camundaHub.webModeler.websockets.dnsConfig .Values.webModeler.websockets.dnsConfig) }}
-      dnsConfig: {{- toYaml (or .Values.camundaHub.webModeler.websockets.dnsConfig .Values.webModeler.websockets.dnsConfig) | nindent 8 }}
+      {{- if (or .Values.camundaHub.websockets.dnsConfig .Values.webModeler.websockets.dnsConfig) }}
+      dnsConfig: {{- toYaml (or .Values.camundaHub.websockets.dnsConfig .Values.webModeler.websockets.dnsConfig) | nindent 8 }}
       {{- end }}
-      {{- if (or .Values.camundaHub.webModeler.websockets.dnsPolicy .Values.webModeler.websockets.dnsPolicy) }}
-      dnsPolicy: {{ (or .Values.camundaHub.webModeler.websockets.dnsPolicy .Values.webModeler.websockets.dnsPolicy) | quote }}
+      {{- if (or .Values.camundaHub.websockets.dnsPolicy .Values.webModeler.websockets.dnsPolicy) }}
+      dnsPolicy: {{ (or .Values.camundaHub.websockets.dnsPolicy .Values.webModeler.websockets.dnsPolicy) | quote }}
       {{- end }}
-      {{- if (or .Values.camundaHub.webModeler.websockets.podSecurityContext .Values.webModeler.websockets.podSecurityContext) }}
-      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (or .Values.camundaHub.webModeler.websockets.podSecurityContext .Values.webModeler.websockets.podSecurityContext) "context" $) | nindent 8 }}
+      {{- if (or .Values.camundaHub.websockets.podSecurityContext .Values.webModeler.websockets.podSecurityContext) }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (or .Values.camundaHub.websockets.podSecurityContext .Values.webModeler.websockets.podSecurityContext) "context" $) | nindent 8 }}
       {{- end }}
-      {{- with (or .Values.camundaHub.webModeler.websockets.nodeSelector .Values.webModeler.websockets.nodeSelector) | default .Values.global.nodeSelector }}
+      {{- with (or .Values.camundaHub.websockets.nodeSelector .Values.webModeler.websockets.nodeSelector) | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with (or .Values.camundaHub.webModeler.websockets.affinity .Values.webModeler.websockets.affinity) }}
+      {{- with (or .Values.camundaHub.websockets.affinity .Values.webModeler.websockets.affinity) }}
       affinity:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with (or .Values.camundaHub.webModeler.websockets.tolerations .Values.webModeler.websockets.tolerations) }}
+      {{- with (or .Values.camundaHub.websockets.tolerations .Values.webModeler.websockets.tolerations) }}
       tolerations:
         {{ toYaml . | nindent 8 }}
       {{- end }}

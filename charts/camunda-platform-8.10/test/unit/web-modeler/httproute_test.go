@@ -72,11 +72,11 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHTTPRouteRendered",
 			Values: map[string]string{
-				"global.gateway.enabled": "true",
-				"global.host":            "camunda.example.com",
-				"webModeler.enabled":     "true",
-				"identity.enabled":       "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
+				"global.gateway.enabled":              "true",
+				"global.host":                         "camunda.example.com",
+				"webModeler.enabled":                  "true",
+				"identity.enabled":                    "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -90,12 +90,12 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHTTPRouteWithTLSSectionName",
 			Values: map[string]string{
-				"global.gateway.enabled":                         "true",
-				"global.host":                                    "camunda.example.com",
-				"global.gateway.tls.enabled":                     "true",
-				"webModeler.enabled":                             "true",
-				"identity.enabled":                               "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
+				"global.gateway.enabled":              "true",
+				"global.host":                         "camunda.example.com",
+				"global.gateway.tls.enabled":          "true",
+				"webModeler.enabled":                  "true",
+				"identity.enabled":                    "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -105,12 +105,12 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHTTPRouteWithContextPath",
 			Values: map[string]string{
-				"global.gateway.enabled": "true",
-				"global.host":            "camunda.example.com",
-				"webModeler.enabled":     "true",
-				"identity.enabled":       "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.webModeler.contextPath":              "/modeler",
+				"global.gateway.enabled":              "true",
+				"global.host":                         "camunda.example.com",
+				"webModeler.enabled":                  "true",
+				"identity.enabled":                    "true",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"camundaHub.contextPath":              "/modeler",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -120,13 +120,13 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHTTPRouteWithAnnotations",
 			Values: map[string]string{
-				"global.gateway.enabled": "true",
-				"global.host":            "camunda.example.com",
-				"webModeler.enabled":     "true",
-				"identity.enabled":       "true",
-				"camundaHub.webModeler.restapi.mail.fromAddress": "example@example.com",
-				"global.annotations.global-key":                  "global-value",
-				"global.gateway.annotations.gateway-key":         "gateway-value",
+				"global.gateway.enabled":                 "true",
+				"global.host":                            "camunda.example.com",
+				"webModeler.enabled":                     "true",
+				"identity.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":    "example@example.com",
+				"global.annotations.global-key":          "global-value",
+				"global.gateway.annotations.gateway-key": "gateway-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

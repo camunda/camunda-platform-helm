@@ -151,74 +151,52 @@ connectors:
 
 camundaHub:
   enabled: true
-  webModeler:
-    contextPath: "/modeler"
-    restapi:
-      # Right-sized for CI: CPU P99 640m INCREASE (from 500m default), memory P99 1132Mi INCREASE (from 1Gi default).
-      resources:
-        requests:
-          cpu: 850m
-          memory: 1550Mi
-        limits:
-          cpu: 2000m
-          memory: 2Gi
-      startupProbe:
-        enabled: true
-        initialDelaySeconds: 5
-        periodSeconds: 5
-        failureThreshold: 30
-        timeoutSeconds: 1
-      pusher:
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "webmodeler-pusher-app-secret"
-        client:
-          secret:
-            existingSecret: "integration-test-credentials"
-            existingSecretKey: "webmodeler-pusher-app-key"
-      mail:
-        fromAddress: noreply@example.com
-    webapp:
-      # Right-sized for CI: CPU P99 47m (from 400m default), memory P99 216Mi INCREASE (from 256Mi default).
-      resources:
-        requests:
-          cpu: 60m
-          memory: 300Mi
-        limits:
-          cpu: 400m
-          memory: 512Mi
-    websockets:
-      # Right-sized for CI: CPU P99 3m (from 100m default), memory P99 33Mi (from 64Mi default).
-      resources:
-        requests:
-          cpu: 25m
-          memory: 50Mi
-        limits:
-          cpu: 100m
-          memory: 128Mi
-  console:
-    contextPath: "/"
-    # Right-sized for CI: "camunda-platform" container CPU P99 493m (from 1000m default), memory P99 849Mi INCREASE (from 1Gi default).
+  contextPath: "/modeler"
+  restapi:
+    # Right-sized for CI: CPU P99 640m INCREASE (from 500m default), memory P99 1132Mi INCREASE (from 1Gi default).
     resources:
       requests:
-        cpu: 650m
-        memory: 1150Mi
+        cpu: 850m
+        memory: 1550Mi
       limits:
         cpu: 2000m
         memory: 2Gi
-    image:
-      pullSecrets:
-        - name: index-docker-io
-        - name: registry-camunda-cloud
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      failureThreshold: 30
+      timeoutSeconds: 1
+    pusher:
+      secret:
+        existingSecret: "integration-test-credentials"
+        existingSecretKey: "webmodeler-pusher-app-secret"
+      client:
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "webmodeler-pusher-app-key"
+    mail:
+      fromAddress: noreply@example.com
+  webapp:
+    # Right-sized for CI: CPU P99 47m (from 400m default), memory P99 216Mi INCREASE (from 256Mi default).
+    resources:
+      requests:
+        cpu: 60m
+        memory: 300Mi
+      limits:
+        cpu: 400m
+        memory: 512Mi
+  websockets:
+    # Right-sized for CI: CPU P99 3m (from 100m default), memory P99 33Mi (from 64Mi default).
+    resources:
+      requests:
+        cpu: 25m
+        memory: 50Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
 
-# NOTE: webModeler.image.pullSecrets (not camundaHub.webModeler.image.pullSecrets)
-# is intentional. The webModeler image helpers in the chart use `or` (returns
-# first truthy value) over (camundaHub.webModeler.image, webModeler.image), so
-# any non-empty camundaHub.webModeler.image stanza fully shadows the legacy
-# webModeler.image — including the default `tag: 8.10.0-alpha3-rc1`. Setting
-# pullSecrets on the legacy path keeps camundaHub.webModeler.image as the
-# chart-default `{}` (falsy) so the `or` falls through to webModeler.image and
-# the tag stays attached. See templates/web-modeler/_helpers.tpl.
+# NOTE: Keep pullSecrets on the legacy path; camundaHub.image.* is additive (merged, not `or`) as of PR #6539.
 webModeler:
   image:
     pullSecrets:
@@ -276,3 +254,18 @@ prometheusServiceMonitor:
   enabled: true
   labels:
     release: kube-prometheus-stack
+
+console:
+  contextPath: "/"
+  # Right-sized for CI: "camunda-platform" container CPU P99 493m (from 1000m default), memory P99 849Mi INCREASE (from 1Gi default).
+  resources:
+    requests:
+      cpu: 650m
+      memory: 1150Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud

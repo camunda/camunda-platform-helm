@@ -12,7 +12,7 @@ identity:
 
 # Camunda Hub.
 camundaHub:
-  console:
+  restapi:
     nodeSelector:
       workload: qa-workloads
     tolerations:
@@ -20,23 +20,14 @@ camundaHub:
       key: workload
       operator: Equal
       value: qa-workloads
-  webModeler:
-    restapi:
-      nodeSelector:
-        workload: qa-workloads
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: qa-workloads
-    websockets:
-      nodeSelector:
-        workload: qa-workloads
-      tolerations:
-      - effect: NoSchedule
-        key: workload
-        operator: Equal
-        value: qa-workloads
+  websockets:
+    nodeSelector:
+      workload: qa-workloads
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: qa-workloads
 connectors:
   nodeSelector:
     workload: qa-workloads
@@ -89,3 +80,11 @@ zeebeGateway:
     operator: Equal
     value: qa-workloads
 
+console:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads

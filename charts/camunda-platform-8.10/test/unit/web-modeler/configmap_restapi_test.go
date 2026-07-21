@@ -77,6 +77,42 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 	s.Require().Equal("custom-audience", configmapApplication.Camunda.Modeler.Security.JWT.Audience.InternalAPI)
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectCamundaHubAuthValues() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                                  "true",
+		"global.identity.auth.enabled":                      "true",
+		"global.identity.auth.camundaHub.clientApiAudience": "custom-hub-audience",
+		"global.identity.auth.camundaHub.clientId":          "custom-hub-clientId",
+		"global.identity.auth.camundaHub.redirectUrl":       "https://hub.example.com",
+		"global.identity.auth.webModeler.clientApiAudience": "legacy-audience",
+		"global.identity.auth.webModeler.clientId":          "legacy-clientId",
+		"global.identity.auth.webModeler.redirectUrl":       "https://legacy.example.com",
+		"global.elasticsearch.enabled":                      "true",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("custom-hub-audience", configmapApplication.Camunda.Modeler.Security.JWT.Audience.InternalAPI)
+	s.Require().Equal("custom-hub-clientId", configmapApplication.Camunda.Modeler.OAuth2.ClientId)
+	s.Require().Equal("https://hub.example.com", configmapApplication.Camunda.Modeler.Server.Url)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
 	// given
 	values := map[string]string{
