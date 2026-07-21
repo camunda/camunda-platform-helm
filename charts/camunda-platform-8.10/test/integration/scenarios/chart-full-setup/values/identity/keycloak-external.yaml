@@ -41,6 +41,7 @@ global:
     service:
       url: "http://integration-identity.${MGMT_NAMESPACE}.svc.cluster.local:80/identity"
     auth:
+      enabled: true
       type: KEYCLOAK
       issuerBackendUrl: "http://keycloak.${MGMT_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
       publicIssuerUrl: "https://${MGMT_HOST}/auth/realms/camunda-platform"
@@ -49,6 +50,11 @@ global:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-admin-client-token"
+      optimize:
+        redirectUrl: "https://${ORCH_HOST}/optimize"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-optimize-client-token"
   security:
     authentication:
       method: oidc

@@ -62,6 +62,7 @@ global:
       # which reach back into this namespace's Identity/Keycloak by FQDN.
       optimize:
         registerInIdentity: true
+        redirectUrl: "https://${ORCH_HOST}/optimize"
       orchestration:
         registerInIdentity: true
       connectors:
