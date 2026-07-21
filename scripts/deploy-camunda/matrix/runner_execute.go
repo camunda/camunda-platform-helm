@@ -18,14 +18,6 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 )
 
-// CompanionChartsForEntry is the exported form of companionChartsForEntry,
-// for callers outside the matrix package (e.g. cmd's topology deploy path)
-// that need the same ChartDependency→config.CompanionChart conversion without
-// duplicating it.
-func CompanionChartsForEntry(entry Entry, repoRoot string) []config.CompanionChart {
-	return companionChartsForEntry(entry, repoRoot)
-}
-
 // ResolveNamespace is the exported form of resolveNamespace, for callers
 // outside the matrix package that need the same "what namespace would a
 // normal (single-namespace) matrix entry get" computation — e.g. the

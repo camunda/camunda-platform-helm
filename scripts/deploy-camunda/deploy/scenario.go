@@ -326,6 +326,11 @@ func generateTopologyContexts(scenario string, releases []TopologyRelease, flags
 	contexts := make([]*ScenarioContext, 0, len(releases))
 	for _, rel := range releases {
 		namespace := fmt.Sprintf("%s-%s", baseNamespace, rel.NamespaceSuffix)
+		if len(namespace) > 63 {
+			maxBase := 63 - len(rel.NamespaceSuffix) - 1
+			truncatedBase := strings.TrimRight(baseNamespace[:maxBase], "-")
+			namespace = fmt.Sprintf("%s-%s", truncatedBase, rel.NamespaceSuffix)
+		}
 		suffix := namespaceDerivedSuffix(namespace)
 
 		ingressHost := ""

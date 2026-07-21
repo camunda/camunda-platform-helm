@@ -1028,6 +1028,10 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		platform = "gke"
 	}
 
+	if entry.Auth != "keycloak" || entry.Flow != "install" {
+		return fmt.Errorf("topology entry %s/%s: multi-namespace topology currently supports only auth=keycloak and flow=install (got auth=%q, flow=%q)", entry.Version, entry.Scenario, entry.Auth, entry.Flow)
+	}
+
 	releases := make([]deploy.TopologyRelease, 0, len(entry.Topology.Releases))
 	for _, r := range entry.Topology.Releases {
 		releases = append(releases, deploy.TopologyRelease{
@@ -1210,4 +1214,10 @@ func applyTopologyReleaseOverrides(flags *config.RuntimeFlags, crossRefEnv map[s
 	}
 
 	flags.Secrets.ExternalSecrets = true
+
+	// The topology driver provisions the registry-camunda-cloud pull secret into each
+	// release namespace (creds resolve from HARBOR_USERNAME/TEST_DOCKER_USERNAME_CAMUNDA_CLOUD
+	// env via the deployer fallback), so the deploy is self-sufficient locally and in CI
+	// without relying on node image cache.
+	flags.Docker.EnsureDockerRegistry = true
 }

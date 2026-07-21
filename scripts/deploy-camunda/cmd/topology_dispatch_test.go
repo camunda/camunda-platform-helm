@@ -254,6 +254,9 @@ func TestApplyTopologyReleaseOverrides_ForcesExternalSecrets(t *testing.T) {
 			if !flags.Secrets.ExternalSecrets {
 				t.Fatal("Secrets.ExternalSecrets = false, want true for every topology release")
 			}
+			if !flags.Docker.EnsureDockerRegistry {
+				t.Fatal("Docker.EnsureDockerRegistry = false, want true for every topology release")
+			}
 		})
 	}
 }
@@ -287,6 +290,9 @@ func TestApplyTopologyReleaseOverrides_AllReleaseRolesGetExternalSecrets(t *test
 		applyTopologyReleaseOverrides(flags, map[string]string{"MGMT_NAMESPACE": "ns-mgmt"})
 		if !flags.Secrets.ExternalSecrets {
 			t.Errorf("release role %q (namespace-suffix %q): ExternalSecrets = false, want true", rel.Role, rel.NamespaceSuffix)
+		}
+		if !flags.Docker.EnsureDockerRegistry {
+			t.Errorf("release role %q (namespace-suffix %q): Docker.EnsureDockerRegistry = false, want true", rel.Role, rel.NamespaceSuffix)
 		}
 	}
 }
