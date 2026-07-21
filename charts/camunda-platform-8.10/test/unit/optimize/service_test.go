@@ -123,7 +123,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"optimize.service.appProtocols.managment": "http",
 			},
 			Expected: map[string]string{
-				"ERROR": "unknown port name",
+				"ERROR": "is not a valid appProtocols key",
 			},
 		},
 	}

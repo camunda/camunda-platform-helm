@@ -114,7 +114,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"connectors.service.appProtocols.srver": "http",
 			},
 			Expected: map[string]string{
-				"ERROR": "unknown port name",
+				"ERROR": "is not a valid appProtocols key",
 			},
 		},
 	}

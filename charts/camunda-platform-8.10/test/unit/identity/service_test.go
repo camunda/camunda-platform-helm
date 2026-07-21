@@ -121,7 +121,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"identity.service.appProtocols.htttp": "http",
 			},
 			Expected: map[string]string{
-				"ERROR": "unknown port name",
+				"ERROR": "is not a valid appProtocols key",
 			},
 		},
 	}
