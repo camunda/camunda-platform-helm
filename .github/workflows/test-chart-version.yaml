@@ -80,6 +80,7 @@ on:
           - oidc
           - opensearch
           - upgrade-migration
+          - multinamespace
       test-enabled:
         description: Whether to run the IT tests
         required: false
