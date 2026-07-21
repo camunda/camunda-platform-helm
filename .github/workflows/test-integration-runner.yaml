@@ -1422,7 +1422,8 @@ jobs:
           distro-platform: ${{ inputs.distro-platform }}
           infra-type: ${{ inputs.infra-type }}
           identifier: ${{ inputs.identifier }}
-          namespace-prefix: "${{ inputs.namespace-prefix }}-orcha"
+          namespace-prefix: ${{ inputs.namespace-prefix }}
+          namespace-override: "${{ steps.base-vars.outputs.namespace }}-orcha"
           management-namespace: "${{ steps.base-vars.outputs.namespace }}-mgmt"
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}

@@ -63,10 +63,18 @@ inputs:
   management-namespace:
     description: >-
       For a multi-namespace topology scenario: the namespace running the
-      central Identity/Keycloak. When set, `identifier`/`namespace-prefix`
-      must resolve TEST_NAMESPACE to the orchestration namespace, and a
-      deploy-camunda binary is downloaded so run-e2e-tests.sh can merge the
-      two namespaces' .env via `deploy-camunda e2e-env merge`.
+      central Identity/Keycloak. A deploy-camunda binary is downloaded so
+      run-e2e-tests.sh can merge the two namespaces' .env via
+      `deploy-camunda e2e-env merge`. Pair with namespace-override so
+      TEST_NAMESPACE resolves to the orchestration namespace.
+    required: false
+    default: ""
+  namespace-override:
+    description: >-
+      Overrides the namespace workflow-vars would otherwise compute from
+      identifier/namespace-prefix. Used by multi-namespace topology callers,
+      whose per-release namespace (e.g. <base>-orcha) workflow-vars has no
+      way to derive on its own.
     required: false
     default: ""
   binary-artifact-name:
@@ -180,6 +188,11 @@ runs:
         chart-dir: ${{ inputs.camunda-helm-dir }}
         chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
         prefix: ${{ inputs.namespace-prefix }}
+
+    - name: Override TEST_NAMESPACE (multi-namespace topology)
+      if: inputs.namespace-override != ''
+      shell: bash
+      run: echo "TEST_NAMESPACE=${{ inputs.namespace-override }}" | tee -a "$GITHUB_ENV"
 
     - name: Authenticate to cluster
       id: cluster-auth
