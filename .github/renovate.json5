@@ -176,17 +176,6 @@
         '/k8s.io/.*/',
       ],
     },
-    // Some asdf plugins use the "v" prefix, so we extract the version without it.
-    {
-      matchFileNames: [
-        '.tool-versions',
-      ],
-      matchPackageNames: [
-        'hairyhenderson/gomplate',
-        'gomplate',
-      ],
-      extractVersion: '^(?<version>v.*)$',
-    },
     // Camunda chart version policies
     {
       description: 'Disable major updates for Helm dependencies to prevent breaking changes.',
