@@ -1624,14 +1624,14 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: multinamespace
-          enabled: false
+          enabled: true
           shortname: mns
           auth: keycloak
           flow: install
           platforms:
             - gke
           exclude: []
-          tier: 2
+          tier: 1
           infra-type:
             gke: distroci
           skip-e2e: true
