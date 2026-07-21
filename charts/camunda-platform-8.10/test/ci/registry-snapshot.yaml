@@ -1631,7 +1631,7 @@ integration:
           platforms:
             - gke
           exclude: []
-          tier: 1
+          tier: 2
           infra-type:
             gke: distroci
           skip-e2e: true

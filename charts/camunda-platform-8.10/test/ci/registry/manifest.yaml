@@ -183,5 +183,5 @@ integration:
       enabled: false
     - id: multinamespace
       shortname: mns
-      tier: 1
+      tier: 2
       enabled: true
