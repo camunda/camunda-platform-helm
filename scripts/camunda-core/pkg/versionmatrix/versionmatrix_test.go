@@ -546,3 +546,26 @@ func TestHasPreSetupScript(t *testing.T) {
 		t.Error("expected HasPreSetupScript(99.99, pre-install-opensearch-self-signed.sh) = false")
 	}
 }
+
+func TestCompareChartVersionsFullNumericPreRelease(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want int
+	}{
+		{"15.0.0-alpha10", "15.0.0-alpha9", 1},
+		{"15.0.0-alpha10", "15.0.0-alpha2", 1},
+		{"15.0.0-alpha4.2", "15.0.0-alpha4.1", 1},
+		{"15.0.0-alpha4.1", "15.0.0-alpha4", 1},
+		{"15.0.0-rc1", "15.0.0-alpha10", 1},
+		{"15.0.0-alpha2", "15.0.0-alpha2", 0},
+		{"15.0.0", "15.0.0-alpha10", 1},
+	}
+	for _, tc := range cases {
+		if got := CompareChartVersionsFull(tc.a, tc.b); got != tc.want {
+			t.Errorf("CompareChartVersionsFull(%q,%q)=%d want %d", tc.a, tc.b, got, tc.want)
+		}
+		if got := CompareChartVersionsFull(tc.b, tc.a); got != -tc.want {
+			t.Errorf("CompareChartVersionsFull(%q,%q)=%d want %d", tc.b, tc.a, got, -tc.want)
+		}
+	}
+}

@@ -22,6 +22,8 @@ import (
 	"strings"
 
 	"scripts/camunda-core/pkg/chartmeta"
+	"scripts/camunda-core/pkg/releasenotes"
+	"scripts/camunda-core/pkg/releaseplease"
 	"scripts/camunda-core/pkg/versionmatrix"
 )
 
@@ -39,6 +41,13 @@ const enterpriseRegistryPrefix = "registry.camunda.cloud/"
 //	                           derived automatically when values-enterprise.yaml
 //	                           exists (its registry.camunda.cloud images).
 //
+// When --app is given, the entry also records its release-time facts:
+// helm_cli (the .tool-versions pin clamped per minor) and release_tag (the
+// GitHub release tag the public release will create). release_date is NOT
+// written here — the public-release pipeline stamps it from the published
+// GitHub release (stamp-release) — and an already-stamped date survives
+// image re-derivation.
+//
 // --dry-run prints the would-be file to stdout and writes nothing.
 func runUpdateMatrix(args []string) error {
 	fs := flag.NewFlagSet("update-matrix", flag.ContinueOnError)
@@ -47,12 +56,14 @@ func runUpdateMatrix(args []string) error {
 		chartDir     string
 		chartVersion string
 		matrixFile   string
+		app          string
 		dryRun       bool
 	)
 	fs.StringVar(&chartYAML, "chart-yaml", "", "path to a pulled package's Chart.yaml (reads the camunda.io/chart-images annotation)")
 	fs.StringVar(&chartDir, "chart-dir", "", "chart directory to derive the image set from (alternative to --chart-yaml)")
 	fs.StringVar(&chartVersion, "chart-version", "", "chart version key for the matrix entry (e.g. 13.4.0)")
 	fs.StringVar(&matrixFile, "matrix-file", "", "path to version-matrix.json to update")
+	fs.StringVar(&app, "app", "", "Camunda minor (e.g. 8.8) — also records helm_cli and release_tag on the entry")
 	fs.BoolVar(&dryRun, "dry-run", false, "print the updated version-matrix.json to stdout instead of writing it")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -96,7 +107,32 @@ func runUpdateMatrix(args []string) error {
 		existing = []byte("[]")
 	}
 
-	updated, err := versionmatrix.UpsertImages(existing, chartVersion, images, enterpriseImages)
+	entry, _, err := versionmatrix.FindEntry(existing, chartVersion)
+	if err != nil {
+		return err
+	}
+	entry.ChartVersion = chartVersion
+	entry.ChartImages = images
+	entry.ChartEnterpriseImages = nil
+	if len(enterpriseImages) > 0 {
+		entry.ChartEnterpriseImages = enterpriseImages
+	}
+	switch {
+	case app != "" && entry.ReleaseDate != "":
+		// Already stamped by the public release — release facts are write-once.
+		// A re-derivation after the fact (e.g. a manual re-run with a newer
+		// .tool-versions) must not rewrite what shipped.
+		fmt.Fprintf(os.Stderr, "entry %s is already stamped (%s) — keeping recorded helm_cli/release_tag\n", chartVersion, entry.ReleaseDate)
+	case app != "":
+		pin, err := helmPin()
+		if err != nil {
+			return err
+		}
+		entry.HelmCLI = releasenotes.HelmCLIVersion(app, pin)
+		entry.ReleaseTag = releaseplease.ReleaseTag(app, chartVersion)
+	}
+
+	updated, err := versionmatrix.UpsertEntry(existing, entry)
 	if err != nil {
 		return err
 	}

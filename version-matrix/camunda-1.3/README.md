@@ -1,5 +1,9 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
+🔙 [Back to version matrix index](../)
+
 # Camunda 1.3 Helm Chart Version Matrix
+
+⛔ End of life
 
 ## Helm chart 8.0.0
 

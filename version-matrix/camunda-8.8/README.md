@@ -3,51 +3,58 @@
 
 # Camunda 8.8 Helm Chart Version Matrix
 
-## ToC
+✅ Standard support until 2027-04-13
 
-- [Helm chart 13.12.2](#helm-chart-13122)
-- [Helm chart 13.12.1](#helm-chart-13121)
-- [Helm chart 13.12.0](#helm-chart-13120)
-- [Helm chart 13.11.1](#helm-chart-13111)
-- [Helm chart 13.11.0](#helm-chart-13110)
-- [Helm chart 13.10.2](#helm-chart-13102)
-- [Helm chart 13.10.1](#helm-chart-13101)
-- [Helm chart 13.10.0](#helm-chart-13100)
-- [Helm chart 13.9.1](#helm-chart-1391)
-- [Helm chart 13.9.0](#helm-chart-1390)
-- [Helm chart 13.8.0](#helm-chart-1380)
-- [Helm chart 13.7.2](#helm-chart-1372)
-- [Helm chart 13.7.1](#helm-chart-1371)
-- [Helm chart 13.7.0](#helm-chart-1370)
-- [Helm chart 13.6.0](#helm-chart-1360)
-- [Helm chart 13.5.5](#helm-chart-1355)
-- [Helm chart 13.5.4](#helm-chart-1354)
-- [Helm chart 13.5.3](#helm-chart-1353)
-- [Helm chart 13.5.2](#helm-chart-1352)
-- [Helm chart 13.5.1](#helm-chart-1351)
-- [Helm chart 13.5.0](#helm-chart-1350)
-- [Helm chart 13.4.2](#helm-chart-1342)
-- [Helm chart 13.4.1](#helm-chart-1341)
-- [Helm chart 13.4.0](#helm-chart-1340)
-- [Helm chart 13.3.2](#helm-chart-1332)
-- [Helm chart 13.3.1](#helm-chart-1331)
-- [Helm chart 13.3.0](#helm-chart-1330)
-- [Helm chart 13.2.2](#helm-chart-1322)
-- [Helm chart 13.2.1](#helm-chart-1321)
-- [Helm chart 13.2.0](#helm-chart-1320)
-- [Helm chart 13.1.2](#helm-chart-1312)
-- [Helm chart 13.1.1](#helm-chart-1311)
-- [Helm chart 13.1.0](#helm-chart-1310)
-- [Helm chart 13.0.0](#helm-chart-1300)
-- [Helm chart 13.0.0-alpha8](#helm-chart-1300-alpha8)
-- [Helm chart 13.0.0-alpha7](#helm-chart-1300-alpha7)
-- [Helm chart 13.0.0-alpha6](#helm-chart-1300-alpha6)
-- [Helm chart 13.0.0-alpha5](#helm-chart-1300-alpha5)
-- [Helm chart 13.0.0-alpha4.2](#helm-chart-1300-alpha42)
-- [Helm chart 13.0.0-alpha4.1](#helm-chart-1300-alpha41)
-- [Helm chart 13.0.0-alpha4](#helm-chart-1300-alpha4)
-- [Helm chart 13.0.0-alpha3](#helm-chart-1300-alpha3)
-- [Helm chart 13.0.0-alpha2](#helm-chart-1300-alpha2)
+| Helm Chart | Camunda | Released | Stability | Helm CLI | Helm Values | Release Notes |
+|---|---|---|---|---|---|---|
+| [13.12.2](#helm-chart-13122) | 8.8.31 | 2026-07-08 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.2) |
+| [13.12.1](#helm-chart-13121) | 8.8.30 | 2026-07-02 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.1) |
+| [13.12.0](#helm-chart-13120) | 8.8.29 | 2026-06-29 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.0) |
+| [13.11.1](#helm-chart-13111) | 8.8.28 | 2026-06-17 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.11.1) |
+| [13.11.0](#helm-chart-13110) | 8.8.27 | 2026-06-15 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.11.0) |
+| [13.10.2](#helm-chart-13102) | 8.8.26 | 2026-06-11 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.2) |
+| [13.10.1](#helm-chart-13101) | 8.8.25 | 2026-06-04 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.1) |
+| [13.10.0](#helm-chart-13100) | 8.8.24 | 2026-05-29 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.0) |
+| [13.9.1](#helm-chart-1391) | 8.8.24 | 2026-05-26 | Stable | [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.9.1) |
+| [13.9.0](#helm-chart-1390) | 8.8.24 | 2026-05-20 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.9.0) |
+| [13.8.0](#helm-chart-1380) | 8.8.24 | 2026-05-08 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.8.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.8.0) |
+| [13.7.2](#helm-chart-1372) | 8.8.23 | 2026-04-23 | Stable | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.2) |
+| [13.7.1](#helm-chart-1371) | 8.8.22 | 2026-04-17 | Stable | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.1) |
+| [13.7.0](#helm-chart-1370) | 8.8.21 | 2026-04-03 | Stable | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.0) |
+| [13.6.0](#helm-chart-1360) | 8.8.20 | 2026-03-31 | Stable | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.6.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.6.0) |
+| [13.5.5](#helm-chart-1355) | 8.8.19 | 2026-03-25 | Stable | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.5#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.5) |
+| [13.5.4](#helm-chart-1354) | 8.8.16 | 2026-03-13 | Stable | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.4#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.4) |
+| [13.5.3](#helm-chart-1353) | 8.8.15 | 2026-03-07 | Stable | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.3#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.3) |
+| [13.5.2](#helm-chart-1352) | 8.8.14 | 2026-02-26 | Stable | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.2) |
+| [13.5.1](#helm-chart-1351) | 8.8.14 | 2026-02-25 | Stable | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.1) |
+| [13.5.0](#helm-chart-1350) | 8.8.13 | 2026-02-20 | Stable | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.0) |
+| [13.4.2](#helm-chart-1342) | 8.8.11 | 2026-02-06 | Stable | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.2) |
+| [13.4.1](#helm-chart-1341) | 8.8.9 | 2026-01-19 | Stable | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.1) |
+| [13.4.0](#helm-chart-1340) | 8.8.9 | 2026-01-12 | Stable | [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.0) |
+| [13.3.2](#helm-chart-1332) | 8.8.8 | 2025-12-12 | Stable | [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.2) |
+| [13.3.1](#helm-chart-1331) | 8.8.7 | 2025-12-11 | Stable | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.1) |
+| [13.3.0](#helm-chart-1330) | 8.8.6 | 2025-12-05 | Stable | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.0) |
+| [13.2.2](#helm-chart-1322) | 8.8.5 | 2025-12-02 | Stable | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.2) |
+| [13.2.1](#helm-chart-1321) | 8.8.4 | 2025-11-27 | Stable | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.1) |
+| [13.2.0](#helm-chart-1320) | 8.8.4 | 2025-11-25 | Stable | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.0) |
+| [13.1.2](#helm-chart-1312) | 8.8.3 | 2025-11-12 | Stable | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.2) |
+| [13.1.1](#helm-chart-1311) | 8.8.2 | 2025-10-30 | Stable | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.1) |
+| [13.1.0](#helm-chart-1310) | 8.8.1 | 2025-10-27 | Stable | [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.0) |
+| [13.0.0](#helm-chart-1300) | 8.8.0 | 2025-10-13 | Stable | [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0) |
+| [13.0.0-alpha8](#helm-chart-1300-alpha8) | 8.8.0-alpha8 | 2025-09-12 | Alpha | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha8) |
+| [13.0.0-alpha7](#helm-chart-1300-alpha7) | 8.8.0-alpha7 | 2025-08-12 | Alpha | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha7#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha7) |
+| [13.0.0-alpha6](#helm-chart-1300-alpha6) | 8.8.0-alpha6 | 2025-07-08 | Alpha | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha6) |
+| [13.0.0-alpha5](#helm-chart-1300-alpha5) | 8.8.0-alpha5 | 2025-06-12 | Alpha | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha5) |
+| [13.0.0-alpha4.2](#helm-chart-1300-alpha42) | 8.8.0-alpha4.1 | 2025-05-20 | Alpha | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4.2) |
+| [13.0.0-alpha4.1](#helm-chart-1300-alpha41) | 8.8.0-alpha4 | 2025-05-15 | Alpha | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4.1) |
+| [13.0.0-alpha4](#helm-chart-1300-alpha4) | 8.8.0-alpha4 | 2025-05-13 | Alpha | [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4) |
+| [13.0.0-alpha3](#helm-chart-1300-alpha3) | 8.8.0-alpha3 | 2025-04-04 | Alpha | [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha3#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha3) |
+| [13.0.0-alpha2](#helm-chart-1300-alpha2) | 8.8.0-alpha2-rc1 | 2025-03-14 | Alpha | [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha2) |
+
+_Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when using Camunda Enterprise registry access — mirror the set that matches your configuration._
+
+
+---
 
 ## Helm chart 13.12.2
 
@@ -85,7 +92,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
 
-
 ## Helm chart 13.12.1
 
 Supported versions:
@@ -121,7 +127,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
-
 
 ## Helm chart 13.12.0
 
@@ -159,7 +164,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-manage
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
 
-
 ## Helm chart 13.11.1
 
 Supported versions:
@@ -195,7 +199,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-manage
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
-
 
 ## Helm chart 13.11.0
 
@@ -234,7 +237,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-manage
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
 
-
 ## Helm chart 13.10.2
 
 Supported versions:
@@ -271,7 +273,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
-
 
 ## Helm chart 13.10.1
 
@@ -310,7 +311,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r2
 - registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r2
 
-
 ## Helm chart 13.10.0
 
 Supported versions:
@@ -348,7 +348,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.9.1
 
 Supported versions:
@@ -356,7 +355,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.9.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.1#parameters)
-- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
+- Helm CLI: [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4)
 
 Camunda images:
 
@@ -385,7 +384,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.9.0
 
@@ -424,7 +422,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.8.0
 
 Supported versions:
@@ -461,7 +458,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.7.2
 
@@ -500,7 +496,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.7.1
 
 Supported versions:
@@ -508,7 +503,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.7.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.1#parameters)
-- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
+- Helm CLI: [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1)
 
 Camunda images:
 
@@ -537,7 +532,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.7.0
 
@@ -575,7 +569,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.6.0
 
 Supported versions:
@@ -612,7 +605,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.5.5
 
 Supported versions:
@@ -620,7 +612,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.5.5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.5#parameters)
-- Helm CLI: [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1)
+- Helm CLI: [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0)
 
 Camunda images:
 
@@ -649,7 +641,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.5.4
 
@@ -687,7 +678,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.5.3
 
 Supported versions:
@@ -723,7 +713,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.5.2
 
@@ -761,7 +750,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.5.1
 
 Supported versions:
@@ -798,7 +786,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.5.0
 
 Supported versions:
@@ -806,7 +793,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.5.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.0#parameters)
-- Helm CLI: [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0)
+- Helm CLI: [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4)
 
 Camunda images:
 
@@ -834,7 +821,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.4.2
 
@@ -872,7 +858,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.4.1
 
 Supported versions:
@@ -909,7 +894,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.4.0
 
 Supported versions:
@@ -917,7 +901,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.4.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.0#parameters)
-- Helm CLI: [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4)
+- Helm CLI: [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3)
 
 Camunda images:
 
@@ -945,7 +929,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.3.2
 
@@ -983,7 +966,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.3.1
 
 Supported versions:
@@ -991,7 +973,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.3.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.1#parameters)
-- Helm CLI: [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -1019,7 +1001,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.3.0
 
@@ -1057,7 +1038,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.2.2
 
 Supported versions:
@@ -1093,7 +1073,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.2.1
 
@@ -1131,7 +1110,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.2.0
 
 Supported versions:
@@ -1139,7 +1117,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.2.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.0#parameters)
-- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
+- Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
 
 Camunda images:
 
@@ -1167,7 +1145,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.1.2
 
@@ -1205,7 +1182,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.1.1
 
 Supported versions:
@@ -1242,7 +1218,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.1.0
 
 Supported versions:
@@ -1250,7 +1225,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.1.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.0#parameters)
-- Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
+- Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
 
 Camunda images:
 
@@ -1278,7 +1253,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.0.0
 
@@ -1316,7 +1290,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.0.0-alpha8
 
 Supported versions:
@@ -1324,7 +1297,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha8](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8#parameters)
-- Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
+- Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
 
 Camunda images:
 
@@ -1351,7 +1324,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.0.0-alpha7
 
@@ -1389,7 +1361,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.0.0-alpha6
 
 Supported versions:
@@ -1426,7 +1397,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.0.0-alpha5
 
 Supported versions:
@@ -1434,7 +1404,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5#parameters)
-- Helm CLI: [3.18.2](https://github.com/helm/helm/releases/tag/v3.18.2)
+- Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
 
 Camunda images:
 
@@ -1453,7 +1423,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.0.0-alpha4.2
 
@@ -1482,7 +1451,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.0.0-alpha4.1
 
 Supported versions:
@@ -1510,7 +1478,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.0.0-alpha4
 
 Supported versions:
@@ -1518,7 +1485,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha4](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4#parameters)
-- Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
+- Helm CLI: [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2)
 
 Camunda images:
 
@@ -1538,7 +1505,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
 
-
 ## Helm chart 13.0.0-alpha3
 
 Supported versions:
@@ -1546,7 +1512,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha3](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha3#parameters)
-- Helm CLI: [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2)
+- Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
 
 Camunda images:
 
@@ -1565,7 +1531,6 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 - registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
 - registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0
 - registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2
-
 
 ## Helm chart 13.0.0-alpha2
 

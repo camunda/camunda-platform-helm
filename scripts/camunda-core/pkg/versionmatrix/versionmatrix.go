@@ -42,10 +42,16 @@ func HasPreSetupScript(repoRoot, appVersion, filename string) bool {
 }
 
 // ChartEntry represents a single entry in a version-matrix.json file.
+// ReleaseDate, HelmCLI, and ReleaseTag are release-time facts written once
+// (promotion writes helm_cli/release_tag, the public-release pipeline stamps
+// release_date from the published GitHub release) and never re-derived.
 type ChartEntry struct {
 	ChartVersion          string   `json:"chart_version"`
 	ChartImages           []string `json:"chart_images"`
 	ChartEnterpriseImages []string `json:"chart_enterprise_images,omitempty"`
+	ReleaseDate           string   `json:"release_date,omitempty"`
+	HelmCLI               string   `json:"helm_cli,omitempty"`
+	ReleaseTag            string   `json:"release_tag,omitempty"`
 }
 
 // LoadVersionMatrix reads and parses the version-matrix.json for the given app version.
@@ -203,8 +209,9 @@ func CompareChartVersions(a, b string) int {
 
 // CompareChartVersionsFull compares two semver-like chart version strings
 // including pre-release suffixes. Numeric parts are compared first; when
-// equal, a stable version (no suffix) sorts higher than a pre-release,
-// and two pre-release suffixes are compared lexicographically.
+// equal, a stable version (no suffix) sorts higher than a pre-release, and
+// two pre-release suffixes are compared segment-wise with numeric awareness
+// (SemVer-style), so alpha10 > alpha9 > alpha4.2 > alpha4.
 func CompareChartVersionsFull(a, b string) int {
 	if cmp := CompareChartVersions(a, b); cmp != 0 {
 		return cmp
@@ -223,14 +230,62 @@ func CompareChartVersionsFull(a, b string) int {
 		return -1 // b is stable, a is pre-release → a < b
 	}
 
-	// Both pre-release: compare lexicographically.
-	if aSuffix < bSuffix {
-		return -1
-	}
-	if aSuffix > bSuffix {
-		return 1
+	return comparePreReleaseSuffixes(aSuffix, bSuffix)
+}
+
+// comparePreReleaseSuffixes compares dot-separated pre-release suffixes
+// segment by segment. Each segment is split into a leading identifier and a
+// numeric tail ("alpha10" → "alpha", 10): identifiers compare lexically,
+// numeric tails numerically, and a missing segment sorts lower ("alpha4" <
+// "alpha4.1").
+func comparePreReleaseSuffixes(a, b string) int {
+	aSegs := strings.Split(a, ".")
+	bSegs := strings.Split(b, ".")
+	for i := 0; i < len(aSegs) || i < len(bSegs); i++ {
+		if i >= len(aSegs) {
+			return -1
+		}
+		if i >= len(bSegs) {
+			return 1
+		}
+		aID, aNum, aHasNum := splitPreReleaseSegment(aSegs[i])
+		bID, bNum, bHasNum := splitPreReleaseSegment(bSegs[i])
+		if aID != bID {
+			if aID < bID {
+				return -1
+			}
+			return 1
+		}
+		if aNum != bNum {
+			if aNum < bNum {
+				return -1
+			}
+			return 1
+		}
+		// A bare identifier sorts below its numbered form ("rc" < "rc0").
+		if aHasNum != bHasNum {
+			if bHasNum {
+				return -1
+			}
+			return 1
+		}
 	}
 	return 0
+}
+
+// splitPreReleaseSegment splits "alpha10" into ("alpha", 10, true); a segment
+// without a numeric tail yields hasNum=false.
+func splitPreReleaseSegment(seg string) (id string, num int, hasNum bool) {
+	i := len(seg)
+	for i > 0 && seg[i-1] >= '0' && seg[i-1] <= '9' {
+		i--
+	}
+	id = seg[:i]
+	if i == len(seg) {
+		return id, 0, false
+	}
+	num, _ = strconv.Atoi(seg[i:])
+	return id, num, true
 }
 
 // parseChartVersion extracts [major, minor, patch] from a version string.

@@ -16,7 +16,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.15",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.15",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.15"
-    ]
+    ],
+    "release_date": "2025-03-10",
+    "helm_cli": "3.17.1",
+    "release_tag": "camunda-platform-9.4.8"
   },
   {
     "chart_version": "9.4.7",
@@ -35,7 +38,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.14",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.14",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.14"
-    ]
+    ],
+    "release_date": "2025-02-06",
+    "helm_cli": "3.17.0",
+    "release_tag": "camunda-platform-9.4.7"
   },
   {
     "chart_version": "9.4.6",
@@ -54,7 +60,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.13",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.13",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.13"
-    ]
+    ],
+    "release_date": "2025-01-14",
+    "helm_cli": "3.16.3",
+    "release_tag": "camunda-platform-9.4.6"
   },
   {
     "chart_version": "9.4.5",
@@ -73,7 +82,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.12",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.12",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.12"
-    ]
+    ],
+    "release_date": "2024-12-10",
+    "helm_cli": "3.16.3",
+    "release_tag": "camunda-platform-9.4.5"
   },
   {
     "chart_version": "9.4.4",
@@ -92,7 +104,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.11",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.11",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.11"
-    ]
+    ],
+    "release_date": "2024-11-12",
+    "helm_cli": "3.16.2",
+    "release_tag": "camunda-platform-9.4.4"
   },
   {
     "chart_version": "9.4.3",
@@ -111,7 +126,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.11",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.11",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.11"
-    ]
+    ],
+    "release_date": "2024-11-11",
+    "helm_cli": "3.16.2",
+    "release_tag": "camunda-platform-9.4.3"
   },
   {
     "chart_version": "9.4.2",
@@ -130,7 +148,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.10",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.10",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.10"
-    ]
+    ],
+    "release_date": "2024-10-30",
+    "helm_cli": "3.16.2",
+    "release_tag": "camunda-platform-9.4.2"
   },
   {
     "chart_version": "9.4.1",
@@ -149,7 +170,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.10",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.10",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.10"
-    ]
+    ],
+    "release_date": "2024-10-07",
+    "helm_cli": "3.16.1",
+    "release_tag": "camunda-platform-9.4.1"
   },
   {
     "chart_version": "9.4.0",
@@ -168,7 +192,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.9",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.9",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.9"
-    ]
+    ],
+    "release_date": "2024-09-09",
+    "helm_cli": "3.15.4",
+    "release_tag": "camunda-platform-9.4.0"
   },
   {
     "chart_version": "9.3.9",
@@ -187,7 +214,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.8",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.8",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.8"
-    ]
+    ],
+    "release_date": "2024-08-12",
+    "helm_cli": "3.15.3",
+    "release_tag": "camunda-platform-9.3.9"
   },
   {
     "chart_version": "9.3.8",
@@ -206,7 +236,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.7",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.7",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.7"
-    ]
+    ],
+    "release_date": "2024-07-25",
+    "helm_cli": "3.15.3",
+    "release_tag": "camunda-platform-9.3.8"
   },
   {
     "chart_version": "9.3.7",
@@ -225,7 +258,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.7",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.7",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.7"
-    ]
+    ],
+    "release_date": "2024-06-28",
+    "helm_cli": "3.15.2",
+    "release_tag": "camunda-platform-9.3.7"
   },
   {
     "chart_version": "9.3.6",
@@ -244,7 +280,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.6",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.6",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.6"
-    ]
+    ],
+    "release_date": "2024-06-11",
+    "helm_cli": "3.15.1",
+    "release_tag": "camunda-platform-9.3.6"
   },
   {
     "chart_version": "9.3.5",
@@ -263,7 +302,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.5",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.5",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.5"
-    ]
+    ],
+    "release_date": "2024-05-22",
+    "helm_cli": "3.14.2",
+    "release_tag": "camunda-platform-9.3.5"
   },
   {
     "chart_version": "9.3.4",
@@ -282,7 +324,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.5",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.5",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.5"
-    ]
+    ],
+    "release_date": "2024-05-13",
+    "helm_cli": "3.14.2",
+    "release_tag": "camunda-platform-9.3.4"
   },
   {
     "chart_version": "9.3.3",
@@ -301,7 +346,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.4",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.4",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.4"
-    ]
+    ],
+    "release_date": "2024-04-08",
+    "helm_cli": "3.14.2",
+    "release_tag": "camunda-platform-9.3.3"
   },
   {
     "chart_version": "9.3.2",
@@ -320,7 +368,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.3",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.3"
-    ]
+    ],
+    "release_date": "2024-03-18",
+    "helm_cli": "3.14.2",
+    "release_tag": "camunda-platform-9.3.2"
   },
   {
     "chart_version": "9.3.1",
@@ -339,7 +390,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.3",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.3"
-    ]
+    ],
+    "release_date": "2024-03-15",
+    "helm_cli": "3.14.2",
+    "release_tag": "camunda-platform-9.3.1"
   },
   {
     "chart_version": "9.3.0",
@@ -358,7 +412,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.3",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.3"
-    ]
+    ],
+    "release_date": "2024-03-11",
+    "helm_cli": "3.14.2",
+    "release_tag": "camunda-platform-9.3.0"
   },
   {
     "chart_version": "9.2.0",
@@ -377,7 +434,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.2",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.2",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.2"
-    ]
+    ],
+    "release_date": "2024-02-29",
+    "helm_cli": "3.14.2",
+    "release_tag": "camunda-platform-9.2.0"
   },
   {
     "chart_version": "9.1.2",
@@ -396,7 +456,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.2",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.2",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.2"
-    ]
+    ],
+    "release_date": "2024-02-15",
+    "helm_cli": "3.14.1",
+    "release_tag": "camunda-platform-9.1.2"
   },
   {
     "chart_version": "9.1.1",
@@ -415,7 +478,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.2",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.2",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.2"
-    ]
+    ],
+    "release_date": "2024-02-14",
+    "helm_cli": "3.14.0",
+    "release_tag": "camunda-platform-9.1.1"
   },
   {
     "chart_version": "9.1.0",
@@ -434,7 +500,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
-    ]
+    ],
+    "release_date": "2024-01-29",
+    "helm_cli": "3.14.0",
+    "release_tag": "camunda-platform-9.1.0"
   },
   {
     "chart_version": "9.0.2",
@@ -453,7 +522,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
-    ]
+    ],
+    "release_date": "2024-01-10",
+    "helm_cli": "3.13.3",
+    "release_tag": "camunda-platform-9.0.2"
   },
   {
     "chart_version": "9.0.1",
@@ -472,7 +544,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
-    ]
+    ],
+    "release_date": "2024-01-10",
+    "helm_cli": "3.13.3",
+    "release_tag": "camunda-platform-9.0.1"
   },
   {
     "chart_version": "9.0.0",
@@ -491,7 +566,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
-    ]
+    ],
+    "release_date": "2024-01-09",
+    "helm_cli": "3.13.3",
+    "release_tag": "camunda-platform-9.0.0"
   },
   {
     "chart_version": "9.5.0",
@@ -510,7 +588,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.16",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.16",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.16"
-    ]
+    ],
+    "release_date": "2025-04-04",
+    "helm_cli": "3.17.1",
+    "release_tag": "camunda-platform-8.4-9.5.0"
   },
   {
     "chart_version": "9.5.1",
@@ -529,7 +610,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.17",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.17",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.17"
-    ]
+    ],
+    "release_date": "2025-05-09",
+    "helm_cli": "3.17.2",
+    "release_tag": "camunda-platform-8.4-9.5.1"
   },
   {
     "chart_version": "9.5.2",
@@ -548,7 +632,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.18",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.18",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.18"
-    ]
+    ],
+    "release_date": "2025-05-22",
+    "helm_cli": "3.17.3",
+    "release_tag": "camunda-platform-8.4-9.5.2"
   },
   {
     "chart_version": "9.6.0",
@@ -567,7 +654,10 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.18",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.18",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.18"
-    ]
+    ],
+    "release_date": "2025-06-09",
+    "helm_cli": "3.17.3",
+    "release_tag": "camunda-platform-8.4-9.6.0"
   },
   {
     "chart_version": "9.7.0",
@@ -586,6 +676,9 @@
       "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.19",
       "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.19",
       "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.19"
-    ]
+    ],
+    "release_date": "2025-07-07",
+    "helm_cli": "3.18.2",
+    "release_tag": "camunda-platform-8.4-9.7.0"
   }
 ]

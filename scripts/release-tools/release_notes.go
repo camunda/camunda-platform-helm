@@ -204,7 +204,7 @@ func releaseNotesFooter(_ context.Context, chartDir string) error {
 	if err != nil {
 		return err
 	}
-	helmCLIVersions := splitCSV(releasenotes.HelmCLIVersion(appVersion, pin))
+	helmCLIVersions := versionmatrix.SplitHelmCLI(releasenotes.HelmCLIVersion(appVersion, pin))
 
 	entry := versionmatrix.ChartEntry{
 		ChartVersion:          id.Version,

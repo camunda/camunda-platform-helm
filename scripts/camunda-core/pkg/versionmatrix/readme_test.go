@@ -105,6 +105,31 @@ func TestReadmeAnchor(t *testing.T) {
 	}
 }
 
+func TestStabilityLabel(t *testing.T) {
+	cases := map[string]string{
+		"14.4.0":         "Stable",
+		"15.0.0-alpha2":  "Alpha",
+		"15.0.0-alpha10": "Alpha",
+		"14.0.0-rc1":     "RC",
+		"14.0.0-beta1":   "Pre-release",
+	}
+	for v, want := range cases {
+		if got := StabilityLabel(v); got != want {
+			t.Errorf("StabilityLabel(%q)=%q want %q", v, got, want)
+		}
+	}
+}
+
+func TestSplitHelmCLI(t *testing.T) {
+	got := SplitHelmCLI(" 3.20.2 , 4.1.4 ")
+	if len(got) != 2 || got[0] != "3.20.2" || got[1] != "4.1.4" {
+		t.Errorf("SplitHelmCLI=%v", got)
+	}
+	if got := SplitHelmCLI(""); len(got) != 0 {
+		t.Errorf("SplitHelmCLI(empty)=%v want empty", got)
+	}
+}
+
 func TestSortEntriesDescending(t *testing.T) {
 	entries := []ChartEntry{
 		{ChartVersion: "12.9.0"},
@@ -132,152 +157,311 @@ func TestSortAppVersionsDescending(t *testing.T) {
 	}
 }
 
-func TestSpliceReadmeFresh(t *testing.T) {
-	// Empty existing (a new app's first release) → a complete file with one section.
-	entry := ChartEntry{
-		ChartVersion: "12.0.0",
-		ChartImages:  []string{"docker.io/camunda/zeebe:8.7.0"},
+func TestChartTableRow(t *testing.T) {
+	e := ChartEntry{
+		ChartVersion: "14.4.0",
+		ChartImages:  []string{"docker.io/camunda/camunda:8.9.7", "docker.io/bitnamilegacy/elasticsearch:8.18.0"},
+		ReleaseDate:  "2026-06-04",
+		HelmCLI:      "3.20.2,4.1.4",
+		ReleaseTag:   "camunda-platform-8.9-14.4.0",
 	}
-	got := SpliceReadme("", "8.7", entry, []string{"3.20.2"})
-
-	if !strings.HasPrefix(got, "<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->\n🔙 [Back to version matrix index](../)\n\n# Camunda 8.7 Helm Chart Version Matrix\n\n## ToC\n\n- [Helm chart 12.0.0](#helm-chart-1200)\n\n## Helm chart 12.0.0\n") {
-		t.Errorf("SpliceReadme fresh: unexpected header/ToC/section start:\n%q", got)
-	}
-	if !strings.HasSuffix(got, "\n") || strings.HasSuffix(got, "\n\n") {
-		t.Errorf("SpliceReadme fresh: want single trailing newline, got %q", got[len(got)-3:])
-	}
-}
-
-func TestSpliceReadmeInsertPreservesFrozenRows(t *testing.T) {
-	// Two existing rows with arbitrary (possibly stale) bodies. Splicing the
-	// newest version must leave both existing rows BYTE-for-BYTE intact.
-	existing := "<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->\n" +
-		"🔙 [Back to version matrix index](../)\n\n" +
-		"# Camunda 8.7 Helm Chart Version Matrix\n\n" +
-		"## ToC\n\n" +
-		"- [Helm chart 12.10.0](#helm-chart-12100)\n" +
-		"- [Helm chart 12.9.0](#helm-chart-1290)\n\n" +
-		"## Helm chart 12.10.0\n\nfrozen ten body\n\n\n" +
-		"## Helm chart 12.9.0\n\nfrozen nine body\n"
-
-	entry := ChartEntry{
-		ChartVersion: "12.11.0",
-		ChartImages:  []string{"docker.io/camunda/zeebe:8.7.30"},
-	}
-	got := SpliceReadme(existing, "8.7", entry, []string{"3.20.2"})
-
-	// ToC regenerated newest-first, including the new version.
-	if !containsStr(got, "## ToC\n\n- [Helm chart 12.11.0](#helm-chart-12110)\n- [Helm chart 12.10.0](#helm-chart-12100)\n- [Helm chart 12.9.0](#helm-chart-1290)\n") {
-		t.Errorf("SpliceReadme: ToC not regenerated newest-first:\n%q", got)
-	}
-	// Frozen rows preserved verbatim.
-	if !containsStr(got, "## Helm chart 12.10.0\n\nfrozen ten body") {
-		t.Errorf("SpliceReadme: 12.10.0 frozen body altered")
-	}
-	if !containsStr(got, "## Helm chart 12.9.0\n\nfrozen nine body") {
-		t.Errorf("SpliceReadme: 12.9.0 frozen body altered")
-	}
-	// New section rendered and placed first.
-	if !containsStr(got, "1290)\n\n## Helm chart 12.11.0\n") {
-		t.Errorf("SpliceReadme: new section not first / wrong ToC-to-section spacing")
-	}
-	// Two blank lines between sections.
-	if !containsStr(got, "\n\n\n## Helm chart 12.10.0") || !containsStr(got, "\n\n\n## Helm chart 12.9.0") {
-		t.Errorf("SpliceReadme: expected two blank lines between sections")
-	}
-	// Single trailing newline.
-	if !strings.HasSuffix(got, "frozen nine body\n") || strings.HasSuffix(got, "frozen nine body\n\n") {
-		t.Errorf("SpliceReadme: want single trailing newline at EOF")
+	got := chartTableRow("./camunda-8.9/", e)
+	want := "| [14.4.0](./camunda-8.9/#helm-chart-1440) | 8.9.7 | 2026-06-04 | Stable | " +
+		"[3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | " +
+		"[ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.4.0#parameters) | " +
+		"[Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.4.0) |\n"
+	if got != want {
+		t.Errorf("chartTableRow:\n--- got ---\n%s--- want ---\n%s", got, want)
 	}
 }
 
-func TestSpliceReadmeReplacesSameVersion(t *testing.T) {
-	existing := "<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->\n" +
-		"🔙 [Back to version matrix index](../)\n\n" +
-		"# Camunda 8.7 Helm Chart Version Matrix\n\n" +
-		"## ToC\n\n" +
-		"- [Helm chart 12.10.0](#helm-chart-12100)\n" +
-		"- [Helm chart 12.9.0](#helm-chart-1290)\n\n" +
-		"## Helm chart 12.10.0\n\nOLD ten body\n\n\n" +
-		"## Helm chart 12.9.0\n\nfrozen nine body\n"
-
-	entry := ChartEntry{
-		ChartVersion: "12.10.0",
-		ChartImages:  []string{"docker.io/camunda/zeebe:8.7.99"},
+func TestCoreCamundaVersion(t *testing.T) {
+	cases := []struct {
+		imgs []string
+		want string
+	}{
+		{[]string{"docker.io/camunda/camunda:8.9.12", "docker.io/camunda/zeebe:9.9.9"}, "8.9.12"},
+		{[]string{"docker.io/camunda/operate:8.7.30", "docker.io/camunda/zeebe:8.7.30"}, "8.7.30"},
+		{[]string{"docker.io/bitnami/elasticsearch:8.12.2"}, ""},
+		{nil, ""},
 	}
-	got := SpliceReadme(existing, "8.7", entry, []string{"3.20.2"})
-
-	if containsStr(got, "OLD ten body") {
-		t.Errorf("SpliceReadme: old 12.10.0 body not replaced")
-	}
-	if !containsStr(got, "docker.io/camunda/zeebe:8.7.99") {
-		t.Errorf("SpliceReadme: new 12.10.0 body not rendered")
-	}
-	// No duplicate ToC entry for the replaced version.
-	if strings.Count(got, "- [Helm chart 12.10.0](#helm-chart-12100)") != 1 {
-		t.Errorf("SpliceReadme: duplicate/missing ToC entry for replaced version")
-	}
-	// Sibling stays frozen.
-	if !containsStr(got, "## Helm chart 12.9.0\n\nfrozen nine body") {
-		t.Errorf("SpliceReadme: 12.9.0 frozen body altered on same-version replace")
+	for _, tc := range cases {
+		if got := coreCamundaVersion(ChartEntry{ChartImages: tc.imgs}); got != tc.want {
+			t.Errorf("coreCamundaVersion(%v)=%q want %q", tc.imgs, got, tc.want)
+		}
 	}
 }
 
-func TestParseReadmeSections(t *testing.T) {
-	readme := "preamble\n## ToC\n\n- x\n\n## Helm chart 12.10.0\n\nbody A\n\n\n## Helm chart 12.9.0\n\nbody B\n"
-	got := parseReadmeSections(readme)
-	if len(got) != 2 {
-		t.Fatalf("parseReadmeSections: got %d sections want 2", len(got))
+func TestChartTableRowMissingFacts(t *testing.T) {
+	got := chartTableRow("", ChartEntry{ChartVersion: "15.0.0-alpha3"})
+	if !strings.Contains(got, "| _pending_ |") {
+		t.Errorf("chartTableRow: missing release date should render _pending_: %q", got)
 	}
-	if got["12.10.0"] != "## Helm chart 12.10.0\n\nbody A" {
-		t.Errorf("parseReadmeSections 12.10.0=%q", got["12.10.0"])
+	if !strings.Contains(got, "| Alpha |") {
+		t.Errorf("chartTableRow: pre-release should render Alpha: %q", got)
 	}
-	if got["12.9.0"] != "## Helm chart 12.9.0\n\nbody B" {
-		t.Errorf("parseReadmeSections 12.9.0=%q", got["12.9.0"])
+	if !strings.Contains(got, "| N/A |") {
+		t.Errorf("chartTableRow: missing helm_cli should render N/A: %q", got)
 	}
-	if len(parseReadmeSections("no sections here")) != 0 {
-		t.Errorf("parseReadmeSections: headerless input should yield empty map")
+	if !strings.Contains(got, "| — |") {
+		t.Errorf("chartTableRow: missing release_tag should render —: %q", got)
+	}
+	if !strings.Contains(got, "[15.0.0-alpha3](#helm-chart-1500-alpha3)") {
+		t.Errorf("chartTableRow: empty prefix should keep in-page anchor: %q", got)
+	}
+}
+
+// testConfig builds a ChartVersionsConfig covering all four buckets.
+func testConfig() *ChartVersionsConfig {
+	return &ChartVersionsConfig{
+		CamundaVersions: Buckets{
+			Alpha:           []string{"8.10"},
+			SupportStandard: []string{"8.9", "8.8"},
+			SupportExtended: []string{"8.6"},
+			EndOfLife:       []string{"8.2"},
+		},
+		CamundaSupportLifecycle: map[string]Lifecycle{
+			"8.10": {Note: "Deploys Camunda Hub — see the [Hub documentation](https://example.invalid/hub)."},
+			"8.9":  {Released: "2026-04-14", StdSupportUntil: "2027-10-13"},
+			"8.8":  {Released: "2025-10-14", StdSupportUntil: "2027-04-13"},
+			"8.6":  {Released: "2024-10-08"},
+			"8.2":  {Released: "2022-10-11", EOLSince: "2024-10-08", LatestChart: "8.2.34"},
+		},
 	}
 }
 
 func TestRenderIndex(t *testing.T) {
-	appVersions := []string{"8.10", "8.9"}
 	entriesByApp := map[string][]ChartEntry{
-		"8.10": {{ChartVersion: "15.0.0-alpha2"}, {ChartVersion: "15.0.0-alpha1"}},
-		"8.9":  {{ChartVersion: "14.4.0"}, {ChartVersion: "14.3.0"}},
+		"8.10": {{ChartVersion: "15.0.0-alpha3", ReleaseDate: "2026-07-09", HelmCLI: "4.2.3", ReleaseTag: "camunda-platform-8.10-15.0.0-alpha3"}},
+		"8.9": {
+			{ChartVersion: "14.7.0", ReleaseDate: "2026-07-17", HelmCLI: "3.20.2,4.2.3", ReleaseTag: "camunda-platform-8.9-14.7.0"},
+			{ChartVersion: "14.6.1", ReleaseDate: "2026-07-08", HelmCLI: "3.20.2,4.2.3", ReleaseTag: "camunda-platform-8.9-14.6.1"},
+			{ChartVersion: "14.6.0"},
+			{ChartVersion: "14.5.0"},
+			{ChartVersion: "14.4.1"},
+			{ChartVersion: "14.4.0"},
+			{ChartVersion: "14.3.0"},
+		},
+		"8.8": {{ChartVersion: "13.12.2", ReleaseDate: "2026-07-08", HelmCLI: "3.20.2", ReleaseTag: "camunda-platform-8.8-13.12.2"}},
+		"8.6": {{ChartVersion: "11.12.3", ReleaseDate: "2026-04-03", HelmCLI: "3.20.1"}},
 	}
-	got := RenderIndex(appVersions, entriesByApp)
+	got, err := RenderIndex(testConfig(), entriesByApp)
+	if err != nil {
+		t.Fatalf("RenderIndex: %v", err)
+	}
 
 	checks := []string{
 		"<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->",
 		"# Camunda 8 Helm Chart Version Matrix",
-		"## Overview",
-		"## [Camunda 8.10](./camunda-8.10)",
-		"### [Helm chart 15.0.0-alpha2](./camunda-8.10/#helm-chart-1500-alpha2)",
-		"### [Helm chart 15.0.0-alpha1](./camunda-8.10/#helm-chart-1500-alpha1)",
-		"## [Camunda 8.9](./camunda-8.9)",
-		"### [Helm chart 14.4.0](./camunda-8.9/#helm-chart-1440)",
+		"helm search repo camunda/camunda-platform --versions",
+		// Active minors: lifecycle heading + table + all-versions link.
+		"## Camunda 8.10 — 🚧 Alpha",
+		"> Deploys Camunda Hub — see the [Hub documentation](https://example.invalid/hub).",
+		"## Camunda 8.9 — ✅ Standard support until 2027-10-13",
+		"| Helm Chart | Camunda | Released | Stability | Helm CLI | Helm Values | Release Notes |",
+		"| [14.7.0](./camunda-8.9/#helm-chart-1470) |",
+		"[All 7 chart versions for Camunda 8.9 →](./camunda-8.9/)",
+		"## Camunda 8.8 — ✅ Standard support until 2027-04-13",
+		// Extended support: one compact row per minor.
+		"## Extended support — 🔒 contact your CSM",
+		"| Camunda | Released | Latest chart | Full matrix |",
+		"| 8.6 | 2024-10-08 | [11.12.3](./camunda-8.6/#helm-chart-11123) | [camunda-8.6](./camunda-8.6/) |",
+		// EOL: compact row from lifecycle data (no JSON needed).
+		"## End of life — ⛔ no longer supported",
+		"| Camunda | EOL since | Last chart | Full matrix |",
+		"| 8.2 | 2024-10-08 | [8.2.34](./camunda-8.2/#helm-chart-8234) | [camunda-8.2](./camunda-8.2/) |",
 	}
 	for _, c := range checks {
-		if !containsStr(got, c) {
+		if !strings.Contains(got, c) {
 			t.Errorf("RenderIndex missing %q", c)
 		}
 	}
-	// Two blank lines before first app (from header).
-	if !containsStr(got, "\n\n\n## [Camunda 8.10]") {
-		t.Errorf("RenderIndex: expected two blank lines before first app section")
+
+	// Index caps each active minor at indexTableLimit rows: 14.3.0 and 14.4.0
+	// (rows 6-7) must NOT appear, while all seven stay reachable via the link.
+	if strings.Contains(got, "[14.3.0]") || strings.Contains(got, "[14.4.0](") {
+		t.Errorf("RenderIndex: rows beyond the %d-row cap leaked into the index", indexTableLimit)
 	}
-	// One blank line between apps.
-	if !containsStr(got, "alpha1)\n\n## [Camunda 8.9]") {
-		t.Errorf("RenderIndex: expected one blank line between app sections")
+	// Old heading-list layout must be gone.
+	if strings.Contains(got, "### [Helm chart") {
+		t.Errorf("RenderIndex: legacy heading-list layout leaked into the index")
 	}
-	// One blank line after app heading.
-	if !containsStr(got, "[Camunda 8.9](./camunda-8.9)\n\n### [Helm chart 14.4.0]") {
-		t.Errorf("RenderIndex: expected one blank line after app heading")
+}
+
+func TestRenderIndexPlaceholderForEmptyActiveMinor(t *testing.T) {
+	// A minor can be classified in chart-versions.yaml before its first chart
+	// is promoted (documented minor-rollover chores) — the index must render
+	// a placeholder, not fail every other minor's release.
+	entriesByApp := map[string][]ChartEntry{
+		"8.10": {{ChartVersion: "15.0.0-alpha3"}},
+		"8.9":  {{ChartVersion: "14.7.0"}},
+		// 8.8 missing entirely.
+		"8.6": {{ChartVersion: "11.12.3"}},
 	}
-	// No blank line between consecutive chart entries.
-	if !containsStr(got, "alpha2)\n### [Helm chart 15.0.0-alpha1]") {
-		t.Errorf("RenderIndex: expected no blank line between chart entries")
+	got, err := RenderIndex(testConfig(), entriesByApp)
+	if err != nil {
+		t.Fatalf("RenderIndex: %v", err)
+	}
+	if !strings.Contains(got, "## Camunda 8.8 — ✅ Standard support until 2027-04-13") {
+		t.Errorf("empty active minor lost its section heading")
+	}
+	if !strings.Contains(got, "_No chart releases for Camunda 8.8 yet._") {
+		t.Errorf("empty active minor missing placeholder:\n%s", got)
+	}
+	if strings.Contains(got, "[All 0 chart versions") {
+		t.Errorf("empty active minor must not render an all-versions link")
+	}
+}
+
+func TestRenderMinorReadme(t *testing.T) {
+	entries := []ChartEntry{
+		{ChartVersion: "14.6.1", ReleaseDate: "2026-07-08", HelmCLI: "3.20.2,4.2.3", ReleaseTag: "camunda-platform-8.9-14.6.1",
+			ChartImages: []string{"docker.io/camunda/camunda:8.9.11"}},
+		{ChartVersion: "14.7.0", ReleaseDate: "2026-07-17", HelmCLI: "3.20.2,4.2.3", ReleaseTag: "camunda-platform-8.9-14.7.0",
+			ChartImages: []string{"docker.io/camunda/camunda:8.9.12", "docker.io/bitnamilegacy/elasticsearch:8.18.0"}},
+	}
+	lc := Lifecycle{Released: "2026-04-14", StdSupportUntil: "2027-10-13"}
+	got := RenderMinorReadme("8.9", entries, BucketSupportStandard, lc, nil)
+
+	checks := []string{
+		"<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->",
+		"🔙 [Back to version matrix index](../)",
+		"# Camunda 8.9 Helm Chart Version Matrix",
+		"✅ Standard support until 2027-10-13",
+		"| Helm Chart | Camunda | Released | Stability | Helm CLI | Helm Values | Release Notes |",
+		// Summary rows link in-page and are sorted newest-first.
+		"| [14.7.0](#helm-chart-1470) |",
+		"| [14.6.1](#helm-chart-1461) |",
+		// Per-version sections preserved with their anchors and image lists.
+		"## Helm chart 14.7.0",
+		"## Helm chart 14.6.1",
+		"- docker.io/camunda/camunda:8.9.12",
+		"Non-Camunda images:",
+		"- docker.io/bitnamilegacy/elasticsearch:8.18.0",
+	}
+	for _, c := range checks {
+		if !strings.Contains(got, c) {
+			t.Errorf("RenderMinorReadme missing %q", c)
+		}
+	}
+	// Sections are newest-first.
+	if strings.Index(got, "## Helm chart 14.7.0") > strings.Index(got, "## Helm chart 14.6.1") {
+		t.Errorf("RenderMinorReadme: sections not newest-first")
+	}
+	// Summary table precedes the sections.
+	if strings.Index(got, "| [14.7.0](#helm-chart-1470)") > strings.Index(got, "## Helm chart 14.7.0") {
+		t.Errorf("RenderMinorReadme: summary table must precede sections")
+	}
+	if !strings.HasSuffix(got, "\n") || strings.HasSuffix(got, "\n\n") {
+		t.Errorf("RenderMinorReadme: want single trailing newline")
+	}
+}
+
+func TestRenderMinorReadmeEOLStatus(t *testing.T) {
+	lc := Lifecycle{Released: "2022-10-11", EOLSince: "2024-10-08"}
+	got := RenderMinorReadme("8.2", []ChartEntry{{ChartVersion: "8.2.34"}}, BucketEndOfLife, lc, nil)
+	if !strings.Contains(got, "⛔ End of life since 2024-10-08") {
+		t.Errorf("RenderMinorReadme: missing EOL status line:\n%q", got[:200])
+	}
+}
+
+func TestRenderMinorReadmePreservesExistingSections(t *testing.T) {
+	// Published section bodies are the historical truth: when a section for a
+	// version already exists it must be kept byte-for-byte, even when the JSON
+	// entry disagrees (the SUPPORT-33569 drift class). Missing sections render
+	// from JSON.
+	entries := []ChartEntry{
+		{ChartVersion: "14.7.0", ReleaseDate: "2026-07-17", ChartImages: []string{"docker.io/camunda/camunda:WRONG-JSON-TAG"}},
+		{ChartVersion: "14.6.1", ReleaseDate: "2026-07-08", ChartImages: []string{"docker.io/camunda/camunda:8.9.11"}, HelmCLI: "3.20.2"},
+	}
+	existing := map[string]string{
+		"14.7.0": "## Helm chart 14.7.0\n\nfrozen published body",
+	}
+	lc := Lifecycle{Released: "2026-04-14", StdSupportUntil: "2027-10-13"}
+	got := RenderMinorReadme("8.9", entries, BucketSupportStandard, lc, existing)
+
+	if !strings.Contains(got, "## Helm chart 14.7.0\n\nfrozen published body") {
+		t.Errorf("existing section body not preserved verbatim:\n%s", got)
+	}
+	// The summary table may legitimately derive its Camunda column from the
+	// JSON entry; only the preserved SECTION bodies must stay untouched.
+	sections := got[strings.Index(got, "## Helm chart"):]
+	if strings.Contains(sections, "WRONG-JSON-TAG") {
+		t.Errorf("JSON image set leaked into a preserved section")
+	}
+	if !strings.Contains(got, "## Helm chart 14.6.1") || !strings.Contains(got, "docker.io/camunda/camunda:8.9.11") {
+		t.Errorf("missing section not rendered from JSON:\n%s", got)
+	}
+	// The summary table still renders every version.
+	if !strings.Contains(got, "| [14.7.0](#helm-chart-1470)") || !strings.Contains(got, "| [14.6.1](#helm-chart-1461)") {
+		t.Errorf("summary table incomplete")
+	}
+}
+
+func TestRenderMinorReadmeRerendersUnpublishedAndAlpha(t *testing.T) {
+	// An UNSTAMPED entry re-renders from JSON even when a section exists (an
+	// in-flight promotion may re-derive its images between RCs)…
+	entries := []ChartEntry{{ChartVersion: "14.8.0", ChartImages: []string{"docker.io/camunda/camunda:8.9.13"}}}
+	existing := map[string]string{"14.8.0": "## Helm chart 14.8.0\n\nSTALE RC1 BODY"}
+	lc := Lifecycle{Released: "2026-04-14", StdSupportUntil: "2027-10-13"}
+	got := RenderMinorReadme("8.9", entries, BucketSupportStandard, lc, existing)
+	if strings.Contains(got, "STALE RC1 BODY") {
+		t.Errorf("unstamped entry kept its stale section:\n%s", got)
+	}
+	if !strings.Contains(got, "docker.io/camunda/camunda:8.9.13") {
+		t.Errorf("unstamped entry not re-rendered from JSON")
+	}
+
+	// …and alpha-bucket minors ALWAYS render from JSON: their JSON is written
+	// by the current promotion pipeline while earlier splice-era sections can
+	// carry another release's images (the 8.10 alpha2 case).
+	entries = []ChartEntry{{ChartVersion: "15.0.0-alpha2", ReleaseDate: "2026-06-05", ChartImages: []string{"docker.io/camunda/camunda:8.10.0-alpha2"}}}
+	existing = map[string]string{"15.0.0-alpha2": "## Helm chart 15.0.0-alpha2\n\n- docker.io/camunda/camunda:8.10.0-alpha1"}
+	got = RenderMinorReadme("8.10", entries, BucketAlpha, Lifecycle{}, existing)
+	if strings.Contains(got, "alpha1") {
+		t.Errorf("alpha section not re-rendered from JSON:\n%s", got)
+	}
+	if !strings.Contains(got, "docker.io/camunda/camunda:8.10.0-alpha2") {
+		t.Errorf("alpha section missing JSON images")
+	}
+}
+
+func TestReleaseSectionOmitsEmptyTagRefs(t *testing.T) {
+	entry := ChartEntry{
+		ChartVersion: "15.0.0-alpha1",
+		ChartImages: []string{
+			"docker.io/camunda/camunda:8.10.0-alpha1",
+			"docker.io/camunda/hub:",
+			"docker.io/camunda/hub-websockets:",
+		},
+		ChartEnterpriseImages: []string{"registry.camunda.cloud/vendor-ee/elasticsearch:"},
+	}
+	got := ReleaseSection("8.10", entry, nil, true)
+	if strings.Contains(got, "hub:") || strings.Contains(got, "hub-websockets:") {
+		t.Errorf("empty-tag refs leaked into the rendered section:\n%s", got)
+	}
+	if strings.Contains(got, "Enterprise images") {
+		t.Errorf("enterprise block rendered although all its refs have empty tags")
+	}
+	if !strings.Contains(got, "docker.io/camunda/camunda:8.10.0-alpha1") {
+		t.Errorf("valid image dropped")
+	}
+}
+
+func TestParseReadmeSections(t *testing.T) {
+	readme := "preamble\n| table |\n\n## Helm chart 12.10.0\n\nbody A\n\n\n## Helm chart 12.9.0\n\nbody B\n"
+	got := ParseReadmeSections(readme)
+	if len(got) != 2 {
+		t.Fatalf("ParseReadmeSections: got %d sections want 2", len(got))
+	}
+	if got["12.10.0"] != "## Helm chart 12.10.0\n\nbody A" {
+		t.Errorf("ParseReadmeSections 12.10.0=%q", got["12.10.0"])
+	}
+	if got["12.9.0"] != "## Helm chart 12.9.0\n\nbody B" {
+		t.Errorf("ParseReadmeSections 12.9.0=%q", got["12.9.0"])
+	}
+	if len(ParseReadmeSections("no sections here")) != 0 {
+		t.Errorf("ParseReadmeSections: headerless input should yield empty map")
 	}
 }
 
@@ -294,6 +478,24 @@ func TestEnterpriseDocsURL(t *testing.T) {
 	}
 }
 
-func containsStr(s, sub string) bool {
-	return strings.Contains(s, sub)
+func TestSyncHelmCLILineInPreservedSection(t *testing.T) {
+	entries := []ChartEntry{{
+		ChartVersion: "14.7.0", ReleaseDate: "2026-07-17", HelmCLI: "3.20.2,4.2.2",
+	}}
+	existing := map[string]string{
+		"14.7.0": "## Helm chart 14.7.0\n\nSupported versions:\n\n" +
+			"- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.2.3](https://github.com/helm/helm/releases/tag/v4.2.3)\n\n" +
+			"Camunda images:\n\n- docker.io/camunda/camunda:8.9.12\n",
+	}
+	lc := Lifecycle{Released: "2026-04-14", StdSupportUntil: "2027-10-13"}
+	got := RenderMinorReadme("8.9", entries, BucketSupportStandard, lc, existing)
+	if strings.Contains(got, "4.2.3") {
+		t.Errorf("stale Helm CLI line survived in preserved section:\n%s", got)
+	}
+	if strings.Count(got, "- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.2.2](https://github.com/helm/helm/releases/tag/v4.2.2)") != 1 {
+		t.Errorf("Helm CLI line not synced to recorded helm_cli:\n%s", got)
+	}
+	if !strings.Contains(got, "- docker.io/camunda/camunda:8.9.12") {
+		t.Errorf("image list of preserved section altered")
+	}
 }
