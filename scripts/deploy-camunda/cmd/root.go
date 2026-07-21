@@ -557,6 +557,7 @@ func Execute() error {
 	rootCmd.AddCommand(newTriageCommand())
 	rootCmd.AddCommand(newDiagnosticsCommand())
 	rootCmd.AddCommand(newCICommand())
+	rootCmd.AddCommand(newE2EEnvCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {
