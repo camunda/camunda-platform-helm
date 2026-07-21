@@ -60,6 +60,19 @@ inputs:
     description: If true, run only the smoke-tests project. If false, run the full-suite project.
     required: false
     default: "true"
+  management-namespace:
+    description: >-
+      For a multi-namespace topology scenario: the namespace running the
+      central Identity/Keycloak. When set, `identifier`/`namespace-prefix`
+      must resolve TEST_NAMESPACE to the orchestration namespace, and a
+      deploy-camunda binary is downloaded so run-e2e-tests.sh can merge the
+      two namespaces' .env via `deploy-camunda e2e-env merge`.
+    required: false
+    default: ""
+  binary-artifact-name:
+    description: Name of the uploaded deploy-camunda binary artifact to download (only used when management-namespace is set).
+    required: false
+    default: deploy-camunda-binary
 runs:
   using: composite
   steps:
@@ -143,6 +156,19 @@ runs:
           zbctl
           jq
 
+    - name: Download deploy-camunda binary (multi-namespace topology)
+      if: inputs.management-namespace != ''
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ inputs.binary-artifact-name }}
+        path: ${{ runner.temp }}/bin
+    - name: Add deploy-camunda to PATH (multi-namespace topology)
+      if: inputs.management-namespace != ''
+      shell: bash
+      run: |
+        chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+        echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -189,6 +215,7 @@ runs:
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
         TEST_EXCLUDE: ${{ inputs.exclude }}
         TEST_AUTH_TYPE: ${{ inputs.auth }}
+        MANAGEMENT_NAMESPACE: ${{ inputs.management-namespace }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -211,7 +238,10 @@ runs:
           SMOKE_FLAG=""
         fi
 
-        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${SMOKE_FLAG} --trace retain-on-failure --verbose ${EXTRA_FLAGS}
+        MGMT_NS_FLAG=""
+        [[ -n "$MANAGEMENT_NAMESPACE" ]] && MGMT_NS_FLAG="--management-namespace ${MANAGEMENT_NAMESPACE}"
+
+        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${SMOKE_FLAG} --trace retain-on-failure --verbose ${EXTRA_FLAGS} ${MGMT_NS_FLAG}
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}

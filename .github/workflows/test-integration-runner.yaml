@@ -1344,6 +1344,95 @@ jobs:
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
 
+  # Multi-namespace topology job: runs the smoke suite against the
+  # 'multinamespace' scenario's orchestration release, with credentials
+  # merged from the management release via `deploy-camunda e2e-env merge`.
+  # Fully additive/opt-in — gated tightly on the one topology scenario, so
+  # it cannot affect any other scenario's e2e path. Non-blocking while new.
+  e2e-topology-smoke:
+    name: "[topology] e2e smoke - ${{ inputs.shortname }}"
+    needs: [install]
+    runs-on: gcp-core-8-release
+    container:
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
+    if: ${{ inputs.test-enabled && inputs.scenario == 'multinamespace' && inputs.flow == 'install' }}
+    continue-on-error: true
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Resolve base namespace and derive management namespace
+        id: base-vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ inputs.deployment-ttl }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+          exportEnv: false
+
+      - name: Run Playwright E2E Tests (multi-namespace topology)
+        uses: ./.github/actions/playwright-e2e-tests
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
+        with:
+          camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+          camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
+          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          flow: ${{ inputs.flow }}
+          distro-platform: ${{ inputs.distro-platform }}
+          infra-type: ${{ inputs.infra-type }}
+          identifier: ${{ inputs.identifier }}
+          namespace-prefix: "${{ inputs.namespace-prefix }}-orcha"
+          management-namespace: "${{ steps.base-vars.outputs.namespace }}-mgmt"
+          binary-artifact-name: ${{ inputs.binary-artifact-name }}
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          auth: ${{ inputs.auth }}
+          auth-data: ${{ inputs.auth-data }}
+          test-stage: after-install
+          shard-index: "1"
+          scenario: ${{ inputs.scenario }}
+          run-smoke-tests: "true"
+
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
