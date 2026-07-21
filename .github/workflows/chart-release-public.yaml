@@ -430,6 +430,7 @@ jobs:
         with:
           tools: |
             git-cliff
+            golang
             helm
             helm-ct
             yq
@@ -440,9 +441,44 @@ jobs:
         run: |
           make release.set-prs-version-label chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
 
+      - name: Stamp release date on the release-please PR
+        id: stamp
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          APP_VERSION: "${{ needs.release.outputs.chart-dir-id }}"
+          CHART_VERSION: "${{ needs.release.outputs.version }}"
+        run: |
+          set -euo pipefail
+
+          head_ref="release-please--branches--main--components--camunda-platform-${APP_VERSION}"
+          git fetch origin "${head_ref}" --tags
+          git checkout "${head_ref}"
+
+          (cd scripts/release-tools && go build -o /tmp/release-tools .)
+
+          /tmp/release-tools stamp-release --app "${APP_VERSION}" --chart-version "${CHART_VERSION}"
+          /tmp/release-tools version-matrix --readme "${APP_VERSION}"
+          /tmp/release-tools version-matrix --index
+
+          git config user.name "distro-ci[bot]"
+          git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
+          git add "version-matrix/camunda-${APP_VERSION}/version-matrix.json" \
+            "version-matrix/camunda-${APP_VERSION}/README.md" \
+            "version-matrix/README.md"
+          if git diff --cached --quiet; then
+            echo "::notice::Release date already stamped"
+          else
+            git commit -m "chore: stamp release date for ${CHART_VERSION}"
+            git push origin "${head_ref}"
+            echo "::notice::Stamped release date on ${head_ref}"
+          fi
+          git checkout -
+
+      # Gated on the stamp: a release must not merge to main with its
+      # release_date unstamped (the page would permanently show _pending_).
       - name: Mark release-please PR as published
         id: mark-published
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.stamp.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
           CHART_DIR_ID: "${{ needs.release.outputs.chart-dir-id }}"

@@ -1,5 +1,5 @@
-# For more details about versions, see the readme file in the charts directory:
-# charts/README.md
+# For more details about versions and the maintainer update procedure, see:
+# docs/reference/release-process.md ("Minor Version Chores")
 name: Get chart versions
 description: Find chart versions that should be included in the CI matrix.
 outputs:

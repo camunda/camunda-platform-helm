@@ -303,8 +303,9 @@ jobs:
           /tmp/release-tools update-matrix \
             --chart-dir "${chart_path}" \
             --chart-version "${chart_version}" \
-            --matrix-file "${version_matrix_file}"
-          /tmp/release-tools version-matrix --readme "${app_version}" --chart-version "${chart_version}"
+            --matrix-file "${version_matrix_file}" \
+            --app "${app_version}"
+          /tmp/release-tools version-matrix --readme "${app_version}"
           /tmp/release-tools version-matrix --index
 
           if [[ "${DRY_RUN}" == "true" ]]; then

@@ -9,7 +9,6 @@ on:
     paths:
     - '.github/workflows/chart-public-files.yaml'
     - 'charts/camunda-platform*/values*.yaml'
-    - 'scripts/templates/version-matrix/*'
     - 'version-matrix/**'
   workflow_dispatch: { }
 
@@ -53,9 +52,14 @@ jobs:
           done
       - name: Copy version matrix files
         run: |
+          set -euo pipefail
+          if [ -z "$(ls -A main/version-matrix 2>/dev/null)" ]; then
+            echo "::error::main/version-matrix is missing or empty — refusing to sync (would delete the published matrix)"
+            exit 1
+          fi
           mkdir -p camunda-platform/version-matrix
-          cp -a main/version-matrix/* camunda-platform/version-matrix/
-          echo "Copied version matrix files to camunda-platform/version-matrix/"
+          rsync -a --delete main/version-matrix/ camunda-platform/version-matrix/
+          echo "Synced version matrix files to camunda-platform/version-matrix/"
       - name: Add public files info to workflow summary
         run: |
           cat << EOF >> $GITHUB_STEP_SUMMARY
