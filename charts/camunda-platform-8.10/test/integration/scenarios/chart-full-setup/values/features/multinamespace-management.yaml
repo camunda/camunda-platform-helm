@@ -61,9 +61,9 @@ global:
       # the orchestration releases instead (see multinamespace-orchestration.yaml),
       # which reach back into this namespace's Identity/Keycloak by FQDN.
       optimize:
-        registerInIdentity: true
+        alwaysRegister: true
         redirectUrl: "https://${ORCH_HOST}/optimize"
       orchestration:
-        registerInIdentity: true
+        alwaysRegister: true
       connectors:
-        registerInIdentity: true
+        alwaysRegister: true

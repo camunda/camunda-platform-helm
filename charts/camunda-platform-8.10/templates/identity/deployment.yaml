@@ -48,19 +48,19 @@ spec:
             ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
-            {{- if or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.registerInIdentity }}
+            {{- if or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.alwaysRegister }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
                 "config"        .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
-            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.registerInIdentity }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
                 "config"        .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
-            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.registerInIdentity }}
+            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize

@@ -1044,11 +1044,11 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				}
 			},
 		}, {
-			// Test: registerInIdentity=true must still emit the VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
+			// Test: alwaysRegister=true must still emit the VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
 			// env var even though optimize is disabled — otherwise Identity's
 			// ClientInitializationService crashes with "Please supply a valid client
 			// secret for Optimize" because the configmap now provisions the Optimize
-			// resource server (see configmap.yaml's registerInIdentity gates) but the
+			// resource server (see configmap.yaml's alwaysRegister gates) but the
 			// secret env var it references was never populated.
 			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesOptimizeSecretEnvVar",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
@@ -1057,7 +1057,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.enabled":                           "true",
 				"global.security.authentication.method":                  "oidc",
 				"optimize.enabled":                                       "false",
-				"global.identity.auth.optimize.registerInIdentity":       "true",
+				"global.identity.auth.optimize.alwaysRegister":       "true",
 				"global.identity.auth.optimize.secret.existingSecret":    "optimize-oidc-secret",
 				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
 			},
@@ -1076,10 +1076,10 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 							},
 						},
 					},
-					"VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET should be present when registerInIdentity=true, even though optimize.enabled=false")
+					"VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET should be present when alwaysRegister=true, even though optimize.enabled=false")
 			},
 		}, {
-			// Test: registerInIdentity=true must still emit the VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
+			// Test: alwaysRegister=true must still emit the VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
 			// env var even though orchestration is disabled — same root cause as the
 			// Optimize case above.
 			Name:                 "TestOrchestrationDisabledWithRegisterInIdentityIncludesOrchestrationSecretEnvVar",
@@ -1089,7 +1089,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.enabled":                                        "true",
 				"global.security.authentication.method":                               "oidc",
 				"orchestration.enabled":                                               "false",
-				"global.identity.auth.orchestration.registerInIdentity":               "true",
+				"global.identity.auth.orchestration.alwaysRegister":               "true",
 				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
 				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
 			},
@@ -1108,7 +1108,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 							},
 						},
 					},
-					"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should be present when registerInIdentity=true, even though orchestration.enabled=false")
+					"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should be present when alwaysRegister=true, even though orchestration.enabled=false")
 			},
 		},
 	}
