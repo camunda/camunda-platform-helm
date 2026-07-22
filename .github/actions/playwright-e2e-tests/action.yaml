@@ -251,10 +251,13 @@ runs:
           SMOKE_FLAG=""
         fi
 
-        MGMT_NS_FLAG=""
-        [[ -n "$MANAGEMENT_NAMESPACE" ]] && MGMT_NS_FLAG="--management-namespace ${MANAGEMENT_NAMESPACE}"
+        E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
+        [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
+        E2E_ARGS+=(--trace retain-on-failure --verbose)
+        [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
+        [[ -n "$MANAGEMENT_NAMESPACE" ]] && E2E_ARGS+=(--management-namespace "${MANAGEMENT_NAMESPACE}")
 
-        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${SMOKE_FLAG} --trace retain-on-failure --verbose ${EXTRA_FLAGS} ${MGMT_NS_FLAG}
+        ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}

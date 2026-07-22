@@ -1389,6 +1389,18 @@ jobs:
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
 
+      - name: Guard topology namespace length
+        run: |
+          set -euo pipefail
+          base="${{ steps.base-vars.outputs.namespace }}"
+          for suffix in orcha mgmt; do
+            full="${base}-${suffix}"
+            if [[ ${#full} -gt 63 ]]; then
+              echo "::error::namespace '${full}' is ${#full} chars, exceeding the 63-character Kubernetes limit. This workflow step derives it via naive concatenation and would diverge from deploy-camunda's DeriveReleaseNamespace truncation used by the actual deploy." >&2
+              exit 1
+            fi
+          done
+
       - name: Import Vault secrets
         id: test-credentials-secret
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
