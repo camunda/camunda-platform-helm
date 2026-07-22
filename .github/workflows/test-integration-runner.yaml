@@ -86,6 +86,16 @@ on:
         required: false
         default: false
         type: boolean
+      wait-ingress-ready:
+        description: "Gate deploy success on the ingress host becoming publicly DNS-resolvable + HTTP-reachable. Opt-in; external reusable-workflow consumers default to false."
+        required: false
+        default: false
+        type: boolean
+      ingress-ready-timeout:
+        description: "Minutes to poll for ingress readiness when wait-ingress-ready is true. Defaults to the tool default (8)."
+        required: false
+        default: 8
+        type: number
       extra-values:
         description: Pass extra values to the Helm chart.
         required: false
@@ -704,6 +714,8 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${{ inputs.wait-ingress-ready && '--wait-ingress-ready' || '' }} \
+            ${{ inputs.wait-ingress-ready && format('--ingress-ready-timeout {0}', inputs.ingress-ready-timeout) || '' }} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
@@ -1095,6 +1107,8 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${{ inputs.wait-ingress-ready && '--wait-ingress-ready' || '' }} \
+            ${{ inputs.wait-ingress-ready && format('--ingress-ready-timeout {0}', inputs.ingress-ready-timeout) || '' }} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \

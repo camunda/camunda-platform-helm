@@ -450,6 +450,47 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		}
 	}
 
+	// Gate on the ingress URL becoming publicly DNS-resolvable and HTTP-reachable
+	// before reporting success, so a nightly failure surfaces at the deploy step
+	// instead of downstream in the E2E suite. The host falls back to the same
+	// CAMUNDA_HOSTNAME / TEST_INGRESS_HOST env vars the auth0 flow uses, since CI
+	// passes the hostname that way rather than via --ingress-hostname.
+	ingressHost := scenarioCtx.IngressHost
+	if ingressHost == "" {
+		ingressHost = os.Getenv("CAMUNDA_HOSTNAME")
+	}
+	if ingressHost == "" {
+		ingressHost = os.Getenv("TEST_INGRESS_HOST")
+	}
+	if flags.Deployment.WaitIngressReady {
+		if ingressHost == "" {
+			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
+			return result
+		}
+		timeoutMinutes := flags.Deployment.IngressReadyTimeoutMinutes
+		if timeoutMinutes <= 0 {
+			timeoutMinutes = config.DefaultIngressReadyTimeoutMinutes
+		}
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("ingressHost", ingressHost).
+			Int("timeoutMinutes", timeoutMinutes).
+			Msg("⏳ [executeDeployment] waiting for ingress to become reachable")
+		if err := waitIngressReady(ctx, ingressHost, time.Duration(timeoutMinutes)*time.Minute, ingressReadyPollInterval); err != nil {
+			logging.Logger.Error().
+				Err(err).
+				Str("scenario", scenarioCtx.ScenarioName).
+				Str("ingressHost", ingressHost).
+				Msg("❌ [executeDeployment] ingress not reachable")
+			result.Error = fmt.Errorf("ingress not reachable: %w", err)
+			return result
+		}
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("ingressHost", ingressHost).
+			Msg("✅ [executeDeployment] ingress reachable")
+	}
+
 	// Capture credentials from the secrets map prepared in prepareScenarioValues.
 	if prepared.Secrets != nil {
 		result.FirstUserPassword = prepared.Secrets["DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"]

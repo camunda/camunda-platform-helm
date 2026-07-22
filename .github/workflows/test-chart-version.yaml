@@ -294,6 +294,7 @@ jobs:
       deployment-ttl: ${{ inputs.deployment-ttl }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
+      wait-ingress-ready: true
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
       infra-type-gke: ${{ matrix.infraTypeGke || 'preemptible' }}
       infra-type-eks: ${{ matrix.infraTypeEks || 'preemptible' }}

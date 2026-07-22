@@ -191,6 +191,8 @@ func newMatrixRunCommand() *cobra.Command {
 		tier                     int
 		chartRef                 string
 		chartRefVersion          string
+		waitIngressReady         bool
+		ingressReadyTimeout      int
 	)
 
 	cmd := &cobra.Command{
@@ -517,46 +519,48 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 
 			runStart := time.Now()
 			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
-				DryRun:                dryRun,
-				Coverage:              coverage,
-				StopOnFailure:         stopOnFailure,
-				Cleanup:               cleanup,
-				DeleteNamespaceFirst:  deleteNamespace,
-				KubeContexts:          kubeContexts,
-				KubeContext:           kubeContext,
-				NamespacePrefix:       namespacePrefix,
-				Platform:              platform,
-				MaxParallel:           maxParallel,
-				TestE2E:               testE2E,
-				TestAll:               testAll,
-				RepoRoot:              repoRoot,
-				EnvFiles:              envFiles,
-				EnvFile:               envFile,
-				IngressBaseDomains:    ingressBaseDomains,
-				IngressBaseDomain:     ingressBaseDomain,
-				LogLevel:              logLevel,
-				SkipDependencyUpdate:  skipDependencyUpdate,
-				VaultBackedSecrets:    vaultBackedSecrets,
-				UseVaultBackedSecrets: useVaultBackedSecrets,
-				KeycloakHost:          keycloakHost,
-				KeycloakProtocol:      keycloakProtocol,
-				UpgradeFromVersion:    upgradeFromVersion,
-				HelmTimeout:           helmTimeout,
-				DockerUsername:        dockerUsername,
-				DockerPassword:        dockerPassword,
-				EnsureDockerRegistry:  ensureDockerRegistry,
-				DockerHubUsername:     dockerHubUsername,
-				DockerHubPassword:     dockerHubPassword,
-				EnsureDockerHub:       ensureDockerHub,
-				UseLatest:             useLatest,
-				UseQA:                 useQA,
-				ForceImageOverrides:   forceImageOverrides,
-				ExtraHelmArgs:         extraHelmArgs,
-				ExtraHelmSets:         extraHelmSets,
-				ExtraValues:           extraValues,
-				NamespaceOverride:     namespaceOverride,
-				ChartRef:              chartRef,
-				ChartRefVersion:       chartRefVersion,
+				DryRun:                     dryRun,
+				Coverage:                   coverage,
+				StopOnFailure:              stopOnFailure,
+				Cleanup:                    cleanup,
+				DeleteNamespaceFirst:       deleteNamespace,
+				KubeContexts:               kubeContexts,
+				KubeContext:                kubeContext,
+				NamespacePrefix:            namespacePrefix,
+				Platform:                   platform,
+				MaxParallel:                maxParallel,
+				TestE2E:                    testE2E,
+				TestAll:                    testAll,
+				RepoRoot:                   repoRoot,
+				EnvFiles:                   envFiles,
+				EnvFile:                    envFile,
+				IngressBaseDomains:         ingressBaseDomains,
+				IngressBaseDomain:          ingressBaseDomain,
+				LogLevel:                   logLevel,
+				SkipDependencyUpdate:       skipDependencyUpdate,
+				VaultBackedSecrets:         vaultBackedSecrets,
+				UseVaultBackedSecrets:      useVaultBackedSecrets,
+				KeycloakHost:               keycloakHost,
+				KeycloakProtocol:           keycloakProtocol,
+				UpgradeFromVersion:         upgradeFromVersion,
+				HelmTimeout:                helmTimeout,
+				DockerUsername:             dockerUsername,
+				DockerPassword:             dockerPassword,
+				EnsureDockerRegistry:       ensureDockerRegistry,
+				DockerHubUsername:          dockerHubUsername,
+				DockerHubPassword:          dockerHubPassword,
+				EnsureDockerHub:            ensureDockerHub,
+				UseLatest:                  useLatest,
+				UseQA:                      useQA,
+				ForceImageOverrides:        forceImageOverrides,
+				WaitIngressReady:           waitIngressReady,
+				IngressReadyTimeoutMinutes: ingressReadyTimeout,
+				ExtraHelmArgs:              extraHelmArgs,
+				ExtraHelmSets:              extraHelmSets,
+				ExtraValues:                extraValues,
+				NamespaceOverride:          namespaceOverride,
+				ChartRef:                   chartRef,
+				ChartRefVersion:            chartRefVersion,
 				OnEntryStart: func(entry matrix.Entry, namespace string) {
 					if statusDisplay != nil {
 						statusDisplay.OnEntryStart(entry, namespace)
@@ -662,6 +666,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
 	f.StringVar(&chartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
 	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
+	f.BoolVar(&waitIngressReady, "wait-ingress-ready", false, "After a successful helm install/upgrade, fail the entry unless its ingress host becomes publicly DNS-resolvable and HTTP-reachable within --ingress-ready-timeout")
+	f.IntVar(&ingressReadyTimeout, "ingress-ready-timeout", config.DefaultIngressReadyTimeoutMinutes, "Timeout in minutes for --wait-ingress-ready")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

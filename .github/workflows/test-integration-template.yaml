@@ -69,6 +69,16 @@ on:
         required: false
         default: false
         type: boolean
+      wait-ingress-ready:
+        description: "Gate deploy success on the ingress host becoming publicly DNS-resolvable + HTTP-reachable. Opt-in; external reusable-workflow consumers default to false."
+        required: false
+        default: false
+        type: boolean
+      ingress-ready-timeout:
+        description: "Minutes to poll for ingress readiness when wait-ingress-ready is true. Defaults to the tool default (8)."
+        required: false
+        default: 8
+        type: number
       extra-values:
         description: Pass extra values to the Helm chart.
         required: false
@@ -370,6 +380,8 @@ jobs:
       flow: ${{ matrix.scenario.flow }}
       test-enabled: ${{ inputs.test-enabled }}
       e2e-enabled: ${{ inputs.e2e-enabled }}
+      wait-ingress-ready: ${{ inputs.wait-ingress-ready }}
+      ingress-ready-timeout: ${{ inputs.ingress-ready-timeout }}
       extra-values: ${{ inputs.extra-values }}
       vault-secret-mapping: ${{ inputs.vault-secret-mapping }}
       auth-data: ${{ inputs.auth-data }}
