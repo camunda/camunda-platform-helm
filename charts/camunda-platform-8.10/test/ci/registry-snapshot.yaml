@@ -71,9 +71,11 @@ integration:
             script: pre-install-orchestration-tls.sh
             description: |
               Generates a self-signed certificate/key pair for the Orchestration
-              Cluster gRPC endpoint, creates the server TLS Secret, and creates
-              a truststore Secret consumed by Web Modeler restapi. The Identity/WebModeler
-              PostgreSQL database is provided by the `postgresql` companion dependency.
+              Cluster gRPC endpoint and creates the server TLS Secret. The same
+              self-signed cert is also referenced as global.tls.caBundle so in-cluster
+              Java clients (Web Modeler, Connectors) trust it via the chart-derived
+              internal URLs. The Identity/WebModeler PostgreSQL database is provided by
+              the `postgresql` companion dependency.
         - name: orchestration-tls-rest
           enabled: true
           shortname: estlr
@@ -109,9 +111,11 @@ integration:
             script: pre-install-orchestration-tls.sh
             description: |
               Generates a self-signed certificate/key pair for the Orchestration
-              Cluster gRPC endpoint, creates the server TLS Secret, and creates
-              a truststore Secret consumed by Web Modeler restapi. The Identity/WebModeler
-              PostgreSQL database is provided by the `postgresql` companion dependency.
+              Cluster gRPC endpoint and creates the server TLS Secret. The same
+              self-signed cert is also referenced as global.tls.caBundle so in-cluster
+              Java clients (Web Modeler, Connectors) trust it via the chart-derived
+              internal URLs. The Identity/WebModeler PostgreSQL database is provided by
+              the `postgresql` companion dependency.
         - name: opensearch
           enabled: true
           shortname: oske
