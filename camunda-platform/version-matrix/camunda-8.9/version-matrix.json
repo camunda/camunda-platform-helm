@@ -17,18 +17,15 @@
       "docker.io/camunda/web-modeler-websockets:8.9.0-alpha1"
     ],
     "chart_enterprise_images": [
-      "docker.io/camunda/camunda:8.9.0-alpha5",
-      "docker.io/camunda/connectors-bundle:8.9.0-alpha5",
-      "docker.io/camunda/console:8.9.0-alpha5",
-      "docker.io/camunda/identity:8.9.0-alpha5",
-      "docker.io/camunda/web-modeler-restapi:8.9.0-alpha5-rc1",
-      "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.0",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2025-11-13",
+    "helm_cli": "3.18.6",
+    "release_tag": "camunda-platform-8.9-14.0.0-alpha1"
   },
   {
     "chart_version": "14.0.0-alpha2",
@@ -48,18 +45,15 @@
       "docker.io/camunda/web-modeler-websockets:8.9.0-alpha2"
     ],
     "chart_enterprise_images": [
-      "docker.io/camunda/camunda:8.9.0-alpha5",
-      "docker.io/camunda/connectors-bundle:8.9.0-alpha5",
-      "docker.io/camunda/console:8.9.0-alpha5",
-      "docker.io/camunda/identity:8.9.0-alpha5",
-      "docker.io/camunda/web-modeler-restapi:8.9.0-alpha5-rc1",
-      "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.0",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2025-12-05",
+    "helm_cli": "3.19.0",
+    "release_tag": "camunda-platform-8.9-14.0.0-alpha2"
   },
   {
     "chart_version": "14.0.0-alpha3",
@@ -79,18 +73,15 @@
       "docker.io/camunda/web-modeler-websockets:8.9.0-alpha3"
     ],
     "chart_enterprise_images": [
-      "docker.io/camunda/camunda:8.9.0-alpha5",
-      "docker.io/camunda/connectors-bundle:8.9.0-alpha5",
-      "docker.io/camunda/console:8.9.0-alpha5",
-      "docker.io/camunda/identity:8.9.0-alpha5",
-      "docker.io/camunda/web-modeler-restapi:8.9.0-alpha5-rc1",
-      "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.0",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-01-13",
+    "helm_cli": "3.19.2",
+    "release_tag": "camunda-platform-8.9-14.0.0-alpha3"
   },
   {
     "chart_version": "14.0.0-alpha4",
@@ -110,18 +101,15 @@
       "docker.io/camunda/web-modeler-websockets:8.9.0-alpha4"
     ],
     "chart_enterprise_images": [
-      "docker.io/camunda/camunda:8.9.0-alpha5",
-      "docker.io/camunda/connectors-bundle:8.9.0-alpha5",
-      "docker.io/camunda/console:8.9.0-alpha5",
-      "docker.io/camunda/identity:8.9.0-alpha5",
-      "docker.io/camunda/web-modeler-restapi:8.9.0-alpha5-rc1",
-      "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.0",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-02-09",
+    "helm_cli": "3.19.4",
+    "release_tag": "camunda-platform-8.9-14.0.0-alpha4"
   },
   {
     "chart_version": "14.0.0-alpha5",
@@ -140,18 +128,15 @@
       "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1"
     ],
     "chart_enterprise_images": [
-      "docker.io/camunda/camunda:8.9.0-alpha5",
-      "docker.io/camunda/connectors-bundle:8.9.0-alpha5",
-      "docker.io/camunda/console:8.9.0-alpha5",
-      "docker.io/camunda/identity:8.9.0-alpha5",
-      "docker.io/camunda/web-modeler-restapi:8.9.0-alpha5-rc1",
-      "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.0",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-03-11",
+    "helm_cli": "3.19.4",
+    "release_tag": "camunda-platform-8.9-14.0.0-alpha5"
   },
   {
     "chart_version": "14.0.0",
@@ -171,20 +156,15 @@
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.9.0-alpha5",
-      "docker.io/camunda/connectors-bundle:8.9.0-alpha5",
-      "docker.io/camunda/console:8.9.0-alpha5",
-      "docker.io/camunda/identity:8.9.0-alpha5",
-      "docker.io/camunda/optimize:8.9.0-alpha5",
-      "docker.io/camunda/web-modeler-restapi:8.9.0-alpha5-rc1",
-      "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.6",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-04-09",
+    "helm_cli": "3.20.0",
+    "release_tag": "camunda-platform-8.9-14.0.0"
   },
   {
     "chart_version": "14.0.1",
@@ -204,20 +184,15 @@
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.9.0-alpha5",
-      "docker.io/camunda/connectors-bundle:8.9.0-alpha5",
-      "docker.io/camunda/console:8.9.0-alpha5",
-      "docker.io/camunda/identity:8.9.0-alpha5",
-      "docker.io/camunda/optimize:8.9.0-alpha5",
-      "docker.io/camunda/web-modeler-restapi:8.9.0-alpha5-rc1",
-      "docker.io/camunda/web-modeler-websockets:8.9.0-alpha5-rc1",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.6",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-04-23",
+    "helm_cli": "3.20.1",
+    "release_tag": "camunda-platform-8.9-14.0.1"
   },
   {
     "chart_version": "14.1.0",
@@ -237,20 +212,15 @@
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.9.0",
-      "docker.io/camunda/connectors-bundle:8.9.0",
-      "docker.io/camunda/console:8.9.0",
-      "docker.io/camunda/identity:8.9.0",
-      "docker.io/camunda/optimize:8.9.0",
-      "docker.io/camunda/web-modeler-restapi:8.9.0",
-      "docker.io/camunda/web-modeler-websockets:8.9.0",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.6",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-05-04",
+    "helm_cli": "3.20.2",
+    "release_tag": "camunda-platform-8.9-14.1.0"
   },
   {
     "chart_version": "14.2.0",
@@ -270,20 +240,15 @@
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.9.0",
-      "docker.io/camunda/connectors-bundle:8.9.0",
-      "docker.io/camunda/console:8.9.0",
-      "docker.io/camunda/identity:8.9.0",
-      "docker.io/camunda/optimize:8.9.0",
-      "docker.io/camunda/web-modeler-restapi:8.9.0",
-      "docker.io/camunda/web-modeler-websockets:8.9.0",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.6",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-05-12",
+    "helm_cli": "3.20.2",
+    "release_tag": "camunda-platform-8.9-14.2.0"
   },
   {
     "chart_version": "14.3.0",
@@ -303,20 +268,15 @@
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.9.0",
-      "docker.io/camunda/connectors-bundle:8.9.0",
-      "docker.io/camunda/console:8.9.0",
-      "docker.io/camunda/identity:8.9.0",
-      "docker.io/camunda/optimize:8.9.0",
-      "docker.io/camunda/web-modeler-restapi:8.9.0",
-      "docker.io/camunda/web-modeler-websockets:8.9.0",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.6",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-05-20",
+    "helm_cli": "3.20.2",
+    "release_tag": "camunda-platform-8.9-14.3.0"
   },
   {
     "chart_version": "14.4.0",
@@ -336,19 +296,14 @@
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.9.0",
-      "docker.io/camunda/connectors-bundle:8.9.0",
-      "docker.io/camunda/console:8.9.0",
-      "docker.io/camunda/identity:8.9.0",
-      "docker.io/camunda/optimize:8.9.0",
-      "docker.io/camunda/web-modeler-restapi:8.9.0",
-      "docker.io/camunda/web-modeler-websockets:8.9.0",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.6",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0"
-    ]
+    ],
+    "release_date": "2026-06-04",
+    "helm_cli": "3.20.2,4.1.4",
+    "release_tag": "camunda-platform-8.9-14.4.0"
   },
   {
     "chart_version": "14.4.1",
@@ -368,19 +323,14 @@
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
     ],
     "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.9.0",
-      "docker.io/camunda/connectors-bundle:8.9.0",
-      "docker.io/camunda/console:8.9.0",
-      "docker.io/camunda/identity:8.9.0",
-      "docker.io/camunda/optimize:8.9.0",
-      "docker.io/camunda/web-modeler-restapi:8.9.0",
-      "docker.io/camunda/web-modeler-websockets:8.9.0",
       "registry.camunda.cloud/keycloak-ee/keycloak:26.5.7",
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.15",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.3.0-debian-12-r0"
-    ]
+    ],
+    "release_date": "2026-06-11",
+    "helm_cli": "3.20.2,4.1.4",
+    "release_tag": "camunda-platform-8.9-14.4.1"
   },
   {
     "chart_version": "14.5.0",
@@ -397,7 +347,16 @@
       "docker.io/camunda/web-modeler-restapi:8.9.4",
       "docker.io/camunda/web-modeler-websockets:8.9.4",
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
-    ]
+    ],
+    "chart_enterprise_images": [
+      "registry.camunda.cloud/keycloak-ee/keycloak:26.6.1",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.16",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:18.4.0-debian-12-r0"
+    ],
+    "release_date": "2026-06-18",
+    "helm_cli": "3.20.2,4.2.1",
+    "release_tag": "camunda-platform-8.9-14.5.0"
   },
   {
     "chart_version": "14.6.0",
@@ -420,7 +379,10 @@
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.17",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.4.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-06-29",
+    "helm_cli": "3.20.2,4.2.0",
+    "release_tag": "camunda-platform-8.9-14.6.0"
   },
   {
     "chart_version": "14.6.1",
@@ -443,7 +405,10 @@
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.18",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.4.0-debian-12-r2"
-    ]
+    ],
+    "release_date": "2026-07-08",
+    "helm_cli": "3.20.2,4.2.2",
+    "release_tag": "camunda-platform-8.9-14.6.1"
   },
   {
     "chart_version": "14.7.0",
@@ -466,6 +431,9 @@
       "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.18",
       "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
       "registry.camunda.cloud/vendor-ee/postgresql:18.4.0-debian-12-r13"
-    ]
+    ],
+    "release_date": "2026-07-17",
+    "helm_cli": "3.20.2,4.2.2",
+    "release_tag": "camunda-platform-8.9-14.7.0"
   }
 ]
