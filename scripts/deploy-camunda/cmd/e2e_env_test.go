@@ -27,6 +27,16 @@ func TestDecodeSecretValueRoundTrip(t *testing.T) {
 	}
 }
 
+func TestDecodeSecretValueEmptyStringSucceeds(t *testing.T) {
+	got, err := decodeSecretValue("")
+	if err != nil {
+		t.Fatalf("decodeSecretValue() unexpected error: %v", err)
+	}
+	if got != "" {
+		t.Fatalf("decodeSecretValue() = %q, want empty string", got)
+	}
+}
+
 func TestDecodeSecretValueRejectsInvalidBase64(t *testing.T) {
 	if _, err := decodeSecretValue("not!base64!"); err == nil {
 		t.Fatal("decodeSecretValue() expected error on invalid base64, got nil")

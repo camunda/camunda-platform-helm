@@ -104,6 +104,11 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "e2e-env" || (cmd.Parent() != nil && cmd.Parent().Name() == "e2e-env") {
 					return nil
 				}
+				// topology subcommands are pure string-derivation utilities;
+				// no chart/namespace/release config needed.
+				if cmd.Name() == "topology" || (cmd.Parent() != nil && cmd.Parent().Name() == "topology") {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -563,6 +568,7 @@ func Execute() error {
 	rootCmd.AddCommand(newDiagnosticsCommand())
 	rootCmd.AddCommand(newCICommand())
 	rootCmd.AddCommand(newE2EEnvCommand())
+	rootCmd.AddCommand(newTopologyCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {

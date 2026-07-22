@@ -35,6 +35,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 		renderScript           string
 		kubeContext            string
 		ci                     bool
+		runSmokeTests          bool
 	)
 
 	cmd := &cobra.Command{
@@ -46,7 +47,9 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				"--absolute-chart-path", chartPath,
 				"--namespace", orchestrationNamespace,
 				"--output", output,
-				"--run-smoke-tests",
+			}
+			if runSmokeTests {
+				renderArgs = append(renderArgs, "--run-smoke-tests")
 			}
 			if !ci {
 				renderArgs = append(renderArgs, "--not-ci")
@@ -95,6 +98,9 @@ func newE2EEnvMergeCommand() *cobra.Command {
 			if err := os.WriteFile(output, []byte(merged), 0o600); err != nil {
 				return err
 			}
+			if err := os.Chmod(output, 0o600); err != nil {
+				return err
+			}
 
 			fmt.Fprintf(os.Stderr, "merged e2e env: mgmtHost=%s overrode %d keys -> %s\n", mgmtHost, len(overrides), output)
 			return nil
@@ -109,6 +115,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	cmd.Flags().StringVar(&renderScript, "render-script", "scripts/render-e2e-env.sh", "path to render-e2e-env.sh")
 	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kube context (optional)")
 	cmd.Flags().BoolVar(&ci, "ci", false, "set CI=true in the merged .env (matches render-e2e-env.sh's default; pass when running in an actual CI job)")
+	cmd.Flags().BoolVar(&runSmokeTests, "run-smoke-tests", true, "pass --run-smoke-tests to render-e2e-env.sh (sets IS_SMOKE=true)")
 	_ = cmd.MarkFlagRequired("orchestration-namespace")
 	_ = cmd.MarkFlagRequired("management-namespace")
 	_ = cmd.MarkFlagRequired("absolute-chart-path")
@@ -126,7 +133,7 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 		a = append(a, "--context", kubeContext)
 	}
 	a = append(a, "-n", namespace, "get", "secret", "integration-test-credentials",
-		"-o", fmt.Sprintf("jsonpath={.data.%s}", key))
+		"-o", fmt.Sprintf("jsonpath={.data['%s']}", key))
 	out, err := exec.Command("kubectl", a...).Output()
 	if err != nil {
 		return "", fmt.Errorf("resolve secret key %q in %s: %w", key, namespace, err)
@@ -134,6 +141,9 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 	dec, err := decodeSecretValue(string(out))
 	if err != nil {
 		return "", fmt.Errorf("decode secret key %q: %w", key, err)
+	}
+	if dec == "" {
+		return "", fmt.Errorf("secret key %q in %s resolved to an empty value", key, namespace)
 	}
 	return dec, nil
 }

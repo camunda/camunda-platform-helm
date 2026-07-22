@@ -98,6 +98,39 @@ func TestGenerateTopologyContexts_EmptyReleasesErrors(t *testing.T) {
 	}
 }
 
+func TestDeriveReleaseNamespace_TruncatesToLimit(t *testing.T) {
+	base := "distribution-810-multinamespace-scenario-with-a-very-long-name"
+	suffix := "orchestration"
+
+	got := DeriveReleaseNamespace(base, suffix)
+
+	if len(got) > 63 {
+		t.Fatalf("DeriveReleaseNamespace(%q, %q) = %q (len %d), want len <= 63", base, suffix, got, len(got))
+	}
+	if got[len(got)-len(suffix):] != suffix {
+		t.Fatalf("DeriveReleaseNamespace(%q, %q) = %q, want suffix %q preserved", base, suffix, got, suffix)
+	}
+}
+
+func TestDeriveReleaseNamespace_DistinctSuffixesYieldDistinctNamespaces(t *testing.T) {
+	base := "distribution-810-multinamespace-scenario-with-a-very-long-name"
+
+	orcha := DeriveReleaseNamespace(base, "orcha")
+	orchb := DeriveReleaseNamespace(base, "orchb")
+
+	if orcha == orchb {
+		t.Fatalf("expected distinct namespaces for distinct suffixes, got %q for both", orcha)
+	}
+}
+
+func TestDeriveReleaseNamespace_NoTruncationWhenWithinLimit(t *testing.T) {
+	got := DeriveReleaseNamespace("matrix-810-mns", "mgmt")
+	want := "matrix-810-mns-mgmt"
+	if got != want {
+		t.Fatalf("DeriveReleaseNamespace() = %q, want %q", got, want)
+	}
+}
+
 // TestGenerateScenarioContext_Unaffected pins down that the existing
 // single-namespace path is untouched by the topology addition.
 func TestGenerateScenarioContext_Unaffected(t *testing.T) {

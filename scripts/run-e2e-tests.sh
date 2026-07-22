@@ -241,6 +241,7 @@ if [[ -n "$MANAGEMENT_NAMESPACE" ]]; then
     --absolute-chart-path "$ABSOLUTE_CHART_PATH" \
     --output "$ENV_FILE" \
     --ci="$IS_CI" \
+    --run-smoke-tests="$RUN_SMOKE_TESTS" \
     ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"}
 else
   render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"
