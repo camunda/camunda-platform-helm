@@ -389,7 +389,28 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "proxyVerify.enabled is true but caSecret.secret.existingSecret is empty")
+				require.Contains(t, err.Error(), "proxyVerify.enabled is true but caSecret.secret.existingSecret / inlineSecret is empty")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressEmitsProxyVerifyAnnotationsFromInlineCaSecret",
+			Values: map[string]string{
+				"global.ingress.enabled":                                                 "true",
+				"global.host":                                                            "camunda.example.com",
+				"orchestration.enabled":                                                  "true",
+				"orchestration.contextPath":                                              "/orchestration",
+				"global.tls.orchestration.rest.enabled":                                  "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret":               "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                      "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.inlineSecret": "CABUNDLEPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
+				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"], "-tls-rest-ca",
+					"an inline CA secret should resolve to the chart-generated <orchestration.fullname>-tls-rest-ca Secret")
 			},
 		},
 		{

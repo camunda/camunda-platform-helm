@@ -50,12 +50,14 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- range $e := (.Values.orchestration.env | default list) -}}
     {{- $envNames = append $envNames ($e.name | default "") -}}
   {{- end }}
+  {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml -}}
+  {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml -}}
   {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
-    {{- if not .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+    {{- if not $restCertRef.name }}
       {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration REST TLS is enabled but no server cert is configured."
-            "Set global.tls.orchestration.rest.cert.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "Set global.tls.orchestration.rest.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret (PEM only) so the chart mounts the cert,"
             "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
@@ -63,17 +65,19 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- end }}
   {{- end }}
   {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
-    {{- if not .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
+    {{- if not $grpcCertRef.name }}
       {{- if not (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration gRPC TLS is enabled but no server cert is configured."
-            "Set global.tls.orchestration.grpc.cert.secret.existingSecret (recommended) so the chart mounts the cert,"
+            "Set global.tls.orchestration.grpc.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret so the chart mounts the cert,"
             "or hand-wire CAMUNDA_API_GRPC_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end }}
     {{- end }}
   {{- end }}
+  {{- $restCaRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" . "proto" "rest") | fromYaml -}}
+  {{- $grpcCaRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" . "proto" "grpc") | fromYaml -}}
   {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
     {{- if ne (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
       {{- $errorMessage := printf "%s %s"
@@ -82,10 +86,10 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
-    {{- if not .Values.global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret }}
+    {{- if not $restCaRef.name }}
       {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but caSecret.secret.existingSecret is empty."
-          "Provide a Secret holding the CA bundle that NGINX should use to validate the Orchestration REST server cert."
+          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but caSecret.secret.existingSecret / inlineSecret is empty."
+          "Provide a Secret (or inlineSecret) holding the CA bundle that NGINX should use to validate the Orchestration REST server cert."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
@@ -98,16 +102,16 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
-    {{- if not .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret }}
+    {{- if not $grpcCaRef.name }}
       {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but caSecret.secret.existingSecret is empty."
-          "Provide a Secret holding the CA bundle that NGINX should use to validate the Orchestration gRPC server cert."
+          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but caSecret.secret.existingSecret / inlineSecret is empty."
+          "Provide a Secret (or inlineSecret) holding the CA bundle that NGINX should use to validate the Orchestration gRPC server cert."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
   {{- end }}
   {{- /* Validate rest.type is one of pkcs12 / pem when a cert secret is referenced. */ -}}
-  {{- if and (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+  {{- if and (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") $restCertRef.name }}
     {{- $t := .Values.global.tls.orchestration.rest.type | default "pkcs12" -}}
     {{- if not (has $t (list "pkcs12" "pem")) }}
       {{- $errorMessage := printf "[camunda][error] global.tls.orchestration.rest.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
@@ -477,6 +481,22 @@ The following values inside your values.yaml need to be set but were not:
         "Set global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.)."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{/* Warn when an Orchestration proxyVerify caSecret existingSecret uses a
+       non-default existingSecretKey: nginx.ingress.kubernetes.io/proxy-ssl-secret
+       always reads the fixed "ca.crt" key from the referenced Secret, so a
+       custom key is silently ignored for the existingSecret path. */}}
+  {{- range $proto := (list "rest" "grpc") }}
+    {{- $pv := (index $.Values.global.tls.orchestration $proto).proxyVerify }}
+    {{- if and $pv.caSecret.secret.existingSecret (ne ($pv.caSecret.secret.existingSecretKey | default "ca.crt") "ca.crt") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          (printf "global.tls.orchestration.%s.proxyVerify.caSecret.secret.existingSecretKey is set to a non-default value." $proto)
+          "nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed key 'ca.crt' from the referenced Secret; a custom existingSecretKey has no effect for an existingSecret-based CA reference. Either store the CA bundle under the 'ca.crt' key in that Secret, or use caSecret.secret.inlineSecret so the chart generates a Secret with the correct key."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}

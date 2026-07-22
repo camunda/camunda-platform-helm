@@ -369,7 +369,7 @@ global:
         cert:
           ## @extra global.tls.orchestration.rest.cert.secret configuration to provide the cert secret.
           secret:
-            ## @param global.tls.orchestration.rest.cert.secret.inlineSecret can be used to provide the cert as a plain-text value for non-production usage.
+            ## @param global.tls.orchestration.rest.cert.secret.inlineSecret can be used to provide the cert as a plain-text value for non-production usage. Only supported when `type: pem`; a PKCS12 keystore is binary and cannot be provided inline (use existingSecret for pkcs12).
             inlineSecret: ""
             ## @param global.tls.orchestration.rest.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via orchestration.extraVolumes and orchestration.env.
             existingSecret: ""
@@ -405,11 +405,11 @@ global:
           caSecret:
             ## @extra global.tls.orchestration.rest.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
             secret:
-              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage.
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret keyed "ca.crt" (the fixed key NGINX reads), so any custom existingSecretKey below is ignored when this is set.
               inlineSecret: ""
-              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle.
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle. nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed "ca.crt" key from this Secret, so the CA bundle must be stored under that key; existingSecretKey is not honored for this path (use inlineSecret if the source key differs).
               existingSecret: ""
-              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object.
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object. Not honored when existingSecret is used directly; kept for schema consistency with other secret blocks. Retained for future use, e.g. if a repack-from-custom-key path is added.
               existingSecretKey: "ca.crt"
             ## @param global.tls.orchestration.rest.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
             namespace: ""
@@ -447,11 +447,11 @@ global:
           caSecret:
             ## @extra global.tls.orchestration.grpc.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
             secret:
-              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage.
+              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret keyed "ca.crt" (the fixed key NGINX reads), so any custom existingSecretKey below is ignored when this is set.
               inlineSecret: ""
-              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle.
+              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle. nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed "ca.crt" key from this Secret, so the CA bundle must be stored under that key; existingSecretKey is not honored for this path (use inlineSecret if the source key differs).
               existingSecret: ""
-              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object.
+              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object. Not honored when existingSecret is used directly; kept for schema consistency with other secret blocks. Retained for future use, e.g. if a repack-from-custom-key path is added.
               existingSecretKey: "ca.crt"
             ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
             namespace: ""

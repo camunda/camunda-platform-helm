@@ -631,7 +631,7 @@
                                                     "properties": {
                                                         "inlineSecret": {
                                                             "type": "string",
-                                                            "description": "can be used to provide the cert as a plain-text value for non-production usage.",
+                                                            "description": "can be used to provide the cert as a plain-text value for non-production usage. Only supported when `type: pem`; a PKCS12 keystore is binary and cannot be provided inline (use existingSecret for pkcs12).",
                                                             "default": ""
                                                         },
                                                         "existingSecret": {
@@ -719,17 +719,17 @@
                                                             "properties": {
                                                                 "inlineSecret": {
                                                                     "type": "string",
-                                                                    "description": "can be used to provide the CA bundle as a plain-text PEM value for non-production usage.",
+                                                                    "description": "can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret keyed \"ca.crt\" (the fixed key NGINX reads), so any custom existingSecretKey below is ignored when this is set.",
                                                                     "default": ""
                                                                 },
                                                                 "existingSecret": {
                                                                     "type": "string",
-                                                                    "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle.",
+                                                                    "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle. nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed \"ca.crt\" key from this Secret, so the CA bundle must be stored under that key; existingSecretKey is not honored for this path (use inlineSecret if the source key differs).",
                                                                     "default": ""
                                                                 },
                                                                 "existingSecretKey": {
                                                                     "type": "string",
-                                                                    "description": "defines the key within the existing secret object.",
+                                                                    "description": "defines the key within the existing secret object. Not honored when existingSecret is used directly; kept for schema consistency with other secret blocks. Retained for future use, e.g. if a repack-from-custom-key path is added.",
                                                                     "default": "ca.crt"
                                                                 }
                                                             }
@@ -824,17 +824,17 @@
                                                             "properties": {
                                                                 "inlineSecret": {
                                                                     "type": "string",
-                                                                    "description": "can be used to provide the CA bundle as a plain-text PEM value for non-production usage.",
+                                                                    "description": "can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret keyed \"ca.crt\" (the fixed key NGINX reads), so any custom existingSecretKey below is ignored when this is set.",
                                                                     "default": ""
                                                                 },
                                                                 "existingSecret": {
                                                                     "type": "string",
-                                                                    "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle.",
+                                                                    "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle. nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed \"ca.crt\" key from this Secret, so the CA bundle must be stored under that key; existingSecretKey is not honored for this path (use inlineSecret if the source key differs).",
                                                                     "default": ""
                                                                 },
                                                                 "existingSecretKey": {
                                                                     "type": "string",
-                                                                    "description": "defines the key within the existing secret object.",
+                                                                    "description": "defines the key within the existing secret object. Not honored when existingSecret is used directly; kept for schema consistency with other secret blocks. Retained for future use, e.g. if a repack-from-custom-key path is added.",
                                                                     "default": "ca.crt"
                                                                 }
                                                             }

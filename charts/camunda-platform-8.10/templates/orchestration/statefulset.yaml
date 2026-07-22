@@ -102,24 +102,31 @@ spec:
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
             {{- if .Values.global.tls.orchestration.rest.enabled }}
+            {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml }}
+            {{- $restKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "rest") | fromYaml }}
+            {{- $restKsPwRef := include "camundaPlatform.orchestrationTLSKeystorePasswordRef" (dict "context" .) | fromYaml }}
             - name: SERVER_SSL_ENABLED
               value: "true"
-            {{- if .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+            {{- if $restCertRef.name }}
             {{- if eq (.Values.global.tls.orchestration.rest.type | default "pkcs12") "pem" }}
             - name: SERVER_SSL_CERTIFICATE
-              value: /usr/local/camunda/certificates/orchestration/rest/{{ include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
+              value: /usr/local/camunda/certificates/orchestration/rest/{{ $restCertRef.key }}
             - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
-              value: /usr/local/camunda/certificates/orchestration/rest/{{ .Values.global.tls.orchestration.rest.privateKey.secret.existingSecretKey }}
+            {{- if eq $restKeyRef.name $restCertRef.name }}
+              value: /usr/local/camunda/certificates/orchestration/rest/{{ $restKeyRef.key }}
+            {{- else }}
+              value: /usr/local/camunda/certificates/orchestration/rest/key/{{ $restKeyRef.key }}
+            {{- end }}
             {{- else }}
             - name: SERVER_SSL_KEY_STORE
-              value: file:/usr/local/camunda/certificates/orchestration/rest/{{ include "camundaPlatform.orchestrationRESTSecretCertKey" . }}
+              value: file:/usr/local/camunda/certificates/orchestration/rest/{{ $restCertRef.key }}
             - name: SERVER_SSL_KEY_STORE_TYPE
               value: PKCS12
             - name: SERVER_SSL_KEY_STORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.tls.orchestration.rest.keystorePassword.secret.existingSecret | default .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
-                  key: {{ .Values.global.tls.orchestration.rest.keystorePassword.secret.existingSecretKey }}
+                  name: {{ $restKsPwRef.name }}
+                  key: {{ $restKsPwRef.key }}
             {{- with .Values.global.tls.orchestration.rest.keyAlias }}
             - name: SERVER_SSL_KEY_ALIAS
               value: {{ . | quote }}
@@ -128,13 +135,19 @@ spec:
             {{- end }}
             {{- end }}
             {{- if .Values.global.tls.orchestration.grpc.enabled }}
+            {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml }}
+            {{- $grpcKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "grpc") | fromYaml }}
             - name: CAMUNDA_API_GRPC_SSL_ENABLED
               value: "true"
-            {{- if .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
+            {{- if $grpcCertRef.name }}
             - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
-              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.cert.secret.existingSecretKey }}
+              value: /usr/local/camunda/certificates/orchestration/grpc/{{ $grpcCertRef.key }}
             - name: CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY
-              value: /usr/local/camunda/certificates/orchestration/grpc/{{ .Values.global.tls.orchestration.grpc.privateKey.secret.existingSecretKey }}
+            {{- if eq $grpcKeyRef.name $grpcCertRef.name }}
+              value: /usr/local/camunda/certificates/orchestration/grpc/{{ $grpcKeyRef.key }}
+            {{- else }}
+              value: /usr/local/camunda/certificates/orchestration/grpc/key/{{ $grpcKeyRef.key }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- with .Values.orchestration.env }}
@@ -294,15 +307,33 @@ spec:
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+            {{- if .Values.global.tls.orchestration.rest.enabled }}
+            {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml }}
+            {{- $restKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "rest") | fromYaml }}
+            {{- if $restCertRef.name }}
             - name: orchestration-tls-rest
               mountPath: /usr/local/camunda/certificates/orchestration/rest
               readOnly: true
             {{- end }}
-            {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
+            {{- if and $restKeyRef.name (ne $restKeyRef.name $restCertRef.name) }}
+            - name: orchestration-tls-rest-key
+              mountPath: /usr/local/camunda/certificates/orchestration/rest/key
+              readOnly: true
+            {{- end }}
+            {{- end }}
+            {{- if .Values.global.tls.orchestration.grpc.enabled }}
+            {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml }}
+            {{- $grpcKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "grpc") | fromYaml }}
+            {{- if $grpcCertRef.name }}
             - name: orchestration-tls-grpc
               mountPath: /usr/local/camunda/certificates/orchestration/grpc
               readOnly: true
+            {{- end }}
+            {{- if and $grpcKeyRef.name (ne $grpcKeyRef.name $grpcCertRef.name) }}
+            - name: orchestration-tls-grpc-key
+              mountPath: /usr/local/camunda/certificates/orchestration/grpc/key
+              readOnly: true
+            {{- end }}
             {{- end }}
             {{- if .Values.orchestration.extraVolumeMounts }}
             {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
@@ -356,17 +387,37 @@ spec:
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
-        {{- if and .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+        {{- if .Values.global.tls.orchestration.rest.enabled }}
+        {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml }}
+        {{- $restKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "rest") | fromYaml }}
+        {{- if $restCertRef.name }}
         - name: orchestration-tls-rest
           secret:
-            secretName: {{ .Values.global.tls.orchestration.rest.cert.secret.existingSecret }}
+            secretName: {{ $restCertRef.name }}
             defaultMode: 0440
         {{- end }}
-        {{- if and .Values.global.tls.orchestration.grpc.enabled .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
+        {{- if and $restKeyRef.name (ne $restKeyRef.name $restCertRef.name) }}
+        - name: orchestration-tls-rest-key
+          secret:
+            secretName: {{ $restKeyRef.name }}
+            defaultMode: 0440
+        {{- end }}
+        {{- end }}
+        {{- if .Values.global.tls.orchestration.grpc.enabled }}
+        {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml }}
+        {{- $grpcKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "grpc") | fromYaml }}
+        {{- if $grpcCertRef.name }}
         - name: orchestration-tls-grpc
           secret:
-            secretName: {{ .Values.global.tls.orchestration.grpc.cert.secret.existingSecret }}
+            secretName: {{ $grpcCertRef.name }}
             defaultMode: 0440
+        {{- end }}
+        {{- if and $grpcKeyRef.name (ne $grpcKeyRef.name $grpcCertRef.name) }}
+        - name: orchestration-tls-grpc-key
+          secret:
+            secretName: {{ $grpcKeyRef.name }}
+            defaultMode: 0440
+        {{- end }}
         {{- end }}
         {{- if .Values.orchestration.extraVolumes }}
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}
