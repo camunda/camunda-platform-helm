@@ -136,6 +136,47 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.spring.profiles.active": "admin,broker,consolidated-auth",
 			},
 		},
+		{
+			Name: "TestApplicationYamlShouldContainCamundaHubPingDefaults",
+			Values: map[string]string{
+				"identity.enabled":                                                    "true",
+				"global.identity.auth.enabled":                                        "true",
+				"global.identity.keycloak.url.protocol":                               "http",
+				"global.identity.keycloak.url.host":                                   "keycloak.prod.svc.cluster.local",
+				"global.identity.keycloak.url.port":                                   "8080",
+				"global.identity.keycloak.auth.adminUser":                             "admin",
+				"global.identity.keycloak.auth.secret.existingSecret":                 "kc-secret",
+				"global.identity.keycloak.auth.secret.existingSecretKey":              "password",
+				"camundaHub.enabled":                                                  "true",
+				"webModeler.restapi.mail.fromAddress":                                 "noreply@example.com",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.hub.ping.endpoint":                   "https://hub/api/v1/clusters",
+				"configmapApplication.camunda.hub.ping.credentials.client-id":      "orchestration",
+				"configmapApplication.camunda.hub.ping.credentials.token-endpoint": "http://keycloak.prod.svc.cluster.local:8080/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.hub.ping.credentials.client-secret":  "${VALUES_CAMUNDAHUB_PING_CLIENT_SECRET:}",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainCamundaHubPingCredentialOverrides",
+			Values: map[string]string{
+				"identity.enabled":                                                    "true",
+				"camundaHub.enabled":                                                  "true",
+				"webModeler.restapi.mail.fromAddress":                                 "noreply@example.com",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+				"orchestration.hub.ping.credentials.tokenEndpoint":                    "https://kc/token",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "secret",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.hub.ping.credentials.client-id":      "ping-client",
+				"configmapApplication.camunda.hub.ping.credentials.token-endpoint": "https://kc/token",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

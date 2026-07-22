@@ -838,6 +838,91 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 					},
 					"Orchestration should have OIDC secret when orchestration.authMethod=oidc")
 			},
+		}, {
+			Name: "TestCamundaHubPingClientSecretDefaultsToOrchestrationOidcSecret",
+			Values: map[string]string{
+				"identity.enabled":                                                    "true",
+				"camundaHub.enabled":                                                  "true",
+				"webModeler.restapi.mail.fromAddress":                                 "noreply@example.com",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(
+					env,
+					corev1.EnvVar{
+						Name: "VALUES_CAMUNDAHUB_PING_CLIENT_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "orchestration-oidc-secret"},
+								Key:                  "client-secret",
+							},
+						},
+					},
+					"Camunda Hub ping should use the orchestration OIDC secret by default")
+			},
+		},
+		{
+			Name: "TestCamundaHubPingClientSecretUsesCompleteCustomSecret",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"camundaHub.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "noreply@example.com",
+				"orchestration.hub.ping.endpoint":     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientSecret.secret.existingSecret":    "my-secret",
+				"orchestration.hub.ping.credentials.clientSecret.secret.existingSecretKey": "my-key",
+				"orchestration.security.authentication.method":                             "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":         "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey":      "client-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(
+					env,
+					corev1.EnvVar{
+						Name: "VALUES_CAMUNDAHUB_PING_CLIENT_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+								Key:                  "my-key",
+							},
+						},
+					},
+					"Camunda Hub ping should use the complete custom secret")
+			},
+		},
+		{
+			Name: "TestCamundaHubPingClientSecretUsesInlineCustomSecret",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"camundaHub.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "noreply@example.com",
+				"orchestration.hub.ping.endpoint":     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "some-secret",
+				"orchestration.security.authentication.method":                        "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(
+					env,
+					corev1.EnvVar{
+						Name:  "VALUES_CAMUNDAHUB_PING_CLIENT_SECRET",
+						Value: "some-secret",
+					},
+					"Camunda Hub ping should use the inline custom secret")
+			},
 		},
 	}
 
