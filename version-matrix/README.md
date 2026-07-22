@@ -1,7 +1,14 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
 # Camunda 8 Helm Chart Version Matrix
 
-Use this page to find which Helm chart version deploys which Camunda 8 release, when it was released, and which Helm CLI it supports. See the [notes](#notes) below for how to read the tables.
+Find the Helm chart that matches your Camunda version. Active minors are listed first; older minors are grouped by support status. Click on the specific Helm chart version for more details.
+
+Start on alpha versions via:
+
+```
+helm repo add camunda https://helm.camunda.io
+helm search repo camunda/camunda-platform --devel --versions
+```
 
 ## Camunda 8.10 — Alpha
 
@@ -16,6 +23,9 @@ Use this page to find which Helm chart version deploys which Camunda 8 release, 
 [All 3 chart versions for Camunda 8.10 →](./camunda-8.10/)
 
 ## Camunda 8.9 — Standard support until 2027-10-13
+
+> Standard support lasts 18 months from release; fixes ship in the newest chart for that minor.
+> Upgrade one minor at a time and review the [upgrade instructions](https://docs.camunda.io/docs/self-managed/upgrade/) first.
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
@@ -71,15 +81,11 @@ Use this page to find which Helm chart version deploys which Camunda 8 release, 
 ## Notes
 
 - The `Camunda` column is the chart's core application version — find your exact Camunda patch (for example, 8.8.5) there. Pre-release charts carry an `-alpha`/`-rc` suffix in the chart version: previews, not for production use and without a support SLA.
-- The Camunda `application version` (`appVersion` in the chart) is different from the Helm `chart version` (`version` in the chart). List both from the live Helm repository (without `--devel`, Helm hides the pre-release charts listed on this page):
-
-  ```
-  helm repo add camunda https://helm.camunda.io
-  helm repo update
-  helm search repo camunda/camunda-platform --versions --devel
-  ```
-
-- Standard support for a Camunda minor lasts 18 months from its release; fixes ship in the newest chart of each supported minor, so stay current within your minor. Extended support is available under contract — contact your Customer Success Manager (CSM).
+- The Camunda `application version` (`appVersion` in the chart) is different from the Helm `chart version` (`version` in the chart). Without `--devel`, `helm search repo` hides the pre-release charts listed on this page.
 - The `Helm CLI` column lists the Helm CLI version(s) each chart was released and tested with (recorded at release in the chart annotation `camunda.io/helmCLIVersion`). Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3; Camunda 8.10 (chart 15.x) and later require Helm v4. Older CLI versions may lack template functions the chart uses (for example, `toYamlPretty` requires 3.17+).
-- When upgrading across minor versions, go one minor at a time (do not skip minors) using the newest chart of each hop, and review the [upgrade instructions](https://docs.camunda.io/docs/self-managed/upgrade/) first. For a rollback option, take a [backup](https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/) before each hop.
-- This page is generated automatically when a chart release is promoted — do not edit it manually.
+- Extended support is available under contract — contact your Customer Success Manager (CSM).
+- For a rollback option when upgrading, take a [backup](https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/) before each hop.
+
+---
+
+_This page is generated automatically from promoted chart releases._

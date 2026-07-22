@@ -235,7 +235,7 @@ func TestRenderIndex(t *testing.T) {
 	checks := []string{
 		"<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->",
 		"# Camunda 8 Helm Chart Version Matrix",
-		"helm search repo camunda/camunda-platform --versions",
+		"helm search repo camunda/camunda-platform --devel --versions",
 		// Active minors: lifecycle heading + table + all-versions link.
 		"## Camunda 8.10 — Alpha",
 		"> Deploys Camunda Hub — see the [Hub documentation](https://example.invalid/hub).",
@@ -479,5 +479,45 @@ func TestSyncHelmCLILineInPreservedSection(t *testing.T) {
 	}
 	if !strings.Contains(got, "- docker.io/camunda/camunda:8.9.12") {
 		t.Errorf("image list of preserved section altered")
+	}
+}
+
+func TestRenderIndexLandingAndFooter(t *testing.T) {
+	entriesByApp := map[string][]ChartEntry{
+		"8.10": {{ChartVersion: "15.0.0-alpha3"}},
+		"8.9":  {{ChartVersion: "14.7.0"}},
+		"8.8":  {{ChartVersion: "13.12.2"}},
+		"8.6":  {{ChartVersion: "11.12.3"}},
+	}
+	got, err := RenderIndex(testConfig(), entriesByApp)
+	if err != nil {
+		t.Fatalf("RenderIndex: %v", err)
+	}
+	// Minimal landing: orientation line + snippet before the first section.
+	firstSection := strings.Index(got, "## Camunda 8.10")
+	landing := got[:firstSection]
+	if !strings.Contains(landing, "Find the Helm chart that matches your Camunda version.") {
+		t.Errorf("landing missing orientation line:\n%s", landing)
+	}
+	if !strings.Contains(landing, "helm repo add camunda https://helm.camunda.io") {
+		t.Errorf("landing missing copy-paste snippet")
+	}
+	if strings.Contains(landing, "18 months") || strings.Contains(landing, "Helm CLI") {
+		t.Errorf("landing carries reference material that belongs below:\n%s", landing)
+	}
+	// Support policy sits under the FIRST standard-support heading only.
+	if strings.Count(got, "Standard support lasts 18 months from release") != 1 {
+		t.Errorf("support note must appear exactly once")
+	}
+	noteAt := strings.Index(got, "Standard support lasts 18 months")
+	if h89 := strings.Index(got, "## Camunda 8.9"); !(noteAt > h89 && noteAt < strings.Index(got, "## Camunda 8.8")) {
+		t.Errorf("support note not under the first standard-support heading")
+	}
+	// Generation FYI is the page footer.
+	if !strings.HasSuffix(got, "_This page is generated automatically from promoted chart releases._\n") {
+		t.Errorf("missing generation footer, tail: %q", got[len(got)-90:])
+	}
+	if notes := strings.Index(got, "## Notes"); notes < 0 || notes > strings.Index(got, "_This page is generated") {
+		t.Errorf("Notes section must precede the footer")
 	}
 }
