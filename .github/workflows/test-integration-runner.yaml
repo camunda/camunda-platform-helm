@@ -1594,7 +1594,7 @@ jobs:
   # skip scenarios that already passed for the same content hash.
   record-result:
     name: Record cache result - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports]
+    needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports, e2e-topology-smoke]
     # Only record when:
     # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios)
     #    Note: we check both 'failure' AND 'cancelled' to prevent false positives when
