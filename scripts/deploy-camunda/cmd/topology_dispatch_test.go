@@ -278,6 +278,31 @@ func TestApplyTopologyReleaseOverrides_InjectsCrossRefEnv(t *testing.T) {
 	}
 }
 
+// TestApplyTopologyReleaseOverrides_MergesWithExistingExtraEnv pins down
+// that pre-seeded ExtraEnv entries (e.g. per-entry client-IDs injected
+// upstream) survive the cross-ref env merge instead of being dropped by a
+// wholesale map replacement.
+func TestApplyTopologyReleaseOverrides_MergesWithExistingExtraEnv(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		ExtraEnv: map[string]string{"VENOM_CLIENT_ID": "venom"},
+	}
+
+	applyTopologyReleaseOverrides(flags, map[string]string{"MGMT_NAMESPACE": "ns-mgmt"})
+
+	if flags.ExtraEnv["VENOM_CLIENT_ID"] != "venom" {
+		t.Errorf("ExtraEnv[VENOM_CLIENT_ID] = %q, want %q (pre-existing entry should survive)", flags.ExtraEnv["VENOM_CLIENT_ID"], "venom")
+	}
+	if flags.ExtraEnv["MGMT_NAMESPACE"] != "ns-mgmt" {
+		t.Errorf("ExtraEnv[MGMT_NAMESPACE] = %q, want %q (cross-ref entry should be added)", flags.ExtraEnv["MGMT_NAMESPACE"], "ns-mgmt")
+	}
+	if !flags.Secrets.ExternalSecrets {
+		t.Error("Secrets.ExternalSecrets = false, want true")
+	}
+	if !flags.Docker.EnsureDockerRegistry {
+		t.Error("Docker.EnsureDockerRegistry = false, want true")
+	}
+}
+
 // TestApplyTopologyReleaseOverrides_AllReleaseRolesGetExternalSecrets
 // exercises the fix across every role synthesizeReleaseEntry produces
 // (management + both orchestration releases), confirming the override is

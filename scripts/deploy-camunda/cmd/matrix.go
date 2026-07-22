@@ -1208,8 +1208,16 @@ func synthesizeReleaseOpts(base matrix.RunOptions, platform string, namespaceOve
 // assembly, mutating flags in place:
 //
 //   - ExtraEnv: the cross-ref env (MGMT_NAMESPACE, KEYCLOAK_REALM,
-//     EXTERNAL_ELASTICSEARCH_*) computed up front, injected into EVERY
-//     release (management included) before render/preflight.
+//     EXTERNAL_ELASTICSEARCH_*) computed up front, MERGED into EVERY
+//     release (management included) before render/preflight, on top of
+//     any pre-existing ExtraEnv (cross-ref wins on key conflict). The
+//     topology path currently bypasses executeEntry (where per-entry
+//     client-IDs like VENOM_CLIENT_ID/CONNECTORS_CLIENT_ID and
+//     Entra/Auth0 vars are injected) and is guarded to auth=keycloak/
+//     flow=install; replacing the map wholesale would silently drop any
+//     such per-entry ExtraEnv if that guard is ever relaxed or if
+//     BuildEntryFlags starts populating ExtraEnv. Merging is
+//     future-proof and functionally identical today.
 //
 //   - Secrets.ExternalSecrets: forced to true for every release.
 //     BuildEntryFlags sets ExternalSecrets = (NamespaceOverride == ""),
@@ -1230,7 +1238,9 @@ func synthesizeReleaseOpts(base matrix.RunOptions, platform string, namespaceOve
 //     would double-provision (and reintroduces the EKS RBAC risk
 //     BuildEntryFlags' comment warns about).
 func applyTopologyReleaseOverrides(flags *config.RuntimeFlags, crossRefEnv map[string]string) {
-	flags.ExtraEnv = make(map[string]string, len(crossRefEnv))
+	if flags.ExtraEnv == nil {
+		flags.ExtraEnv = make(map[string]string, len(crossRefEnv))
+	}
 	for k, v := range crossRefEnv {
 		flags.ExtraEnv[k] = v
 	}
