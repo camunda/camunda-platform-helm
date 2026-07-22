@@ -1092,14 +1092,11 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 	}
 
-	// Deploy order: management first, then every other release in
-	// declaration order.
-	order := make([]int, 0, len(entry.Topology.Releases))
-	order = append(order, managementIdx)
-	for i := range entry.Topology.Releases {
-		if i != managementIdx {
-			order = append(order, i)
-		}
+	// Deploy order honors each release's depends-on (management, which the
+	// orchestration releases depend on, therefore deploys first).
+	order, err := topologyDeployOrder(entry.Topology.Releases)
+	if err != nil {
+		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
 
 	for _, i := range order {
@@ -1132,6 +1129,49 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	return nil
+}
+
+// topologyDeployOrder returns release indices in a depends-on-respecting order:
+// a release whose DependsOn names another release's Role is always emitted after
+// that release. Ties break by declaration order, so the management release the
+// orchestration releases depend on is deployed first. Errors on a cycle or an
+// unresolvable dependency (Topology.Validate already rejects unknown roles, so
+// this is defense-in-depth).
+func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
+	roleIdx := make(map[string]int, len(releases))
+	for i, r := range releases {
+		if r.Role != "" {
+			if _, seen := roleIdx[r.Role]; !seen {
+				roleIdx[r.Role] = i
+			}
+		}
+	}
+	emitted := make([]bool, len(releases))
+	order := make([]int, 0, len(releases))
+	for len(order) < len(releases) {
+		progressed := false
+		for i, r := range releases {
+			if emitted[i] {
+				continue
+			}
+			if r.DependsOn != "" {
+				dep, ok := roleIdx[r.DependsOn]
+				if !ok {
+					return nil, fmt.Errorf("release[%d] (role %q) depends-on %q which is not a declared role", i, r.Role, r.DependsOn)
+				}
+				if !emitted[dep] {
+					continue
+				}
+			}
+			order = append(order, i)
+			emitted[i] = true
+			progressed = true
+		}
+		if !progressed {
+			return nil, fmt.Errorf("topology depends-on graph has a cycle or unresolvable dependency")
+		}
+	}
+	return order, nil
 }
 
 // synthesizeReleaseEntry builds the matrix.Entry for one topology release,

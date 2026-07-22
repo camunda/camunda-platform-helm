@@ -16,6 +16,23 @@ func TestMergeEnvOverridesReplacesExistingKey(t *testing.T) {
 	}
 }
 
+func TestDecodeSecretValueRoundTrip(t *testing.T) {
+	// "s3cr3t" base64 == "czNjcjN0", with surrounding whitespace kubectl may emit.
+	got, err := decodeSecretValue("  czNjcjN0\n")
+	if err != nil {
+		t.Fatalf("decodeSecretValue() unexpected error: %v", err)
+	}
+	if got != "s3cr3t" {
+		t.Fatalf("decodeSecretValue() = %q, want %q", got, "s3cr3t")
+	}
+}
+
+func TestDecodeSecretValueRejectsInvalidBase64(t *testing.T) {
+	if _, err := decodeSecretValue("not!base64!"); err == nil {
+		t.Fatal("decodeSecretValue() expected error on invalid base64, got nil")
+	}
+}
+
 func TestMergeEnvOverridesAppendsMissingKeysSorted(t *testing.T) {
 	content := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\n"
 	overrides := map[string]string{

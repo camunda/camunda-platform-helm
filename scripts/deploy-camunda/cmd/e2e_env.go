@@ -92,7 +92,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				return err
 			}
 			merged := mergeEnvOverrides(string(content), overrides)
-			if err := os.WriteFile(output, []byte(merged), 0o644); err != nil {
+			if err := os.WriteFile(output, []byte(merged), 0o600); err != nil {
 				return err
 			}
 
@@ -131,9 +131,20 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve secret key %q in %s: %w", key, namespace, err)
 	}
-	dec, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(out)))
+	dec, err := decodeSecretValue(string(out))
 	if err != nil {
 		return "", fmt.Errorf("decode secret key %q: %w", key, err)
+	}
+	return dec, nil
+}
+
+// decodeSecretValue base64-decodes a (possibly whitespace-padded) Kubernetes
+// secret data value. Extracted so the decode-failure path is unit-testable
+// without shelling out to kubectl.
+func decodeSecretValue(raw string) (string, error) {
+	dec, err := base64.StdEncoding.DecodeString(strings.TrimSpace(raw))
+	if err != nil {
+		return "", err
 	}
 	return string(dec), nil
 }

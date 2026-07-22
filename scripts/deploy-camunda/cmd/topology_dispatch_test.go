@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -523,4 +524,68 @@ func TestResolveSharedStorageServiceName(t *testing.T) {
 			t.Errorf("resolveSharedStorageServiceName() = %q, want empty string", got)
 		}
 	})
+}
+
+func TestTopologyDeployOrder_ManagementFirst(t *testing.T) {
+	order, err := topologyDeployOrder(testTopologyReleases())
+	if err != nil {
+		t.Fatalf("topologyDeployOrder() unexpected error: %v", err)
+	}
+	if len(order) != 3 || order[0] != 0 {
+		t.Fatalf("order = %v, want management (index 0) first over 3 releases", order)
+	}
+	// every orchestration (depends-on management) must come after index 0
+	for _, idx := range order[1:] {
+		if idx == 0 {
+			t.Fatalf("management index appeared after position 0: %v", order)
+		}
+	}
+}
+
+func TestTopologyDeployOrder_ChainedDependency(t *testing.T) {
+	releases := []matrix.TopologyRelease{
+		{Role: "orchestration", NamespaceSuffix: "orchb", DependsOn: "management"},
+		{Role: "management", NamespaceSuffix: "mgmt"},
+		{Role: "aux", NamespaceSuffix: "aux", DependsOn: "orchestration"},
+	}
+	order, err := topologyDeployOrder(releases)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pos := map[int]int{}
+	for p, idx := range order {
+		pos[idx] = p
+	}
+	if !(pos[1] < pos[0] && pos[0] < pos[2]) {
+		t.Fatalf("order %v does not satisfy management(1) < orchestration(0) < aux(2)", order)
+	}
+}
+
+func TestTopologyDeployOrder_CycleErrors(t *testing.T) {
+	releases := []matrix.TopologyRelease{
+		{Role: "a", DependsOn: "b"},
+		{Role: "b", DependsOn: "a"},
+	}
+	if _, err := topologyDeployOrder(releases); err == nil {
+		t.Fatal("expected cycle error, got nil")
+	}
+}
+
+func TestRunTopologyEntry_RejectsUnsupportedAuthFlow(t *testing.T) {
+	base := matrix.Entry{
+		Version:  "8.10",
+		Scenario: "multinamespace",
+		Auth:     "oidc", // not keycloak
+		Flow:     "install",
+		Topology: &matrix.Topology{Name: "t", Releases: testTopologyReleases()},
+	}
+	if err := runTopologyEntry(context.Background(), base, matrix.RunOptions{}); err == nil {
+		t.Fatal("expected error for auth=oidc, got nil")
+	}
+
+	base.Auth = "keycloak"
+	base.Flow = "upgrade-minor" // not install
+	if err := runTopologyEntry(context.Background(), base, matrix.RunOptions{}); err == nil {
+		t.Fatal("expected error for flow=upgrade-minor, got nil")
+	}
 }
