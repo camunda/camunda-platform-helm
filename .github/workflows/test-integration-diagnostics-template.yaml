@@ -30,15 +30,17 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - name: Validate platform
+    - name: Normalize and validate platform
       shell: bash
       env:
-        PLATFORM: ${{ inputs.platform }}
+        PLATFORM_RAW: ${{ inputs.platform }}
       run: |
-        case "$PLATFORM" in
+        platform="$(echo "$PLATFORM_RAW" | tr '[:upper:]' '[:lower:]')"
+        case "$platform" in
           gke|eks|rosa) ;;
-          *) echo "::error::Unsupported platform '$PLATFORM' (expected gke|eks|rosa)"; exit 1 ;;
+          *) echo "::error::Unsupported platform '$PLATFORM_RAW' (expected gke|eks|rosa)"; exit 1 ;;
         esac
+        echo "PLATFORM=$platform" >> "$GITHUB_ENV"
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       with:
         repository: camunda/camunda-platform-helm
@@ -57,8 +59,15 @@ jobs:
       run: |
         chmod +x "${{ runner.temp }}/bin/deploy-camunda" || true
         echo "${{ runner.temp }}/bin" >> "$GITHUB_PATH"
+    - name: Verify requested binary is available
+      if: inputs.binary-artifact-name != ''
+      shell: bash
+      run: |
+        if ! command -v deploy-camunda >/dev/null 2>&1; then
+          echo "::warning::Requested deploy-camunda binary artifact '${{ inputs.binary-artifact-name }}' was not found; falling back to basic kubectl output. Verify the producer's artifact name."
+        fi
     - name: Import Vault secrets
-      if: inputs.platform == 'gke'
+      if: env.PLATFORM == 'gke'
       id: test-credentials-secret
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
@@ -73,7 +82,7 @@ jobs:
           secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
         exportEnv: false
     - name: Resolve EKS cluster name
-      if: inputs.platform == 'eks'
+      if: env.PLATFORM == 'eks'
       shell: bash
       run: echo "INFRA_CLUSTER_NAME=$(yq '.eks.cluster-name' .github/config/infra.yaml)" >> "$GITHUB_ENV"
     - name: Authenticate to cluster
@@ -91,7 +100,7 @@ jobs:
         CLUSTER_NAME: ${{ env.INFRA_CLUSTER_NAME }}
         TELEPORT_TOKEN: ${{ inputs.teleport-token }}
       with:
-        platform: ${{ inputs.platform }}
+        platform: ${{ env.PLATFORM }}
     - name: Print cluster diagnostics
       if: always()
       env:
@@ -114,11 +123,15 @@ jobs:
       env:
         TEST_NAMESPACE: ${{ inputs.namespace }}
       uses: ./.github/actions/failed-pods-info
+    - name: Compute artifact suffix
+      if: always()
+      shell: bash
+      run: echo "ARTIFACT_SUFFIX=${{ github.run_id }}-${{ github.run_attempt }}-$RANDOM" >> "$GITHUB_ENV"
     - name: Upload cluster diagnostics
       if: always()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
-        name: e2e-readiness-cluster-diagnostics-${{ inputs.namespace }}
+        name: e2e-readiness-cluster-diagnostics-${{ inputs.namespace }}-${{ env.ARTIFACT_SUFFIX }}
         path: diagnostics/**
         if-no-files-found: ignore
         retention-days: 14
