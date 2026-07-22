@@ -1348,7 +1348,8 @@ jobs:
   # 'multinamespace' scenario's orchestration release, with credentials
   # merged from the management release via `deploy-camunda e2e-env merge`.
   # Fully additive/opt-in — gated tightly on the one topology scenario, so
-  # it cannot affect any other scenario's e2e path. Non-blocking while new.
+  # it cannot affect any other scenario's e2e path. Blocking: a smoke-suite
+  # failure fails this check.
   e2e-topology-smoke:
     name: "[topology] e2e smoke - ${{ inputs.shortname }}"
     needs: [install]
@@ -1363,7 +1364,6 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.scenario == 'multinamespace' && inputs.flow == 'install' }}
-    continue-on-error: true
     timeout-minutes: 30
     permissions:
       contents: read
