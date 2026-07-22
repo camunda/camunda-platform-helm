@@ -114,6 +114,8 @@ jobs:
       pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
 
       # Detect whether any chart/CI-relevant files changed. On non-PR events
       # (merge_group, workflow_dispatch) we always consider changes present.
