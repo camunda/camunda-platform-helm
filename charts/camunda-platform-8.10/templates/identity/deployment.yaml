@@ -88,7 +88,7 @@ spec:
               "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
               "config" .Values.global.identity.auth.identity
             ) | nindent 12 }}
-            {{- if .Values.optimize.enabled }}
+            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict

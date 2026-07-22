@@ -1110,6 +1110,80 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					},
 					"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should be present when alwaysRegister=true, even though orchestration.enabled=false")
 			},
+		}, {
+			// Test: alwaysRegister=true must still emit the VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
+			// env var even though connectors is disabled — same root cause as the
+			// Optimize/Orchestration cases above.
+			Name:                 "TestConnectorsDisabledWithRegisterInIdentityIncludesConnectorsSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                                 "true",
+				"global.identity.auth.enabled":                                     "true",
+				"global.security.authentication.method":                            "oidc",
+				"connectors.enabled":                                               "false",
+				"global.identity.auth.connectors.alwaysRegister":                   "true",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "connectors-oidc-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "identity-connectors-client-token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "connectors-oidc-secret"},
+								Key:                  "identity-connectors-client-token",
+							},
+						},
+					},
+					"VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET should be present when alwaysRegister=true, even though connectors.enabled=false")
+			},
+		}, {
+			// Test: alwaysRegister=true must still emit CAMUNDA_OPTIMIZE_CLIENT_ID/CAMUNDA_OPTIMIZE_SECRET
+			// even though optimize is disabled. This is the deployment.yaml:91 gate (distinct from the
+			// VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET gate above), only rendered when Identity's own auth
+			// type is non-Keycloak (global.identity.auth.identity secret config is rejected under Keycloak).
+			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesOptimizeClientIdAndSecretEnvVars",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.auth.type":                              "GENERIC",
+				"orchestration.enabled":                                  "false",
+				"optimize.enabled":                                       "false",
+				"global.identity.auth.optimize.alwaysRegister":           "true",
+				"global.identity.auth.optimize.secret.existingSecret":    "optimize-oidc-secret",
+				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
+				"global.identity.auth.identity.secret.existingSecret":    "identity-generic-secret",
+				"global.identity.auth.identity.secret.existingSecretKey": "identity-generic-client-token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "CAMUNDA_OPTIMIZE_CLIENT_ID",
+						Value: "optimize",
+					},
+					"CAMUNDA_OPTIMIZE_CLIENT_ID should be present when alwaysRegister=true, even though optimize.enabled=false")
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "CAMUNDA_OPTIMIZE_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "optimize-oidc-secret"},
+								Key:                  "identity-optimize-client-token",
+							},
+						},
+					},
+					"CAMUNDA_OPTIMIZE_SECRET should be present when alwaysRegister=true, even though optimize.enabled=false")
+			},
 		},
 	}
 
