@@ -221,7 +221,6 @@ ZBCTL_VERSION=$(extract_version "zbctl")
 ORAS_VERSION=$(extract_version "oras")
 HELM_CT_VERSION=$(extract_version "helm-ct")
 HELM_CR_VERSION=$(extract_version "helm-cr")
-GOMPLATE_VERSION=$(extract_version "gomplate")
 BATS_VERSION=$(extract_version "bats")
 YAMLLINT_VERSION=$(extract_version "yamllint")
 
@@ -239,7 +238,6 @@ CI_BUILD_ARGS="--build-arg GOLANG_VERSION=${GOLANG_VERSION} \
     --build-arg ORAS_VERSION=${ORAS_VERSION} \
     --build-arg HELM_CT_VERSION=${HELM_CT_VERSION} \
     --build-arg HELM_CR_VERSION=${HELM_CR_VERSION} \
-    --build-arg GOMPLATE_VERSION=${GOMPLATE_VERSION} \
     --build-arg BATS_VERSION=${BATS_VERSION} \
     --build-arg YAMLLINT_VERSION=${YAMLLINT_VERSION}"
 

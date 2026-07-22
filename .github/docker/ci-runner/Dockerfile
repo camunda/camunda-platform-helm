@@ -27,7 +27,6 @@
 #    
 #    Compression results:
 #      oc:        160 MB → 75 MB  (53% reduction)
-#      gomplate:   84 MB → 20 MB  (76% reduction)
 #      cr:         63 MB → 28 MB  (56% reduction)
 #      helm:       58 MB → 14 MB  (76% reduction)
 #      kubectl:    47 MB → 12 MB  (74% reduction)
@@ -99,9 +98,6 @@
 #   - Remove chart-releaser cr (-28 MB)
 #     Only if you don't publish Helm charts to GitHub Pages.
 #
-#   - Remove gomplate (-20 MB)
-#     Only if you don't use gomplate for templating.
-#
 # BUILD INSTRUCTIONS
 # ==================
 #
@@ -155,7 +151,6 @@ ARG ZBCTL_VERSION=v8.6.0
 ARG ORAS_VERSION=1.3.0
 ARG HELM_CT_VERSION=3.11.0
 ARG HELM_CR_VERSION=1.7.0
-ARG GOMPLATE_VERSION=v4.3.3
 ARG OC_VERSION=4.17.11
 
 WORKDIR /tools
@@ -213,11 +208,6 @@ RUN curl -fsSL "https://github.com/helm/chart-testing/releases/download/v${HELM_
 # Used for: Publishing Helm charts to GitHub Pages
 RUN curl -fsSL "https://github.com/helm/chart-releaser/releases/download/v${HELM_CR_VERSION}/chart-releaser_${HELM_CR_VERSION}_linux_amd64.tar.gz" | tar -xzf - cr
 
-# gomplate - Template renderer
-# Used for: Rendering Go templates in CI
-RUN curl -fsSL -o gomplate "https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_linux-amd64" \
-    && chmod +x gomplate
-
 # oc - OpenShift CLI
 # Used for: Deploying to OpenShift/OKD clusters
 # This is the largest binary (160 MB uncompressed)
@@ -241,7 +231,7 @@ RUN echo "=== Original binary sizes ===" && ls -lhS /tools/
 # - Anti-tampering measures
 # We continue on failure to avoid breaking the build.
 # ------------------------------------------------------------------------------
-RUN for bin in helm kubectl yq kustomize kind oras ct cr gomplate oc zbctl; do \
+RUN for bin in helm kubectl yq kustomize kind oras ct cr oc zbctl; do \
         echo "Compressing $bin..." && upx --best "$bin" || echo "Warning: UPX failed for $bin, keeping original"; \
     done \
     # jq sometimes fails with UPX on certain versions
@@ -446,7 +436,6 @@ RUN echo "=== Verifying tool installations ===" \
     && oras version \
     && ct version \
     && cr version \
-    && gomplate --version \
     && bats --version \
     && yamllint --version \
     && gcloud version \

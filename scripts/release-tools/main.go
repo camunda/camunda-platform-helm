@@ -54,6 +54,10 @@ func main() {
 		err = runInjectValues(os.Args[2:])
 	case "version-matrix":
 		err = runVersionMatrix(os.Args[2:])
+	case "backfill-matrix":
+		err = runBackfillMatrix(os.Args[2:])
+	case "stamp-release":
+		err = runStampRelease(os.Args[2:])
 	case "-h", "--help", "help":
 		usage()
 		return
@@ -84,5 +88,7 @@ Subcommands:
   release-notes   Generate RELEASE-NOTES.md + Chart.yaml release annotations (--main / --footer)
   inject-values   Override component image tags in a chart's values.yaml from *_IMAGE_TAG env
   version-matrix  Render version-matrix/camunda-<app>/README.md (--readme <app>) or version-matrix/README.md (--index)
+  backfill-matrix One-time backfill of release_date/helm_cli/release_tag for historical version-matrix entries
+  stamp-release   Stamp a published GitHub release's date onto its version-matrix.json entry
 `)
 }

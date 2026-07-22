@@ -15,6 +15,7 @@
 package versionmatrix
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -174,5 +175,85 @@ func TestUpsertImagesWritesEnterprise(t *testing.T) {
 `
 	if string(got) != want {
 		t.Errorf("UpsertImages enterprise:\n got: %q\nwant: %q", got, want)
+	}
+}
+
+func TestUpsertImagesPreservesReleaseFacts(t *testing.T) {
+	// An image re-derivation (e.g. a repeated RC promotion) must not erase
+	// release-time facts already recorded on the entry.
+	existing := `[
+  {
+    "chart_version": "13.4.0",
+    "chart_images": ["docker.io/camunda/camunda:8.10.0"],
+    "release_date": "2026-07-08",
+    "helm_cli": "3.20.2",
+    "release_tag": "camunda-platform-8.8-13.4.0"
+  }
+]
+`
+	got, err := UpsertImages([]byte(existing), "13.4.0",
+		[]string{"docker.io/camunda/camunda:8.10.1"}, nil)
+	if err != nil {
+		t.Fatalf("UpsertImages: %v", err)
+	}
+	for _, want := range []string{
+		`"release_date": "2026-07-08"`,
+		`"helm_cli": "3.20.2"`,
+		`"release_tag": "camunda-platform-8.8-13.4.0"`,
+		`"docker.io/camunda/camunda:8.10.1"`,
+	} {
+		if !bytes.Contains(got, []byte(want)) {
+			t.Errorf("UpsertImages dropped %q:\n%s", want, got)
+		}
+	}
+	if bytes.Contains(got, []byte("8.10.0\"")) {
+		t.Errorf("UpsertImages kept stale image list:\n%s", got)
+	}
+}
+
+func TestUpsertEntryAndFindEntry(t *testing.T) {
+	entry := ChartEntry{
+		ChartVersion: "14.7.0",
+		ChartImages:  []string{"docker.io/camunda/camunda:8.9.12"},
+		ReleaseDate:  "2026-07-17",
+		HelmCLI:      "3.20.2,4.2.3",
+		ReleaseTag:   "camunda-platform-8.9-14.7.0",
+	}
+	out, err := UpsertEntry([]byte("[]"), entry)
+	if err != nil {
+		t.Fatalf("UpsertEntry: %v", err)
+	}
+	got, ok, err := FindEntry(out, "14.7.0")
+	if err != nil || !ok {
+		t.Fatalf("FindEntry: ok=%v err=%v", ok, err)
+	}
+	if got.ReleaseDate != "2026-07-17" || got.HelmCLI != "3.20.2,4.2.3" || got.ReleaseTag != entry.ReleaseTag {
+		t.Errorf("FindEntry roundtrip mismatch: %+v", got)
+	}
+	if _, ok, _ := FindEntry(out, "0.0.1"); ok {
+		t.Errorf("FindEntry: unexpected hit for absent version")
+	}
+	if _, err := UpsertEntry([]byte("[]"), ChartEntry{}); err == nil {
+		t.Errorf("UpsertEntry: want error for empty chart_version")
+	}
+}
+
+func TestEncodeEntries(t *testing.T) {
+	out, err := EncodeEntries([]ChartEntry{
+		{ChartVersion: "1.0.0", ReleaseDate: "2026-01-01"},
+	})
+	if err != nil {
+		t.Fatalf("EncodeEntries: %v", err)
+	}
+	want := `[
+  {
+    "chart_version": "1.0.0",
+    "chart_images": [],
+    "release_date": "2026-01-01"
+  }
+]
+`
+	if string(out) != want {
+		t.Errorf("EncodeEntries:\n got: %q\nwant: %q", out, want)
 	}
 }

@@ -109,7 +109,10 @@ The charts are built, linted, and tested on every push to the main branch. The r
 3. Uploads to GitHub Releases using `helm-cr`.
 4. Updates the Helm repo index (`gh-pages` branch).
 5. Signs with Cosign and uploads the bundle to the release.
-6. Labels the `release-please` PR with `autorelease: published`.
+6. Stamps the published release's date onto the chart's `version-matrix.json` entry
+   (`release-tools stamp-release`) and regenerates the matrix READMEs on the `release-please`
+   branch — the single write of `release_date`, taken from the GitHub release's `publishedAt`.
+7. Labels the `release-please` PR with `autorelease: published`.
 
 **Release tag format:** `camunda-platform-{appVersion}-{version}` (e.g. `camunda-platform-8.8-13.4.0`).
 
@@ -244,7 +247,9 @@ Assuming `current alpha is 8.9` (which will become `stable`) and the `new alpha 
 
 **Configuration files updates:**
 
-1. Update [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml).
+1. Update [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml) —
+   both the `camundaVersions` buckets and the matching `camundaSupportLifecycle` entries
+   (release/support/EOL dates; the version-matrix renderer fails loudly when they diverge).
 2. Update Release-Please config and manifest in `.github/config/release-please/`.
 3. Update [`renovate.json5`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5).
 4. Update GitHub Actions with version choices (search for `type: choice`).

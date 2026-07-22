@@ -103,7 +103,6 @@ test_ci_runner() {
     run_test "oras" "docker run --rm --user root $image bash -c 'oras version'" || ((failed++))
     run_test "ct" "docker run --rm --user root $image bash -c 'ct version'" || ((failed++))
     run_test "cr" "docker run --rm --user root $image bash -c 'cr version'" || ((failed++))
-    run_test "gomplate" "docker run --rm --user root $image bash -c 'gomplate --version'" || ((failed++))
     run_test "bats" "docker run --rm --user root $image bash -c 'bats --version'" || ((failed++))
     run_test "yamllint" "docker run --rm --user root $image bash -c 'yamllint --version'" || ((failed++))
     run_test "zbctl" "docker run --rm --user root $image bash -c 'zbctl version'" || ((failed++))
