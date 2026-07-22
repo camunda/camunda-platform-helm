@@ -1,0 +1,30 @@
+# Zero-infrastructure developer / evaluation profile.
+#
+#   helm install camunda camunda/camunda-platform --devel --version '15.x' \
+#     -f https://helm.camunda.io/camunda-platform/values/camunda-8.10/values-quickstart.yaml
+#
+# Runs the Orchestration Cluster + Connectors on an embedded, file-based H2
+# database with Basic auth (demo/demo) and NO external infrastructure.
+# NON-PRODUCTION: single broker + single partition only; data is local to the
+# broker PVC. For production, choose a real secondary-storage backend
+# (Elasticsearch / OpenSearch / external RDBMS) and a multi-broker topology.
+orchestration:
+  clusterSize: "1"
+  exporters:
+    rdbms:
+      enabled: true
+  data:
+    secondaryStorage:
+      rdbms:
+        url: "jdbc:h2:file:/usr/local/camunda/data/camunda-rdbms;DB_CLOSE_DELAY=-1"
+        username: "sa"
+  # partition-count / replication-factor set via extraConfiguration (imported over
+  # the base application.yaml through spring.config.import) instead of the deprecated
+  # orchestration.partitionCount / orchestration.replicationFactor keys.
+  extraConfiguration:
+    - file: cluster-topology.yaml
+      content: |
+        camunda:
+          cluster:
+            partition-count: 1
+            replication-factor: 1
