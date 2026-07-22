@@ -452,8 +452,12 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			entries = singleEntries
 
 			if len(topologyEntries) > 0 {
-				if dryRun {
-					fmt.Fprintf(os.Stdout, "\n=== Topology entries (dry-run not yet supported, listing only) ===\n")
+				if dryRun || coverage {
+					label := "dry-run"
+					if !dryRun && coverage {
+						label = "coverage"
+					}
+					fmt.Fprintf(os.Stdout, "\n=== Topology entries (%s — listing only, no deploy) ===\n", label)
 					for _, e := range topologyEntries {
 						fmt.Fprintf(os.Stdout, "%s/%s (%s): %d releases\n", e.Version, e.Scenario, e.Shortname, len(e.Topology.Releases))
 					}
@@ -1030,6 +1034,13 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	if entry.Auth != "keycloak" || entry.Flow != "install" {
 		return fmt.Errorf("topology entry %s/%s: multi-namespace topology currently supports only auth=keycloak and flow=install (got auth=%q, flow=%q)", entry.Version, entry.Scenario, entry.Auth, entry.Flow)
+	}
+
+	if opts.ChartRef != "" {
+		return fmt.Errorf("topology entry %s/%s: --chart-ref is not supported on the multi-namespace topology path yet (applyChartRefOverride runs only in executeEntry); tracked in #6656", entry.Version, entry.Scenario)
+	}
+	if opts.Cleanup {
+		return fmt.Errorf("topology entry %s/%s: --cleanup is not supported on the multi-namespace topology path yet (no per-release namespace teardown; the loop's cleanup() is BuildEntryFlags' temp-file cleanup); tracked in #6656", entry.Version, entry.Scenario)
 	}
 
 	releases := make([]deploy.TopologyRelease, 0, len(entry.Topology.Releases))

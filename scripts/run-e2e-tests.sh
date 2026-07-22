@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 source "$(dirname "$0")/base_playwright_script.sh"
 source "$(dirname "$0")/render-e2e-env.sh"
 
@@ -242,6 +244,7 @@ if [[ -n "$MANAGEMENT_NAMESPACE" ]]; then
     --output "$ENV_FILE" \
     --ci="$IS_CI" \
     --run-smoke-tests="$RUN_SMOKE_TESTS" \
+    --render-script "$SCRIPT_DIR/render-e2e-env.sh" \
     ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"}
 else
   render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"

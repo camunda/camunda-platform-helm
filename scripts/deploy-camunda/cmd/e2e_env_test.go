@@ -1,6 +1,23 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestMergeEnvOverridesReplacesExistingKey(t *testing.T) {
 	content := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\nKEYCLOAK_URL=https://orcha.example.com\n"
@@ -69,6 +86,26 @@ func TestMergeEnvOverridesPreservesNoTrailingNewline(t *testing.T) {
 
 	if got != want {
 		t.Fatalf("mergeEnvOverrides() = %q, want %q", got, want)
+	}
+}
+
+func TestE2EEnvMergeFailsOnMissingRenderScript(t *testing.T) {
+	cmd := newE2EEnvMergeCommand()
+	cmd.SetArgs([]string{
+		"--orchestration-namespace", "matrix-810-mns-orcha",
+		"--management-namespace", "matrix-810-mns-mgmt",
+		"--absolute-chart-path", "/workspace/charts/camunda-platform-8.10",
+		"--render-script", "/nonexistent/render-e2e-env.sh",
+	})
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error when --render-script points at a non-existent path")
+	}
+	if !strings.Contains(err.Error(), "render script failed") {
+		t.Fatalf("expected error to mention render script failure, got: %v", err)
 	}
 }
 
