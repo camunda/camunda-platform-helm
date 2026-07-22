@@ -165,6 +165,37 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConstraintTemplateTest) TestGatewayConstraints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGatewayNamespaceWithCreateGatewayResourceFails",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.namespace":             "shared-infra",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "global.gateway.namespace and global.gateway.createGatewayResource=true cannot be set together")
+			},
+		},
+		{
+			Name: "TestGatewayNamespaceWithoutCreateGatewayResourceSucceeds",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.namespace":             "shared-infra",
+				"global.gateway.createGatewayResource": "false",
+				"global.host":                          "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
 		{
