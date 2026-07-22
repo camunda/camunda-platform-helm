@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Release Process | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/reference/release-process"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Helm Charts"><meta data-rh="true" name="description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><meta data-rh="true" property="og:description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><link data-rh="true" rel="icon" href="/camunda-platform-helm/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/reference/release-process" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://helm.camunda.io/camunda-platform-helm/reference/release-process"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/assets/js/runtime~main.a9bfc55a.js" defer="defer"></script>
-<script src="/camunda-platform-helm/assets/js/main.43d77eb6.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/runtime~main.4a657de4.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/main.b3b4cf62.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -78,6 +78,9 @@ version matrix files (component versions mapping + READMEs).</li>
 <li class="">Uploads to GitHub Releases using <code>helm-cr</code>.</li>
 <li class="">Updates the Helm repo index (<code>gh-pages</code> branch).</li>
 <li class="">Signs with Cosign and uploads the bundle to the release.</li>
+<li class="">Stamps the published release&#x27;s date onto the chart&#x27;s <code>version-matrix.json</code> entry
+(<code>release-tools stamp-release</code>) and regenerates the matrix READMEs on the <code>release-please</code>
+branch — the single write of <code>release_date</code>, taken from the GitHub release&#x27;s <code>publishedAt</code>.</li>
 <li class="">Labels the <code>release-please</code> PR with <code>autorelease: published</code>.</li>
 </ol>
 <p><strong>Release tag format:</strong> <code>camunda-platform-{appVersion}-{version}</code> (e.g. <code>camunda-platform-8.8-13.4.0</code>).</p>
@@ -173,7 +176,9 @@ itself is not treated as failed.</li>
 </ol>
 <p><strong>Configuration files updates:</strong></p>
 <ol>
-<li class="">Update <a href="https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml" target="_blank" rel="noopener noreferrer" class=""><code>charts/chart-versions.yaml</code></a>.</li>
+<li class="">Update <a href="https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml" target="_blank" rel="noopener noreferrer" class=""><code>charts/chart-versions.yaml</code></a> —
+both the <code>camundaVersions</code> buckets and the matching <code>camundaSupportLifecycle</code> entries
+(release/support/EOL dates; the version-matrix renderer fails loudly when they diverge).</li>
 <li class="">Update Release-Please config and manifest in <code>.github/config/release-please/</code>.</li>
 <li class="">Update <a href="https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5" target="_blank" rel="noopener noreferrer" class=""><code>renovate.json5</code></a>.</li>
 <li class="">Update GitHub Actions with version choices (search for <code>type: choice</code>).</li>
