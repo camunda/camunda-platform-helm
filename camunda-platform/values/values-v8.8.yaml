@@ -24,7 +24,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.8.31
+    tag: 8.8.32
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
