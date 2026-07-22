@@ -108,6 +108,60 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar-service-annotation", service.ObjectMeta.Annotations["foo"])
 			},
+		}, {
+			Name: "TestAppProtocolsDefaultEmpty",
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol by default", port.Name)
+				}
+			},
+		}, {
+			Name: "TestAppProtocolsSetsOnlyTargetedPort",
+			Values: map[string]string{
+				"orchestration.service.appProtocols.grpc": "kubernetes.io/h2c",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					if port.Name == "grpc" {
+						s.Require().NotNil(port.AppProtocol)
+						s.Require().Equal("kubernetes.io/h2c", *port.AppProtocol)
+					} else {
+						s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol", port.Name)
+					}
+				}
+			},
+		}, {
+			Name: "TestAppProtocolsUnknownPortNameFails",
+			Values: map[string]string{
+				"orchestration.service.appProtocols.gprc": "kubernetes.io/h2c",
+			},
+			Expected: map[string]string{
+				"ERROR": "is not a valid appProtocols key",
+			},
+		}, {
+			Name: "TestAppProtocolsHeadlessOnlyPortNamesDoNotBreakRender",
+			Values: map[string]string{
+				"orchestration.service.appProtocols.internal": "kubernetes.io/h2c",
+				"orchestration.service.appProtocols.command":  "kubernetes.io/h2c",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then: internal/command are valid orchestration.service.appProtocols keys
+				// (used by service-headless.yaml) but this Service has no such ports.
+				for _, port := range service.Spec.Ports {
+					s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol", port.Name)
+				}
+			},
 		},
 	}
 
