@@ -197,6 +197,74 @@ func TestCompute_DeployCamundaAndCorePackagesIncluded(t *testing.T) {
 	}
 }
 
+func TestCompute_E2EExecutionScriptsIncluded(t *testing.T) {
+	for _, relPath := range []string{
+		filepath.Join("scripts", "run-e2e-tests.sh"),
+		filepath.Join("scripts", "render-e2e-env.sh"),
+		filepath.Join("scripts", "generate-chart-matrix.sh"),
+	} {
+		t.Run(relPath, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			chartDir := filepath.Join(tmpDir, "charts", "camunda-platform-8.9")
+			if err := os.MkdirAll(chartDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, filepath.Join(chartDir, "Chart.yaml"), "name: test\n")
+
+			scriptPath := filepath.Join(tmpDir, relPath)
+			if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, scriptPath, "#!/usr/bin/env bash\n")
+
+			hash1, err := Compute(tmpDir, "8.9")
+			if err != nil {
+				t.Fatalf("first Compute: %v", err)
+			}
+
+			writeFile(t, scriptPath, "#!/usr/bin/env bash\n# changed\n")
+
+			hash2, err := Compute(tmpDir, "8.9")
+			if err != nil {
+				t.Fatalf("second Compute: %v", err)
+			}
+
+			if hash1 == hash2 {
+				t.Errorf("expected hash to change when %s changes", relPath)
+			}
+		})
+	}
+}
+
+func TestCompute_PlaywrightE2ETestsActionIncluded(t *testing.T) {
+	tmpDir := t.TempDir()
+	chartDir := filepath.Join(tmpDir, "charts", "camunda-platform-8.9")
+	if err := os.MkdirAll(chartDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(chartDir, "Chart.yaml"), "name: test\n")
+
+	hash1, err := Compute(tmpDir, "8.9")
+	if err != nil {
+		t.Fatalf("first Compute: %v", err)
+	}
+
+	actionDir := filepath.Join(tmpDir, ".github", "actions", "playwright-e2e-tests")
+	if err := os.MkdirAll(actionDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(actionDir, "action.yaml"), "name: playwright-e2e-tests\n")
+
+	hash2, err := Compute(tmpDir, "8.9")
+	if err != nil {
+		t.Fatalf("second Compute: %v", err)
+	}
+
+	if hash1 == hash2 {
+		t.Error("expected hash to change when playwright-e2e-tests/action.yaml is added")
+	}
+}
+
 func TestCompute_MissingChartDirNoError(t *testing.T) {
 	tmpDir := t.TempDir()
 
