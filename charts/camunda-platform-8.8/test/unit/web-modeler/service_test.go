@@ -86,6 +86,59 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 			},
+		}, {
+			// webapp's Service does not wire appProtocol (only restapi/websockets do).
+			Skip: s.component == "webapp",
+			Name: "TestAppProtocolsDefaultEmpty",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol by default", port.Name)
+				}
+			},
+		}, {
+			Skip: s.component == "webapp",
+			Name: "TestAppProtocolsSetsOnlyTargetedPort",
+			Values: map[string]string{
+				"identity.enabled":                                         "true",
+				"webModeler.enabled":                                       "true",
+				"webModeler.restapi.mail.fromAddress":                      "example@example.com",
+				"webModeler." + s.component + ".service.appProtocols.http": "http",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					if port.Name == "http" {
+						s.Require().NotNil(port.AppProtocol)
+						s.Require().Equal("http", *port.AppProtocol)
+					} else {
+						s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol", port.Name)
+					}
+				}
+			},
+		}, {
+			Skip: s.component == "webapp",
+			Name: "TestAppProtocolsUnknownPortNameFails",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler." + s.component + ".service.appProtocols.htttp": "http",
+			},
+			Expected: map[string]string{
+				"ERROR": "is not a valid appProtocols key",
+			},
 		},
 	}
 
