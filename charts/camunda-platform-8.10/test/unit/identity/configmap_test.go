@@ -455,10 +455,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesOptimizeConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                 "true",
-				"global.identity.auth.enabled":                     "true",
-				"global.security.authentication.method":            "oidc",
-				"optimize.enabled":                                 "false",
+				"identity.enabled":                             "true",
+				"global.identity.auth.enabled":                 "true",
+				"global.security.authentication.method":        "oidc",
+				"optimize.enabled":                             "false",
 				"global.identity.auth.optimize.alwaysRegister": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -511,10 +511,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestConnectorsDisabledWithRegisterInIdentityIncludesConnectorsConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                   "true",
-				"global.identity.auth.enabled":                       "true",
-				"global.security.authentication.method":              "oidc",
-				"connectors.enabled":                                 "false",
+				"identity.enabled":                               "true",
+				"global.identity.auth.enabled":                   "true",
+				"global.security.authentication.method":          "oidc",
+				"connectors.enabled":                             "false",
 				"global.identity.auth.connectors.alwaysRegister": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -560,10 +560,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestOrchestrationDisabledWithRegisterInIdentityIncludesOrchestrationConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                      "true",
-				"global.identity.auth.enabled":                          "true",
-				"global.security.authentication.method":                 "oidc",
-				"orchestration.enabled":                                 "false",
+				"identity.enabled":                                  "true",
+				"global.identity.auth.enabled":                      "true",
+				"global.security.authentication.method":             "oidc",
+				"orchestration.enabled":                             "false",
 				"global.identity.auth.orchestration.alwaysRegister": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
