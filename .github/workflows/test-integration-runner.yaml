@@ -1655,7 +1655,7 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [merge-e2e-reports, shadow-e2e-full-suite]
+    needs: [merge-e2e-reports, shadow-e2e-full-suite, e2e-topology-smoke]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
@@ -1823,3 +1823,29 @@ jobs:
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
             fi
           fi
+
+      - name: CI Cleanup - Reap topology mgmt/orcha namespaces
+        if: always() && inputs.always-delete-namespace
+        env:
+          OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
+          OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
+        run: |
+          for suffix in mgmt orcha; do
+            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
+
+            kubectl annotate ns "$ns" test-flow=${{ inputs.flow }} --overwrite || true
+            kubectl annotate ns "$ns" build-failed=true --overwrite || true
+
+            if [[ "$(kubectl get ns "$ns" --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
+              kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
+              kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
+            else
+              if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
+                kubectl annotate ns "$ns" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
+                kubectl annotate ns "$ns" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
+              else
+                kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
+                kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
+              fi
+            fi
+          done
