@@ -1109,6 +1109,39 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						},
 					},
 					"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should be present when alwaysRegister=true, even though orchestration.enabled=false")
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "CAMUNDA_ORCHESTRATION_CLIENT_ID",
+						Value: "orchestration",
+					},
+					"CAMUNDA_ORCHESTRATION_CLIENT_ID should be present (default value) when alwaysRegister=true, even though orchestration.enabled=false")
+			},
+		}, {
+			// Test: alwaysRegister=true must emit CAMUNDA_ORCHESTRATION_CLIENT_ID with a
+			// custom clientId when one is configured, matching the configmap's fallback.
+			Name:                 "TestOrchestrationDisabledWithRegisterInIdentityIncludesCustomOrchestrationClientId",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                                    "true",
+				"global.identity.auth.enabled":                                        "true",
+				"global.security.authentication.method":                               "oidc",
+				"orchestration.enabled":                                               "false",
+				"global.identity.auth.orchestration.alwaysRegister":                   "true",
+				"orchestration.security.authentication.oidc.clientId":                 "custom-orchestration",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "CAMUNDA_ORCHESTRATION_CLIENT_ID",
+						Value: "custom-orchestration",
+					},
+					"CAMUNDA_ORCHESTRATION_CLIENT_ID should reflect the custom clientId")
 			},
 		}, {
 			// Test: alwaysRegister=true must still emit the VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
@@ -1141,6 +1174,39 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						},
 					},
 					"VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET should be present when alwaysRegister=true, even though connectors.enabled=false")
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "CAMUNDA_CONNECTORS_CLIENT_ID",
+						Value: "connectors",
+					},
+					"CAMUNDA_CONNECTORS_CLIENT_ID should be present (default value) when alwaysRegister=true, even though connectors.enabled=false")
+			},
+		}, {
+			// Test: alwaysRegister=true must emit CAMUNDA_CONNECTORS_CLIENT_ID with a
+			// custom clientId when one is configured, matching the configmap's fallback.
+			Name:                 "TestConnectorsDisabledWithRegisterInIdentityIncludesCustomConnectorsClientId",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                                 "true",
+				"global.identity.auth.enabled":                                     "true",
+				"global.security.authentication.method":                            "oidc",
+				"connectors.enabled":                                               "false",
+				"global.identity.auth.connectors.alwaysRegister":                   "true",
+				"connectors.security.authentication.oidc.clientId":                 "custom-connectors",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "connectors-oidc-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "identity-connectors-client-token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "CAMUNDA_CONNECTORS_CLIENT_ID",
+						Value: "custom-connectors",
+					},
+					"CAMUNDA_CONNECTORS_CLIENT_ID should reflect the custom clientId")
 			},
 		}, {
 			// Test: alwaysRegister=true must still emit CAMUNDA_OPTIMIZE_CLIENT_ID/CAMUNDA_OPTIMIZE_SECRET

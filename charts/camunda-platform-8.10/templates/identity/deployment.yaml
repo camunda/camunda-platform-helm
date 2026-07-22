@@ -53,12 +53,16 @@ spec:
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
                 "config"        .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
+            - name: CAMUNDA_CONNECTORS_CLIENT_ID
+              value: {{ .Values.connectors.security.authentication.oidc.clientId | default "connectors" | quote }}
             {{- end }}
             {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
                 "config"        .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
+            - name: CAMUNDA_ORCHESTRATION_CLIENT_ID
+              value: {{ include "orchestration.authClientId" . | quote }}
             {{- end }}
             {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
