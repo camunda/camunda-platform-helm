@@ -3,13 +3,8 @@ name: MCP - Test
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - "helm-values-mcp/**"
-      - ".github/workflows/test-mcp.yaml"
-      - ".github/actions/install-tool-versions/**"
-      - ".tool-versions"
-      - "charts/camunda-platform-*/Chart.yaml"
-      - "charts/camunda-platform-*/values.schema.json"
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch: {}
 
 concurrency:
@@ -22,8 +17,34 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.mcp }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          filters: |
+            mcp:
+              - 'helm-values-mcp/**'
+              - '.github/workflows/test-mcp.yaml'
+              - '.github/actions/install-tool-versions/**'
+              - '.tool-versions'
+              - 'charts/camunda-platform-*/Chart.yaml'
+              - 'charts/camunda-platform-*/values*.yaml'
+              - 'charts/camunda-platform-*/values.schema.json'
+
   test:
     name: Test helm-values-mcp
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' ||
+      github.event_name == 'merge_group' ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,3 +62,19 @@ jobs:
         run: npm run build
       - name: Test
         run: npm test
+
+  mcp-gate:
+    name: mcp-gate
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify MCP tests passed or were correctly skipped
+        run: |
+          result="${{ needs.test.result }}"
+          echo "test job result: ${result}"
+          if [ "${result}" = "failure" ] || [ "${result}" = "cancelled" ]; then
+            echo "::error::MCP tests did not pass"
+            exit 1
+          fi
+          echo "mcp-gate OK (test result: ${result})"
