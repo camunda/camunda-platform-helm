@@ -86,7 +86,6 @@ data:
         network:
           host: 0.0.0.0
           port: {{ .Values.zeebeGateway.service.grpcPort | quote }}
-          maxMessageSize: {{ .Values.global.config.requestBodySize | quote }}
         {{- if .Values.global.multitenancy.enabled }}
         multitenancy:
           enabled: true

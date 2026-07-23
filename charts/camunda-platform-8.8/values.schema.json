@@ -98,7 +98,7 @@
                     "properties": {
                         "requestBodySize": {
                             "type": "string",
-                            "description": "defines the maximum request body size for file uploads, HTTP form posts, and Zeebe messages.",
+                            "description": "defines the maximum request body size for file uploads and HTTP form posts.",
                             "default": "10MB"
                         }
                     }
