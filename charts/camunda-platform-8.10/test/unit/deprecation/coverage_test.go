@@ -157,7 +157,6 @@ func lastSegment(path string) string {
 	return path
 }
 
-
 func setDifference(a, b map[string]struct{}) map[string]struct{} {
 	diff := make(map[string]struct{})
 	for key := range a {
