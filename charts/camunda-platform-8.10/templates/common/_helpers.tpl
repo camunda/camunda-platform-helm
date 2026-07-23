@@ -1386,11 +1386,11 @@ of annotation key → value:
 proxy-ssl-name is ALWAYS emitted when verify is on: with ingress-nginx dynamic
 upstreams, absent proxy-ssl-name NGINX validates the upstream cert against the
 proxy host rather than the Orchestration Service DNS, so a cert carrying only
-the Service SAN fails. sniHost wins when set; otherwise the name is derived
-per protocol from the matching Orchestration Service host — REST from
-orchestration.serviceNameHTTP, gRPC from orchestration.serviceNameGRPC — the
-same helpers the *InternalURL helpers use, so REST and gRPC never derive to
-the same SNI name.
+the Service SAN fails. sniHost wins when set; otherwise the name is derived from
+the bare Orchestration Service DNS (orchestration.serviceName, `<fullname>-gateway`
+with no port — proxy-ssl-name is an SNI hostname, not a URL authority). REST and
+gRPC derive to the SAME name because both ingresses target the same gateway
+Service presenting the same cert.
 
 The caller is responsible for merging the result into the ingress
 annotations block. Pass `proto` ("rest" or "grpc") to select the source.
@@ -1404,8 +1404,7 @@ Usage (inside an ingress template's annotations block, e.g. via merge-overwrite)
 {{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
 {{- $caRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" $ctx "proto" $proto) | fromYaml -}}
 {{- if and $pv.enabled $caRef.name -}}
-{{- $derivedName := ternary (include "orchestration.serviceNameHTTP" $ctx) (include "orchestration.serviceNameGRPC" $ctx) (eq $proto "rest") -}}
-{{- $sslName := $pv.sniHost | default ($derivedName | trim) -}}
+{{- $sslName := $pv.sniHost | default (include "orchestration.serviceName" $ctx | trim) -}}
 nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
 nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $caRef.namespace $caRef.name | quote }}
 nginx.ingress.kubernetes.io/proxy-ssl-name: {{ $sslName | quote }}
