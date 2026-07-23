@@ -71,10 +71,15 @@ jobs:
     steps:
       - name: Verify MCP tests passed or were correctly skipped
         run: |
-          result="${{ needs.test.result }}"
-          echo "test job result: ${result}"
-          if [ "${result}" = "failure" ] || [ "${result}" = "cancelled" ]; then
-            echo "::error::MCP tests did not pass"
+          changes_result="${{ needs.changes.result }}"
+          test_result="${{ needs.test.result }}"
+          echo "changes result: ${changes_result} | test result: ${test_result}"
+          if [ "${changes_result}" != "success" ]; then
+            echo "::error::change detection did not succeed (${changes_result}); refusing to pass the gate"
             exit 1
           fi
-          echo "mcp-gate OK (test result: ${result})"
+          if [ "${test_result}" = "failure" ] || [ "${test_result}" = "cancelled" ]; then
+            echo "::error::MCP tests did not pass (${test_result})"
+            exit 1
+          fi
+          echo "mcp-gate OK (changes: ${changes_result}, test: ${test_result})"
