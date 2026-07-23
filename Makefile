@@ -201,7 +201,20 @@ helm.repos-add:
 			exit 1; \
 		fi; \
 	done
-	@helm repo update
+	@success=false; \
+	for i in 1 2 3; do \
+		if helm repo update; then \
+			success=true; break; \
+		fi; \
+		if [ $$i -lt 3 ]; then \
+			echo "⚠️  helm repo update failed (attempt $$i/3), retrying in 5s..." >&2; \
+			sleep 5; \
+		fi; \
+	done; \
+	if [ "$$success" != "true" ]; then \
+		echo "❌ helm repo update failed after 3 attempts" >&2; \
+		exit 1; \
+	fi
 
 # helm.dependency-update: update and downloads the dependencies for the Helm chart
 .PHONY: helm.dependency-update
