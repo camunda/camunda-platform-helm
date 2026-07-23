@@ -1023,6 +1023,24 @@ func resolveSharedStorageServiceName(topo *matrix.Topology, resolvedDeps []matri
 	return ""
 }
 
+// extractHelmSetValue scans "key=value" helm-set pairs (the same shape
+// matrix.RunOptions.ExtraHelmSets and parseHelmSetPairs use) for key and
+// returns its value, or "" if key isn't present. The last matching entry
+// wins, mirroring how repeated --extra-helm-set flags are applied.
+func extractHelmSetValue(pairs []string, key string) string {
+	value := ""
+	for _, p := range pairs {
+		idx := strings.Index(p, "=")
+		if idx <= 0 {
+			continue
+		}
+		if p[:idx] == key {
+			value = p[idx+1:]
+		}
+	}
+	return value
+}
+
 func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions) error {
 	platform := entry.Platform
 	if platform == "" {
@@ -1081,26 +1099,24 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	crossRefEnv := deploy.BuildTopologyCrossRefEnv(contexts[managementIdx], sharedStorageService, "9200", "http")
 
-	// MGMT_HOST is the management release ingress host (<mgmt-namespace>.<base-domain>),
-	// used by orchestration values to point the browser-facing OIDC issuer at the
-	// management Keycloak. Uses the same base-domain resolution BuildEntryFlags
-	// uses for the per-release host (including the INFRA_INGRESS_HOSTNAME_BASE
-	// env var fallback CI relies on — see matrix.ResolveIngressBaseDomain).
-	baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
-	if baseDomain != "" {
-		crossRefEnv["MGMT_HOST"] = contexts[managementIdx].Namespace + "." + baseDomain
+	// MGMT_HOST/ORCH_HOST both resolve to the single ingress host CI applies to
+	// every release in the topology via `--extra-helm-set global.host=<host>`
+	// (test-integration-runner.yaml injects one hash-prefixed host shared by
+	// management and orchestration; the namespace's hash is a suffix, so
+	// "<namespace>.<base-domain>" never matches it — see #6651). Prefer that
+	// applied host; only fall back to the per-release resolver (which, absent
+	// an explicit hostname/subdomain in opts, resolves to "" rather than
+	// fabricating a namespace-based host) when ExtraHelmSets doesn't carry it,
+	// e.g. local runs. If neither resolves, leave MGMT_HOST/ORCH_HOST unset so
+	// the values layers fail loudly instead of pointing at the wrong host.
+	sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host")
+	if sharedHost == "" {
+		baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
+		sharedHost = (&config.IngressFlags{IngressBaseDomain: baseDomain}).ResolveIngressHostname()
 	}
-
-	// ORCH_HOST: the single orchestration release's ingress host, consumed by
-	// the management feature layer to register the orchestration Keycloak
-	// client's root-url at the orchestration host (see #6651).
-	if baseDomain != "" {
-		for i, r := range entry.Topology.Releases {
-			if r.Role == "orchestration" {
-				crossRefEnv["ORCH_HOST"] = contexts[i].Namespace + "." + baseDomain
-				break
-			}
-		}
+	if sharedHost != "" {
+		crossRefEnv["MGMT_HOST"] = sharedHost
+		crossRefEnv["ORCH_HOST"] = sharedHost
 	}
 
 	// Deploy order honors each release's depends-on (management, which the

@@ -137,6 +137,36 @@ func TestSelectIngressHostEmptyInputReturnsEmpty(t *testing.T) {
 	}
 }
 
+// TestSelectIngressHostDedupesRepeatedHost pins down the shared-host
+// multi-namespace topology case: a namespace's Ingress can list the same
+// host across multiple rules, so the kubectl jsonpath query
+// ({.items[*].spec.rules[*].host}) emits it N times. selectIngressHost must
+// collapse the repeats into a single host rather than joining "host,host,host".
+func TestSelectIngressHostDedupesRepeatedHost(t *testing.T) {
+	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com matrix-810-mns-mgmt.ci.distro.ultrawombat.com matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+
+	got := selectIngressHost(raw)
+	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+
+	if got != want {
+		t.Fatalf("selectIngressHost() = %q, want %q (repeated host must collapse to one)", got, want)
+	}
+}
+
+// TestSelectIngressHostDedupesWhilePreservingOrderAndFilter combines the
+// repeated-host and zeebe/grpc-filter behaviors: distinct hosts survive in
+// first-seen order, duplicates collapse, and zeebe/grpc hosts are dropped.
+func TestSelectIngressHostDedupesWhilePreservingOrderAndFilter(t *testing.T) {
+	raw := "b.example.com a.example.com b.example.com zeebe-a.example.com a.example.com"
+
+	got := selectIngressHost(raw)
+	want := "b.example.com,a.example.com"
+
+	if got != want {
+		t.Fatalf("selectIngressHost() = %q, want %q", got, want)
+	}
+}
+
 func TestMergeEnvOverridesIgnoresLinesWithoutEquals(t *testing.T) {
 	content := "# a comment\n\nPLAYWRIGHT_BASE_URL=https://orcha.example.com\n"
 	overrides := map[string]string{

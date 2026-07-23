@@ -24,6 +24,53 @@ import (
 	"scripts/deploy-camunda/matrix"
 )
 
+// TestExtractHelmSetValue_FindsKey pins down that extractHelmSetValue reads
+// the "global.host" value out of the "key=value" ExtraHelmSets pairs CI
+// passes via --extra-helm-set global.host=<host> — the value runTopologyEntry
+// now uses for MGMT_HOST/ORCH_HOST instead of fabricating
+// "<namespace>.<base-domain>" (see #6651).
+func TestExtractHelmSetValue_FindsKey(t *testing.T) {
+	pairs := []string{
+		"orchestration.upgrade.allowPreReleaseImages=true",
+		"global.host=abc123-mns.ci.distro.ultrawombat.com",
+	}
+	if got := extractHelmSetValue(pairs, "global.host"); got != "abc123-mns.ci.distro.ultrawombat.com" {
+		t.Fatalf("extractHelmSetValue() = %q, want %q", got, "abc123-mns.ci.distro.ultrawombat.com")
+	}
+}
+
+func TestExtractHelmSetValue_MissingKeyReturnsEmpty(t *testing.T) {
+	pairs := []string{"orchestration.upgrade.allowPreReleaseImages=true"}
+	if got := extractHelmSetValue(pairs, "global.host"); got != "" {
+		t.Fatalf("extractHelmSetValue() = %q, want empty string", got)
+	}
+}
+
+func TestExtractHelmSetValue_EmptyInputReturnsEmpty(t *testing.T) {
+	if got := extractHelmSetValue(nil, "global.host"); got != "" {
+		t.Fatalf("extractHelmSetValue() = %q, want empty string", got)
+	}
+}
+
+// TestExtractHelmSetValue_LastDuplicateWins mirrors how repeated
+// --extra-helm-set flags for the same key are applied by Helm (last wins).
+func TestExtractHelmSetValue_LastDuplicateWins(t *testing.T) {
+	pairs := []string{"global.host=first.example.com", "global.host=second.example.com"}
+	if got := extractHelmSetValue(pairs, "global.host"); got != "second.example.com" {
+		t.Fatalf("extractHelmSetValue() = %q, want %q", got, "second.example.com")
+	}
+}
+
+// TestExtractHelmSetValue_SkipsMalformedEntries pins down that entries
+// without "=" (or with "=" as the first character) are ignored rather than
+// panicking or matching spuriously, mirroring parseHelmSetPairs' handling.
+func TestExtractHelmSetValue_SkipsMalformedEntries(t *testing.T) {
+	pairs := []string{"malformed-entry-no-equals", "=leading-equals-is-skipped", "global.host=host.example.com"}
+	if got := extractHelmSetValue(pairs, "global.host"); got != "host.example.com" {
+		t.Fatalf("extractHelmSetValue() = %q, want %q", got, "host.example.com")
+	}
+}
+
 func testTopologyReleases() []matrix.TopologyRelease {
 	return []matrix.TopologyRelease{
 		{

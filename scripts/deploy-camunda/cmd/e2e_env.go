@@ -151,15 +151,23 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 
 // selectIngressHost filters raw whitespace-separated ingress/gateway host
 // tokens (as emitted by a kubectl jsonpath query), dropping any host that
-// looks like the Zeebe gRPC gateway, and joins what remains with a comma.
-// Returns "" if no host survives the filter.
+// looks like the Zeebe gRPC gateway, de-duplicates repeats (a namespace's
+// Ingress can list the same host across multiple rules, e.g. in a
+// shared-host multi-namespace topology), and joins what remains with a
+// comma, preserving first-seen order. Returns "" if no host survives the
+// filter.
 func selectIngressHost(raw string) string {
 	tokens := strings.Fields(raw)
 	kept := make([]string, 0, len(tokens))
+	seen := make(map[string]bool, len(tokens))
 	for _, t := range tokens {
 		if strings.Contains(t, "zeebe") || strings.Contains(t, "grpc") {
 			continue
 		}
+		if seen[t] {
+			continue
+		}
+		seen[t] = true
 		kept = append(kept, t)
 	}
 	return strings.Join(kept, ",")
