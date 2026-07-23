@@ -2,10 +2,10 @@
 <html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence" data-has-hydrated="false">
 <head>
 <meta charset="UTF-8">
-<meta name="generator" content="Docusaurus v3.10.1">
+<meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Allow opt-in deployment strategy for components with chart-managed RWO persistence | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Allow opt-in deployment strategy for components with chart-managed RWO persistence | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6562/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6562/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/runtime~main.7546c738.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/main.1807bf5a.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/runtime~main.34d350df.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/main.e4337596.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -50,7 +50,8 @@ layout differences that prevent a copy-paste across versions:<!-- -->
 <li class=""><strong>Optimize</strong> uses a single PVC (<code>&lt;release&gt;-optimize-data</code>) in 8.9/8.10 but <strong>two</strong> PVCs
 (<code>&lt;release&gt;-optimize-data-tmp</code> and <code>&lt;release&gt;-optimize-data-camunda</code>) in 8.8.</li>
 <li class=""><strong>Web Modeler</strong> restapi mounts <code>&lt;release&gt;-webmodeler-data</code> in all three; 8.10 additionally resolves
-its values through the <code>camundaHub.*</code> override layer (see constraint 1).</li>
+its values through the <code>camundaHub.*</code> override layer (see constraint 1); in 8.10 those overrides live
+under <code>camundaHub.persistence.*</code> after the namespace hoist (PR #6539).</li>
 </ul>
 </li>
 <li class=""><strong>8.7 and earlier</strong> — these components do <strong>not</strong> mount a chart-managed PVC (only the Zeebe
@@ -86,9 +87,12 @@ Web Modeler restapi, Connectors, Identity, and Optimize. The following constrain
 <li class=""><strong>Location.</strong> The value lives under the component&#x27;s persistence block as
 <code>&lt;component&gt;.persistence.deploymentStrategy</code> (e.g. <code>webModeler.persistence.deploymentStrategy</code>). It
 MUST NOT be exposed as a top-level component value, so it cannot exist independently of a PVC. In
-8.10, where components are configurable through the <code>camundaHub.*</code> override layer, the value resolves
-as <code>(or .Values.camundaHub.&lt;component&gt;.persistence.deploymentStrategy .Values.&lt;component&gt;.persistence.deploymentStrategy)</code>, matching every other 8.10 override, with the
-same default and guard.</li>
+8.10, Web Modeler is consolidated into the Camunda Hub component, so its persistence values resolve
+through the hoisted <code>camundaHub.*</code> override layer directly — <code>(or .Values.camundaHub.persistence.deploymentStrategy .Values.webModeler.persistence.deploymentStrategy)</code> —
+with no intermediate <code>webModeler</code> segment, matching every other 8.10 Hub override. The pre-hoist path
+<code>camundaHub.webModeler.persistence.deploymentStrategy</code> is retired and guarded by a
+<code>camundaPlatform.keyRenamed</code> error (PR #6539, camunda/camunda-platform-helm); the same default and
+guard otherwise apply.</li>
 <li class=""><strong>Allowed values.</strong> <code>RollingUpdate</code> and <code>Recreate</code> only, enforced by a <code>values.schema.json</code> enum
 <strong>and</strong> a Helm template guard that fails with a clear message if schema validation is bypassed.</li>
 <li class=""><strong>Default.</strong> <code>RollingUpdate</code> for components whose pre-amendment hardcoded strategy was
