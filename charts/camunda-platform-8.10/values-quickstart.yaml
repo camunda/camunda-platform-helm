@@ -8,6 +8,10 @@
 # NON-PRODUCTION: single broker + single partition only; data is local to the
 # broker PVC. For production, choose a real secondary-storage backend
 # (Elasticsearch / OpenSearch / external RDBMS) and a multi-broker topology.
+#
+# CI coverage mirrors this orchestration block in
+# test/integration/scenarios/chart-full-setup/values/persistence/rdbms-embedded-h2.yaml;
+# keep the two in sync.
 orchestration:
   clusterSize: "1"
   exporters:
