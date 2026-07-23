@@ -47,7 +47,7 @@ integration:
       enabled: true
     - id: keycloak-mt
       shortname: kemt
-      enabled: false
+      enabled: true
     - id: keycloak-rba
       shortname: kerba
       enabled: true
