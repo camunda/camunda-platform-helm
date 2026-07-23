@@ -601,6 +601,23 @@ integration:
               env-vars:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
+        - name: quickstart-embedded-h2
+          enabled: true
+          shortname: qseh
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: rdbms-embedded-h2
+          skip-e2e: true
         - name: component-persistence
           enabled: false
           shortname: cprst

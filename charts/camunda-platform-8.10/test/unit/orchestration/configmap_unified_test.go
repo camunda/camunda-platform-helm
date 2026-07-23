@@ -494,6 +494,34 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestQuickstartProfileRendersEmbeddedH2() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestQuickstartProfileResolvesRdbmsWithEmbeddedH2",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "values-quickstart.yaml")},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.type":           "rdbms",
+				"configmapApplication.camunda.data.secondary-storage.rdbms.url":      "jdbc:h2:file:/usr/local/camunda/data/camunda-rdbms;DB_CLOSE_DELAY=-1",
+				"configmapApplication.camunda.data.secondary-storage.rdbms.username": "sa",
+				"configmapApplication.camunda.cluster.size":                          "1",
+			},
+		},
+		{
+			Name:        "TestQuickstartProfileSetsSingleBrokerTopologyViaExtraConfiguration",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "values-quickstart.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "optional:file:/usr/local/camunda/config/cluster-topology.yaml")
+				require.Contains(t, output, "cluster-topology.yaml: |")
+				require.Contains(t, output, "partition-count: 1")
+				require.Contains(t, output, "replication-factor: 1")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 	testCases := []testhelpers.TestCase{
 		{
