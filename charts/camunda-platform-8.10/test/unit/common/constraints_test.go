@@ -644,20 +644,6 @@ func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 				s.Require().ErrorContains(err, "changed from")
 			},
 		},
-		{
-			Name: "TestConsoleRedirectUrlRenamedKeyFails",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":            "elasticsearch",
-				"identity.enabled":                                    "true",
-				"camundaHub.enabled":                                  "true",
-				"camundaHub.restapi.mail.fromAddress":                 "noreply@example.com",
-				"global.identity.auth.camundaHub.console.redirectUrl": "https://console.example.com",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "global.identity.auth.camundaHub.console")
-				s.Require().ErrorContains(err, "changed from")
-			},
-		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -703,6 +689,32 @@ func (s *ConstraintTemplateTest) TestDeprecatedKeyHelperRendersWithoutCrash() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestAuthConsoleDeprecationWarningRendersWithoutCrash exercises the bespoke
+// non-fatal warning for "global.identity.auth.console.*" (Console consolidated
+// into Camunda Hub; the key has no replacement home). Unlike the app-config-proxy
+// keyDeprecated helper, this warning's text is asserted directly here because it
+// is also emitted into the "<release>-warnings" ConfigMap (configmap-warnings.yaml),
+// which IS surfaced by `helm template` (the framework these tests use).
+func (s *ConstraintTemplateTest) TestAuthConsoleDeprecationWarningRendersWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestAuthConsoleKeySetRenderOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.identity.auth.console.clientId":    "foo",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+				s.Require().Contains(output, "global.identity.auth.console")
+				s.Require().Contains(output, "no longer used in Camunda 8.10")
+				s.Require().Contains(output, "no replacement")
 			},
 		},
 	}
