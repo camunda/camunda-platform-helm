@@ -9,9 +9,9 @@ Alpha
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
-| [15.0.0-alpha3](#helm-chart-1500-alpha3) | 8.10.0-alpha3 | 2026-07-09 | [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha3#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha3) |
-| [15.0.0-alpha2](#helm-chart-1500-alpha2) | 8.10.0-alpha2 | 2026-06-05 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha2) |
-| [15.0.0-alpha1](#helm-chart-1500-alpha1) | 8.10.0-alpha1 | 2026-05-12 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha1) |
+| [15.0.0-alpha3](#helm-chart-1500-alpha3) | 8.10.0-alpha3 | 2026-07-09 | [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha3?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha3) |
+| [15.0.0-alpha2](#helm-chart-1500-alpha2) | 8.10.0-alpha2 | 2026-06-05 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha2) |
+| [15.0.0-alpha1](#helm-chart-1500-alpha1) | 8.10.0-alpha1 | 2026-05-12 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha1) |
 
 _Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when using Camunda Enterprise registry access — mirror the set that matches your configuration._
 
@@ -24,7 +24,7 @@ Supported versions:
 
 - Camunda applications: [8.10](https://github.com/camunda/camunda/releases?q=tag%3A8.10&expanded=true)
 - Camunda version matrix: [8.10](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.10)
-- Helm values: [15.0.0-alpha3](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha3#parameters)
+- Helm values: [15.0.0-alpha3](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha3?modal=values)
 - Helm CLI: [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4)
 
 Camunda images:
@@ -42,7 +42,7 @@ Supported versions:
 
 - Camunda applications: [8.10](https://github.com/camunda/camunda/releases?q=tag%3A8.10&expanded=true)
 - Camunda version matrix: [8.10](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.10)
-- Helm values: [15.0.0-alpha2](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha2#parameters)
+- Helm values: [15.0.0-alpha2](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha2?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -65,7 +65,7 @@ Supported versions:
 
 - Camunda applications: [8.10](https://github.com/camunda/camunda/releases?q=tag%3A8.10&expanded=true)
 - Camunda version matrix: [8.10](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.10)
-- Helm values: [15.0.0-alpha1](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha1#parameters)
+- Helm values: [15.0.0-alpha1](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha1?modal=values)
 - Helm CLI: [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4)
 
 Camunda images:
