@@ -277,54 +277,20 @@ jobs:
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
 
+      - name: Setup deploy-camunda
+        uses: ./.github/actions/setup-deploy-camunda
       - name: CI Setup - Generate workflow matrix
         id: generate-workflow-matrix
         env:
-          CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
-          # Use GH env to safely load JSON matrix input.
+          # Passed via env, not inline interpolation: matrix-data is raw JSON.
           CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
           CI_PLATFORMS: "${{ inputs.platforms }}"
           CI_FLOWS: "${{ inputs.flows }}"
         run: |
-          # Build yq select expressions from comma-separated platform and flow inputs.
-          # This replaces the previous envsubst + exclude hack, which silently turned
-          # unset variables into empty strings and relied on a non-standard 'if' field.
-
-          # Lowercase inputs so callers passing e.g. "GKE" or "Install" still match
-          # the canonical lowercase keys in test-integration-matrix.yaml.
-          CI_PLATFORMS="${CI_PLATFORMS,,}"
-          CI_FLOWS="${CI_FLOWS,,}"
-
-          # Build platform filter: ".platform == \"gke\" or .platform == \"eks\""
-          platform_expr=""
-          IFS=',' read -r -a platforms_arr <<< "${CI_PLATFORMS}"
-          for p in "${platforms_arr[@]}"; do
-            [ -n "$platform_expr" ] && platform_expr="${platform_expr} or "
-            platform_expr="${platform_expr}.platform == \"${p}\""
-          done
-
-          # Build flow filter: ".flow == \"install\" or .flow == \"upgrade-patch\""
-          flow_expr=""
-          IFS=',' read -r -a flows_arr <<< "${CI_FLOWS}"
-          for f in "${flows_arr[@]}"; do
-            [ -n "$flow_expr" ] && flow_expr="${flow_expr} or "
-            flow_expr="${flow_expr}.flow == \"${f}\""
-          done
-
-          # Filter distro and scenario entries using yq select(); no envsubst or exclude needed.
-          yq ".matrix.distro |= map(select(${platform_expr})) | .matrix.scenario |= map(select(${flow_expr}))" \
-            "${CI_MATRIX_FILE}" | tee /tmp/matrix.yaml
-
-          # Read matrix YAML file.
-          matrix_default="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
-          matrix="${CI_MATRIX_INPUT:-${matrix_default}}"
-          echo ""
-          # Print and set matrix JSON object as an output.
-          echo "${matrix}" | jq
-          echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
-
-      - name: Setup deploy-camunda
-        uses: ./.github/actions/setup-deploy-camunda
+          "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ci integration-matrix \
+            --platforms "$CI_PLATFORMS" \
+            --flows "$CI_FLOWS" \
+            --matrix-data "$CI_MATRIX_INPUT"
       - name: Upload deploy-camunda binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:

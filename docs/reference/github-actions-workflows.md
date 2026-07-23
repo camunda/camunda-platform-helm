@@ -336,14 +336,14 @@ Generates the full **platform × flow** matrix and dispatches each combination t
 
 #### How matrix generation works
 
-The `init` job reads [`.github/config/test-integration-matrix.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/test-integration-matrix.yaml) — a YAML file with `$VARIABLE` placeholders in `if` fields. The job:
+The `init` job restores or builds `deploy-camunda`, then runs `deploy-camunda ci integration-matrix`. The command:
 
-1. Exports boolean env vars (`INPUTS_PLATFORMS_GKE=true`, `INPUTS_FLOWS_INSTALL=false`, etc.) based on the workflow inputs.
-2. Runs `envsubst` to replace the `$VARIABLE` references with `true`/`false`.
-3. Relies on the matrix `exclude` block to remove entries where `if: false`.
-4. Converts the result to JSON via `yq` for the runner's `strategy.matrix`.
+1. Reads [`.github/config/test-integration-matrix.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/test-integration-matrix.yaml).
+2. Normalizes the comma-separated platform and flow inputs.
+3. Filters distro entries by platform and scenario entries by flow.
+4. Writes the compact JSON matrix to `$GITHUB_OUTPUT` for the runner's `strategy.matrix`.
 
-The `matrix-data` input can override the file-based matrix entirely.
+The `matrix-data` input can override the file-based matrix entirely. The command validates and compacts the supplied JSON without applying the platform and flow filters.
 
 ### Layer 3: `test-integration-runner`
 
@@ -386,7 +386,7 @@ Upgrade across minor versions (e.g. `8.7 → 8.8`). The install job deploys the 
 
 Component-by-component upgrade from a previous minor version. This flow **skips the install job** — it expects the namespace and Helm release to already exist from a prior deployment. It uses the same namespace (no suffix) as the install flow and runs only the upgrade job.
 
-> **Important:** This flow cannot be invoked via `generate-chart-matrix.sh`. It must be called directly on `test-integration-template.yaml`. When used alongside `install` in the same flows string (e.g. `"install,modular-upgrade-minor"`), the two run as independent shards with **no ordering guarantee**.
+> **Important:** This flow cannot be selected with `deploy-camunda matrix plan --manual-flow`. It must be passed directly to `test-integration-template.yaml`. When used alongside `install` in the same flows string (e.g. `"install,modular-upgrade-minor"`), the two run as independent shards with **no ordering guarantee**.
 
 ### Namespace management
 
