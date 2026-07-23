@@ -514,6 +514,12 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		ingressHost = os.Getenv("TEST_INGRESS_HOST")
 	}
 	if flags.Deployment.WaitIngressReady {
+		// Prefer the host on the Ingress helm just created: CI configures it with
+		// a hash-based global.host that differs from the <namespace>.<base-domain>
+		// value computed above, and only the deployed host is published to DNS.
+		if live := resolveDeployedIngressHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace); live != "" {
+			ingressHost = live
+		}
 		if ingressHost == "" {
 			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
 			return result
