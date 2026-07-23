@@ -66,6 +66,16 @@ on:
         required: false
         default: true
         type: boolean
+      wait-ingress-ready:
+        description: "Gate deploy success on the ingress host becoming publicly DNS-resolvable + HTTP-reachable. Opt-in; external reusable-workflow consumers default to false."
+        required: false
+        default: false
+        type: boolean
+      ingress-ready-timeout:
+        description: "Minutes to poll for ingress readiness when wait-ingress-ready is true. Defaults to the tool default (8)."
+        required: false
+        default: 8
+        type: number
       always-delete-namespace:
         description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
         default: false
@@ -189,6 +199,8 @@ jobs:
       identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}-${{ matrix.platform }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
       test-enabled: ${{ inputs.test-enabled }}
+      wait-ingress-ready: ${{ inputs.wait-ingress-ready }}
+      ingress-ready-timeout: ${{ inputs.ingress-ready-timeout }}
       flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

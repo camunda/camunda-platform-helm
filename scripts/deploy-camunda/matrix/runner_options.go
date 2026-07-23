@@ -159,4 +159,10 @@ type RunOptions struct {
 	// that chart artifact, without chart-root image overlays or image-tag env
 	// substitutions from the local git checkout.
 	ForceImageOverrides bool
+	// WaitIngressReady gates each entry's deployment success on its ingress host
+	// becoming publicly DNS-resolvable and HTTP-reachable before reporting success.
+	WaitIngressReady bool
+	// IngressReadyTimeoutMinutes bounds how long WaitIngressReady polls before
+	// failing. When <= 0, config.DefaultIngressReadyTimeoutMinutes is used.
+	IngressReadyTimeoutMinutes int
 }
