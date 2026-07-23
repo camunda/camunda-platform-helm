@@ -213,22 +213,28 @@ describe('MCP Tools', () => {
   describe('list_components', () => {
     it('should return components with descriptions and dependency info', () => {
       const result = listComponents({});
-      
+
       expect(result.version).toBe('8.10');
-      
+
       // Check descriptions are derived
       const global = result.components.find(c => c.name === 'global');
       expect(global?.description).toContain('Global');
       expect(global?.dependency).toBeUndefined();
-      
+
+      // 8.10 dropped the bundled Bitnami subcharts, so no top-level component
+      // in the current version carries chart dependency info. Verify
+      // dependency surfacing on 8.9, which still declares elasticsearch and
+      // identityKeycloak as chart dependencies.
+      const result89 = listComponents({ version: '8.9' });
+
       // Check dependency info for chart dependencies
-      const elasticsearch = result.components.find(c => c.name === 'elasticsearch');
+      const elasticsearch = result89.components.find(c => c.name === 'elasticsearch');
       expect(elasticsearch?.dependency?.chart).toBe('elasticsearch');
       expect(elasticsearch?.dependency?.source).toBe('local');
       expect(elasticsearch?.dependency?.enableCondition).toBe('elasticsearch.enabled');
-      
+
       // Check local vs external
-      const identityKeycloak = result.components.find(c => c.name === 'identityKeycloak');
+      const identityKeycloak = result89.components.find(c => c.name === 'identityKeycloak');
       expect(identityKeycloak?.dependency?.source).toBe('local');
     });
   });
