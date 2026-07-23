@@ -121,3 +121,33 @@ func (s *ConfigMapWarningsTemplateTest) TestConsoleConfigKeysWarningRendersInCon
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+// TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap pins the
+// separate global.identity.auth.console keyDeprecated warning (the one whose
+// migration hint Fix A narrowed) to actual rendered output. Setting any child
+// under global.identity.auth.console makes hasKey ".console" true, firing the
+// camundaPlatform.keyDeprecated helper. Assert both the deprecated oldName and
+// the narrowed migration target appear in the rendered "-warnings" ConfigMap.
+func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGlobalIdentityAuthConsoleKeyTriggersDeprecationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				s.Require().Contains(configmap.Data["warnings"],
+					`The Helm values file key "global.identity.auth.console" is deprecated`)
+				s.Require().Contains(configmap.Data["warnings"],
+					"global.identity.auth.camundaHub.webModeler.*")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
