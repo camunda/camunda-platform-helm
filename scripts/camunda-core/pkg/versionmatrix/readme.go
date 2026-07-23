@@ -118,9 +118,9 @@ func helmCLILinks(versions []string) string {
 	return strings.Join(links, ", ")
 }
 
-// artifactHubURL returns the chart version's ArtifactHub parameters page.
+// artifactHubURL returns the chart version's package-backed default-values modal.
 func artifactHubURL(chartVersion string) string {
-	return "https://artifacthub.io/packages/helm/camunda/camunda-platform/" + chartVersion + "#parameters"
+	return "https://artifacthub.io/packages/helm/camunda/camunda-platform/" + chartVersion + "?modal=values"
 }
 
 // releaseURL returns the GitHub release page for a release tag.
@@ -278,9 +278,8 @@ func RenderIndex(cfg *ChartVersionsConfig, entriesByApp map[string][]ChartEntry)
 //
 // existingSections maps chart version → its current "## Helm chart <v>…"
 // section body. Sections of PUBLISHED entries (release_date stamped) in
-// non-alpha minors are preserved byte-for-byte — the published section is the
-// historical truth of what each release shipped, and version-matrix.json
-// image sets have drifted from it in the past (the SUPPORT-33569 class).
+// non-alpha minors preserve their published content and image lists while the
+// generator-owned Helm values and Helm CLI bullets are synchronized.
 // Everything else renders from the JSON entry: versions without a section,
 // unstamped entries (an in-flight promotion may re-derive its images), and
 // all alpha-bucket minors (their JSON is written by the current promotion
@@ -305,6 +304,7 @@ func RenderMinorReadme(app string, entries []ChartEntry, bucket string, lc Lifec
 		if !ok || bucket == BucketAlpha || e.ReleaseDate == "" {
 			section = ReleaseSection(app, e, SplitHelmCLI(e.HelmCLI), true)
 		} else {
+			section = syncHelmValuesLine(section, e)
 			section = syncHelmCLILine(section, e)
 		}
 		b.WriteString("\n")
@@ -312,6 +312,15 @@ func RenderMinorReadme(app string, entries []ChartEntry, bucket string, lc Lifec
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// helmValuesLineRe matches a section's "- Helm values: …" bullet.
+var helmValuesLineRe = regexp.MustCompile(`(?m)^- Helm values: .*$`)
+
+// syncHelmValuesLine rewrites a preserved section's generator-owned Helm values bullet.
+func syncHelmValuesLine(section string, e ChartEntry) string {
+	return helmValuesLineRe.ReplaceAllString(section,
+		fmt.Sprintf("- Helm values: [%s](%s)", e.ChartVersion, artifactHubURL(e.ChartVersion)))
 }
 
 // helmCLILineRe matches a section's "- Helm CLI: …" bullet.

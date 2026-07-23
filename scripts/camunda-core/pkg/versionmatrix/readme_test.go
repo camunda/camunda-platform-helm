@@ -38,7 +38,7 @@ Supported versions:
 
 - Camunda applications: [8.7](https://github.com/camunda/camunda/releases?q=tag%3A8.7&expanded=true)
 - Camunda version matrix: [8.7](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.7)
-- Helm values: [12.11.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.11.0#parameters)
+- Helm values: [12.11.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.11.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -71,7 +71,7 @@ func TestReleaseSectionNoEnterpriseNoHeader(t *testing.T) {
 
 - Camunda applications: [8.7](https://github.com/camunda/camunda/releases?q=tag%3A8.7&expanded=true)
 - Camunda version matrix: [8.7](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.7)
-- Helm values: [12.11.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.11.0#parameters)
+- Helm values: [12.11.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.11.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4)
 
 Camunda images:
@@ -153,7 +153,7 @@ func TestChartTableRow(t *testing.T) {
 	got := chartTableRow("./camunda-8.9/", e)
 	want := "| [14.4.0](./camunda-8.9/#helm-chart-1440) | 8.9.7 | 2026-06-04 | " +
 		"[3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | " +
-		"[ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.4.0#parameters) | " +
+		"[ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.4.0?modal=values) | " +
 		"[Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.4.0) |\n"
 	if got != want {
 		t.Errorf("chartTableRow:\n--- got ---\n%s--- want ---\n%s", got, want)
@@ -460,25 +460,25 @@ func TestEnterpriseDocsURL(t *testing.T) {
 	}
 }
 
-func TestSyncHelmCLILineInPreservedSection(t *testing.T) {
+func TestSyncGeneratedMetadataInPreservedSection(t *testing.T) {
 	entries := []ChartEntry{{
 		ChartVersion: "14.7.0", ReleaseDate: "2026-07-17", HelmCLI: "3.20.2,4.2.2",
 	}}
 	existing := map[string]string{
 		"14.7.0": "## Helm chart 14.7.0\n\nSupported versions:\n\n" +
+			"- Helm values: [14.7.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.7.0#parameters)\n" +
 			"- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.2.3](https://github.com/helm/helm/releases/tag/v4.2.3)\n\n" +
 			"Camunda images:\n\n- docker.io/camunda/camunda:8.9.12\n",
 	}
 	lc := Lifecycle{Released: "2026-04-14", StdSupportUntil: "2027-10-13"}
 	got := RenderMinorReadme("8.9", entries, BucketSupportStandard, lc, existing)
-	if strings.Contains(got, "4.2.3") {
-		t.Errorf("stale Helm CLI line survived in preserved section:\n%s", got)
-	}
-	if strings.Count(got, "- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.2.2](https://github.com/helm/helm/releases/tag/v4.2.2)") != 1 {
-		t.Errorf("Helm CLI line not synced to recorded helm_cli:\n%s", got)
-	}
-	if !strings.Contains(got, "- docker.io/camunda/camunda:8.9.12") {
-		t.Errorf("image list of preserved section altered")
+	section := ParseReadmeSections(got)["14.7.0"]
+	want := "## Helm chart 14.7.0\n\nSupported versions:\n\n" +
+		"- Helm values: [14.7.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.7.0?modal=values)\n" +
+		"- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.2.2](https://github.com/helm/helm/releases/tag/v4.2.2)\n\n" +
+		"Camunda images:\n\n- docker.io/camunda/camunda:8.9.12"
+	if section != want {
+		t.Errorf("preserved section metadata sync:\n--- got ---\n%s\n--- want ---\n%s", section, want)
 	}
 }
 

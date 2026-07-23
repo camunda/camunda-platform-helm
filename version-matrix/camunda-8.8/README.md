@@ -7,49 +7,49 @@ Standard support until 2027-04-13
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
-| [13.12.2](#helm-chart-13122) | 8.8.31 | 2026-07-08 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.2) |
-| [13.12.1](#helm-chart-13121) | 8.8.30 | 2026-07-02 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.1) |
-| [13.12.0](#helm-chart-13120) | 8.8.29 | 2026-06-29 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.0) |
-| [13.11.1](#helm-chart-13111) | 8.8.28 | 2026-06-17 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.11.1) |
-| [13.11.0](#helm-chart-13110) | 8.8.27 | 2026-06-15 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.11.0) |
-| [13.10.2](#helm-chart-13102) | 8.8.26 | 2026-06-11 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.2) |
-| [13.10.1](#helm-chart-13101) | 8.8.25 | 2026-06-04 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.1) |
-| [13.10.0](#helm-chart-13100) | 8.8.24 | 2026-05-29 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.0) |
-| [13.9.1](#helm-chart-1391) | 8.8.24 | 2026-05-26 | [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.9.1) |
-| [13.9.0](#helm-chart-1390) | 8.8.24 | 2026-05-20 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.9.0) |
-| [13.8.0](#helm-chart-1380) | 8.8.24 | 2026-05-08 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.8.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.8.0) |
-| [13.7.2](#helm-chart-1372) | 8.8.23 | 2026-04-23 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.2) |
-| [13.7.1](#helm-chart-1371) | 8.8.22 | 2026-04-17 | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.1) |
-| [13.7.0](#helm-chart-1370) | 8.8.21 | 2026-04-03 | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.0) |
-| [13.6.0](#helm-chart-1360) | 8.8.20 | 2026-03-31 | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.6.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.6.0) |
-| [13.5.5](#helm-chart-1355) | 8.8.19 | 2026-03-25 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.5#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.5) |
-| [13.5.4](#helm-chart-1354) | 8.8.16 | 2026-03-13 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.4#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.4) |
-| [13.5.3](#helm-chart-1353) | 8.8.15 | 2026-03-07 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.3#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.3) |
-| [13.5.2](#helm-chart-1352) | 8.8.14 | 2026-02-26 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.2) |
-| [13.5.1](#helm-chart-1351) | 8.8.14 | 2026-02-25 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.1) |
-| [13.5.0](#helm-chart-1350) | 8.8.13 | 2026-02-20 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.0) |
-| [13.4.2](#helm-chart-1342) | 8.8.11 | 2026-02-06 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.2) |
-| [13.4.1](#helm-chart-1341) | 8.8.9 | 2026-01-19 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.1) |
-| [13.4.0](#helm-chart-1340) | 8.8.9 | 2026-01-12 | [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.0) |
-| [13.3.2](#helm-chart-1332) | 8.8.8 | 2025-12-12 | [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.2) |
-| [13.3.1](#helm-chart-1331) | 8.8.7 | 2025-12-11 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.1) |
-| [13.3.0](#helm-chart-1330) | 8.8.6 | 2025-12-05 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.0) |
-| [13.2.2](#helm-chart-1322) | 8.8.5 | 2025-12-02 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.2) |
-| [13.2.1](#helm-chart-1321) | 8.8.4 | 2025-11-27 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.1) |
-| [13.2.0](#helm-chart-1320) | 8.8.4 | 2025-11-25 | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.0) |
-| [13.1.2](#helm-chart-1312) | 8.8.3 | 2025-11-12 | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.2) |
-| [13.1.1](#helm-chart-1311) | 8.8.2 | 2025-10-30 | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.1) |
-| [13.1.0](#helm-chart-1310) | 8.8.1 | 2025-10-27 | [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.0) |
-| [13.0.0](#helm-chart-1300) | 8.8.0 | 2025-10-13 | [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0) |
-| [13.0.0-alpha8](#helm-chart-1300-alpha8) | 8.8.0-alpha8 | 2025-09-12 | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha8) |
-| [13.0.0-alpha7](#helm-chart-1300-alpha7) | 8.8.0-alpha7 | 2025-08-12 | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha7#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha7) |
-| [13.0.0-alpha6](#helm-chart-1300-alpha6) | 8.8.0-alpha6 | 2025-07-08 | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha6) |
-| [13.0.0-alpha5](#helm-chart-1300-alpha5) | 8.8.0-alpha5 | 2025-06-12 | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha5) |
-| [13.0.0-alpha4.2](#helm-chart-1300-alpha42) | 8.8.0-alpha4.1 | 2025-05-20 | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4.2) |
-| [13.0.0-alpha4.1](#helm-chart-1300-alpha41) | 8.8.0-alpha4 | 2025-05-15 | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.1#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4.1) |
-| [13.0.0-alpha4](#helm-chart-1300-alpha4) | 8.8.0-alpha4 | 2025-05-13 | [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4) |
-| [13.0.0-alpha3](#helm-chart-1300-alpha3) | 8.8.0-alpha3 | 2025-04-04 | [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha3#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha3) |
-| [13.0.0-alpha2](#helm-chart-1300-alpha2) | 8.8.0-alpha2-rc1 | 2025-03-14 | [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha2#parameters) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha2) |
+| [13.12.2](#helm-chart-13122) | 8.8.31 | 2026-07-08 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.2) |
+| [13.12.1](#helm-chart-13121) | 8.8.30 | 2026-07-02 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.1) |
+| [13.12.0](#helm-chart-13120) | 8.8.29 | 2026-06-29 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.12.0) |
+| [13.11.1](#helm-chart-13111) | 8.8.28 | 2026-06-17 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.11.1) |
+| [13.11.0](#helm-chart-13110) | 8.8.27 | 2026-06-15 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.11.0) |
+| [13.10.2](#helm-chart-13102) | 8.8.26 | 2026-06-11 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.2) |
+| [13.10.1](#helm-chart-13101) | 8.8.25 | 2026-06-04 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.1) |
+| [13.10.0](#helm-chart-13100) | 8.8.24 | 2026-05-29 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.10.0) |
+| [13.9.1](#helm-chart-1391) | 8.8.24 | 2026-05-26 | [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.9.1) |
+| [13.9.0](#helm-chart-1390) | 8.8.24 | 2026-05-20 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.9.0) |
+| [13.8.0](#helm-chart-1380) | 8.8.24 | 2026-05-08 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.8.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.8.0) |
+| [13.7.2](#helm-chart-1372) | 8.8.23 | 2026-04-23 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.2) |
+| [13.7.1](#helm-chart-1371) | 8.8.22 | 2026-04-17 | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.1) |
+| [13.7.0](#helm-chart-1370) | 8.8.21 | 2026-04-03 | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.7.0) |
+| [13.6.0](#helm-chart-1360) | 8.8.20 | 2026-03-31 | [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.6.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.6.0) |
+| [13.5.5](#helm-chart-1355) | 8.8.19 | 2026-03-25 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.5?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.5) |
+| [13.5.4](#helm-chart-1354) | 8.8.16 | 2026-03-13 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.4?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.4) |
+| [13.5.3](#helm-chart-1353) | 8.8.15 | 2026-03-07 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.3?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.3) |
+| [13.5.2](#helm-chart-1352) | 8.8.14 | 2026-02-26 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.2) |
+| [13.5.1](#helm-chart-1351) | 8.8.14 | 2026-02-25 | [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.1) |
+| [13.5.0](#helm-chart-1350) | 8.8.13 | 2026-02-20 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.5.0) |
+| [13.4.2](#helm-chart-1342) | 8.8.11 | 2026-02-06 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.2) |
+| [13.4.1](#helm-chart-1341) | 8.8.9 | 2026-01-19 | [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.1) |
+| [13.4.0](#helm-chart-1340) | 8.8.9 | 2026-01-12 | [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.4.0) |
+| [13.3.2](#helm-chart-1332) | 8.8.8 | 2025-12-12 | [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.2) |
+| [13.3.1](#helm-chart-1331) | 8.8.7 | 2025-12-11 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.1) |
+| [13.3.0](#helm-chart-1330) | 8.8.6 | 2025-12-05 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.3.0) |
+| [13.2.2](#helm-chart-1322) | 8.8.5 | 2025-12-02 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.2) |
+| [13.2.1](#helm-chart-1321) | 8.8.4 | 2025-11-27 | [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.1) |
+| [13.2.0](#helm-chart-1320) | 8.8.4 | 2025-11-25 | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.2.0) |
+| [13.1.2](#helm-chart-1312) | 8.8.3 | 2025-11-12 | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.2) |
+| [13.1.1](#helm-chart-1311) | 8.8.2 | 2025-10-30 | [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.1) |
+| [13.1.0](#helm-chart-1310) | 8.8.1 | 2025-10-27 | [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.1.0) |
+| [13.0.0](#helm-chart-1300) | 8.8.0 | 2025-10-13 | [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0) |
+| [13.0.0-alpha8](#helm-chart-1300-alpha8) | 8.8.0-alpha8 | 2025-09-12 | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha8) |
+| [13.0.0-alpha7](#helm-chart-1300-alpha7) | 8.8.0-alpha7 | 2025-08-12 | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha7?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha7) |
+| [13.0.0-alpha6](#helm-chart-1300-alpha6) | 8.8.0-alpha6 | 2025-07-08 | [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha6) |
+| [13.0.0-alpha5](#helm-chart-1300-alpha5) | 8.8.0-alpha5 | 2025-06-12 | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha5) |
+| [13.0.0-alpha4.2](#helm-chart-1300-alpha42) | 8.8.0-alpha4.1 | 2025-05-20 | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4.2) |
+| [13.0.0-alpha4.1](#helm-chart-1300-alpha41) | 8.8.0-alpha4 | 2025-05-15 | [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4.1) |
+| [13.0.0-alpha4](#helm-chart-1300-alpha4) | 8.8.0-alpha4 | 2025-05-13 | [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha4) |
+| [13.0.0-alpha3](#helm-chart-1300-alpha3) | 8.8.0-alpha3 | 2025-04-04 | [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha3?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.8-13.0.0-alpha3) |
+| [13.0.0-alpha2](#helm-chart-1300-alpha2) | 8.8.0-alpha2-rc1 | 2025-03-14 | [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha2) |
 
 _Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when using Camunda Enterprise registry access — mirror the set that matches your configuration._
 
@@ -62,7 +62,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.12.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.2#parameters)
+- Helm values: [13.12.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.2?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -98,7 +98,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.12.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.1#parameters)
+- Helm values: [13.12.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.1?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -134,7 +134,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.12.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.0#parameters)
+- Helm values: [13.12.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.12.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -170,7 +170,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.11.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.1#parameters)
+- Helm values: [13.11.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.1?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -206,7 +206,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.11.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.0#parameters)
+- Helm values: [13.11.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.11.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -243,7 +243,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.10.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.2#parameters)
+- Helm values: [13.10.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.2?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -280,7 +280,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.10.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.1#parameters)
+- Helm values: [13.10.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.1?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -317,7 +317,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.10.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.0#parameters)
+- Helm values: [13.10.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.10.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -354,7 +354,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.9.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.1#parameters)
+- Helm values: [13.9.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.1?modal=values)
 - Helm CLI: [4.1.4](https://github.com/helm/helm/releases/tag/v4.1.4)
 
 Camunda images:
@@ -391,7 +391,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.9.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.0#parameters)
+- Helm values: [13.9.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.9.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -428,7 +428,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.8.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.8.0#parameters)
+- Helm values: [13.8.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.8.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -465,7 +465,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.7.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.2#parameters)
+- Helm values: [13.7.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.2?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
 
 Camunda images:
@@ -502,7 +502,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.7.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.1#parameters)
+- Helm values: [13.7.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.1?modal=values)
 - Helm CLI: [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1)
 
 Camunda images:
@@ -539,7 +539,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.7.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.0#parameters)
+- Helm values: [13.7.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.7.0?modal=values)
 - Helm CLI: [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1)
 
 Camunda images:
@@ -575,7 +575,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.6.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.6.0#parameters)
+- Helm values: [13.6.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.6.0?modal=values)
 - Helm CLI: [3.20.1](https://github.com/helm/helm/releases/tag/v3.20.1)
 
 Camunda images:
@@ -611,7 +611,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.5.5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.5#parameters)
+- Helm values: [13.5.5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.5?modal=values)
 - Helm CLI: [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0)
 
 Camunda images:
@@ -648,7 +648,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.5.4](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.4#parameters)
+- Helm values: [13.5.4](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.4?modal=values)
 - Helm CLI: [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0)
 
 Camunda images:
@@ -684,7 +684,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.5.3](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.3#parameters)
+- Helm values: [13.5.3](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.3?modal=values)
 - Helm CLI: [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0)
 
 Camunda images:
@@ -720,7 +720,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.5.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.2#parameters)
+- Helm values: [13.5.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.2?modal=values)
 - Helm CLI: [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0)
 
 Camunda images:
@@ -756,7 +756,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.5.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.1#parameters)
+- Helm values: [13.5.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.1?modal=values)
 - Helm CLI: [3.20.0](https://github.com/helm/helm/releases/tag/v3.20.0)
 
 Camunda images:
@@ -792,7 +792,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.5.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.0#parameters)
+- Helm values: [13.5.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.5.0?modal=values)
 - Helm CLI: [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4)
 
 Camunda images:
@@ -828,7 +828,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.4.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.2#parameters)
+- Helm values: [13.4.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.2?modal=values)
 - Helm CLI: [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4)
 
 Camunda images:
@@ -864,7 +864,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.4.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.1#parameters)
+- Helm values: [13.4.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.1?modal=values)
 - Helm CLI: [3.19.4](https://github.com/helm/helm/releases/tag/v3.19.4)
 
 Camunda images:
@@ -900,7 +900,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.4.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.0#parameters)
+- Helm values: [13.4.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.4.0?modal=values)
 - Helm CLI: [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3)
 
 Camunda images:
@@ -936,7 +936,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.3.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.2#parameters)
+- Helm values: [13.3.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.2?modal=values)
 - Helm CLI: [3.19.3](https://github.com/helm/helm/releases/tag/v3.19.3)
 
 Camunda images:
@@ -972,7 +972,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.3.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.1#parameters)
+- Helm values: [13.3.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.1?modal=values)
 - Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
@@ -1008,7 +1008,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.3.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.0#parameters)
+- Helm values: [13.3.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.3.0?modal=values)
 - Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
@@ -1044,7 +1044,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.2.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.2#parameters)
+- Helm values: [13.2.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.2?modal=values)
 - Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
@@ -1080,7 +1080,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.2.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.1#parameters)
+- Helm values: [13.2.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.1?modal=values)
 - Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
@@ -1116,7 +1116,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.2.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.0#parameters)
+- Helm values: [13.2.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.0?modal=values)
 - Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
 
 Camunda images:
@@ -1152,7 +1152,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.1.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.2#parameters)
+- Helm values: [13.1.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.2?modal=values)
 - Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
 
 Camunda images:
@@ -1188,7 +1188,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.1.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.1#parameters)
+- Helm values: [13.1.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.1?modal=values)
 - Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
 
 Camunda images:
@@ -1224,7 +1224,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.1.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.0#parameters)
+- Helm values: [13.1.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.0?modal=values)
 - Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
 
 Camunda images:
@@ -1260,7 +1260,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0#parameters)
+- Helm values: [13.0.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0?modal=values)
 - Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
 
 Camunda images:
@@ -1296,7 +1296,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha8](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8#parameters)
+- Helm values: [13.0.0-alpha8](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8?modal=values)
 - Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
 
 Camunda images:
@@ -1331,7 +1331,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha7](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha7#parameters)
+- Helm values: [13.0.0-alpha7](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha7?modal=values)
 - Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
 
 Camunda images:
@@ -1367,7 +1367,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha6](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6#parameters)
+- Helm values: [13.0.0-alpha6](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6?modal=values)
 - Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
 
 Camunda images:
@@ -1403,7 +1403,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5#parameters)
+- Helm values: [13.0.0-alpha5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5?modal=values)
 - Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
 
 Camunda images:
@@ -1430,7 +1430,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha4.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.2#parameters)
+- Helm values: [13.0.0-alpha4.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.2?modal=values)
 - Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
 
 Camunda images:
@@ -1457,7 +1457,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha4.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.1#parameters)
+- Helm values: [13.0.0-alpha4.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.1?modal=values)
 - Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
 
 Camunda images:
@@ -1484,7 +1484,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha4](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4#parameters)
+- Helm values: [13.0.0-alpha4](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4?modal=values)
 - Helm CLI: [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2)
 
 Camunda images:
@@ -1511,7 +1511,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha3](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha3#parameters)
+- Helm values: [13.0.0-alpha3](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha3?modal=values)
 - Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
 
 Camunda images:
@@ -1538,7 +1538,7 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha2#parameters)
+- Helm values: [13.0.0-alpha2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha2?modal=values)
 - Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
 
 Camunda images:

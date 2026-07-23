@@ -35,7 +35,7 @@ func TestParseReadmeHelmCLI(t *testing.T) {
 
 Supported versions:
 
-- Helm values: [14.7.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.7.0#parameters)
+- Helm values: [14.7.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.7.0?modal=values)
 - Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2), [4.2.3](https://github.com/helm/helm/releases/tag/v4.2.3)
 
 
