@@ -30,12 +30,6 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
-{{ include "camundaPlatform.keyRenamed" (dict
-  "condition" (ne nil (dig "identity" "auth" "camundaHub" "console" nil .Values.global))
-  "oldName" "global.identity.auth.camundaHub.console.*"
-  "newName" "global.identity.auth.console.*"
-) }}
-
 {{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 
@@ -439,10 +433,14 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
-  {{ include "camundaPlatform.keyDeprecated" (dict
-    "condition" (hasKey .Values.global.identity.auth "console")
-    "oldName" "global.identity.auth.console"
-    "migration" "global.identity.auth.webModeler.* / global.identity.auth.camundaHub.*") }}
+  {{- if hasKey .Values.global.identity.auth "console" }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"global.identity.auth.console.*\" is no longer used in Camunda 8.10."
+        "Console has been consolidated into Camunda Hub and this key has no replacement; it can be safely removed from values.yaml."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 
   {{/*
   *****************************************************************************
