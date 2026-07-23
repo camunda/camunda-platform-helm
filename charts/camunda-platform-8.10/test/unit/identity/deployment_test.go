@@ -1209,11 +1209,15 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					"CAMUNDA_CONNECTORS_CLIENT_ID should reflect the custom clientId")
 			},
 		}, {
-			// Test: alwaysRegister=true must still emit CAMUNDA_OPTIMIZE_CLIENT_ID/CAMUNDA_OPTIMIZE_SECRET
-			// even though optimize is disabled. This is the deployment.yaml:91 gate (distinct from the
-			// VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET gate above), only rendered when Identity's own auth
-			// type is non-Keycloak (global.identity.auth.identity secret config is rejected under Keycloak).
-			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesOptimizeClientIdAndSecretEnvVars",
+			// Test: alwaysRegister=true must still emit CAMUNDA_OPTIMIZE_SECRET even though
+			// optimize is disabled. This is the deployment.yaml hasSecretConfig(identity) gate
+			// (distinct from the VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET gate above), which renders
+			// whenever Identity's own auth has a secret config, independent of auth type.
+			// CAMUNDA_OPTIMIZE_CLIENT_ID now lives exclusively in the KEYCLOAK-gated
+			// init block alongside VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET (mirroring
+			// CAMUNDA_ORCHESTRATION_CLIENT_ID/CAMUNDA_CONNECTORS_CLIENT_ID), so it is
+			// KEYCLOAK-only and must NOT render for a GENERIC identity auth type.
+			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesOptimizeSecretEnvVarGenericAuth",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"identity.enabled":                                       "true",
@@ -1234,12 +1238,6 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env,
 					corev1.EnvVar{
-						Name:  "CAMUNDA_OPTIMIZE_CLIENT_ID",
-						Value: "optimize",
-					},
-					"CAMUNDA_OPTIMIZE_CLIENT_ID should be present when alwaysRegister=true, even though optimize.enabled=false")
-				s.Require().Contains(env,
-					corev1.EnvVar{
 						Name: "CAMUNDA_OPTIMIZE_SECRET",
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
@@ -1249,6 +1247,37 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						},
 					},
 					"CAMUNDA_OPTIMIZE_SECRET should be present when alwaysRegister=true, even though optimize.enabled=false")
+				for _, envVar := range env {
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_CLIENT_ID", envVar.Name,
+						"CAMUNDA_OPTIMIZE_CLIENT_ID is KEYCLOAK-only (mirrors orchestration/connectors) and must not render for a GENERIC identity auth type")
+				}
+			},
+		}, {
+			// Test: for KEYCLOAK auth, CAMUNDA_OPTIMIZE_CLIENT_ID must render alongside
+			// VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET when alwaysRegister=true, mirroring
+			// CAMUNDA_ORCHESTRATION_CLIENT_ID/CAMUNDA_CONNECTORS_CLIENT_ID, using a custom
+			// clientId, and even though optimize.enabled=false.
+			Name:                 "TestOptimizeDisabledWithRegisterInIdentityIncludesCustomOptimizeClientIdKeycloak",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                             "true",
+				"global.identity.auth.enabled":                 "true",
+				"global.identity.auth.type":                    "KEYCLOAK",
+				"optimize.enabled":                             "false",
+				"global.identity.auth.optimize.alwaysRegister": "true",
+				"global.identity.auth.optimize.clientId":       "custom-optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "CAMUNDA_OPTIMIZE_CLIENT_ID",
+						Value: "custom-optimize",
+					},
+					"CAMUNDA_OPTIMIZE_CLIENT_ID should reflect the custom clientId and render even though optimize.enabled=false")
 			},
 		},
 	}

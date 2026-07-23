@@ -31,7 +31,11 @@ func newTopologyNamespaceCommand() *cobra.Command {
 		Use:   "namespace",
 		Short: "Print the derived release namespace for a base namespace and suffix",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Fprintln(cmd.OutOrStdout(), deploy.DeriveReleaseNamespace(base, suffix))
+			namespace, err := deploy.DeriveReleaseNamespace(base, suffix)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), namespace)
 			return nil
 		},
 	}

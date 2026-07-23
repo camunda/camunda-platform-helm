@@ -69,6 +69,8 @@ spec:
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
             ) | nindent 12 }}
+            - name: CAMUNDA_OPTIMIZE_CLIENT_ID
+              value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
             {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"           "VALUES_KEYCLOAK_SETUP_PASSWORD"
@@ -93,8 +95,6 @@ spec:
               "config" .Values.global.identity.auth.identity
             ) | nindent 12 }}
             {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
-            - name: CAMUNDA_OPTIMIZE_CLIENT_ID
-              value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "CAMUNDA_OPTIMIZE_SECRET"
               "config" .Values.global.identity.auth.optimize

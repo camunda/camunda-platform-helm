@@ -215,13 +215,13 @@ data:
             - resourceServerId: camunda-identity-resource-server
               definition: write
             {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
-            - resourceServerId: orchestration-api
+            - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: read:*
-            - resourceServerId: orchestration-api
+            - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: write:*
             {{- end }}
             {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
-            - resourceServerId: optimize-api
+            - resourceServerId: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
               definition: write:*
             {{- end }}
             - resourceServerId: web-modeler-api

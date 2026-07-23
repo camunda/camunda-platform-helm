@@ -15,6 +15,7 @@
 package deploy
 
 import (
+	"strings"
 	"testing"
 
 	"scripts/deploy-camunda/config"
@@ -116,7 +117,10 @@ func TestDeriveReleaseNamespace_TruncatesToLimit(t *testing.T) {
 	base := "distribution-810-multinamespace-scenario-with-a-very-long-name"
 	suffix := "orchestration"
 
-	got := DeriveReleaseNamespace(base, suffix)
+	got, err := DeriveReleaseNamespace(base, suffix)
+	if err != nil {
+		t.Fatalf("DeriveReleaseNamespace(%q, %q) returned unexpected error: %v", base, suffix, err)
+	}
 
 	if len(got) > 63 {
 		t.Fatalf("DeriveReleaseNamespace(%q, %q) = %q (len %d), want len <= 63", base, suffix, got, len(got))
@@ -129,8 +133,14 @@ func TestDeriveReleaseNamespace_TruncatesToLimit(t *testing.T) {
 func TestDeriveReleaseNamespace_DistinctSuffixesYieldDistinctNamespaces(t *testing.T) {
 	base := "distribution-810-multinamespace-scenario-with-a-very-long-name"
 
-	orcha := DeriveReleaseNamespace(base, "orcha")
-	orchb := DeriveReleaseNamespace(base, "orchb")
+	orcha, err := DeriveReleaseNamespace(base, "orcha")
+	if err != nil {
+		t.Fatalf("DeriveReleaseNamespace(%q, %q) returned unexpected error: %v", base, "orcha", err)
+	}
+	orchb, err := DeriveReleaseNamespace(base, "orchb")
+	if err != nil {
+		t.Fatalf("DeriveReleaseNamespace(%q, %q) returned unexpected error: %v", base, "orchb", err)
+	}
 
 	if orcha == orchb {
 		t.Fatalf("expected distinct namespaces for distinct suffixes, got %q for both", orcha)
@@ -138,10 +148,23 @@ func TestDeriveReleaseNamespace_DistinctSuffixesYieldDistinctNamespaces(t *testi
 }
 
 func TestDeriveReleaseNamespace_NoTruncationWhenWithinLimit(t *testing.T) {
-	got := DeriveReleaseNamespace("matrix-810-mns", "mgmt")
+	got, err := DeriveReleaseNamespace("matrix-810-mns", "mgmt")
+	if err != nil {
+		t.Fatalf("DeriveReleaseNamespace() returned unexpected error: %v", err)
+	}
 	want := "matrix-810-mns-mgmt"
 	if got != want {
 		t.Fatalf("DeriveReleaseNamespace() = %q, want %q", got, want)
+	}
+}
+
+func TestDeriveReleaseNamespace_OversizedSuffixErrors(t *testing.T) {
+	base := "b"
+	suffix := strings.Repeat("s", 62)
+
+	_, err := DeriveReleaseNamespace(base, suffix)
+	if err == nil {
+		t.Fatalf("DeriveReleaseNamespace(%q, %q) = nil error, want error for oversized suffix", base, suffix)
 	}
 }
 

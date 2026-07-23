@@ -306,15 +306,19 @@ type TopologyRelease struct {
 
 // DeriveReleaseNamespace forms a release's namespace as <base>-<suffix>,
 // truncating base so the result stays within Kubernetes' 63-character
-// namespace name limit.
-func DeriveReleaseNamespace(base, suffix string) string {
+// namespace name limit. It returns an error when suffix alone (plus the
+// separating "-") cannot leave room for at least a 1-character base.
+func DeriveReleaseNamespace(base, suffix string) (string, error) {
 	namespace := fmt.Sprintf("%s-%s", base, suffix)
 	if len(namespace) > 63 {
 		maxBase := 63 - len(suffix) - 1
+		if maxBase <= 0 {
+			return "", fmt.Errorf("DeriveReleaseNamespace: suffix %q is too long to fit a namespace within the 63-character Kubernetes limit", suffix)
+		}
 		truncatedBase := strings.TrimRight(base[:maxBase], "-")
 		namespace = fmt.Sprintf("%s-%s", truncatedBase, suffix)
 	}
-	return namespace
+	return namespace, nil
 }
 
 // generateTopologyContexts fans a single scenario out into one *ScenarioContext
@@ -338,7 +342,10 @@ func generateTopologyContexts(scenario string, releases []TopologyRelease, flags
 
 	contexts := make([]*ScenarioContext, 0, len(releases))
 	for _, rel := range releases {
-		namespace := DeriveReleaseNamespace(baseNamespace, rel.NamespaceSuffix)
+		namespace, err := DeriveReleaseNamespace(baseNamespace, rel.NamespaceSuffix)
+		if err != nil {
+			return nil, fmt.Errorf("generateTopologyContexts: scenario %q: %w", scenario, err)
+		}
 		suffix := namespaceDerivedSuffix(namespace)
 
 		ingressHost := ""

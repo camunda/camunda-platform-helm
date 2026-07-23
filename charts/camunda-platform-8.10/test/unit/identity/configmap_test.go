@@ -609,6 +609,38 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(applicationYaml, "- Orchestration",
 					"first-user Orchestration role should not render when alwaysRegister defaults to false and orchestration.enabled=false")
 			},
+		}, {
+			// Test: the admin-permission block's resourceServerId entries must track custom
+			// orchestration/optimize audiences (rather than the hardcoded orchestration-api /
+			// optimize-api defaults) so admin permissions still resolve against the actual
+			// resource server when a deployment overrides the audience.
+			Name:                 "TestAdminPermissionsTrackCustomAudiences",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                    "true",
+				"global.identity.auth.enabled":                        "true",
+				"global.identity.auth.admin.enabled":                  "true",
+				"global.identity.auth.admin.clientId":                 "custom-admin",
+				"global.security.authentication.method":               "oidc",
+				"orchestration.security.authentication.oidc.audience": "custom-orchestration-api",
+				"global.identity.auth.optimize.audience":              "custom-optimize-api",
+				"global.identity.auth.optimize.alwaysRegister":        "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().Contains(applicationYaml, "resourceServerId: \"custom-orchestration-api\"",
+					"admin permissions should reference the custom orchestration audience")
+				s.Require().Contains(applicationYaml, "resourceServerId: \"custom-optimize-api\"",
+					"admin permissions should reference the custom optimize audience")
+				s.Require().NotContains(applicationYaml, "resourceServerId: orchestration-api",
+					"admin permissions should not reference the literal default orchestration-api once a custom audience is set")
+				s.Require().NotContains(applicationYaml, "resourceServerId: optimize-api",
+					"admin permissions should not reference the literal default optimize-api once a custom audience is set")
+			},
 		},
 	}
 
