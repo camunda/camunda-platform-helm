@@ -1218,7 +1218,7 @@ func (s *StatefulSetTest) TestOrchestrationTLSEnabledViaEnvWithManagedCert() {
 		{
 			Name: "REST TLS enabled via orchestration.env with flag off still wires the managed cert",
 			Values: map[string]string{
-				"orchestration.enabled":                                    "true",
+				"orchestration.enabled": "true",
 				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
 				"orchestration.env[0].name":                                "SERVER_SSL_ENABLED",
 			},
@@ -1264,7 +1264,7 @@ func (s *StatefulSetTest) TestOrchestrationTLSEnabledViaEnvWithManagedCert() {
 		{
 			Name: "gRPC TLS enabled via orchestration.env with flag off still wires the managed cert",
 			Values: map[string]string{
-				"orchestration.enabled":                                    "true",
+				"orchestration.enabled": "true",
 				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
 				"orchestration.env[0].name":                                "CAMUNDA_API_GRPC_SSL_ENABLED",
 			},
@@ -1305,6 +1305,83 @@ func (s *StatefulSetTest) TestOrchestrationTLSEnabledViaEnvWithManagedCert() {
 					}
 				}
 				s.Require().True(volFound, "expected orchestration-tls-grpc volume when TLS is enabled via orchestration.env")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestOrchestrationTLSEnabledViaEnvValueFrom() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "REST TLS toggle via orchestration.env valueFrom with global flag=true resolves TLS-effective (https internal URL)",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/orchestration/configmap.yaml"},
+			},
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"orchestration.env[0].name":                                "SERVER_SSL_ENABLED",
+				"orchestration.env[0].valueFrom.secretKeyRef.name":         "tls-toggle-secret",
+				"orchestration.env[0].valueFrom.secretKeyRef.key":          "server-ssl-enabled",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, `restAddress: "https://camunda-platform-test-zeebe-gateway:8080"`,
+					"a valueFrom-sourced toggle must NOT be read as false; the global flag governs chart wiring")
+			},
+		},
+		{
+			Name: "REST TLS toggle via orchestration.env valueFrom with global flag=true keeps the cert volumeMount wired",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"orchestration.env[0].name":                                "SERVER_SSL_ENABLED",
+				"orchestration.env[0].valueFrom.secretKeyRef.name":         "tls-toggle-secret",
+				"orchestration.env[0].valueFrom.secretKeyRef.key":          "server-ssl-enabled",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				var found bool
+				for _, e := range env {
+					if e.Name == "SERVER_SSL_ENABLED" && e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
+						found = true
+					}
+				}
+				s.Require().True(found, "expected the user-supplied valueFrom entry to be rendered as-is")
+
+				mounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+				var mountFound bool
+				for _, m := range mounts {
+					if m.Name == "orchestration-tls-rest" {
+						mountFound = true
+					}
+				}
+				s.Require().True(mountFound, "expected the cert volumeMount to remain wired when the global flag governs a valueFrom toggle")
+			},
+		},
+		{
+			Name: "REST TLS toggle via orchestration.env valueFrom with global flag=false does not crash and stays plaintext",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/orchestration/configmap.yaml"},
+			},
+			Values: map[string]string{
+				"orchestration.enabled":                            "true",
+				"orchestration.env[0].name":                        "SERVER_SSL_ENABLED",
+				"orchestration.env[0].valueFrom.secretKeyRef.name": "tls-toggle-secret",
+				"orchestration.env[0].valueFrom.secretKeyRef.key":  "server-ssl-enabled",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, `restAddress: "http://camunda-platform-test-zeebe-gateway:8080"`,
+					"with no global flag and a valueFrom toggle, chart wiring falls back to plaintext without failing the render")
 			},
 		},
 	}

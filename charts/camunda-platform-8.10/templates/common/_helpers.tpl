@@ -708,7 +708,10 @@ Zeebe templates.
 explicit orchestration.env entry for SERVER_SSL_ENABLED wins over
 global.tls.orchestration.rest.enabled, because Kubernetes keeps the LAST
 duplicate env var and the chart must report the same TLS state the running
-container actually ends up with.
+container actually ends up with. A "valueFrom"-sourced entry (no literal
+value) resolves to "unknown" from orchestrationEnvLastValue and is treated
+the same as "unset" here — the chart defers to the global flag rather than
+assuming the runtime secret disables TLS.
 */}}
 {{- define "camundaPlatform.orchestrationRESTTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
@@ -727,7 +730,8 @@ container actually ends up with.
 [camunda-platform] Returns "true" when Orchestration gRPC TLS is enabled. An
 explicit orchestration.env entry for CAMUNDA_API_GRPC_SSL_ENABLED wins over
 global.tls.orchestration.grpc.enabled, mirroring
-camundaPlatform.orchestrationRESTTLSEnabled.
+camundaPlatform.orchestrationRESTTLSEnabled, including the "unknown" ==
+"unset" fallback for a valueFrom-sourced entry.
 */}}
 {{- define "camundaPlatform.orchestrationGRPCTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED") -}}
@@ -743,10 +747,14 @@ camundaPlatform.orchestrationRESTTLSEnabled.
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true", "false", or "unset" for the LAST matching
-orchestration.env entry by name. Kubernetes keeps the last duplicate env var,
-so callers resolving effective TLS state must look at the last match, not
-merely whether any match exists.
+[camunda-platform] Returns "true", "false", "unknown", or "unset" for the LAST
+matching orchestration.env entry by name. Kubernetes keeps the last duplicate
+env var, so callers resolving effective TLS state must look at the last
+match, not merely whether any match exists. "unset" means no matching entry
+exists at all. "unknown" means the last matching entry carries no literal
+value but does carry a valueFrom (e.g. a Secret/ConfigMap key) — the chart
+cannot read that value at render time, so callers must fall back to the
+global TLS flag rather than treat it as "false".
 Usage:
   {{ include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") }}
 */}}
@@ -756,8 +764,14 @@ Usage:
   {{- $result := "unset" -}}
   {{- range $env := $ctx.Values.orchestration.env -}}
     {{- if eq ($env.name | default "") $name -}}
-      {{- if eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true" -}}
-        {{- $result = "true" -}}
+      {{- if $env.value -}}
+        {{- if eq (lower (tpl (toString $env.value) $ctx)) "true" -}}
+          {{- $result = "true" -}}
+        {{- else -}}
+          {{- $result = "false" -}}
+        {{- end -}}
+      {{- else if $env.valueFrom -}}
+        {{- $result = "unknown" -}}
       {{- else -}}
         {{- $result = "false" -}}
       {{- end -}}
@@ -1414,10 +1428,18 @@ nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
 
 {{/*
 orchestrationTLSChecksumAnnotations
-Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert,
-private-key, and (REST) keystore-password material of the Orchestration TLS
-config when global.tls.orchestration.autoRollout is true, so a key- or
-password-only rotation also rolls the pod.
+Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert
+and private-key material of the Orchestration TLS config when
+global.tls.orchestration.autoRollout is true, so a cert- or key-only
+rotation also rolls the pod.
+
+Per proto the gate is the EFFECTIVE TLS state
+(camundaPlatform.orchestrationRESTTLSEnabled /
+camundaPlatform.orchestrationGRPCTLSEnabled), not the raw
+global.tls.orchestration.<proto>.enabled flag: cert mounts follow the
+effective helper too (an orchestration.env override can enable TLS with the
+flag left off), so the checksum must be emitted whenever a cert is actually
+mounted or a rotation would silently not roll the pod.
 
 Per hashed item the source is chosen by material precedence: an inlineSecret
 value is hashed DIRECTLY from .Values (it is the material being rendered NOW),
@@ -1427,6 +1449,12 @@ opt-in gate and that caveat match camundaPlatform.caBundleChecksumAnnotation —
 but an inline value always reflects the current render, so an inline cert/key
 change flips the checksum even without cluster access.
 
+The REST keystore password is deliberately EXCLUDED from the hash: hashing a
+password-only value with no corresponding cert/key material would make the
+pod annotation a sha256(password) oracle, readable by anyone with Pod-get
+access even without Secret-read RBAC. Password-only rotation is therefore
+NOT covered by autoRollout and requires a manual `kubectl rollout restart`.
+
 Usage (inside the Orchestration pod template's metadata.annotations):
   {{- include "camundaPlatform.orchestrationTLSChecksumAnnotations" . | nindent 8 }}
 */}}
@@ -1434,7 +1462,8 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- if .Values.global.tls.orchestration.autoRollout -}}
 {{- range $proto := (list "rest" "grpc") -}}
 {{- $tls := index $.Values.global.tls.orchestration $proto -}}
-{{- if $tls.enabled -}}
+{{- $effectiveHelper := ternary "camundaPlatform.orchestrationRESTTLSEnabled" "camundaPlatform.orchestrationGRPCTLSEnabled" (eq $proto "rest") -}}
+{{- if eq (include $effectiveHelper $) "true" -}}
 {{- $isPem := or (eq $proto "grpc") (eq ($tls.type | default "pkcs12") "pem") -}}
 {{- $certRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" $ "proto" $proto) | fromYaml -}}
 {{- $keyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" $ "proto" $proto) | fromYaml -}}
@@ -1453,19 +1482,6 @@ Usage (inside the Orchestration pod template's metadata.annotations):
   {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}
   {{- $data := ($s | default dict).data | default dict -}}
   {{- $hashes = append $hashes (get $data $keyRef.key) -}}
-{{- end -}}
-{{- if eq $proto "rest" -}}
-  {{- $ksPw := $tls.keystorePassword.secret -}}
-  {{- if $ksPw.inlineSecret -}}
-    {{- $hashes = append $hashes $ksPw.inlineSecret -}}
-  {{- else -}}
-    {{- $ksPwRef := include "camundaPlatform.orchestrationTLSKeystorePasswordRef" (dict "context" $) | fromYaml -}}
-    {{- if and $ksPwRef.name (ne $ksPwRef.name $certRef.name) -}}
-      {{- $s := lookup "v1" "Secret" $.Release.Namespace $ksPwRef.name -}}
-      {{- $data := ($s | default dict).data | default dict -}}
-      {{- $hashes = append $hashes (get $data $ksPwRef.key) -}}
-    {{- end -}}
-  {{- end -}}
 {{- end -}}
 {{- if $hashes -}}
 {{- printf "\nchecksum/orchestration-tls-%s: %s" $proto (join "" $hashes | sha256sum) -}}
