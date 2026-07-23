@@ -1,0 +1,85 @@
+name: MCP - Test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch: {}
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{
+      github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.mcp }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          filters: |
+            mcp:
+              - 'helm-values-mcp/**'
+              - '.github/workflows/test-mcp.yaml'
+              - '.github/actions/install-tool-versions/**'
+              - '.tool-versions'
+              - 'charts/camunda-platform-*/Chart.yaml'
+              - 'charts/camunda-platform-*/values*.yaml'
+              - 'charts/camunda-platform-*/values.schema.json'
+
+  test:
+    name: Test helm-values-mcp
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' ||
+      github.event_name == 'merge_group' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: helm-values-mcp
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Install Node (from .tool-versions)
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            nodejs
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+
+  mcp-gate:
+    name: mcp-gate
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify MCP tests passed or were correctly skipped
+        run: |
+          changes_result="${{ needs.changes.result }}"
+          test_result="${{ needs.test.result }}"
+          echo "changes result: ${changes_result} | test result: ${test_result}"
+          if [ "${changes_result}" != "success" ]; then
+            echo "::error::change detection did not succeed (${changes_result}); refusing to pass the gate"
+            exit 1
+          fi
+          if [ "${test_result}" = "failure" ] || [ "${test_result}" = "cancelled" ]; then
+            echo "::error::MCP tests did not pass (${test_result})"
+            exit 1
+          fi
+          echo "mcp-gate OK (changes: ${changes_result}, test: ${test_result})"
