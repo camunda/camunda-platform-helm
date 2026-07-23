@@ -777,6 +777,17 @@ func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
 				s.Require().Nil(err)
 			},
 		},
+		{
+			Name: "TestPingEndpointWithOrchestrationDisabledDoesNotFail",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.enabled":                    "false",
+				"orchestration.hub.ping.endpoint":          "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

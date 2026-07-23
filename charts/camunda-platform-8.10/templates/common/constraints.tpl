@@ -65,7 +65,7 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
   {{- fail "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`, available values are [elasticsearch, opensearch, rdbms]. For more details, see our documentation here: https://docs.camunda.io/docs/next/self-managed/concepts/secondary-storage/configuring-secondary-storage/" -}}
 {{- end }}
 
-{{- if .Values.orchestration.hub.ping.endpoint }}
+{{- if and .Values.orchestration.enabled .Values.orchestration.hub.ping.endpoint }}
   {{- $isOidc := eq (include "orchestration.authMethod" .) "oidc" -}}
   {{- $pcId := .Values.orchestration.hub.ping.credentials.clientId -}}
   {{- $pcTok := .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
