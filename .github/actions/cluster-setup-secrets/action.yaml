@@ -64,6 +64,28 @@ runs:
           return 1
         }
 
+        wait_for_replicated_secret_keys() {
+          local namespace="$1"
+          local secret_name="$2"
+          shift 2
+          local expected_keys=("$@")
+          local key missing_keys
+          for _ in {1..60}; do
+            missing_keys=()
+            for key in "${expected_keys[@]}"; do
+              kubectl get secret "$secret_name" -n "$namespace" -o json 2>/dev/null | jq -e --arg key "$key" '(.data[$key] // "") | length > 0' >/dev/null || missing_keys+=("$key")
+            done
+            if [[ ${#missing_keys[@]} -eq 0 ]]; then
+              echo "✅ Replicated Secret $secret_name contains all expected keys"
+              return 0
+            fi
+            echo "⏳ Waiting for replicated Secret $secret_name keys: ${missing_keys[*]}"
+            sleep 10
+          done
+          echo "❌ Replicated Secret $secret_name is missing expected keys: ${missing_keys[*]}"
+          return 1
+        }
+
         if [[ "$DISTRO_PLATFORM" == "gke" || "$DISTRO_PLATFORM" == "rosa" ]]; then
           echo "🔧 Applying external secret certificates for $DISTRO_PLATFORM"
           apply_external_secret_with_retry \
@@ -100,10 +122,16 @@ runs:
         else
           echo "🔧 Running in EKS mode — using vault-backed ExternalSecrets"
 
-          # Apply EKS TLS certificate ExternalSecret (creates aws-camunda-cloud-tls secret from Vault)
+          # The EKS TLS certificate (aws-camunda-cloud-tls) is no longer sourced from Vault.
+          # It is issued by cert-manager in the distribution-certs namespace and pulled into this
+          # namespace by the mittwald kubernetes-replicator via a replicate-from stub Secret
+          # (replicator.v1.mittwald.de/replicate-from) applied below. Wait for the replicator to
+          # populate it.
           apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-certificates-vault.yaml" \
+            ".github/config/replicate-from/replicate-from-eks-tls.yaml" \
             "$TEST_NAMESPACE"
+          echo "⏳ Waiting for replicated EKS TLS certificate secret aws-camunda-cloud-tls in $TEST_NAMESPACE"
+          wait_for_replicated_secret_keys "$TEST_NAMESPACE" aws-camunda-cloud-tls tls.crt tls.key
 
           # Apply credentials secrets (creates integration-test secret, for backward compat)
           apply_external_secret_with_retry \
