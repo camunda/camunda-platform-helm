@@ -96,3 +96,4 @@
 | 92 | [Allow opt-in deployment strategy for components with chart-managed RWO persistence](0092-allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence.md) |
 | 93 | [Adopt a composable CI scenario registry for the per-version integration test matrix](0093-adopt-composable-ci-scenario-registry-for-per-version-test-matrix.md) |
 | 94 | [Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts](0094-remove-bundled-bitnami-subcharts-from-the-8-10-chart.md) |
+| 95 | [Ship opt-in least-privilege NetworkPolicies as a first-class chart feature](0095-ship-opt-in-least-privilege-networkpolicies.md) |
