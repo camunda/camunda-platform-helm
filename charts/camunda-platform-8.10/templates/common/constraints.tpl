@@ -30,12 +30,6 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
-{{ include "camundaPlatform.keyRenamed" (dict
-  "condition" (ne nil (dig "identity" "auth" "camundaHub" "console" nil .Values.global))
-  "oldName" "global.identity.auth.camundaHub.console.*"
-  "newName" "global.identity.auth.console.*"
-) }}
-
 {{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 
@@ -439,6 +433,14 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+  {{- if hasKey .Values.global.identity.auth "console" }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"global.identity.auth.console.*\" is no longer used in Camunda 8.10."
+        "Console has been consolidated into Camunda Hub and this key has no replacement; it can be safely removed from values.yaml."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 
   {{/*
   *****************************************************************************
@@ -649,19 +651,6 @@ The following values inside your values.yaml need to be set but were not:
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index $wm.restapi.logging.level "io.grpc" | toString) "INFO")
       "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
-  {{- end }}
-
-  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-    {{- $con := .Values.console | default dict }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (dig "keycloak" "realm" "camunda-platform" $con) "camunda-platform")
-      "oldName" "console.keycloak.realm" "migration" "console.env") }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne ($con.nodeEnv | default "prod" | toString) "prod")
-      "oldName" "console.nodeEnv" "migration" "console.env") }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (not (empty $con.logging))
-      "oldName" "console.logging" "migration" "console.env") }}
   {{- end }}
 
   {{- $componentExtra := "the consuming component's extraConfiguration" }}
