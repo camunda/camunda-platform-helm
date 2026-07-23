@@ -5,6 +5,11 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - "helm-values-mcp/**"
+      - ".github/workflows/test-mcp.yaml"
+      - ".github/actions/install-tool-versions/**"
+      - ".tool-versions"
+      - "charts/camunda-platform-*/Chart.yaml"
+      - "charts/camunda-platform-*/values.schema.json"
   workflow_dispatch: {}
 
 concurrency:
