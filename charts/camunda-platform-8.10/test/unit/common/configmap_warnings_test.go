@@ -90,3 +90,34 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+// TestConsoleConfigKeysWarningRendersInConfigMap pins the consolidated
+// "console.* configuration keys have no effect in 8.10" warning (constraints.tpl)
+// to actual rendered output: it sets a non-"enabled" console.* key and asserts
+// the warning text appears in the "-warnings" ConfigMap. Without this test,
+// deleting the warning block in constraints.tpl would still pass
+// coverage_test.go (which only checks the "console.*" string is referenced),
+// leaving a silent regression.
+func (s *ConfigMapWarningsTemplateTest) TestConsoleConfigKeysWarningRendersInConfigMap() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConsoleNonEnabledKeyTriggersConsolidationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"console.someUnusedKey":                    "someValue",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				s.Require().Contains(configmap.Data["warnings"],
+					"console.* configuration keys have no effect in 8.10")
+				s.Require().Contains(configmap.Data["warnings"],
+					"consolidated into Camunda Hub")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
