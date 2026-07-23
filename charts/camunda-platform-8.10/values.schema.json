@@ -4201,6 +4201,61 @@
                         }
                     }
                 },
+                "hub": {
+                    "type": "object",
+                    "properties": {
+                        "ping": {
+                            "type": "object",
+                            "properties": {
+                                "endpoint": {
+                                    "type": "string",
+                                    "description": "defines the Camunda Hub POST /clusters endpoint pings are sent to. Setting it renders the ping connectivity/credentials config; enable the ping via orchestration.extraConfiguration.",
+                                    "default": ""
+                                },
+                                "credentials": {
+                                    "type": "object",
+                                    "properties": {
+                                        "tokenEndpoint": {
+                                            "type": "string",
+                                            "description": "defines the OAuth2 token endpoint used to request an access token. Defaults to the orchestration client token endpoint when empty.",
+                                            "default": ""
+                                        },
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the M2M client id. Defaults to the orchestration client id when empty.",
+                                            "default": ""
+                                        },
+                                        "clientSecret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the client secret. Must be set together with existingSecretKey.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object. Must be set together with existingSecret.",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "image": {
                     "type": "object",
                     "properties": {

@@ -218,6 +218,23 @@ Authentication.
     {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}
 
+{{- define "orchestration.hubPingClientId" -}}
+    {{- .Values.orchestration.hub.ping.credentials.clientId | default (include "orchestration.authClientId" .) -}}
+{{- end -}}
+
+{{- define "orchestration.hubPingTokenEndpoint" -}}
+    {{- .Values.orchestration.hub.ping.credentials.tokenEndpoint | default (include "orchestration.authIssuerBackendUrlEndpointToken" .) -}}
+{{- end -}}
+
+{{- define "orchestration.hubPingClientSecretConfig" -}}
+    {{- $cs := .Values.orchestration.hub.ping.credentials.clientSecret.secret -}}
+    {{- if or $cs.inlineSecret (and $cs.existingSecret $cs.existingSecretKey) -}}
+        {{- .Values.orchestration.hub.ping.credentials.clientSecret | toYaml -}}
+    {{- else -}}
+        {{- .Values.orchestration.security.authentication.oidc | toYaml -}}
+    {{- end -}}
+{{- end -}}
+
 {{- define "orchestration.authAudience" -}}
     {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
 {{- end -}}

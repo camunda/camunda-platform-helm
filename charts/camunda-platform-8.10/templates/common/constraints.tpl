@@ -65,6 +65,33 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
   {{- fail "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`, available values are [elasticsearch, opensearch, rdbms]. For more details, see our documentation here: https://docs.camunda.io/docs/next/self-managed/concepts/secondary-storage/configuring-secondary-storage/" -}}
 {{- end }}
 
+{{- if and .Values.orchestration.enabled .Values.orchestration.hub.ping.endpoint }}
+  {{- $isOidc := eq (include "orchestration.authMethod" .) "oidc" -}}
+  {{- $pcId := .Values.orchestration.hub.ping.credentials.clientId -}}
+  {{- $pcTok := .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
+  {{- $pcCs := .Values.orchestration.hub.ping.credentials.clientSecret.secret -}}
+  {{- $pcHasSecret := or $pcCs.inlineSecret (and $pcCs.existingSecret $pcCs.existingSecretKey) -}}
+  {{- if not $isOidc }}
+    {{- if not (and $pcId $pcTok $pcHasSecret) }}
+      {{- fail "[camunda][error] orchestration.hub.ping.endpoint requires orchestration.security.authentication.method=oidc (to reuse the orchestration client), or explicit orchestration.hub.ping.credentials.clientId, orchestration.hub.ping.credentials.tokenEndpoint, and either orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret or orchestration.hub.ping.credentials.clientSecret.secret.existingSecret/orchestration.hub.ping.credentials.clientSecret.secret.existingSecretKey when orchestration is not using oidc" -}}
+    {{- end }}
+  {{- else }}
+    {{- $ocCs := .Values.orchestration.security.authentication.oidc.secret -}}
+    {{- $ocHasSecret := or $ocCs.inlineSecret (and $ocCs.existingSecret $ocCs.existingSecretKey) -}}
+    {{- $resolvedTokenEndpoint := include "orchestration.hubPingTokenEndpoint" . -}}
+    {{- if and (not $pcHasSecret) (not $ocHasSecret) }}
+      {{- fail "[camunda][error] orchestration.hub.ping.endpoint with orchestration in oidc mode requires a usable client secret: configure orchestration.security.authentication.oidc.secret (inlineSecret or existingSecret+existingSecretKey), or set orchestration.hub.ping.credentials.clientSecret.secret explicitly" -}}
+    {{- end }}
+    {{- if not $resolvedTokenEndpoint }}
+      {{- fail "[camunda][error] orchestration.hub.ping.endpoint could not resolve a token endpoint (orchestration's OIDC issuer is not Keycloak and global.identity.auth.tokenUrl is unset): set orchestration.hub.ping.credentials.tokenEndpoint explicitly" -}}
+    {{- end }}
+  {{- end }}
+  {{- $pcs := .Values.orchestration.hub.ping.credentials.clientSecret.secret }}
+  {{- if or (and $pcs.existingSecret (not $pcs.existingSecretKey)) (and $pcs.existingSecretKey (not $pcs.existingSecret)) }}
+    {{- fail "[camunda][error] orchestration.hub.ping.credentials.clientSecret.secret.existingSecret and orchestration.hub.ping.credentials.clientSecret.secret.existingSecretKey must be set together" -}}
+  {{- end }}
+{{- end }}
+
 {{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}

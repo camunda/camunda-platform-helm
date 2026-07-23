@@ -211,6 +211,15 @@ camunda:
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
+  {{- if .Values.orchestration.hub.ping.endpoint }}
+  hub:
+    ping:
+      endpoint: {{ .Values.orchestration.hub.ping.endpoint | quote }}
+      credentials:
+        token-endpoint: {{ include "orchestration.hubPingTokenEndpoint" . | quote }}
+        client-id: {{ include "orchestration.hubPingClientId" . | quote }}
+        client-secret: ${VALUES_CAMUNDAHUB_PING_CLIENT_SECRET:}
+  {{- end }}
   {{- if eq (include "orchestration.authMethod" .) "oidc" }}
   identity:
     clientId: {{ include "orchestration.authClientId" . | quote }}

@@ -79,6 +79,12 @@ spec:
                 "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
+            {{- if .Values.orchestration.hub.ping.endpoint }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDAHUB_PING_CLIENT_SECRET"
+                "config" (include "orchestration.hubPingClientSecretConfig" . | fromYaml)
+            ) | nindent 12 }}
+            {{- end }}
             {{- if or
               (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true")
               (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true")
