@@ -73,6 +73,12 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Fail clearly when an image override has an empty tag and no digest"
+      description: "Exclude operate and tasklist profiles when noSecondaryStorage is enabled"
     - kind: fixed
-      description: "Surface deprecation warnings on the gitops render path"
+      description: "Revert vendor-ee/postgresql to -r2 to restore amd64 image pulls"
+    - kind: fixed
+      description: "Respect explicit empty global.identity.keycloak.contextPath"
+    - kind: fixed
+      description: "Allow Web Modeler and Console with external management Identity"
+    - kind: fixed
+      description: "Decouple requestBodySize from Zeebe maxMessageSize"
