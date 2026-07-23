@@ -122,10 +122,20 @@
     {
       description: 'Major updates require manual review to prevent breaking changes.',
       matchUpdateTypes: ['major'],
+      matchManagers: ['!github-actions'],
       automerge: false,
       platformAutomerge: false,
       dependencyDashboardApproval: false,
       addLabels: ['requires-manual-review'],
+    },
+    {
+      description: 'GitHub Actions use v1/v2/v3 versioning — major = node bump, not semver API break.',
+      matchManagers: ['github-actions'],
+      matchUpdateTypes: ['major'],
+      automerge: true,
+      platformAutomerge: true,
+      automergeType: 'pr',
+      addLabels: ['automerge', 'automation/renovatebot', 'kind/chore'],
     },
     {
       description: 'Schedule major updates for Friday nights.',
@@ -341,6 +351,24 @@
       matchFileNames: [
         'charts/camunda-platform-8.8/values-digest.yaml',
         'charts/camunda-platform-8.9/values-digest.yaml',
+      ],
+      matchUpdateTypes: ['digest'],
+      schedule: ['at any time'],
+      addLabels: ['camunda-platform', 'priority-high'],
+      prCreation: 'immediate',
+    },
+    {
+      enabled: true,
+      groupName: 'camunda-platform-digests-alpha',
+      matchPackageNames: [
+        '/.*camunda.*/',
+      ],
+      matchDatasources: [
+        'helm',
+        'docker',
+        'regex',
+      ],
+      matchFileNames: [
         'charts/camunda-platform-8.10/values-digest.yaml',
       ],
       matchUpdateTypes: ['digest'],
