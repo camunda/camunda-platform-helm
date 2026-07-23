@@ -134,6 +134,7 @@ jobs:
               - '.github/workflows/test-chart-version.yaml'
               - '.github/config/external-secret/**'
               - 'scripts/**'
+              - '!scripts/auto-approve-gate/**'
               - '.tool-versions'
               - 'charts/camunda-platform-8*/**'
               - '!charts/camunda-platform-8*/*.md'
