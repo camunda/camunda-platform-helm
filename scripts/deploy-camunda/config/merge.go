@@ -50,7 +50,17 @@ type DeploymentFlags struct {
 	ExtraHelmArgs []string
 	// Extra --set pairs for helm (e.g., {"orchestration.upgrade.allowPreReleaseImages": "true"}).
 	ExtraHelmSets map[string]string
+	// WaitIngressReady gates a successful deployment on the ingress host
+	// becoming publicly DNS-resolvable and HTTP-reachable.
+	WaitIngressReady bool
+	// IngressReadyTimeoutMinutes bounds how long WaitIngressReady polls before
+	// failing. When <= 0, DefaultIngressReadyTimeoutMinutes is used.
+	IngressReadyTimeoutMinutes int
 }
+
+// DefaultIngressReadyTimeoutMinutes is the default timeout for the
+// --wait-ingress-ready gate when --ingress-ready-timeout is not set.
+const DefaultIngressReadyTimeoutMinutes = 8
 
 // IngressFlags holds ingress-related configuration.
 type IngressFlags struct {

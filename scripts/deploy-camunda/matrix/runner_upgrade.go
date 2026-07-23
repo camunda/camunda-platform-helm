@@ -204,6 +204,8 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	step1Flags.Deployment.ExtraValues = nil
 	step1Flags.Test.RunE2ETests = false // Don't run tests after Step 1.
 	step1Flags.Test.RunAllTests = false
+	step1Flags.Deployment.WaitIngressReady = false // No ingress gate on the throwaway Step 1 install.
+	step1Flags.Deployment.IngressReadyTimeoutMinutes = 0
 	step1Flags.Deployment.DeleteNamespaceFirst = flags.Deployment.DeleteNamespaceFirst // Only delete on Step 1.
 
 	// For upgrade-minor, Step 1 uses the PREVIOUS app version's values files.
