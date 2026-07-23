@@ -596,6 +596,8 @@ jobs:
           E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           INFRA_TYPE: ${{ inputs.infra-type }}
+          WAIT_INGRESS_READY: ${{ inputs.wait-ingress-ready }}
+          INGRESS_READY_TIMEOUT: ${{ inputs.ingress-ready-timeout }}
           # Selection + composition model environment variables (consumed by
           # deploy-camunda's prepare-values via the matrix run scenario resolver
           # — no flag wiring required, the runner reads $TEST_* env vars).
@@ -701,6 +703,24 @@ jobs:
           # Empty falls back to deploy-camunda's 60m default.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
 
+          # The workflow input is `number` type, so reject empty/fractional/negative
+          # (any non-digit matches *[!0-9]*) and then zero before it reaches the
+          # integer --ingress-ready-timeout flag; a valid whole minute passes through.
+          INGRESS_READY_ARGS=()
+          if [ "$WAIT_INGRESS_READY" = "true" ]; then
+            case "$INGRESS_READY_TIMEOUT" in
+              ''|*[!0-9]*)
+                echo "::error::ingress-ready-timeout must be a positive whole number of minutes, got '$INGRESS_READY_TIMEOUT'" >&2
+                exit 1
+                ;;
+            esac
+            if [ "$INGRESS_READY_TIMEOUT" -lt 1 ]; then
+              echo "::error::ingress-ready-timeout must be >= 1 minute, got '$INGRESS_READY_TIMEOUT'" >&2
+              exit 1
+            fi
+            INGRESS_READY_ARGS+=(--wait-ingress-ready --ingress-ready-timeout "$INGRESS_READY_TIMEOUT")
+          fi
+
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
@@ -714,8 +734,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
-            ${{ inputs.wait-ingress-ready && '--wait-ingress-ready' || '' }} \
-            ${{ inputs.wait-ingress-ready && format('--ingress-ready-timeout {0}', inputs.ingress-ready-timeout) || '' }} \
+            ${INGRESS_READY_ARGS[@]+"${INGRESS_READY_ARGS[@]}"} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
@@ -993,6 +1012,8 @@ jobs:
           E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           INFRA_TYPE: ${{ inputs.infra-type }}
+          WAIT_INGRESS_READY: ${{ inputs.wait-ingress-ready }}
+          INGRESS_READY_TIMEOUT: ${{ inputs.ingress-ready-timeout }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
           # Selection + composition model environment variables.
           TEST_IDENTITY: ${{ inputs.test-identity }}
@@ -1094,6 +1115,24 @@ jobs:
           # Empty falls back to deploy-camunda's 60m default.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
 
+          # The workflow input is `number` type, so reject empty/fractional/negative
+          # (any non-digit matches *[!0-9]*) and then zero before it reaches the
+          # integer --ingress-ready-timeout flag; a valid whole minute passes through.
+          INGRESS_READY_ARGS=()
+          if [ "$WAIT_INGRESS_READY" = "true" ]; then
+            case "$INGRESS_READY_TIMEOUT" in
+              ''|*[!0-9]*)
+                echo "::error::ingress-ready-timeout must be a positive whole number of minutes, got '$INGRESS_READY_TIMEOUT'" >&2
+                exit 1
+                ;;
+            esac
+            if [ "$INGRESS_READY_TIMEOUT" -lt 1 ]; then
+              echo "::error::ingress-ready-timeout must be >= 1 minute, got '$INGRESS_READY_TIMEOUT'" >&2
+              exit 1
+            fi
+            INGRESS_READY_ARGS+=(--wait-ingress-ready --ingress-ready-timeout "$INGRESS_READY_TIMEOUT")
+          fi
+
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
@@ -1107,8 +1146,7 @@ jobs:
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
-            ${{ inputs.wait-ingress-ready && '--wait-ingress-ready' || '' }} \
-            ${{ inputs.wait-ingress-ready && format('--ingress-ready-timeout {0}', inputs.ingress-ready-timeout) || '' }} \
+            ${INGRESS_READY_ARGS[@]+"${INGRESS_READY_ARGS[@]}"} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
