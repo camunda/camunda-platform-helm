@@ -455,6 +455,53 @@ func TestRunTopologyEntry_SharedStorageServiceFallsBackToSharedStorage(t *testin
 	}
 }
 
+// TestBuildOrchestrationZeebeEnv pins down that ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST
+// are derived from the orchestration release's context (release name +
+// namespace) into the cross-namespace Zeebe gateway Service FQDN
+// ("<release>-zeebe-gateway.<namespace>.svc.cluster.local") on the gRPC
+// (26500) and REST (8080) ports — the fix for Web Modeler's empty "Deploy &
+// run" cluster dropdown in the multinamespace topology (orchestration.enabled
+// is false in the management release, so the default cluster helper has
+// nothing to register; webModeler.restapi.clusters must be set explicitly).
+func TestBuildOrchestrationZeebeEnv(t *testing.T) {
+	tests := []struct {
+		name      string
+		release   string
+		namespace string
+		wantGRPC  string
+		wantREST  string
+	}{
+		{
+			name:      "integration release in foo-orcha namespace",
+			release:   "integration",
+			namespace: "foo-orcha",
+			wantGRPC:  "grpc://integration-zeebe-gateway.foo-orcha.svc.cluster.local:26500",
+			wantREST:  "http://integration-zeebe-gateway.foo-orcha.svc.cluster.local:8080",
+		},
+		{
+			name:      "matrix-run namespace",
+			release:   "integration",
+			namespace: "matrix-810-mns-orcha",
+			wantGRPC:  "grpc://integration-zeebe-gateway.matrix-810-mns-orcha.svc.cluster.local:26500",
+			wantREST:  "http://integration-zeebe-gateway.matrix-810-mns-orcha.svc.cluster.local:8080",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			orchestrationCtx := &deploy.ScenarioContext{Release: tt.release, Namespace: tt.namespace}
+
+			env := buildOrchestrationZeebeEnv(orchestrationCtx)
+			if got := env["ORCH_ZEEBE_GRPC"]; got != tt.wantGRPC {
+				t.Errorf("ORCH_ZEEBE_GRPC = %q, want %q", got, tt.wantGRPC)
+			}
+			if got := env["ORCH_ZEEBE_REST"]; got != tt.wantREST {
+				t.Errorf("ORCH_ZEEBE_REST = %q, want %q", got, tt.wantREST)
+			}
+		})
+	}
+}
+
 // TestSynthesizeReleaseOpts_PropagatesHelmTimeout pins down that --timeout
 // (helm deployment timeout in minutes) is forwarded to every topology
 // release's matrix.RunOptions — same class of bug as the ingress-base-domain

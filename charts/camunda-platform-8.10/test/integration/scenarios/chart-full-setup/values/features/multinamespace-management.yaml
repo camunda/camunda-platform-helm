@@ -43,6 +43,25 @@ orchestration:
       oidc:
         redirectUrl: "https://${ORCH_HOST}/orchestration"
 
+webModeler:
+  restapi:
+    # orchestration.enabled: false above collapses the
+    # camundaPlatform.defaultWebModelerCluster helper's orchestration entry
+    # (gated on orchestration.enabled — see templates/common/_helpers.tpl),
+    # leaving Web Modeler's "Deploy & run" cluster dropdown empty. Register
+    # the orchestration release's cross-namespace Zeebe gateway explicitly;
+    # ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST are injected by runTopologyEntry
+    # alongside ORCH_HOST above.
+    clusters:
+      - id: orchestration-cluster
+        name: orchestration
+        version: "8.10.0-alpha3"
+        authentication: "BEARER_TOKEN"
+        url:
+          grpc: "${ORCH_ZEEBE_GRPC}"
+          rest: "${ORCH_ZEEBE_REST}"
+          web-app: "https://${ORCH_HOST}/operate"
+
 optimize:
   enabled: false
 

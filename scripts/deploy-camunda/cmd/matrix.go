@@ -1007,6 +1007,21 @@ func pluralEntry(n int) string {
 // companions must be reachable before orchestration releases render (their
 // external-Keycloak layer points straight at the management namespace) or
 // start.
+
+// buildOrchestrationZeebeEnv derives ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST from the
+// orchestration release's context: its Zeebe gateway Service is reachable
+// cross-namespace at "<release>-zeebe-gateway.<namespace>.svc.cluster.local"
+// (orchestration.serviceName in templates/orchestration/_helpers.tpl), on the
+// gRPC (26500) and REST (8080) ports from
+// orchestration.service.{grpcPort,httpPort}.
+func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[string]string {
+	zeebeGatewayHost := fmt.Sprintf("%s-zeebe-gateway.%s.svc.cluster.local", orchestrationCtx.Release, orchestrationCtx.Namespace)
+	return map[string]string{
+		"ORCH_ZEEBE_GRPC": fmt.Sprintf("grpc://%s:26500", zeebeGatewayHost),
+		"ORCH_ZEEBE_REST": fmt.Sprintf("http://%s:8080", zeebeGatewayHost),
+	}
+}
+
 // resolveSharedStorageServiceName resolves the Kubernetes Service name of the
 // shared storage backend for a topology: it prefers the explicit
 // topo.SharedStorageService, falling back to the ReleaseName of the resolved
@@ -1085,10 +1100,13 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	managementIdx := -1
+	orchestrationIdx := -1
 	for i, r := range entry.Topology.Releases {
 		if r.Role == "management" {
 			managementIdx = i
-			break
+		}
+		if r.Role == "orchestration" {
+			orchestrationIdx = i
 		}
 	}
 	if managementIdx == -1 {
@@ -1098,6 +1116,19 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	sharedStorageService := resolveSharedStorageServiceName(entry.Topology, entry.Topology.Releases[managementIdx].ResolvedDependencies)
 
 	crossRefEnv := deploy.BuildTopologyCrossRefEnv(contexts[managementIdx], sharedStorageService, "9200", "http")
+
+	// ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST let the management release (Web
+	// Modeler) register the orchestration release's Zeebe gateway as a
+	// cluster, reaching it cross-namespace by FQDN — the same
+	// "<release>-zeebe-gateway.<namespace>.svc.cluster.local" Service the
+	// orchestration release itself exposes (orchestration.serviceName in
+	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
+	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
+	if orchestrationIdx != -1 {
+		for k, v := range buildOrchestrationZeebeEnv(contexts[orchestrationIdx]) {
+			crossRefEnv[k] = v
+		}
+	}
 
 	// MGMT_HOST/ORCH_HOST both resolve to the single ingress host CI applies to
 	// every release in the topology via `--extra-helm-set global.host=<host>`
@@ -1275,7 +1306,8 @@ func synthesizeReleaseOpts(base matrix.RunOptions, platform string, namespaceOve
 // assembly, mutating flags in place:
 //
 //   - ExtraEnv: the cross-ref env (MGMT_NAMESPACE, KEYCLOAK_REALM,
-//     EXTERNAL_ELASTICSEARCH_*) computed up front, MERGED into EVERY
+//     EXTERNAL_ELASTICSEARCH_*, MGMT_HOST, ORCH_HOST, ORCH_ZEEBE_GRPC,
+//     ORCH_ZEEBE_REST) computed up front, MERGED into EVERY
 //     release (management included) before render/preflight, on top of
 //     any pre-existing ExtraEnv (cross-ref wins on key conflict). The
 //     topology path currently bypasses executeEntry (where per-entry
