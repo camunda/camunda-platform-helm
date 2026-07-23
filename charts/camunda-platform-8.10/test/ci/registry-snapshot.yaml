@@ -270,7 +270,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-mt
-          enabled: false
+          enabled: true
           shortname: kemt
           auth: keycloak
           flow: upgrade-minor
@@ -299,7 +299,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-rba
-          enabled: false
+          enabled: true
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
