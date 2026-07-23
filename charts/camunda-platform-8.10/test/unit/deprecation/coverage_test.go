@@ -65,6 +65,11 @@ var allowlist = map[string]string{
 
 var oldNamePattern = regexp.MustCompile(`"oldName"\s+"([^"]+)"`)
 
+// helmCommentPattern matches Helm comment blocks {{/* ... */}} (including the
+// {{- -}} whitespace-chomp variants). Non-greedy + dot-matches-newline so
+// multi-line comment blocks are removed whole.
+var helmCommentPattern = regexp.MustCompile(`(?s)\{\{-?\s*/\*.*?\*/\s*-?\}\}`)
+
 func TestDeprecationKeyCoverage89To810(t *testing.T) {
 	t.Parallel()
 
@@ -126,6 +131,30 @@ func TestHasDescendantInKeepsTeeth(t *testing.T) {
 	require.True(t, hasDescendantIn("global.identity.keycloak.url", curr))
 	// Truly removed empty-map key: no descendant in curr -> still flagged.
 	require.False(t, hasDescendantIn("global.some.removedEmptyMap", curr))
+}
+
+// TestParseCoveredKeysIgnoresComments pins that a live keyDeprecated invocation
+// counts as coverage while a commented-out one inside {{/* ... */}} does not.
+func TestParseCoveredKeysIgnoresComments(t *testing.T) {
+	t.Parallel()
+
+	input := `
+{{ include "camundaPlatform.keyDeprecated" (dict
+  "condition" true
+  "oldName" "foo.live"
+  "migration" "bar") }}
+{{/*
+{{ include "camundaPlatform.keyDeprecated" (dict
+  "condition" true
+  "oldName" "foo.commented"
+  "migration" "bar") }}
+*/}}
+`
+	covered := parseCoveredKeys(input)
+	_, liveOK := covered["foo.live"]
+	require.True(t, liveOK, "live oldName should be covered")
+	_, commentedOK := covered["foo.commented"]
+	require.False(t, commentedOK, "commented-out oldName must not be covered")
 }
 
 func flattenValuesFile(path string) (map[string]struct{}, error) {
@@ -210,8 +239,13 @@ func setDifference(a, b map[string]struct{}) map[string]struct{} {
 }
 
 func parseCoveredKeys(constraints string) map[string]struct{} {
+	// Strip Helm comment blocks first: an "oldName" "X" sitting inside a
+	// {{/* ... */}} comment (or a commented-out keyDeprecated invocation) is not
+	// executed and must NOT count as coverage — otherwise a commented-out
+	// warning would falsely pass the coverage check.
+	executable := helmCommentPattern.ReplaceAllString(constraints, "")
 	covered := make(map[string]struct{})
-	for _, match := range oldNamePattern.FindAllStringSubmatch(constraints, -1) {
+	for _, match := range oldNamePattern.FindAllStringSubmatch(executable, -1) {
 		covered[match[1]] = struct{}{}
 	}
 	return covered
