@@ -79,6 +79,52 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 			},
+		}, {
+			Name: "TestAppProtocolsDefaultEmpty",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol by default", port.Name)
+				}
+			},
+		}, {
+			Name: "TestAppProtocolsSetsOnlyTargetedPort",
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"optimize.enabled":                         "true",
+				"optimize.service.appProtocols.management": "http",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				for _, port := range service.Spec.Ports {
+					if port.Name == "management" {
+						s.Require().NotNil(port.AppProtocol)
+						s.Require().Equal("http", *port.AppProtocol)
+					} else {
+						s.Require().Empty(port.AppProtocol, "port %q should have no appProtocol", port.Name)
+					}
+				}
+			},
+		}, {
+			Name: "TestAppProtocolsUnknownPortNameFails",
+			Values: map[string]string{
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"optimize.service.appProtocols.managment": "http",
+			},
+			Expected: map[string]string{
+				"ERROR": "is not a valid appProtocols key",
+			},
 		},
 	}
 
