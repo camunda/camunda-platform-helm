@@ -102,11 +102,13 @@ spec:
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
             {{- if .Values.global.tls.orchestration.rest.enabled }}
+            - name: SERVER_SSL_ENABLED
+              value: "true"
+            {{- end }}
+            {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
             {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml }}
             {{- $restKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "rest") | fromYaml }}
             {{- $restKsPwRef := include "camundaPlatform.orchestrationTLSKeystorePasswordRef" (dict "context" .) | fromYaml }}
-            - name: SERVER_SSL_ENABLED
-              value: "true"
             {{- if $restCertRef.name }}
             {{- if eq (.Values.global.tls.orchestration.rest.type | default "pkcs12") "pem" }}
             - name: SERVER_SSL_CERTIFICATE
@@ -135,10 +137,12 @@ spec:
             {{- end }}
             {{- end }}
             {{- if .Values.global.tls.orchestration.grpc.enabled }}
-            {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml }}
-            {{- $grpcKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "grpc") | fromYaml }}
             - name: CAMUNDA_API_GRPC_SSL_ENABLED
               value: "true"
+            {{- end }}
+            {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
+            {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml }}
+            {{- $grpcKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "grpc") | fromYaml }}
             {{- if $grpcCertRef.name }}
             - name: CAMUNDA_API_GRPC_SSL_CERTIFICATE
               value: /usr/local/camunda/certificates/orchestration/grpc/{{ $grpcCertRef.key }}
@@ -307,7 +311,7 @@ spec:
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
-            {{- if .Values.global.tls.orchestration.rest.enabled }}
+            {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
             {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml }}
             {{- $restKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "rest") | fromYaml }}
             {{- if $restCertRef.name }}
@@ -321,7 +325,7 @@ spec:
               readOnly: true
             {{- end }}
             {{- end }}
-            {{- if .Values.global.tls.orchestration.grpc.enabled }}
+            {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
             {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml }}
             {{- $grpcKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "grpc") | fromYaml }}
             {{- if $grpcCertRef.name }}
@@ -387,7 +391,7 @@ spec:
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
-        {{- if .Values.global.tls.orchestration.rest.enabled }}
+        {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
         {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml }}
         {{- $restKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "rest") | fromYaml }}
         {{- if $restCertRef.name }}
@@ -403,7 +407,7 @@ spec:
             defaultMode: 0440
         {{- end }}
         {{- end }}
-        {{- if .Values.global.tls.orchestration.grpc.enabled }}
+        {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
         {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml }}
         {{- $grpcKeyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "grpc") | fromYaml }}
         {{- if $grpcCertRef.name }}

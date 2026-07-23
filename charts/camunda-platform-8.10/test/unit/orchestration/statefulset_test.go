@@ -1213,6 +1213,105 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *StatefulSetTest) TestOrchestrationTLSEnabledViaEnvWithManagedCert() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "REST TLS enabled via orchestration.env with flag off still wires the managed cert",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"orchestration.env[0].name":                                "SERVER_SSL_ENABLED",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.env[0].value=true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				var enabledCount int
+				for _, e := range env {
+					if e.Name == "SERVER_SSL_ENABLED" {
+						enabledCount++
+					}
+				}
+				s.Require().Equal(1, enabledCount, "only the user-supplied orchestration.env entry should be rendered, no flag-gated duplicate")
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_ENABLED", Value: "true"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE", Value: "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12"})
+
+				mounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+				var mountFound bool
+				for _, m := range mounts {
+					if m.Name == "orchestration-tls-rest" {
+						mountFound = true
+					}
+				}
+				s.Require().True(mountFound, "expected orchestration-tls-rest volumeMount when TLS is enabled via orchestration.env")
+
+				vols := statefulSet.Spec.Template.Spec.Volumes
+				var volFound bool
+				for _, v := range vols {
+					if v.Name == "orchestration-tls-rest" {
+						volFound = true
+						s.Require().Equal("rest-ks", v.Secret.SecretName)
+					}
+				}
+				s.Require().True(volFound, "expected orchestration-tls-rest volume when TLS is enabled via orchestration.env")
+			},
+		},
+		{
+			Name: "gRPC TLS enabled via orchestration.env with flag off still wires the managed cert",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+				"orchestration.env[0].name":                                "CAMUNDA_API_GRPC_SSL_ENABLED",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.env[0].value=true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				var enabledCount int
+				for _, e := range env {
+					if e.Name == "CAMUNDA_API_GRPC_SSL_ENABLED" {
+						enabledCount++
+					}
+				}
+				s.Require().Equal(1, enabledCount, "only the user-supplied orchestration.env entry should be rendered, no flag-gated duplicate")
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_ENABLED", Value: "true"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/orchestration/grpc/tls.crt"})
+
+				mounts := statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts
+				var mountFound bool
+				for _, m := range mounts {
+					if m.Name == "orchestration-tls-grpc" {
+						mountFound = true
+					}
+				}
+				s.Require().True(mountFound, "expected orchestration-tls-grpc volumeMount when TLS is enabled via orchestration.env")
+
+				vols := statefulSet.Spec.Template.Spec.Volumes
+				var volFound bool
+				for _, v := range vols {
+					if v.Name == "orchestration-tls-grpc" {
+						volFound = true
+						s.Require().Equal("grpc-pem", v.Secret.SecretName)
+					}
+				}
+				s.Require().True(volFound, "expected orchestration-tls-grpc volume when TLS is enabled via orchestration.env")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *StatefulSetTest) TestOrchestrationTLSAutoRollout() {
 	testCases := []testhelpers.TestCase{
 		{
