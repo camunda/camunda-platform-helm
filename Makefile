@@ -39,6 +39,15 @@ build.vault-secret-mapper:
 install.vault-secret-mapper:
 	cd scripts/vault-secret-mapper && go mod tidy && go install .
 
+
+.PHONY: build.auto-approve-gate
+build.auto-approve-gate:
+	cd scripts/auto-approve-gate && go mod tidy && go build .
+
+.PHONY: install.auto-approve-gate
+install.auto-approve-gate:
+	cd scripts/auto-approve-gate && go mod tidy && go install .
+
 .PHONY: build.ci-result-cache
 build.ci-result-cache:
 	cd scripts/ci-result-cache && go mod tidy && go build .

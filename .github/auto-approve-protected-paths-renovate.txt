@@ -1,0 +1,14 @@
+# Paths a renovate[bot] PR may NEVER touch and still be auto-approved — the
+# approval trust machinery. Everything else Renovate changes (workflow action
+# pins, chart image tags) is governed by the renovate.json5 automerge policy.
+# One Go regexp (RE2) pattern per line; blank lines and # comments are ignored. Matched
+# against every file in the PR net diff (new paths and rename sources).
+
+^\.github/auto-approve-
+^\.github/workflows/repo-auto-approve\.yaml$
+^\.github/CODEOWNERS$
+
+# --- Chart public API Renovate never legitimately edits ---
+^charts/.+/values\.schema(\.extra)?\.json$
+^charts/.+/constraints\.tpl$
+^scripts/auto-approve-gate/
