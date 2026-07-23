@@ -12,3 +12,7 @@ global:
         keystorePassword:
           secret:
             existingSecretKey: keystore-password
+    caBundle:
+      secret:
+        existingSecret: orchestration-tls
+        existingSecretKey: tls.crt

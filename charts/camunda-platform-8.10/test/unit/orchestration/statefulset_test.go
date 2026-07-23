@@ -1138,6 +1138,180 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 				require.Contains(t, err.Error(), "Orchestration gRPC TLS is enabled but no server cert is configured")
 			},
 		},
+		{
+			Name: "Constraint fails when REST inline cert has no private key source",
+			Values: map[string]string{
+				"orchestration.enabled":                                  "true",
+				"global.tls.orchestration.rest.enabled":                  "true",
+				"global.tls.orchestration.rest.type":                     "pem",
+				"global.tls.orchestration.rest.cert.secret.inlineSecret": "CERTPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "inline PEM cert")
+				require.Contains(t, err.Error(), "no private key is configured")
+			},
+		},
+		{
+			Name: "Constraint fails when gRPC inline cert has no private key source",
+			Values: map[string]string{
+				"orchestration.enabled":                                  "true",
+				"global.tls.orchestration.grpc.enabled":                  "true",
+				"global.tls.orchestration.grpc.cert.secret.inlineSecret": "GRPCCERTPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "inline PEM cert")
+				require.Contains(t, err.Error(), "no private key is configured")
+			},
+		},
+		{
+			Name: "REST inline cert WITH inline private key renders successfully",
+			Values: map[string]string{
+				"orchestration.enabled":                                        "true",
+				"global.tls.orchestration.rest.enabled":                        "true",
+				"global.tls.orchestration.rest.type":                           "pem",
+				"global.tls.orchestration.rest.cert.secret.inlineSecret":       "CERTPEM",
+				"global.tls.orchestration.rest.privateKey.secret.inlineSecret": "KEYPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			Name: "REST TLS with no chart cert does NOT fail when orchestration.envFrom is set",
+			Values: map[string]string{
+				"orchestration.enabled":                   "true",
+				"global.tls.orchestration.rest.enabled":   "true",
+				"orchestration.envFrom[0].secretRef.name": "orchestration-tls-env",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_ENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "gRPC TLS with no chart cert does NOT fail when orchestration.envFrom is set",
+			Values: map[string]string{
+				"orchestration.enabled":                   "true",
+				"global.tls.orchestration.grpc.enabled":   "true",
+				"orchestration.envFrom[0].secretRef.name": "orchestration-tls-env",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_ENABLED", Value: "true"})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestOrchestrationTLSAutoRollout() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "autoRollout=true with REST TLS emits checksum/orchestration-tls-rest annotation",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.autoRollout":                     "true",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+				_, ok := statefulSet.Spec.Template.Annotations["checksum/orchestration-tls-rest"]
+				s.Require().True(ok, "expected checksum/orchestration-tls-rest pod annotation")
+			},
+		},
+		{
+			Name: "autoRollout=true with gRPC TLS emits checksum/orchestration-tls-grpc annotation",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.autoRollout":                     "true",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+				_, ok := statefulSet.Spec.Template.Annotations["checksum/orchestration-tls-grpc"]
+				s.Require().True(ok, "expected checksum/orchestration-tls-grpc pod annotation")
+			},
+		},
+		{
+			Name: "autoRollout=false (default) emits NEITHER TLS checksum annotation",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+				_, restOk := statefulSet.Spec.Template.Annotations["checksum/orchestration-tls-rest"]
+				_, grpcOk := statefulSet.Spec.Template.Annotations["checksum/orchestration-tls-grpc"]
+				s.Require().False(restOk, "checksum/orchestration-tls-rest should be absent when autoRollout is off")
+				s.Require().False(grpcOk, "checksum/orchestration-tls-grpc should be absent when autoRollout is off")
+			},
+		},
+		{
+			Name: "autoRollout=true renders deterministically without cluster access (lookup empty)",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.autoRollout":                     "true",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "checksum/orchestration-tls-rest")
+			},
+		},
+		{
+			Name: "autoRollout=true with inline gRPC cert hashes the inline value (changes flip the checksum)",
+			Values: map[string]string{
+				"orchestration.enabled":                                        "true",
+				"global.tls.orchestration.autoRollout":                         "true",
+				"global.tls.orchestration.grpc.enabled":                        "true",
+				"global.tls.orchestration.grpc.cert.secret.inlineSecret":       "CERT_A",
+				"global.tls.orchestration.grpc.privateKey.secret.inlineSecret": "KEY",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+				checksumA := statefulSet.Spec.Template.Annotations["checksum/orchestration-tls-grpc"]
+				s.Require().NotEmpty(checksumA, "expected inline-derived gRPC checksum")
+
+				outB, errB := helm.RenderTemplateE(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"global.elasticsearch.enabled":                                 "true",
+						"orchestration.enabled":                                        "true",
+						"global.tls.orchestration.autoRollout":                         "true",
+						"global.tls.orchestration.grpc.enabled":                        "true",
+						"global.tls.orchestration.grpc.cert.secret.inlineSecret":       "CERT_B",
+						"global.tls.orchestration.grpc.privateKey.secret.inlineSecret": "KEY",
+					},
+				}, s.chartPath, s.release, []string{"templates/orchestration/statefulset.yaml"})
+				require.NoError(t, errB)
+				var statefulSetB appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), outB, &statefulSetB)
+				checksumB := statefulSetB.Spec.Template.Annotations["checksum/orchestration-tls-grpc"]
+				s.Require().NotEqual(checksumA, checksumB, "changing the inline cert must flip the checksum without cluster access")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -1554,19 +1728,20 @@ func (s *StatefulSetTest) TestOrchestrationTLSInlineSecret() {
 			},
 		},
 		{
-			Name: "gRPC cert.secret.inlineSecret alone (no key inline) renders generated Secret with only tls.crt",
+			Name: "gRPC cert.secret.inlineSecret with inline key renders generated Secret with tls.crt and tls.key",
 			CaseTemplates: &testhelpers.CaseTemplate{
 				Templates: []string{"templates/orchestration/tls-secret.yaml"},
 			},
 			Values: map[string]string{
-				"orchestration.enabled":                                  "true",
-				"global.tls.orchestration.grpc.enabled":                  "true",
-				"global.tls.orchestration.grpc.cert.secret.inlineSecret": "GRPCCERTPEM",
+				"orchestration.enabled":                                        "true",
+				"global.tls.orchestration.grpc.enabled":                        "true",
+				"global.tls.orchestration.grpc.cert.secret.inlineSecret":       "GRPCCERTPEM",
+				"global.tls.orchestration.grpc.privateKey.secret.inlineSecret": "GRPCKEYPEM",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "tls.crt:")
-				require.NotContains(t, output, "tls.key:")
+				require.Contains(t, output, "tls.key:")
 			},
 		},
 		{

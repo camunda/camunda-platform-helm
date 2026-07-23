@@ -1380,7 +1380,17 @@ Returns nothing when proxyVerify.enabled is false or no CA Secret resolves
 of annotation key → value:
   - nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
   - nginx.ingress.kubernetes.io/proxy-ssl-secret: "<namespace>/<name>"
-  - (if sniHost set) proxy-ssl-name + proxy-ssl-server-name: "on"
+  - nginx.ingress.kubernetes.io/proxy-ssl-name: "<sniHost or derived Service DNS>"
+  - nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+
+proxy-ssl-name is ALWAYS emitted when verify is on: with ingress-nginx dynamic
+upstreams, absent proxy-ssl-name NGINX validates the upstream cert against the
+proxy host rather than the Orchestration Service DNS, so a cert carrying only
+the Service SAN fails. sniHost wins when set; otherwise the name is derived
+per protocol from the matching Orchestration Service host — REST from
+orchestration.serviceNameHTTP, gRPC from orchestration.serviceNameGRPC — the
+same helpers the *InternalURL helpers use, so REST and gRPC never derive to
+the same SNI name.
 
 The caller is responsible for merging the result into the ingress
 annotations block. Pass `proto` ("rest" or "grpc") to select the source.
@@ -1394,22 +1404,29 @@ Usage (inside an ingress template's annotations block, e.g. via merge-overwrite)
 {{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
 {{- $caRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" $ctx "proto" $proto) | fromYaml -}}
 {{- if and $pv.enabled $caRef.name -}}
+{{- $derivedName := ternary (include "orchestration.serviceNameHTTP" $ctx) (include "orchestration.serviceNameGRPC" $ctx) (eq $proto "rest") -}}
+{{- $sslName := $pv.sniHost | default ($derivedName | trim) -}}
 nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
 nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $caRef.namespace $caRef.name | quote }}
-{{- with $pv.sniHost }}
-nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-name: {{ $sslName | quote }}
 nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
-{{- end }}
 {{- end -}}
 {{- end -}}
 
 {{/*
 orchestrationTLSChecksumAnnotations
-Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert
-AND private-key (and, when separately referenced, CA) Secret content of the
-Orchestration TLS Secrets when global.tls.orchestration.autoRollout is true,
-so a key-only rotation also rolls the pod. Opt-in shape and
-lookup-during-template caveats match camundaPlatform.caBundleChecksumAnnotation.
+Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert,
+private-key, and (REST) keystore-password material of the Orchestration TLS
+config when global.tls.orchestration.autoRollout is true, so a key- or
+password-only rotation also rolls the pod.
+
+Per hashed item the source is chosen by material precedence: an inlineSecret
+value is hashed DIRECTLY from .Values (it is the material being rendered NOW),
+otherwise the existingSecret is read via `lookup`. `lookup` returns the
+pre-upgrade Secret content and is inert under `helm template` / GitOps — the
+opt-in gate and that caveat match camundaPlatform.caBundleChecksumAnnotation —
+but an inline value always reflects the current render, so an inline cert/key
+change flips the checksum even without cluster access.
 
 Usage (inside the Orchestration pod template's metadata.annotations):
   {{- include "camundaPlatform.orchestrationTLSChecksumAnnotations" . | nindent 8 }}
@@ -1419,25 +1436,36 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- range $proto := (list "rest" "grpc") -}}
 {{- $tls := index $.Values.global.tls.orchestration $proto -}}
 {{- if $tls.enabled -}}
+{{- $isPem := or (eq $proto "grpc") (eq ($tls.type | default "pkcs12") "pem") -}}
 {{- $certRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" $ "proto" $proto) | fromYaml -}}
 {{- $keyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" $ "proto" $proto) | fromYaml -}}
 {{- $hashes := list -}}
-{{- if $certRef.name -}}
+{{- $certInline := ternary $tls.cert.secret.inlineSecret "" $isPem -}}
+{{- if $certInline -}}
+  {{- $hashes = append $hashes $certInline -}}
+{{- else if $certRef.name -}}
   {{- $s := lookup "v1" "Secret" $.Release.Namespace $certRef.name -}}
   {{- $data := ($s | default dict).data | default dict -}}
   {{- $hashes = append $hashes (get $data $certRef.key) -}}
 {{- end -}}
-{{- if $keyRef.name -}}
+{{- if $tls.privateKey.secret.inlineSecret -}}
+  {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
+{{- else if $keyRef.name -}}
   {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}
   {{- $data := ($s | default dict).data | default dict -}}
   {{- $hashes = append $hashes (get $data $keyRef.key) -}}
 {{- end -}}
 {{- if eq $proto "rest" -}}
-  {{- $ksPwRef := include "camundaPlatform.orchestrationTLSKeystorePasswordRef" (dict "context" $) | fromYaml -}}
-  {{- if and $ksPwRef.name (ne $ksPwRef.name $certRef.name) -}}
-    {{- $s := lookup "v1" "Secret" $.Release.Namespace $ksPwRef.name -}}
-    {{- $data := ($s | default dict).data | default dict -}}
-    {{- $hashes = append $hashes (get $data $ksPwRef.key) -}}
+  {{- $ksPw := $tls.keystorePassword.secret -}}
+  {{- if $ksPw.inlineSecret -}}
+    {{- $hashes = append $hashes $ksPw.inlineSecret -}}
+  {{- else -}}
+    {{- $ksPwRef := include "camundaPlatform.orchestrationTLSKeystorePasswordRef" (dict "context" $) | fromYaml -}}
+    {{- if and $ksPwRef.name (ne $ksPwRef.name $certRef.name) -}}
+      {{- $s := lookup "v1" "Secret" $.Release.Namespace $ksPwRef.name -}}
+      {{- $data := ($s | default dict).data | default dict -}}
+      {{- $hashes = append $hashes (get $data $ksPwRef.key) -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 {{- if $hashes -}}

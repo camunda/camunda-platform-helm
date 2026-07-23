@@ -52,13 +52,25 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
   {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml -}}
   {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml -}}
+  {{- $hasEnvFrom := not (empty .Values.orchestration.envFrom) -}}
   {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
     {{- if not $restCertRef.name }}
-      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
+      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) $hasEnvFrom) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration REST TLS is enabled but no server cert is configured."
             "Set global.tls.orchestration.rest.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret (PEM only) so the chart mounts the cert,"
-            "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
+            "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries (or via orchestration.envFrom)."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+    {{- $rest := .Values.global.tls.orchestration.rest -}}
+    {{- $restCertInline := and (eq ($rest.type | default "pkcs12") "pem") $rest.cert.secret.inlineSecret (not $rest.cert.secret.existingSecret) -}}
+    {{- if $restCertInline }}
+      {{- if not (or $rest.privateKey.secret.inlineSecret $rest.privateKey.secret.existingSecret) }}
+        {{- $errorMessage := printf "%s %s"
+            "[camunda][error] Orchestration REST TLS uses an inline PEM cert (global.tls.orchestration.rest.cert.secret.inlineSecret) but no private key is configured."
+            "Set global.tls.orchestration.rest.privateKey.secret.inlineSecret or privateKey.secret.existingSecret; the generated Secret needs a tls.key or the server crashes on startup."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end }}
@@ -66,11 +78,22 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
   {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
     {{- if not $grpcCertRef.name }}
-      {{- if not (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) }}
+      {{- if not (or (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) $hasEnvFrom) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration gRPC TLS is enabled but no server cert is configured."
             "Set global.tls.orchestration.grpc.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret so the chart mounts the cert,"
-            "or hand-wire CAMUNDA_API_GRPC_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries."
+            "or hand-wire CAMUNDA_API_GRPC_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries (or via orchestration.envFrom)."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+    {{- $grpc := .Values.global.tls.orchestration.grpc -}}
+    {{- $grpcCertInline := and $grpc.cert.secret.inlineSecret (not $grpc.cert.secret.existingSecret) -}}
+    {{- if $grpcCertInline }}
+      {{- if not (or $grpc.privateKey.secret.inlineSecret $grpc.privateKey.secret.existingSecret) }}
+        {{- $errorMessage := printf "%s %s"
+            "[camunda][error] Orchestration gRPC TLS uses an inline PEM cert (global.tls.orchestration.grpc.cert.secret.inlineSecret) but no private key is configured."
+            "Set global.tls.orchestration.grpc.privateKey.secret.inlineSecret or privateKey.secret.existingSecret; the generated Secret needs a tls.key or the server crashes on startup."
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end }}
