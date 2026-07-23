@@ -2341,6 +2341,110 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
+          description: "Exclude operate and tasklist profiles when noSecondaryStorage is enabled"
+        - kind: fixed
+          description: "Revert vendor-ee/postgresql to -r2 to restore amd64 image pulls"
+        - kind: fixed
+          description: "Respect explicit empty global.identity.keycloak.contextPath"
+        - kind: fixed
+          description: "Allow Web Modeler and Console with external management Identity"
+        - kind: fixed
+          description: "Decouple requestBodySize from Zeebe maxMessageSize"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/bitnamilegacy/elasticsearch:8.18.0
+        docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+        docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+        docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+        docker.io/camunda/camunda:8.8.32
+        docker.io/camunda/connectors-bundle:8.8.15
+        docker.io/camunda/console:8.8.137
+        docker.io/camunda/identity:8.8.15
+        docker.io/camunda/optimize:8.8.32
+        docker.io/camunda/web-modeler-restapi:8.8.17
+        docker.io/camunda/web-modeler-webapp:8.8.17
+        docker.io/camunda/web-modeler-websockets:8.8.17
+        registry.camunda.cloud/camunda/keycloak:26.3.3
+      camunda.io/component-image-versions: |
+        camunda: 8.8.32
+        managementIdentity: 8.8.15
+        optimize: 8.8.32
+        webModeler: 8.8.17
+        connectors: 8.8.15
+        console: 8.8.137
+      camunda.io/helmCLIVersion: 3.20.2
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2026-07-23T15:55:09.990930519Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 612a35cc00d2ff19ab0a5f5ce8c9d01d0f5ffd50b971e38aac22837048a5d00d
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: eamonn.moloney@camunda.com
+      name: eamonnmoloney
+    - email: ian.wang@camunda.com
+      name: Ian-wang-liyang
+    - email: immanuel.monma@camunda.com
+      name: hisImminence
+    - email: balazs.kenez@camunda.com
+      name: bkenez
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.12.3/camunda-platform-13.12.3.tgz
+    version: 13.12.3
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
           description: "Fail clearly when an image override has an empty tag and no digest"
         - kind: fixed
           description: "Surface deprecation warnings on the gitops render path"
@@ -30328,4 +30432,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-07-17T07:13:52.376292289Z"
+generated: "2026-07-23T15:55:09.991859517Z"
