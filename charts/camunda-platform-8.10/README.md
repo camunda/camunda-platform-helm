@@ -150,6 +150,77 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 > For more details about deploying Camunda 8 on Kubernetes, please visit the
 > [Helm/Kubernetes installation instructions docs](https://docs.camunda.io/docs/self-managed/setup/overview/).
 
+## Configuration responsibilities
+
+This chart configures **Kubernetes deployment** for the Camunda 8 platform.
+Application behaviour is configured in each application's own config layer.
+The chart provides a generic `extraConfiguration` hook to inject any
+application-config field a customer needs to override.
+
+| What you want to configure | Where you set it |
+|---|---|
+| Replicas, resources, node selectors, tolerations | This chart's `values.yaml` (per-component) |
+| Service ports, ingress hosts, persistent storage | This chart's `values.yaml` (per-component) |
+| Secrets, identity wiring, Elasticsearch URL, license | This chart's `values.yaml` (per-component, `global.*`) |
+| JVM options | This chart's per-component `javaOpts` value (rendered to `JAVA_TOOL_OPTIONS`) |
+| Application logging level, retention, exporters, mail | The application's own config layer, injected via `<component>.extraConfiguration` |
+
+Application-config proxy keys are deprecated in 8.10 and will be removed in 8.11 (chart v16).
+Setting a deprecated key to a non-default value emits a `[camunda][warning] DEPRECATION` message
+naming its `extraConfiguration` replacement. The per-key migration table, with each key's target
+application-config field and before/after examples, is in the
+[Helm upgrade guide](https://docs.camunda.io/docs/self-managed/upgrade/helm/).
+
+### Migrating a key to `extraConfiguration`
+
+For the Spring Boot and Java components (orchestration, optimize, connectors, identity, and the
+Web Modeler REST API), `extraConfiguration` is a list where each entry has a `file` (filename),
+`content` (file contents), and an optional `springImport` (bool, default `true`). Files with
+`springImport: true` are added to `spring.config.import`; set it to `false` to mount a file without
+importing it (for example a `log4j2.xml` or `logback.xml`). The Web Modeler WebSockets component
+(non-Spring) instead takes a map of files that are mounted directly, without Spring import.
+
+#### Orchestration (Spring Boot)
+
+Before — proxied through a chart key:
+
+```yaml
+orchestration:
+  logLevel: debug
+```
+
+After — injected via `extraConfiguration` (`orchestration.logLevel` renders to `zeebe.log.level`; see the upgrade guide for each key's target field):
+
+```yaml
+orchestration:
+  extraConfiguration:
+    - file: orchestration-overrides.yaml
+      content: |
+        zeebe:
+          log:
+            level: debug
+```
+
+#### Optimize (Java, custom logging)
+
+A custom Logback configuration mounted without Spring import:
+
+```yaml
+optimize:
+  extraConfiguration:
+    - file: environment-logback.xml
+      springImport: false
+      content: |
+        <configuration>
+          <root level="DEBUG"/>
+        </configuration>
+```
+
+> [!NOTE]
+>
+> Console and Web Modeler are part of Camunda Hub in 8.10, so there is no standalone Node.js
+> component example here.
+
 ## Notes on Configuration
 
 ### Web Modeler
