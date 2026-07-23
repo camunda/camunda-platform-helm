@@ -4155,6 +4155,13 @@
                                                     "items": {
                                                         "type": "string"
                                                     }
+                                                },
+                                                "clients": {
+                                                    "type": "array",
+                                                    "description": "defines the initial clients that will get the admin permission.",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
                                                 }
                                             }
                                         },

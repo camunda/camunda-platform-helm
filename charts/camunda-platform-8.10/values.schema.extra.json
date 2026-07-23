@@ -721,6 +721,29 @@
         },
         "orchestration": {
             "properties": {
+                "security": {
+                    "properties": {
+                        "initialization": {
+                            "properties": {
+                                "defaultRoles": {
+                                    "properties": {
+                                        "admin": {
+                                            "properties": {
+                                                "clients": {
+                                                    "type": "array",
+                                                    "description": "defines the initial clients that will get the admin permission.",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "exporters": {
                     "properties": {
                         "zeebe": {
