@@ -39,214 +39,23 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: Configure Git safe directory
-    shell: bash
-    run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+    - name: Configure Git safe directory
+      shell: bash
+      run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
-  - name: Load infra config
-    shell: bash
-    run: |
-      # Load infrastructure values from centralized config.
-      INFRA_CONFIG=".github/config/infra.yaml"
-
-      # Extract first platform when a comma-separated list is passed (e.g. "gke,eks").
-      # Normalize to lowercase so callers can pass "GKE", "gke", "EKS", etc. interchangeably.
-      PLATFORM="${{ inputs.platform }}"
-      PLATFORM="${PLATFORM%%,*}"
-      PLATFORM="${PLATFORM,,}"
-      if [[ -z "$PLATFORM" ]]; then
-        echo "::error::platform input must not be empty"
-        exit 1
-      fi
-      if ! yq -e ".$PLATFORM" "$INFRA_CONFIG" > /dev/null 2>&1; then
-        echo "::error::platform '$PLATFORM' not found in $INFRA_CONFIG"
-        exit 1
-      fi
-
-      # Platform-specific values.
-      INFRA_INGRESS_HOSTNAME_BASE=$(yq ".$PLATFORM.ingress-hostname-base" "$INFRA_CONFIG")
-      INFRA_NAMESPACE_PREFIX=$(yq ".$PLATFORM.namespace-prefix" "$INFRA_CONFIG")
-      echo "INFRA_INGRESS_HOSTNAME_BASE=${INFRA_INGRESS_HOSTNAME_BASE}" | tee -a $GITHUB_ENV
-      echo "INFRA_NAMESPACE_PREFIX=${INFRA_NAMESPACE_PREFIX}" | tee -a $GITHUB_ENV
-
-      # EKS-specific values.
-      INFRA_CLUSTER_NAME=$(yq '.eks.cluster-name' "$INFRA_CONFIG")
-      INFRA_AWS_PROFILE=$(yq '.eks.aws-profile' "$INFRA_CONFIG")
-      echo "INFRA_CLUSTER_NAME=${INFRA_CLUSTER_NAME}" | tee -a $GITHUB_ENV
-      echo "CLUSTER_NAME=${INFRA_CLUSTER_NAME}" | tee -a $GITHUB_ENV
-      echo "AWS_PROFILE=${INFRA_AWS_PROFILE}" | tee -a $GITHUB_ENV
-
-      # PostgreSQL — also set consumer-facing env var.
-      INFRA_PG_HOST=$(yq '.postgresql.jdbc-host' "$INFRA_CONFIG")
-      INFRA_PG_PORT=$(yq '.postgresql.jdbc-port' "$INFRA_CONFIG")
-      echo "POSTGRESQL_JDBC_URL=jdbc:postgresql://${INFRA_PG_HOST}:${INFRA_PG_PORT}" | tee -a $GITHUB_ENV
-
-      # Teleport.
-      INFRA_TELEPORT_PROXY=$(yq '.teleport.proxy' "$INFRA_CONFIG")
-      echo "INFRA_TELEPORT_PROXY=${INFRA_TELEPORT_PROXY}" | tee -a $GITHUB_ENV
-
-  - name: Set workflow vars
-    id: vars
-    shell: bash
-    run: |
-      # Generate workflow vars.
-      is_pr() {
-        echo ${{ github.event.pull_request.number }} | grep -q .
-      }
-
-      if [[ -z "${{ inputs.prefix }}" ]]; then
-        export NAMESPACE_PREFIX="${INFRA_NAMESPACE_PREFIX}"
-      else
-        export NAMESPACE_PREFIX="${{ inputs.prefix }}"
-      fi
-      echo NAMESPACE_PREFIX=$NAMESPACE_PREFIX | tee -a $GITHUB_ENV
-
-      PLATFORM="${{ inputs.platform }}"
-      PLATFORM="${PLATFORM%%,*}"
-      PLATFORM="${PLATFORM,,}"
-      echo PLATFORM=$PLATFORM | tee -a $GITHUB_ENV
-
-      echo "Env vars:"
-      # Namespace.
-      TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
-      TEST_NAMESPACE="$NAMESPACE_PREFIX-$(echo ${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
-    
-      # NOTE: We should use the matrix job id var once it's available.
-      # https://github.com/orgs/community/discussions/40291
-      # NOTE we are using a hash here rather than a random value so that the namespace is deterministic.
-      # We intentionally exclude github.run_attempt so that retried jobs ("re-run failed jobs")
-      # compute the same namespace as the original install job. The install step already handles
-      # stale state via `helm uninstall || true` and the cleanup job removes indices/namespaces.
-      GITHUB_WORKFLOW_JOB_ID=$(echo -n "$TEST_NAMESPACE-${{ github.run_id }}" | sha256sum | head -c 6)
-      # Workflow.
-      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
-      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
-
-      # K8s caps namespace length at 63. Reserve room for the hash (-XXXXXX, 7 chars) and the flow
-      # suffix (-upgp/-upgm, 5 chars) BEFORE appending them, so on long scenario names the hash and
-      # flow tag survive instead of being silently truncated off — otherwise namespaces stop being
-      # unique per run and concurrent or back-to-back runs collide.
-      RESERVED_SUFFIX_LEN=0
-      if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
-        RESERVED_SUFFIX_LEN=$((RESERVED_SUFFIX_LEN + 7))
-      fi
-      case "${{ inputs.setup-flow }}" in
-        upgrade-patch|upgrade-minor) RESERVED_SUFFIX_LEN=$((RESERVED_SUFFIX_LEN + 5)) ;;
-      esac
-      TEST_NAMESPACE="$(printf '%s' "$TEST_NAMESPACE" | head -c $((63 - RESERVED_SUFFIX_LEN)) | sed 's/-$//')"
-
-      if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-${GITHUB_WORKFLOW_JOB_ID}"
-      fi
-
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-upgp"
-      fi
-
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-upgm"
-      fi
-
-      if [[ "${{ inputs.setup-flow }}" == 'modular-upgrade-minor' ]]; then
-        : # no-op; this flow depends on the namespace given during installation so we don't adjust it here
-      fi
-
-      TEST_NAMESPACE="$(printf '%s' "$TEST_NAMESPACE" | head -c 63 | sed 's/-$//')"
-      echo "TEST_NAMESPACE=$TEST_NAMESPACE" | tee -a "$GITHUB_ENV"
-      echo "namespace=$TEST_NAMESPACE" >> "$GITHUB_OUTPUT"
-
-      # Get alpha chart dir.
-      TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
-      echo "TEST_CAMUNDA_HELM_DIR_ALPHA=${TEST_CAMUNDA_HELM_DIR_ALPHA}" | tee -a $GITHUB_ENV
-
-      echo "Output vars:"
-
-      # Identifier
-      local_identifier=${{ inputs.identifier-base }}
-      if [[ -z "${{ inputs.identifier-base }}" ]]; then
-        local_identifier="no-id-use-ran-$(uuidgen | head -c 6)"
-      fi
-
-      # Deployment identifier.
-      TEST_IDENTIFIER="$(echo ${PLATFORM}-${local_identifier} | sed 's/\./-/g')"
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
-        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgp"
-      fi
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
-        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgm"
-      fi
-      echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
-
-      # Ingress hostname.
-      export INGRESS_HOSTNAME_BASE="${INFRA_INGRESS_HOSTNAME_BASE}"
-
-      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${INGRESS_HOSTNAME_BASE}"
-      if [[ "${{ inputs.deployment-ttl }}" == "" ]]; then
-        TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
-      fi
-      # The var is needed in some non-shell steps.
-      echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
-
-      ## Setting values for the external infra
-      echo "ORCHESTRATION_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-orchestration" | tee -a $GITHUB_ENV
-      echo "OPTIMIZE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-optimize" | tee -a $GITHUB_ENV
-      echo "OPERATE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-operate" | tee -a $GITHUB_ENV
-      echo "TASKLIST_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-tasklist" | tee -a $GITHUB_ENV
-      # For modular-upgrade-minor, the upgrade step must use the same FLOW value
-      # that was used during install (i.e. "install") so that index prefixes match.
-      # The install step creates indices with FLOW=install; if the upgrade step used
-      # FLOW=modular-upgrade-minor, it would look for non-existent indices.
-      if [[ "${{ inputs.setup-flow }}" == 'modular-upgrade-minor' ]]; then
-        echo "FLOW=install" | tee -a $GITHUB_ENV
-      else
-        echo "FLOW=$FLOW" | tee -a $GITHUB_ENV
-      fi
-      keycloakRealm="${GITHUB_WORKFLOW_JOB_ID}-realm"
-      export KEYCLOAK_REALM=$keycloakRealm
-      echo "KEYCLOAK_REALM=$KEYCLOAK_REALM" | tee -a $GITHUB_ENV
-
-  - name: Set workflow vars - Chart version
-    shell: bash
-    run: |
-      # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
-      # then upgraded from the PR branch to ensure upgradability.
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' || "${{ inputs.setup-flow }}" == 'upgrade-minor' || "${{ inputs.setup-flow }}" == 'modular-upgrade-minor' ]]; then
-        if [[ -n "${{ inputs.chart-upgrade-version }}" ]]; then
-          TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
-        fi
-        if [[ -z "${{ inputs.chart-upgrade-version }}" ]]; then
-          if [[ "$(git branch --show-current)" != "main" ]]; then
-            # Retry git fetch up to 3 times with exponential backoff.
-            # GitHub occasionally returns transient 500 errors during high load,
-            # which would otherwise fail the entire workflow unnecessarily.
-            for attempt in 1 2 3; do
-              echo "Attempt $attempt of 3: Fetching main branch..."
-              if git fetch origin main:main --no-tags; then
-                break
-              fi
-              if [ $attempt -lt 3 ]; then
-                echo "git fetch failed, retrying in $((attempt * 10)) seconds..."
-                sleep $((attempt * 10))
-              else
-                echo "All git fetch attempts failed"
-                exit 1
-              fi
-            done
-          fi
-          if [[ -n "$(git ls-tree main -- charts/${{ inputs.chart-dir }}/Chart.yaml)" ]]; then
-            TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
-          else
-            # Fallback (needed only when we add a new chart directory).
-            TEST_CHART_VERSION="$(cat charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
-          fi
-        fi
-        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
-      fi
-
-    # Avoid confusion about the chart version since we only change the version during the release process
-    # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
-  - name: Set chart version
-    shell: bash
-    run: |
-      chart_version="$(echo ${{ inputs.chart-dir }} | sed 's/camunda-platform/0.0.0-ci-snapshot/g')" \
-        yq -i '.version = env(chart_version)' charts/${{ inputs.chart-dir }}/Chart.yaml
+    - name: Setup deploy-camunda
+      uses: ./.github/actions/setup-deploy-camunda
+    - name: Set workflow vars
+      id: vars
+      shell: bash
+      run: |
+        deploy-camunda ci workflow-vars \
+          --platform "${{ inputs.platform }}" \
+          --setup-flow "${{ inputs.setup-flow }}" \
+          --deployment-ttl "${{ inputs.deployment-ttl }}" \
+          --identifier-base "${{ inputs.identifier-base }}" \
+          --chart-dir "${{ inputs.chart-dir }}" \
+          --chart-upgrade-version "${{ inputs.chart-upgrade-version }}" \
+          --prefix "${{ inputs.prefix }}" \
+          --pr-number "${{ github.event.pull_request.number }}" \
+          --run-id "${{ github.run_id }}"
