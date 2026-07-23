@@ -89,6 +89,15 @@ func TestDeprecationKeyCoverage89To810(t *testing.T) {
 		if _, ok := allowlist[key]; ok {
 			continue
 		}
+		// Exact-string setDifference can't distinguish "key removed" from "key's
+		// empty map grew children" (e.g. global.identity.keycloak.url was {} in
+		// 8.9 and {protocol,host,port} in 8.10). If the prev key has any
+		// descendant in curr, it expanded rather than being removed — not a
+		// deprecation gap. A truly-removed empty-map key has no curr descendant
+		// and is still flagged.
+		if hasDescendantIn(key, currKeys) {
+			continue
+		}
 		if isCovered(key, covered) {
 			continue
 		}
@@ -101,6 +110,22 @@ func TestDeprecationKeyCoverage89To810(t *testing.T) {
 			t.Errorf("removed key %q has no deprecation coverage: add keyDeprecated/keyRemoved in constraints.tpl or allowlist it in coverage_test.go", key)
 		}
 	}
+}
+
+// TestHasDescendantInKeepsTeeth pins the disambiguation logic: an expanded key
+// (empty {} that grew children) is NOT flagged, while a truly-removed empty-map
+// key (no descendant in curr) still is.
+func TestHasDescendantInKeepsTeeth(t *testing.T) {
+	t.Parallel()
+
+	curr := map[string]struct{}{
+		"global.identity.keycloak.url.protocol": {},
+		"global.identity.keycloak.url.host":     {},
+	}
+	// Expanded: {} in prev, now has children in curr -> not removed.
+	require.True(t, hasDescendantIn("global.identity.keycloak.url", curr))
+	// Truly removed empty-map key: no descendant in curr -> still flagged.
+	require.False(t, hasDescendantIn("global.some.removedEmptyMap", curr))
 }
 
 func flattenValuesFile(path string) (map[string]struct{}, error) {
@@ -130,6 +155,11 @@ func flattenKeys(prefix string, value any, keys map[string]struct{}) {
 	switch typed := value.(type) {
 	case map[string]any:
 		if len(typed) == 0 {
+			// Record the empty map's own prefix so an empty-map key has presence
+			// in the key set (otherwise a removed empty-map key escapes coverage).
+			if prefix != "" {
+				keys[prefix] = struct{}{}
+			}
 			return
 		}
 		for key, child := range typed {
@@ -155,6 +185,18 @@ func lastSegment(path string) string {
 		return path[idx+1:]
 	}
 	return path
+}
+
+// hasDescendantIn reports whether any key in set is a strict descendant of key
+// (i.e. begins with key+"."). Used to tell an expanded key from a removed one.
+func hasDescendantIn(key string, set map[string]struct{}) bool {
+	prefix := key + "."
+	for k := range set {
+		if strings.HasPrefix(k, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func setDifference(a, b map[string]struct{}) map[string]struct{} {
