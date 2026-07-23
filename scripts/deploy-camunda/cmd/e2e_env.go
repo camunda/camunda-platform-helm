@@ -31,7 +31,6 @@ func newE2EEnvMergeCommand() *cobra.Command {
 		managementNamespace    string
 		chartPath              string
 		output                 string
-		baseDomain             string
 		renderScript           string
 		kubeContext            string
 		ci                     bool
@@ -64,7 +63,10 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				return fmt.Errorf("render script failed: %w", err)
 			}
 
-			mgmtHost := managementNamespace + "." + baseDomain
+			mgmtHost, err := resolveIngressHost(kubeContext, managementNamespace)
+			if err != nil {
+				return err
+			}
 
 			firstUserPw, err := resolveSecretKey(kubeContext, managementNamespace, "identity-user-password")
 			if err != nil {
@@ -111,7 +113,6 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	cmd.Flags().StringVar(&managementNamespace, "management-namespace", "", "management release namespace")
 	cmd.Flags().StringVar(&chartPath, "absolute-chart-path", "", "absolute chart path")
 	cmd.Flags().StringVar(&output, "output", ".env", "output .env path")
-	cmd.Flags().StringVar(&baseDomain, "base-domain", "ci.distro.ultrawombat.com", "ingress base domain")
 	cmd.Flags().StringVar(&renderScript, "render-script", "scripts/render-e2e-env.sh", "path to render-e2e-env.sh")
 	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kube context (optional)")
 	cmd.Flags().BoolVar(&ci, "ci", false, "set CI=true in the merged .env (matches render-e2e-env.sh's default; pass when running in an actual CI job)")
@@ -146,6 +147,57 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 		return "", fmt.Errorf("secret key %q in %s resolved to an empty value", key, namespace)
 	}
 	return dec, nil
+}
+
+// selectIngressHost filters raw whitespace-separated ingress/gateway host
+// tokens (as emitted by a kubectl jsonpath query), dropping any host that
+// looks like the Zeebe gRPC gateway, and joins what remains with a comma.
+// Returns "" if no host survives the filter.
+func selectIngressHost(raw string) string {
+	tokens := strings.Fields(raw)
+	kept := make([]string, 0, len(tokens))
+	for _, t := range tokens {
+		if strings.Contains(t, "zeebe") || strings.Contains(t, "grpc") {
+			continue
+		}
+		kept = append(kept, t)
+	}
+	return strings.Join(kept, ",")
+}
+
+// resolveIngressHost discovers the live ingress hostname for a namespace by
+// querying the cluster directly, since CI ingress hosts are assigned by a
+// hash-based scheme at deploy time and cannot be reconstructed from the
+// namespace name. Falls back to the Gateway API when no Ingress host is
+// found (e.g. on a mesh-based cluster without classic Ingress objects).
+func resolveIngressHost(kubeContext, namespace string) (string, error) {
+	ingressArgs := []string{}
+	if kubeContext != "" {
+		ingressArgs = append(ingressArgs, "--context", kubeContext)
+	}
+	ingressArgs = append(ingressArgs, "-n", namespace, "get", "ingress",
+		"-o", "jsonpath={.items[*].spec.rules[*].host}")
+	out, err := exec.Command("kubectl", ingressArgs...).Output()
+	if err != nil {
+		return "", fmt.Errorf("resolve ingress host for namespace %q: %w", namespace, err)
+	}
+	if host := selectIngressHost(string(out)); host != "" {
+		return host, nil
+	}
+
+	gatewayArgs := []string{}
+	if kubeContext != "" {
+		gatewayArgs = append(gatewayArgs, "--context", kubeContext)
+	}
+	gatewayArgs = append(gatewayArgs, "-n", namespace, "get", "gateway",
+		"-o", "jsonpath={.items[*].spec.listeners[*].hostname}")
+	if gwOut, err := exec.Command("kubectl", gatewayArgs...).Output(); err == nil {
+		if host := selectIngressHost(string(gwOut)); host != "" {
+			return host, nil
+		}
+	}
+
+	return "", fmt.Errorf("resolve ingress host for namespace %q: no non-zeebe/grpc ingress or gateway host found", namespace)
 }
 
 // decodeSecretValue base64-decodes a (possibly whitespace-padded) Kubernetes

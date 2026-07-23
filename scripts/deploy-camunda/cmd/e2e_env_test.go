@@ -109,6 +109,34 @@ func TestE2EEnvMergeFailsOnMissingRenderScript(t *testing.T) {
 	}
 }
 
+func TestSelectIngressHostFiltersZeebeAndGrpcHosts(t *testing.T) {
+	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com zeebe-matrix-810-mns-mgmt.ci.distro.ultrawombat.com grpc-matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+
+	got := selectIngressHost(raw)
+	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+
+	if got != want {
+		t.Fatalf("selectIngressHost() = %q, want %q", got, want)
+	}
+}
+
+func TestSelectIngressHostPassesThroughSingleHost(t *testing.T) {
+	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+
+	got := selectIngressHost(raw)
+	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+
+	if got != want {
+		t.Fatalf("selectIngressHost() = %q, want %q", got, want)
+	}
+}
+
+func TestSelectIngressHostEmptyInputReturnsEmpty(t *testing.T) {
+	if got := selectIngressHost(""); got != "" {
+		t.Fatalf("selectIngressHost() = %q, want empty string", got)
+	}
+}
+
 func TestMergeEnvOverridesIgnoresLinesWithoutEquals(t *testing.T) {
 	content := "# a comment\n\nPLAYWRIGHT_BASE_URL=https://orcha.example.com\n"
 	overrides := map[string]string{
