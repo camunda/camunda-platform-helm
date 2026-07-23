@@ -1,0 +1,32 @@
+name: MCP - Test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "helm-values-mcp/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test helm-values-mcp
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: helm-values-mcp
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Install Node (from .tool-versions)
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            nodejs
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
