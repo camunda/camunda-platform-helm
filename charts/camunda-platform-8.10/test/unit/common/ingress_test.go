@@ -373,7 +373,11 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &ingress)
 				require.Equal(t, "on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
 				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"], "/upstream-ca")
-				require.NotContains(t, ingress.Annotations, "nginx.ingress.kubernetes.io/proxy-ssl-name", "sniHost was unset; proxy-ssl-name should not be emitted")
+				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"], "-gateway",
+					"sniHost unset; proxy-ssl-name should be derived from the Orchestration Service DNS")
+				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"], ":8080",
+					"REST proxy-ssl-name should be derived from orchestration.serviceNameHTTP")
+				require.Equal(t, "on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-server-name"])
 			},
 		},
 		{
@@ -657,6 +661,29 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
 				s.Require().Contains(ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"], "/upstream-ca")
 				s.Require().Equal("orchestration.svc.cluster.local", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"])
+				s.Require().Equal("on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-server-name"])
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressDerivesProxySslNameWhenSniHostUnset",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                                                    "true",
+				"orchestration.ingress.grpc.enabled":                                       "true",
+				"global.tls.orchestration.grpc.enabled":                                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret":                 "grpc-pem",
+				"global.tls.orchestration.grpc.proxyVerify.enabled":                        "true",
+				"global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				s.Require().Equal("on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
+				s.Require().Contains(ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"], "-gateway",
+					"sniHost unset; proxy-ssl-name should be derived from the Orchestration Service DNS")
+				s.Require().Contains(ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"], ":26500",
+					"gRPC proxy-ssl-name should be derived from orchestration.serviceNameGRPC, distinct from REST's :8080")
 				s.Require().Equal("on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-server-name"])
 			},
 		},
