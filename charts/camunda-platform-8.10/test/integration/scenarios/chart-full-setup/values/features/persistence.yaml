@@ -3,12 +3,16 @@
 # =============================================================================
 # Layer 4: Optional feature - exercises persistent volume configuration on
 # Camunda components so the chart's PVC/StatefulSet templates are covered by
-# nightly CI. Currently scoped to Web Modeler restapi persistence
-# (SUPPORT-30069). Optimize persistence (SUPPORT-30042) and orchestration
-# extraVolumeClaimTemplates (SUPPORT-30094) are tracked in their own PRs and
-# will be re-enabled here when the corresponding template fixes land.
+# nightly CI. Orchestration extraVolumeClaimTemplates (SUPPORT-30094) remains
+# deferred until the corresponding template fixes land.
 # Used with: TEST_VALUES_FEATURES containing "persistence"
 # =============================================================================
+
+optimize:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 1Gi
 
 webModeler:
   persistence:
