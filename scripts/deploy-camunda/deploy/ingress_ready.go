@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -38,6 +39,30 @@ type ingressReadyDeps struct {
 
 type kubectlOutputFunc func(ctx context.Context, args ...string) ([]byte, error)
 
+type routingResourceList struct {
+	Items []routingResource `json:"items"`
+}
+
+type routingResource struct {
+	Metadata routingResourceMetadata `json:"metadata"`
+	Spec     routingResourceSpec     `json:"spec"`
+}
+
+type routingResourceMetadata struct {
+	Name   string            `json:"name"`
+	Labels map[string]string `json:"labels"`
+}
+
+type routingResourceSpec struct {
+	Rules []struct {
+		Host string `json:"host"`
+	} `json:"rules"`
+	Hostnames []string `json:"hostnames"`
+	Listeners []struct {
+		Hostname string `json:"hostname"`
+	} `json:"listeners"`
+}
+
 // resolveIngressReadyHost selects the public host that was actually applied
 // to the deployment before falling back to the precomputed scenario host.
 func resolveIngressReadyHost(ctx context.Context, flags *config.RuntimeFlags, scenarioCtx *ScenarioContext) string {
@@ -49,58 +74,59 @@ func resolveIngressReadyHostWith(
 	flags *config.RuntimeFlags,
 	scenarioCtx *ScenarioContext,
 	getenv func(string) string,
-	lookupDeployedHost func(context.Context, string, string) string,
+	lookupDeployedHost func(context.Context, string, string, string) string,
 ) string {
-	if host := concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.host"]); host != "" {
-		return host
-	}
-
-	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace)
+	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
 	return config.FirstNonEmpty(
 		deployedHost,
-		scenarioCtx.IngressHost,
+		flags.Ingress.IngressHostname,
 		getenv("CAMUNDA_HOSTNAME"),
 		getenv("TEST_INGRESS_HOST"),
+		scenarioCtx.IngressHost,
 	)
 }
 
 // resolveDeployedRoutingHost discovers the first web hostname exposed by the
 // routing resources in a namespace. HTTPRoute is checked before Gateway so an
 // exact route hostname wins over a wildcard listener hostname.
-func resolveDeployedRoutingHost(ctx context.Context, kubeContext, namespace string) string {
+func resolveDeployedRoutingHost(ctx context.Context, kubeContext, namespace, release string) string {
 	lookupCtx, cancel := context.WithTimeout(ctx, routingHostLookupTimeout)
 	defer cancel()
-	return resolveDeployedRoutingHostWith(lookupCtx, kubeContext, namespace, runKubectlOutput)
+	return resolveDeployedRoutingHostWith(lookupCtx, kubeContext, namespace, release, runKubectlOutput)
 }
 
 func resolveDeployedRoutingHostWith(
 	ctx context.Context,
 	kubeContext,
-	namespace string,
+	namespace,
+	release string,
 	kubectlOutput kubectlOutputFunc,
 ) string {
-	queries := []struct {
-		resource string
-		jsonPath string
-	}{
-		{resource: "ingress", jsonPath: "{.items[*].spec.rules[*].host}"},
-		{resource: "httproute", jsonPath: "{.items[*].spec.hostnames[*]}"},
-		{resource: "gateway", jsonPath: "{.items[*].spec.listeners[*].hostname}"},
-	}
+	resources := []string{"ingress", "httproute", "gateway"}
 
-	for _, query := range queries {
+	for _, resource := range resources {
 		args := make([]string, 0, 7)
 		if kubeContext != "" {
 			args = append(args, "--context", kubeContext)
 		}
-		args = append(args, "-n", namespace, "get", query.resource, "--request-timeout=5s", "-o", "jsonpath="+query.jsonPath)
+		args = append(args, "-n", namespace, "get", resource, "--request-timeout=5s", "-o", "json")
 
 		out, err := kubectlOutput(ctx, args...)
 		if err != nil {
 			continue
 		}
-		if host := selectPrimaryRoutingHost(string(out)); host != "" {
-			return host
+
+		var resourceList routingResourceList
+		if err := json.Unmarshal(out, &resourceList); err != nil {
+			continue
+		}
+		for _, item := range resourceList.Items {
+			if !routingResourceOwnedByRelease(item.Metadata, release) {
+				continue
+			}
+			if host := selectPrimaryRoutingHost(strings.Join(routingResourceHosts(item.Spec), " ")); host != "" {
+				return host
+			}
 		}
 	}
 
@@ -109,6 +135,28 @@ func resolveDeployedRoutingHostWith(
 
 func runKubectlOutput(ctx context.Context, args ...string) ([]byte, error) {
 	return exec.CommandContext(ctx, "kubectl", args...).Output()
+}
+
+func routingResourceOwnedByRelease(metadata routingResourceMetadata, release string) bool {
+	if release == "" {
+		return false
+	}
+	if metadata.Labels["app.kubernetes.io/instance"] == release {
+		return true
+	}
+	return metadata.Name == release || strings.HasPrefix(metadata.Name, release+"-")
+}
+
+func routingResourceHosts(spec routingResourceSpec) []string {
+	hosts := make([]string, 0, len(spec.Rules)+len(spec.Hostnames)+len(spec.Listeners))
+	for _, rule := range spec.Rules {
+		hosts = append(hosts, rule.Host)
+	}
+	hosts = append(hosts, spec.Hostnames...)
+	for _, listener := range spec.Listeners {
+		hosts = append(hosts, listener.Hostname)
+	}
+	return hosts
 }
 
 func selectPrimaryRoutingHost(raw string) string {
