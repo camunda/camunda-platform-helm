@@ -51,7 +51,7 @@ func resolveIngressReadyHostWith(
 	getenv func(string) string,
 	lookupDeployedHost func(context.Context, string, string) string,
 ) string {
-	if host := config.FirstNonEmpty(flags.Deployment.ExtraHelmSets["global.host"]); host != "" {
+	if host := concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.host"]); host != "" {
 		return host
 	}
 
@@ -113,6 +113,9 @@ func runKubectlOutput(ctx context.Context, args ...string) ([]byte, error) {
 
 func selectPrimaryRoutingHost(raw string) string {
 	for _, host := range strings.Fields(raw) {
+		if concreteRoutingHost(host) == "" {
+			continue
+		}
 		firstLabel := strings.ToLower(strings.SplitN(host, ".", 2)[0])
 		if firstLabel == "grpc" || firstLabel == "zeebe" || firstLabel == "actuator" ||
 			strings.HasPrefix(firstLabel, "grpc-") ||
@@ -123,6 +126,14 @@ func selectPrimaryRoutingHost(raw string) string {
 		return host
 	}
 	return ""
+}
+
+func concreteRoutingHost(raw string) string {
+	host := strings.TrimSpace(raw)
+	if host == "" || strings.Contains(host, "{{") || strings.Contains(host, "}}") || strings.Contains(host, "*") {
+		return ""
+	}
+	return host
 }
 
 // waitIngressReady polls host until it is both publicly DNS-resolvable and

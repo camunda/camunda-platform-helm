@@ -108,6 +108,34 @@ func TestResolveIngressReadyHostWith(t *testing.T) {
 		}
 	})
 
+	t.Run("templated global host defers to the rendered routing host", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Deployment: config.DeploymentFlags{
+				ExtraHelmSets: map[string]string{"global.host": "{{ .Release.Name }}.example.com"},
+			},
+		}
+		scenarioCtx := &ScenarioContext{Namespace: "test", IngressHost: "computed.example.com"}
+		lookupCalled := false
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "env.example.com" },
+			func(context.Context, string, string) string {
+				lookupCalled = true
+				return "rendered.example.com"
+			},
+		)
+
+		if got != "rendered.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want rendered routing host", got)
+		}
+		if !lookupCalled {
+			t.Fatal("cluster lookup should run when global.host contains a Helm template")
+		}
+	})
+
 	t.Run("computed host remains the fallback when no deployed host is found", func(t *testing.T) {
 		flags := &config.RuntimeFlags{}
 		scenarioCtx := &ScenarioContext{Namespace: "test", IngressHost: "computed.example.com"}
@@ -190,6 +218,8 @@ func TestSelectPrimaryRoutingHost(t *testing.T) {
 		{raw: "grpc-app.example.com app.example.com", want: "app.example.com"},
 		{raw: "zeebe-app.example.com actuator-app.example.com", want: ""},
 		{raw: "app.grpc-company.example", want: "app.grpc-company.example"},
+		{raw: "*.example.com app.example.com", want: "app.example.com"},
+		{raw: "*.example.com", want: ""},
 	}
 
 	for _, tt := range tests {
