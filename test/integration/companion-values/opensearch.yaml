@@ -63,10 +63,9 @@ resources:
 # than prefix globs ("operate-*"). CI prepends $GITHUB_WORKFLOW_JOB_ID to
 # every component prefix via .github/actions/workflow-vars/action.yaml, so
 # real indices look like "8d2802-operate-install-...". Substring matching
-# covers that, the default "<component>-*" naming, and the hardcoded
-# "custom-zeebe" prefix used by 8.9/8.10 in opensearch-embedded.yaml. None
-# of OpenSearch's system indices (.opendistro_security, .kibana_*, .tasks)
-# contain those substrings.
+# covers that and the default "<component>-*" naming. None of OpenSearch's
+# system indices (.opendistro_security, .kibana_*, .tasks) contain those
+# substrings.
 extraObjects:
   - apiVersion: batch/v1
     kind: Job

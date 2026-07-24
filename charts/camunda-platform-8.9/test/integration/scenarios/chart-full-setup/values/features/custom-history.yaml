@@ -1,0 +1,9 @@
+# Non-default values verify history archiver settings survive minor upgrades.
+orchestration:
+  history:
+    elsRolloverDateFormat: yyyy-MM
+    rolloverInterval: 2d
+    rolloverBatchSize: 321
+    waitPeriodBeforeArchiving: 3h
+    delayBetweenRuns: 4000
+    maxDelayBetweenRuns: 12000

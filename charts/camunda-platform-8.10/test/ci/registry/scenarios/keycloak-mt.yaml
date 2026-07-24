@@ -4,6 +4,8 @@ flows:
   - upgrade-minor
 identity: keycloak
 persistence: elasticsearch
+features:
+  - custom-history
 platforms:
   - gke
 infra-type:
