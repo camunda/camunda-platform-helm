@@ -251,6 +251,70 @@ func TestResolveIngressReadyHostWith(t *testing.T) {
 	})
 }
 
+func TestResolveIngressReadyHostAfterLookup(t *testing.T) {
+	forbiddenErr := apierrors.NewForbidden(
+		schema.GroupResource{Group: "networking.k8s.io", Resource: "ingresses"},
+		"",
+		errors.New("denied"),
+	)
+	tests := []struct {
+		name         string
+		flags        *config.RuntimeFlags
+		getenv       func(string) string
+		computedHost string
+		want         string
+		wantErr      bool
+	}{
+		{
+			name: "configured host survives forbidden discovery",
+			flags: &config.RuntimeFlags{Deployment: config.DeploymentFlags{ExtraHelmSets: map[string]string{
+				"global.host": "configured.example.com",
+			}}},
+			getenv:       func(string) string { return "env.example.com" },
+			computedHost: "computed.example.com",
+			want:         "configured.example.com",
+		},
+		{
+			name:         "environment host survives forbidden discovery",
+			flags:        &config.RuntimeFlags{},
+			getenv:       func(string) string { return "env.example.com" },
+			computedHost: "computed.example.com",
+			want:         "env.example.com",
+		},
+		{
+			name:         "forbidden discovery wins over computed fallback",
+			flags:        &config.RuntimeFlags{},
+			getenv:       func(string) string { return "" },
+			computedHost: "computed.example.com",
+			wantErr:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveIngressReadyHostAfterLookup(
+				tt.flags,
+				&ScenarioContext{IngressHost: tt.computedHost},
+				tt.getenv,
+				"",
+				forbiddenErr,
+			)
+			if tt.wantErr {
+				if !apierrors.IsForbidden(err) {
+					t.Fatalf("resolveIngressReadyHostAfterLookup() error = %v, want Forbidden", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveIngressReadyHostAfterLookup() unexpected error = %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("resolveIngressReadyHostAfterLookup() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestResolveDeployedRoutingHostWith(t *testing.T) {
 	tests := []struct {
 		name    string
