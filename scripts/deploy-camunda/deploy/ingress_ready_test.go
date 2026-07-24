@@ -1,14 +1,31 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package deploy
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"scripts/deploy-camunda/config"
 )
 
 // fakeResolver returns a canned result for every LookupHost call, tracking how
@@ -38,6 +55,157 @@ func (alwaysFailResolver) LookupHost(_ context.Context, host string) ([]string, 
 // noSleep replaces the interval wait with a no-op so tests run instantly.
 func noSleep(ctx context.Context, _ time.Duration) error {
 	return ctx.Err()
+}
+
+func TestResolveIngressReadyHostWith(t *testing.T) {
+	t.Run("applied global host wins without querying the cluster", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Deployment: config.DeploymentFlags{
+				ExtraHelmSets: map[string]string{"global.host": "applied.example.com"},
+			},
+		}
+		scenarioCtx := &ScenarioContext{Namespace: "test", IngressHost: "computed.example.com"}
+		lookupCalled := false
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "env.example.com" },
+			func(context.Context, string, string) string {
+				lookupCalled = true
+				return "deployed.example.com"
+			},
+		)
+
+		if got != "applied.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want applied host", got)
+		}
+		if lookupCalled {
+			t.Fatal("cluster lookup should not run when global.host was applied explicitly")
+		}
+	})
+
+	t.Run("deployed routing host wins over computed and environment hosts", func(t *testing.T) {
+		flags := &config.RuntimeFlags{Test: config.TestFlags{KubeContext: "cluster"}}
+		scenarioCtx := &ScenarioContext{Namespace: "test", IngressHost: "computed.example.com"}
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "env.example.com" },
+			func(_ context.Context, kubeContext, namespace string) string {
+				if kubeContext != "cluster" || namespace != "test" {
+					t.Fatalf("lookup called with context=%q namespace=%q", kubeContext, namespace)
+				}
+				return "gateway.example.com"
+			},
+		)
+
+		if got != "gateway.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want deployed routing host", got)
+		}
+	})
+
+	t.Run("computed host remains the fallback when no deployed host is found", func(t *testing.T) {
+		flags := &config.RuntimeFlags{}
+		scenarioCtx := &ScenarioContext{Namespace: "test", IngressHost: "computed.example.com"}
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "env.example.com" },
+			func(context.Context, string, string) string { return "" },
+		)
+
+		if got != "computed.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want computed fallback", got)
+		}
+	})
+}
+
+func TestResolveDeployedRoutingHostWith(t *testing.T) {
+	tests := []struct {
+		name    string
+		outputs map[string]string
+		errors  map[string]error
+		want    string
+	}{
+		{
+			name:    "classic ingress host wins",
+			outputs: map[string]string{"ingress": "grpc-app.example.com app.example.com"},
+			want:    "app.example.com",
+		},
+		{
+			name: "HTTPRoute host is used when ingress is empty",
+			outputs: map[string]string{
+				"ingress":   "",
+				"httproute": "grpc-app.example.com route.example.com",
+			},
+			want: "route.example.com",
+		},
+		{
+			name: "Gateway listener host is used when ingress and HTTPRoute are unavailable",
+			outputs: map[string]string{
+				"ingress": "",
+				"gateway": "grpc-app.example.com gateway.example.com",
+			},
+			errors: map[string]error{"httproute": errors.New("resource unavailable")},
+			want:   "gateway.example.com",
+		},
+		{
+			name:   "no routing host returns empty",
+			errors: map[string]error{"ingress": errors.New("not found"), "httproute": errors.New("not found"), "gateway": errors.New("not found")},
+			want:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls []string
+			kubectlOutput := func(_ context.Context, args ...string) ([]byte, error) {
+				resource := resourceAfterGet(args)
+				calls = append(calls, resource)
+				if err := tt.errors[resource]; err != nil {
+					return nil, err
+				}
+				return []byte(tt.outputs[resource]), nil
+			}
+
+			got := resolveDeployedRoutingHostWith(context.Background(), "cluster", "test", kubectlOutput)
+			if got != tt.want {
+				t.Fatalf("resolveDeployedRoutingHostWith() = %q, want %q (calls: %v)", got, tt.want, calls)
+			}
+		})
+	}
+}
+
+func TestSelectPrimaryRoutingHost(t *testing.T) {
+	tests := []struct {
+		raw  string
+		want string
+	}{
+		{raw: "grpc-app.example.com app.example.com", want: "app.example.com"},
+		{raw: "zeebe-app.example.com actuator-app.example.com", want: ""},
+		{raw: "app.grpc-company.example", want: "app.grpc-company.example"},
+	}
+
+	for _, tt := range tests {
+		if got := selectPrimaryRoutingHost(tt.raw); got != tt.want {
+			t.Errorf("selectPrimaryRoutingHost(%q) = %q, want %q", tt.raw, got, tt.want)
+		}
+	}
+}
+
+func resourceAfterGet(args []string) string {
+	for i, arg := range args {
+		if arg == "get" && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return fmt.Sprintf("missing-get-resource:%v", args)
 }
 
 func TestWaitIngressReadyWithDeps(t *testing.T) {

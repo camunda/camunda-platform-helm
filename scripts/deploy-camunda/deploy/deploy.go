@@ -450,21 +450,12 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		}
 	}
 
-	// Gate on the ingress URL becoming publicly DNS-resolvable and HTTP-reachable
-	// before reporting success, so a nightly failure surfaces at the deploy step
-	// instead of downstream in the E2E suite. The host falls back to the same
-	// CAMUNDA_HOSTNAME / TEST_INGRESS_HOST env vars the auth0 flow uses, since CI
-	// passes the hostname that way rather than via --ingress-hostname.
-	ingressHost := scenarioCtx.IngressHost
-	if ingressHost == "" {
-		ingressHost = os.Getenv("CAMUNDA_HOSTNAME")
-	}
-	if ingressHost == "" {
-		ingressHost = os.Getenv("TEST_INGRESS_HOST")
-	}
 	if flags.Deployment.WaitIngressReady {
+		// Probe the host applied to Helm or discovered from the deployed routing
+		// resources before falling back to the precomputed scenario hostname.
+		ingressHost := resolveIngressReadyHost(ctx, flags, scenarioCtx)
 		if ingressHost == "" {
-			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
+			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set global.host, --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
 			return result
 		}
 		timeoutMinutes := flags.Deployment.IngressReadyTimeoutMinutes

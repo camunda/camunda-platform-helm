@@ -6,13 +6,19 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/config"
 )
 
 // ingressReadyPollInterval is the wait between reachability polls in executeDeployment.
 const ingressReadyPollInterval = 15 * time.Second
+
+const routingHostLookupTimeout = 10 * time.Second
 
 // hostResolver abstracts DNS resolution so tests can inject a fake without
 // touching the network. net.Resolver satisfies this via LookupHost.
@@ -28,6 +34,95 @@ type ingressReadyDeps struct {
 	resolver hostResolver
 	client   *http.Client
 	sleep    func(ctx context.Context, d time.Duration) error
+}
+
+type kubectlOutputFunc func(ctx context.Context, args ...string) ([]byte, error)
+
+// resolveIngressReadyHost selects the public host that was actually applied
+// to the deployment before falling back to the precomputed scenario host.
+func resolveIngressReadyHost(ctx context.Context, flags *config.RuntimeFlags, scenarioCtx *ScenarioContext) string {
+	return resolveIngressReadyHostWith(ctx, flags, scenarioCtx, os.Getenv, resolveDeployedRoutingHost)
+}
+
+func resolveIngressReadyHostWith(
+	ctx context.Context,
+	flags *config.RuntimeFlags,
+	scenarioCtx *ScenarioContext,
+	getenv func(string) string,
+	lookupDeployedHost func(context.Context, string, string) string,
+) string {
+	if host := config.FirstNonEmpty(flags.Deployment.ExtraHelmSets["global.host"]); host != "" {
+		return host
+	}
+
+	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace)
+	return config.FirstNonEmpty(
+		deployedHost,
+		scenarioCtx.IngressHost,
+		getenv("CAMUNDA_HOSTNAME"),
+		getenv("TEST_INGRESS_HOST"),
+	)
+}
+
+// resolveDeployedRoutingHost discovers the first web hostname exposed by the
+// routing resources in a namespace. HTTPRoute is checked before Gateway so an
+// exact route hostname wins over a wildcard listener hostname.
+func resolveDeployedRoutingHost(ctx context.Context, kubeContext, namespace string) string {
+	lookupCtx, cancel := context.WithTimeout(ctx, routingHostLookupTimeout)
+	defer cancel()
+	return resolveDeployedRoutingHostWith(lookupCtx, kubeContext, namespace, runKubectlOutput)
+}
+
+func resolveDeployedRoutingHostWith(
+	ctx context.Context,
+	kubeContext,
+	namespace string,
+	kubectlOutput kubectlOutputFunc,
+) string {
+	queries := []struct {
+		resource string
+		jsonPath string
+	}{
+		{resource: "ingress", jsonPath: "{.items[*].spec.rules[*].host}"},
+		{resource: "httproute", jsonPath: "{.items[*].spec.hostnames[*]}"},
+		{resource: "gateway", jsonPath: "{.items[*].spec.listeners[*].hostname}"},
+	}
+
+	for _, query := range queries {
+		args := make([]string, 0, 7)
+		if kubeContext != "" {
+			args = append(args, "--context", kubeContext)
+		}
+		args = append(args, "-n", namespace, "get", query.resource, "--request-timeout=5s", "-o", "jsonpath="+query.jsonPath)
+
+		out, err := kubectlOutput(ctx, args...)
+		if err != nil {
+			continue
+		}
+		if host := selectPrimaryRoutingHost(string(out)); host != "" {
+			return host
+		}
+	}
+
+	return ""
+}
+
+func runKubectlOutput(ctx context.Context, args ...string) ([]byte, error) {
+	return exec.CommandContext(ctx, "kubectl", args...).Output()
+}
+
+func selectPrimaryRoutingHost(raw string) string {
+	for _, host := range strings.Fields(raw) {
+		firstLabel := strings.ToLower(strings.SplitN(host, ".", 2)[0])
+		if firstLabel == "grpc" || firstLabel == "zeebe" || firstLabel == "actuator" ||
+			strings.HasPrefix(firstLabel, "grpc-") ||
+			strings.HasPrefix(firstLabel, "zeebe-") ||
+			strings.HasPrefix(firstLabel, "actuator-") {
+			continue
+		}
+		return host
+	}
+	return ""
 }
 
 // waitIngressReady polls host until it is both publicly DNS-resolvable and
