@@ -1130,25 +1130,11 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 	}
 
-	// MGMT_HOST/ORCH_HOST both resolve to the single ingress host CI applies to
-	// every release in the topology via `--extra-helm-set global.host=<host>`
-	// (test-integration-runner.yaml injects one hash-prefixed host shared by
-	// management and orchestration; the namespace's hash is a suffix, so
-	// "<namespace>.<base-domain>" never matches it — see #6651). Prefer that
-	// applied host; only fall back to the per-release resolver (which, absent
-	// an explicit hostname/subdomain in opts, resolves to "" rather than
-	// fabricating a namespace-based host) when ExtraHelmSets doesn't carry it,
-	// e.g. local runs. If neither resolves, leave MGMT_HOST/ORCH_HOST unset so
-	// the values layers fail loudly instead of pointing at the wrong host.
-	sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host")
-	if sharedHost == "" {
-		baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
-		sharedHost = (&config.IngressFlags{IngressBaseDomain: baseDomain}).ResolveIngressHostname()
+	var orchestrationCtx *deploy.ScenarioContext
+	if orchestrationIdx != -1 {
+		orchestrationCtx = contexts[orchestrationIdx]
 	}
-	if sharedHost != "" {
-		crossRefEnv["MGMT_HOST"] = sharedHost
-		crossRefEnv["ORCH_HOST"] = sharedHost
-	}
+	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[managementIdx], orchestrationCtx)
 
 	// Deploy order honors each release's depends-on (management, which the
 	// orchestration releases depend on, therefore deploys first).
@@ -1187,6 +1173,31 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	return nil
+}
+
+func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, managementCtx, orchestrationCtx *deploy.ScenarioContext) {
+	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" {
+		crossRefEnv["MGMT_HOST"] = sharedHost
+		if orchestrationCtx != nil {
+			crossRefEnv["ORCH_HOST"] = sharedHost
+		}
+		return
+	}
+
+	baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
+	if baseDomain == "" {
+		return
+	}
+	crossRefEnv["MGMT_HOST"] = (&config.IngressFlags{
+		IngressSubdomain:  managementCtx.Namespace,
+		IngressBaseDomain: baseDomain,
+	}).ResolveIngressHostname()
+	if orchestrationCtx != nil {
+		crossRefEnv["ORCH_HOST"] = (&config.IngressFlags{
+			IngressSubdomain:  orchestrationCtx.Namespace,
+			IngressBaseDomain: baseDomain,
+		}).ResolveIngressHostname()
+	}
 }
 
 // topologyDeployOrder returns release indices in a depends-on-respecting order:

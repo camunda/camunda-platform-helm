@@ -290,6 +290,73 @@ func TestSynthesizeReleaseOpts_GenericIngressBaseDomainStillWorks(t *testing.T) 
 	}
 }
 
+func TestAddTopologyIngressHosts_DerivesPerReleaseHosts(t *testing.T) {
+	env := deploy.BuildTopologyCrossRefEnv(
+		&deploy.ScenarioContext{Namespace: "matrix-810-mns-mgmt"},
+		"elasticsearch",
+		"9200",
+		"http",
+	)
+	opts := matrix.RunOptions{
+		IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
+		IngressBaseDomain:  "fallback.example.com",
+	}
+
+	addTopologyIngressHosts(
+		env,
+		opts,
+		"gke",
+		&deploy.ScenarioContext{Namespace: "matrix-810-mns-mgmt"},
+		&deploy.ScenarioContext{Namespace: "matrix-810-mns-orcha"},
+	)
+
+	if got, want := env["MGMT_HOST"], "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"; got != want {
+		t.Errorf("MGMT_HOST = %q, want %q", got, want)
+	}
+	if got, want := env["ORCH_HOST"], "matrix-810-mns-orcha.ci.distro.ultrawombat.com"; got != want {
+		t.Errorf("ORCH_HOST = %q, want %q", got, want)
+	}
+}
+
+func TestAddTopologyIngressHosts_UsesExplicitSharedHost(t *testing.T) {
+	env := map[string]string{}
+	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
+
+	addTopologyIngressHosts(
+		env,
+		opts,
+		"gke",
+		&deploy.ScenarioContext{Namespace: "matrix-810-mns-mgmt"},
+		&deploy.ScenarioContext{Namespace: "matrix-810-mns-orcha"},
+	)
+
+	for _, key := range []string{"MGMT_HOST", "ORCH_HOST"} {
+		if got, want := env[key], "abc123-mns.ci.distro.ultrawombat.com"; got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
+	}
+}
+
+func TestAddTopologyIngressHosts_OmitsOrchestrationHostWithoutRelease(t *testing.T) {
+	env := map[string]string{}
+	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
+
+	addTopologyIngressHosts(
+		env,
+		opts,
+		"gke",
+		&deploy.ScenarioContext{Namespace: "matrix-810-mns-mgmt"},
+		nil,
+	)
+
+	if got, want := env["MGMT_HOST"], "abc123-mns.ci.distro.ultrawombat.com"; got != want {
+		t.Errorf("MGMT_HOST = %q, want %q", got, want)
+	}
+	if _, ok := env["ORCH_HOST"]; ok {
+		t.Errorf("ORCH_HOST = %q, want key omitted without an orchestration release", env["ORCH_HOST"])
+	}
+}
+
 // TestApplyTopologyReleaseOverrides_ForcesExternalSecrets pins down the fix
 // for the live-GKE bug where the management release's bundled Keycloak
 // CreateContainerConfigError'd on a missing "integration-test-credentials"
