@@ -26,6 +26,7 @@ import (
 
 	"scripts/deploy-camunda/config"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -256,6 +257,7 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 		outputs map[string][]unstructured.Unstructured
 		errors  map[string]error
 		want    string
+		wantErr bool
 	}{
 		{
 			name: "classic ingress host wins",
@@ -274,6 +276,7 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 			outputs: map[string][]unstructured.Unstructured{
 				"ingresses": {
 					routingObject("companion", "companion", map[string]any{"rules": []any{map[string]any{"host": "unrelated.example.com"}}}),
+					routingObject("integration-companion", "", map[string]any{"rules": []any{map[string]any{"host": "prefix.example.com"}}}),
 					routingObject("integration-http", "integration", map[string]any{"rules": []any{map[string]any{"host": "app.example.com"}}}),
 				},
 			},
@@ -285,6 +288,18 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 				"httproutes": {routingObject("integration-orchestration", "integration", map[string]any{
 					"hostnames": []any{"grpc-app.example.com", "route.example.com"},
 				})},
+			},
+			want: "route.example.com",
+		},
+		{
+			name: "owned route wins despite forbidden lookup for another resource type",
+			outputs: map[string][]unstructured.Unstructured{
+				"httproutes": {routingObject("integration-orchestration", "integration", map[string]any{
+					"hostnames": []any{"route.example.com"},
+				})},
+			},
+			errors: map[string]error{
+				"ingresses": apierrors.NewForbidden(schema.GroupResource{Group: "networking.k8s.io", Resource: "ingresses"}, "", errors.New("denied")),
 			},
 			want: "route.example.com",
 		},
@@ -306,6 +321,13 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 			errors: map[string]error{"ingresses": errors.New("not found"), "httproutes": errors.New("not found"), "gateways": errors.New("not found")},
 			want:   "",
 		},
+		{
+			name: "forbidden discovery without an owned route returns an error",
+			errors: map[string]error{
+				"ingresses": apierrors.NewForbidden(schema.GroupResource{Group: "networking.k8s.io", Resource: "ingresses"}, "", errors.New("denied")),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -326,7 +348,16 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 				return &unstructured.UnstructuredList{Items: tt.outputs[resource.Resource]}, nil
 			}
 
-			got := resolveDeployedRoutingHostWith(context.Background(), "test", "integration", listResources)
+			got, err := resolveDeployedRoutingHostWith(context.Background(), "test", "integration", listResources)
+			if tt.wantErr {
+				if !apierrors.IsForbidden(err) {
+					t.Fatalf("resolveDeployedRoutingHostWith() error = %v, want Forbidden", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveDeployedRoutingHostWith() unexpected error = %v", err)
+			}
 			if got != tt.want {
 				t.Fatalf("resolveDeployedRoutingHostWith() = %q, want %q (calls: %v)", got, tt.want, calls)
 			}

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -73,7 +74,11 @@ func TestListNamespacedResourcesWrapsListError(t *testing.T) {
 		map[schema.GroupVersionResource]string{resource: "IngressList"},
 	)
 	dynamicClient.PrependReactor("list", "ingresses", func(k8stesting.Action) (bool, runtime.Object, error) {
-		return true, nil, errors.New("forbidden")
+		return true, nil, apierrors.NewForbidden(
+			schema.GroupResource{Group: resource.Group, Resource: resource.Resource},
+			"",
+			errors.New("denied"),
+		)
 	})
 
 	client := &Client{dynamicClient: dynamicClient}
@@ -81,7 +86,10 @@ func TestListNamespacedResourcesWrapsListError(t *testing.T) {
 	if err == nil {
 		t.Fatal("ListNamespacedResources() expected a list error")
 	}
-	if !strings.Contains(err.Error(), "ingresses") || !strings.Contains(err.Error(), "test-namespace") || !strings.Contains(err.Error(), "forbidden") {
+	if !apierrors.IsForbidden(err) {
+		t.Fatalf("ListNamespacedResources() error = %q, want Forbidden classification", err)
+	}
+	if !strings.Contains(err.Error(), "ingresses") || !strings.Contains(err.Error(), "test-namespace") || !strings.Contains(err.Error(), "denied") {
 		t.Fatalf("ListNamespacedResources() error = %q, want resource, namespace, and cause", err)
 	}
 }
