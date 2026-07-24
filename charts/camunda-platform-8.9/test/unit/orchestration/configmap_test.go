@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -103,7 +104,7 @@ func TestGoldenConfigmapWithHistoryRetentionEnabled(t *testing.T) {
 func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:   "TestContainerShouldContainExporterClassPerDefault",
+			Name:   "TestExportersShouldBeEmptyByDefault",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -111,13 +112,74 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 
-				// then
-				s.Require().Equal("io.camunda.exporter.CamundaExporter", configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
+				// CamundaExporter is auto-registered via autoconfigure-camunda-exporter: true;
+				// the legacy zeebe.broker.exporters.camundaexporter entry must not be present.
+				s.Require().Empty(configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
+
+				s.Require().NotContains(configmap.Data["application.yaml"], "exporters: {}")
+			},
+		},
+		{
+			Name:   "TestCustomHistorySettingsUseUnifiedElasticsearchConfig",
+			Values: customHistoryValues("elasticsearch"),
+			Verifier: func(t *testing.T, output string, err error) {
+				assertCustomHistorySettings(t, output, false)
+			},
+		},
+		{
+			Name:   "TestCustomHistorySettingsUseUnifiedOpenSearchConfig",
+			Values: customHistoryValues("opensearch"),
+			Verifier: func(t *testing.T, output string, err error) {
+				assertCustomHistorySettings(t, output, true)
+			},
+		},
+		{
+			Name: "TestCamundaExporterAutoconfigurationCanBeDisabled",
+			Values: map[string]string{
+				"orchestration.exporters.camunda.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var application camunda.OrchestrationApplicationYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+
+				require.False(t, application.Camunda.Data.SecondaryStorage.AutoconfigureCamundaExporter)
 			},
 		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func customHistoryValues(secondaryStorageType string) map[string]string {
+	return map[string]string{
+		"orchestration.data.secondaryStorage.type":        secondaryStorageType,
+		"orchestration.history.elsRolloverDateFormat":     "yyyy-MM",
+		"orchestration.history.rolloverInterval":          "2d",
+		"orchestration.history.rolloverBatchSize":         "321",
+		"orchestration.history.waitPeriodBeforeArchiving": "3h",
+		"orchestration.history.delayBetweenRuns":          "4000",
+		"orchestration.history.maxDelayBetweenRuns":       "12000",
+	}
+}
+
+func assertCustomHistorySettings(t *testing.T, output string, openSearch bool) {
+	var configmap corev1.ConfigMap
+	var application camunda.OrchestrationApplicationYAML
+	helm.UnmarshalK8SYaml(t, output, &configmap)
+	require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+
+	history := application.Camunda.Data.SecondaryStorage.Elasticsearch.History
+	if openSearch {
+		history = application.Camunda.Data.SecondaryStorage.OpenSearch.History
+	}
+	require.Equal(t, "yyyy-MM", history.ElsRolloverDateFormat)
+	require.Equal(t, "2d", history.RolloverInterval)
+	require.Equal(t, 321, history.RolloverBatchSize)
+	require.Equal(t, "3h", history.WaitPeriodBeforeArchiving)
+	require.Equal(t, 4000, history.DelayBetweenRuns)
+	require.Equal(t, 12000, history.MaximumDelayBetweenRuns)
 }
 
 func (s *ConfigmapLegacyTemplateTest) TestRequestBodySizeConfiguresUploadLimits() {

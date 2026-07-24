@@ -738,7 +738,7 @@ func (s *ConfigmapTemplateTest) TestCamundaExporterHonorsAutoconfigureFromExtraC
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "autoconfigure-camunda-exporter: true")
-				require.Contains(t, output, "camundaexporter:")
+				require.NotContains(t, output, "camundaexporter:")
 			},
 		},
 		{

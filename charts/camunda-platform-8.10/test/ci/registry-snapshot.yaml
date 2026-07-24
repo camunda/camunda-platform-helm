@@ -270,7 +270,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-mt
-          enabled: false
+          enabled: true
           shortname: kemt
           auth: keycloak
           flow: upgrade-minor
@@ -282,6 +282,8 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
+          features:
+            - custom-history
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -299,7 +301,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-rba
-          enabled: false
+          enabled: true
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor

@@ -2523,18 +2523,23 @@ orchestration:
 
   ## @extra orchestration.history configuration for Camunda harmonized historical indices.
   history:
-    ## @param orchestration.history.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.els-rollover-date-format` via `orchestration.extraConfiguration`.
+    ## @param orchestration.history.elsRolloverDateFormat (DEPRECATED) defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
     elsRolloverDateFormat: date
-    ## @param orchestration.history.rolloverInterval defines the time range of the historical indices to be created.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-interval` via `orchestration.extraConfiguration`.
+    ## @param orchestration.history.rolloverInterval (DEPRECATED) defines the time range of the historical indices to be created.
     rolloverInterval: 1d
-    ## @param orchestration.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-batch-size` via `orchestration.extraConfiguration`. Set it explicitly when migrating because the application default can differ from the chart default.
+    ## @param orchestration.history.rolloverBatchSize (DEPRECATED) defines the maximum number of process instances per batch during archiving.
     rolloverBatchSize: 100
-    ## @param orchestration.history.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
-    ## the last hour will not be collected into historical indices.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.wait-period-before-archiving` via `orchestration.extraConfiguration`.
+    ## @param orchestration.history.waitPeriodBeforeArchiving (DEPRECATED) defines the grace period for processes to be excluded from archiving; processes completed in the last hour are not collected into historical indices with the default value.
     waitPeriodBeforeArchiving: 1h
-    ## @param orchestration.history.delayBetweenRuns the millisecond interval between archiver runs
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.delay-between-runs` via `orchestration.extraConfiguration`.
+    ## @param orchestration.history.delayBetweenRuns (DEPRECATED) the millisecond interval between archiver runs
     delayBetweenRuns: 2000
-    ## @param orchestration.history.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.max-delay-between-runs` via `orchestration.extraConfiguration`.
+    ## @param orchestration.history.maxDelayBetweenRuns (DEPRECATED) the maximum millisecond interval between archiver runs due to failure backoffs
     maxDelayBetweenRuns: 60000
     ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.
     retention:
