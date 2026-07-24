@@ -2,18 +2,20 @@ package deploy
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
+	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ingressReadyPollInterval is the wait between reachability polls in executeDeployment.
@@ -37,31 +39,11 @@ type ingressReadyDeps struct {
 	sleep    func(ctx context.Context, d time.Duration) error
 }
 
-type kubectlOutputFunc func(ctx context.Context, args ...string) ([]byte, error)
-
-type routingResourceList struct {
-	Items []routingResource `json:"items"`
-}
-
-type routingResource struct {
-	Metadata routingResourceMetadata `json:"metadata"`
-	Spec     routingResourceSpec     `json:"spec"`
-}
-
-type routingResourceMetadata struct {
-	Name   string            `json:"name"`
-	Labels map[string]string `json:"labels"`
-}
-
-type routingResourceSpec struct {
-	Rules []struct {
-		Host string `json:"host"`
-	} `json:"rules"`
-	Hostnames []string `json:"hostnames"`
-	Listeners []struct {
-		Hostname string `json:"hostname"`
-	} `json:"listeners"`
-}
+type routingResourceLister func(
+	ctx context.Context,
+	namespace string,
+	resource schema.GroupVersionResource,
+) (*unstructured.UnstructuredList, error)
 
 // resolveIngressReadyHost selects the public host that was actually applied
 // to the deployment before falling back to the precomputed scenario host.
@@ -79,6 +61,8 @@ func resolveIngressReadyHostWith(
 	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
 	return config.FirstNonEmpty(
 		deployedHost,
+		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.ingress.host"]),
+		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.host"]),
 		flags.Ingress.IngressHostname,
 		getenv("CAMUNDA_HOSTNAME"),
 		getenv("TEST_INGRESS_HOST"),
@@ -92,39 +76,36 @@ func resolveIngressReadyHostWith(
 func resolveDeployedRoutingHost(ctx context.Context, kubeContext, namespace, release string) string {
 	lookupCtx, cancel := context.WithTimeout(ctx, routingHostLookupTimeout)
 	defer cancel()
-	return resolveDeployedRoutingHostWith(lookupCtx, kubeContext, namespace, release, runKubectlOutput)
+
+	client, err := kube.NewClient("", kubeContext)
+	if err != nil {
+		return ""
+	}
+	return resolveDeployedRoutingHostWith(lookupCtx, namespace, release, client.ListNamespacedResources)
 }
 
 func resolveDeployedRoutingHostWith(
 	ctx context.Context,
-	kubeContext,
 	namespace,
 	release string,
-	kubectlOutput kubectlOutputFunc,
+	listResources routingResourceLister,
 ) string {
-	resources := []string{"ingress", "httproute", "gateway"}
+	resources := []schema.GroupVersionResource{
+		{Group: "networking.k8s.io", Version: "v1", Resource: "ingresses"},
+		{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "httproutes"},
+		{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "gateways"},
+	}
 
 	for _, resource := range resources {
-		args := make([]string, 0, 7)
-		if kubeContext != "" {
-			args = append(args, "--context", kubeContext)
-		}
-		args = append(args, "-n", namespace, "get", resource, "--request-timeout=5s", "-o", "json")
-
-		out, err := kubectlOutput(ctx, args...)
+		resourceList, err := listResources(ctx, namespace, resource)
 		if err != nil {
 			continue
 		}
-
-		var resourceList routingResourceList
-		if err := json.Unmarshal(out, &resourceList); err != nil {
-			continue
-		}
 		for _, item := range resourceList.Items {
-			if !routingResourceOwnedByRelease(item.Metadata, release) {
+			if !routingResourceOwnedByRelease(item, release) {
 				continue
 			}
-			if host := selectPrimaryRoutingHost(strings.Join(routingResourceHosts(item.Spec), " ")); host != "" {
+			if host := selectPrimaryRoutingHost(strings.Join(routingResourceHosts(item), " ")); host != "" {
 				return host
 			}
 		}
@@ -133,28 +114,34 @@ func resolveDeployedRoutingHostWith(
 	return ""
 }
 
-func runKubectlOutput(ctx context.Context, args ...string) ([]byte, error) {
-	return exec.CommandContext(ctx, "kubectl", args...).Output()
-}
-
-func routingResourceOwnedByRelease(metadata routingResourceMetadata, release string) bool {
+func routingResourceOwnedByRelease(resource unstructured.Unstructured, release string) bool {
 	if release == "" {
 		return false
 	}
-	if metadata.Labels["app.kubernetes.io/instance"] == release {
+	if resource.GetLabels()["app.kubernetes.io/instance"] == release {
 		return true
 	}
-	return metadata.Name == release || strings.HasPrefix(metadata.Name, release+"-")
+	name := resource.GetName()
+	return name == release || strings.HasPrefix(name, release+"-")
 }
 
-func routingResourceHosts(spec routingResourceSpec) []string {
-	hosts := make([]string, 0, len(spec.Rules)+len(spec.Hostnames)+len(spec.Listeners))
-	for _, rule := range spec.Rules {
-		hosts = append(hosts, rule.Host)
+func routingResourceHosts(resource unstructured.Unstructured) []string {
+	hosts, _, _ := unstructured.NestedStringSlice(resource.Object, "spec", "hostnames")
+	rules, _, _ := unstructured.NestedSlice(resource.Object, "spec", "rules")
+	for _, rawRule := range rules {
+		if rule, ok := rawRule.(map[string]any); ok {
+			if host, ok := rule["host"].(string); ok {
+				hosts = append(hosts, host)
+			}
+		}
 	}
-	hosts = append(hosts, spec.Hostnames...)
-	for _, listener := range spec.Listeners {
-		hosts = append(hosts, listener.Hostname)
+	listeners, _, _ := unstructured.NestedSlice(resource.Object, "spec", "listeners")
+	for _, rawListener := range listeners {
+		if listener, ok := rawListener.(map[string]any); ok {
+			if host, ok := listener["hostname"].(string); ok {
+				hosts = append(hosts, host)
+			}
+		}
 	}
 	return hosts
 }

@@ -136,6 +136,24 @@ func NewClient(kubeconfig, kubeContext string) (*Client, error) {
 	}, nil
 }
 
+// ListNamespacedResources lists arbitrary Kubernetes resources through the
+// dynamic client. Callers provide the exact group, version, and resource name.
+func (c *Client) ListNamespacedResources(
+	ctx context.Context,
+	namespace string,
+	resource schema.GroupVersionResource,
+) (*unstructured.UnstructuredList, error) {
+	if namespace == "" {
+		return nil, errors.New("namespace must not be empty")
+	}
+
+	resources, err := c.dynamicClient.Resource(resource).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list %s in namespace %q: %w", resource.Resource, namespace, err)
+	}
+	return resources, nil
+}
+
 func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 	if namespace == "" {
 		return errors.New("namespace must not be empty")
