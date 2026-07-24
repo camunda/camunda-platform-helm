@@ -58,12 +58,15 @@ func resolveIngressReadyHostWith(
 	getenv func(string) string,
 	lookupDeployedHost func(context.Context, string, string, string) string,
 ) string {
+	if host := concreteRoutingHost(flags.Ingress.IngressHostname); host != "" {
+		return host
+	}
+
 	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
 	return config.FirstNonEmpty(
 		deployedHost,
 		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.ingress.host"]),
 		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.host"]),
-		flags.Ingress.IngressHostname,
 		getenv("CAMUNDA_HOSTNAME"),
 		getenv("TEST_INGRESS_HOST"),
 		scenarioCtx.IngressHost,

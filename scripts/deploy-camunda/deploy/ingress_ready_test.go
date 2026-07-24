@@ -60,6 +60,32 @@ func noSleep(ctx context.Context, _ time.Duration) error {
 }
 
 func TestResolveIngressReadyHostWith(t *testing.T) {
+	t.Run("explicit ingress hostname remains the full override", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Ingress: config.IngressFlags{IngressHostname: "override.example.com"},
+		}
+		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
+		lookupCalled := false
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "env.example.com" },
+			func(context.Context, string, string, string) string {
+				lookupCalled = true
+				return "rendered.example.com"
+			},
+		)
+
+		if got != "override.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want explicit override", got)
+		}
+		if lookupCalled {
+			t.Fatal("cluster lookup should not run when --ingress-hostname is set")
+		}
+	})
+
 	t.Run("rendered routing host wins over raw Helm and computed hosts", func(t *testing.T) {
 		flags := &config.RuntimeFlags{
 			Deployment: config.DeploymentFlags{

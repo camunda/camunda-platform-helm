@@ -16,6 +16,8 @@ package kube
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -61,6 +63,26 @@ func TestListNamespacedResourcesRejectsEmptyNamespace(t *testing.T) {
 	)
 	if err == nil {
 		t.Fatal("ListNamespacedResources() expected an error for an empty namespace")
+	}
+}
+
+func TestListNamespacedResourcesWrapsListError(t *testing.T) {
+	resource := schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "ingresses"}
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{resource: "IngressList"},
+	)
+	dynamicClient.PrependReactor("list", "ingresses", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("forbidden")
+	})
+
+	client := &Client{dynamicClient: dynamicClient}
+	_, err := client.ListNamespacedResources(context.Background(), "test-namespace", resource)
+	if err == nil {
+		t.Fatal("ListNamespacedResources() expected a list error")
+	}
+	if !strings.Contains(err.Error(), "ingresses") || !strings.Contains(err.Error(), "test-namespace") || !strings.Contains(err.Error(), "forbidden") {
+		t.Fatalf("ListNamespacedResources() error = %q, want resource, namespace, and cause", err)
 	}
 }
 
