@@ -72,6 +72,38 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestHistoryDeprecationWarningsNameAllKeysAndRemovalVersion",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                    "false",
+				"orchestration.data.secondaryStorage.type":        "elasticsearch",
+				"orchestration.history.elsRolloverDateFormat":     "yyyy-MM",
+				"orchestration.history.rolloverInterval":          "2d",
+				"orchestration.history.rolloverBatchSize":         "321",
+				"orchestration.history.waitPeriodBeforeArchiving": "3h",
+				"orchestration.history.delayBetweenRuns":          "4000",
+				"orchestration.history.maxDelayBetweenRuns":       "12000",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				warnings := configmap.Data["warnings"]
+				for _, key := range []string{
+					"orchestration.history.elsRolloverDateFormat",
+					"orchestration.history.rolloverInterval",
+					"orchestration.history.rolloverBatchSize",
+					"orchestration.history.waitPeriodBeforeArchiving",
+					"orchestration.history.delayBetweenRuns",
+					"orchestration.history.maxDelayBetweenRuns",
+				} {
+					s.Require().Contains(warnings, key)
+				}
+				s.Require().Contains(warnings, "orchestration.extraConfiguration")
+				s.Require().Contains(warnings, "chart v16 (Camunda 8.11)")
+			},
+		},
+		{
 			Name: "TestWarningsConfigMapAbsentWhenNoWarnings",
 			// global.elasticsearch.enabled=false avoids the legacy-option deprecation warning
 			// (the test helper otherwise defaults it to true); the new secondaryStorage key
