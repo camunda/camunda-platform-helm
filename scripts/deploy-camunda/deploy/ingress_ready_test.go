@@ -17,7 +17,6 @@ package deploy
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -26,6 +25,9 @@ import (
 	"time"
 
 	"scripts/deploy-camunda/config"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // fakeResolver returns a canned result for every LookupHost call, tracking how
@@ -159,6 +161,51 @@ func TestResolveIngressReadyHostWith(t *testing.T) {
 		}
 	})
 
+	t.Run("concrete configured host remains a fallback when discovery fails", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Deployment: config.DeploymentFlags{
+				ExtraHelmSets: map[string]string{"global.host": "configured.example.com"},
+			},
+		}
+		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "env.example.com" },
+			func(context.Context, string, string, string) string { return "" },
+		)
+
+		if got != "configured.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want configured host", got)
+		}
+	})
+
+	t.Run("legacy ingress host takes precedence in configured fallbacks", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Deployment: config.DeploymentFlags{
+				ExtraHelmSets: map[string]string{
+					"global.host":         "current.example.com",
+					"global.ingress.host": "legacy.example.com",
+				},
+			},
+		}
+		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration"}
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "" },
+			func(context.Context, string, string, string) string { return "" },
+		)
+
+		if got != "legacy.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want legacy host", got)
+		}
+	})
+
 	t.Run("computed host remains the final fallback", func(t *testing.T) {
 		flags := &config.RuntimeFlags{}
 		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
@@ -180,45 +227,57 @@ func TestResolveIngressReadyHostWith(t *testing.T) {
 func TestResolveDeployedRoutingHostWith(t *testing.T) {
 	tests := []struct {
 		name    string
-		outputs map[string]string
+		outputs map[string][]unstructured.Unstructured
 		errors  map[string]error
 		want    string
 	}{
 		{
-			name:    "classic ingress host wins",
-			outputs: map[string]string{"ingress": routingListJSON("integration-http", "integration", `"rules":[{"host":"grpc-app.example.com"},{"host":"app.example.com"}]`)},
-			want:    "app.example.com",
+			name: "classic ingress host wins",
+			outputs: map[string][]unstructured.Unstructured{
+				"ingresses": {routingObject("integration-http", "integration", map[string]any{
+					"rules": []any{
+						map[string]any{"host": "grpc-app.example.com"},
+						map[string]any{"host": "app.example.com"},
+					},
+				})},
+			},
+			want: "app.example.com",
 		},
 		{
 			name: "unrelated routing resources are ignored",
-			outputs: map[string]string{
-				"ingress": routingItemsJSON(
-					routingItemJSON("companion", "companion", `"rules":[{"host":"unrelated.example.com"}]`),
-					routingItemJSON("integration-http", "integration", `"rules":[{"host":"app.example.com"}]`),
-				),
+			outputs: map[string][]unstructured.Unstructured{
+				"ingresses": {
+					routingObject("companion", "companion", map[string]any{"rules": []any{map[string]any{"host": "unrelated.example.com"}}}),
+					routingObject("integration-http", "integration", map[string]any{"rules": []any{map[string]any{"host": "app.example.com"}}}),
+				},
 			},
 			want: "app.example.com",
 		},
 		{
 			name: "HTTPRoute host is used when ingress is empty",
-			outputs: map[string]string{
-				"ingress":   `{"items":[]}`,
-				"httproute": routingListJSON("integration-orchestration", "integration", `"hostnames":["grpc-app.example.com","route.example.com"]`),
+			outputs: map[string][]unstructured.Unstructured{
+				"httproutes": {routingObject("integration-orchestration", "integration", map[string]any{
+					"hostnames": []any{"grpc-app.example.com", "route.example.com"},
+				})},
 			},
 			want: "route.example.com",
 		},
 		{
 			name: "Gateway listener host is used when ingress and HTTPRoute are unavailable",
-			outputs: map[string]string{
-				"ingress": `{"items":[]}`,
-				"gateway": routingListJSON("integration-camunda-platform", "", `"listeners":[{"hostname":"grpc-app.example.com"},{"hostname":"gateway.example.com"}]`),
+			outputs: map[string][]unstructured.Unstructured{
+				"gateways": {routingObject("integration-camunda-platform", "", map[string]any{
+					"listeners": []any{
+						map[string]any{"hostname": "grpc-app.example.com"},
+						map[string]any{"hostname": "gateway.example.com"},
+					},
+				})},
 			},
-			errors: map[string]error{"httproute": errors.New("resource unavailable")},
+			errors: map[string]error{"httproutes": errors.New("resource unavailable")},
 			want:   "gateway.example.com",
 		},
 		{
 			name:   "no routing host returns empty",
-			errors: map[string]error{"ingress": errors.New("not found"), "httproute": errors.New("not found"), "gateway": errors.New("not found")},
+			errors: map[string]error{"ingresses": errors.New("not found"), "httproutes": errors.New("not found"), "gateways": errors.New("not found")},
 			want:   "",
 		},
 	}
@@ -226,16 +285,22 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var calls []string
-			kubectlOutput := func(_ context.Context, args ...string) ([]byte, error) {
-				resource := resourceAfterGet(args)
-				calls = append(calls, resource)
-				if err := tt.errors[resource]; err != nil {
+			listResources := func(
+				_ context.Context,
+				namespace string,
+				resource schema.GroupVersionResource,
+			) (*unstructured.UnstructuredList, error) {
+				calls = append(calls, resource.Resource)
+				if namespace != "test" {
+					t.Fatalf("namespace = %q, want test", namespace)
+				}
+				if err := tt.errors[resource.Resource]; err != nil {
 					return nil, err
 				}
-				return []byte(tt.outputs[resource]), nil
+				return &unstructured.UnstructuredList{Items: tt.outputs[resource.Resource]}, nil
 			}
 
-			got := resolveDeployedRoutingHostWith(context.Background(), "cluster", "test", "integration", kubectlOutput)
+			got := resolveDeployedRoutingHostWith(context.Background(), "test", "integration", listResources)
 			if got != tt.want {
 				t.Fatalf("resolveDeployedRoutingHostWith() = %q, want %q (calls: %v)", got, tt.want, calls)
 			}
@@ -243,20 +308,15 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 	}
 }
 
-func routingListJSON(name, release, specFields string) string {
-	return routingItemsJSON(routingItemJSON(name, release, specFields))
-}
-
-func routingItemsJSON(items ...string) string {
-	return fmt.Sprintf(`{"items":[%s]}`, strings.Join(items, ","))
-}
-
-func routingItemJSON(name, release, specFields string) string {
-	labels := "{}"
+func routingObject(name, release string, spec map[string]any) unstructured.Unstructured {
+	labels := map[string]any{}
 	if release != "" {
-		labels = fmt.Sprintf(`{"app.kubernetes.io/instance":%q}`, release)
+		labels["app.kubernetes.io/instance"] = release
 	}
-	return fmt.Sprintf(`{"metadata":{"name":%q,"labels":%s},"spec":{%s}}`, name, labels, specFields)
+	return unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{"name": name, "labels": labels},
+		"spec":     spec,
+	}}
 }
 
 func TestSelectPrimaryRoutingHost(t *testing.T) {
@@ -276,15 +336,6 @@ func TestSelectPrimaryRoutingHost(t *testing.T) {
 			t.Errorf("selectPrimaryRoutingHost(%q) = %q, want %q", tt.raw, got, tt.want)
 		}
 	}
-}
-
-func resourceAfterGet(args []string) string {
-	for i, arg := range args {
-		if arg == "get" && i+1 < len(args) {
-			return args[i+1]
-		}
-	}
-	return fmt.Sprintf("missing-get-resource:%v", args)
 }
 
 func TestWaitIngressReadyWithDeps(t *testing.T) {
