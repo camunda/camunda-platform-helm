@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package deploy
 
 import (
@@ -54,10 +68,23 @@ func resolveIngressReadyHost(ctx context.Context, flags *config.RuntimeFlags, sc
 	}
 
 	deployedHost, err := resolveDeployedRoutingHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
-	if err != nil {
-		return "", err
+	return resolveIngressReadyHostAfterLookup(flags, scenarioCtx, os.Getenv, deployedHost, err)
+}
+
+func resolveIngressReadyHostAfterLookup(
+	flags *config.RuntimeFlags,
+	scenarioCtx *ScenarioContext,
+	getenv func(string) string,
+	deployedHost string,
+	lookupErr error,
+) (string, error) {
+	if lookupErr != nil {
+		if host := configuredIngressReadyHostFallback(flags, getenv); host != "" {
+			return host, nil
+		}
+		return "", lookupErr
 	}
-	return ingressReadyHostFallback(flags, scenarioCtx, os.Getenv, deployedHost), nil
+	return ingressReadyHostFallback(flags, scenarioCtx, getenv, deployedHost), nil
 }
 
 func resolveIngressReadyHostWith(
@@ -83,11 +110,17 @@ func ingressReadyHostFallback(
 ) string {
 	return config.FirstNonEmpty(
 		deployedHost,
+		configuredIngressReadyHostFallback(flags, getenv),
+		scenarioCtx.IngressHost,
+	)
+}
+
+func configuredIngressReadyHostFallback(flags *config.RuntimeFlags, getenv func(string) string) string {
+	return config.FirstNonEmpty(
 		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.ingress.host"]),
 		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.host"]),
 		getenv("CAMUNDA_HOSTNAME"),
 		getenv("TEST_INGRESS_HOST"),
-		scenarioCtx.IngressHost,
 	)
 }
 
