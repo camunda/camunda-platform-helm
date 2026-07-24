@@ -1,0 +1,88 @@
+# Management namespace layer for the multinamespace topology (8.10)
+# Selected as a Feature layer (values/features/multinamespace-management.yaml)
+# rather than an ExtraValues file so any env-var placeholders go through the
+# normal per-layer substitution pipeline — ExtraValues files are NOT
+# substituted (see scripts/deploy-camunda/deploy/values.go's
+# BuildValuesChain), which is exactly the correctness bug this fix addresses.
+# This file itself has no placeholders today, but keeping it on the
+# substituted path is required for consistency with orchestration's Feature
+# layer.
+#
+# NOTE: avoid writing literal dollar-sign placeholder syntax in prose
+# comments in this file — the env var scanner (os.Expand-based) matches it
+# anywhere in the raw file content, including comments, and an unset name
+# will be reported as a "missing required environment variable" at
+# prepare-values / deploy time.
+#
+# Management release — Identity + Camunda Hub (Console +
+# Web Modeler) + bundled Keycloak + bundled PostgreSQL, central to the whole
+# logical cluster. Orchestration, Optimize, Connectors, and the secondary
+# storage backend are disabled here — they live in the orchestration
+# releases (see multinamespace-orchestration.yaml + identity/keycloak-external.yaml), which
+# reach back into this namespace via FQDN for Identity/Keycloak.
+#
+# This release's own auth wiring (bundled Keycloak, Identity clients) comes
+# from this release's `identity: keycloak` layer selection (see the
+# scenario's topology block) — the same identity/keycloak.yaml layer a
+# single-namespace keycloak scenario uses. Its `dependencies: [keycloak,
+# postgresql, elasticsearch]` deploy the companion Keycloak/PostgreSQL/
+# Elasticsearch releases into THIS namespace only; orchestration releases
+# deploy none of their own and reach this namespace's Elasticsearch/Identity/
+# Keycloak cross-namespace by FQDN instead.
+#
+# identity.enabled and camundaHub.enabled are already true via base.yaml;
+# only the components that must be OFF in this namespace are set here.
+
+orchestration:
+  enabled: false
+  # The management Identity registers the single orchestration Keycloak
+  # client; its root-url must be the orchestration cluster host (ORCH_HOST,
+  # injected by runTopologyEntry) so browser-login redirect URIs are accepted.
+  security:
+    authentication:
+      oidc:
+        redirectUrl: "https://${ORCH_HOST}/orchestration"
+
+webModeler:
+  restapi:
+    # orchestration.enabled: false above collapses the
+    # camundaPlatform.defaultWebModelerCluster helper's orchestration entry
+    # (gated on orchestration.enabled — see templates/common/_helpers.tpl),
+    # leaving Web Modeler's "Deploy & run" cluster dropdown empty. Register
+    # the orchestration release's cross-namespace Zeebe gateway explicitly;
+    # ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST are injected by runTopologyEntry
+    # alongside ORCH_HOST above.
+    clusters:
+      - id: orchestration-cluster
+        name: orchestration
+        version: "8.10.0-alpha3"
+        authentication: "BEARER_TOKEN"
+        url:
+          grpc: "${ORCH_ZEEBE_GRPC}"
+          rest: "${ORCH_ZEEBE_REST}"
+          web-app: "https://${ORCH_HOST}/operate"
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
+global:
+  elasticsearch:
+    enabled: false
+  identity:
+    auth:
+      # This (management) release is the central Identity for the whole
+      # multinamespace topology: it must register Keycloak clients + resource
+      # servers (audiences) for Optimize and the Orchestration Cluster even
+      # though both are disabled in THIS namespace — their workloads run in
+      # the orchestration releases instead (see multinamespace-orchestration.yaml),
+      # which reach back into this namespace's Identity/Keycloak by FQDN.
+      optimize:
+        alwaysRegister: true
+        redirectUrl: "https://${ORCH_HOST}/optimize"
+      orchestration:
+        alwaysRegister: true
+      connectors:
+        alwaysRegister: true

@@ -205,3 +205,27 @@ func containsDNSErr(err error) bool {
 func containsHTTPErr(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "http error=") && !strings.Contains(err.Error(), "http error=<nil>")
 }
+
+func TestSelectPrimaryIngressHost(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{"empty", "", ""},
+		{"single web host", "4b5e47-gke-6650-intg-8-10-gke-eske.ci.distro.ultrawombat.com", "4b5e47-gke-6650-intg-8-10-gke-eske.ci.distro.ultrawombat.com"},
+		{
+			"skips grpc sub-host and picks the web host",
+			"grpc-4b5e47-gke-6650-intg-8-10-gke-eske.ci.distro.ultrawombat.com 4b5e47-gke-6650-intg-8-10-gke-eske.ci.distro.ultrawombat.com",
+			"4b5e47-gke-6650-intg-8-10-gke-eske.ci.distro.ultrawombat.com",
+		},
+		{"only grpc/zeebe/actuator yields empty", "grpc-x.example zeebe-x.example actuator-x.example", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := selectPrimaryIngressHost(tc.raw); got != tc.want {
+				t.Fatalf("selectPrimaryIngressHost(%q) = %q, want %q", tc.raw, got, tc.want)
+			}
+		})
+	}
+}

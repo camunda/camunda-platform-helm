@@ -75,6 +75,7 @@ write_matrix_entry() {
   fi
   if [[ "${MANUAL_SCENARIO}" != "none" && "${MANUAL_SCENARIO}" != "all" && -n "${MANUAL_SCENARIO}" ]]; then
     cli_flags+=(--scenario-filter "${MANUAL_SCENARIO}")
+    cli_flags+=(--include-disabled)
   fi
 
   local permitted_flows_json='{}'

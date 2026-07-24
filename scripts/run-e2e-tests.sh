@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 source "$(dirname "$0")/base_playwright_script.sh"
 source "$(dirname "$0")/render-e2e-env.sh"
 
@@ -68,6 +70,9 @@ Options:
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
   --retries N                                 Number of test retries (overrides playwright.config value)
   --local-test-suite DIR                      Use a local checkout of c8-cross-component-e2e-tests instead of the npm package
+  --management-namespace NAMESPACE            For a multi-namespace topology: the namespace running the central
+                                               Identity/Keycloak. --namespace is then the orchestration namespace.
+                                               Requires deploy-camunda on PATH (used to merge the .env).
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -97,6 +102,7 @@ VIDEO_MODE=""
 TRACE_MODE=""
 RETRIES=""
 LOCAL_TEST_SUITE=""
+MANAGEMENT_NAMESPACE=""
 
 check_required_cmds
 
@@ -175,6 +181,10 @@ while [[ $# -gt 0 ]]; do
       LOCAL_TEST_SUITE="$2"
       shift 2
       ;;
+    --management-namespace)
+      MANAGEMENT_NAMESPACE="$2"
+      shift 2
+      ;;
     -v | --verbose)
       VERBOSE=true
       shift
@@ -225,7 +235,20 @@ log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
 trap 'rm -f "$ENV_FILE"' EXIT
 
-render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"
+if [[ -n "$MANAGEMENT_NAMESPACE" ]]; then
+  log "DEBUG: Multi-namespace topology — merging orchestration ($NAMESPACE) + management ($MANAGEMENT_NAMESPACE) into $ENV_FILE"
+  deploy-camunda e2e-env merge \
+    --orchestration-namespace "$NAMESPACE" \
+    --management-namespace "$MANAGEMENT_NAMESPACE" \
+    --absolute-chart-path "$ABSOLUTE_CHART_PATH" \
+    --output "$ENV_FILE" \
+    --ci="$IS_CI" \
+    --run-smoke-tests="$RUN_SMOKE_TESTS" \
+    --render-script "$SCRIPT_DIR/render-e2e-env.sh" \
+    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"}
+else
+  render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"
+fi
 
 # Export every variable from the namespace-scoped .env into the shell so that
 # the npx playwright subprocess inherits them without needing the .env file.

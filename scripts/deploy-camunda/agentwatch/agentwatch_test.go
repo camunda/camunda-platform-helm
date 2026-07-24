@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package agentwatch
 
 import (
@@ -12,6 +26,16 @@ import (
 )
 
 func nowSuffix() string { return time.Now().UTC().Format("20060102T150405") }
+
+func useFailingKubectl(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "kubectl")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatalf("write failing kubectl: %v", err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
 
 func TestParseVerdict_StrictJSON(t *testing.T) {
 	raw := []byte(`{
@@ -294,6 +318,8 @@ func contains(haystack []string, needle string) bool {
 }
 
 func TestWatch_SnapshotFailureRespectsMaxTicks(t *testing.T) {
+	useFailingKubectl(t)
+
 	// Regression: snapshot-fail path used to skip tick++, so MaxTicks
 	// could not bound the loop when kubectl was permanently broken.
 	// We simulate "always-broken kubectl" by pointing GatherSnapshot at a
@@ -488,6 +514,8 @@ func TestWatch_MaxDurationStopsLoop(t *testing.T) {
 }
 
 func TestWatch_MaxErrorsStopsRetryStorm(t *testing.T) {
+	useFailingKubectl(t)
+
 	opts := Options{
 		CLI: AgentCLI{Name: "claude", Path: "/nonexistent-but-required-by-validation"},
 		Snapshot: SnapshotOptions{

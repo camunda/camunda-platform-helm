@@ -69,6 +69,10 @@ type registryScenario struct {
 	PostInfraID   string   `yaml:"post-infra,omitempty"`
 	PostDeployID  string   `yaml:"post-deploy,omitempty"`
 	DependencyIDs []string `yaml:"dependencies,omitempty"`
+
+	// Topology, when set, describes a multi-namespace deployment shape for
+	// this scenario (see topology.go). Scenarios without it are unaffected.
+	Topology *Topology `yaml:"topology,omitempty"`
 }
 
 // HasRegistry reports whether <chartDir>/test/<RegistryDirName>/manifest.yaml
@@ -188,6 +192,25 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 			deps = append(deps, d)
 		}
 
+		// Resolve each topology release's per-release dependency IDs into
+		// ChartDependency specs, mirroring rscn.DependencyIDs above. Mutates
+		// rscn.Topology.Releases in place before it's shared onto every
+		// fanned-out CIScenario below (safe: read-only afterwards, and every
+		// fanned-out entry for this manifest row should see the same
+		// resolved companions).
+		if rscn.Topology != nil {
+			for i := range rscn.Topology.Releases {
+				rel := &rscn.Topology.Releases[i]
+				for _, depID := range rel.Dependencies {
+					d, err := loadDep(depID, entry.ID)
+					if err != nil {
+						return nil, err
+					}
+					rel.ResolvedDependencies = append(rel.ResolvedDependencies, d)
+				}
+			}
+		}
+
 		flows := rscn.Flows
 		if len(flows) == 0 {
 			// Match legacy default behavior: an empty/missing flow ends up as
@@ -223,6 +246,7 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 				PreInstall:   preInstall,
 				PostInfra:    postInfra,
 				PostDeploy:   postDeploy,
+				Topology:     rscn.Topology,
 			})
 		}
 	}

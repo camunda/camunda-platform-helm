@@ -232,6 +232,12 @@ type CIScenario struct {
 	// installed by the chart itself (e.g., the Gateway API
 	// ProxySettingsPolicy applied for gateway-keycloak).
 	PostDeploy *LifecycleHook `yaml:"post-deploy,omitempty"`
+
+	// Topology, when set, describes a multi-namespace deployment shape for
+	// this scenario (management + orchestration releases sharing a central
+	// Identity and secondary storage). Scenarios without it deploy as a
+	// single namespace/release exactly as before.
+	Topology *Topology `yaml:"topology,omitempty"`
 }
 
 // ChartDependency represents a companion chart that must be deployed

@@ -1,0 +1,41 @@
+# Orchestration namespace layer for the multinamespace topology (8.10)
+# Selected as a Feature layer (values/features/multinamespace-orchestration.yaml)
+# rather than an ExtraValues file so its EXTERNAL_ELASTICSEARCH_* placeholders
+# go through the normal per-layer env var substitution pipeline — ExtraValues
+# files are NOT substituted (see
+# scripts/deploy-camunda/deploy/values.go's BuildValuesChain). Feeding this
+# through ExtraValues was the root cause of the "EXTERNAL_ELASTICSEARCH_HOST
+# does not exist" live-GKE failure this fix addresses.
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose
+# comments in this file — the env var scanner (os.Expand-based) matches it
+# anywhere in the raw file content, including comments, and a malformed
+# match will be reported as a "missing required environment variable" at
+# prepare-values / deploy time. Reference placeholder names in plain text
+# instead (as above); the real placeholder syntax appears only in actual
+# values below.
+#
+# Orchestration release — Zeebe/Operate/Tasklist,
+# Connectors, and Optimize only. Auth (Identity/Keycloak wiring, pointed at
+# the management namespace) is owned entirely by
+# identity/keycloak-external.yaml (this release's `identity` layer selection
+# — see the scenario's topology block) so it is not duplicated here.
+#
+# The secondary storage backend is the Elasticsearch companion deployed once
+# into the management namespace (shared-storage: elasticsearch in the
+# scenario's topology block), referenced here by FQDN via the
+# EXTERNAL_ELASTICSEARCH_* env vars, resolved the same way persistence/
+# elasticsearch-external.yaml resolves them for a single-namespace scenario.
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+
+optimize:
+  enabled: true
+
+connectors:
+  enabled: true

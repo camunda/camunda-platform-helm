@@ -2,6 +2,7 @@ package deployer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
@@ -285,6 +286,32 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	// Values file (optional)
 	if cc.ValuesFile != "" {
 		args = append(args, "-f", cc.ValuesFile)
+	}
+
+	if len(o.CompanionNodeSelector) > 0 {
+		b, err := json.Marshal(o.CompanionNodeSelector)
+		if err != nil {
+			return &HelmError{
+				Reason:  fmt.Sprintf("companion chart %q: marshal nodeSelector", cc.ReleaseName),
+				Command: "json.Marshal(CompanionNodeSelector)",
+				Cause:   err,
+			}
+		}
+		args = append(args, "--set-json", "nodeSelector="+string(b))
+	}
+	if len(o.CompanionTolerations) > 0 {
+		b, err := json.Marshal(o.CompanionTolerations)
+		if err != nil {
+			return &HelmError{
+				Reason:  fmt.Sprintf("companion chart %q: marshal tolerations", cc.ReleaseName),
+				Command: "json.Marshal(CompanionTolerations)",
+				Cause:   err,
+			}
+		}
+		args = append(args, "--set-json", "tolerations="+string(b))
+	}
+	if cc.ReleaseName == "elasticsearch" && o.CompanionElasticsearchStorageClass != "" {
+		args = append(args, "--set", "volumeClaimTemplate.storageClassName="+o.CompanionElasticsearchStorageClass)
 	}
 
 	_, runErr := helmRunWithRetry(ctx, args)

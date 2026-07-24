@@ -75,6 +75,11 @@ type Entry struct {
 	// When set, generateScenarioContext uses this instead of Entry.Scenario
 	// to compute orchestration/optimize/tasklist/operate index prefixes.
 	PrefixKey string `json:"prefixKey,omitempty"`
+
+	// Topology, when set, describes a multi-namespace deployment shape for
+	// this scenario (see topology.go). Entries without it deploy as a single
+	// namespace/release exactly as before — this field is purely additive.
+	Topology *Topology `json:"topology,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -230,6 +235,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						PreUpgrade:   preUpgrade,
 						HelmVersion:  scenario.HelmVersion,
 						PrefixKey:    scenario.PrefixKey,
+						Topology:     scenario.Topology,
 					})
 				}
 			}
