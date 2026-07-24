@@ -181,3 +181,7 @@ integration:
     - id: qa-license
       shortname: lic
       enabled: false
+    - id: multinamespace
+      shortname: mns
+      tier: 2
+      enabled: true

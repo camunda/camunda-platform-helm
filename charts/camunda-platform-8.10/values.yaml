@@ -648,6 +648,24 @@ global:
         # Should be publicly accessible, the default value works if a port-forward to Optimize is created to 8083.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8083"
+        ## @param global.identity.auth.optimize.alwaysRegister if true, this Identity always provisions Optimize's Keycloak client and resource server (audience), even when Optimize's workload is not active in this release. Defaults to registering only when optimize.enabled is true. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.
+        alwaysRegister: false
+
+      #####################
+      # Orchestration
+      #####################
+      ## @extra global.identity.auth.orchestration configuration to configure Orchestration authentication specifics on global level, which can be accessed by other components
+      orchestration:
+        ## @param global.identity.auth.orchestration.alwaysRegister if true, this Identity always provisions the Orchestration Cluster's Keycloak client and resource server (audience), even when the Orchestration Cluster's OIDC auth method is not active in this release. Defaults to registering only when the Orchestration Cluster uses OIDC. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.
+        alwaysRegister: false
+
+      #####################
+      # Connectors
+      #####################
+      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
+      connectors:
+        ## @param global.identity.auth.connectors.alwaysRegister if true, this Identity always provisions the Connectors Keycloak client, even when Connectors OIDC auth is not active in this release. Defaults to registering only when Connectors uses OIDC. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.
+        alwaysRegister: false
 
   # Multiregion options for Zeebe
   #

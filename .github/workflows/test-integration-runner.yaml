@@ -1344,6 +1344,108 @@ jobs:
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
 
+  # Multi-namespace topology job: runs the smoke suite against the
+  # 'multinamespace' scenario's orchestration release, with credentials
+  # merged from the management release via `deploy-camunda e2e-env merge`.
+  # Fully additive/opt-in — gated tightly on the one topology scenario, so
+  # it cannot affect any other scenario's e2e path. Blocking: a smoke-suite
+  # failure fails this check.
+  e2e-topology-smoke:
+    name: "[topology] e2e smoke - ${{ inputs.shortname }}"
+    needs: [install]
+    runs-on: gcp-core-8-release
+    container:
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
+    if: ${{ inputs.test-enabled && inputs.scenario == 'multinamespace' && inputs.flow == 'install' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Resolve base namespace and derive management namespace
+        id: base-vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ inputs.deployment-ttl }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: Guard topology namespace length
+        run: |
+          set -euo pipefail
+          base="${{ steps.base-vars.outputs.namespace }}"
+          for suffix in orcha mgmt; do
+            full="${base}-${suffix}"
+            if [[ ${#full} -gt 63 ]]; then
+              echo "::error::namespace '${full}' is ${#full} chars, exceeding the 63-character Kubernetes limit. This workflow step derives it via naive concatenation and would diverge from deploy-camunda's DeriveReleaseNamespace truncation used by the actual deploy." >&2
+              exit 1
+            fi
+          done
+
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+          exportEnv: false
+
+      - name: Run Playwright E2E Tests (multi-namespace topology)
+        uses: ./.github/actions/playwright-e2e-tests
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
+        with:
+          camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+          camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
+          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          flow: ${{ inputs.flow }}
+          distro-platform: ${{ inputs.distro-platform }}
+          infra-type: ${{ inputs.infra-type }}
+          identifier: ${{ inputs.identifier }}
+          namespace-prefix: ${{ inputs.namespace-prefix }}
+          namespace-override: "${{ steps.base-vars.outputs.namespace }}-orcha"
+          management-namespace: "${{ steps.base-vars.outputs.namespace }}-mgmt"
+          binary-artifact-name: ${{ inputs.binary-artifact-name }}
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          auth: ${{ inputs.auth }}
+          auth-data: ${{ inputs.auth-data }}
+          test-stage: after-install
+          shard-index: "1"
+          scenario: ${{ inputs.scenario }}
+          run-smoke-tests: "true"
+
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
@@ -1504,7 +1606,7 @@ jobs:
   # skip scenarios that already passed for the same content hash.
   record-result:
     name: Record cache result - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports]
+    needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports, e2e-topology-smoke]
     # Only record when:
     # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios)
     #    Note: we check both 'failure' AND 'cancelled' to prevent false positives when
@@ -1553,7 +1655,7 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [merge-e2e-reports, shadow-e2e-full-suite]
+    needs: [merge-e2e-reports, shadow-e2e-full-suite, e2e-topology-smoke]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
@@ -1721,3 +1823,29 @@ jobs:
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
             fi
           fi
+
+      - name: CI Cleanup - Reap topology mgmt/orcha namespaces
+        if: always() && inputs.always-delete-namespace
+        env:
+          OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
+          OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
+        run: |
+          for suffix in mgmt orcha; do
+            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
+
+            kubectl annotate ns "$ns" test-flow=${{ inputs.flow }} --overwrite || true
+            kubectl annotate ns "$ns" build-failed=true --overwrite || true
+
+            if [[ "$(kubectl get ns "$ns" --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
+              kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
+              kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
+            else
+              if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
+                kubectl annotate ns "$ns" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
+                kubectl annotate ns "$ns" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
+              else
+                kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
+                kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
+              fi
+            fi
+          done

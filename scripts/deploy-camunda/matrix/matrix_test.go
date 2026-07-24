@@ -1343,12 +1343,32 @@ func TestResolveIngressBaseDomain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("INFRA_INGRESS_HOSTNAME_BASE", "")
 			got := resolveIngressBaseDomain(tt.opts, tt.platform)
 			if got != tt.want {
 				t.Errorf("resolveIngressBaseDomain(opts, %q) = %q, want %q", tt.platform, got, tt.want)
 			}
 		})
 	}
+}
+
+func TestResolveIngressBaseDomainEnvFallback(t *testing.T) {
+	t.Run("falls back to INFRA_INGRESS_HOSTNAME_BASE when flags empty", func(t *testing.T) {
+		t.Setenv("INFRA_INGRESS_HOSTNAME_BASE", "ci.distro.ultrawombat.com")
+		got := resolveIngressBaseDomain(RunOptions{}, "gke")
+		if got != "ci.distro.ultrawombat.com" {
+			t.Errorf("resolveIngressBaseDomain() = %q, want %q", got, "ci.distro.ultrawombat.com")
+		}
+	})
+
+	t.Run("flag-derived sources take priority over env var", func(t *testing.T) {
+		t.Setenv("INFRA_INGRESS_HOSTNAME_BASE", "should-not-be-used.example.com")
+		opts := RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}}
+		got := resolveIngressBaseDomain(opts, "gke")
+		if got != "ci.distro.ultrawombat.com" {
+			t.Errorf("resolveIngressBaseDomain() = %q, want %q", got, "ci.distro.ultrawombat.com")
+		}
+	})
 }
 
 // --- resolveInfraType tests ---

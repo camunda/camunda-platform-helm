@@ -55,6 +55,7 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	scriptsDir := filepath.Join(scenariosDir, "pre-setup-scripts")
 	chartFullSetupDir := filepath.Join(scenariosDir, "chart-full-setup")
 	featuresDir := filepath.Join(chartFullSetupDir, "values", "features")
+	registryDepsDir := filepath.Join(v.ChartDir, "test", RegistryDirName, "dependencies")
 
 	// Referenced-set tracking — feeds the orphan walks below. Populated as a
 	// side effect of checkHook so every hook iteration path (PR/Nightly/
@@ -165,6 +166,11 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		}
 		for _, dep := range scn.Dependencies {
 			checkDep(label, dep)
+		}
+		if scn.Topology != nil {
+			if err := scn.Topology.Validate(label, chartFullSetupDir, registryDepsDir); err != nil {
+				problems = append(problems, err.Error())
+			}
 		}
 
 		platforms := scn.Platforms

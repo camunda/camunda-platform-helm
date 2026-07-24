@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os/exec"
+	"strings"
 	"time"
 
 	"scripts/camunda-core/pkg/logging"
@@ -115,6 +117,40 @@ func waitIngressReadyWithDeps(ctx context.Context, deps ingressReadyDeps, host s
 			return fmt.Errorf("ingress %q readiness check canceled after %s: %w", host, time.Since(start).Round(time.Second), err)
 		}
 	}
+}
+
+// resolveDeployedIngressHost reads the primary web host from the Ingress
+// objects helm just created in namespace, so the readiness gate probes the
+// host actually served (and published to DNS) rather than a computed
+// <namespace>.<base-domain> value that CI overrides via global.host. Returns
+// "" on any error or when no primary host is found, so callers fall back to
+// their computed host.
+func resolveDeployedIngressHost(ctx context.Context, kubeContext, namespace string) string {
+	args := []string{}
+	if kubeContext != "" {
+		args = append(args, "--context", kubeContext)
+	}
+	args = append(args, "-n", namespace, "get", "ingress",
+		"-o", "jsonpath={.items[*].spec.rules[*].host}")
+	out, err := exec.CommandContext(ctx, "kubectl", args...).Output()
+	if err != nil {
+		return ""
+	}
+	return selectPrimaryIngressHost(string(out))
+}
+
+// selectPrimaryIngressHost picks the primary web host from whitespace-separated
+// ingress host tokens, skipping the gRPC/Zeebe/actuator sub-hosts, and returns
+// the first match ("" if none). Kept pure so it is unit-testable without
+// shelling out to kubectl.
+func selectPrimaryIngressHost(raw string) string {
+	for _, h := range strings.Fields(raw) {
+		if strings.Contains(h, "zeebe") || strings.Contains(h, "grpc") || strings.Contains(h, "actuator") {
+			continue
+		}
+		return h
+	}
+	return ""
 }
 
 // probeIngressOnce runs one DNS + HTTPS attempt bounded by perAttemptCap.

@@ -60,6 +60,27 @@ inputs:
     description: If true, run only the smoke-tests project. If false, run the full-suite project.
     required: false
     default: "true"
+  management-namespace:
+    description: >-
+      For a multi-namespace topology scenario: the namespace running the
+      central Identity/Keycloak. A deploy-camunda binary is downloaded so
+      run-e2e-tests.sh can merge the two namespaces' .env via
+      `deploy-camunda e2e-env merge`. Pair with namespace-override so
+      TEST_NAMESPACE resolves to the orchestration namespace.
+    required: false
+    default: ""
+  namespace-override:
+    description: >-
+      Overrides the namespace workflow-vars would otherwise compute from
+      identifier/namespace-prefix. Used by multi-namespace topology callers,
+      whose per-release namespace (e.g. <base>-orcha) workflow-vars has no
+      way to derive on its own.
+    required: false
+    default: ""
+  binary-artifact-name:
+    description: Name of the uploaded deploy-camunda binary artifact to download (only used when management-namespace is set).
+    required: false
+    default: deploy-camunda-binary
 runs:
   using: composite
   steps:
@@ -143,6 +164,19 @@ runs:
           zbctl
           jq
 
+    - name: Download deploy-camunda binary (multi-namespace topology)
+      if: inputs.management-namespace != ''
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ inputs.binary-artifact-name }}
+        path: ${{ runner.temp }}/bin
+    - name: Add deploy-camunda to PATH (multi-namespace topology)
+      if: inputs.management-namespace != ''
+      shell: bash
+      run: |
+        chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+        echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -154,6 +188,11 @@ runs:
         chart-dir: ${{ inputs.camunda-helm-dir }}
         chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
         prefix: ${{ inputs.namespace-prefix }}
+
+    - name: Override TEST_NAMESPACE (multi-namespace topology)
+      if: inputs.namespace-override != ''
+      shell: bash
+      run: echo "TEST_NAMESPACE=${{ inputs.namespace-override }}" | tee -a "$GITHUB_ENV"
 
     - name: Authenticate to cluster
       id: cluster-auth
@@ -189,6 +228,7 @@ runs:
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
         TEST_EXCLUDE: ${{ inputs.exclude }}
         TEST_AUTH_TYPE: ${{ inputs.auth }}
+        MANAGEMENT_NAMESPACE: ${{ inputs.management-namespace }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -211,7 +251,13 @@ runs:
           SMOKE_FLAG=""
         fi
 
-        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" ${SMOKE_FLAG} --trace retain-on-failure --verbose ${EXTRA_FLAGS}
+        E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
+        [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
+        E2E_ARGS+=(--trace retain-on-failure --verbose)
+        [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
+        [[ -n "$MANAGEMENT_NAMESPACE" ]] && E2E_ARGS+=(--management-namespace "${MANAGEMENT_NAMESPACE}")
+
+        ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}

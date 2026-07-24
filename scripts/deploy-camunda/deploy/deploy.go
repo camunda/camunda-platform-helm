@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
@@ -17,6 +19,51 @@ import (
 	"scripts/deploy-camunda/pkg/deployer"
 	"scripts/deploy-camunda/pkg/types"
 )
+
+// companionSchedulingFromInfra reads the infra values file for the given
+// infra type and returns the pool nodeSelector + tolerations to apply to
+// companion chart installs (they need top-level scheduling; the infra file
+// only sets it per main-chart component). Returns nil,nil when infraType is
+// empty or the file/keys are absent (best-effort, never fails the deploy).
+func companionSchedulingFromInfra(scenarioPath, infraType string) (map[string]string, []map[string]interface{}) {
+	if infraType == "" || scenarioPath == "" {
+		return nil, nil
+	}
+	path := filepath.Join(filepath.Dir(scenarioPath), "infra", "values-infra-"+infraType+".yaml")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, nil
+	}
+	var doc map[string]interface{}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, nil
+	}
+	// Every component in the infra file shares the same pool scheduling; use the first component that has both keys.
+	for _, v := range doc {
+		comp, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		ns, hasNS := comp["nodeSelector"].(map[string]interface{})
+		tol, hasTol := comp["tolerations"].([]interface{})
+		if hasNS && hasTol {
+			nodeSel := map[string]string{}
+			for k, vv := range ns {
+				if s, ok := vv.(string); ok {
+					nodeSel[k] = s
+				}
+			}
+			tols := make([]map[string]interface{}, 0, len(tol))
+			for _, t := range tol {
+				if tm, ok := t.(map[string]interface{}); ok {
+					tols = append(tols, tm)
+				}
+			}
+			return nodeSel, tols
+		}
+	}
+	return nil, nil
+}
 
 // runFailFastPreflight runs the secrets/env preflight before a deploy and
 // returns an error when a required input is missing. It skips the cluster
@@ -340,6 +387,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	}
 
 	// Build deployment options
+	compNS, compTol := companionSchedulingFromInfra(flags.Deployment.ScenarioPath, flags.Selection.InfraType)
 	deployOpts := types.Options{
 		ChartPath:              flags.Chart.ChartPath,
 		Chart:                  flags.Chart.Chart,
@@ -372,7 +420,8 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		RenderOutputDir:        flags.Deployment.RenderOutputDir,
 		IncludeCRDs:            true,
 		CIMetadata: types.CIMetadata{
-			Flow: flags.Deployment.Flow,
+			Flow:        flags.Deployment.Flow,
+			GithubRunID: os.Getenv("GITHUB_RUN_ID"),
 		},
 		ApplyIntegrationCreds: false,
 		VaultSecretPath:       prepared.VaultSecretPath,
@@ -381,6 +430,8 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		PreInstallHooks:       flags.PreInstallHooks,
 		CompanionCharts:       toDeployerCompanionCharts(prepared.CompanionCharts),
 		PostInfraHooks:        flags.PostInfraHooks,
+		CompanionNodeSelector: compNS,
+		CompanionTolerations:  compTol,
 	}
 
 	// Log deployment options (redact sensitive fields)
@@ -463,6 +514,12 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		ingressHost = os.Getenv("TEST_INGRESS_HOST")
 	}
 	if flags.Deployment.WaitIngressReady {
+		// Prefer the host on the Ingress helm just created: CI configures it with
+		// a hash-based global.host that differs from the <namespace>.<base-domain>
+		// value computed above, and only the deployed host is published to DNS.
+		if live := resolveDeployedIngressHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace); live != "" {
+			ingressHost = live
+		}
 		if ingressHost == "" {
 			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
 			return result
@@ -526,6 +583,36 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Msg("Scenario deployment completed successfully")
 
 	return result
+}
+
+// BuildTopologyCrossRefEnv derives the cross-namespace env vars every release
+// in a multi-namespace topology needs to reach back into the management
+// release: its namespace (for the Identity/Keycloak FQDNs baked into the
+// external-Keycloak identity layer), its Keycloak realm, and the shared
+// secondary-storage backend's FQDN (Service lives in the management
+// namespace, reachable cluster-wide via <service>.<namespace>.svc.cluster.local).
+//
+// Exported so the topology deploy driver (cmd's runTopologyEntry) can compute
+// this UP FRONT — every release's namespace/realm is known before any
+// release is deployed (see GenerateTopologyContexts) — and inject it into
+// EVERY release's ExtraEnv (including the management release itself, whose
+// inherited placeholders then resolve harmlessly) before render/preflight,
+// rather than only after the management release finishes deploying.
+func BuildTopologyCrossRefEnv(managementCtx *ScenarioContext, sharedStorageServiceName, sharedStoragePort, sharedStorageScheme string) map[string]string {
+	env := map[string]string{
+		"MGMT_NAMESPACE": managementCtx.Namespace,
+		"KEYCLOAK_REALM": managementCtx.KeycloakRealm,
+	}
+	if sharedStorageServiceName != "" {
+		env["EXTERNAL_ELASTICSEARCH_HOST"] = fmt.Sprintf("%s.%s.svc.cluster.local", sharedStorageServiceName, managementCtx.Namespace)
+	}
+	if sharedStoragePort != "" {
+		env["EXTERNAL_ELASTICSEARCH_PORT"] = sharedStoragePort
+	}
+	if sharedStorageScheme != "" {
+		env["EXTERNAL_ELASTICSEARCH_SCHEME"] = sharedStorageScheme
+	}
+	return env
 }
 
 func resolveDeployTTL(flagTTL, envTTL string) string {

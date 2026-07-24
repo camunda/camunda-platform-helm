@@ -87,6 +87,11 @@ type Options struct {
 	// e.g. migrating data from a prior release's bundled backends onto the
 	// companion services before the chart switches over to them.
 	PostInfraHooks []func(ctx context.Context) error
+
+	// CompanionNodeSelector is node scheduling applied to companion chart installs so they run on the same infra pool as the main chart.
+	CompanionNodeSelector map[string]string
+	// CompanionTolerations is node scheduling applied to companion chart installs so they run on the same infra pool as the main chart.
+	CompanionTolerations []map[string]interface{}
 }
 
 // CompanionChart represents a Helm chart that should be deployed as a

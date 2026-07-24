@@ -1161,12 +1161,30 @@ func resolveUseVaultBackedSecrets(opts RunOptions, platform string) bool {
 }
 
 // resolveIngressBaseDomain returns the ingress base domain for a given platform.
-// It checks IngressBaseDomains (platform-specific map) first, then falls back to IngressBaseDomain.
+// It checks IngressBaseDomains (platform-specific map) first, then falls back to
+// IngressBaseDomain, then to the INFRA_INGRESS_HOSTNAME_BASE env var
+// test-integration-runner.yaml exports. CI invokes deploy-camunda with
+// --extra-helm-set global.host=<precomputed-host> for the base (single-namespace)
+// deploy rather than --ingress-base-domain-<platform>, so neither flag-derived
+// source is populated there; the env var is the only base domain CI actually
+// provides, and it's what a topology deploy needs to derive each release's own
+// per-namespace host.
 func resolveIngressBaseDomain(opts RunOptions, platform string) string {
 	if d, ok := opts.IngressBaseDomains[platform]; ok && d != "" {
 		return d
 	}
-	return opts.IngressBaseDomain
+	if opts.IngressBaseDomain != "" {
+		return opts.IngressBaseDomain
+	}
+	return os.Getenv("INFRA_INGRESS_HOSTNAME_BASE")
+}
+
+// ResolveIngressBaseDomain is the exported form of resolveIngressBaseDomain,
+// for callers outside the matrix package (e.g. the topology deploy driver,
+// which derives each release's own ingress host the same way BuildEntryFlags
+// does for the single-namespace path).
+func ResolveIngressBaseDomain(opts RunOptions, platform string) string {
+	return resolveIngressBaseDomain(opts, platform)
 }
 
 // diagnosticsDir is the directory where per-namespace diagnostic files are written.

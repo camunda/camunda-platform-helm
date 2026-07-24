@@ -286,3 +286,103 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 
 	return nil
 }
+
+// TopologyRelease is the deploy package's view of one release within a
+// multi-namespace topology (matrix.TopologyRelease, mirrored here to avoid an
+// import cycle — the matrix package already imports deploy).
+type TopologyRelease struct {
+	// Role is either "management" or "orchestration".
+	Role string
+	// NamespaceSuffix is appended to the base namespace to form this
+	// release's namespace (<base>-<namespace-suffix>).
+	NamespaceSuffix string
+	// Values names the values file for this release (relative to the
+	// scenario's chart-full-setup values dir).
+	Values string
+	// DependsOn, when set, names the Role of a release that must be deployed
+	// (and ready) before this one.
+	DependsOn string
+}
+
+// DeriveReleaseNamespace forms a release's namespace as <base>-<suffix>,
+// truncating base so the result stays within Kubernetes' 63-character
+// namespace name limit. It returns an error when suffix alone (plus the
+// separating "-") cannot leave room for at least a 1-character base.
+func DeriveReleaseNamespace(base, suffix string) (string, error) {
+	namespace := fmt.Sprintf("%s-%s", base, suffix)
+	if len(namespace) > 63 {
+		maxBase := 63 - len(suffix) - 1
+		if maxBase <= 0 {
+			return "", fmt.Errorf("DeriveReleaseNamespace: suffix %q is too long to fit a namespace within the 63-character Kubernetes limit", suffix)
+		}
+		truncatedBase := strings.TrimRight(base[:maxBase], "-")
+		namespace = fmt.Sprintf("%s-%s", truncatedBase, suffix)
+	}
+	return namespace, nil
+}
+
+// generateTopologyContexts fans a single scenario out into one *ScenarioContext
+// per TopologyRelease. Each release gets its own namespace
+// (<baseNamespace>-<namespace-suffix>), always releases as "integration", and
+// derives its index prefixes + Keycloak realm from the *release's own*
+// namespace via the same namespaceDerivedSuffix/orchestrationPrefix helpers
+// generateScenarioContext uses — so the two orchestration releases sharing one
+// Elasticsearch automatically land on distinct index prefixes.
+//
+// This is purely additive: callers only invoke it when a scenario declares a
+// Topology; generateScenarioContext (the single-namespace path) is untouched.
+func generateTopologyContexts(scenario string, releases []TopologyRelease, flags *config.RuntimeFlags) ([]*ScenarioContext, error) {
+	if len(releases) == 0 {
+		return nil, fmt.Errorf("generateTopologyContexts: scenario %q: at least one topology release is required", scenario)
+	}
+
+	baseNamespace := flags.EffectiveNamespace()
+	resolvedHost := flags.ResolveIngressHostname()
+	normalizedScenario := normalizeIdentifierPart(scenario)
+
+	contexts := make([]*ScenarioContext, 0, len(releases))
+	for _, rel := range releases {
+		namespace, err := DeriveReleaseNamespace(baseNamespace, rel.NamespaceSuffix)
+		if err != nil {
+			return nil, fmt.Errorf("generateTopologyContexts: scenario %q: %w", scenario, err)
+		}
+		suffix := namespaceDerivedSuffix(namespace)
+
+		ingressHost := ""
+		if resolvedHost != "" {
+			ingressHost = fmt.Sprintf("%s-%s", rel.NamespaceSuffix, resolvedHost)
+		}
+
+		realmName := generateCompactRealmName(normalizeIdentifierPart(namespace), normalizedScenario, suffix)
+
+		contexts = append(contexts, &ScenarioContext{
+			ScenarioName:             scenario,
+			Namespace:                namespace,
+			Release:                  "integration",
+			IngressHost:              ingressHost,
+			KeycloakRealm:            realmName,
+			OptimizeIndexPrefix:      fmt.Sprintf("opt-%s-%s", normalizedScenario, suffix),
+			OrchestrationIndexPrefix: orchestrationPrefix(normalizedScenario, suffix),
+			TasklistIndexPrefix:      fmt.Sprintf("task-%s-%s", normalizedScenario, suffix),
+			OperateIndexPrefix:       fmt.Sprintf("op-%s-%s", normalizedScenario, suffix),
+		})
+	}
+
+	return contexts, nil
+}
+
+// GenerateTopologyContexts is the exported form of generateTopologyContexts,
+// for callers outside the deploy package (the topology deploy driver in
+// cmd's runTopologyEntry) that need to predict every release's namespace,
+// Keycloak realm, and index prefixes UP FRONT — before any release is
+// deployed — so cross-namespace env vars (MGMT_NAMESPACE, KEYCLOAK_REALM,
+// EXTERNAL_ELASTICSEARCH_HOST) can be computed once and injected into every
+// release's ExtraEnv ahead of render/preflight, rather than only being
+// available after the management release finishes deploying.
+//
+// flags only needs Deployment.Namespace (and, optionally, Ingress fields) set
+// — EffectiveNamespace() and ResolveIngressHostname() are the only fields
+// this reads.
+func GenerateTopologyContexts(scenario string, releases []TopologyRelease, flags *config.RuntimeFlags) ([]*ScenarioContext, error) {
+	return generateTopologyContexts(scenario, releases, flags)
+}
