@@ -14,6 +14,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -47,8 +48,16 @@ type routingResourceLister func(
 
 // resolveIngressReadyHost selects the public host that was actually applied
 // to the deployment before falling back to the precomputed scenario host.
-func resolveIngressReadyHost(ctx context.Context, flags *config.RuntimeFlags, scenarioCtx *ScenarioContext) string {
-	return resolveIngressReadyHostWith(ctx, flags, scenarioCtx, os.Getenv, resolveDeployedRoutingHost)
+func resolveIngressReadyHost(ctx context.Context, flags *config.RuntimeFlags, scenarioCtx *ScenarioContext) (string, error) {
+	if host := concreteRoutingHost(flags.Ingress.IngressHostname); host != "" {
+		return host, nil
+	}
+
+	deployedHost, err := resolveDeployedRoutingHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
+	if err != nil {
+		return "", err
+	}
+	return ingressReadyHostFallback(flags, scenarioCtx, os.Getenv, deployedHost), nil
 }
 
 func resolveIngressReadyHostWith(
@@ -63,6 +72,15 @@ func resolveIngressReadyHostWith(
 	}
 
 	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
+	return ingressReadyHostFallback(flags, scenarioCtx, getenv, deployedHost)
+}
+
+func ingressReadyHostFallback(
+	flags *config.RuntimeFlags,
+	scenarioCtx *ScenarioContext,
+	getenv func(string) string,
+	deployedHost string,
+) string {
 	return config.FirstNonEmpty(
 		deployedHost,
 		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.ingress.host"]),
@@ -76,13 +94,13 @@ func resolveIngressReadyHostWith(
 // resolveDeployedRoutingHost discovers the first web hostname exposed by the
 // routing resources in a namespace. HTTPRoute is checked before Gateway so an
 // exact route hostname wins over a wildcard listener hostname.
-func resolveDeployedRoutingHost(ctx context.Context, kubeContext, namespace, release string) string {
+func resolveDeployedRoutingHost(ctx context.Context, kubeContext, namespace, release string) (string, error) {
 	lookupCtx, cancel := context.WithTimeout(ctx, routingHostLookupTimeout)
 	defer cancel()
 
 	client, err := kube.NewClient("", kubeContext)
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("create Kubernetes client for readiness host discovery: %w", err)
 	}
 	return resolveDeployedRoutingHostWith(lookupCtx, namespace, release, client.ListNamespacedResources)
 }
@@ -92,16 +110,20 @@ func resolveDeployedRoutingHostWith(
 	namespace,
 	release string,
 	listResources routingResourceLister,
-) string {
+) (string, error) {
 	resources := []schema.GroupVersionResource{
 		{Group: "networking.k8s.io", Version: "v1", Resource: "ingresses"},
 		{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "httproutes"},
 		{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "gateways"},
 	}
 
+	var forbiddenErr error
 	for _, resource := range resources {
 		resourceList, err := listResources(ctx, namespace, resource)
 		if err != nil {
+			if apierrors.IsForbidden(err) && forbiddenErr == nil {
+				forbiddenErr = fmt.Errorf("list %s while resolving readiness host in namespace %q: %w", resource.Resource, namespace, err)
+			}
 			continue
 		}
 		for _, item := range resourceList.Items {
@@ -109,12 +131,12 @@ func resolveDeployedRoutingHostWith(
 				continue
 			}
 			if host := selectPrimaryRoutingHost(strings.Join(routingResourceHosts(item), " ")); host != "" {
-				return host
+				return host, nil
 			}
 		}
 	}
 
-	return ""
+	return "", forbiddenErr
 }
 
 func routingResourceOwnedByRelease(resource unstructured.Unstructured, release string) bool {
@@ -125,7 +147,7 @@ func routingResourceOwnedByRelease(resource unstructured.Unstructured, release s
 		return true
 	}
 	name := resource.GetName()
-	return name == release || strings.HasPrefix(name, release+"-")
+	return name == release || name == release+"-camunda-platform"
 }
 
 func routingResourceHosts(resource unstructured.Unstructured) []string {

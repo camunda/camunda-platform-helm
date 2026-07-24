@@ -453,7 +453,11 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	if flags.Deployment.WaitIngressReady {
 		// Probe the host applied to Helm or discovered from the deployed routing
 		// resources before falling back to the precomputed scenario hostname.
-		ingressHost := resolveIngressReadyHost(ctx, flags, scenarioCtx)
+		ingressHost, err := resolveIngressReadyHost(ctx, flags, scenarioCtx)
+		if err != nil {
+			result.Error = fmt.Errorf("failed to resolve ingress readiness host: %w", err)
+			return result
+		}
 		if ingressHost == "" {
 			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set global.host, --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
 			return result
