@@ -669,7 +669,7 @@ Zeebe templates.
       printf "%s://%s%s"
         (ternary "https" "http" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true"))
         (include "orchestration.serviceNameHTTP" .)
-        (.Values.orchestration.contextPath | default "")
+        (.Values.orchestration.contextPath | default "" | trimSuffix "/")
     -}}
   {{- end -}}
 {{- end -}}
