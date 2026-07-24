@@ -542,6 +542,52 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	}
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUrlWithoutTrailingSlashWhenContextPathIsRoot() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                              "true",
+		"global.zeebeClusterName":                       "test-zeebe",
+		"global.ingress.enabled":                        "true",
+		"global.ingress.tls.enabled":                    "true",
+		"global.host":                                   "example.com",
+		"orchestration.contextPath":                     "/",
+		"orchestration.service.grpcPort":                "26600",
+		"orchestration.service.httpPort":                "8090",
+		"orchestration.security.authorizations.enabled": "false",
+		"global.elasticsearch.enabled":                  "true",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
+	defaultCluster := configmapApplication.Camunda.Modeler.Clusters[1]
+	s.Require().Equal("default-cluster", defaultCluster.Id)
+	var orchestrationComp ComponentYAML
+	for _, c := range defaultCluster.Components {
+		if c.Type == "orchestration" {
+			orchestrationComp = c
+			break
+		}
+	}
+	s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090", orchestrationComp.Urls.Rest)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOrchestrationGrpcTlsIsEnabled() {
 	values := map[string]string{
 		"identity.enabled":                              "true",
