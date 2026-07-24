@@ -7,3 +7,6 @@ orchestration:
     waitPeriodBeforeArchiving: 3h
     delayBetweenRuns: 4000
     maxDelayBetweenRuns: 12000
+  env:
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_ROLLOVERBATCHSIZE
+      value: "321"
