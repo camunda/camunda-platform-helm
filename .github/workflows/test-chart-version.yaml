@@ -296,6 +296,7 @@ jobs:
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
       wait-ingress-ready: true
+      ingress-ready-timeout: 12
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
       infra-type-gke: ${{ matrix.infraTypeGke || 'preemptible' }}
       infra-type-eks: ${{ matrix.infraTypeEks || 'preemptible' }}
@@ -385,4 +386,3 @@ jobs:
             -f state="success" \
             -f context="release-chores" \
             -f description="$desc"
-

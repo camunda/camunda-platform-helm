@@ -115,6 +115,8 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 		return nil, namespace, kubeCtx, envFile, cleanup, err
 	}
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
+	explicitIngressHost := explicitIngressHost(opts)
+	baseDomain := resolveIngressBaseDomain(opts, platform)
 
 	// Compute the scenario directory. deploy.Execute uses this to resolve
 	// values files — both layered and legacy formats are handled there.
@@ -198,8 +200,9 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 			// e.g., namespace "matrix-89-eske-inst" + base "ci.distro.ultrawombat.com"
 			//     → hostname "matrix-89-eske-inst.ci.distro.ultrawombat.com"
 			// The base domain is resolved per-platform (GKE/EKS may have different domains).
-			IngressSubdomain:  ingressSubdomain(resolveIngressBaseDomain(opts, platform), namespace),
-			IngressBaseDomain: resolveIngressBaseDomain(opts, platform),
+			IngressHostname:   explicitIngressHost,
+			IngressSubdomain:  ingressSubdomain(baseDomain, namespace, explicitIngressHost),
+			IngressBaseDomain: ingressBaseDomain(baseDomain, explicitIngressHost),
 		},
 		Auth: config.AuthFlags{
 			Auth:             entry.Auth,
@@ -264,6 +267,10 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 	}
 
 	return flags, namespace, kubeCtx, envFile, cleanup, nil
+}
+
+func explicitIngressHost(opts RunOptions) string {
+	return parseHelmSetPairs(opts.ExtraHelmSets)["global.host"]
 }
 
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().

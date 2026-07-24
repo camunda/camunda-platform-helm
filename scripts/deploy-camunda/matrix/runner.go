@@ -298,8 +298,8 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 			envFile := resolveEnvFile(opts, entry.Version)
 			useVault := resolveUseVaultBackedSecrets(opts, platform)
 			baseDomain := resolveIngressBaseDomain(opts, platform)
-			ingressHost := ""
-			if baseDomain != "" {
+			ingressHost := explicitIngressHost(opts)
+			if ingressHost == "" && baseDomain != "" {
 				ingressHost = namespace + "." + baseDomain
 			}
 
@@ -1090,12 +1090,19 @@ func flowAbbrev(flow string) string {
 }
 
 // ingressSubdomain returns the namespace as the ingress subdomain when a base
-// domain is configured, or empty string when ingress is not configured.
-func ingressSubdomain(baseDomain, namespace string) string {
-	if baseDomain == "" {
+// domain is configured and no full hostname override is set.
+func ingressSubdomain(baseDomain, namespace, ingressHostname string) string {
+	if baseDomain == "" || ingressHostname != "" {
 		return ""
 	}
 	return namespace
+}
+
+func ingressBaseDomain(baseDomain, ingressHostname string) string {
+	if ingressHostname != "" {
+		return ""
+	}
+	return baseDomain
 }
 
 // resolveKubeContext returns the Kubernetes context for a given platform.

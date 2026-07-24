@@ -432,6 +432,12 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		PostInfraHooks:        flags.PostInfraHooks,
 		CompanionNodeSelector: compNS,
 		CompanionTolerations:  compTol,
+		CompanionElasticsearchStorageClass: func() string {
+			if flags.Selection.InfraType == "arm" {
+				return "hyperdisk-balanced"
+			}
+			return ""
+		}(),
 	}
 
 	// Log deployment options (redact sensitive fields)

@@ -279,6 +279,19 @@ func TestDeployCompanionChart(t *testing.T) {
 			},
 		},
 		{
+			name: "elasticsearch storage class override",
+			cc: types.CompanionChart{
+				ChartRef:    "elastic/elasticsearch",
+				Version:     "8.5.1",
+				ReleaseName: "elasticsearch",
+			},
+			opts: types.Options{
+				Namespace:                          "ns",
+				CompanionElasticsearchStorageClass: "hyperdisk-balanced",
+			},
+			wantArgs: []string{"--set", "volumeClaimTemplate.storageClassName=hyperdisk-balanced"},
+		},
+		{
 			name: "unmarshalable tolerations value propagates as HelmError",
 			cc: types.CompanionChart{
 				ChartRef:    "bitnami/redis",

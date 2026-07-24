@@ -310,6 +310,9 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		}
 		args = append(args, "--set-json", "tolerations="+string(b))
 	}
+	if cc.ReleaseName == "elasticsearch" && o.CompanionElasticsearchStorageClass != "" {
+		args = append(args, "--set", "volumeClaimTemplate.storageClassName="+o.CompanionElasticsearchStorageClass)
+	}
 
 	_, runErr := helmRunWithRetry(ctx, args)
 	if runErr == nil {

@@ -953,11 +953,61 @@ func TestIngressSubdomain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ingressSubdomain(tt.baseDomain, tt.namespace)
+			got := ingressSubdomain(tt.baseDomain, tt.namespace, "")
 			if got != tt.want {
 				t.Errorf("ingressSubdomain(%q, %q) = %q, want %q", tt.baseDomain, tt.namespace, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestIngressSubdomainWithExplicitHostname(t *testing.T) {
+	if got := ingressSubdomain("ci.distro.ultrawombat.com", "matrix-810-eske-inst", "hash.example.com"); got != "" {
+		t.Fatalf("ingressSubdomain() = %q, want empty when full hostname is set", got)
+	}
+	if got := ingressBaseDomain("ci.distro.ultrawombat.com", "hash.example.com"); got != "" {
+		t.Fatalf("ingressBaseDomain() = %q, want empty when full hostname is set", got)
+	}
+}
+
+func TestBuildEntryFlagsPrefersExplicitGlobalHost(t *testing.T) {
+	entry := Entry{
+		Version:   "8.10",
+		ChartPath: "charts/camunda-platform-8.10",
+		Scenario:  "estls",
+		Shortname: "estls",
+		Flow:      "install",
+		Platform:  "gke",
+	}
+	opts := RunOptions{
+		NamespaceOverride: "camunda-id--intg-8-10-gke-estls-e0bc5f",
+		IngressBaseDomain: "ci.distro.ultrawombat.com",
+		ExtraHelmSets: []string{
+			"global.host=e0bc5f-gke--intg-8-10-gke-estls.ci.distro.ultrawombat.com",
+		},
+	}
+
+	flags, _, _, _, cleanup, err := BuildEntryFlags(entry, opts)
+	defer cleanup()
+	if err != nil {
+		t.Fatalf("BuildEntryFlags returned error: %v", err)
+	}
+	if got, want := flags.ResolveIngressHostname(), "e0bc5f-gke--intg-8-10-gke-estls.ci.distro.ultrawombat.com"; got != want {
+		t.Fatalf("ResolveIngressHostname() = %q, want %q", got, want)
+	}
+	if flags.Ingress.IngressSubdomain != "" || flags.Ingress.IngressBaseDomain != "" {
+		t.Fatalf("explicit hostname must clear derived ingress fields, got %#v", flags.Ingress)
+	}
+}
+
+func TestDryRunPrefersExplicitGlobalHost(t *testing.T) {
+	opts := RunOptions{
+		IngressBaseDomain: "ci.distro.ultrawombat.com",
+		ExtraHelmSets:     []string{"global.host=hash.example.com"},
+	}
+
+	if got, want := explicitIngressHost(opts), "hash.example.com"; got != want {
+		t.Fatalf("explicitIngressHost() = %q, want %q", got, want)
 	}
 }
 

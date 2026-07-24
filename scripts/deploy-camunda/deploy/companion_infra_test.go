@@ -52,3 +52,15 @@ func TestCompanionSchedulingFromInfraEmptyType(t *testing.T) {
 		t.Fatalf("expected nil,nil for empty infraType, got %#v, %#v", nodeSelector, tolerations)
 	}
 }
+
+func TestCompanionSchedulingFromInfraARM(t *testing.T) {
+	scenarioPath := chartFullSetupPath(t)
+
+	nodeSelector, tolerations := companionSchedulingFromInfra(scenarioPath, "arm")
+	if nodeSelector["workload"] != "arm-processor" {
+		t.Fatalf("expected ARM node selector, got %#v", nodeSelector)
+	}
+	if len(tolerations) == 0 || tolerations[0]["value"] != "arm-processor" {
+		t.Fatalf("expected ARM toleration, got %#v", tolerations)
+	}
+}
