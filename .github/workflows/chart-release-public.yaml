@@ -76,7 +76,7 @@ jobs:
       # "Parse RC tag" runs before the main checkout, so build release-tools here.
       # The binary in /tmp survives the later checkout.
       - name: Checkout for tooling
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install tools for tooling
         uses: ./.github/actions/install-tool-versions
@@ -127,7 +127,7 @@ jobs:
           /tmp/release-tools resolve-tag --kind rc --input-tag "$input_tag" --tags-file /tmp/rc-tags.json "${dry_run_args[@]}"
 
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -420,7 +420,7 @@ jobs:
           private_key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           token: ${{ steps.generate-github-token.outputs.token }}
@@ -621,7 +621,7 @@ jobs:
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@305de9730455a10c1df97262d42ced69855f2b16 # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@8f6fae58d4594d3a700982c6642d9de28a950fcc # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
