@@ -31,7 +31,7 @@ jobs:
     env:
       TEST_NAMESPACE: camunda-platform
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: "${{ inputs.camunda-helm-git-ref }}"
       - name: Import Vault secrets
@@ -47,7 +47,7 @@ jobs:
             secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
           exportEnv: false
       - name: Install common software tooling
-        uses: camunda/infra-global-github-actions/common-tooling@305de9730455a10c1df97262d42ced69855f2b16 # main
+        uses: camunda/infra-global-github-actions/common-tooling@8f6fae58d4594d3a700982c6642d9de28a950fcc # main
         with:
           overwrite: "false"
           build-essential-enabled: "true"
