@@ -59,6 +59,7 @@ Options:
   --shard-index SHARD_INDEX                   The shard index to run.
   --shard-total SHARD_TOTAL                   The total number of shards.
   --test-exclude TEST_EXCLUDE                 The tests to exclude
+  --test-grep TEST_GREP                       Run tests whose titles match this regular expression
   --not-ci                                    Don't set the CI env var to true
   --run-smoke-tests                           Run the smoke tests
   --opensearch                                Run the opensearch tests
@@ -91,6 +92,7 @@ VERBOSE=false
 SHARD_INDEX=1
 SHARD_TOTAL=1
 TEST_EXCLUDE=""
+TEST_GREP=""
 IS_CI="${CI:-false}"
 RUN_SMOKE_TESTS=false
 IS_OPENSEARCH=false
@@ -135,6 +137,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --test-exclude)
       TEST_EXCLUDE="$2"
+      shift 2
+      ;;
+    --test-grep)
+      TEST_GREP="$2"
       shift 2
       ;;
     --not-ci)
@@ -278,6 +284,7 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
 [[ -n "$KUBE_CONTEXT" ]] && RERUN_CMD+=" --kube-context ${KUBE_CONTEXT}"
 [[ -n "$TEST_EXCLUDE" ]] && RERUN_CMD+=" --test-exclude \"${TEST_EXCLUDE}\""
+[[ -n "$TEST_GREP" ]] && RERUN_CMD+=" --test-grep \"${TEST_GREP}\""
 [[ "$RUN_SMOKE_TESTS" == "true" ]] && RERUN_CMD+=" --run-smoke-tests"
 [[ "$IS_OPENSEARCH" == "true" ]] && RERUN_CMD+=" --opensearch"
 [[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
@@ -288,6 +295,6 @@ RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PAT
 [[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
 [[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$TEST_GREP"
 
 log "DEBUG: E2E tests completed"
