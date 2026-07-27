@@ -1275,9 +1275,9 @@
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                        "orchestration": {"type": "string"},
-                        "optimize": {"type": "string"},
-                        "connectors": {"type": "string"}
+                        "orchestration": {"type": "string", "pattern": "^$|^/"},
+                        "optimize": {"type": "string", "pattern": "^$|^/"},
+                        "connectors": {"type": "string", "pattern": "^$|^/"}
                     }
                 },
                 "components": {"$ref": "#/$defs/topologyComponents"}

@@ -81,6 +81,8 @@ func TestOrchestrationTopologyConsumesClusterAndManagementConfiguration(t *testi
 	output := render(t, "orchestration.yaml",
 		"templates/orchestration/configmap.yaml",
 		"templates/orchestration/statefulset.yaml",
+		"templates/optimize/deployment.yaml",
+		"templates/connectors/deployment.yaml",
 		"templates/common/configmap-identity-auth.yaml",
 	)
 
@@ -104,6 +106,23 @@ func TestOrchestrationTopologyConsumesClusterAndManagementConfiguration(t *testi
 			Key:                  "orchestration-secret",
 		}},
 	})
+	require.Contains(t, output, "name: CAMUNDA_IDENTITY_CLIENT_SECRET")
+	require.Contains(t, output, "name: east-oidc")
+	require.Contains(t, output, "key: optimize-secret")
+	require.Contains(t, output, "key: connectors-secret")
+}
+
+func TestManagementTopologyRejectsDuplicateClientIds(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[1].components.orchestration.clientId": "orchestration-east",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
 }
 
 func splitDocuments(output string) []string {

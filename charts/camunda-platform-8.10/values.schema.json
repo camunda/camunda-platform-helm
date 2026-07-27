@@ -6931,13 +6931,16 @@
                     "additionalProperties": false,
                     "properties": {
                         "orchestration": {
-                            "type": "string"
+                            "type": "string",
+                            "pattern": "^$|^/"
                         },
                         "optimize": {
-                            "type": "string"
+                            "type": "string",
+                            "pattern": "^$|^/"
                         },
                         "connectors": {
-                            "type": "string"
+                            "type": "string",
+                            "pattern": "^$|^/"
                         }
                     }
                 },

@@ -602,14 +602,19 @@ Identity Auth.
 
 {{- define "camundaPlatform.topologyManagementIdentityURL" -}}
   {{- $management := .Values.global.topology.management -}}
-  {{- if .Values.global.identity.service.url -}}
-    {{- tpl .Values.global.identity.service.url . -}}
-  {{- else if $management.identityServiceUrl -}}
+  {{- if and (eq .Values.global.topology.mode "orchestration") $management.identityServiceUrl -}}
     {{- tpl $management.identityServiceUrl . -}}
-  {{- else if and $management.releaseName $management.namespace -}}
+  {{- else if and (eq .Values.global.topology.mode "orchestration") $management.releaseName $management.namespace -}}
     {{- $serviceName := include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $management.releaseName "componentName" "identity") -}}
     {{- printf "http://%s.%s.svc.cluster.local:%v%s" $serviceName $management.namespace $management.identityServicePort $management.identityContextPath -}}
+  {{- else if .Values.global.identity.service.url -}}
+    {{- tpl .Values.global.identity.service.url . -}}
   {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyContextPath" -}}
+  {{- $path := . | default "" | toString | trimAll "/" -}}
+  {{- if $path -}}{{- printf "/%s" $path -}}{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.orchestrationEnabled" -}}
@@ -972,9 +977,9 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- $orchestration := dig "components" "orchestration" dict $cluster }}
 {{- $optimize := dig "components" "optimize" dict $cluster }}
 {{- $connectors := dig "components" "connectors" dict $cluster }}
-{{- $orchestrationPath := dig "contextPaths" "orchestration" "/orchestration" $cluster }}
-{{- $optimizePath := dig "contextPaths" "optimize" "/optimize" $cluster }}
-{{- $connectorsPath := dig "contextPaths" "connectors" "/connectors" $cluster }}
+{{- $orchestrationPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "orchestration" "/orchestration" $cluster) }}
+{{- $optimizePath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "optimize" "/optimize" $cluster) }}
+{{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "/connectors" $cluster) }}
 {{- $orchestrationName := $orchestration.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "zeebe")) }}
 {{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
 {{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "optimize")) }}
