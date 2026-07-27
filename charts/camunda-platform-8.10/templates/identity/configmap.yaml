@@ -63,10 +63,6 @@ data:
               type: confidential
               secret: {{ printf "${VALUES_TOPOLOGY_%s_ORCHESTRATION_SECRET:}" $token }}
               permissions:
-                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
-                  definition: create:*
-                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
-                  definition: update:*
                 - audience: {{ $orchestration.audience | quote }}
                   definition: write:*
               root-url: {{ tpl $orchestration.redirectUrl $ | quote }}

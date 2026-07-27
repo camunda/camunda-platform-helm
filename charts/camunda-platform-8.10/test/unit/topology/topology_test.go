@@ -50,6 +50,8 @@ func TestManagementTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testin
 	require.Contains(t, output, `name: "Orchestration"`)
 	require.Contains(t, output, `audience: "orchestration-east-api"`)
 	require.Contains(t, output, `audience: "orchestration-west-api"`)
+	require.NotContains(t, output, `audience: "web-modeler-api"\n                  definition: create:*`)
+	require.NotContains(t, output, `audience: "web-modeler-api"\n                  definition: update:*`)
 	require.Contains(t, output, `id: "east"`)
 	require.Contains(t, output, `id: "west"`)
 	require.Contains(t, output, `grpc://camunda-zeebe-gateway.camunda-east.svc.cluster.local:26500`)
