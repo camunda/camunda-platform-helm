@@ -1,4 +1,4 @@
-{{- if and (or (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Release.IsUpgrade) (not .Values.global.noSecondaryStorage) .Values.optimize.persistence.enabled (not .Values.optimize.persistence.existingClaim) }}
+{{- if and (or (and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage)) .Release.IsUpgrade) .Values.optimize.persistence.enabled (not .Values.optimize.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
