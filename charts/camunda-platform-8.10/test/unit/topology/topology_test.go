@@ -97,6 +97,20 @@ func TestManagementTopologyPreservesLegacyAlwaysRegister(t *testing.T) {
 	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET")
 }
 
+func TestManagementTopologyRejectsLegacyRegistrationCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.orchestration.alwaysRegister":             "true",
+			"global.topology.clusters[0].components.orchestration.clientId": "orchestration",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration"`)
+}
+
 func TestOrchestrationTopologyConsumesClusterAndManagementConfiguration(t *testing.T) {
 	output := render(t, "orchestration.yaml",
 		"templates/orchestration/configmap.yaml",

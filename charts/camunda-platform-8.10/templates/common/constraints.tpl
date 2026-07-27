@@ -62,6 +62,24 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
       (include "webModeler.authPublicApiAudience" .) true
   }}
   {{- $seenRoles := dict "ManagementIdentity" true "Web Modeler" true "Web Modeler Admin" true }}
+  {{- $legacyIds := list }}
+  {{- if .Values.global.identity.auth.connectors.alwaysRegister }}
+    {{- $legacyIds = append $legacyIds (include "connectors.authClientId" .) }}
+  {{- end }}
+  {{- if .Values.global.identity.auth.optimize.alwaysRegister }}
+    {{- $legacyIds = append $legacyIds (include "optimize.authClientId" .) }}
+    {{- $legacyIds = append $legacyIds (include "camundaPlatform.authAudienceOptimize" .) }}
+  {{- end }}
+  {{- if .Values.global.identity.auth.orchestration.alwaysRegister }}
+    {{- $legacyIds = append $legacyIds (include "orchestration.authClientId" .) }}
+    {{- $legacyIds = append $legacyIds (include "orchestration.authAudience" .) }}
+  {{- end }}
+  {{- range $legacyId := $legacyIds }}
+    {{- if hasKey $seenIds $legacyId }}
+      {{- fail (printf "[camunda][error] duplicate legacy client or audience id %q." $legacyId) }}
+    {{- end }}
+    {{- $_ := set $seenIds $legacyId true }}
+  {{- end }}
   {{- range $cluster := $topology.clusters }}
     {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
     {{- if or (empty $cluster.id) (empty $slug) (empty $cluster.namespace) (empty $cluster.releaseName) (empty $cluster.host) (empty $cluster.version) }}
