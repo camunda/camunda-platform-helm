@@ -38,21 +38,6 @@
                             "enum": ["combined", "management", "orchestration"],
                             "default": "combined"
                         },
-                        "management": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "namespace": {"type": "string"},
-                                "releaseName": {"type": "string"},
-                                "identityServiceUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
-                                "identityServicePort": {"type": "integer", "minimum": 1, "maximum": 65535},
-                                "identityContextPath": {"type": "string", "pattern": "^$|^/"}
-                            }
-                        },
-                        "cluster": {
-                            "type": "object",
-                            "allOf": [{"$ref": "#/$defs/topologyClusterSelection"}]
-                        },
                         "clusters": {
                             "type": "array",
                             "items": {
@@ -1245,14 +1230,6 @@
                 "orchestration": {"$ref": "#/$defs/topologyComponentBase"},
                 "optimize": {"$ref": "#/$defs/topologyComponentBase"},
                 "connectors": {"$ref": "#/$defs/topologyComponentBase"}
-            }
-        },
-                        "topologyClusterSelection": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "id": {"type": "string"},
-                "components": {"$ref": "#/$defs/topologyComponents"}
             }
         },
         "topologyCluster": {

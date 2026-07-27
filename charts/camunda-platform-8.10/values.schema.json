@@ -18,41 +18,6 @@
                                 "orchestration"
                             ]
                         },
-                        "management": {
-                            "type": "object",
-                            "properties": {
-                                "namespace": {
-                                    "type": "string",
-                                    "description": "can be used to define the namespace containing Management Identity.",
-                                    "default": ""
-                                },
-                                "releaseName": {
-                                    "type": "string",
-                                    "description": "can be used to define the management Helm release name.",
-                                    "default": ""
-                                },
-                                "identityServiceUrl": {
-                                    "type": "string",
-                                    "description": "can be used to override the internal Management Identity service URL. When empty, it is derived from releaseName and namespace.",
-                                    "default": "",
-                                    "pattern": "^$|^https?://[^\\s]+$"
-                                },
-                                "identityServicePort": {
-                                    "type": "integer",
-                                    "description": "defines the internal Management Identity service port used when identityServiceUrl is empty.",
-                                    "default": 80,
-                                    "minimum": 1,
-                                    "maximum": 65535
-                                },
-                                "identityContextPath": {
-                                    "type": "string",
-                                    "description": "defines the Management Identity context path used when identityServiceUrl is empty.",
-                                    "default": "",
-                                    "pattern": "^$|^/"
-                                }
-                            },
-                            "additionalProperties": false
-                        },
                         "clusters": {
                             "type": "array",
                             "description": "can be used by a management release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.",
@@ -60,14 +25,6 @@
                             "items": {
                                 "$ref": "#/$defs/topologyCluster"
                             }
-                        },
-                        "cluster": {
-                            "type": "object",
-                            "allOf": [
-                                {
-                                    "$ref": "#/$defs/topologyClusterSelection"
-                                }
-                            ]
                         }
                     },
                     "additionalProperties": false
@@ -6879,18 +6836,6 @@
                 },
                 "connectors": {
                     "$ref": "#/$defs/topologyComponentBase"
-                }
-            }
-        },
-        "topologyClusterSelection": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "components": {
-                    "$ref": "#/$defs/topologyComponents"
                 }
             }
         },

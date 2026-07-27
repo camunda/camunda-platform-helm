@@ -46,20 +46,6 @@ global:
   topology:
     ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, management, and orchestration.
     mode: combined
-    ## @extra global.topology.management configuration for the management release consumed by an orchestration release.
-    management:
-      ## @param global.topology.management.namespace can be used to define the namespace containing Management Identity.
-      namespace: ""
-      ## @param global.topology.management.releaseName can be used to define the management Helm release name.
-      releaseName: ""
-      ## @param global.topology.management.identityServiceUrl can be used to override the internal Management Identity service URL. When empty, it is derived from releaseName and namespace.
-      identityServiceUrl: ""
-      ## @param global.topology.management.identityServicePort defines the internal Management Identity service port used when identityServiceUrl is empty.
-      identityServicePort: 80
-      ## @param global.topology.management.identityContextPath defines the Management Identity context path used when identityServiceUrl is empty.
-      identityContextPath: ""
-    ## @skip global.topology.cluster
-    cluster: {}
     ## @param global.topology.clusters can be used by a management release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
     clusters: []
     # - id: production-a

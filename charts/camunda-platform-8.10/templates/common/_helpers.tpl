@@ -574,13 +574,7 @@ Identity Auth.
 */}}
 
 {{- define "camundaPlatform.authAudienceOptimize" -}}
-  {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
-  {{- $topologyOptimize := dig "components" "optimize" dict $topologyCluster -}}
-  {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyOptimize.audience -}}
-    {{- $topologyOptimize.audience -}}
-  {{- else -}}
-    {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
-  {{- end -}}
+  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
 {{- define "camundaPlatform.topologySlug" -}}
@@ -604,36 +598,21 @@ Identity Auth.
   {{- end -}}
 {{- end -}}
 
-{{- define "camundaPlatform.topologyManagementIdentityURL" -}}
-  {{- $management := dig "management" dict (.Values.global.topology | default dict) -}}
-  {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $management.identityServiceUrl -}}
-    {{- tpl $management.identityServiceUrl . -}}
-  {{- else if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $management.releaseName $management.namespace -}}
-    {{- $serviceName := include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $management.releaseName "componentName" "identity") -}}
-    {{- printf "http://%s.%s.svc.cluster.local:%v%s" $serviceName $management.namespace $management.identityServicePort $management.identityContextPath -}}
-  {{- else if .Values.global.identity.service.url -}}
-    {{- tpl .Values.global.identity.service.url . -}}
-  {{- end -}}
-{{- end -}}
-
 {{- define "camundaPlatform.topologyContextPath" -}}
   {{- $path := . | default "" | toString | trimAll "/" -}}
   {{- if $path -}}{{- printf "/%s" $path -}}{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.orchestrationEnabled" -}}
-  {{- $topologyEnabled := dig "components" "orchestration" "enabled" false (dig "cluster" dict (.Values.global.topology | default dict)) -}}
-  {{- if eq (include "camundaPlatform.topologyMode" .) "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.connectorsEnabled" -}}
-  {{- $topologyEnabled := dig "components" "connectors" "enabled" false (dig "cluster" dict (.Values.global.topology | default dict)) -}}
-  {{- if eq (include "camundaPlatform.topologyMode" .) "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.optimizeEnabled" -}}
-  {{- $topologyEnabled := dig "components" "optimize" "enabled" false (dig "cluster" dict (.Values.global.topology | default dict)) -}}
-  {{- if eq (include "camundaPlatform.topologyMode" .) "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.optimize.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.optimize.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.identityEnabled" -}}

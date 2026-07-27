@@ -111,7 +111,7 @@ func TestManagementTopologyRejectsLegacyRegistrationCollision(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration"`)
 }
 
-func TestOrchestrationTopologyConsumesClusterAndManagementConfiguration(t *testing.T) {
+func TestOrchestrationTopologyUsesExistingComponentAndIdentityConfiguration(t *testing.T) {
 	output := render(t, "orchestration.yaml",
 		"templates/orchestration/configmap.yaml",
 		"templates/orchestration/statefulset.yaml",
@@ -173,33 +173,30 @@ func TestManagementTopologyKeycloakRejectsMissingSecret(t *testing.T) {
 	require.ErrorContains(t, err, "requires a complete secret configuration when Management Identity administers Keycloak")
 }
 
-func TestOrchestrationTopologyRejectsMissingSecret(t *testing.T) {
+func TestOrchestrationTopologyRejectsEnabledIdentity(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "orchestration.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
-			"global.topology.cluster.components.connectors.secret.existingSecret":    "",
-			"global.topology.cluster.components.connectors.secret.existingSecretKey": "",
+			"identity.enabled": "true",
 		},
 	}
 
-	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/connectors/deployment.yaml"})
-	require.ErrorContains(t, err, "global.topology.cluster.components.connectors requires a complete secret configuration when enabled")
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=orchestration requires identity.enabled=false")
 }
 
-func TestOrchestrationTopologyIdentityURLOverrideWins(t *testing.T) {
+func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "orchestration.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
-			"global.identity.service.url":                   "https://legacy.example.com/identity",
-			"global.topology.management.identityServiceUrl": "https://topology.example.com/identity",
+			"global.identity.service.url": "https://management.example.com/identity",
 		},
 	}
 
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/configmap-identity-auth.yaml"})
-	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://topology.example.com/identity"`)
-	require.NotContains(t, output, "legacy.example.com")
+	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://management.example.com/identity"`)
 }
 
 func TestNullTopologyPreservesCombinedMode(t *testing.T) {

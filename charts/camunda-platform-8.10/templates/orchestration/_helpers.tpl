@@ -215,13 +215,7 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.authClientId" -}}
-    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
-    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
-    {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyOrchestration.clientId -}}
-        {{- $topologyOrchestration.clientId -}}
-    {{- else -}}
-        {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
-    {{- end -}}
+    {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}
 
 {{- define "orchestration.hubPingClientId" -}}
@@ -250,23 +244,11 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.authAudience" -}}
-    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
-    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
-    {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyOrchestration.audience -}}
-        {{- $topologyOrchestration.audience -}}
-    {{- else -}}
-        {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
-    {{- end -}}
+    {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
 {{- end -}}
 
 {{- define "orchestration.authSecretConfig" -}}
-    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
-    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
-    {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyOrchestration.secret -}}
-        {{- toYaml $topologyOrchestration -}}
-    {{- else -}}
-        {{- toYaml .Values.orchestration.security.authentication.oidc -}}
-    {{- end -}}
+    {{- toYaml .Values.orchestration.security.authentication.oidc -}}
 {{- end -}}
 
 {{- define "orchestration.enabledProfiles" -}}
@@ -462,8 +444,5 @@ URIs.
 */}}
 {{- define "orchestration.RedirectURI" -}}
     {{- $redirectURIDefault := include "orchestration.serviceNameHTTP" . -}}
-    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
-    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
-    {{- $redirectURL := ternary ($topologyOrchestration.redirectUrl | default "") .Values.orchestration.security.authentication.oidc.redirectUrl (eq (include "camundaPlatform.topologyMode" .) "orchestration") -}}
-    {{- tpl $redirectURL . | default $redirectURIDefault -}}
+    {{- tpl .Values.orchestration.security.authentication.oidc.redirectUrl . | default $redirectURIDefault -}}
 {{- end -}}

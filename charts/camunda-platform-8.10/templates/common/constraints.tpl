@@ -30,7 +30,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
-{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url (ne (include "camundaPlatform.topologyManagementIdentityURL" .) "")) }}
+{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
@@ -43,14 +43,14 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- if and (eq $topologyMode "orchestration") (not .Values.global.identity.auth.enabled) }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
 {{- end }}
-{{- if and (eq $topologyMode "orchestration") (empty $topology.cluster) }}
-  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.cluster." }}
+{{- if and (eq $topologyMode "orchestration") .Values.identity.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identity.enabled=false; configure global.identity.service.url to reach Management Identity." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (empty .Values.global.identity.service.url) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.service.url to reach Management Identity." }}
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
-  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.cluster.components.orchestration.enabled=true." }}
-{{- end }}
-{{- if and (eq $topologyMode "orchestration") (empty (include "camundaPlatform.topologyManagementIdentityURL" .)) }}
-  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.management.identityServiceUrl or both releaseName and namespace." }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
 {{- end }}
 {{- if eq $topologyMode "management" }}
   {{- $seenSlugs := dict }}
@@ -121,29 +121,6 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
     {{- end }}
     {{- if and (dig "components" "connectors" "enabled" false $cluster) (not (dig "components" "orchestration" "enabled" false $cluster)) }}
       {{- fail (printf "[camunda][error] global.topology.clusters[%s] enables Connectors without Orchestration." $cluster.id) }}
-    {{- end }}
-  {{- end }}
-{{- end }}
-{{- if and (eq $topologyMode "orchestration") $topology.management.identityServiceUrl (not (regexMatch "^https?://[^[:space:]]+$" $topology.management.identityServiceUrl)) }}
-  {{- fail "[camunda][error] global.topology.management.identityServiceUrl must be an absolute HTTP(S) URL." }}
-{{- end }}
-{{- if and (eq $topologyMode "orchestration") (not (empty $topology.management.identityContextPath)) (not (hasPrefix "/" $topology.management.identityContextPath)) }}
-  {{- fail "[camunda][error] global.topology.management.identityContextPath must be empty or start with /." }}
-{{- end }}
-{{- if eq $topologyMode "orchestration" }}
-  {{- $topologyCluster := $topology.cluster }}
-  {{- range $componentName := list "orchestration" "optimize" "connectors" }}
-    {{- $component := get ($topologyCluster.components | default dict) $componentName | default dict }}
-    {{- if $component.enabled }}
-      {{- if empty $component.clientId }}
-        {{- fail (printf "[camunda][error] global.topology.cluster.components.%s requires clientId when enabled." $componentName) }}
-      {{- end }}
-      {{- if and (ne $componentName "connectors") (or (empty $component.audience) (empty $component.redirectUrl)) }}
-        {{- fail (printf "[camunda][error] global.topology.cluster.components.%s requires audience and redirectUrl when enabled." $componentName) }}
-      {{- end }}
-      {{- if ne (include "camundaPlatform.hasSecretConfig" (dict "config" $component)) "true" }}
-        {{- fail (printf "[camunda][error] global.topology.cluster.components.%s requires a complete secret configuration when enabled." $componentName) }}
-      {{- end }}
     {{- end }}
   {{- end }}
 {{- end }}

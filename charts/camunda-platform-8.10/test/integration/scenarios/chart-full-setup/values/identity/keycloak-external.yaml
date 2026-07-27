@@ -41,40 +41,21 @@ global:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-admin-client-token"
+      optimize:
+        clientId: optimize
+        audience: optimize-api
+        redirectUrl: "https://${ORCH_HOST}/optimize"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
   topology:
     mode: orchestration
-    management:
-      namespace: "${MGMT_NAMESPACE}"
-      releaseName: integration
-      identityContextPath: /identity
-    cluster:
-      id: orchestration
-      components:
-        orchestration:
-          enabled: true
-          clientId: orchestration
-          audience: orchestration-api
-          redirectUrl: "https://${ORCH_HOST}/orchestration"
-          secret:
-            existingSecret: integration-test-credentials
-            existingSecretKey: identity-orchestration-client-token
-        optimize:
-          enabled: true
-          clientId: optimize
-          audience: optimize-api
-          redirectUrl: "https://${ORCH_HOST}/optimize"
-          secret:
-            existingSecret: integration-test-credentials
-            existingSecretKey: identity-optimize-client-token
-        connectors:
-          enabled: true
-          clientId: connectors
-          secret:
-            existingSecret: integration-test-credentials
-            existingSecretKey: identity-connectors-client-token
   security:
     authentication:
       method: oidc
+
+identity:
+  enabled: false
 
 optimize:
   enabled: true
@@ -85,7 +66,17 @@ optimize:
   livenessProbe:
     enabled: true
 
+connectors:
+  security:
+    authentication:
+      oidc:
+        clientId: connectors
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-connectors-client-token
+
 orchestration:
+  enabled: true
   security:
     initialization:
       defaultRoles:
@@ -97,6 +88,12 @@ orchestration:
     authentication:
       authenticationRefreshInterval: "PT30S"
       oidc:
+        clientId: orchestration
+        audience: orchestration-api
+        redirectUrl: "https://${ORCH_HOST}/orchestration"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-orchestration-client-token
         backwardsCompatibleAudiences:
           - operate-api
           - tasklist-api

@@ -83,23 +83,11 @@ Authentication.
 [connectors] Defines the auth client
 */}}
 {{- define "connectors.authClientId" -}}
-    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
-    {{- $topologyConnectors := dig "components" "connectors" dict $topologyCluster -}}
-    {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyConnectors.clientId -}}
-      {{- $topologyConnectors.clientId -}}
-    {{- else -}}
-      {{- .Values.connectors.security.authentication.oidc.clientId -}}
-    {{- end -}}
+    {{- .Values.connectors.security.authentication.oidc.clientId -}}
 {{- end }}
 
 {{- define "connectors.authSecretConfig" -}}
-    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
-    {{- $topologyConnectors := dig "components" "connectors" dict $topologyCluster -}}
-    {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyConnectors.secret -}}
-      {{- toYaml $topologyConnectors -}}
-    {{- else -}}
-      {{- toYaml .Values.connectors.security.authentication.oidc -}}
-    {{- end -}}
+    {{- toYaml .Values.connectors.security.authentication.oidc -}}
 {{- end -}}
 
 {{- define "connectors.authAudience" -}}
