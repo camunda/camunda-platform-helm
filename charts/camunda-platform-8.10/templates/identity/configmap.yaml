@@ -108,12 +108,10 @@ data:
               permissions:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
-                {{- if .Values.orchestration.hub.ping.endpoint }}
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: create:*
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: update:*
-                {{- end }}
               root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
@@ -179,7 +177,7 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
-            {{- if .Values.orchestration.hub.ping.endpoint }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
             - name: "Web Modeler Public API - Cluster Ping"
               description: "Grants create/update access to Web Modeler's public API for the orchestration cluster ping"
               permissions:
@@ -189,11 +187,11 @@ data:
                   definition: update:*
             {{- end }}
 
-      {{- if and (eq (include "orchestration.authMethod" .) "oidc") .Values.orchestration.hub.ping.endpoint }}
+      {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
       mapping-rules:
         - name: "OC Cluster Endpoint Access"
           claim-name: sub
-          claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
+          claim-value: service-account-{{ include "orchestration.hubPingClientId" . }}
           operator: EQUALS
           rule-type: ROLE
           applied-role-names:

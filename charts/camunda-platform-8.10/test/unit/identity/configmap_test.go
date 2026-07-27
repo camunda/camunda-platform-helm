@@ -658,7 +658,39 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
 				s.Require().Contains(applicationYaml, "audience: \"web-modeler-public-api\"")
-				s.Require().Contains(applicationYaml, "claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}")
+				s.Require().Contains(applicationYaml, "claim-value: service-account-orchestration")
+			},
+		}, {
+			Name: "TestHubPingMapsCustomClient",
+			Values: map[string]string{
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"orchestration.hub.ping.credentials.clientId":                    "ping-client",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				s.Require().Contains(configmap.Data["application.yaml"], "claim-value: service-account-ping-client")
+			},
+		}, {
+			Name: "TestHubPingAuthorizationRendersForCentralIdentity",
+			Values: map[string]string{
+				"identity.enabled":                                  "true",
+				"global.identity.auth.enabled":                      "true",
+				"global.identity.auth.orchestration.alwaysRegister": "true",
+				"orchestration.enabled":                             "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
+				s.Require().Contains(applicationYaml, "claim-value: service-account-orchestration")
 			},
 		},
 	}

@@ -225,8 +225,8 @@ Authentication.
 {{- define "orchestration.hubPingTokenEndpoint" -}}
     {{- if .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
         {{- tpl .Values.orchestration.hub.ping.credentials.tokenEndpoint . -}}
-    {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
-        {{- $issuer := include "camundaPlatform.authIssuerUrlWithFallback" . -}}
+    {{- else if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" -}}
+        {{- $issuer := tpl (.Values.orchestration.security.authentication.oidc.issuer | default (include "camundaPlatform.authIssuerUrlWithFallback" .)) . -}}
         {{- if $issuer -}}
             {{- $issuer -}}/protocol/openid-connect/token
         {{- else -}}
