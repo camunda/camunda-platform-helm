@@ -232,6 +232,7 @@ runs:
         TEST_EXCLUDE: ${{ inputs.exclude }}
         TEST_AUTH_TYPE: ${{ inputs.auth }}
         MANAGEMENT_NAMESPACE: ${{ inputs.management-namespace }}
+        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.management-namespace != '' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests

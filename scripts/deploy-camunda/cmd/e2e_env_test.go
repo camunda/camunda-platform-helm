@@ -75,6 +75,36 @@ func TestMergeEnvOverridesAppendsMissingKeysSorted(t *testing.T) {
 	}
 }
 
+func TestMergeEnvOverridesRoutesManagementApplicationsToManagementHost(t *testing.T) {
+	content := strings.Join([]string{
+		"PLAYWRIGHT_BASE_URL=https://orcha.example.com",
+		"CONSOLE_BASE_URL=https://orcha.example.com",
+		"IDENTITY_BASE_URL=https://orcha.example.com/identity/",
+		"KEYCLOAK_BASE_URL=https://orcha.example.com/auth",
+		"WEBMODELER_BASE_URL=https://orcha.example.com/modeler",
+		"",
+	}, "\n")
+	overrides := map[string]string{
+		"CONSOLE_BASE_URL":                 "https://mgmt.example.com",
+		"CONSOLE_CONTEXT_PATH":             "https://mgmt.example.com/modeler",
+		"IDENTITY_BASE_URL":                "https://mgmt.example.com/identity/",
+		"KEYCLOAK_BASE_URL":                "https://mgmt.example.com/auth",
+		"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://mgmt.example.com/identity",
+		"MODELER_CONTEXT_PATH":             "https://mgmt.example.com/modeler",
+		"WEBMODELER_BASE_URL":              "https://mgmt.example.com/modeler",
+	}
+
+	got := mergeEnvOverrides(content, overrides)
+	if !strings.Contains(got, "PLAYWRIGHT_BASE_URL=https://orcha.example.com\n") {
+		t.Fatalf("mergeEnvOverrides() changed orchestration base URL: %q", got)
+	}
+	for key, value := range overrides {
+		if !strings.Contains(got, key+"="+value+"\n") {
+			t.Errorf("mergeEnvOverrides() missing %s management URL: %q", key, got)
+		}
+	}
+}
+
 func TestMergeEnvOverridesPreservesNoTrailingNewline(t *testing.T) {
 	content := "PLAYWRIGHT_BASE_URL=https://orcha.example.com"
 	overrides := map[string]string{
@@ -153,14 +183,11 @@ func TestSelectIngressHostDedupesRepeatedHost(t *testing.T) {
 	}
 }
 
-// TestSelectIngressHostDedupesWhilePreservingOrderAndFilter combines the
-// repeated-host and zeebe/grpc-filter behaviors: distinct hosts survive in
-// first-seen order, duplicates collapse, and zeebe/grpc hosts are dropped.
-func TestSelectIngressHostDedupesWhilePreservingOrderAndFilter(t *testing.T) {
+func TestSelectIngressHostRejectsMultipleDistinctHosts(t *testing.T) {
 	raw := "b.example.com a.example.com b.example.com zeebe-a.example.com a.example.com"
 
 	got := selectIngressHost(raw)
-	want := "b.example.com,a.example.com"
+	want := ""
 
 	if got != want {
 		t.Fatalf("selectIngressHost() = %q, want %q", got, want)

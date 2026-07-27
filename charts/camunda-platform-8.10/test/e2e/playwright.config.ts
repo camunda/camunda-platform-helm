@@ -8,9 +8,13 @@ dotenv.config();
 // TODO: Remove the fallback once QA publishes the SM-8.10 e2e test suite
 //  in the @camunda/e2e-test-suite npm package.
 const smTestDir = "./node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.10";
-const testDir = fs.existsSync(path.resolve(__dirname, smTestDir))
-  ? smTestDir
-  : "./empty-test-dir";
+const hasSmSmokeSuite = fs.existsSync(
+  path.resolve(__dirname, smTestDir, "smoke-tests.spec.js"),
+);
+if (process.env.REQUIRE_SM_810_TEST_SUITE === "true" && !hasSmSmokeSuite) {
+  throw new Error("The required SM-8.10 smoke test suite is not installed");
+}
+const testDir = hasSmSmokeSuite ? smTestDir : "./empty-test-dir";
 
 // When SM-8.10 is missing, create a fallback directory with a single skipped
 // test so Playwright exits with code 0 instead of failing on "No tests found".
@@ -25,7 +29,7 @@ if (!fs.existsSync(skipFile)) {
   fs.writeFileSync(
     skipFile,
     `const { test } = require("@playwright/test");\n` +
-      `test.skip("SM-8.10 e2e suite not yet published", () => {});\n`
+      `test.skip("SM-8.10 e2e suite not yet published", () => {});\n`,
   );
 }
 
@@ -59,7 +63,10 @@ export default defineConfig({
       testMatch: ["**/*.spec.{ts,js}"],
       // cluster-variables requires Vault-managed secrets not available in PR CI.
       // test-setup is run via the full-suite-setup dependency, not directly.
-      testIgnore: ["**/cluster-variables.spec.{ts,js}", "**/test-setup.spec.{ts,js}"],
+      testIgnore: [
+        "**/cluster-variables.spec.{ts,js}",
+        "**/test-setup.spec.{ts,js}",
+      ],
       // Match the E2E repo's chromium-v2 project behavior:
       // - @tasklistV1: These tests require Tasklist v1 mode with RBA enabled
       //   (CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true), which
