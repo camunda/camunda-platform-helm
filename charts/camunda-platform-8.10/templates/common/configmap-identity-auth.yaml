@@ -7,7 +7,7 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
   {{- $topologyIdentityURL := include "camundaPlatform.topologyManagementIdentityURL" . }}
-  CAMUNDA_IDENTITY_BASEURL: {{ ternary $topologyIdentityURL (include "camundaPlatform.identityURL" .) (and (eq .Values.global.topology.mode "orchestration") (ne $topologyIdentityURL "")) | quote }}
+  CAMUNDA_IDENTITY_BASEURL: {{ ternary $topologyIdentityURL (include "camundaPlatform.identityURL" .) (and (eq (include "camundaPlatform.topologyMode" .) "orchestration") (ne $topologyIdentityURL "")) | quote }}
   CAMUNDA_IDENTITY_TYPE: {{ include "camundaPlatform.authIssuerType" . | quote }}
   CAMUNDA_IDENTITY_ISSUER: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
   CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}

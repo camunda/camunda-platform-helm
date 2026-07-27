@@ -45,9 +45,9 @@ Create a default fully qualified app name.
 {{- end }}
 
 {{- define "optimize.authClientId" -}}
-  {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+  {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
   {{- $topologyOptimize := dig "components" "optimize" dict $topologyCluster -}}
-  {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOptimize.clientId -}}
+  {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyOptimize.clientId -}}
     {{- $topologyOptimize.clientId -}}
   {{- else -}}
     {{- .Values.global.identity.auth.optimize.clientId -}}
@@ -59,9 +59,9 @@ Create a default fully qualified app name.
 {{- end -}}
 
 {{- define "optimize.authSecretConfig" -}}
-  {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+  {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
   {{- $topologyOptimize := dig "components" "optimize" dict $topologyCluster -}}
-  {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOptimize.secret -}}
+  {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyOptimize.secret -}}
     {{- toYaml $topologyOptimize -}}
   {{- else -}}
     {{- toYaml .Values.global.identity.auth.optimize -}}

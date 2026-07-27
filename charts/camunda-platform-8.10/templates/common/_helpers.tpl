@@ -574,9 +574,9 @@ Identity Auth.
 */}}
 
 {{- define "camundaPlatform.authAudienceOptimize" -}}
-  {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+  {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
   {{- $topologyOptimize := dig "components" "optimize" dict $topologyCluster -}}
-  {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOptimize.audience -}}
+  {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyOptimize.audience -}}
     {{- $topologyOptimize.audience -}}
   {{- else -}}
     {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
@@ -585,6 +585,10 @@ Identity Auth.
 
 {{- define "camundaPlatform.topologySlug" -}}
   {{- regexReplaceAll "[^a-z0-9]+" (lower (. | toString)) "-" | trimAll "-" -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyMode" -}}
+  {{- dig "mode" "combined" (.Values.global.topology | default dict) -}}
 {{- end -}}
 
 {{- define "camundaPlatform.topologyEnvToken" -}}
@@ -601,10 +605,10 @@ Identity Auth.
 {{- end -}}
 
 {{- define "camundaPlatform.topologyManagementIdentityURL" -}}
-  {{- $management := .Values.global.topology.management -}}
-  {{- if and (eq .Values.global.topology.mode "orchestration") $management.identityServiceUrl -}}
+  {{- $management := dig "management" dict (.Values.global.topology | default dict) -}}
+  {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $management.identityServiceUrl -}}
     {{- tpl $management.identityServiceUrl . -}}
-  {{- else if and (eq .Values.global.topology.mode "orchestration") $management.releaseName $management.namespace -}}
+  {{- else if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $management.releaseName $management.namespace -}}
     {{- $serviceName := include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $management.releaseName "componentName" "identity") -}}
     {{- printf "http://%s.%s.svc.cluster.local:%v%s" $serviceName $management.namespace $management.identityServicePort $management.identityContextPath -}}
   {{- else if .Values.global.identity.service.url -}}
@@ -618,22 +622,22 @@ Identity Auth.
 {{- end -}}
 
 {{- define "camundaPlatform.orchestrationEnabled" -}}
-  {{- $topologyEnabled := dig "components" "orchestration" "enabled" false (.Values.global.topology.cluster | default dict) -}}
-  {{- if eq .Values.global.topology.mode "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.orchestration.enabled (ne .Values.global.topology.mode "management") -}}true{{- else -}}false{{- end -}}
+  {{- $topologyEnabled := dig "components" "orchestration" "enabled" false (dig "cluster" dict (.Values.global.topology | default dict)) -}}
+  {{- if eq (include "camundaPlatform.topologyMode" .) "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.connectorsEnabled" -}}
-  {{- $topologyEnabled := dig "components" "connectors" "enabled" false (.Values.global.topology.cluster | default dict) -}}
-  {{- if eq .Values.global.topology.mode "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.connectors.enabled (ne .Values.global.topology.mode "management") -}}true{{- else -}}false{{- end -}}
+  {{- $topologyEnabled := dig "components" "connectors" "enabled" false (dig "cluster" dict (.Values.global.topology | default dict)) -}}
+  {{- if eq (include "camundaPlatform.topologyMode" .) "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.optimizeEnabled" -}}
-  {{- $topologyEnabled := dig "components" "optimize" "enabled" false (.Values.global.topology.cluster | default dict) -}}
-  {{- if eq .Values.global.topology.mode "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.optimize.enabled (ne .Values.global.topology.mode "management") -}}true{{- else -}}false{{- end -}}
+  {{- $topologyEnabled := dig "components" "optimize" "enabled" false (dig "cluster" dict (.Values.global.topology | default dict)) -}}
+  {{- if eq (include "camundaPlatform.topologyMode" .) "orchestration" -}}{{- $topologyEnabled -}}{{- else if and .Values.optimize.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.identityEnabled" -}}
-  {{- if and .Values.identity.enabled (ne .Values.global.topology.mode "orchestration") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.identity.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 
@@ -656,7 +660,7 @@ Returns "true" if camundaHub.enabled OR webModeler.enabled.
 Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.webModelerEnabled" -}}
-  {{- if and (ne .Values.global.topology.mode "orchestration") (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
+  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
     true
   {{- else -}}
     false
@@ -670,7 +674,7 @@ Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.consoleEnabled" -}}
   {{- $console := default (dict) .Values.console -}}
-  {{- if and (ne .Values.global.topology.mode "orchestration") (or .Values.camundaHub.enabled $console.enabled) -}}
+  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled $console.enabled) -}}
     true
   {{- else -}}
     false
@@ -973,7 +977,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 
 {{- define "camundaPlatform.topologyWebModelerClusters" -}}
 {{- include "camundaPlatform.defaultWebModelerCluster" . -}}
-{{- range $cluster := .Values.global.topology.clusters }}
+{{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
 {{- $orchestration := dig "components" "orchestration" dict $cluster }}
 {{- $optimize := dig "components" "optimize" dict $cluster }}
 {{- $connectors := dig "components" "connectors" dict $cluster }}

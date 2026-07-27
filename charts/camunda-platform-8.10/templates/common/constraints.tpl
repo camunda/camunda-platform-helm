@@ -32,25 +32,27 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 
 {{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url (ne (include "camundaPlatform.topologyManagementIdentityURL" .) "")) }}
 
-{{- if not (has .Values.global.topology.mode (list "combined" "management" "orchestration")) }}
-  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, management, or orchestration; got %q." .Values.global.topology.mode) }}
+{{- $topologyMode := include "camundaPlatform.topologyMode" . }}
+{{- $topology := .Values.global.topology | default dict }}
+{{- if not (has $topologyMode (list "combined" "management" "orchestration")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, management, or orchestration; got %q." $topologyMode) }}
 {{- end }}
-{{- if and (eq .Values.global.topology.mode "management") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
+{{- if and (eq $topologyMode "management") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=management requires identity.enabled=true." }}
 {{- end }}
-{{- if and (eq .Values.global.topology.mode "orchestration") (not .Values.global.identity.auth.enabled) }}
+{{- if and (eq $topologyMode "orchestration") (not .Values.global.identity.auth.enabled) }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
 {{- end }}
-{{- if and (eq .Values.global.topology.mode "orchestration") (empty .Values.global.topology.cluster) }}
+{{- if and (eq $topologyMode "orchestration") (empty $topology.cluster) }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.cluster." }}
 {{- end }}
-{{- if and (eq .Values.global.topology.mode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.cluster.components.orchestration.enabled=true." }}
 {{- end }}
-{{- if and (eq .Values.global.topology.mode "orchestration") (empty (include "camundaPlatform.topologyManagementIdentityURL" .)) }}
+{{- if and (eq $topologyMode "orchestration") (empty (include "camundaPlatform.topologyManagementIdentityURL" .)) }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.management.identityServiceUrl or both releaseName and namespace." }}
 {{- end }}
-{{- if eq .Values.global.topology.mode "management" }}
+{{- if eq $topologyMode "management" }}
   {{- $seenSlugs := dict }}
   {{- $seenIds := dict
       (include "identity.authClientId" .) true
@@ -60,7 +62,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
       (include "webModeler.authPublicApiAudience" .) true
   }}
   {{- $seenRoles := dict "ManagementIdentity" true "Web Modeler" true "Web Modeler Admin" true }}
-  {{- range $cluster := .Values.global.topology.clusters }}
+  {{- range $cluster := $topology.clusters }}
     {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
     {{- if or (empty $cluster.id) (empty $slug) (empty $cluster.namespace) (empty $cluster.releaseName) (empty $cluster.host) (empty $cluster.version) }}
       {{- fail "[camunda][error] every global.topology.clusters entry requires id, namespace, releaseName, host, and version." }}
@@ -104,14 +106,14 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
     {{- end }}
   {{- end }}
 {{- end }}
-{{- if and (eq .Values.global.topology.mode "orchestration") .Values.global.topology.management.identityServiceUrl (not (regexMatch "^https?://[^[:space:]]+$" .Values.global.topology.management.identityServiceUrl)) }}
+{{- if and (eq $topologyMode "orchestration") $topology.management.identityServiceUrl (not (regexMatch "^https?://[^[:space:]]+$" $topology.management.identityServiceUrl)) }}
   {{- fail "[camunda][error] global.topology.management.identityServiceUrl must be an absolute HTTP(S) URL." }}
 {{- end }}
-{{- if and (eq .Values.global.topology.mode "orchestration") (not (empty .Values.global.topology.management.identityContextPath)) (not (hasPrefix "/" .Values.global.topology.management.identityContextPath)) }}
+{{- if and (eq $topologyMode "orchestration") (not (empty $topology.management.identityContextPath)) (not (hasPrefix "/" $topology.management.identityContextPath)) }}
   {{- fail "[camunda][error] global.topology.management.identityContextPath must be empty or start with /." }}
 {{- end }}
-{{- if eq .Values.global.topology.mode "orchestration" }}
-  {{- $topologyCluster := .Values.global.topology.cluster }}
+{{- if eq $topologyMode "orchestration" }}
+  {{- $topologyCluster := $topology.cluster }}
   {{- range $componentName := list "orchestration" "optimize" "connectors" }}
     {{- $component := get ($topologyCluster.components | default dict) $componentName | default dict }}
     {{- if $component.enabled }}
@@ -277,7 +279,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
     {{- $existingSecretsNotConfigured := list }}
 
     {{ if .Values.global.identity.auth.enabled }}
-      {{ if and (ne .Values.global.topology.mode "orchestration")
+      {{ if and (ne (include "camundaPlatform.topologyMode" .) "orchestration")
                 (eq (include "camundaPlatform.connectorsEnabled" .) "true")
                 (eq (include "connectors.authMethod" .) "oidc")
                 (not .Values.connectors.security.authentication.oidc.secret.existingSecret) }}
@@ -292,7 +294,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
             $existingSecretsNotConfigured "global.identity.auth.identity.secret.existingSecret" }}
       {{- end }}
 
-      {{ if and (ne .Values.global.topology.mode "orchestration")
+      {{ if and (ne (include "camundaPlatform.topologyMode" .) "orchestration")
                 (eq (include "camundaPlatform.orchestrationEnabled" .) "true")
                 (eq (include "orchestration.authMethod" .) "oidc")
                 (not .Values.orchestration.security.authentication.oidc.secret.existingSecret) }}

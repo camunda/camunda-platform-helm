@@ -139,6 +139,32 @@ func TestManagementTopologyKeycloakRejectsMissingSecret(t *testing.T) {
 	require.ErrorContains(t, err, "requires a complete secret configuration when Management Identity administers Keycloak")
 }
 
+func TestOrchestrationTopologyIdentityURLOverrideWins(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url":                   "https://legacy.example.com/identity",
+			"global.topology.management.identityServiceUrl": "https://topology.example.com/identity",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/configmap-identity-auth.yaml"})
+	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://topology.example.com/identity"`)
+	require.NotContains(t, output, "legacy.example.com")
+}
+
+func TestNullTopologyPreservesCombinedMode(t *testing.T) {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.topology":                                       "null",
+		"orchestration.data.secondaryStorage.type":              "elasticsearch",
+		"orchestration.data.secondaryStorage.elasticsearch.url": "http://elasticsearch:9200",
+	}}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
 func splitDocuments(output string) []string {
 	return strings.Split(output, "\n---\n")
 }

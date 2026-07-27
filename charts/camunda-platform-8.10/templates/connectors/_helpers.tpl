@@ -83,9 +83,9 @@ Authentication.
 [connectors] Defines the auth client
 */}}
 {{- define "connectors.authClientId" -}}
-    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
     {{- $topologyConnectors := dig "components" "connectors" dict $topologyCluster -}}
-    {{- if and (eq .Values.global.topology.mode "orchestration") $topologyConnectors.clientId -}}
+    {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyConnectors.clientId -}}
       {{- $topologyConnectors.clientId -}}
     {{- else -}}
       {{- .Values.connectors.security.authentication.oidc.clientId -}}
@@ -93,9 +93,9 @@ Authentication.
 {{- end }}
 
 {{- define "connectors.authSecretConfig" -}}
-    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyCluster := dig "cluster" dict (.Values.global.topology | default dict) -}}
     {{- $topologyConnectors := dig "components" "connectors" dict $topologyCluster -}}
-    {{- if and (eq .Values.global.topology.mode "orchestration") $topologyConnectors.secret -}}
+    {{- if and (eq (include "camundaPlatform.topologyMode" .) "orchestration") $topologyConnectors.secret -}}
       {{- toYaml $topologyConnectors -}}
     {{- else -}}
       {{- toYaml .Values.connectors.security.authentication.oidc -}}

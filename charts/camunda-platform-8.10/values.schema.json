@@ -6838,25 +6838,32 @@
                     "type": "string"
                 },
                 "webappUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
                 },
                 "readinessUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
                 },
                 "restUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
                 },
                 "grpcUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^grpcs?://[^\\s]+$"
                 },
                 "operateUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
                 },
                 "tasklistUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
                 },
                 "adminUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
                 }
             }
         },

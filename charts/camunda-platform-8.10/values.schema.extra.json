@@ -1229,13 +1229,13 @@
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
                 "gatewayServiceName": {"type": "string"},
-                "webappUrl": {"type": "string"},
-                "readinessUrl": {"type": "string"},
-                "restUrl": {"type": "string"},
-                "grpcUrl": {"type": "string"},
-                "operateUrl": {"type": "string"},
-                "tasklistUrl": {"type": "string"},
-                "adminUrl": {"type": "string"}
+                "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "grpcUrl": {"type": "string", "pattern": "^$|^grpcs?://[^\\s]+$"},
+                "operateUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "tasklistUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "adminUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
             }
         },
         "topologyComponents": {
