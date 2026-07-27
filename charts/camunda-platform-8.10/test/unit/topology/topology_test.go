@@ -199,6 +199,19 @@ func TestOrchestrationTopologyRejectsEnabledIdentity(t *testing.T) {
 	require.ErrorContains(t, err, "global.topology.mode=orchestration requires identity.enabled=false")
 }
 
+func TestOrchestrationTopologyRequiresManagementIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=orchestration requires global.identity.service.url")
+}
+
 func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "orchestration.yaml")
 	options := &helm.Options{
