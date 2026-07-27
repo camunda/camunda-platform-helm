@@ -160,7 +160,7 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 // tokens (as emitted by a kubectl jsonpath query), dropping hosts that look
 // like the Zeebe gRPC gateway, and returning the first remaining host.
 // Returns "" if no host survives the filter.
-func selectIngressHost(raw string) string {
+func selectIngressHost(raw string) (string, error) {
 	tokens := strings.Fields(raw)
 	host := ""
 	for _, t := range tokens {
@@ -172,10 +172,10 @@ func selectIngressHost(raw string) string {
 			continue
 		}
 		if t != host {
-			return ""
+			return "", fmt.Errorf("multiple distinct HTTP hosts found: %q and %q", host, t)
 		}
 	}
-	return host
+	return host, nil
 }
 
 // resolveIngressHost discovers the live ingress hostname for a namespace by
@@ -194,7 +194,11 @@ func resolveIngressHost(kubeContext, namespace string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve ingress host for namespace %q: %w", namespace, err)
 	}
-	if host := selectIngressHost(string(out)); host != "" {
+	host, err := selectIngressHost(string(out))
+	if err != nil {
+		return "", fmt.Errorf("resolve ingress host for namespace %q: %w", namespace, err)
+	}
+	if host != "" {
 		return host, nil
 	}
 
@@ -205,7 +209,11 @@ func resolveIngressHost(kubeContext, namespace string) (string, error) {
 	gatewayArgs = append(gatewayArgs, "-n", namespace, "get", "gateway",
 		"-o", "jsonpath={.items[*].spec.listeners[*].hostname}")
 	if gwOut, err := exec.Command("kubectl", gatewayArgs...).Output(); err == nil {
-		if host := selectIngressHost(string(gwOut)); host != "" {
+		host, selectErr := selectIngressHost(string(gwOut))
+		if selectErr != nil {
+			return "", fmt.Errorf("resolve gateway host for namespace %q: %w", namespace, selectErr)
+		}
+		if host != "" {
 			return host, nil
 		}
 	}

@@ -142,7 +142,10 @@ func TestE2EEnvMergeFailsOnMissingRenderScript(t *testing.T) {
 func TestSelectIngressHostFiltersZeebeAndGrpcHosts(t *testing.T) {
 	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com zeebe-matrix-810-mns-mgmt.ci.distro.ultrawombat.com grpc-matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
 
-	got := selectIngressHost(raw)
+	got, err := selectIngressHost(raw)
+	if err != nil {
+		t.Fatalf("selectIngressHost() unexpected error: %v", err)
+	}
 	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
 
 	if got != want {
@@ -153,7 +156,10 @@ func TestSelectIngressHostFiltersZeebeAndGrpcHosts(t *testing.T) {
 func TestSelectIngressHostPassesThroughSingleHost(t *testing.T) {
 	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
 
-	got := selectIngressHost(raw)
+	got, err := selectIngressHost(raw)
+	if err != nil {
+		t.Fatalf("selectIngressHost() unexpected error: %v", err)
+	}
 	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
 
 	if got != want {
@@ -162,7 +168,11 @@ func TestSelectIngressHostPassesThroughSingleHost(t *testing.T) {
 }
 
 func TestSelectIngressHostEmptyInputReturnsEmpty(t *testing.T) {
-	if got := selectIngressHost(""); got != "" {
+	got, err := selectIngressHost("")
+	if err != nil {
+		t.Fatalf("selectIngressHost() unexpected error: %v", err)
+	}
+	if got != "" {
 		t.Fatalf("selectIngressHost() = %q, want empty string", got)
 	}
 }
@@ -175,7 +185,10 @@ func TestSelectIngressHostEmptyInputReturnsEmpty(t *testing.T) {
 func TestSelectIngressHostDedupesRepeatedHost(t *testing.T) {
 	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com matrix-810-mns-mgmt.ci.distro.ultrawombat.com matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
 
-	got := selectIngressHost(raw)
+	got, err := selectIngressHost(raw)
+	if err != nil {
+		t.Fatalf("selectIngressHost() unexpected error: %v", err)
+	}
 	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
 
 	if got != want {
@@ -186,11 +199,12 @@ func TestSelectIngressHostDedupesRepeatedHost(t *testing.T) {
 func TestSelectIngressHostRejectsMultipleDistinctHosts(t *testing.T) {
 	raw := "b.example.com a.example.com b.example.com zeebe-a.example.com a.example.com"
 
-	got := selectIngressHost(raw)
-	want := ""
-
-	if got != want {
-		t.Fatalf("selectIngressHost() = %q, want %q", got, want)
+	got, err := selectIngressHost(raw)
+	if err == nil {
+		t.Fatalf("selectIngressHost() = %q, want ambiguity error", got)
+	}
+	if !strings.Contains(err.Error(), "multiple distinct HTTP hosts") {
+		t.Fatalf("selectIngressHost() error = %q, want ambiguity error", err)
 	}
 }
 
