@@ -48,9 +48,13 @@ orchestration:
 
 webModeler:
   restapi:
-    env:
-      - name: DYNAMIC_CLUSTER_MANAGEMENT_ENABLED
-        value: "true"
+    extraConfiguration:
+      - file: dynamic-cluster-management.yaml
+        content: |
+          camunda:
+            modeler:
+              feature:
+                dynamic-cluster-management-enabled: true
     # orchestration.enabled: false above collapses the
     # camundaPlatform.defaultWebModelerCluster helper's orchestration entry
     # (gated on orchestration.enabled — see templates/common/_helpers.tpl),

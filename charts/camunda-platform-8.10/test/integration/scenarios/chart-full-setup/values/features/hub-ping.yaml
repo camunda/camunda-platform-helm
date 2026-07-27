@@ -1,8 +1,12 @@
 camundaHub:
   restapi:
-    env:
-      - name: DYNAMIC_CLUSTER_MANAGEMENT_ENABLED
-        value: "true"
+    extraConfiguration:
+      - file: dynamic-cluster-management.yaml
+        content: |
+          camunda:
+            modeler:
+              feature:
+                dynamic-cluster-management-enabled: true
 
 orchestration:
   hub:
