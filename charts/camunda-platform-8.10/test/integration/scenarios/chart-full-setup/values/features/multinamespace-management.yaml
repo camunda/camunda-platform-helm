@@ -66,6 +66,10 @@ global:
         releaseName: integration
         host: "${ORCH_HOST}"
         version: "8.10.0-alpha3"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: /optimize
+          connectors: /connectors
         components:
           orchestration:
             enabled: true

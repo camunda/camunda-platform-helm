@@ -109,9 +109,9 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- if .Values.global.ingress.enabled }}
 ## Combined Ingress
 
-{{- if or (.Values.identity.enabled) (eq (include "camundaHub.webModelerEnabled" .) "true") }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - Web Applications:
-  {{ if .Values.identity.enabled -}}
+  {{ if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
   - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
   {{ if eq (include "camundaHub.webModelerEnabled" .) "true" -}}

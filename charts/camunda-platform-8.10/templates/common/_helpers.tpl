@@ -981,9 +981,9 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- $orchestration := dig "components" "orchestration" dict $cluster }}
 {{- $optimize := dig "components" "optimize" dict $cluster }}
 {{- $connectors := dig "components" "connectors" dict $cluster }}
-{{- $orchestrationPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "orchestration" "/orchestration" $cluster) }}
-{{- $optimizePath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "optimize" "/optimize" $cluster) }}
-{{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "/connectors" $cluster) }}
+{{- $orchestrationPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "orchestration" "" $cluster) }}
+{{- $optimizePath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "optimize" "" $cluster) }}
+{{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "" $cluster) }}
 {{- $orchestrationName := $orchestration.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "zeebe")) }}
 {{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
 {{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "optimize")) }}
