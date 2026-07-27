@@ -233,7 +233,9 @@ Authentication.
             {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
         {{- end -}}
     {{- else -}}
-        {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
+        {{- if .Values.orchestration.security.authentication.oidc.tokenUrl -}}
+            {{- tpl .Values.orchestration.security.authentication.oidc.tokenUrl . -}}
+        {{- end -}}
     {{- end -}}
 {{- end -}}
 

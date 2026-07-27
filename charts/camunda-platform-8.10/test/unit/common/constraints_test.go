@@ -737,6 +737,21 @@ func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
 			},
 		},
 		{
+			Name: "TestPingEndpointWithComponentNonKeycloakOidcRequiresTokenEndpoint",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.type":                     "MICROSOFT",
+				"orchestration.security.authentication.oidc.issuer":                   "https://login.microsoftonline.com/tenant/v2.0",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "could not resolve a token endpoint")
+			},
+		},
+		{
 			Name: "TestPingEndpointWithNonKeycloakOidcAndExplicitTokenEndpointRenders",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":                            "elasticsearch",

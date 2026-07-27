@@ -666,6 +666,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                               "true",
 				"global.identity.auth.enabled":                                   "true",
 				"global.security.authentication.method":                          "oidc",
+				"orchestration.hub.ping.endpoint":                                "https://hub.example/api/v1/clusters",
 				"orchestration.hub.ping.credentials.clientId":                    "ping-client",
 				"orchestration.security.authentication.method":                   "oidc",
 				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
