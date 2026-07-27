@@ -959,6 +959,11 @@
                                             "type": "boolean",
                                             "description": "if true, this Identity always provisions the Orchestration Cluster's Keycloak client and resource server (audience), even when the Orchestration Cluster's OIDC auth method is not active in this release. Defaults to registering only when the Orchestration Cluster uses OIDC. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.",
                                             "default": false
+                                        },
+                                        "hubPingAuthorizationEnabled": {
+                                            "type": "boolean",
+                                            "description": "if true, this Identity provisions the Orchestration client's Camunda Hub ping permissions and role mapping. Enable this in a central Identity release when the Orchestration workload runs in another release.",
+                                            "default": false
                                         }
                                     }
                                 },

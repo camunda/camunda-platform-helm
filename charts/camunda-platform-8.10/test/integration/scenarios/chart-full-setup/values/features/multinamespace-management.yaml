@@ -87,5 +87,6 @@ global:
         redirectUrl: "https://${ORCH_HOST}/optimize"
       orchestration:
         alwaysRegister: true
+        hubPingAuthorizationEnabled: true
       connectors:
         alwaysRegister: true

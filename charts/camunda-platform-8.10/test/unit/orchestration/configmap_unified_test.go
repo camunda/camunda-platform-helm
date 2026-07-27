@@ -178,10 +178,11 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 		},
 		{
-			Name: "TestApplicationYamlShouldUsePublicKeycloakIssuerForHubPingToken",
+			Name: "TestApplicationYamlShouldUseExplicitPublicKeycloakTokenForHubPing",
 			Values: map[string]string{
 				"global.identity.auth.publicIssuerUrl":                                "https://idp.example/realms/camunda-platform",
 				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.tokenEndpoint":                    "https://idp.example/realms/camunda-platform/protocol/openid-connect/token",
 				"orchestration.security.authentication.method":                        "oidc",
 				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
 				"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
@@ -191,10 +192,11 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 		},
 		{
-			Name: "TestApplicationYamlShouldUseOrchestrationIssuerForHubPingToken",
+			Name: "TestApplicationYamlShouldUseExplicitOrchestrationIssuerTokenForHubPing",
 			Values: map[string]string{
 				"global.identity.auth.publicIssuerUrl":                                "https://global-idp.example/realms/camunda-platform",
 				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.tokenEndpoint":                    "https://orch-idp.example/realms/orchestration/protocol/openid-connect/token",
 				"orchestration.security.authentication.method":                        "oidc",
 				"orchestration.security.authentication.oidc.issuer":                   "https://orch-idp.example/realms/orchestration",
 				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",

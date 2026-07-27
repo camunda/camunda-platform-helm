@@ -230,12 +230,7 @@ Authentication.
     {{- else if .Values.global.identity.auth.tokenUrl -}}
         {{- tpl .Values.global.identity.auth.tokenUrl . -}}
     {{- else if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" -}}
-        {{- $issuer := tpl (.Values.orchestration.security.authentication.oidc.issuer | default (include "camundaPlatform.authIssuerUrlWithFallback" .)) . -}}
-        {{- if $issuer -}}
-            {{- $issuer -}}/protocol/openid-connect/token
-        {{- else -}}
-            {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
-        {{- end -}}
+        {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
     {{- end -}}
 {{- end -}}
 
