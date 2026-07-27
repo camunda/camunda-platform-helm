@@ -70,3 +70,33 @@ global:
             secret:
               existingSecret: integration-test-credentials
               existingSecretKey: identity-connectors-client-token
+
+identity:
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-orcha-api
+          definition: read:*
+        - resourceServerId: orchestration-orcha-api
+          definition: write:*
+        - resourceServerId: optimize-orcha-api
+          definition: write:*
+        - resourceServerId: orchestration-orchb-api
+          definition: read:*
+        - resourceServerId: orchestration-orchb-api
+          definition: write:*
+        - resourceServerId: optimize-orchb-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
