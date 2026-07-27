@@ -37,7 +37,7 @@ orchestration:
     ping:
       endpoint: "http://integration-web-modeler-restapi.${MGMT_NAMESPACE}/modeler/api/v1/clusters"
       credentials:
-        tokenEndpoint: "https://${ORCH_HOST}/auth/realms/camunda-platform/protocol/openid-connect/token"
+        tokenEndpoint: "https://${MGMT_HOST}/auth/realms/camunda-platform/protocol/openid-connect/token"
   extraConfiguration:
     - file: hub-ping.yaml
       content: |

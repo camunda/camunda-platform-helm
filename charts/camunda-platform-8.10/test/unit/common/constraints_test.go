@@ -689,6 +689,19 @@ func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
 			},
 		},
 		{
+			Name: "TestPingExternalOidcClaimMappingRequiresBothValues",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                       "elasticsearch",
+				"orchestration.hub.ping.endpoint":                                "https://hub/api/v1/clusters",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+				"global.identity.auth.orchestration.hubPingClaimName":            "azp",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue must be set together")
+			},
+		},
+		{
 			Name: "TestPingClientSecretExistingSecretRequiresKey",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":                              "elasticsearch",

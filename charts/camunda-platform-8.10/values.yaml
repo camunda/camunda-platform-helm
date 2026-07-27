@@ -660,6 +660,10 @@ global:
         alwaysRegister: false
         ## @param global.identity.auth.orchestration.hubPingAuthorizationEnabled if true, this Identity provisions the Orchestration client's Camunda Hub ping permissions and role mapping. Enable this in a central Identity release when the Orchestration workload runs in another release.
         hubPingAuthorizationEnabled: false
+        ## @param global.identity.auth.orchestration.hubPingClaimName defines the token claim used to map an external OIDC client to the Hub ping role. Keycloak defaults to the sub claim when empty.
+        hubPingClaimName: ""
+        ## @param global.identity.auth.orchestration.hubPingClaimValue defines the claim value used to map an external OIDC client to the Hub ping role. Required with hubPingClaimName for non-Keycloak providers and supports Helm templating.
+        hubPingClaimValue: ""
 
       #####################
       # Connectors

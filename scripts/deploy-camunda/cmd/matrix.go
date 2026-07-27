@@ -1255,6 +1255,10 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 
 		applyTopologyReleaseOverrides(flags, crossRefEnv)
+		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+		}
 
 		deployErr := deploy.Execute(ctx, flags)
 		cleanup()

@@ -658,7 +658,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
 				s.Require().Contains(applicationYaml, "audience: \"web-modeler-public-api\"")
-				s.Require().Contains(applicationYaml, "claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}")
+				s.Require().Contains(applicationYaml, "claim-value: \"service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}\"")
 			},
 		}, {
 			Name: "TestHubPingMapsCustomClient",
@@ -676,7 +676,9 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(t, output, &configmap)
 
-				s.Require().Contains(configmap.Data["application.yaml"], "claim-value: service-account-ping-client")
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "claim-value: \"service-account-ping-client\"")
+				s.Require().NotContains(applicationYaml, "audience: \"web-modeler-public-api\"\n                  definition: create:*")
 			},
 		}, {
 			Name: "TestHubPingAuthorizationRendersForCentralIdentity",
@@ -692,10 +694,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
-				s.Require().Contains(applicationYaml, "claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}")
+				s.Require().Contains(applicationYaml, "claim-value: \"service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}\"")
 			},
 		}, {
-			Name: "TestHubPingDoesNotRenderKeycloakMappingForExternalOidc",
+			Name: "TestHubPingRendersConfiguredMappingForExternalOidc",
 			Values: map[string]string{
 				"identity.enabled":                                               "true",
 				"global.identity.auth.enabled":                                   "true",
@@ -704,6 +706,8 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				"orchestration.security.authentication.oidc.type":                "MICROSOFT",
 				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
 				"orchestration.security.authentication.oidc.tokenUrl":            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token",
+				"global.identity.auth.orchestration.hubPingClaimName":            "azp",
+				"global.identity.auth.orchestration.hubPingClaimValue":           "orchestration-client",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -711,7 +715,8 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
-				s.Require().NotContains(applicationYaml, "claim-value: service-account-")
+				s.Require().Contains(applicationYaml, "claim-name: \"azp\"")
+				s.Require().Contains(applicationYaml, "claim-value: \"orchestration-client\"")
 			},
 		},
 	}

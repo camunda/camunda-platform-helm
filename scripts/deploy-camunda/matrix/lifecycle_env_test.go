@@ -216,3 +216,29 @@ func TestUpgradeOnly_PreInstallHookRegistrationDetachesParent(t *testing.T) {
 		t.Errorf("upgradeFlags.PreInstallHooks: got len %d, want %d", got, want)
 	}
 }
+
+func TestRegisterDeclarativePostDeployHook(t *testing.T) {
+	repoRoot := t.TempDir()
+	scriptDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10", "test", "integration", "scenarios", "pre-setup-scripts")
+	if err := os.MkdirAll(scriptDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(scriptDir, "post-deploy-test.sh"), []byte("#!/bin/bash\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	flags := &config.RuntimeFlags{}
+	if err := RegisterDeclarativePostDeployHook(flags, &LifecycleHook{Script: "post-deploy-test.sh", Description: "Verify topology hook registration."}, repoRoot, "8.10", "topology"); err != nil {
+		t.Fatalf("RegisterDeclarativePostDeployHook() error = %v", err)
+	}
+	if got := len(flags.PostDeployHooks); got != 1 {
+		t.Fatalf("len(PostDeployHooks) = %d, want 1", got)
+	}
+}
+
+func TestResolveLifecycleEnv_IncludesTopologyNamespace(t *testing.T) {
+	flags := &config.RuntimeFlags{ExtraEnv: map[string]string{"MGMT_NAMESPACE": "matrix-810-mns-mgmt"}}
+	if got := resolveLifecycleEnv(flags)["MGMT_NAMESPACE"]; got != "matrix-810-mns-mgmt" {
+		t.Fatalf("MGMT_NAMESPACE = %q, want matrix-810-mns-mgmt", got)
+	}
+}

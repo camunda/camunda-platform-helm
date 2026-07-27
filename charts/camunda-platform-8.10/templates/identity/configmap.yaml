@@ -108,7 +108,7 @@ data:
               permissions:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
-                {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+                {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (not .Values.orchestration.hub.ping.credentials.clientId) }}
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: create:*
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
@@ -189,14 +189,18 @@ data:
                   definition: update:*
             {{- end }}
 
-      {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (eq (include "orchestration.authIssuerType" .) "KEYCLOAK") }}
+      {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
+      {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
+      {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (or (eq (include "orchestration.authIssuerType" .) "KEYCLOAK") (and $pingClaimName $pingClaimValue)) }}
       mapping-rules:
         - name: "OC Cluster Endpoint Access"
-          claim-name: sub
-          {{- if .Values.orchestration.hub.ping.credentials.clientId }}
-          claim-value: service-account-{{ .Values.orchestration.hub.ping.credentials.clientId }}
+          claim-name: {{ $pingClaimName | default "sub" | quote }}
+          {{- if $pingClaimValue }}
+          claim-value: {{ tpl $pingClaimValue . | quote }}
+          {{- else if .Values.orchestration.hub.ping.credentials.clientId }}
+          claim-value: "service-account-{{ .Values.orchestration.hub.ping.credentials.clientId }}"
           {{- else }}
-          claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
+          claim-value: "service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}"
           {{- end }}
           operator: EQUALS
           rule-type: ROLE

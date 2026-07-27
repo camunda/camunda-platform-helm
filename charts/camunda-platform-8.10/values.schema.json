@@ -964,6 +964,16 @@
                                             "type": "boolean",
                                             "description": "if true, this Identity provisions the Orchestration client's Camunda Hub ping permissions and role mapping. Enable this in a central Identity release when the Orchestration workload runs in another release.",
                                             "default": false
+                                        },
+                                        "hubPingClaimName": {
+                                            "type": "string",
+                                            "description": "defines the token claim used to map an external OIDC client to the Hub ping role. Keycloak defaults to the sub claim when empty.",
+                                            "default": ""
+                                        },
+                                        "hubPingClaimValue": {
+                                            "type": "string",
+                                            "description": "defines the claim value used to map an external OIDC client to the Hub ping role. Required with hubPingClaimName for non-Keycloak providers and supports Helm templating.",
+                                            "default": ""
                                         }
                                     }
                                 },
