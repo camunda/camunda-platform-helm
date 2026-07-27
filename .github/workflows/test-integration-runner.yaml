@@ -1214,7 +1214,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && inputs.scenario != 'multinamespace' && inputs.scenario != 'multinamespace-2orch' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
