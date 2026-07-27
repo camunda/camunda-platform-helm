@@ -46,6 +46,7 @@ global:
     management:
       namespace: "${MGMT_NAMESPACE}"
       releaseName: integration
+      identityContextPath: /identity
     cluster:
       id: orchestration
       components:

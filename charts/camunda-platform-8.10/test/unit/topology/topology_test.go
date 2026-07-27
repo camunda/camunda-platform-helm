@@ -77,6 +77,26 @@ func TestManagementTopologyKeycloakRendersInitAndSecretReferences(t *testing.T) 
 	require.Contains(t, output, "key: orchestration-secret")
 }
 
+func TestManagementTopologyPreservesLegacyAlwaysRegister(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.connectors.alwaysRegister":    "true",
+			"global.identity.auth.optimize.alwaysRegister":      "true",
+			"global.identity.auth.orchestration.alwaysRegister": "true",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/identity/configmap.yaml",
+		"templates/identity/deployment.yaml",
+	})
+	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET")
+	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET")
+	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET")
+}
+
 func TestOrchestrationTopologyConsumesClusterAndManagementConfiguration(t *testing.T) {
 	output := render(t, "orchestration.yaml",
 		"templates/orchestration/configmap.yaml",
@@ -137,6 +157,20 @@ func TestManagementTopologyKeycloakRejectsMissingSecret(t *testing.T) {
 
 	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
 	require.ErrorContains(t, err, "requires a complete secret configuration when Management Identity administers Keycloak")
+}
+
+func TestOrchestrationTopologyRejectsMissingSecret(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.cluster.components.connectors.secret.existingSecret":    "",
+			"global.topology.cluster.components.connectors.secret.existingSecretKey": "",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/connectors/deployment.yaml"})
+	require.ErrorContains(t, err, "global.topology.cluster.components.connectors requires a complete secret configuration when enabled")
 }
 
 func TestOrchestrationTopologyIdentityURLOverrideWins(t *testing.T) {

@@ -168,7 +168,7 @@ data:
           {{- end }}
         {{- end }}
         {{- end }}
-        {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.alwaysRegister) }}
+        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "connectors.authMethod" .) "oidc")) }}
         connectors:
           applications:
             - name: Connectors
@@ -198,7 +198,7 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
+        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
         optimize:
           applications:
             - name: Optimize
@@ -223,7 +223,7 @@ data:
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         {{- end }}
-        {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
+        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
         orchestration:
           applications:
             - name: Orchestration
@@ -362,15 +362,15 @@ data:
         "topology-shared-roles": {}
         {{- end }}
         {{- end }}
-        {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.alwaysRegister) }}
+        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "connectors.authMethod" .) "oidc")) }}
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         {{- end }}
-        {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
+        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         {{- end }}
-        {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
+        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
@@ -389,13 +389,13 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: read:*
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: write:*
             {{- end }}
-            {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
             - resourceServerId: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
               definition: write:*
             {{- end }}
@@ -456,14 +456,14 @@ data:
             - "Optimize"
             {{- end }}
             {{- end }}
-            {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
             - Optimize
             {{- end }}
             {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
             - Web Modeler
             - Web Modeler Admin
             {{- end }}
-            {{- if and (ne (include "camundaPlatform.topologyMode" .) "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
             - Orchestration
             {{- end }}
           {{- end }}
