@@ -787,6 +787,18 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
+      - name: Collect topology namespace diagnostics
+        if: failure() && (inputs.scenario == 'multinamespace' || inputs.scenario == 'multinamespace-2orch')
+        run: |
+          mkdir -p diagnostics
+          for suffix in mgmt orcha orchb; do
+            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
+            if [[ "$(kubectl get ns "$ns" --ignore-not-found -o name)" == "" ]]; then
+              continue
+            fi
+            deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/topology-${suffix}.log" 2>&1 || true
+          done
+
       - name: Compute diagnostics artifact name
         if: failure()
         id: diag-artifact
