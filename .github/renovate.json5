@@ -445,7 +445,8 @@
       datasourceTemplate: '{{{datasource}}}',
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}',
     },
-    // This regex manager is used to update the image digests in the values-digest.yaml files.
+    // Keep repository, tag, and digest adjacent so a digest-less image block
+    // cannot consume the digest from the next component.
     {
       customType: 'regex',
       fileMatch: [
