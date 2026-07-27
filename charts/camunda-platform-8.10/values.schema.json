@@ -34,20 +34,21 @@
                                 "identityServiceUrl": {
                                     "type": "string",
                                     "description": "can be used to override the internal Management Identity service URL. When empty, it is derived from releaseName and namespace.",
-                                    "default": ""
+                                    "default": "",
+                                    "pattern": "^$|^https?://[^\\s]+$"
                                 },
                                 "identityServicePort": {
-                                    "type": [
-                                        "integer",
-                                        "string"
-                                    ],
+                                    "type": "integer",
                                     "description": "defines the internal Management Identity service port used when identityServiceUrl is empty.",
-                                    "default": 80
+                                    "default": 80,
+                                    "minimum": 1,
+                                    "maximum": 65535
                                 },
                                 "identityContextPath": {
                                     "type": "string",
                                     "description": "defines the Management Identity context path used when identityServiceUrl is empty.",
-                                    "default": "/identity"
+                                    "default": "",
+                                    "pattern": "^$|^/"
                                 }
                             },
                             "additionalProperties": false

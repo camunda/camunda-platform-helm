@@ -44,9 +44,9 @@
                             "properties": {
                                 "namespace": {"type": "string"},
                                 "releaseName": {"type": "string"},
-                                "identityServiceUrl": {"type": "string"},
-                                "identityServicePort": {"type": ["integer", "string"]},
-                                "identityContextPath": {"type": "string"}
+                                "identityServiceUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                                "identityServicePort": {"type": "integer", "minimum": 1, "maximum": 65535},
+                                "identityContextPath": {"type": "string", "pattern": "^$|^/"}
                             }
                         },
                         "cluster": {

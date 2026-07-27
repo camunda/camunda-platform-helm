@@ -12,6 +12,7 @@ global:
     management:
       namespace: camunda-management
       releaseName: camunda
+      identityContextPath: /identity
     cluster:
       id: east
       components:

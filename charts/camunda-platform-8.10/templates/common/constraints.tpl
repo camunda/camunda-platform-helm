@@ -59,6 +59,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
       (include "webModeler.authClientApiAudience" .) true
       (include "webModeler.authPublicApiAudience" .) true
   }}
+  {{- $seenRoles := dict "ManagementIdentity" true "Web Modeler" true "Web Modeler Admin" true }}
   {{- range $cluster := .Values.global.topology.clusters }}
     {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
     {{- if or (empty $cluster.id) (empty $slug) (empty $cluster.namespace) (empty $cluster.releaseName) (empty $cluster.host) (empty $cluster.version) }}
@@ -90,12 +91,24 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
         {{- if and (eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK") (ne (include "camundaPlatform.hasSecretConfig" (dict "config" $component)) "true") }}
           {{- fail (printf "[camunda][error] global.topology.clusters[%s].components.%s requires a complete secret configuration when Management Identity administers Keycloak." $cluster.id $componentName) }}
         {{- end }}
+        {{- if $component.roleName }}
+          {{- if hasKey $seenRoles $component.roleName }}
+            {{- fail (printf "[camunda][error] duplicate or reserved topology role name %q." $component.roleName) }}
+          {{- end }}
+          {{- $_ := set $seenRoles $component.roleName true }}
+        {{- end }}
       {{- end }}
     {{- end }}
     {{- if and (dig "components" "connectors" "enabled" false $cluster) (not (dig "components" "orchestration" "enabled" false $cluster)) }}
       {{- fail (printf "[camunda][error] global.topology.clusters[%s] enables Connectors without Orchestration." $cluster.id) }}
     {{- end }}
   {{- end }}
+{{- end }}
+{{- if and (eq .Values.global.topology.mode "orchestration") .Values.global.topology.management.identityServiceUrl (not (regexMatch "^https?://[^[:space:]]+$" .Values.global.topology.management.identityServiceUrl)) }}
+  {{- fail "[camunda][error] global.topology.management.identityServiceUrl must be an absolute HTTP(S) URL." }}
+{{- end }}
+{{- if and (eq .Values.global.topology.mode "orchestration") (not (empty .Values.global.topology.management.identityContextPath)) (not (hasPrefix "/" .Values.global.topology.management.identityContextPath)) }}
+  {{- fail "[camunda][error] global.topology.management.identityContextPath must be empty or start with /." }}
 {{- end }}
 {{- if eq .Values.global.topology.mode "orchestration" }}
   {{- $topologyCluster := .Values.global.topology.cluster }}

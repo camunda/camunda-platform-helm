@@ -57,7 +57,7 @@ global:
       ## @param global.topology.management.identityServicePort defines the internal Management Identity service port used when identityServiceUrl is empty.
       identityServicePort: 80
       ## @param global.topology.management.identityContextPath defines the Management Identity context path used when identityServiceUrl is empty.
-      identityContextPath: /identity
+      identityContextPath: ""
     ## @skip global.topology.cluster
     cluster: {}
     ## @param global.topology.clusters can be used by a management release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.

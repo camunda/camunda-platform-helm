@@ -125,6 +125,20 @@ func TestManagementTopologyRejectsDuplicateClientIds(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
 }
 
+func TestManagementTopologyKeycloakRejectsMissingSecret(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.secret.existingSecret":    "",
+			"global.topology.clusters[0].components.orchestration.secret.existingSecretKey": "",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, "requires a complete secret configuration when Management Identity administers Keycloak")
+}
+
 func splitDocuments(output string) []string {
 	return strings.Split(output, "\n---\n")
 }
