@@ -1706,6 +1706,8 @@ integration:
                 namespace-suffix: mgmt
                 values: features/multinamespace-2orch-management.yaml
                 identity: keycloak
+                features:
+                  - multinamespace-reset-clients
                 dependencies:
                   - keycloak
                   - postgresql

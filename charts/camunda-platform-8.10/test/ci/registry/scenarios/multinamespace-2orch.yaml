@@ -18,6 +18,8 @@ topology:
         - keycloak
         - postgresql
         - elasticsearch
+      features:
+        - multinamespace-reset-clients
       values: features/multinamespace-2orch-management.yaml
     - role: orchestration
       namespace-suffix: orcha
