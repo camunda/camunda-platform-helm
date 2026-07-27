@@ -4252,7 +4252,7 @@
                                         },
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the M2M client id. Defaults to the orchestration client id when empty. A custom client must be provisioned separately in the IdP and requires an explicit clientSecret below.",
+                                            "description": "defines the M2M client id. Defaults to the orchestration client id when empty. A custom client must be provisioned separately in the IdP, requires an explicit clientSecret below, and in split deployments must also be set in the central Identity release so its role mapping targets the same client.",
                                             "default": ""
                                         },
                                         "clientSecret": {

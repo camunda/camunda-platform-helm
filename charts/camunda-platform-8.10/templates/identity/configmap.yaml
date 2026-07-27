@@ -98,7 +98,7 @@ data:
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         {{- end }}
-        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
         orchestration:
           applications:
             - name: Orchestration
@@ -225,7 +225,7 @@ data:
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         {{- end }}
-        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
@@ -244,7 +244,7 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: read:*
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
@@ -290,7 +290,7 @@ data:
             - Web Modeler
             - Web Modeler Admin
             {{- end }}
-            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
             - Orchestration
             {{- end }}
           {{- end }}
