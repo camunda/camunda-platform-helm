@@ -1,0 +1,21 @@
+camundaHub:
+  restapi:
+    env:
+      - name: DYNAMIC_CLUSTER_MANAGEMENT_ENABLED
+        value: "true"
+
+orchestration:
+  hub:
+    ping:
+      endpoint: "http://integration-web-modeler-restapi/modeler/api/v1/clusters"
+  extraConfiguration:
+    - file: hub-ping.yaml
+      content: |
+        camunda:
+          hub:
+            ping:
+              enabled: true
+              clusterName: authenticated-hub-ping
+              pingPeriod: 5s
+              properties:
+                verification: inherited-oidc-credentials

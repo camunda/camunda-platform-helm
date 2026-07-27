@@ -641,6 +641,25 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(applicationYaml, "resourceServerId: optimize-api",
 					"admin permissions should not reference the literal default optimize-api once a custom audience is set")
 			},
+		}, {
+			Name: "TestHubPingAddsOrchestrationPermissionsAndMappingRule",
+			Values: map[string]string{
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"orchestration.hub.ping.endpoint":                                "https://hub.example/api/v1/clusters",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
+				s.Require().Contains(applicationYaml, "audience: \"web-modeler-public-api\"")
+				s.Require().Contains(applicationYaml, "claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}")
+			},
 		},
 	}
 

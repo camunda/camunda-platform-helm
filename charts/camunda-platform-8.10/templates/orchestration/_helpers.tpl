@@ -223,7 +223,18 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.hubPingTokenEndpoint" -}}
-    {{- .Values.orchestration.hub.ping.credentials.tokenEndpoint | default (include "orchestration.authIssuerBackendUrlEndpointToken" .) -}}
+    {{- if .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
+        {{- tpl .Values.orchestration.hub.ping.credentials.tokenEndpoint . -}}
+    {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
+        {{- $issuer := include "camundaPlatform.authIssuerUrlWithFallback" . -}}
+        {{- if $issuer -}}
+            {{- $issuer -}}/protocol/openid-connect/token
+        {{- else -}}
+            {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
+        {{- end -}}
+    {{- else -}}
+        {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
+    {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.hubPingClientSecretConfig" -}}

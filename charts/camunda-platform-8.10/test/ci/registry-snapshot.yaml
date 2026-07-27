@@ -982,6 +982,8 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
+          features:
+            - hub-ping
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -998,6 +1000,11 @@ integration:
               env-vars:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
+          post-deploy:
+            script: post-deploy-hub-ping.sh
+            description: |
+              Waits for the authenticated Orchestration Cluster ping to register its
+              uniquely named cluster in Hub's database.
         - name: alwaysgreen
           enabled: false
           shortname: agrn

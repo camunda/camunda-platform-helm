@@ -177,6 +177,19 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.hub.ping.credentials.token-endpoint": "https://kc/token",
 			},
 		},
+		{
+			Name: "TestApplicationYamlShouldUsePublicKeycloakIssuerForHubPingToken",
+			Values: map[string]string{
+				"global.identity.auth.publicIssuerUrl":                                "https://idp.example/realms/camunda-platform",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.hub.ping.credentials.token-endpoint": "https://idp.example/realms/camunda-platform/protocol/openid-connect/token",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
