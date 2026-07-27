@@ -1117,6 +1117,31 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					"CAMUNDA_ORCHESTRATION_CLIENT_ID should be present (default value) when alwaysRegister=true, even though orchestration.enabled=false")
 			},
 		}, {
+			Name:                 "TestHubPingAuthorizationIncludesOrchestrationSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+				"orchestration.enabled":        "false",
+				"global.identity.auth.orchestration.hubPingAuthorizationEnabled":      "true",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+					ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "orchestration-oidc-secret"},
+						Key:                  "identity-orchestration-client-token",
+					}},
+				})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_ORCHESTRATION_CLIENT_ID", Value: "orchestration"})
+			},
+		}, {
 			// Test: alwaysRegister=true must emit CAMUNDA_ORCHESTRATION_CLIENT_ID with a
 			// custom clientId when one is configured, matching the configmap's fallback.
 			Name:                 "TestOrchestrationDisabledWithRegisterInIdentityIncludesCustomOrchestrationClientId",

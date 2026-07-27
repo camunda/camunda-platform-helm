@@ -28,6 +28,11 @@
 # elasticsearch-external.yaml resolves them for a single-namespace scenario.
 
 orchestration:
+  env:
+    - name: CAMUNDA_HUB_PING_CLUSTERNAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
   hub:
     ping:
       endpoint: "http://integration-web-modeler-restapi.${MGMT_NAMESPACE}/modeler/api/v1/clusters"
@@ -40,7 +45,6 @@ orchestration:
           hub:
             ping:
               enabled: true
-              clusterName: authenticated-hub-ping
               pingPeriod: 5s
               properties:
                 verification: inherited-oidc-credentials

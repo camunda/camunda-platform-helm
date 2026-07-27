@@ -681,11 +681,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestHubPingAuthorizationRendersForCentralIdentity",
 			Values: map[string]string{
-				"identity.enabled":                                               "true",
-				"global.identity.auth.enabled":                                   "true",
-				"global.identity.auth.orchestration.alwaysRegister":              "true",
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
 				"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
-				"orchestration.enabled":                                          "false",
+				"orchestration.enabled": "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
