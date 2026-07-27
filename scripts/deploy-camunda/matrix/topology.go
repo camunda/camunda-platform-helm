@@ -79,6 +79,11 @@ type TopologyRelease struct {
 	// cross-namespace instead of deploying its own copy).
 	Dependencies []string `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
 
+	// Env contains release-local values-layer substitutions. The topology
+	// driver merges these after shared cross-release variables, so each
+	// orchestration release can use distinct auth identifiers.
+	Env map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
+
 	// ResolvedDependencies holds the fully-resolved companion chart specs
 	// for Dependencies, populated by LoadRegistry (mirroring how
 	// registryScenario.DependencyIDs resolves into CIScenario.Dependencies).

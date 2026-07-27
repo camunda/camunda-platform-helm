@@ -27,3 +27,9 @@ topology:
       dependencies: []
       values: features/multinamespace-orchestration.yaml
       depends-on: management
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize
+        ORCH_OPTIMIZE_AUDIENCE: optimize-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors

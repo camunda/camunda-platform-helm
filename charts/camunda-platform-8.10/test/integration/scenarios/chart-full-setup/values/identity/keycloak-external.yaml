@@ -42,8 +42,8 @@ global:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-admin-client-token"
       optimize:
-        clientId: optimize
-        audience: optimize-api
+        clientId: "${ORCH_OPTIMIZE_CLIENT_ID}"
+        audience: "${ORCH_OPTIMIZE_AUDIENCE}"
         redirectUrl: "https://${ORCH_HOST}/optimize"
         secret:
           existingSecret: integration-test-credentials
@@ -70,7 +70,7 @@ connectors:
   security:
     authentication:
       oidc:
-        clientId: connectors
+        clientId: "${ORCH_CONNECTORS_CLIENT_ID}"
         secret:
           existingSecret: integration-test-credentials
           existingSecretKey: identity-connectors-client-token
@@ -88,8 +88,8 @@ orchestration:
     authentication:
       authenticationRefreshInterval: "PT30S"
       oidc:
-        clientId: orchestration
-        audience: orchestration-api
+        clientId: "${ORCH_ORCHESTRATION_CLIENT_ID}"
+        audience: "${ORCH_ORCHESTRATION_AUDIENCE}"
         redirectUrl: "https://${ORCH_HOST}/orchestration"
         secret:
           existingSecret: integration-test-credentials

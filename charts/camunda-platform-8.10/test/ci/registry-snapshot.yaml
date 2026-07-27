@@ -1680,6 +1680,60 @@ integration:
                 depends-on: management
                 identity: keycloak-external
                 persistence: elasticsearch-external
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: multinamespace-2orch
+          enabled: true
+          shortname: mns2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          topology:
+            name: mgmt-2orch
+            releases:
+              - role: management
+                namespace-suffix: mgmt
+                values: features/multinamespace-2orch-management.yaml
+                identity: keycloak
+                dependencies:
+                  - keycloak
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                values: features/multinamespace-orchestration.yaml
+                depends-on: management
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+              - role: orchestration
+                namespace-suffix: orchb
+                values: features/multinamespace-orchestration.yaml
+                depends-on: management
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
     nightly:

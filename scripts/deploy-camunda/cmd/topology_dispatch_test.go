@@ -315,14 +315,69 @@ func TestAddTopologyIngressHosts_DerivesPerReleaseHosts(t *testing.T) {
 		opts,
 		"gke",
 		&deploy.ScenarioContext{Namespace: "matrix-810-mns-mgmt"},
-		&deploy.ScenarioContext{Namespace: "matrix-810-mns-orcha"},
+		[]matrix.TopologyRelease{{Role: "management", NamespaceSuffix: "mgmt"}, {Role: "orchestration", NamespaceSuffix: "orcha"}},
+		[]*deploy.ScenarioContext{{Namespace: "matrix-810-mns-mgmt"}, {Namespace: "matrix-810-mns-orcha"}},
 	)
 
 	if got, want := env["MGMT_HOST"], "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"; got != want {
 		t.Errorf("MGMT_HOST = %q, want %q", got, want)
 	}
-	if got, want := env["ORCH_HOST"], "matrix-810-mns-orcha.ci.distro.ultrawombat.com"; got != want {
-		t.Errorf("ORCH_HOST = %q, want %q", got, want)
+	if got, want := env["ORCHA_HOST"], "matrix-810-mns-orcha.ci.distro.ultrawombat.com"; got != want {
+		t.Errorf("ORCHA_HOST = %q, want %q", got, want)
+	}
+}
+
+func TestAddTopologyIngressHosts_DerivesEveryOrchestrationHost(t *testing.T) {
+	env := map[string]string{}
+	releases := testTopologyReleases()
+	contexts := []*deploy.ScenarioContext{
+		{Namespace: "matrix-810-mns-mgmt"},
+		{Namespace: "matrix-810-mns-orcha"},
+		{Namespace: "matrix-810-mns-orchb"},
+	}
+
+	addTopologyIngressHosts(env, matrix.RunOptions{IngressBaseDomain: "ci.example.com"}, "gke", contexts[0], releases, contexts)
+
+	if got := env["ORCHA_HOST"]; got != "matrix-810-mns-orcha.ci.example.com" {
+		t.Errorf("ORCHA_HOST = %q", got)
+	}
+	if got := env["ORCHB_HOST"]; got != "matrix-810-mns-orchb.ci.example.com" {
+		t.Errorf("ORCHB_HOST = %q", got)
+	}
+	if _, exists := env["ORCH_HOST"]; exists {
+		t.Error("ORCH_HOST must not alias one release in a multi-orchestration topology")
+	}
+}
+
+func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":  "ns-orcha",
+		"ORCHA_HOST":       "orcha.example.com",
+		"ORCHA_ZEEBE_GRPC": "grpc://orcha:26500",
+		"ORCHA_ZEEBE_REST": "http://orcha:8080",
+		"ORCHB_NAMESPACE":  "ns-orchb",
+		"ORCHB_HOST":       "orchb.example.com",
+		"ORCHB_ZEEBE_GRPC": "grpc://orchb:26500",
+		"ORCHB_ZEEBE_REST": "http://orchb:8080",
+	}
+	release := matrix.TopologyRelease{
+		Role:            "orchestration",
+		NamespaceSuffix: "orchb",
+		Env:             map[string]string{"ORCH_ORCHESTRATION_CLIENT_ID": "orchestration-orchb"},
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	if got := env["ORCH_NAMESPACE"]; got != "ns-orchb" {
+		t.Errorf("ORCH_NAMESPACE = %q", got)
+	}
+	if got := env["ORCH_HOST"]; got != "orchb.example.com" {
+		t.Errorf("ORCH_HOST = %q", got)
+	}
+	if got := env["ORCH_ZEEBE_GRPC"]; got != "grpc://orchb:26500" {
+		t.Errorf("ORCH_ZEEBE_GRPC = %q", got)
+	}
+	if got := env["ORCH_ORCHESTRATION_CLIENT_ID"]; got != "orchestration-orchb" {
+		t.Errorf("ORCH_ORCHESTRATION_CLIENT_ID = %q", got)
 	}
 }
 
@@ -335,10 +390,11 @@ func TestAddTopologyIngressHosts_UsesExplicitSharedHost(t *testing.T) {
 		opts,
 		"gke",
 		&deploy.ScenarioContext{Namespace: "matrix-810-mns-mgmt"},
-		&deploy.ScenarioContext{Namespace: "matrix-810-mns-orcha"},
+		[]matrix.TopologyRelease{{Role: "management", NamespaceSuffix: "mgmt"}, {Role: "orchestration", NamespaceSuffix: "orcha"}},
+		[]*deploy.ScenarioContext{{Namespace: "matrix-810-mns-mgmt"}, {Namespace: "matrix-810-mns-orcha"}},
 	)
 
-	for _, key := range []string{"MGMT_HOST", "ORCH_HOST"} {
+	for _, key := range []string{"MGMT_HOST", "ORCHA_HOST"} {
 		if got, want := env[key], "abc123-mns.ci.distro.ultrawombat.com"; got != want {
 			t.Errorf("%s = %q, want %q", key, got, want)
 		}
@@ -354,7 +410,8 @@ func TestAddTopologyIngressHosts_OmitsOrchestrationHostWithoutRelease(t *testing
 		opts,
 		"gke",
 		&deploy.ScenarioContext{Namespace: "matrix-810-mns-mgmt"},
-		nil,
+		[]matrix.TopologyRelease{{Role: "management", NamespaceSuffix: "mgmt"}},
+		[]*deploy.ScenarioContext{{Namespace: "matrix-810-mns-mgmt"}},
 	)
 
 	if got, want := env["MGMT_HOST"], "abc123-mns.ci.distro.ultrawombat.com"; got != want {

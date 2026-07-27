@@ -78,6 +78,7 @@ func TestTopologyValidate_Valid(t *testing.T) {
 				Identity:        "keycloak-external",
 				Persistence:     "elasticsearch-external",
 				DependsOn:       "management",
+				Env:             map[string]string{"ORCH_ORCHESTRATION_CLIENT_ID": "orchestration-orcha"},
 			},
 			{
 				Role:            "orchestration",
@@ -91,6 +92,9 @@ func TestTopologyValidate_Valid(t *testing.T) {
 	}
 	if err := top.Validate("ctx", dir, depsDir); err != nil {
 		t.Fatalf("expected valid topology, got: %v", err)
+	}
+	if got := top.Releases[1].Env["ORCH_ORCHESTRATION_CLIENT_ID"]; got != "orchestration-orcha" {
+		t.Fatalf("release env = %q", got)
 	}
 }
 

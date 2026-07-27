@@ -1346,14 +1346,14 @@ jobs:
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
 
-  # Multi-namespace topology job: runs the smoke suite against the
-  # 'multinamespace' scenario's orchestration release, with credentials
+  # Multi-namespace topology job: runs the smoke suite against each
+  # topology scenario's orchestration releases, with credentials
   # merged from the management release via `deploy-camunda e2e-env merge`.
-  # Fully additive/opt-in — gated tightly on the one topology scenario, so
-  # it cannot affect any other scenario's e2e path. Blocking: a smoke-suite
+  # Fully additive/opt-in — gated tightly on topology scenarios, so it cannot
+  # affect any other scenario's e2e path. Blocking: a smoke-suite
   # failure fails this check.
   e2e-topology-smoke:
-    name: "[topology] e2e smoke - ${{ inputs.shortname }}"
+    name: "[topology] e2e smoke - ${{ inputs.shortname }} - ${{ matrix.orchestration_suffix }}"
     needs: [install]
     runs-on: gcp-core-8-release
     container:
@@ -1365,8 +1365,16 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.scenario == 'multinamespace' && inputs.flow == 'install' }}
+    if: ${{ inputs.test-enabled && (inputs.scenario == 'multinamespace' || inputs.scenario == 'multinamespace-2orch') && inputs.flow == 'install' }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - orchestration_suffix: orcha
+            shard_index: "1"
+          - orchestration_suffix: orchb
+            shard_index: "2"
     permissions:
       contents: read
       id-token: write
@@ -1395,7 +1403,7 @@ jobs:
         run: |
           set -euo pipefail
           base="${{ steps.base-vars.outputs.namespace }}"
-          for suffix in orcha mgmt; do
+          for suffix in orcha orchb mgmt; do
             full="${base}-${suffix}"
             if [[ ${#full} -gt 63 ]]; then
               echo "::error::namespace '${full}' is ${#full} chars, exceeding the 63-character Kubernetes limit. This workflow step derives it via naive concatenation and would diverge from deploy-camunda's DeriveReleaseNamespace truncation used by the actual deploy." >&2
@@ -1419,6 +1427,7 @@ jobs:
           exportEnv: false
 
       - name: Run Playwright E2E Tests (multi-namespace topology)
+        if: ${{ matrix.orchestration_suffix == 'orcha' || inputs.scenario == 'multinamespace-2orch' }}
         uses: ./.github/actions/playwright-e2e-tests
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
@@ -1437,14 +1446,14 @@ jobs:
           infra-type: ${{ inputs.infra-type }}
           identifier: ${{ inputs.identifier }}
           namespace-prefix: ${{ inputs.namespace-prefix }}
-          namespace-override: "${{ steps.base-vars.outputs.namespace }}-orcha"
+          namespace-override: "${{ steps.base-vars.outputs.namespace }}-${{ matrix.orchestration_suffix }}"
           management-namespace: "${{ steps.base-vars.outputs.namespace }}-mgmt"
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
           auth-data: ${{ inputs.auth-data }}
           test-stage: after-install
-          shard-index: "1"
+          shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "true"
 
@@ -1827,13 +1836,13 @@ jobs:
             fi
           fi
 
-      - name: CI Cleanup - Reap topology mgmt/orcha namespaces
+      - name: CI Cleanup - Reap topology namespaces
         if: always() && inputs.always-delete-namespace
         env:
           OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
           OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
         run: |
-          for suffix in mgmt orcha; do
+          for suffix in mgmt orcha orchb; do
             ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
 
             kubectl annotate ns "$ns" test-flow=${{ inputs.flow }} --overwrite || true

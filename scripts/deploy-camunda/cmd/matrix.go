@@ -1126,6 +1126,36 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
+func topologyEnvToken(value string) string {
+	var token strings.Builder
+	for _, r := range strings.ToUpper(value) {
+		if r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
+			token.WriteRune(r)
+		} else {
+			token.WriteByte('_')
+		}
+	}
+	return strings.Trim(token.String(), "_")
+}
+
+func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRelease) map[string]string {
+	env := make(map[string]string, len(shared)+len(release.Env)+4)
+	for key, value := range shared {
+		env[key] = value
+	}
+	if release.Role == "orchestration" {
+		token := topologyEnvToken(release.NamespaceSuffix)
+		env["ORCH_NAMESPACE"] = env[token+"_NAMESPACE"]
+		env["ORCH_HOST"] = env[token+"_HOST"]
+		env["ORCH_ZEEBE_GRPC"] = env[token+"_ZEEBE_GRPC"]
+		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
+	}
+	for key, value := range release.Env {
+		env[key] = value
+	}
+	return env
+}
+
 // resolveSharedStorageServiceName resolves the Kubernetes Service name of the
 // shared storage backend for a topology: it prefers the explicit
 // topo.SharedStorageService, falling back to the ReleaseName of the resolved
@@ -1204,13 +1234,13 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	managementIdx := -1
-	orchestrationIdx := -1
+	var orchestrationIndices []int
 	for i, r := range entry.Topology.Releases {
 		if r.Role == "management" {
 			managementIdx = i
 		}
 		if r.Role == "orchestration" {
-			orchestrationIdx = i
+			orchestrationIndices = append(orchestrationIndices, i)
 		}
 	}
 	if managementIdx == -1 {
@@ -1228,18 +1258,21 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// orchestration release itself exposes (orchestration.serviceName in
 	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
-	if orchestrationIdx != -1 {
-		crossRefEnv["ORCH_NAMESPACE"] = contexts[orchestrationIdx].Namespace
-		for k, v := range buildOrchestrationZeebeEnv(contexts[orchestrationIdx]) {
-			crossRefEnv[k] = v
+	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[managementIdx], entry.Topology.Releases, contexts)
+	for _, i := range orchestrationIndices {
+		token := topologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
+		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
+		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
+			crossRefEnv[token+strings.TrimPrefix(key, "ORCH")] = value
 		}
 	}
-
-	var orchestrationCtx *deploy.ScenarioContext
-	if orchestrationIdx != -1 {
-		orchestrationCtx = contexts[orchestrationIdx]
+	if len(orchestrationIndices) == 1 {
+		i := orchestrationIndices[0]
+		crossRefEnv["ORCH_NAMESPACE"] = contexts[i].Namespace
+		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
+			crossRefEnv[key] = value
+		}
 	}
-	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[managementIdx], orchestrationCtx)
 
 	// Deploy order honors each release's depends-on (management, which the
 	// orchestration releases depend on, therefore deploys first).
@@ -1254,6 +1287,13 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
+		if len(orchestrationIndices) > 1 {
+			hostKey := "MGMT_HOST"
+			if rel.Role == "orchestration" {
+				hostKey = topologyEnvToken(rel.NamespaceSuffix) + "_HOST"
+			}
+			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+crossRefEnv[hostKey])
+		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
 		if buildErr != nil {
@@ -1261,7 +1301,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, buildErr)
 		}
 
-		applyTopologyReleaseOverrides(flags, crossRefEnv)
+		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
@@ -1284,11 +1324,19 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	return nil
 }
 
-func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, managementCtx, orchestrationCtx *deploy.ScenarioContext) {
-	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" {
+func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, managementCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
+	orchestrationCount := 0
+	for _, release := range releases {
+		if release.Role == "orchestration" {
+			orchestrationCount++
+		}
+	}
+	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" && orchestrationCount <= 1 {
 		crossRefEnv["MGMT_HOST"] = sharedHost
-		if orchestrationCtx != nil {
-			crossRefEnv["ORCH_HOST"] = sharedHost
+		for _, release := range releases {
+			if release.Role == "orchestration" {
+				crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
+			}
 		}
 		return
 	}
@@ -1301,9 +1349,12 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		IngressSubdomain:  managementCtx.Namespace,
 		IngressBaseDomain: baseDomain,
 	}).ResolveIngressHostname()
-	if orchestrationCtx != nil {
-		crossRefEnv["ORCH_HOST"] = (&config.IngressFlags{
-			IngressSubdomain:  orchestrationCtx.Namespace,
+	for i, release := range releases {
+		if release.Role != "orchestration" {
+			continue
+		}
+		crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = (&config.IngressFlags{
+			IngressSubdomain:  contexts[i].Namespace,
 			IngressBaseDomain: baseDomain,
 		}).ResolveIngressHostname()
 	}
