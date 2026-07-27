@@ -702,6 +702,17 @@ func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
 			},
 		},
 		{
+			Name: "TestCentralExternalOidcAuthorizationRequiresClaimMapping",
+			Values: map[string]string{
+				"orchestration.enabled":                                          "false",
+				"orchestration.security.authentication.oidc.type":                "MICROSOFT",
+				"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "with a non-Keycloak OIDC provider requires")
+			},
+		},
+		{
 			Name: "TestPingClientSecretExistingSecretRequiresKey",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":                              "elasticsearch",

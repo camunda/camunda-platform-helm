@@ -59,17 +59,21 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
   {{- fail "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`, available values are [elasticsearch, opensearch, rdbms]. For more details, see our documentation here: https://docs.camunda.io/docs/next/self-managed/concepts/secondary-storage/configuring-secondary-storage/" -}}
 {{- end }}
 
+{{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
+{{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
+{{- if ne (not (not $pingClaimName)) (not (not $pingClaimValue)) }}
+  {{- fail "[camunda][error] global.identity.auth.orchestration.hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue must be set together" -}}
+{{- end }}
+{{- if and .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (ne (include "orchestration.authIssuerType" .) "KEYCLOAK") (not (and $pingClaimName $pingClaimValue)) }}
+  {{- fail "[camunda][error] global.identity.auth.orchestration.hubPingAuthorizationEnabled with a non-Keycloak OIDC provider requires global.identity.auth.orchestration.hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue" -}}
+{{- end }}
+
 {{- if and .Values.orchestration.enabled .Values.orchestration.hub.ping.endpoint }}
   {{- $isOidc := eq (include "orchestration.authMethod" .) "oidc" -}}
   {{- $pcId := .Values.orchestration.hub.ping.credentials.clientId -}}
   {{- $pcTok := .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
   {{- $pcCs := .Values.orchestration.hub.ping.credentials.clientSecret.secret -}}
   {{- $pcHasSecret := or $pcCs.inlineSecret (and $pcCs.existingSecret $pcCs.existingSecretKey) -}}
-  {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
-  {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
-  {{- if ne (not (not $pingClaimName)) (not (not $pingClaimValue)) }}
-    {{- fail "[camunda][error] global.identity.auth.orchestration.hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue must be set together" -}}
-  {{- end }}
   {{- if and $pcId (not $pcHasSecret) }}
     {{- fail "[camunda][error] orchestration.hub.ping.credentials.clientId requires an explicit orchestration.hub.ping.credentials.clientSecret.secret (inlineSecret or existingSecret+existingSecretKey) so the client ID and secret cannot resolve from different clients" -}}
   {{- end }}
