@@ -357,8 +357,8 @@
       ],
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],
+      prCreation: 'immediate',
       addLabels: ['camunda-platform', 'priority-high'],
-      minimumReleaseAge: '6 hours',
     },
     {
       matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
@@ -460,7 +460,7 @@
             tag: SNAPSHOT
             digest: "sha256:abcdef123456789..."
         */
-        'repository:\\s+(?<depName>\\S+)[\\s\\S]*?tag:\\s+(?<currentValue>[^\\s]+)[\\s\\S]*?digest:\\s+\"?(?<currentDigest>sha256:[a-f0-9]{64})\"?'
+        'repository:\\s+(?<depName>\\S+)\\s*\\n\\s+tag:\\s+(?<currentValue>\\S+)\\s*\\n\\s+digest:\\s+\"?(?<currentDigest>sha256:[a-f0-9]{64})\"?'
       ],
       datasourceTemplate: 'docker',
       versioningTemplate: 'docker',

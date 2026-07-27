@@ -44,23 +44,32 @@ func repoRoot(t *testing.T) string {
 
 // RenovateConfig represents the subset of renovate.json5 we need to validate.
 type RenovateConfig struct {
-	PackageRules []PackageRule `json:"packageRules"`
+	PackageRules   []PackageRule   `json:"packageRules"`
+	CustomManagers []CustomManager `json:"customManagers"`
 }
 
 // PackageRule represents a single Renovate package rule.
 type PackageRule struct {
 	Description       string   `json:"description"`
+	GroupName         string   `json:"groupName"`
 	Versioning        string   `json:"versioning"`
 	MatchFileNames    []string `json:"matchFileNames"`
 	MatchManagers     []string `json:"matchManagers"`
 	MatchPackageNames []string `json:"matchPackageNames"`
 	MatchUpdateTypes  []string `json:"matchUpdateTypes"`
+	PRCreation        string   `json:"prCreation"`
+	MinimumReleaseAge string   `json:"minimumReleaseAge"`
 	AddLabels         []string `json:"addLabels"`
 	Schedule          []string `json:"schedule"`
 	Automerge         *bool    `json:"automerge"`
 	PlatformAutomerge *bool    `json:"platformAutomerge"`
 	IgnoreTests       *bool    `json:"ignoreTests"`
 	AutomergeType     string   `json:"automergeType"`
+}
+
+type CustomManager struct {
+	FileMatch    []string `json:"fileMatch"`
+	MatchStrings []string `json:"matchStrings"`
 }
 
 // ChartYAML represents the relevant fields from Chart.yaml.
@@ -260,6 +269,100 @@ func TestGitHubActionsAutomergePolicy(t *testing.T) {
 	} {
 		assert.Contains(t, actionRule.AddLabels, label)
 	}
+}
+
+func TestDigestUpdatesAreCreatedImmediately(t *testing.T) {
+	config := readRenovateConfig(t)
+
+	for _, rule := range config.PackageRules {
+		if rule.GroupName != "camunda-platform-digests" {
+			continue
+		}
+		assert.Contains(t, rule.MatchUpdateTypes, "digest")
+		assert.Equal(t, "immediate", rule.PRCreation,
+			"moving snapshot digests must not be held by the global not-pending policy")
+		assert.Empty(t, rule.MinimumReleaseAge,
+			"a minimum release age can reset indefinitely for moving snapshot tags")
+		return
+	}
+	t.Fatal("camunda-platform-digests package rule not found")
+}
+
+func TestDigestRegexDoesNotCrossImageBlocks(t *testing.T) {
+	root := repoRoot(t)
+	config := readRenovateConfig(t)
+	re := regexp.MustCompile(digestManagerPattern(t, config))
+
+	for _, version := range []string{"8.8", "8.9", "8.10"} {
+		path := filepath.Join(root, "charts", "camunda-platform-"+version, "values-digest.yaml")
+		contents, err := os.ReadFile(path)
+		require.NoError(t, err)
+
+		assert.Equal(t, digestImageBlocks(t, contents), digestRegexMatches(re, string(contents)),
+			"%s digest dependencies must stay within their YAML image block", path)
+	}
+}
+
+func readRenovateConfig(t *testing.T) RenovateConfig {
+	t.Helper()
+	contents, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "renovate.json5"))
+	require.NoError(t, err)
+	var config RenovateConfig
+	require.NoError(t, json5.Unmarshal(contents, &config))
+	return config
+}
+
+func digestManagerPattern(t *testing.T, config RenovateConfig) string {
+	t.Helper()
+	for _, manager := range config.CustomManagers {
+		if containsFile(manager.FileMatch, "values-digest\\.yaml$") {
+			require.Len(t, manager.MatchStrings, 1)
+			return manager.MatchStrings[0]
+		}
+	}
+	t.Fatal("values-digest custom manager not found")
+	return ""
+}
+
+func digestImageBlocks(t *testing.T, contents []byte) map[string]string {
+	t.Helper()
+	var document yaml.Node
+	require.NoError(t, yaml.Unmarshal(contents, &document))
+	result := map[string]string{}
+	var visit func(*yaml.Node)
+	visit = func(node *yaml.Node) {
+		if node.Kind == yaml.MappingNode {
+			fields := map[string]string{}
+			for i := 0; i+1 < len(node.Content); i += 2 {
+				key, value := node.Content[i], node.Content[i+1]
+				if value.Kind == yaml.ScalarNode {
+					fields[key.Value] = value.Value
+				}
+				visit(value)
+			}
+			if fields["repository"] != "" && fields["tag"] != "" && fields["digest"] != "" {
+				result[fields["repository"]+"@"+fields["tag"]] = fields["digest"]
+			}
+			return
+		}
+		for _, child := range node.Content {
+			visit(child)
+		}
+	}
+	visit(&document)
+	return result
+}
+
+func digestRegexMatches(re *regexp.Regexp, contents string) map[string]string {
+	result := map[string]string{}
+	groups := map[string]int{}
+	for i, name := range re.SubexpNames() {
+		groups[name] = i
+	}
+	for _, match := range re.FindAllStringSubmatch(contents, -1) {
+		result[match[groups["depName"]]+"@"+match[groups["currentValue"]]] = match[groups["currentDigest"]]
+	}
+	return result
 }
 
 // extractChartVersions extracts unique chart version numbers from matchFileNames.
