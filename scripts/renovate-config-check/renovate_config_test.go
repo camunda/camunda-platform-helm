@@ -303,6 +303,28 @@ func TestDigestRegexDoesNotCrossImageBlocks(t *testing.T) {
 	}
 }
 
+func TestDigestRegexSkipsDigestlessBlockWithoutConsumingNextDigest(t *testing.T) {
+	config := readRenovateConfig(t)
+	re := regexp.MustCompile(digestManagerPattern(t, config))
+	contents := `
+webModeler:
+  restapi:
+    image:
+      repository: camunda/hub
+      tag: SNAPSHOT
+
+orchestration:
+  image:
+    repository: camunda/camunda
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+`
+
+	assert.Equal(t, map[string]string{
+		"camunda/camunda@8.10-SNAPSHOT": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	}, digestRegexMatches(re, contents))
+}
+
 func readRenovateConfig(t *testing.T) RenovateConfig {
 	t.Helper()
 	contents, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "renovate.json5"))
