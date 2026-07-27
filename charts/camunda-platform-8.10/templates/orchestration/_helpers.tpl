@@ -225,16 +225,16 @@ Authentication.
 {{- define "orchestration.hubPingTokenEndpoint" -}}
     {{- if .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
         {{- tpl .Values.orchestration.hub.ping.credentials.tokenEndpoint . -}}
+    {{- else if .Values.orchestration.security.authentication.oidc.tokenUrl -}}
+        {{- tpl .Values.orchestration.security.authentication.oidc.tokenUrl . -}}
+    {{- else if .Values.global.identity.auth.tokenUrl -}}
+        {{- tpl .Values.global.identity.auth.tokenUrl . -}}
     {{- else if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" -}}
         {{- $issuer := tpl (.Values.orchestration.security.authentication.oidc.issuer | default (include "camundaPlatform.authIssuerUrlWithFallback" .)) . -}}
         {{- if $issuer -}}
             {{- $issuer -}}/protocol/openid-connect/token
         {{- else -}}
             {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
-        {{- end -}}
-    {{- else -}}
-        {{- if .Values.orchestration.security.authentication.oidc.tokenUrl -}}
-            {{- tpl .Values.orchestration.security.authentication.oidc.tokenUrl . -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}

@@ -65,6 +65,9 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
   {{- $pcTok := .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
   {{- $pcCs := .Values.orchestration.hub.ping.credentials.clientSecret.secret -}}
   {{- $pcHasSecret := or $pcCs.inlineSecret (and $pcCs.existingSecret $pcCs.existingSecretKey) -}}
+  {{- if and $pcId (not $pcHasSecret) }}
+    {{- fail "[camunda][error] orchestration.hub.ping.credentials.clientId requires an explicit orchestration.hub.ping.credentials.clientSecret.secret (inlineSecret or existingSecret+existingSecretKey) so the client ID and secret cannot resolve from different clients" -}}
+  {{- end }}
   {{- if not $isOidc }}
     {{- if not (and $pcId $pcTok $pcHasSecret) }}
       {{- fail "[camunda][error] orchestration.hub.ping.endpoint requires orchestration.security.authentication.method=oidc (to reuse the orchestration client), or explicit orchestration.hub.ping.credentials.clientId, orchestration.hub.ping.credentials.tokenEndpoint, and either orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret or orchestration.hub.ping.credentials.clientSecret.secret.existingSecret/orchestration.hub.ping.credentials.clientSecret.secret.existingSecretKey when orchestration is not using oidc" -}}

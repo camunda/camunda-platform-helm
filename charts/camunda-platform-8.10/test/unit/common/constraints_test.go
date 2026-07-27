@@ -675,6 +675,20 @@ func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
 			},
 		},
 		{
+			Name: "TestPingCustomClientIdRequiresCustomSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "clientId requires an explicit")
+			},
+		},
+		{
 			Name: "TestPingClientSecretExistingSecretRequiresKey",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":                              "elasticsearch",

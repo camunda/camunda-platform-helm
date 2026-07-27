@@ -108,7 +108,7 @@ data:
               permissions:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
-                {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.alwaysRegister }}
+                {{- if .Values.orchestration.hub.ping.endpoint }}
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: create:*
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
@@ -179,7 +179,7 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
-            {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.alwaysRegister }}
+            {{- if .Values.orchestration.hub.ping.endpoint }}
             - name: "Web Modeler Public API - Cluster Ping"
               description: "Grants create/update access to Web Modeler's public API for the orchestration cluster ping"
               permissions:
@@ -189,7 +189,7 @@ data:
                   definition: update:*
             {{- end }}
 
-      {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.alwaysRegister }}
+      {{- if and .Values.orchestration.hub.ping.endpoint (eq (include "orchestration.authIssuerType" .) "KEYCLOAK") }}
       mapping-rules:
         - name: "OC Cluster Endpoint Access"
           claim-name: sub

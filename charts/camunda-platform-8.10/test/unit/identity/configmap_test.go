@@ -663,13 +663,14 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestHubPingMapsCustomClient",
 			Values: map[string]string{
-				"identity.enabled":                                               "true",
-				"global.identity.auth.enabled":                                   "true",
-				"global.security.authentication.method":                          "oidc",
-				"orchestration.hub.ping.endpoint":                                "https://hub.example/api/v1/clusters",
-				"orchestration.hub.ping.credentials.clientId":                    "ping-client",
-				"orchestration.security.authentication.method":                   "oidc",
-				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+				"identity.enabled":                                                    "true",
+				"global.identity.auth.enabled":                                        "true",
+				"global.security.authentication.method":                               "oidc",
+				"orchestration.hub.ping.endpoint":                                     "https://hub.example/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "ping-secret",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret":      "secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -684,6 +685,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.enabled":                      "true",
 				"global.identity.auth.orchestration.alwaysRegister": "true",
 				"orchestration.enabled":                             "false",
+				"orchestration.hub.ping.endpoint":                   "https://hub.example/api/v1/clusters",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -692,6 +694,25 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
 				s.Require().Contains(applicationYaml, "claim-value: service-account-orchestration")
+			},
+		}, {
+			Name: "TestHubPingDoesNotRenderKeycloakMappingForExternalOidc",
+			Values: map[string]string{
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"orchestration.hub.ping.endpoint":                                "https://hub.example/api/v1/clusters",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.type":                "MICROSOFT",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+				"orchestration.security.authentication.oidc.tokenUrl":            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
+				s.Require().NotContains(applicationYaml, "claim-value: service-account-")
 			},
 		},
 	}
