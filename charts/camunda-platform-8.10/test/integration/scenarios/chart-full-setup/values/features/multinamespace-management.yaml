@@ -42,6 +42,9 @@ orchestration:
     authentication:
       oidc:
         redirectUrl: "https://${ORCH_HOST}/orchestration"
+  hub:
+    ping:
+      endpoint: "http://${MANAGEMENT_RELEASE}-web-modeler-restapi.${MANAGEMENT_NAMESPACE}/modeler/api/v1/clusters"
 
 webModeler:
   restapi:
@@ -86,8 +89,3 @@ global:
         alwaysRegister: true
       connectors:
         alwaysRegister: true
-
-orchestration:
-  hub:
-    ping:
-      endpoint: "http://${MANAGEMENT_RELEASE}-web-modeler-restapi.${MANAGEMENT_NAMESPACE}/modeler/api/v1/clusters"

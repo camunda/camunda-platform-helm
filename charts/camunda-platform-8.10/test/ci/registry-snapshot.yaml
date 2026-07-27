@@ -1642,6 +1642,11 @@ integration:
           infra-type:
             gke: distroci
           skip-e2e: true
+          post-deploy:
+            script: post-deploy-hub-ping.sh
+            description: |
+              Waits for the authenticated Orchestration Cluster ping to register its
+              uniquely named cluster in Hub's database.
           topology:
             name: mgmt-1orch
             releases:

@@ -193,7 +193,11 @@ data:
       mapping-rules:
         - name: "OC Cluster Endpoint Access"
           claim-name: sub
-          claim-value: service-account-{{ include "orchestration.hubPingClientId" . }}
+          {{- if .Values.orchestration.hub.ping.credentials.clientId }}
+          claim-value: service-account-{{ .Values.orchestration.hub.ping.credentials.clientId }}
+          {{- else }}
+          claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
+          {{- end }}
           operator: EQUALS
           rule-type: ROLE
           applied-role-names:

@@ -28,6 +28,20 @@
 # elasticsearch-external.yaml resolves them for a single-namespace scenario.
 
 orchestration:
+  hub:
+    ping:
+      endpoint: "http://${MANAGEMENT_RELEASE}-web-modeler-restapi.${MANAGEMENT_NAMESPACE}/modeler/api/v1/clusters"
+  extraConfiguration:
+    - file: hub-ping.yaml
+      content: |
+        camunda:
+          hub:
+            ping:
+              enabled: true
+              clusterName: authenticated-hub-ping
+              pingPeriod: 5s
+              properties:
+                verification: inherited-oidc-credentials
   data:
     secondaryStorage:
       type: elasticsearch

@@ -658,7 +658,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
 				s.Require().Contains(applicationYaml, "audience: \"web-modeler-public-api\"")
-				s.Require().Contains(applicationYaml, "claim-value: service-account-orchestration")
+				s.Require().Contains(applicationYaml, "claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}")
 			},
 		}, {
 			Name: "TestHubPingMapsCustomClient",
@@ -693,7 +693,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
-				s.Require().Contains(applicationYaml, "claim-value: service-account-orchestration")
+				s.Require().Contains(applicationYaml, "claim-value: service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}")
 			},
 		}, {
 			Name: "TestHubPingDoesNotRenderKeycloakMappingForExternalOidc",
