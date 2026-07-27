@@ -111,6 +111,19 @@ func TestManagementTopologyRejectsLegacyRegistrationCollision(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration"`)
 }
 
+func TestManagementTopologyRejectsReservedSharedRoleName(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.roleName": "Orchestration",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate or reserved topology role name "Orchestration"`)
+}
+
 func TestOrchestrationTopologyUsesExistingComponentAndIdentityConfiguration(t *testing.T) {
 	output := render(t, "orchestration.yaml",
 		"templates/orchestration/configmap.yaml",
@@ -197,6 +210,33 @@ func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
 
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/configmap-identity-auth.yaml"})
 	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://management.example.com/identity"`)
+}
+
+func TestTopologyUpgradePreservesSuppressedPersistentVolumeClaims(t *testing.T) {
+	managementOptions := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "management-generic.yaml")},
+		SetValues: map[string]string{
+			"connectors.persistence.enabled": "true",
+			"optimize.persistence.enabled":   "true",
+		},
+	}
+	managementOutput := helm.RenderTemplate(t, managementOptions, chartPath(t), "camunda", []string{
+		"templates/connectors/persistentvolumeclaim.yaml",
+		"templates/optimize/persistentvolumeclaim.yaml",
+	}, "--is-upgrade")
+	require.Contains(t, managementOutput, "name: camunda-camunda-platform-connectors-data")
+	require.Contains(t, managementOutput, "name: camunda-camunda-platform-optimize-data")
+
+	orchestrationOptions := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"identity.persistence.enabled": "true",
+		},
+	}
+	orchestrationOutput := helm.RenderTemplate(t, orchestrationOptions, chartPath(t), "camunda", []string{
+		"templates/identity/persistentvolumeclaim.yaml",
+	}, "--is-upgrade")
+	require.Contains(t, orchestrationOutput, "name: camunda-camunda-platform-identity-data")
 }
 
 func TestNullTopologyPreservesCombinedMode(t *testing.T) {

@@ -61,7 +61,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
       (include "webModeler.authClientApiAudience" .) true
       (include "webModeler.authPublicApiAudience" .) true
   }}
-  {{- $seenRoles := dict "ManagementIdentity" true "Web Modeler" true "Web Modeler Admin" true }}
+  {{- $seenRoles := dict "ManagementIdentity" true "Orchestration" true "Optimize" true "Web Modeler" true "Web Modeler Admin" true }}
   {{- $legacyIds := list }}
   {{- if .Values.global.identity.auth.connectors.alwaysRegister }}
     {{- $legacyIds = append $legacyIds (include "connectors.authClientId" .) }}
