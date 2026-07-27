@@ -298,6 +298,10 @@ spec:
       tolerations:
         {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
+      {{- with .Values.orchestration.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
+      {{- end }}
   {{- if eq .Values.orchestration.persistenceType "disk" }}
   volumeClaimTemplates:
     - apiVersion: v1

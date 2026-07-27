@@ -1010,6 +1010,9 @@ zeebe:
                   - zeebe-broker
           topologyKey: "kubernetes.io/hostname"
 
+  ## @param zeebe.topologySpreadConstraints can be used to define how broker pods are spread across topology domains https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+  topologySpreadConstraints: []
+
   ## @param zeebe.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
@@ -1224,6 +1227,9 @@ zeebeGateway:
                 values:
                   - zeebe-gateway
           topologyKey: "kubernetes.io/hostname"
+
+  ## @param zeebeGateway.topologySpreadConstraints can be used to define how gateway pods are spread across topology domains https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+  topologySpreadConstraints: []
 
   ## @param zeebeGateway.extraVolumeMounts can be used to mount extra volumes for the gateway pods, useful for enabling tls between gateway and broker
   extraVolumeMounts: []

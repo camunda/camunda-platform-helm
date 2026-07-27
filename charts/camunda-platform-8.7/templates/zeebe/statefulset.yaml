@@ -295,6 +295,10 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
+{{- with .Values.zeebe.topologySpreadConstraints }}
+      topologySpreadConstraints:
+{{ toYaml . | indent 8 }}
+{{- end }}
 
   {{- if eq .Values.zeebe.persistenceType "disk" }}
   volumeClaimTemplates:
