@@ -4234,7 +4234,7 @@
                             "properties": {
                                 "endpoint": {
                                     "type": "string",
-                                    "description": "defines the Camunda Hub POST /clusters endpoint pings are sent to. Setting it renders the ping connectivity/credentials config; enable the ping via orchestration.extraConfiguration.",
+                                    "description": "defines the Camunda Hub POST /clusters endpoint pings are sent to. Setting it renders the ping connectivity/credentials config and, when Identity is enabled in this release, provisions the inherited client's Hub permissions. In split deployments, set the same value in the central Identity release to provision authorization and in each Orchestration release to send pings. Enable the ping via orchestration.extraConfiguration.",
                                     "default": ""
                                 },
                                 "credentials": {
@@ -4247,7 +4247,7 @@
                                         },
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the M2M client id. Defaults to the orchestration client id when empty.",
+                                            "description": "defines the M2M client id. Defaults to the orchestration client id when empty. A custom client must be provisioned separately in the IdP and requires an explicit clientSecret below.",
                                             "default": ""
                                         },
                                         "clientSecret": {
