@@ -308,6 +308,9 @@ jobs:
       test-qa: ${{ matrix.qa == 'true' }}
       test-upgrade: ${{ matrix.upgrade == 'true' }}
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
+      is-topology: ${{ matrix.isTopology == 'true' }}
+      topology-namespace-suffixes: ${{ matrix.topologyNamespaceSuffixes }}
+      topology-smoke-matrix: ${{ matrix.topologySmokeMatrix }}
       helm-version: ${{ matrix.helmVersion }}
       cached: ${{ matrix.cached == 'true' }}
       pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}

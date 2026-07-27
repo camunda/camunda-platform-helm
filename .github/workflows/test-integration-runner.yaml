@@ -154,6 +154,21 @@ on:
         required: false
         default: false
         type: boolean
+      is-topology:
+        description: "Whether this scenario declares a multi-release topology"
+        required: false
+        default: false
+        type: boolean
+      topology-namespace-suffixes:
+        description: "JSON array of topology release namespace suffixes"
+        required: false
+        default: "[]"
+        type: string
+      topology-smoke-matrix:
+        description: "JSON matrix derived from topology orchestration releases"
+        required: false
+        default: "[]"
+        type: string
       pr-head-sha:
         description: "PR HEAD commit SHA for recording cache results"
         required: false
@@ -788,16 +803,18 @@ jobs:
         uses: ./.github/actions/failed-pods-info
 
       - name: Collect topology namespace diagnostics
-        if: failure() && (inputs.scenario == 'multinamespace' || inputs.scenario == 'multinamespace-2orch')
+        if: failure() && inputs.is-topology
+        env:
+          TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
         run: |
           mkdir -p diagnostics
-          for suffix in mgmt orcha orchb; do
+          while IFS= read -r suffix; do
             ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
             if [[ "$(kubectl get ns "$ns" --ignore-not-found -o name)" == "" ]]; then
               continue
             fi
             deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/topology-${suffix}.log" 2>&1 || true
-          done
+          done < <(jq -r '.[]' <<<"$TOPOLOGY_NAMESPACE_SUFFIXES")
 
       - name: Compute diagnostics artifact name
         if: failure()
@@ -1214,7 +1231,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && inputs.scenario != 'multinamespace' && inputs.scenario != 'multinamespace-2orch' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1378,18 +1395,12 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && (inputs.scenario == 'multinamespace' || inputs.scenario == 'multinamespace-2orch') && inputs.flow == 'install' }}
+    if: ${{ inputs.test-enabled && inputs.is-topology && inputs.flow == 'install' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - orchestration_suffix: orcha
-            shard_index: "1"
-            test_grep: ""
-          - orchestration_suffix: orchb
-            shard_index: "2"
-            test_grep: "Basic Login|Basic Navigation"
+        include: ${{ fromJson(inputs.topology-smoke-matrix) }}
     permissions:
       contents: read
       id-token: write
@@ -1418,13 +1429,13 @@ jobs:
         run: |
           set -euo pipefail
           base="${{ steps.base-vars.outputs.namespace }}"
-          for suffix in orcha orchb mgmt; do
+          while IFS= read -r suffix; do
             full="${base}-${suffix}"
             if [[ ${#full} -gt 63 ]]; then
               echo "::error::namespace '${full}' is ${#full} chars, exceeding the 63-character Kubernetes limit. This workflow step derives it via naive concatenation and would diverge from deploy-camunda's DeriveReleaseNamespace truncation used by the actual deploy." >&2
               exit 1
             fi
-          done
+          done < <(jq -r '.[]' <<< '${{ inputs.topology-namespace-suffixes }}')
 
       - name: Import Vault secrets
         id: test-credentials-secret
@@ -1442,7 +1453,6 @@ jobs:
           exportEnv: false
 
       - name: Run Playwright E2E Tests (multi-namespace topology)
-        if: ${{ matrix.orchestration_suffix == 'orcha' || inputs.scenario == 'multinamespace-2orch' }}
         uses: ./.github/actions/playwright-e2e-tests
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
@@ -1853,12 +1863,12 @@ jobs:
           fi
 
       - name: CI Cleanup - Reap topology namespaces
-        if: always() && inputs.always-delete-namespace
+        if: always() && inputs.always-delete-namespace && inputs.is-topology
         env:
           OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
           OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
         run: |
-          for suffix in mgmt orcha orchb; do
+          while IFS= read -r suffix; do
             ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
 
             kubectl annotate ns "$ns" test-flow=${{ inputs.flow }} --overwrite || true
@@ -1876,4 +1886,4 @@ jobs:
                 kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
               fi
             fi
-          done
+          done < <(jq -r '.[]' <<< '${{ inputs.topology-namespace-suffixes }}')
