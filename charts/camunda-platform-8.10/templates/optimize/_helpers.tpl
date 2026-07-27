@@ -45,11 +45,27 @@ Create a default fully qualified app name.
 {{- end }}
 
 {{- define "optimize.authClientId" -}}
-  {{- .Values.global.identity.auth.optimize.clientId -}}
+  {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+  {{- $topologyOptimize := dig "components" "optimize" dict $topologyCluster -}}
+  {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOptimize.clientId -}}
+    {{- $topologyOptimize.clientId -}}
+  {{- else -}}
+    {{- .Values.global.identity.auth.optimize.clientId -}}
+  {{- end -}}
 {{- end -}}
 
 {{- define "optimize.authAudience" -}}
-  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
+  {{- include "camundaPlatform.authAudienceOptimize" . -}}
+{{- end -}}
+
+{{- define "optimize.authSecretConfig" -}}
+  {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+  {{- $topologyOptimize := dig "components" "optimize" dict $topologyCluster -}}
+  {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOptimize.secret -}}
+    {{- toYaml $topologyOptimize -}}
+  {{- else -}}
+    {{- toYaml .Values.global.identity.auth.optimize -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*

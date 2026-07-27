@@ -1,0 +1,115 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package topology
+
+import (
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+)
+
+func chartPath(t *testing.T) string {
+	t.Helper()
+	path, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	return path
+}
+
+func render(t *testing.T, valuesFile string, templates ...string) string {
+	t.Helper()
+	options := &helm.Options{ValuesFiles: []string{filepath.Join("testdata", valuesFile)}}
+	return helm.RenderTemplate(t, options, chartPath(t), "camunda", templates)
+}
+
+func TestManagementTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testing.T) {
+	output := render(t, "management-generic.yaml",
+		"templates/identity/configmap.yaml",
+		"templates/web-modeler/configmap-restapi.yaml",
+	)
+
+	require.Contains(t, output, `"topology-east":`)
+	require.Contains(t, output, `"topology-west":`)
+	require.Contains(t, output, `"topology-shared-roles":`)
+	require.Contains(t, output, `name: "Orchestration"`)
+	require.Contains(t, output, `audience: "orchestration-east-api"`)
+	require.Contains(t, output, `audience: "orchestration-west-api"`)
+	require.Contains(t, output, `id: "east"`)
+	require.Contains(t, output, `id: "west"`)
+	require.Contains(t, output, `grpc://camunda-zeebe-gateway.camunda-east.svc.cluster.local:26500`)
+	require.Contains(t, output, `grpc://camunda-west-zeebe-gateway.camunda-west.svc.cluster.local:26500`)
+	require.NotContains(t, output, `keycloak:\n`)
+}
+
+func TestManagementTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
+	output := render(t, "management-generic.yaml")
+
+	require.Contains(t, output, "name: camunda-identity")
+	require.NotContains(t, output, "name: camunda-zeebe")
+	require.NotContains(t, output, "name: camunda-connectors")
+}
+
+func TestManagementTopologyKeycloakRendersInitAndSecretReferences(t *testing.T) {
+	output := render(t, "management-keycloak.yaml",
+		"templates/identity/configmap.yaml",
+		"templates/identity/deployment.yaml",
+	)
+
+	require.Contains(t, output, `"topology-east": {}`)
+	require.Contains(t, output, "VALUES_TOPOLOGY_EAST_ORCHESTRATION_SECRET")
+	require.Contains(t, output, "name: east-oidc")
+	require.Contains(t, output, "key: orchestration-secret")
+}
+
+func TestOrchestrationTopologyConsumesClusterAndManagementConfiguration(t *testing.T) {
+	output := render(t, "orchestration.yaml",
+		"templates/orchestration/configmap.yaml",
+		"templates/orchestration/statefulset.yaml",
+		"templates/common/configmap-identity-auth.yaml",
+	)
+
+	require.Contains(t, output, `client-id: "orchestration-east"`)
+	require.Contains(t, output, `- "orchestration-east-api"`)
+	require.Contains(t, output, `redirect-uri: "https://east.example.com/orchestration/sso-callback"`)
+	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "http://camunda-identity.camunda-management.svc.cluster.local:80/identity"`)
+
+	var statefulSet appsv1.StatefulSet
+	for _, document := range splitDocuments(output) {
+		if !contains(document, "kind: StatefulSet") {
+			continue
+		}
+		helm.UnmarshalK8SYaml(t, document, &statefulSet)
+	}
+	require.NotEmpty(t, statefulSet.Name)
+	require.Contains(t, statefulSet.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
+		Name: "VALUES_ORCHESTRATION_CLIENT_SECRET",
+		ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "east-oidc"},
+			Key:                  "orchestration-secret",
+		}},
+	})
+}
+
+func splitDocuments(output string) []string {
+	return strings.Split(output, "\n---\n")
+}
+
+func contains(value, substring string) bool {
+	return strings.Contains(value, substring)
+}

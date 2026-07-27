@@ -1229,6 +1229,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
 	if orchestrationIdx != -1 {
+		crossRefEnv["ORCH_NAMESPACE"] = contexts[orchestrationIdx].Namespace
 		for k, v := range buildOrchestrationZeebeEnv(contexts[orchestrationIdx]) {
 			crossRefEnv[k] = v
 		}

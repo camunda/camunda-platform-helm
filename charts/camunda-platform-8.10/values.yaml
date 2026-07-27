@@ -42,6 +42,65 @@
 ## @section Global parameters
 ## @extra global
 global:
+  ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
+  topology:
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, management, and orchestration.
+    mode: combined
+    ## @extra global.topology.management configuration for the management release consumed by an orchestration release.
+    management:
+      ## @param global.topology.management.namespace can be used to define the namespace containing Management Identity.
+      namespace: ""
+      ## @param global.topology.management.releaseName can be used to define the management Helm release name.
+      releaseName: ""
+      ## @param global.topology.management.identityServiceUrl can be used to override the internal Management Identity service URL. When empty, it is derived from releaseName and namespace.
+      identityServiceUrl: ""
+      ## @param global.topology.management.identityServicePort defines the internal Management Identity service port used when identityServiceUrl is empty.
+      identityServicePort: 80
+      ## @param global.topology.management.identityContextPath defines the Management Identity context path used when identityServiceUrl is empty.
+      identityContextPath: /identity
+    ## @skip global.topology.cluster
+    cluster: {}
+    ## @param global.topology.clusters can be used by a management release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
+    clusters: []
+    # - id: production-a
+    #   name: Production A
+    #   namespace: camunda-production-a
+    #   releaseName: camunda
+    #   host: production-a.example.com
+    #   version: 8.10.0
+    #   authorizations:
+    #     enabled: true
+    #   contextPaths:
+    #     orchestration: /orchestration
+    #     optimize: /optimize
+    #     connectors: /connectors
+    #   components:
+    #     orchestration:
+    #       enabled: true
+    #       clientId: orchestration-production-a
+    #       audience: orchestration-production-a-api
+    #       redirectUrl: https://production-a.example.com/orchestration
+    #       secret:
+    #         inlineSecret: ""
+    #         existingSecret: orchestration-production-a-oidc
+    #         existingSecretKey: client-secret
+    #     optimize:
+    #       enabled: true
+    #       clientId: optimize-production-a
+    #       audience: optimize-production-a-api
+    #       redirectUrl: https://production-a.example.com/optimize
+    #       secret:
+    #         inlineSecret: ""
+    #         existingSecret: optimize-production-a-oidc
+    #         existingSecretKey: client-secret
+    #     connectors:
+    #       enabled: true
+    #       clientId: connectors-production-a
+    #       secret:
+    #         inlineSecret: ""
+    #         existingSecret: connectors-production-a-oidc
+    #         existingSecretKey: client-secret
+
   ## License configuration.
   ## @extra global.license
   license:

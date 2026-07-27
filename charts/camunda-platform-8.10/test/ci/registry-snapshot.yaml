@@ -1658,7 +1658,6 @@ integration:
           tier: 2
           infra-type:
             gke: distroci
-          skip-e2e: true
           post-deploy:
             script: post-deploy-hub-ping.sh
             description: |

@@ -13,8 +13,8 @@
 ## Installed Services:
 
 - Orchestration:
-  - Enabled: {{ .Values.orchestration.enabled }}
-  {{- if .Values.orchestration.enabled }}
+  - Enabled: {{ eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
     {{- if .Values.orchestration.image.tag }}
   - Docker Image used for Orchestration: {{ .Values.orchestration.image.repository }}:{{ .Values.orchestration.image.tag }}
     {{- end }}
@@ -28,20 +28,20 @@
     {{- end }}
   {{- end }}
 - Optimize:
-  - Enabled: {{ .Values.optimize.enabled }}
-  {{- if .Values.optimize.enabled }}
+  - Enabled: {{ eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
+  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
     {{- if .Values.optimize.image.tag }}
   - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.optimize.image.tag }}
     {{- end }}
   {{- end }}
 - Connectors:
-  - Enabled: {{ .Values.connectors.enabled }}
-  {{- if .Values.connectors.enabled }}
+  - Enabled: {{ eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
+  {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
   - Docker Image used for Connectors: {{ .Values.connectors.image.repository }}:{{ .Values.connectors.image.tag }}
   {{- end }}
 - Identity:
-  - Enabled: {{ .Values.identity.enabled }}
-  {{- if .Values.identity.enabled }}
+  - Enabled: {{ eq (include "camundaPlatform.identityEnabled" .) "true" }}
+  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
     {{- if .Values.identity.image.tag }}
   - Docker Image used for Identity: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag }}
     {{- end }}
@@ -63,18 +63,18 @@ The Cluster itself is not exposed as a service which means that you can use `kub
 
 Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:8080` for REST API usage.
 
-{{ if or (.Values.orchestration.enabled) (.Values.identity.enabled) }}
+{{ if or (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.identityEnabled" .) "true") }}
 ### Connecting to Web apps
 
 As part of the Helm charts, an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
 
 If you don't have an ingress controller you can use `kubectl port-forward` to access the deployed web application from outside the cluster:
 
-{{ if .Values.identity.enabled -}}
+{{ if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
 Identity:
 > kubectl port-forward svc/{{ .Release.Name }}-identity 8084:80
 {{- end }}
-{{ if .Values.optimize.enabled -}}
+{{ if eq (include "camundaPlatform.optimizeEnabled" .) "true" -}}
 Optimize:
 > kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
@@ -83,11 +83,11 @@ Camunda Hub:
 > kubectl port-forward svc/{{ include "webModeler.restapi.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
-{{ if .Values.connectors.enabled -}}
+{{ if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
 Connectors:
 > kubectl port-forward svc/{{ .Release.Name }}-connectors 8086:8080
 {{- end }}
-{{- if and .Values.global.identity.auth.enabled .Values.identity.enabled }}
+{{- if and .Values.global.identity.auth.enabled (eq (include "camundaPlatform.identityEnabled" .) "true") }}
 
 If you want to use different ports for the services, please adjust the related configs in the values file since these ports are used as redirect URLs for Keycloak.
 

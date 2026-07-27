@@ -29,6 +29,38 @@
                         }
                     }
                 },
+                "topology": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "enum": ["combined", "management", "orchestration"],
+                            "default": "combined"
+                        },
+                        "management": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "namespace": {"type": "string"},
+                                "releaseName": {"type": "string"},
+                                "identityServiceUrl": {"type": "string"},
+                                "identityServicePort": {"type": ["integer", "string"]},
+                                "identityContextPath": {"type": "string"}
+                            }
+                        },
+                        "cluster": {
+                            "type": "object",
+                            "allOf": [{"$ref": "#/$defs/topologyClusterSelection"}]
+                        },
+                        "clusters": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/topologyCluster"
+                            }
+                        }
+                    }
+                },
                 "ingress": {
                     "properties": {
                         "annotations": {
@@ -1172,6 +1204,83 @@
                         }
                     }
                 }
+            }
+        }
+    },
+    "$defs": {
+        "topologySecret": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "inlineSecret": {"type": "string"},
+                "existingSecret": {"type": "string"},
+                "existingSecretKey": {"type": "string"}
+            }
+        },
+        "topologyComponentBase": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "clientId": {"type": "string"},
+                "audience": {"type": "string"},
+                "redirectUrl": {"type": "string"},
+                "roleName": {"type": "string"},
+                "secret": {"$ref": "#/$defs/topologySecret"},
+                "serviceName": {"type": "string"},
+                "gatewayServiceName": {"type": "string"},
+                "webappUrl": {"type": "string"},
+                "readinessUrl": {"type": "string"},
+                "restUrl": {"type": "string"},
+                "grpcUrl": {"type": "string"},
+                "operateUrl": {"type": "string"},
+                "tasklistUrl": {"type": "string"},
+                "adminUrl": {"type": "string"}
+            }
+        },
+        "topologyComponents": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "orchestration": {"$ref": "#/$defs/topologyComponentBase"},
+                "optimize": {"$ref": "#/$defs/topologyComponentBase"},
+                "connectors": {"$ref": "#/$defs/topologyComponentBase"}
+            }
+        },
+                        "topologyClusterSelection": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "id": {"type": "string"},
+                "components": {"$ref": "#/$defs/topologyComponents"}
+            }
+        },
+        "topologyCluster": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "namespace", "releaseName", "host", "version", "components"],
+            "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"},
+                "name": {"type": "string"},
+                "namespace": {"type": "string"},
+                "releaseName": {"type": "string"},
+                "host": {"type": "string"},
+                "version": {"type": "string"},
+                "authorizations": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {"enabled": {"type": "boolean"}}
+                },
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "orchestration": {"type": "string"},
+                        "optimize": {"type": "string"},
+                        "connectors": {"type": "string"}
+                    }
+                },
+                "components": {"$ref": "#/$defs/topologyComponents"}
             }
         }
     }

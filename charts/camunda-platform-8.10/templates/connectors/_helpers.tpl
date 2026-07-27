@@ -70,7 +70,7 @@ Authentication.
 */}}
 
 {{- define "connectors.authMethod" -}}
-    {{- if not .Values.connectors.enabled -}}
+    {{- if ne (include "camundaPlatform.connectorsEnabled" .) "true" -}}
         none
     {{- else -}}
         {{- .Values.connectors.security.authentication.method | default (
@@ -83,8 +83,24 @@ Authentication.
 [connectors] Defines the auth client
 */}}
 {{- define "connectors.authClientId" -}}
-    {{- .Values.connectors.security.authentication.oidc.clientId -}}
+    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyConnectors := dig "components" "connectors" dict $topologyCluster -}}
+    {{- if and (eq .Values.global.topology.mode "orchestration") $topologyConnectors.clientId -}}
+      {{- $topologyConnectors.clientId -}}
+    {{- else -}}
+      {{- .Values.connectors.security.authentication.oidc.clientId -}}
+    {{- end -}}
 {{- end }}
+
+{{- define "connectors.authSecretConfig" -}}
+    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyConnectors := dig "components" "connectors" dict $topologyCluster -}}
+    {{- if and (eq .Values.global.topology.mode "orchestration") $topologyConnectors.secret -}}
+      {{- toYaml $topologyConnectors -}}
+    {{- else -}}
+      {{- toYaml .Values.connectors.security.authentication.oidc -}}
+    {{- end -}}
+{{- end -}}
 
 {{- define "connectors.authAudience" -}}
     {{- .Values.connectors.security.authentication.oidc.audience |

@@ -17,15 +17,6 @@
 # This release deploys no Identity, Keycloak, Web Modeler, or Camunda Hub of
 # its own — auth and modeling are centralized in the management namespace.
 
-identity:
-  enabled: false
-
-webModeler:
-  enabled: false
-
-camundaHub:
-  enabled: false
-
 global:
   host: "$CAMUNDA_HOSTNAME"
   ingress:
@@ -50,11 +41,36 @@ global:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-admin-client-token"
-      optimize:
-        redirectUrl: "https://${ORCH_HOST}/optimize"
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-optimize-client-token"
+  topology:
+    mode: orchestration
+    management:
+      namespace: "${MGMT_NAMESPACE}"
+      releaseName: integration
+    cluster:
+      id: orchestration
+      components:
+        orchestration:
+          enabled: true
+          clientId: orchestration
+          audience: orchestration-api
+          redirectUrl: "https://${ORCH_HOST}/orchestration"
+          secret:
+            existingSecret: integration-test-credentials
+            existingSecretKey: identity-orchestration-client-token
+        optimize:
+          enabled: true
+          clientId: optimize
+          audience: optimize-api
+          redirectUrl: "https://${ORCH_HOST}/optimize"
+          secret:
+            existingSecret: integration-test-credentials
+            existingSecretKey: identity-optimize-client-token
+        connectors:
+          enabled: true
+          clientId: connectors
+          secret:
+            existingSecret: integration-test-credentials
+            existingSecretKey: identity-connectors-client-token
   security:
     authentication:
       method: oidc
@@ -68,14 +84,6 @@ optimize:
   livenessProbe:
     enabled: true
 
-connectors:
-  security:
-    authentication:
-      oidc:
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-connectors-client-token"
-
 orchestration:
   security:
     initialization:
@@ -88,10 +96,6 @@ orchestration:
     authentication:
       authenticationRefreshInterval: "PT30S"
       oidc:
-        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-orchestration-client-token"
         backwardsCompatibleAudiences:
           - operate-api
           - tasklist-api

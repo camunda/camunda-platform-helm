@@ -159,7 +159,7 @@ Authentication.
 */}}
 
 {{- define "orchestration.authMethod" -}}
-    {{- if not .Values.orchestration.enabled -}}
+    {{- if ne (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
         none
     {{- else -}}
         {{- .Values.orchestration.security.authentication.method | default (
@@ -215,7 +215,13 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.authClientId" -}}
-    {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
+    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
+    {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOrchestration.clientId -}}
+        {{- $topologyOrchestration.clientId -}}
+    {{- else -}}
+        {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
+    {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.hubPingClientId" -}}
@@ -244,7 +250,23 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.authAudience" -}}
-    {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
+    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
+    {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOrchestration.audience -}}
+        {{- $topologyOrchestration.audience -}}
+    {{- else -}}
+        {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
+    {{- end -}}
+{{- end -}}
+
+{{- define "orchestration.authSecretConfig" -}}
+    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
+    {{- if and (eq .Values.global.topology.mode "orchestration") $topologyOrchestration.secret -}}
+        {{- toYaml $topologyOrchestration -}}
+    {{- else -}}
+        {{- toYaml .Values.orchestration.security.authentication.oidc -}}
+    {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.enabledProfiles" -}}
@@ -329,10 +351,10 @@ and
 {{- define "orchestration.hasLegacyElasticsearchExporter" -}}
 {{- and
       (or
-        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         (or
           (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
+          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         )
       )
       (or
@@ -346,7 +368,7 @@ and
 {{- and
       (or
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
+        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
@@ -440,5 +462,8 @@ URIs.
 */}}
 {{- define "orchestration.RedirectURI" -}}
     {{- $redirectURIDefault := include "orchestration.serviceNameHTTP" . -}}
-    {{- tpl .Values.orchestration.security.authentication.oidc.redirectUrl . | default $redirectURIDefault -}}
+    {{- $topologyCluster := .Values.global.topology.cluster | default dict -}}
+    {{- $topologyOrchestration := dig "components" "orchestration" dict $topologyCluster -}}
+    {{- $redirectURL := ternary ($topologyOrchestration.redirectUrl | default "") .Values.orchestration.security.authentication.oidc.redirectUrl (eq .Values.global.topology.mode "orchestration") -}}
+    {{- tpl $redirectURL . | default $redirectURIDefault -}}
 {{- end -}}

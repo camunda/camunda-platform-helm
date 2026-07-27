@@ -30,7 +30,90 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
-{{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
+{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url (ne (include "camundaPlatform.topologyManagementIdentityURL" .) "")) }}
+
+{{- if not (has .Values.global.topology.mode (list "combined" "management" "orchestration")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, management, or orchestration; got %q." .Values.global.topology.mode) }}
+{{- end }}
+{{- if and (eq .Values.global.topology.mode "management") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=management requires identity.enabled=true." }}
+{{- end }}
+{{- if and (eq .Values.global.topology.mode "orchestration") (not .Values.global.identity.auth.enabled) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
+{{- end }}
+{{- if and (eq .Values.global.topology.mode "orchestration") (empty .Values.global.topology.cluster) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.cluster." }}
+{{- end }}
+{{- if and (eq .Values.global.topology.mode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.cluster.components.orchestration.enabled=true." }}
+{{- end }}
+{{- if and (eq .Values.global.topology.mode "orchestration") (empty (include "camundaPlatform.topologyManagementIdentityURL" .)) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.topology.management.identityServiceUrl or both releaseName and namespace." }}
+{{- end }}
+{{- if eq .Values.global.topology.mode "management" }}
+  {{- $seenSlugs := dict }}
+  {{- $seenIds := dict
+      (include "identity.authClientId" .) true
+      (include "identity.authAudience" .) true
+      (include "webModeler.authClientId" .) true
+      (include "webModeler.authClientApiAudience" .) true
+      (include "webModeler.authPublicApiAudience" .) true
+  }}
+  {{- range $cluster := .Values.global.topology.clusters }}
+    {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
+    {{- if or (empty $cluster.id) (empty $slug) (empty $cluster.namespace) (empty $cluster.releaseName) (empty $cluster.host) (empty $cluster.version) }}
+      {{- fail "[camunda][error] every global.topology.clusters entry requires id, namespace, releaseName, host, and version." }}
+    {{- end }}
+    {{- if hasKey $seenSlugs $slug }}
+      {{- fail (printf "[camunda][error] global.topology.clusters ids %q and %q normalize to the same key %q." (get $seenSlugs $slug) $cluster.id $slug) }}
+    {{- end }}
+    {{- $_ := set $seenSlugs $slug $cluster.id }}
+    {{- range $componentName := list "orchestration" "optimize" "connectors" }}
+      {{- $component := get ($cluster.components | default dict) $componentName | default dict }}
+      {{- if $component.enabled }}
+        {{- if empty $component.clientId }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].components.%s requires clientId when enabled." $cluster.id $componentName) }}
+        {{- end }}
+        {{- if and (ne $componentName "connectors") (or (empty $component.audience) (empty $component.redirectUrl)) }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].components.%s requires audience and redirectUrl when enabled." $cluster.id $componentName) }}
+        {{- end }}
+        {{- if hasKey $seenIds $component.clientId }}
+          {{- fail (printf "[camunda][error] duplicate topology client or audience id %q." $component.clientId) }}
+        {{- end }}
+        {{- $_ := set $seenIds $component.clientId true }}
+        {{- if $component.audience }}
+          {{- if hasKey $seenIds $component.audience }}
+            {{- fail (printf "[camunda][error] duplicate topology client or audience id %q." $component.audience) }}
+          {{- end }}
+          {{- $_ := set $seenIds $component.audience true }}
+        {{- end }}
+        {{- if and (eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK") (ne (include "camundaPlatform.hasSecretConfig" (dict "config" $component)) "true") }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].components.%s requires a complete secret configuration when Management Identity administers Keycloak." $cluster.id $componentName) }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if and (dig "components" "connectors" "enabled" false $cluster) (not (dig "components" "orchestration" "enabled" false $cluster)) }}
+      {{- fail (printf "[camunda][error] global.topology.clusters[%s] enables Connectors without Orchestration." $cluster.id) }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- if eq .Values.global.topology.mode "orchestration" }}
+  {{- $topologyCluster := .Values.global.topology.cluster }}
+  {{- range $componentName := list "orchestration" "optimize" "connectors" }}
+    {{- $component := get ($topologyCluster.components | default dict) $componentName | default dict }}
+    {{- if $component.enabled }}
+      {{- if empty $component.clientId }}
+        {{- fail (printf "[camunda][error] global.topology.cluster.components.%s requires clientId when enabled." $componentName) }}
+      {{- end }}
+      {{- if and (ne $componentName "connectors") (or (empty $component.audience) (empty $component.redirectUrl)) }}
+        {{- fail (printf "[camunda][error] global.topology.cluster.components.%s requires audience and redirectUrl when enabled." $componentName) }}
+      {{- end }}
+      {{- if ne (include "camundaPlatform.hasSecretConfig" (dict "config" $component)) "true" }}
+        {{- fail (printf "[camunda][error] global.topology.cluster.components.%s requires a complete secret configuration when enabled." $componentName) }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
 
 {{/*
@@ -55,7 +138,7 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 {{/*
 Fail if there is no secondary storage type specified and if noSecondaryStorage is not enabled.
 */}}
-{{- if and .Values.orchestration.enabled (eq (include "orchestration.secondaryStorage" .) "unset") }}
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "unset") }}
   {{- fail "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`, available values are [elasticsearch, opensearch, rdbms]. For more details, see our documentation here: https://docs.camunda.io/docs/next/self-managed/concepts/secondary-storage/configuring-secondary-storage/" -}}
 {{- end }}
 
@@ -181,7 +264,8 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
     {{- $existingSecretsNotConfigured := list }}
 
     {{ if .Values.global.identity.auth.enabled }}
-      {{ if and (.Values.connectors.enabled)
+      {{ if and (ne .Values.global.topology.mode "orchestration")
+                (eq (include "camundaPlatform.connectorsEnabled" .) "true")
                 (eq (include "connectors.authMethod" .) "oidc")
                 (not .Values.connectors.security.authentication.oidc.secret.existingSecret) }}
         {{- $existingSecretsNotConfigured = append
@@ -189,13 +273,14 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- end }}
 
       {{ if and (ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK")
-                (.Values.identity.enabled)
+                (eq (include "camundaPlatform.identityEnabled" .) "true")
                 (not .Values.global.identity.auth.identity.secret.existingSecret) }}
         {{- $existingSecretsNotConfigured = append
             $existingSecretsNotConfigured "global.identity.auth.identity.secret.existingSecret" }}
       {{- end }}
 
-      {{ if and (.Values.orchestration.enabled)
+      {{ if and (ne .Values.global.topology.mode "orchestration")
+                (eq (include "camundaPlatform.orchestrationEnabled" .) "true")
                 (eq (include "orchestration.authMethod" .) "oidc")
                 (not .Values.orchestration.security.authentication.oidc.secret.existingSecret) }}
         {{- $existingSecretsNotConfigured = append
@@ -492,7 +577,7 @@ The following values inside your values.yaml need to be set but were not:
   to a non-default value; removed in chart v16 (8.11) -> extraConfiguration.
   *****************************************************************************
   */}}
-  {{- if .Values.orchestration.enabled }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
     {{- $orchestrationExtra := "orchestration.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (.Values.orchestration.logLevel | toString) "info")
@@ -628,13 +713,13 @@ The following values inside your values.yaml need to be set but were not:
       "oldName" "orchestration.multitenancy.api.enabled" "migration" $orchestrationExtra) }}
   {{- end }}
 
-  {{- if .Values.connectors.enabled }}
+  {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index .Values.connectors.logging.level "io.camunda.connector" | toString) "INFO")
       "oldName" "connectors.logging.level.io.camunda.connector" "migration" "connectors.extraConfiguration") }}
   {{- end }}
 
-  {{- if .Values.optimize.enabled }}
+  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
     {{- $optimizeExtra := "optimize.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (.Values.optimize.logLevel | toString) "info")
@@ -966,7 +1051,7 @@ Identity
 *******************************************************************************
 */}}
 
-{{- if .Values.identity.enabled -}}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.identity.firstUser "password")
@@ -1006,7 +1091,7 @@ Connectors
 *******************************************************************************
 */}}
 
-{{- if .Values.connectors.enabled -}}
+{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecret")
@@ -1026,7 +1111,7 @@ Orchestration
 *******************************************************************************
 */}}
 
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecret")
@@ -1179,7 +1264,7 @@ Orchestration
 *******************************************************************************
 */}}
 
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.orchestration.profiles "identity")

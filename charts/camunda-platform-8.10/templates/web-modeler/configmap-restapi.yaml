@@ -14,7 +14,7 @@ data:
     camunda:
       {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
       identity:
-        {{- if .Values.identity.enabled }}
+        {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
         base-url: {{ include "camundaPlatform.identityURL" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
@@ -66,12 +66,16 @@ data:
           url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
           https-only: {{ hasPrefix "https://" (tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $) | quote }}
 
-        {{- if or .Values.orchestration.enabled (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
+        {{- if or .Values.orchestration.enabled (eq .Values.global.topology.mode "management") (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
         clusters:
           {{- if (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
             {{- (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) | toYaml | nindent 10 }}
           {{- else}}
-            {{- include "camundaPlatform.defaultWebModelerCluster" . | nindent 10 }}
+            {{- if eq .Values.global.topology.mode "management" }}
+              {{- include "camundaPlatform.topologyWebModelerClusters" . | nindent 10 }}
+            {{- else }}
+              {{- include "camundaPlatform.defaultWebModelerCluster" . | nindent 10 }}
+            {{- end }}
           {{- end }}
         {{- end }}
 

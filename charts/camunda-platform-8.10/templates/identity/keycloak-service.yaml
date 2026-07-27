@@ -1,4 +1,4 @@
-{{- if .Values.identity.enabled -}}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
 {{- if eq (include "identity.keycloak.externalNameService.enabled" .) "true" -}}
 apiVersion: v1
 kind: Service

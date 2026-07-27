@@ -42,8 +42,10 @@ security:
       same-site:
         enabled: false
 {{- if .Values.global.identity.auth.enabled }}
+    {{- $topologyCluster := .Values.global.topology.cluster | default dict }}
+    {{- $topologyOptimize := dig "components" "optimize" dict $topologyCluster }}
     ccsm:
-      redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+      redirectRootUrl: {{ tpl (ternary ($topologyOptimize.redirectUrl | default "") .Values.global.identity.auth.optimize.redirectUrl (eq .Values.global.topology.mode "orchestration")) $ | quote }}
 api:
   audience: {{ include "optimize.authAudience" . | quote }}
   jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}

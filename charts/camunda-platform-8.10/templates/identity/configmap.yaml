@@ -1,4 +1,4 @@
-{{- if .Values.identity.enabled }}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -43,7 +43,132 @@ data:
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
       {{- end }}
       component-presets:
-        {{- if or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.alwaysRegister }}
+        {{- if eq .Values.global.topology.mode "management" }}
+        {{- $hasSharedOrchestrationRole := false }}
+        {{- $hasSharedOptimizeRole := false }}
+        {{- range $cluster := .Values.global.topology.clusters }}
+        {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
+        {{- $token := include "camundaPlatform.topologyEnvToken" $cluster.id }}
+        {{- $displayName := $cluster.name | default $cluster.id }}
+        {{- $orchestration := dig "components" "orchestration" dict $cluster }}
+        {{- $optimize := dig "components" "optimize" dict $cluster }}
+        {{- $connectors := dig "components" "connectors" dict $cluster }}
+        {{- if or $orchestration.enabled $optimize.enabled $connectors.enabled }}
+        {{ printf "topology-%s" $slug | quote }}:
+          applications:
+          {{- if eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK" }}
+          {{- if $orchestration.enabled }}
+            - name: {{ printf "Orchestration %s" $displayName | quote }}
+              id: {{ $orchestration.clientId | quote }}
+              type: confidential
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_ORCHESTRATION_SECRET:}" $token }}
+              permissions:
+                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
+                  definition: create:*
+                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
+                  definition: update:*
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: write:*
+              root-url: {{ tpl $orchestration.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/login/oauth2/code/orchestration"
+                - "/sso-callback"
+          {{- end }}
+          {{- if $optimize.enabled }}
+            - name: {{ printf "Optimize %s" $displayName | quote }}
+              id: {{ $optimize.clientId | quote }}
+              type: confidential
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_OPTIMIZE_SECRET:}" $token }}
+              root-url: {{ tpl $optimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+          {{- end }}
+          {{- if $connectors.enabled }}
+            - name: {{ printf "Connectors %s" $displayName | quote }}
+              id: {{ $connectors.clientId | quote }}
+              type: m2m
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_CONNECTORS_SECRET:}" $token }}
+              permissions:
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: read:*
+          {{- end }}
+          {{- end }}
+          apis:
+          {{- if $orchestration.enabled }}
+            - name: {{ printf "Orchestration %s API" $displayName | quote }}
+              audience: {{ $orchestration.audience | quote }}
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          {{- end }}
+          {{- if $optimize.enabled }}
+            - name: {{ printf "Optimize %s API" $displayName | quote }}
+              audience: {{ $optimize.audience | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          {{- end }}
+          roles:
+          {{- if and $orchestration.enabled $orchestration.roleName }}
+            - name: {{ $orchestration.roleName | quote }}
+              description: {{ printf "Grants full access to Orchestration %s" $displayName | quote }}
+              permissions:
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: read:*
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: write:*
+          {{- else if $orchestration.enabled }}
+            {{- $hasSharedOrchestrationRole = true }}
+          {{- end }}
+          {{- if and $optimize.enabled $optimize.roleName }}
+            - name: {{ $optimize.roleName | quote }}
+              description: {{ printf "Grants full access to Optimize %s" $displayName | quote }}
+              permissions:
+                - audience: {{ $optimize.audience | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" $ | quote }}
+                  definition: read:users
+          {{- else if $optimize.enabled }}
+            {{- $hasSharedOptimizeRole = true }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if or $hasSharedOrchestrationRole $hasSharedOptimizeRole }}
+        "topology-shared-roles":
+          roles:
+          {{- if $hasSharedOrchestrationRole }}
+            - name: "Orchestration"
+              description: "Grants full access to Orchestration"
+              permissions:
+              {{- range $cluster := $.Values.global.topology.clusters }}
+              {{- $component := dig "components" "orchestration" dict $cluster }}
+              {{- if and $component.enabled (empty $component.roleName) }}
+                - audience: {{ $component.audience | quote }}
+                  definition: read:*
+                - audience: {{ $component.audience | quote }}
+                  definition: write:*
+              {{- end }}
+              {{- end }}
+          {{- end }}
+          {{- if $hasSharedOptimizeRole }}
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+              {{- range $cluster := $.Values.global.topology.clusters }}
+              {{- $component := dig "components" "optimize" dict $cluster }}
+              {{- if and $component.enabled (empty $component.roleName) }}
+                - audience: {{ $component.audience | quote }}
+                  definition: write:*
+              {{- end }}
+              {{- end }}
+                - audience: {{ include "identity.authAudience" $ | quote }}
+                  definition: read:users
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if and (ne .Values.global.topology.mode "management") (or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.alwaysRegister) }}
         connectors:
           applications:
             - name: Connectors
@@ -73,7 +198,7 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
+        {{- if and (ne .Values.global.topology.mode "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
         optimize:
           applications:
             - name: Optimize
@@ -98,7 +223,7 @@ data:
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         {{- end }}
-        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+        {{- if and (ne .Values.global.topology.mode "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
         orchestration:
           applications:
             - name: Orchestration
@@ -221,15 +346,31 @@ data:
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       {{- end }}
       init:
-        {{- if or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.alwaysRegister }}
+        {{- if and (eq .Values.global.topology.mode "management") (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") }}
+        {{- $hasSharedTopologyRole := false }}
+        {{- range $cluster := .Values.global.topology.clusters }}
+        {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
+        {{- $components := $cluster.components | default dict }}
+        {{- if or (dig "orchestration" "enabled" false $components) (dig "optimize" "enabled" false $components) (dig "connectors" "enabled" false $components) }}
+        {{ printf "topology-%s" $slug | quote }}: {}
+        {{- end }}
+        {{- if or (and (dig "components" "orchestration" "enabled" false $cluster) (empty (dig "components" "orchestration" "roleName" "" $cluster))) (and (dig "components" "optimize" "enabled" false $cluster) (empty (dig "components" "optimize" "roleName" "" $cluster))) }}
+          {{- $hasSharedTopologyRole = true }}
+        {{- end }}
+        {{- end }}
+        {{- if $hasSharedTopologyRole }}
+        "topology-shared-roles": {}
+        {{- end }}
+        {{- end }}
+        {{- if and (ne .Values.global.topology.mode "management") (or (eq (include "connectors.authMethod" .) "oidc") .Values.global.identity.auth.connectors.alwaysRegister) }}
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         {{- end }}
-        {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
+        {{- if and (ne .Values.global.topology.mode "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         {{- end }}
-        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+        {{- if and (ne .Values.global.topology.mode "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
@@ -248,13 +389,13 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+            {{- if and (ne .Values.global.topology.mode "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: read:*
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: write:*
             {{- end }}
-            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
+            {{- if and (ne .Values.global.topology.mode "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
             - resourceServerId: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
               definition: write:*
             {{- end }}
@@ -287,14 +428,42 @@ data:
           {{- if .Values.global.identity.auth.enabled }}
           roles:
             - ManagementIdentity
-            {{- if or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister }}
+            {{- if eq .Values.global.topology.mode "management" }}
+            {{- $hasSharedOrchestrationRole := false }}
+            {{- $hasSharedOptimizeRole := false }}
+            {{- range $cluster := .Values.global.topology.clusters }}
+            {{- if (dig "components" "orchestration" "enabled" false $cluster) }}
+              {{- $roleName := dig "components" "orchestration" "roleName" "" $cluster }}
+              {{- if $roleName }}
+            - {{ $roleName | quote }}
+              {{- else }}
+                {{- $hasSharedOrchestrationRole = true }}
+              {{- end }}
+            {{- end }}
+            {{- if (dig "components" "optimize" "enabled" false $cluster) }}
+              {{- $roleName := dig "components" "optimize" "roleName" "" $cluster }}
+              {{- if $roleName }}
+            - {{ $roleName | quote }}
+              {{- else }}
+                {{- $hasSharedOptimizeRole = true }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if $hasSharedOrchestrationRole }}
+            - "Orchestration"
+            {{- end }}
+            {{- if $hasSharedOptimizeRole }}
+            - "Optimize"
+            {{- end }}
+            {{- end }}
+            {{- if and (ne .Values.global.topology.mode "management") (or .Values.optimize.enabled .Values.global.identity.auth.optimize.alwaysRegister) }}
             - Optimize
             {{- end }}
             {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
             - Web Modeler
             - Web Modeler Admin
             {{- end }}
-            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+            {{- if and (ne .Values.global.topology.mode "management") (or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) }}
             - Orchestration
             {{- end }}
           {{- end }}

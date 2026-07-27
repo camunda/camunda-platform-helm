@@ -5,6 +5,72 @@
         "global": {
             "type": "object",
             "properties": {
+                "topology": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined, management, and orchestration.",
+                            "default": "combined",
+                            "enum": [
+                                "combined",
+                                "management",
+                                "orchestration"
+                            ]
+                        },
+                        "management": {
+                            "type": "object",
+                            "properties": {
+                                "namespace": {
+                                    "type": "string",
+                                    "description": "can be used to define the namespace containing Management Identity.",
+                                    "default": ""
+                                },
+                                "releaseName": {
+                                    "type": "string",
+                                    "description": "can be used to define the management Helm release name.",
+                                    "default": ""
+                                },
+                                "identityServiceUrl": {
+                                    "type": "string",
+                                    "description": "can be used to override the internal Management Identity service URL. When empty, it is derived from releaseName and namespace.",
+                                    "default": ""
+                                },
+                                "identityServicePort": {
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ],
+                                    "description": "defines the internal Management Identity service port used when identityServiceUrl is empty.",
+                                    "default": 80
+                                },
+                                "identityContextPath": {
+                                    "type": "string",
+                                    "description": "defines the Management Identity context path used when identityServiceUrl is empty.",
+                                    "default": "/identity"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "clusters": {
+                            "type": "array",
+                            "description": "can be used by a management release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.",
+                            "default": [],
+                            "items": {
+                                "$ref": "#/$defs/topologyCluster"
+                            }
+                        },
+                        "cluster": {
+                            "type": "object",
+                            "allOf": [
+                                {
+                                    "$ref": "#/$defs/topologyClusterSelection"
+                                }
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "license": {
                     "type": "object",
                     "properties": {
@@ -6722,6 +6788,161 @@
                         ],
                         "additionalProperties": false
                     }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "topologySecret": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "inlineSecret": {
+                    "type": "string"
+                },
+                "existingSecret": {
+                    "type": "string"
+                },
+                "existingSecretKey": {
+                    "type": "string"
+                }
+            }
+        },
+        "topologyComponentBase": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "clientId": {
+                    "type": "string"
+                },
+                "audience": {
+                    "type": "string"
+                },
+                "redirectUrl": {
+                    "type": "string"
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "secret": {
+                    "$ref": "#/$defs/topologySecret"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "gatewayServiceName": {
+                    "type": "string"
+                },
+                "webappUrl": {
+                    "type": "string"
+                },
+                "readinessUrl": {
+                    "type": "string"
+                },
+                "restUrl": {
+                    "type": "string"
+                },
+                "grpcUrl": {
+                    "type": "string"
+                },
+                "operateUrl": {
+                    "type": "string"
+                },
+                "tasklistUrl": {
+                    "type": "string"
+                },
+                "adminUrl": {
+                    "type": "string"
+                }
+            }
+        },
+        "topologyComponents": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "orchestration": {
+                    "$ref": "#/$defs/topologyComponentBase"
+                },
+                "optimize": {
+                    "$ref": "#/$defs/topologyComponentBase"
+                },
+                "connectors": {
+                    "$ref": "#/$defs/topologyComponentBase"
+                }
+            }
+        },
+        "topologyClusterSelection": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "components": {
+                    "$ref": "#/$defs/topologyComponents"
+                }
+            }
+        },
+        "topologyCluster": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "namespace",
+                "releaseName",
+                "host",
+                "version",
+                "components"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "namespace": {
+                    "type": "string"
+                },
+                "releaseName": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "authorizations": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "orchestration": {
+                            "type": "string"
+                        },
+                        "optimize": {
+                            "type": "string"
+                        },
+                        "connectors": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "components": {
+                    "$ref": "#/$defs/topologyComponents"
                 }
             }
         }
