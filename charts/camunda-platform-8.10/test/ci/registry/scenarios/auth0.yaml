@@ -4,8 +4,6 @@ flows:
   - install
 identity: auth0
 persistence: elasticsearch
-features:
-  - hub-ping
 platforms:
   - gke
 exclude:
@@ -15,7 +13,6 @@ exclude:
 infra-type:
   eks: preemptible
   gke: distroci
-post-deploy: hub-ping
 dependencies:
   - elasticsearch
   - postgresql

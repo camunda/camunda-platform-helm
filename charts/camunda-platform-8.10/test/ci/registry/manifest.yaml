@@ -42,8 +42,7 @@ integration:
       enabled: false
     - id: auth0
       shortname: esa0
-      tier: 1
-      enabled: true
+      enabled: false
     - id: keycloak-mt
       shortname: kemt
       enabled: false

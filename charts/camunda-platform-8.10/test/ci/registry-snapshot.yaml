@@ -241,7 +241,7 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: auth0
-          enabled: true
+          enabled: false
           shortname: esa0
           auth: oidc
           flow: install
@@ -251,14 +251,11 @@ integration:
             - identity
             - console
             - orchestration-grpc
-          tier: 1
           infra-type:
             eks: preemptible
             gke: distroci
           identity: auth0
           persistence: elasticsearch
-          features:
-            - hub-ping
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1
@@ -272,11 +269,6 @@ integration:
               env-vars:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
-          post-deploy:
-            script: post-deploy-hub-ping.sh
-            description: |
-              Waits for the authenticated Orchestration Cluster ping to register its
-              uniquely named cluster in Hub's database.
         - name: keycloak-mt
           enabled: false
           shortname: kemt
