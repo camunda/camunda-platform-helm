@@ -175,8 +175,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "secret",
 			},
 			Expected: map[string]string{
-				"configmapApplication.camunda.hub.ping.credentials.client-id":      "ping-client",
-				"configmapApplication.camunda.hub.ping.credentials.token-endpoint": "https://kc/token",
+				"configmapApplication.camunda.hub.ping.credentials.client-id":                         "ping-client",
+				"configmapApplication.camunda.hub.ping.credentials.token-endpoint":                    "https://kc/token",
 				"configmapApplication.camunda.hub.ping.credentials.token-request-parameters.audience": "https://hub.example/api",
 				"configmapApplication.camunda.hub.ping.credentials.token-request-parameters.scope":    "api://hub/.default",
 			},
