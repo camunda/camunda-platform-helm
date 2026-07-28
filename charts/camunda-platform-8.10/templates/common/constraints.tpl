@@ -53,7 +53,10 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
 {{- end }}
 {{- if eq $topologyMode "management" }}
-  {{- $seenSlugs := dict }}
+  {{- if ne (include "webModeler.authMethod" .) "oidc" }}
+    {{- fail "[camunda][error] global.topology.mode=management requires OIDC authentication for Camunda Hub topology connections." }}
+  {{- end }}
+  {{- $seenSlugs := dict "management-cluster" "management-cluster" }}
   {{- $seenIds := dict
       (include "identity.authClientId" .) true
       (include "identity.authAudience" .) true
@@ -61,6 +64,18 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
       (include "webModeler.authClientApiAudience" .) true
       (include "webModeler.authPublicApiAudience" .) true
   }}
+  {{- if .Values.global.identity.auth.admin.enabled }}
+    {{- if hasKey $seenIds .Values.global.identity.auth.admin.clientId }}
+      {{- fail (printf "[camunda][error] duplicate topology, built-in, or custom client or audience id %q." .Values.global.identity.auth.admin.clientId) }}
+    {{- end }}
+    {{- $_ := set $seenIds .Values.global.identity.auth.admin.clientId true }}
+  {{- end }}
+  {{- range $client := .Values.identity.clients }}
+    {{- if hasKey $seenIds $client.id }}
+      {{- fail (printf "[camunda][error] duplicate topology, built-in, or custom client or audience id %q." $client.id) }}
+    {{- end }}
+    {{- $_ := set $seenIds $client.id true }}
+  {{- end }}
   {{- $seenRoles := dict "ManagementIdentity" true "Orchestration" true "Optimize" true "Web Modeler" true "Web Modeler Admin" true }}
   {{- $legacyIds := list }}
   {{- if .Values.global.identity.auth.connectors.alwaysRegister }}

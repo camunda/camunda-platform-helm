@@ -970,7 +970,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 - id: {{ $cluster.id | quote }}
   name: {{ ($cluster.name | default $cluster.id) | quote }}
   version: {{ $cluster.version | quote }}
-  authentication: {{ include "webModeler.authConfigValue" $ | quote }}
+  authentication: "BEARER_TOKEN"
   authorizations:
     enabled: {{ dig "authorizations" "enabled" false $cluster }}
   components:

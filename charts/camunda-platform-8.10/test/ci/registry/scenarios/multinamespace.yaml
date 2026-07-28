@@ -22,6 +22,8 @@ topology:
       values: features/multinamespace-management.yaml
     - role: orchestration
       namespace-suffix: orcha
+      modeler-cluster-id: orchestration
+      modeler-cluster-name: orchestration
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []

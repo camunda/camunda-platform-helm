@@ -1,4 +1,7 @@
 global:
+  security:
+    authentication:
+      method: oidc
   identity:
     keycloak:
       url:

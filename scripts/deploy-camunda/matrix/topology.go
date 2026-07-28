@@ -84,6 +84,9 @@ type TopologyRelease struct {
 	// orchestration release can use distinct auth identifiers.
 	Env map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 
+	ModelerClusterID   string `yaml:"modeler-cluster-id,omitempty" json:"modelerClusterId,omitempty"`
+	ModelerClusterName string `yaml:"modeler-cluster-name,omitempty" json:"modelerClusterName,omitempty"`
+
 	// ResolvedDependencies holds the fully-resolved companion chart specs
 	// for Dependencies, populated by LoadRegistry (mirroring how
 	// registryScenario.DependencyIDs resolves into CIScenario.Dependencies).
@@ -118,6 +121,8 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 	roles := map[string]bool{}
 	suffixes := map[string]bool{}
 	managementCount := 0
+	modelerClusterIDs := map[string]bool{}
+	modelerClusterNames := map[string]bool{}
 
 	for i, r := range t.Releases {
 		label := fmt.Sprintf("%s: topology %q: release[%d] (role %q, namespace-suffix %q)", ctx, t.Name, i, r.Role, r.NamespaceSuffix)
@@ -126,7 +131,20 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		case "management":
 			managementCount++
 		case "orchestration":
-			// valid
+			if strings.TrimSpace(r.ModelerClusterID) == "" {
+				problems = append(problems, fmt.Sprintf("%s: modeler-cluster-id is required", label))
+			} else if modelerClusterIDs[r.ModelerClusterID] {
+				problems = append(problems, fmt.Sprintf("%s: duplicate modeler-cluster-id %q", label, r.ModelerClusterID))
+			} else {
+				modelerClusterIDs[r.ModelerClusterID] = true
+			}
+			if strings.TrimSpace(r.ModelerClusterName) == "" {
+				problems = append(problems, fmt.Sprintf("%s: modeler-cluster-name is required", label))
+			} else if modelerClusterNames[r.ModelerClusterName] {
+				problems = append(problems, fmt.Sprintf("%s: duplicate modeler-cluster-name %q", label, r.ModelerClusterName))
+			} else {
+				modelerClusterNames[r.ModelerClusterName] = true
+			}
 		default:
 			problems = append(problems, fmt.Sprintf("%s: role must be \"management\" or \"orchestration\", got %q", label, r.Role))
 		}

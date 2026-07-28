@@ -23,13 +23,14 @@ topology:
       values: features/multinamespace-2orch-management.yaml
     - role: orchestration
       namespace-suffix: orcha
+      modeler-cluster-id: orcha
+      modeler-cluster-name: Orchestration A
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []
       values: features/multinamespace-orchestration.yaml
       depends-on: management
       env:
-        MODELER_CLUSTER_NAME: Orchestration A
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
@@ -37,13 +38,14 @@ topology:
         ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
     - role: orchestration
       namespace-suffix: orchb
+      modeler-cluster-id: orchb
+      modeler-cluster-name: Orchestration B
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []
       values: features/multinamespace-orchestration.yaml
       depends-on: management
       env:
-        MODELER_CLUSTER_NAME: Orchestration B
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb

@@ -164,6 +164,11 @@ on:
         required: false
         default: "[]"
         type: string
+      topology-management-suffix:
+        description: "Namespace suffix of the topology management release"
+        required: false
+        default: ""
+        type: string
       topology-smoke-matrix:
         description: "JSON matrix derived from topology orchestration releases"
         required: false
@@ -1472,7 +1477,7 @@ jobs:
           identifier: ${{ inputs.identifier }}
           namespace-prefix: ${{ inputs.namespace-prefix }}
           namespace-override: "${{ steps.base-vars.outputs.namespace }}-${{ matrix.orchestration_suffix }}"
-          management-namespace: "${{ steps.base-vars.outputs.namespace }}-mgmt"
+          management-namespace: "${{ steps.base-vars.outputs.namespace }}-${{ inputs.topology-management-suffix }}"
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
@@ -1564,8 +1569,8 @@ jobs:
   merge-e2e-reports:
     name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     # Run if e2e is enabled AND at least one test job completed (success or failure, not skipped/cancelled)
-    if: ${{ !cancelled() && inputs.e2e-enabled && (needs.playwright-e2e-tests-after-install.result == 'success' || needs.playwright-e2e-tests-after-install.result == 'failure' || needs.playwright-e2e-tests-after-upgrade.result == 'success' || needs.playwright-e2e-tests-after-upgrade.result == 'failure') }}
-    needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
+    if: ${{ !cancelled() && inputs.e2e-enabled && (needs.playwright-e2e-tests-after-install.result == 'success' || needs.playwright-e2e-tests-after-install.result == 'failure' || needs.playwright-e2e-tests-after-upgrade.result == 'success' || needs.playwright-e2e-tests-after-upgrade.result == 'failure' || needs.e2e-topology-smoke.result == 'success' || needs.e2e-topology-smoke.result == 'failure') }}
+    needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, e2e-topology-smoke]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -1798,6 +1803,27 @@ jobs:
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: Collect failed topology diagnostics
+        if: needs.e2e-topology-smoke.result == 'failure' && inputs.is-topology
+        env:
+          TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
+        run: |
+          mkdir -p diagnostics
+          while IFS= read -r suffix; do
+            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
+            if [[ "$(kubectl get ns "$ns" --ignore-not-found -o name)" != "" ]]; then
+              deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/topology-${suffix}.log" 2>&1 || true
+            fi
+          done < <(jq -r '.[]' <<<"$TOPOLOGY_NAMESPACE_SUFFIXES")
+
+      - name: Upload failed topology diagnostics
+        if: needs.e2e-topology-smoke.result == 'failure' && inputs.is-topology
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: topology-diagnostics-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: diagnostics/
+          retention-days: 14
 
       - name: CI Cleanup - Cleanup GitHub deployment
         if: always() && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')

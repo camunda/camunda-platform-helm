@@ -310,6 +310,7 @@ jobs:
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
       is-topology: ${{ matrix.isTopology == 'true' }}
       topology-namespace-suffixes: ${{ matrix.topologyNamespaceSuffixes }}
+      topology-management-suffix: ${{ matrix.topologyManagementSuffix }}
       topology-smoke-matrix: ${{ matrix.topologySmokeMatrix }}
       helm-version: ${{ matrix.helmVersion }}
       cached: ${{ matrix.cached == 'true' }}

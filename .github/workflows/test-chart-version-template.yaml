@@ -137,6 +137,11 @@ on:
         required: false
         default: "[]"
         type: string
+      topology-management-suffix:
+        description: "Namespace suffix of the topology management release"
+        required: false
+        default: ""
+        type: string
       topology-smoke-matrix:
         description: "JSON matrix derived from topology orchestration releases"
         required: false
@@ -243,6 +248,7 @@ jobs:
       skip-e2e: ${{ inputs.skip-e2e }}
       is-topology: ${{ inputs.is-topology }}
       topology-namespace-suffixes: ${{ inputs.topology-namespace-suffixes }}
+      topology-management-suffix: ${{ inputs.topology-management-suffix }}
       topology-smoke-matrix: ${{ inputs.topology-smoke-matrix }}
       helm-version: ${{ inputs.helm-version }}
       pr-head-sha: ${{ inputs.pr-head-sha }}

@@ -54,6 +54,7 @@ func TestManagementTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testin
 	require.NotContains(t, output, `audience: "web-modeler-api"\n                  definition: update:*`)
 	require.Contains(t, output, `id: "east"`)
 	require.Contains(t, output, `id: "west"`)
+	require.Contains(t, output, `authentication: "BEARER_TOKEN"`)
 	require.Contains(t, output, `grpc://camunda-zeebe-gateway.camunda-east.svc.cluster.local:26500`)
 	require.Contains(t, output, `grpc://camunda-west-zeebe-gateway.camunda-west.svc.cluster.local:26500`)
 	require.NotContains(t, output, `keycloak:\n`)
@@ -172,6 +173,64 @@ func TestManagementTopologyRejectsDuplicateClientIds(t *testing.T) {
 
 	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
+}
+
+func TestManagementTopologyRejectsAdminClientCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.admin.enabled":  "true",
+			"global.identity.auth.admin.clientId": "orchestration-east",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
+}
+
+func TestManagementTopologyRejectsCustomClientCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"identity.clients[0].id":                  "orchestration-east",
+			"identity.clients[0].name":                "Duplicate",
+			"identity.clients[0].type":                "public",
+			"identity.clients[0].redirectUris":        "/dummy",
+			"identity.clients[0].rootUrl":             "http://dummy",
+			"identity.clients[0].secret.inlineSecret": "unused",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
+}
+
+func TestManagementTopologyRejectsReservedHubClusterId(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].id": "management-cluster",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.ErrorContains(t, err, `normalize to the same key "management-cluster"`)
+}
+
+func TestManagementTopologyRequiresOIDC(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.security.authentication.method": "basic",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=management requires OIDC authentication")
 }
 
 func TestManagementTopologyKeycloakRejectsMissingSecret(t *testing.T) {

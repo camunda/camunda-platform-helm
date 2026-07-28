@@ -6766,7 +6766,7 @@
                 }
             }
         },
-        "topologyComponentBase": {
+        "topologyOrchestrationComponent": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
@@ -6794,10 +6794,6 @@
                 "gatewayServiceName": {
                     "type": "string"
                 },
-                "webappUrl": {
-                    "type": "string",
-                    "pattern": "^$|^https?://[^\\s]+$"
-                },
                 "readinessUrl": {
                     "type": "string",
                     "pattern": "^$|^https?://[^\\s]+$"
@@ -6824,18 +6820,79 @@
                 }
             }
         },
+        "topologyOptimizeComponent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "clientId": {
+                    "type": "string"
+                },
+                "audience": {
+                    "type": "string"
+                },
+                "redirectUrl": {
+                    "type": "string"
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "secret": {
+                    "$ref": "#/$defs/topologySecret"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "webappUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "readinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                }
+            }
+        },
+        "topologyConnectorsComponent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "clientId": {
+                    "type": "string"
+                },
+                "secret": {
+                    "$ref": "#/$defs/topologySecret"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "restUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "readinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                }
+            }
+        },
         "topologyComponents": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
                 "orchestration": {
-                    "$ref": "#/$defs/topologyComponentBase"
+                    "$ref": "#/$defs/topologyOrchestrationComponent"
                 },
                 "optimize": {
-                    "$ref": "#/$defs/topologyComponentBase"
+                    "$ref": "#/$defs/topologyOptimizeComponent"
                 },
                 "connectors": {
-                    "$ref": "#/$defs/topologyComponentBase"
+                    "$ref": "#/$defs/topologyConnectorsComponent"
                 }
             }
         },

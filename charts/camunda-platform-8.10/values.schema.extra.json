@@ -1202,7 +1202,7 @@
                 "existingSecretKey": {"type": "string"}
             }
         },
-        "topologyComponentBase": {
+        "topologyOrchestrationComponent": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
@@ -1214,7 +1214,6 @@
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
                 "gatewayServiceName": {"type": "string"},
-                "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
                 "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
                 "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
                 "grpcUrl": {"type": "string", "pattern": "^$|^grpcs?://[^\\s]+$"},
@@ -1223,13 +1222,40 @@
                 "adminUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
             }
         },
+        "topologyOptimizeComponent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "clientId": {"type": "string"},
+                "audience": {"type": "string"},
+                "redirectUrl": {"type": "string"},
+                "roleName": {"type": "string"},
+                "secret": {"$ref": "#/$defs/topologySecret"},
+                "serviceName": {"type": "string"},
+                "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+            }
+        },
+        "topologyConnectorsComponent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "clientId": {"type": "string"},
+                "secret": {"$ref": "#/$defs/topologySecret"},
+                "serviceName": {"type": "string"},
+                "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+            }
+        },
         "topologyComponents": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "orchestration": {"$ref": "#/$defs/topologyComponentBase"},
-                "optimize": {"$ref": "#/$defs/topologyComponentBase"},
-                "connectors": {"$ref": "#/$defs/topologyComponentBase"}
+                "orchestration": {"$ref": "#/$defs/topologyOrchestrationComponent"},
+                "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"},
+                "connectors": {"$ref": "#/$defs/topologyConnectorsComponent"}
             }
         },
         "topologyCluster": {

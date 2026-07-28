@@ -17,6 +17,7 @@ package matrix
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -72,21 +73,25 @@ func TestTopologyValidate_Valid(t *testing.T) {
 				Dependencies:    []string{"keycloak", "postgresql", "elasticsearch"},
 			},
 			{
-				Role:            "orchestration",
-				NamespaceSuffix: "orcha",
-				Values:          "orchestration.yaml",
-				Identity:        "keycloak-external",
-				Persistence:     "elasticsearch-external",
-				DependsOn:       "management",
-				Env:             map[string]string{"ORCH_ORCHESTRATION_CLIENT_ID": "orchestration-orcha"},
+				Role:               "orchestration",
+				NamespaceSuffix:    "orcha",
+				ModelerClusterID:   "orcha",
+				ModelerClusterName: "Orchestration A",
+				Values:             "orchestration.yaml",
+				Identity:           "keycloak-external",
+				Persistence:        "elasticsearch-external",
+				DependsOn:          "management",
+				Env:                map[string]string{"ORCH_ORCHESTRATION_CLIENT_ID": "orchestration-orcha"},
 			},
 			{
-				Role:            "orchestration",
-				NamespaceSuffix: "orchb",
-				Values:          "orchestration.yaml",
-				Identity:        "keycloak-external",
-				Persistence:     "elasticsearch-external",
-				DependsOn:       "management",
+				Role:               "orchestration",
+				NamespaceSuffix:    "orchb",
+				ModelerClusterID:   "orchb",
+				ModelerClusterName: "Orchestration B",
+				Values:             "orchestration.yaml",
+				Identity:           "keycloak-external",
+				Persistence:        "elasticsearch-external",
+				DependsOn:          "management",
 			},
 		},
 	}
@@ -95,6 +100,25 @@ func TestTopologyValidate_Valid(t *testing.T) {
 	}
 	if got := top.Releases[1].Env["ORCH_ORCHESTRATION_CLIENT_ID"]; got != "orchestration-orcha" {
 		t.Fatalf("release env = %q", got)
+	}
+}
+
+func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	top := &Topology{
+		Name: "duplicate-modeler-cluster",
+		Releases: []TopologyRelease{
+			{Role: "management", NamespaceSuffix: "mgmt", Values: "management.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "shared", ModelerClusterName: "Shared"},
+			{Role: "orchestration", NamespaceSuffix: "orchb", Values: "orchestration.yaml", ModelerClusterID: "shared", ModelerClusterName: "Shared"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "duplicate modeler-cluster-id") || !strings.Contains(err.Error(), "duplicate modeler-cluster-name") {
+		t.Fatalf("expected duplicate Modeler cluster validation errors, got %v", err)
 	}
 }
 
