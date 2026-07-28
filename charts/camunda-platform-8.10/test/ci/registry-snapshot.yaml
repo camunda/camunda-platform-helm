@@ -212,7 +212,7 @@ integration:
           enabled: true
           shortname: esoi
           auth: oidc
-          flow: upgrade-minor
+          flow: install
           platforms:
             - gke
           exclude:
