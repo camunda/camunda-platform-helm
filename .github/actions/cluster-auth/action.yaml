@@ -43,7 +43,7 @@ runs:
 
     - name: Authenticate to OpenShift
       if: inputs.platform == 'rosa' && inputs.auth-data == ''
-      uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1
+      uses: redhat-actions/oc-login@2a1614bc977c054c8786c8e35fc9534bd0ddc156 # v2
       with:
         openshift_server_url: ${{ env.ROSA_URL }}
         openshift_username:   ${{ env.ROSA_USER }}
