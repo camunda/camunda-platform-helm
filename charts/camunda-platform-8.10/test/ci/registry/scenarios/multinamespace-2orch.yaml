@@ -29,6 +29,7 @@ topology:
       values: features/multinamespace-orchestration.yaml
       depends-on: management
       env:
+        MODELER_CLUSTER_NAME: Orchestration A
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
@@ -42,6 +43,7 @@ topology:
       values: features/multinamespace-orchestration.yaml
       depends-on: management
       env:
+        MODELER_CLUSTER_NAME: Orchestration B
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb

@@ -1719,6 +1719,7 @@ integration:
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 env:
+                  MODELER_CLUSTER_NAME: Orchestration A
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
                   ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
                   ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
@@ -1731,6 +1732,7 @@ integration:
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 env:
+                  MODELER_CLUSTER_NAME: Orchestration B
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
                   ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
                   ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
