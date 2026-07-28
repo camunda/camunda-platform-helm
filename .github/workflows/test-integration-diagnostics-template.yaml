@@ -45,6 +45,13 @@ jobs:
       with:
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
+    - name: Install tools
+      uses: ./.github/actions/install-tool-versions
+      with:
+        tools: |
+          kubectl
+          oc
+          yq
     - name: Download deploy-camunda binary
       if: inputs.binary-artifact-name != ''
       continue-on-error: true
