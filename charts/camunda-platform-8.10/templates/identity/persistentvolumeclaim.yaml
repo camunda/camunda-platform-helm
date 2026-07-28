@@ -1,4 +1,4 @@
-{{- if and (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Release.IsUpgrade) .Values.identity.persistence.enabled (not .Values.identity.persistence.existingClaim) }}
+{{- if and .Values.identity.persistence.enabled (not .Values.identity.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

@@ -1,4 +1,4 @@
-{{- if and (or (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Release.IsUpgrade) .Values.connectors.persistence.enabled (not .Values.connectors.persistence.existingClaim) }}
+{{- if and .Values.connectors.persistence.enabled (not .Values.connectors.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

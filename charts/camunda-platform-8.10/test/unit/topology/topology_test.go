@@ -227,7 +227,7 @@ func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
 	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://management.example.com/identity"`)
 }
 
-func TestTopologyUpgradePreservesSuppressedPersistentVolumeClaims(t *testing.T) {
+func TestTopologyPreservesSuppressedPersistentVolumeClaims(t *testing.T) {
 	managementOptions := &helm.Options{
 		ValuesFiles: []string{filepath.Join("testdata", "management-generic.yaml")},
 		SetValues: map[string]string{
@@ -235,12 +235,15 @@ func TestTopologyUpgradePreservesSuppressedPersistentVolumeClaims(t *testing.T) 
 			"optimize.persistence.enabled":   "true",
 		},
 	}
-	managementOutput := helm.RenderTemplate(t, managementOptions, chartPath(t), "camunda", []string{
+	managementTemplates := []string{
 		"templates/connectors/persistentvolumeclaim.yaml",
 		"templates/optimize/persistentvolumeclaim.yaml",
-	}, "--is-upgrade")
-	require.Contains(t, managementOutput, "name: camunda-camunda-platform-connectors-data")
-	require.Contains(t, managementOutput, "name: camunda-camunda-platform-optimize-data")
+	}
+	for _, args := range [][]string{nil, {"--is-upgrade"}} {
+		managementOutput := helm.RenderTemplate(t, managementOptions, chartPath(t), "camunda", managementTemplates, args...)
+		require.Contains(t, managementOutput, "name: camunda-camunda-platform-connectors-data")
+		require.Contains(t, managementOutput, "name: camunda-camunda-platform-optimize-data")
+	}
 
 	orchestrationOptions := &helm.Options{
 		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
@@ -248,10 +251,12 @@ func TestTopologyUpgradePreservesSuppressedPersistentVolumeClaims(t *testing.T) 
 			"identity.persistence.enabled": "true",
 		},
 	}
-	orchestrationOutput := helm.RenderTemplate(t, orchestrationOptions, chartPath(t), "camunda", []string{
-		"templates/identity/persistentvolumeclaim.yaml",
-	}, "--is-upgrade")
-	require.Contains(t, orchestrationOutput, "name: camunda-camunda-platform-identity-data")
+	for _, args := range [][]string{nil, {"--is-upgrade"}} {
+		orchestrationOutput := helm.RenderTemplate(t, orchestrationOptions, chartPath(t), "camunda", []string{
+			"templates/identity/persistentvolumeclaim.yaml",
+		}, args...)
+		require.Contains(t, orchestrationOutput, "name: camunda-camunda-platform-identity-data")
+	}
 }
 
 func TestNullTopologyPreservesCombinedMode(t *testing.T) {
