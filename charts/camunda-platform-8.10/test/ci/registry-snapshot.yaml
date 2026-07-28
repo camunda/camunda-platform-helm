@@ -268,6 +268,7 @@ integration:
           features:
             - hub-ping
             - hub-ping-token-params-test-image
+          skip-e2e: true
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1
@@ -1001,6 +1002,7 @@ integration:
           persistence: elasticsearch
           features:
             - hub-ping
+            - hub-ping-keycloak-token-endpoint
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak

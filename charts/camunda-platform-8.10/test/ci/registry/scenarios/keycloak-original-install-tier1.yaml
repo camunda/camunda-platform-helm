@@ -6,6 +6,7 @@ identity: keycloak
 persistence: elasticsearch
 features:
   - hub-ping
+  - hub-ping-keycloak-token-endpoint
 platforms:
   - gke
 infra-type:
