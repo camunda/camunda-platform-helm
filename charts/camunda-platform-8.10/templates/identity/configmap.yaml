@@ -180,8 +180,8 @@ data:
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
             {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
-            - name: "Web Modeler Public API - Cluster Ping"
-              description: "Grants create/update access to Web Modeler's public API for the orchestration cluster ping"
+            - name: "CamundaHub - Cluster Ping"
+              description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
               permissions:
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: create:*
@@ -205,7 +205,7 @@ data:
           operator: EQUALS
           rule-type: ROLE
           applied-role-names:
-            - "Web Modeler Public API - Cluster Ping"
+            - "CamundaHub - Cluster Ping"
       {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}

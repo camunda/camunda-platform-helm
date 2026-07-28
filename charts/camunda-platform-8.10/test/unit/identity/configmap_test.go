@@ -656,7 +656,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				applicationYaml := configmap.Data["application.yaml"]
-				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping")
 				s.Require().Contains(applicationYaml, "audience: \"web-modeler-public-api\"")
 				s.Require().Contains(applicationYaml, "claim-value: \"service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}\"")
 			},
@@ -693,7 +693,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				applicationYaml := configmap.Data["application.yaml"]
-				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping")
 				s.Require().Contains(applicationYaml, "claim-value: \"service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}\"")
 			},
 		}, {
@@ -714,7 +714,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &configmap)
 
 				applicationYaml := configmap.Data["application.yaml"]
-				s.Require().Contains(applicationYaml, "Web Modeler Public API - Cluster Ping")
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping")
 				s.Require().Contains(applicationYaml, "claim-name: \"azp\"")
 				s.Require().Contains(applicationYaml, "claim-value: \"orchestration-client\"")
 			},
