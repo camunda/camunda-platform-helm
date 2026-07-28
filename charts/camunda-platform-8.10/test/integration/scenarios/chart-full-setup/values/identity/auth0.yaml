@@ -71,6 +71,8 @@ global:
       orchestration:
         clientId: $AUTH0_ORCHESTRATION_CLIENT_ID
         audience: $AUTH0_AUDIENCE
+        hubPingClaimName: azp
+        hubPingClaimValue: $AUTH0_ORCHESTRATION_CLIENT_ID
         redirectUrl: "https://{{ .Values.global.host }}/orchestration"
         secret:
           existingSecret: client-secret-for-components

@@ -715,6 +715,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping")
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping Access")
 				s.Require().Contains(applicationYaml, "claim-name: \"azp\"")
 				s.Require().Contains(applicationYaml, "claim-value: \"orchestration-client\"")
 			},

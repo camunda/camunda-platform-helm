@@ -20,8 +20,6 @@ orchestration:
   hub:
     ping:
       endpoint: "http://integration-web-modeler-restapi/modeler/api/v1/clusters"
-      credentials:
-        tokenEndpoint: "https://$CAMUNDA_HOSTNAME/auth/realms/camunda-platform/protocol/openid-connect/token"
   extraConfiguration:
     - file: hub-ping.yaml
       content: |
