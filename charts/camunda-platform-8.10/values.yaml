@@ -2098,6 +2098,10 @@ orchestration:
       credentials:
         ## @param orchestration.hub.ping.credentials.tokenEndpoint defines the OAuth2 token endpoint used to request an access token. Defaults to the orchestration client token endpoint when empty.
         tokenEndpoint: ""
+        ## @param orchestration.hub.ping.credentials.audience defines the optional OAuth2 audience sent when requesting the ping access token. Required by providers such as Auth0.
+        audience: ""
+        ## @param orchestration.hub.ping.credentials.scope defines the optional OAuth2 scope sent when requesting the ping access token. Microsoft Entra client credentials commonly require the API resource identifier suffixed with /.default.
+        scope: ""
         ## @param orchestration.hub.ping.credentials.clientId defines the M2M client id. Defaults to the orchestration client id when empty. A custom client must be provisioned separately in the IdP, requires an explicit clientSecret below, and in split deployments must also be set in the central Identity release so its role mapping targets the same client.
         clientId: ""
         ## @extra orchestration.hub.ping.credentials.clientSecret configuration to provide the ping client secret. Defaults to the orchestration OIDC client secret when unset.

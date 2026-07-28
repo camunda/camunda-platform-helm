@@ -4260,6 +4260,16 @@
                                             "description": "defines the OAuth2 token endpoint used to request an access token. Defaults to the orchestration client token endpoint when empty.",
                                             "default": ""
                                         },
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "defines the optional OAuth2 audience sent when requesting the ping access token. Required by providers such as Auth0.",
+                                            "default": ""
+                                        },
+                                        "scope": {
+                                            "type": "string",
+                                            "description": "defines the optional OAuth2 scope sent when requesting the ping access token. Microsoft Entra client credentials commonly require the API resource identifier suffixed with /.default.",
+                                            "default": ""
+                                        },
                                         "clientId": {
                                             "type": "string",
                                             "description": "defines the M2M client id. Defaults to the orchestration client id when empty. A custom client must be provisioned separately in the IdP, requires an explicit clientSecret below, and in split deployments must also be set in the central Identity release so its role mapping targets the same client.",

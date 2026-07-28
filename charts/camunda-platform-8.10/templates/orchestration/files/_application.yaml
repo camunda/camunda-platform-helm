@@ -215,6 +215,12 @@ camunda:
         token-endpoint: {{ include "orchestration.hubPingTokenEndpoint" . | quote }}
         client-id: {{ include "orchestration.hubPingClientId" . | quote }}
         client-secret: ${VALUES_CAMUNDAHUB_PING_CLIENT_SECRET:}
+        {{- with .Values.orchestration.hub.ping.credentials.audience }}
+        audience: {{ tpl . $ | quote }}
+        {{- end }}
+        {{- with .Values.orchestration.hub.ping.credentials.scope }}
+        scope: {{ tpl . $ | quote }}
+        {{- end }}
   {{- end }}
   {{- if eq (include "orchestration.authMethod" .) "oidc" }}
   identity:
