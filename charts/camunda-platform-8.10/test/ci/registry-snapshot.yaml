@@ -1027,13 +1027,14 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: capacity-manager
-          enabled: false
+          enabled: true
           shortname: acm
           auth: basic
           flow: install
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             gke: distroci
           identity: basic
