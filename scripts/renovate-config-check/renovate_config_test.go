@@ -271,7 +271,7 @@ func TestGitHubActionsAutomergePolicy(t *testing.T) {
 	}
 }
 
-func TestDigestUpdatesAreCreatedImmediately(t *testing.T) {
+func TestDigestUpdatePolicy(t *testing.T) {
 	config := readRenovateConfig(t)
 
 	for _, rule := range config.PackageRules {
@@ -281,8 +281,8 @@ func TestDigestUpdatesAreCreatedImmediately(t *testing.T) {
 		assert.Contains(t, rule.MatchUpdateTypes, "digest")
 		assert.Equal(t, "immediate", rule.PRCreation,
 			"moving snapshot digests must not be held by the global not-pending policy")
-		assert.Empty(t, rule.MinimumReleaseAge,
-			"a minimum release age can reset indefinitely for moving snapshot tags")
+		assert.Equal(t, "6 hours", rule.MinimumReleaseAge,
+			"digest updates need time to detect retracted image hashes")
 		return
 	}
 	t.Fatal("camunda-platform-digests package rule not found")
