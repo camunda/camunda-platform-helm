@@ -1184,3 +1184,22 @@ Bundled Bitnami subcharts (removed in 8.10)
   "condition" (hasKey .Values "elasticsearch")
   "oldName" "elasticsearch"
 ) }}
+{{- if and .Values.capacityManager.enabled (not .Values.orchestration.enabled) }}
+  {{- fail "[camunda][error] capacityManager.enabled requires orchestration.enabled." }}
+{{- end }}
+{{- if and .Values.capacityManager.enabled (gt (int .Values.global.multiregion.regions) 1) }}
+  {{- fail "[camunda][error] capacityManager does not yet support multi-region deployments." }}
+{{- end }}
+{{- if and .Values.capacityManager.enabled (ne (int .Values.orchestration.clusterSize) 1) }}
+  {{- fail "[camunda][error] capacityManager currently requires orchestration.clusterSize to be 1 so Helm never owns the runtime replica count." }}
+{{- end }}
+{{- if and .Values.capacityManager.enabled (not .Values.capacityManager.serviceAccount.enabled) (not .Values.capacityManager.serviceAccount.name) }}
+  {{- fail "[camunda][error] capacityManager.serviceAccount.name is required when service account creation is disabled." }}
+{{- end }}
+{{- if not .Values.capacityManager.enabled }}
+  {{- $orchestration := lookup "apps/v1" "StatefulSet" .Release.Namespace (include "orchestration.fullname" .) }}
+  {{- $target := dig "metadata" "annotations" "capacity-manager.camunda.io/target-brokers" "1" $orchestration }}
+  {{- if ne (int $target) 1 }}
+    {{- fail "[camunda][error] capacityManager cannot be disabled while its durable broker target exceeds 1. Set capacityManager.policy.targetBrokers to 1 and wait for safe contraction first." }}
+  {{- end }}
+{{- end }}

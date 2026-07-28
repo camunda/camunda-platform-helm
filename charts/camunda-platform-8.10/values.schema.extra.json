@@ -149,6 +149,50 @@
                 }
             }
         },
+        "capacityManager": {
+            "properties": {
+                "policy": {
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "enum": ["recommend", "scheduled", "automatic"]
+                        },
+                        "minBrokers": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "maxBrokers": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "targetBrokers": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "scheduledMinimumBrokers": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "scaleUpThreshold": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "scaleDownThreshold": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "scaleUpSamples": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "scaleDownSamples": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                }
+            }
+        },
         "console": {
             "deprecated": true,
             "properties": {

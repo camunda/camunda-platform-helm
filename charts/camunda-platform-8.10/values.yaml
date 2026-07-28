@@ -1932,6 +1932,120 @@ connectors:
     ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
+################################################################################
+## @section Capacity Manager Parameters
+## @extra capacityManager configuration for automatic orchestration capacity management.
+capacityManager:
+  ## @param capacityManager.enabled if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.
+  enabled: false
+
+  ## @extra capacityManager.image configuration to configure the Capacity Manager image specifics.
+  image:
+    ## @param capacityManager.image.registry can be used to set the container image registry.
+    registry: registry.camunda.cloud
+    ## @param capacityManager.image.repository defines which image repository to use.
+    repository: team-distribution/capacity-manager
+    ## @param capacityManager.image.tag defines the image tag to use.
+    tag: latest
+    ## @param capacityManager.image.digest can be used to set the image digest, overriding the tag.
+    digest: ""
+    ## @param capacityManager.image.pullSecrets can be used to configure image pull secrets.
+    pullSecrets: []
+
+  ## @param capacityManager.reconcileInterval defines how often the capacity policy is evaluated.
+  reconcileInterval: 30s
+  ## @param capacityManager.operationTimeout defines the maximum duration of a Zeebe topology operation.
+  operationTimeout: 20m
+  ## @param capacityManager.prometheusURL can be used to configure the Prometheus server queried for automatic scaling pressure.
+  prometheusURL: ""
+
+  ## @extra capacityManager.policy configuration for capacity decisions.
+  policy:
+    ## @param capacityManager.policy.mode defines the operating mode: recommend, scheduled, or automatic.
+    mode: recommend
+    ## @param capacityManager.policy.minBrokers defines the minimum broker count.
+    minBrokers: 1
+    ## @param capacityManager.policy.maxBrokers defines the maximum broker count.
+    maxBrokers: 3
+    ## @param capacityManager.policy.targetBrokers can be used to set an explicit target for scheduled validation and controlled operations.
+    targetBrokers: 0
+    ## @param capacityManager.policy.scheduledMinimumBrokers can be used to set a minimum during a time window.
+    scheduledMinimumBrokers: 0
+    ## @param capacityManager.policy.scheduleStartsAt can be used to set the RFC3339 start of a capacity window.
+    scheduleStartsAt: ""
+    ## @param capacityManager.policy.scheduleEndsAt can be used to set the RFC3339 end of a capacity window.
+    scheduleEndsAt: ""
+    ## @param capacityManager.policy.pressureQuery can be used to set the PromQL query used by automatic mode.
+    pressureQuery: max(zeebe_flow_control_partition_load)
+    ## @param capacityManager.policy.scaleUpThreshold defines the pressure threshold for scale-up.
+    scaleUpThreshold: 0.8
+    ## @param capacityManager.policy.scaleDownThreshold defines the pressure threshold for scale-down.
+    scaleDownThreshold: 0.2
+    ## @param capacityManager.policy.scaleUpSamples defines the consecutive samples required before scale-up.
+    scaleUpSamples: 3
+    ## @param capacityManager.policy.scaleDownSamples defines the consecutive samples required before scale-down.
+    scaleDownSamples: 120
+
+  ## @extra capacityManager.resources configuration to set requests and limits for the container.
+  ## @param capacityManager.resources.requests.cpu
+  ## @param capacityManager.resources.requests.memory
+  ## @param capacityManager.resources.limits.cpu
+  ## @param capacityManager.resources.limits.memory
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+  ## @param capacityManager.podAnnotations can be used to define pod annotations.
+  podAnnotations: {}
+  ## @param capacityManager.podLabels can be used to define pod labels.
+  podLabels: {}
+  ## @param capacityManager.nodeSelector can be used to define on which nodes the pods should run.
+  nodeSelector: {}
+  ## @param capacityManager.tolerations can be used to define pod tolerations.
+  tolerations: []
+  ## @param capacityManager.affinity can be used to define pod affinity.
+  affinity: {}
+
+  ## @extra capacityManager.serviceAccount configuration for the Capacity Manager service account.
+  serviceAccount:
+    ## @param capacityManager.serviceAccount.enabled if true, creates the service account.
+    enabled: true
+    ## @param capacityManager.serviceAccount.name can be used to set the service account name.
+    name: ""
+    ## @param capacityManager.serviceAccount.annotations can be used to set service account annotations.
+    annotations: {}
+    ## @param capacityManager.serviceAccount.labels can be used to set service account labels.
+    labels: {}
+
+  ## @extra capacityManager.podSecurityContext defines pod security options.
+  podSecurityContext:
+    ## @param capacityManager.podSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @extra capacityManager.podSecurityContext.seccompProfile
+    seccompProfile:
+      ## @param capacityManager.podSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+  ## @extra capacityManager.containerSecurityContext defines container security options.
+  containerSecurityContext:
+    ## @param capacityManager.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @extra capacityManager.containerSecurityContext.capabilities
+    capabilities:
+      ## @param capacityManager.containerSecurityContext.capabilities.drop
+      drop: ["ALL"]
+    ## @param capacityManager.containerSecurityContext.privileged
+    privileged: false
+    ## @param capacityManager.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param capacityManager.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param capacityManager.containerSecurityContext.runAsUser
+    runAsUser: 65532
+
 ####################################################################################
 #######
 #     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #

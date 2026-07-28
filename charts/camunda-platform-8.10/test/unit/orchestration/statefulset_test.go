@@ -53,6 +53,16 @@ func TestStatefulSetTemplate(t *testing.T) {
 func (s *StatefulSetTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Name:        "TestCapacityManagerRelinquishesReplicaOwnership",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-capacity-manager.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				s.Require().Nil(statefulSet.Spec.Replicas)
+			},
+		},
+		{
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
 				"orchestration.podLabels.foo": "bar",

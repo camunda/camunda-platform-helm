@@ -3989,6 +3989,291 @@
                 }
             }
         },
+        "capacityManager": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.",
+                    "default": false
+                },
+                "image": {
+                    "type": "object",
+                    "properties": {
+                        "registry": {
+                            "type": "string",
+                            "description": "can be used to set the container image registry.",
+                            "default": "registry.camunda.cloud"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "defines which image repository to use.",
+                            "default": "team-distribution/capacity-manager"
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "defines the image tag to use.",
+                            "default": "latest"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set the image digest, overriding the tag.",
+                            "default": ""
+                        },
+                        "pullSecrets": {
+                            "type": "array",
+                            "description": "can be used to configure image pull secrets.",
+                            "default": [],
+                            "items": {}
+                        }
+                    }
+                },
+                "reconcileInterval": {
+                    "type": "string",
+                    "description": "defines how often the capacity policy is evaluated.",
+                    "default": "30s"
+                },
+                "operationTimeout": {
+                    "type": "string",
+                    "description": "defines the maximum duration of a Zeebe topology operation.",
+                    "default": "20m"
+                },
+                "prometheusURL": {
+                    "type": "string",
+                    "description": "can be used to configure the Prometheus server queried for automatic scaling pressure.",
+                    "default": ""
+                },
+                "policy": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "description": "defines the operating mode: recommend, scheduled, or automatic.",
+                            "default": "recommend",
+                            "enum": [
+                                "recommend",
+                                "scheduled",
+                                "automatic"
+                            ]
+                        },
+                        "minBrokers": {
+                            "type": "integer",
+                            "description": "defines the minimum broker count.",
+                            "default": 1,
+                            "minimum": 1
+                        },
+                        "maxBrokers": {
+                            "type": "integer",
+                            "description": "defines the maximum broker count.",
+                            "default": 3,
+                            "minimum": 1
+                        },
+                        "targetBrokers": {
+                            "type": "integer",
+                            "description": "can be used to set an explicit target for scheduled validation and controlled operations.",
+                            "default": 0,
+                            "minimum": 0
+                        },
+                        "scheduledMinimumBrokers": {
+                            "type": "integer",
+                            "description": "can be used to set a minimum during a time window.",
+                            "default": 0,
+                            "minimum": 0
+                        },
+                        "scheduleStartsAt": {
+                            "type": "string",
+                            "description": "can be used to set the RFC3339 start of a capacity window.",
+                            "default": ""
+                        },
+                        "scheduleEndsAt": {
+                            "type": "string",
+                            "description": "can be used to set the RFC3339 end of a capacity window.",
+                            "default": ""
+                        },
+                        "pressureQuery": {
+                            "type": "string",
+                            "description": "can be used to set the PromQL query used by automatic mode.",
+                            "default": "max(zeebe_flow_control_partition_load)"
+                        },
+                        "scaleUpThreshold": {
+                            "type": "number",
+                            "description": "defines the pressure threshold for scale-up.",
+                            "default": 0.8,
+                            "minimum": 0
+                        },
+                        "scaleDownThreshold": {
+                            "type": "number",
+                            "description": "defines the pressure threshold for scale-down.",
+                            "default": 0.2,
+                            "minimum": 0
+                        },
+                        "scaleUpSamples": {
+                            "type": "integer",
+                            "description": "defines the consecutive samples required before scale-up.",
+                            "default": 3,
+                            "minimum": 1
+                        },
+                        "scaleDownSamples": {
+                            "type": "integer",
+                            "description": "defines the consecutive samples required before scale-down.",
+                            "default": 120,
+                            "minimum": 1
+                        }
+                    }
+                },
+                "resources": {
+                    "type": "object",
+                    "properties": {
+                        "requests": {
+                            "type": "object",
+                            "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "50m"
+                                },
+                                "memory": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "64Mi"
+                                }
+                            }
+                        },
+                        "limits": {
+                            "type": "object",
+                            "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "250m"
+                                },
+                                "memory": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "128Mi"
+                                }
+                            }
+                        }
+                    }
+                },
+                "podAnnotations": {
+                    "type": "object",
+                    "description": "can be used to define pod annotations.",
+                    "default": {}
+                },
+                "podLabels": {
+                    "type": "object",
+                    "description": "can be used to define pod labels.",
+                    "default": {}
+                },
+                "nodeSelector": {
+                    "type": "object",
+                    "description": "can be used to define on which nodes the pods should run.",
+                    "default": {}
+                },
+                "tolerations": {
+                    "type": "array",
+                    "description": "can be used to define pod tolerations.",
+                    "default": [],
+                    "items": {}
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "can be used to define pod affinity.",
+                    "default": {}
+                },
+                "serviceAccount": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, creates the service account.",
+                            "default": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "can be used to set the service account name.",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to set service account annotations.",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set service account labels.",
+                            "default": {}
+                        }
+                    }
+                },
+                "podSecurityContext": {
+                    "type": "object",
+                    "properties": {
+                        "runAsNonRoot": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": true
+                        },
+                        "seccompProfile": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "RuntimeDefault"
+                                }
+                            }
+                        }
+                    }
+                },
+                "containerSecurityContext": {
+                    "type": "object",
+                    "properties": {
+                        "allowPrivilegeEscalation": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": false
+                        },
+                        "capabilities": {
+                            "type": "object",
+                            "properties": {
+                                "drop": {
+                                    "type": "array",
+                                    "description": "",
+                                    "default": [
+                                        "ALL"
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "privileged": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": false
+                        },
+                        "readOnlyRootFilesystem": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": true
+                        },
+                        "runAsNonRoot": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": true
+                        },
+                        "runAsUser": {
+                            "type": "number",
+                            "description": "",
+                            "default": 65532
+                        }
+                    }
+                }
+            }
+        },
         "orchestration": {
             "type": "object",
             "properties": {
