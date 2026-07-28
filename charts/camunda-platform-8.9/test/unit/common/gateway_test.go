@@ -314,6 +314,19 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				require.NotContains(t, output, "port: 80")
 			},
 		},
+		{
+			Name: "TestGatewayCustomName",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.createGatewayResource": "true",
+				"global.gateway.name":                  "my-shared-gateway",
+				"global.host":                          "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: my-shared-gateway")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
