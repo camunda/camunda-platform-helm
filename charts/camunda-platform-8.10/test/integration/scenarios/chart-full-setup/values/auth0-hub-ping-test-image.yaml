@@ -1,0 +1,5 @@
+orchestration:
+  image:
+    repository: registry.camunda.cloud/team-distribution/camunda
+    tag: "hub-ping-audience-657dc746"
+    digest: ""

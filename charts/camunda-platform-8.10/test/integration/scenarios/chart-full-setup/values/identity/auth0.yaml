@@ -166,10 +166,6 @@ camundaHub:
           existingSecretKey: webmodeler-pusher-app-key
 
 orchestration:
-  image:
-    repository: registry.camunda.cloud/team-distribution/camunda
-    tag: "hub-ping-audience-657dc746"
-    digest: ""
   hub:
     ping:
       credentials:
