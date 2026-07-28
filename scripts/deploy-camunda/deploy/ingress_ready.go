@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package deploy
 
 import (
@@ -6,15 +20,23 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os/exec"
+	"os"
 	"strings"
 	"time"
 
+	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/config"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ingressReadyPollInterval is the wait between reachability polls in executeDeployment.
 const ingressReadyPollInterval = 15 * time.Second
+
+const routingHostLookupTimeout = 10 * time.Second
 
 // hostResolver abstracts DNS resolution so tests can inject a fake without
 // touching the network. net.Resolver satisfies this via LookupHost.
@@ -30,6 +52,188 @@ type ingressReadyDeps struct {
 	resolver hostResolver
 	client   *http.Client
 	sleep    func(ctx context.Context, d time.Duration) error
+}
+
+type routingResourceLister func(
+	ctx context.Context,
+	namespace string,
+	resource schema.GroupVersionResource,
+) (*unstructured.UnstructuredList, error)
+
+// resolveIngressReadyHost selects the public host that was actually applied
+// to the deployment before falling back to the precomputed scenario host.
+func resolveIngressReadyHost(ctx context.Context, flags *config.RuntimeFlags, scenarioCtx *ScenarioContext) (string, error) {
+	deployedHost, err := resolveDeployedRoutingHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
+	return resolveIngressReadyHostAfterLookup(flags, scenarioCtx, os.Getenv, deployedHost, err)
+}
+
+func resolveIngressReadyHostAfterLookup(
+	flags *config.RuntimeFlags,
+	scenarioCtx *ScenarioContext,
+	getenv func(string) string,
+	deployedHost string,
+	lookupErr error,
+) (string, error) {
+	if lookupErr != nil {
+		if !apierrors.IsForbidden(lookupErr) {
+			return "", lookupErr
+		}
+		if host := configuredIngressReadyHostFallback(flags, getenv); host != "" {
+			return host, nil
+		}
+		return "", lookupErr
+	}
+	return ingressReadyHostFallback(flags, scenarioCtx, getenv, deployedHost), nil
+}
+
+func resolveIngressReadyHostWith(
+	ctx context.Context,
+	flags *config.RuntimeFlags,
+	scenarioCtx *ScenarioContext,
+	getenv func(string) string,
+	lookupDeployedHost func(context.Context, string, string, string) string,
+) string {
+	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
+	return ingressReadyHostFallback(flags, scenarioCtx, getenv, deployedHost)
+}
+
+func ingressReadyHostFallback(
+	flags *config.RuntimeFlags,
+	scenarioCtx *ScenarioContext,
+	getenv func(string) string,
+	deployedHost string,
+) string {
+	return config.FirstNonEmpty(
+		deployedHost,
+		configuredIngressReadyHostFallback(flags, getenv),
+		scenarioCtx.IngressHost,
+	)
+}
+
+func configuredIngressReadyHostFallback(flags *config.RuntimeFlags, getenv func(string) string) string {
+	return config.FirstNonEmpty(
+		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.ingress.host"]),
+		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.host"]),
+		concreteRoutingHost(flags.Ingress.IngressHostname),
+		getenv("CAMUNDA_HOSTNAME"),
+		getenv("TEST_INGRESS_HOST"),
+	)
+}
+
+// resolveDeployedRoutingHost discovers the first web hostname exposed by the
+// routing resources in a namespace. HTTPRoute is checked before Gateway so an
+// exact route hostname wins over a wildcard listener hostname.
+func resolveDeployedRoutingHost(ctx context.Context, kubeContext, namespace, release string) (string, error) {
+	lookupCtx, cancel := context.WithTimeout(ctx, routingHostLookupTimeout)
+	defer cancel()
+
+	client, err := kube.NewClient("", kubeContext)
+	if err != nil {
+		return "", fmt.Errorf("create Kubernetes client for readiness host discovery: %w", err)
+	}
+	return resolveDeployedRoutingHostWith(lookupCtx, namespace, release, client.ListNamespacedResources)
+}
+
+func resolveDeployedRoutingHostWith(
+	ctx context.Context,
+	namespace,
+	release string,
+	listResources routingResourceLister,
+) (string, error) {
+	resources := []schema.GroupVersionResource{
+		{Group: "networking.k8s.io", Version: "v1", Resource: "ingresses"},
+		{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "httproutes"},
+		{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "gateways"},
+	}
+
+	var forbiddenErr, discoveryErr error
+	for _, resource := range resources {
+		resourceList, err := listResources(ctx, namespace, resource)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			wrappedErr := fmt.Errorf("list %s while resolving readiness host in namespace %q: %w", resource.Resource, namespace, err)
+			if apierrors.IsForbidden(err) {
+				if forbiddenErr == nil {
+					forbiddenErr = wrappedErr
+				}
+			} else if discoveryErr == nil {
+				discoveryErr = wrappedErr
+			}
+			continue
+		}
+		for _, item := range resourceList.Items {
+			if !routingResourceOwnedByRelease(item, release) {
+				continue
+			}
+			if host := selectPrimaryRoutingHost(strings.Join(routingResourceHosts(item), " ")); host != "" {
+				return host, nil
+			}
+		}
+	}
+
+	if discoveryErr != nil {
+		return "", discoveryErr
+	}
+	return "", forbiddenErr
+}
+
+func routingResourceOwnedByRelease(resource unstructured.Unstructured, release string) bool {
+	if release == "" {
+		return false
+	}
+	if resource.GetLabels()["app.kubernetes.io/instance"] == release {
+		return true
+	}
+	name := resource.GetName()
+	return name == release || name == release+"-camunda-platform"
+}
+
+func routingResourceHosts(resource unstructured.Unstructured) []string {
+	hosts, _, _ := unstructured.NestedStringSlice(resource.Object, "spec", "hostnames")
+	rules, _, _ := unstructured.NestedSlice(resource.Object, "spec", "rules")
+	for _, rawRule := range rules {
+		if rule, ok := rawRule.(map[string]any); ok {
+			if host, ok := rule["host"].(string); ok {
+				hosts = append(hosts, host)
+			}
+		}
+	}
+	listeners, _, _ := unstructured.NestedSlice(resource.Object, "spec", "listeners")
+	for _, rawListener := range listeners {
+		if listener, ok := rawListener.(map[string]any); ok {
+			if host, ok := listener["hostname"].(string); ok {
+				hosts = append(hosts, host)
+			}
+		}
+	}
+	return hosts
+}
+
+func selectPrimaryRoutingHost(raw string) string {
+	for _, host := range strings.Fields(raw) {
+		if concreteRoutingHost(host) == "" {
+			continue
+		}
+		firstLabel := strings.ToLower(strings.SplitN(host, ".", 2)[0])
+		if firstLabel == "grpc" || firstLabel == "zeebe" || firstLabel == "actuator" ||
+			strings.HasPrefix(firstLabel, "grpc-") ||
+			strings.HasPrefix(firstLabel, "zeebe-") ||
+			strings.HasPrefix(firstLabel, "actuator-") {
+			continue
+		}
+		return host
+	}
+	return ""
+}
+
+func concreteRoutingHost(raw string) string {
+	host := strings.TrimSpace(raw)
+	if host == "" || strings.Contains(host, "{{") || strings.Contains(host, "}}") || strings.Contains(host, "*") {
+		return ""
+	}
+	return host
 }
 
 // waitIngressReady polls host until it is both publicly DNS-resolvable and
@@ -117,40 +321,6 @@ func waitIngressReadyWithDeps(ctx context.Context, deps ingressReadyDeps, host s
 			return fmt.Errorf("ingress %q readiness check canceled after %s: %w", host, time.Since(start).Round(time.Second), err)
 		}
 	}
-}
-
-// resolveDeployedIngressHost reads the primary web host from the Ingress
-// objects helm just created in namespace, so the readiness gate probes the
-// host actually served (and published to DNS) rather than a computed
-// <namespace>.<base-domain> value that CI overrides via global.host. Returns
-// "" on any error or when no primary host is found, so callers fall back to
-// their computed host.
-func resolveDeployedIngressHost(ctx context.Context, kubeContext, namespace string) string {
-	args := []string{}
-	if kubeContext != "" {
-		args = append(args, "--context", kubeContext)
-	}
-	args = append(args, "-n", namespace, "get", "ingress",
-		"-o", "jsonpath={.items[*].spec.rules[*].host}")
-	out, err := exec.CommandContext(ctx, "kubectl", args...).Output()
-	if err != nil {
-		return ""
-	}
-	return selectPrimaryIngressHost(string(out))
-}
-
-// selectPrimaryIngressHost picks the primary web host from whitespace-separated
-// ingress host tokens, skipping the gRPC/Zeebe/actuator sub-hosts, and returns
-// the first match ("" if none). Kept pure so it is unit-testable without
-// shelling out to kubectl.
-func selectPrimaryIngressHost(raw string) string {
-	for _, h := range strings.Fields(raw) {
-		if strings.Contains(h, "zeebe") || strings.Contains(h, "grpc") || strings.Contains(h, "actuator") {
-			continue
-		}
-		return h
-	}
-	return ""
 }
 
 // probeIngressOnce runs one DNS + HTTPS attempt bounded by perAttemptCap.
