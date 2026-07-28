@@ -3,7 +3,7 @@ capacityManager:
   image:
     registry: registry.camunda.cloud
     repository: team-distribution/capacity-manager
-    tag: $CAPACITY_MANAGER_IMAGE_TAG
+    tag: latest
     pullSecrets:
       - name: registry-camunda-cloud
   reconcileInterval: 5s
@@ -49,7 +49,7 @@ global:
               - name: registry-camunda-cloud
             containers:
               - name: load-generator
-                image: registry.camunda.cloud/team-distribution/capacity-manager:$CAPACITY_MANAGER_IMAGE_TAG
+                image: registry.camunda.cloud/team-distribution/capacity-manager:latest
                 imagePullPolicy: Always
                 command: ["/load-generator"]
                 args:
