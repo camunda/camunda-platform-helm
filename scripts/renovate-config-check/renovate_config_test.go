@@ -49,9 +49,18 @@ type RenovateConfig struct {
 
 // PackageRule represents a single Renovate package rule.
 type PackageRule struct {
-	Description    string   `json:"description"`
-	Versioning     string   `json:"versioning"`
-	MatchFileNames []string `json:"matchFileNames"`
+	Description       string   `json:"description"`
+	Versioning        string   `json:"versioning"`
+	MatchFileNames    []string `json:"matchFileNames"`
+	MatchManagers     []string `json:"matchManagers"`
+	MatchPackageNames []string `json:"matchPackageNames"`
+	MatchUpdateTypes  []string `json:"matchUpdateTypes"`
+	AddLabels         []string `json:"addLabels"`
+	Schedule          []string `json:"schedule"`
+	Automerge         *bool    `json:"automerge"`
+	PlatformAutomerge *bool    `json:"platformAutomerge"`
+	IgnoreTests       *bool    `json:"ignoreTests"`
+	AutomergeType     string   `json:"automergeType"`
 }
 
 // ChartYAML represents the relevant fields from Chart.yaml.
@@ -197,6 +206,62 @@ func TestGAChartsHavePatchUpdatesEnabled(t *testing.T) {
 	}
 }
 
+func TestGitHubActionsAutomergePolicy(t *testing.T) {
+	t.Parallel()
+
+	root := repoRoot(t)
+	configBytes, err := os.ReadFile(filepath.Join(root, ".github", "renovate.json5"))
+	require.NoError(t, err, "failed to read renovate.json5")
+
+	var config RenovateConfig
+	err = json5.Unmarshal(configBytes, &config)
+	require.NoError(t, err, "failed to parse renovate.json5 as JSON5")
+
+	var actionRules []PackageRule
+	var manualMajorRule *PackageRule
+	var scheduledMajorRule *PackageRule
+	for i := range config.PackageRules {
+		rule := &config.PackageRules[i]
+		if containsString(rule.MatchManagers, "github-actions") {
+			actionRules = append(actionRules, *rule)
+		}
+		switch rule.Description {
+		case "Major updates require manual review to prevent breaking changes.":
+			manualMajorRule = rule
+		case "Schedule major updates for Friday nights.":
+			scheduledMajorRule = rule
+		}
+	}
+
+	require.NotNil(t, manualMajorRule)
+	assert.Equal(t, []string{"!github-actions"}, manualMajorRule.MatchManagers)
+	require.NotNil(t, scheduledMajorRule)
+	assert.Equal(t, []string{"!github-actions"}, scheduledMajorRule.MatchManagers)
+
+	require.Len(t, actionRules, 1, "GitHub Actions policy must be defined by one manager-wide rule")
+	actionRule := actionRules[0]
+	assert.Empty(t, actionRule.MatchPackageNames)
+	assert.Empty(t, actionRule.MatchUpdateTypes)
+	assert.Contains(t, actionRule.Schedule, "every weekend")
+
+	require.NotNil(t, actionRule.Automerge)
+	assert.True(t, *actionRule.Automerge)
+	require.NotNil(t, actionRule.PlatformAutomerge)
+	assert.True(t, *actionRule.PlatformAutomerge)
+	require.NotNil(t, actionRule.IgnoreTests)
+	assert.False(t, *actionRule.IgnoreTests)
+	assert.Equal(t, "pr", actionRule.AutomergeType)
+
+	for _, label := range []string{
+		"deps/github-actions",
+		"automerge",
+		"automation/renovatebot",
+		"kind/chore",
+	} {
+		assert.Contains(t, actionRule.AddLabels, label)
+	}
+}
+
 // extractChartVersions extracts unique chart version numbers from matchFileNames.
 func extractChartVersions(fileNames []string) []string {
 	seen := make(map[string]bool)
@@ -254,6 +319,15 @@ func findGACharts(t *testing.T, root string) []string {
 func containsFile(fileNames []string, suffix string) bool {
 	for _, f := range fileNames {
 		if strings.HasSuffix(f, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsString(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
 			return true
 		}
 	}
