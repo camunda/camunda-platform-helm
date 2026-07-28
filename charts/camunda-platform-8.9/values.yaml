@@ -952,6 +952,8 @@ identity:
     metricsPort: 82
     ## @param identity.service.metricsName defines the name of the service on which the identity metrics will be available
     metricsName: metrics
+    ## @param identity.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, metrics), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra identity.podSecurityContext defines the security options the Management Identity pod should be run with
   podSecurityContext:
@@ -1938,6 +1940,8 @@ webModeler:
       port: 80
       ## @param webModeler.restapi.service.managementPort defines the management port of the service
       managementPort: 8091
+      ## @param webModeler.restapi.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+      appProtocols: {}
 
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
@@ -2115,6 +2119,8 @@ webModeler:
       type: ClusterIP
       ## @param webModeler.websockets.service.port defines the port of the service
       port: 80
+      ## @param webModeler.websockets.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http), e.g. {http: "kubernetes.io/ws"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+      appProtocols: {}
     ## @param webModeler.websockets.configuration if specified, contents will be used as the application.yaml
     configuration: ""
     ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
@@ -2323,6 +2329,8 @@ connectors:
     serverPort: 8080
     ## @param connectors.service.serverName defines the port name where the Connector web application will be available
     serverName: http
+    ## @param connectors.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (server), e.g. {server: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra connectors.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param connectors.resources.requests.cpu
@@ -2739,6 +2747,9 @@ orchestration:
       #   protocol: TCP
       #   port: 5701
       #   targetPort: 5701
+
+    ## @param orchestration.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (management, http, internal, command, grpc), e.g. {grpc: "kubernetes.io/h2c"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra global.orchestration.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
@@ -3346,6 +3357,8 @@ optimize:
     port: 80
     ## @param optimize.service.managementPort defines the port where actuator will be available. Also required to reach backup API
     managementPort: 8092
+    ## @param optimize.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra optimize.podSecurityContext defines the security options the Optimize pod should be run with
   podSecurityContext:
