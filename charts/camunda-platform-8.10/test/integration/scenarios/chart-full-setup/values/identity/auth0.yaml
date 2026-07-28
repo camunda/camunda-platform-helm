@@ -167,8 +167,8 @@ camundaHub:
 
 orchestration:
   image:
-    repository: europe-west1-docker.pkg.dev/camunda-distribution/c8e2e/camunda-hub-ping-audience
-    tag: "657dc746"
+    repository: registry.camunda.cloud/team-distribution/camunda
+    tag: "hub-ping-audience-657dc746"
     digest: ""
   hub:
     ping:
