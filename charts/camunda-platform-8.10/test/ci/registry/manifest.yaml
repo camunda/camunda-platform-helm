@@ -130,6 +130,9 @@ integration:
     - id: alwaysgreen
       shortname: agrn
       enabled: false
+    - id: capacity-manager
+      shortname: acm
+      enabled: false
     - id: qa-elasticsearch-upg-install
       shortname: qaelupg
       enabled: false
