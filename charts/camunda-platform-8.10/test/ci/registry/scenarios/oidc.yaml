@@ -7,7 +7,6 @@ persistence: elasticsearch
 features:
   - postgresql-companion
   - hub-ping
-  - hub-ping-token-params-test-image
 platforms:
   - gke
 exclude:

@@ -228,7 +228,6 @@ integration:
           features:
             - postgresql-companion
             - hub-ping
-            - hub-ping-token-params-test-image
           skip-e2e: true
           dependencies:
             - chart: charts/internal-postgresql
@@ -267,7 +266,6 @@ integration:
           persistence: elasticsearch
           features:
             - hub-ping
-            - hub-ping-token-params-test-image
           skip-e2e: true
           dependencies:
             - chart: elastic/elasticsearch

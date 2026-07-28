@@ -6,7 +6,6 @@ identity: auth0
 persistence: elasticsearch
 features:
   - hub-ping
-  - hub-ping-token-params-test-image
 platforms:
   - gke
 exclude:

@@ -8,15 +8,7 @@ camundaHub:
               feature:
                 dynamic-cluster-management-enabled: true
 
-identity:
-  image:
-    tag: SNAPSHOT
-    digest: "sha256:4631b55924f44399e34049ccfd982363f26eb43698c3ef7d0e3696cfe3e05210"
-
 orchestration:
-  image:
-    tag: 8.10-SNAPSHOT
-    digest: "sha256:8f00933e362c6fa498f8b439621108c5554265145d0c45afef93a921b8e14483"
   hub:
     ping:
       endpoint: "http://integration-web-modeler-restapi/modeler/api/v1/clusters"
