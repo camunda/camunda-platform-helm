@@ -122,6 +122,40 @@ func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
 	}
 }
 
+func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "management.yaml")
+	top := &Topology{
+		Name: "management-only",
+		Releases: []TopologyRelease{
+			{Role: "management", NamespaceSuffix: "mgmt", Values: "management.yaml"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "at least one release with role \"orchestration\"") {
+		t.Fatalf("expected missing orchestration release error, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RequiresDNS1123NamespaceSuffix(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	top := &Topology{
+		Name: "invalid-suffix",
+		Releases: []TopologyRelease{
+			{Role: "management", NamespaceSuffix: "Management", Values: "management.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orch_a", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "must be a lowercase DNS-1123 label") {
+		t.Fatalf("expected DNS-1123 namespace suffix errors, got %v", err)
+	}
+}
+
 func TestTopologyValidate_MissingValuesFile(t *testing.T) {
 	dir := t.TempDir()
 	top := &Topology{

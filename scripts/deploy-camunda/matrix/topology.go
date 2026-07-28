@@ -121,6 +121,7 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 	roles := map[string]bool{}
 	suffixes := map[string]bool{}
 	managementCount := 0
+	orchestrationCount := 0
 	modelerClusterIDs := map[string]bool{}
 	modelerClusterNames := map[string]bool{}
 
@@ -131,6 +132,7 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		case "management":
 			managementCount++
 		case "orchestration":
+			orchestrationCount++
 			if strings.TrimSpace(r.ModelerClusterID) == "" {
 				problems = append(problems, fmt.Sprintf("%s: modeler-cluster-id is required", label))
 			} else if modelerClusterIDs[r.ModelerClusterID] {
@@ -152,6 +154,8 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 
 		if strings.TrimSpace(r.NamespaceSuffix) == "" {
 			problems = append(problems, fmt.Sprintf("%s: namespace-suffix is required", label))
+		} else if !isDNS1123Label(r.NamespaceSuffix) {
+			problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q must be a lowercase DNS-1123 label", label, r.NamespaceSuffix))
 		} else if suffixes[r.NamespaceSuffix] {
 			problems = append(problems, fmt.Sprintf("%s: duplicate namespace-suffix %q", label, r.NamespaceSuffix))
 		} else {
@@ -199,6 +203,9 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 	if managementCount != 1 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: exactly one release with role \"management\" is required, found %d", ctx, t.Name, managementCount))
 	}
+	if orchestrationCount == 0 {
+		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release with role \"orchestration\" is required", ctx, t.Name))
+	}
 
 	for i, r := range t.Releases {
 		if r.DependsOn == "" {
@@ -213,4 +220,17 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		return nil
 	}
 	return fmt.Errorf("%s", strings.Join(problems, "\n  - "))
+}
+
+func isDNS1123Label(value string) bool {
+	if value == "" || len(value) > 63 {
+		return false
+	}
+	for i, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || (r == '-' && i > 0 && i < len(value)-1) {
+			continue
+		}
+		return false
+	}
+	return true
 }

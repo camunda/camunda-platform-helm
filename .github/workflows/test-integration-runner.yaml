@@ -1399,7 +1399,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.is-topology && inputs.flow == 'install' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && !inputs.skip-e2e && inputs.is-topology && inputs.flow == 'install' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false

@@ -233,6 +233,41 @@ func TestManagementTopologyRequiresOIDC(t *testing.T) {
 	require.ErrorContains(t, err, "global.topology.mode=management requires OIDC authentication")
 }
 
+func TestManagementTopologyUsesHubEndpointOverrides(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.grpcUrl":      "grpcs://grpc.example.com:443",
+			"global.topology.clusters[0].components.orchestration.restUrl":      "https://api.example.com/orchestration",
+			"global.topology.clusters[0].components.orchestration.readinessUrl": "https://health.example.com/orchestration",
+			"global.topology.clusters[0].components.orchestration.operateUrl":   "https://apps.example.com/operate",
+			"global.topology.clusters[0].components.orchestration.tasklistUrl":  "https://apps.example.com/tasklist",
+			"global.topology.clusters[0].components.orchestration.adminUrl":     "https://apps.example.com/admin",
+			"global.topology.clusters[0].components.optimize.webappUrl":         "https://apps.example.com/optimize",
+			"global.topology.clusters[0].components.optimize.readinessUrl":      "https://health.example.com/optimize",
+			"global.topology.clusters[0].components.connectors.restUrl":         "https://api.example.com/connectors",
+			"global.topology.clusters[0].components.connectors.readinessUrl":    "https://health.example.com/connectors",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	for _, endpoint := range []string{
+		"grpcs://grpc.example.com:443",
+		"https://api.example.com/orchestration",
+		"https://health.example.com/orchestration",
+		"https://apps.example.com/operate",
+		"https://apps.example.com/tasklist",
+		"https://apps.example.com/admin",
+		"https://apps.example.com/optimize",
+		"https://health.example.com/optimize",
+		"https://api.example.com/connectors",
+		"https://health.example.com/connectors",
+	} {
+		require.Contains(t, output, endpoint)
+	}
+}
+
 func TestManagementTopologyKeycloakRejectsMissingSecret(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "management-keycloak.yaml")
 	options := &helm.Options{
