@@ -1,0 +1,76 @@
+{{- if .Values.capacityManager.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "capacityManager.fullname" . }}
+  labels: {{- include "capacityManager.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "capacityManager.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "capacityManager.labels" . | nindent 8 }}
+        {{- with .Values.capacityManager.podLabels }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/capacity-manager/configmap.yaml") . | sha256sum }}
+        {{- with .Values.capacityManager.podAnnotations }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "capacityManager.serviceAccountName" . }}
+      imagePullSecrets: {{- include "capacityManager.imagePullSecrets" . | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.capacityManager.podSecurityContext "context" $) | nindent 8 }}
+      containers:
+        - name: capacity-manager
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.capacityManager) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          args:
+            - --namespace=$(POD_NAMESPACE)
+            - --statefulset={{ include "orchestration.fullname" . }}
+            - --zeebe-url=http://{{ include "orchestration.fullname" . }}-0.{{ include "orchestration.serviceNameHeadless" . }}:{{ .Values.orchestration.service.managementPort }}{{ .Values.orchestration.contextPath }}
+            - --prometheus-url={{ .Values.capacityManager.prometheusURL }}
+            - --interval={{ .Values.capacityManager.reconcileInterval }}
+            - --operation-timeout={{ .Values.capacityManager.operationTimeout }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources: {{- toYaml .Values.capacityManager.resources | nindent 12 }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.capacityManager.containerSecurityContext "context" $) | nindent 12 }}
+          volumeMounts:
+            - name: policy
+              mountPath: /etc/capacity-manager
+              readOnly: true
+      volumes:
+        - name: policy
+          configMap:
+            name: {{ include "capacityManager.fullname" . }}
+      {{- with .Values.capacityManager.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.capacityManager.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.capacityManager.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end -}}

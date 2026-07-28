@@ -1,0 +1,24 @@
+{{- if .Values.capacityManager.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "capacityManager.fullname" . }}
+  labels: {{- include "capacityManager.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  policy.json: |
+    {{- dict
+        "mode" .Values.capacityManager.policy.mode
+        "minBrokers" .Values.capacityManager.policy.minBrokers
+        "maxBrokers" .Values.capacityManager.policy.maxBrokers
+        "targetBrokers" .Values.capacityManager.policy.targetBrokers
+        "scheduledMinimumBrokers" .Values.capacityManager.policy.scheduledMinimumBrokers
+        "scheduleStartsAt" .Values.capacityManager.policy.scheduleStartsAt
+        "scheduleEndsAt" .Values.capacityManager.policy.scheduleEndsAt
+        "pressureQuery" .Values.capacityManager.policy.pressureQuery
+        "scaleUpThreshold" .Values.capacityManager.policy.scaleUpThreshold
+        "scaleDownThreshold" .Values.capacityManager.policy.scaleDownThreshold
+        "scaleUpSamples" .Values.capacityManager.policy.scaleUpSamples
+        "scaleDownSamples" .Values.capacityManager.policy.scaleDownSamples
+        | toPrettyJson | nindent 4 }}
+{{- end -}}

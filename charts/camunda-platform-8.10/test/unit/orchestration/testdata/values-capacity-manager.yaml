@@ -1,0 +1,9 @@
+global:
+  elasticsearch:
+    enabled: true
+
+capacityManager:
+  enabled: true
+
+orchestration:
+  clusterSize: "1"
