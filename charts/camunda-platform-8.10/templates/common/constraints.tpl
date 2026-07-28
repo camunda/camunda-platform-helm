@@ -61,6 +61,11 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 
 {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
 {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
+{{- range $name, $_ := .Values.orchestration.hub.ping.credentials.tokenRequestParameters -}}
+  {{- if has $name (list "grant_type" "client_id" "client_secret") -}}
+    {{- fail (printf "[camunda][error] orchestration.hub.ping.credentials.tokenRequestParameters.%s is reserved and cannot be overridden" $name) -}}
+  {{- end -}}
+{{- end -}}
 {{- if ne (not (not $pingClaimName)) (not (not $pingClaimValue)) }}
   {{- fail "[camunda][error] global.identity.auth.orchestration.hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue must be set together" -}}
 {{- end }}

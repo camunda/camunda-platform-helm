@@ -689,6 +689,16 @@ func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
 			},
 		},
 		{
+			Name: "TestPingTokenRequestParametersRejectReservedKeys",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                      "elasticsearch",
+				"orchestration.hub.ping.credentials.tokenRequestParameters.client_secret":       "override",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "tokenRequestParameters.client_secret is reserved")
+			},
+		},
+		{
 			Name: "TestPingExternalOidcClaimMappingRequiresBothValues",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":                       "elasticsearch",

@@ -169,7 +169,8 @@ orchestration:
   hub:
     ping:
       credentials:
-        audience: $AUTH0_AUDIENCE
+        tokenRequestParameters:
+          audience: $AUTH0_AUDIENCE
   security:
     authentication:
       method: oidc

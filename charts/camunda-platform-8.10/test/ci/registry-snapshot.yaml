@@ -209,7 +209,7 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: oidc
-          enabled: false
+          enabled: true
           shortname: esoi
           auth: oidc
           flow: upgrade-minor
@@ -219,6 +219,7 @@ integration:
             - identity
             - console
             - orchestration-grpc
+          tier: 1
           infra-type:
             eks: preemptible
             gke: distroci
@@ -226,6 +227,8 @@ integration:
           persistence: elasticsearch
           features:
             - postgresql-companion
+            - hub-ping
+            - hub-ping-token-params-test-image
           skip-e2e: true
           dependencies:
             - chart: charts/internal-postgresql
@@ -240,6 +243,11 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
+          post-deploy:
+            script: post-deploy-hub-ping.sh
+            description: |
+              Waits for the authenticated Orchestration Cluster ping to register its
+              uniquely named cluster in Hub's database.
         - name: auth0
           enabled: true
           shortname: esa0
@@ -259,7 +267,7 @@ integration:
           persistence: elasticsearch
           features:
             - hub-ping
-            - auth0-hub-ping-test-image
+            - hub-ping-token-params-test-image
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1

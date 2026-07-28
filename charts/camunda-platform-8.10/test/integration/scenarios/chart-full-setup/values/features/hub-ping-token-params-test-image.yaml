@@ -1,5 +1,5 @@
 orchestration:
   image:
     repository: registry.camunda.cloud/team-distribution/camunda
-    tag: "8.10.0-hub-ping-audience-2"
+    tag: "8.10.0-hub-ping-token-params-3"
     digest: ""

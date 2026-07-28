@@ -4260,15 +4260,10 @@
                                             "description": "defines the OAuth2 token endpoint used to request an access token. Defaults to the orchestration client token endpoint when empty.",
                                             "default": ""
                                         },
-                                        "audience": {
-                                            "type": "string",
-                                            "description": "defines the optional OAuth2 audience sent when requesting the ping access token. Required by providers such as Auth0.",
-                                            "default": ""
-                                        },
-                                        "scope": {
-                                            "type": "string",
-                                            "description": "defines the optional OAuth2 scope sent when requesting the ping access token. Microsoft Entra client credentials commonly require the API resource identifier suffixed with /.default.",
-                                            "default": ""
+                                        "tokenRequestParameters": {
+                                            "type": "object",
+                                            "description": "defines additional form parameters sent to the OAuth2 token endpoint. For example, Auth0 uses audience and Microsoft Entra uses scope. grant_type, client_id, and client_secret are reserved.",
+                                            "default": {}
                                         },
                                         "clientId": {
                                             "type": "string",

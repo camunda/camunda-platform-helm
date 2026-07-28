@@ -39,7 +39,8 @@ integration:
       enabled: false
     - id: oidc
       shortname: esoi
-      enabled: false
+      tier: 1
+      enabled: true
     - id: auth0
       shortname: esa0
       tier: 1
