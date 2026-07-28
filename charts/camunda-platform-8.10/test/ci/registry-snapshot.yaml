@@ -259,8 +259,7 @@ integration:
           persistence: elasticsearch
           features:
             - hub-ping
-          extra-values:
-            - values/auth0-hub-ping-test-image.yaml
+            - auth0-hub-ping-test-image
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1
