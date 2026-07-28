@@ -25,6 +25,7 @@ var lifecycleVarPassthrough = []string{
 	"GITHUB_WORKFLOW_JOB_ID",
 	"POSTGRESQL_JDBC_URL",
 	"CAMUNDA_HOSTNAME",
+	"MGMT_NAMESPACE",
 }
 
 // resolveLifecycleEnv builds the env map used to resolve lifecycle hook
@@ -203,6 +204,12 @@ func registerDeclarativePostInfraHook(flags *config.RuntimeFlags, hook *Lifecycl
 // for post-deploy registrations.
 func registerDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
 	return registerDeclarativeHook(flags, hook, hookPostDeploy, &flags.PostDeployHooks, repoRoot, appVersion, scenario)
+}
+
+// RegisterDeclarativePostDeployHook registers a post-deploy hook for callers
+// that execute a synthesized matrix entry outside the standard runner path.
+func RegisterDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
+	return registerDeclarativePostDeployHook(flags, hook, repoRoot, appVersion, scenario)
 }
 
 // runDeclarativePreUpgradeHook executes the supplied pre-upgrade hook between

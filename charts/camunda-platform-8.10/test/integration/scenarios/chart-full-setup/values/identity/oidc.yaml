@@ -33,6 +33,8 @@ global:
       orchestration:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
+        hubPingClaimName: azp
+        hubPingClaimValue: $ENTRA_APP_CLIENT_ID
         secret:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
@@ -93,6 +95,16 @@ connectors:
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
 orchestration:
+  hub:
+    ping:
+      credentials:
+        clientId: $ENTRA_APP_CLIENT_ID
+        tokenRequestParameters:
+          scope: $ENTRA_APP_CLIENT_ID/.default
+        clientSecret:
+          secret:
+            existingSecret: integration-test-credentials
+            existingSecretKey: entra-child-app-client-secret
   security:
     authentication:
       unprotectedApi: false

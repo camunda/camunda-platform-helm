@@ -649,6 +649,199 @@ func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestPingEndpointRequiresOidcOrExplicitCredentials",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.hub.ping.endpoint":          "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "requires orchestration.security.authentication.method=oidc")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithExplicitCredentialsDoesNotRequireOidc",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+				"orchestration.hub.ping.credentials.tokenEndpoint":                    "https://kc/token",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingCustomClientIdRequiresCustomSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "clientId requires an explicit")
+			},
+		},
+		{
+			Name: "TestPingTokenRequestParametersRejectReservedKeys",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+				"orchestration.hub.ping.credentials.tokenRequestParameters.client_secret": "override",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "tokenRequestParameters.client_secret is reserved")
+			},
+		},
+		{
+			Name: "TestPingExternalOidcClaimMappingRequiresBothValues",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                       "elasticsearch",
+				"orchestration.hub.ping.endpoint":                                "https://hub/api/v1/clusters",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+				"global.identity.auth.orchestration.hubPingClaimName":            "azp",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue must be set together")
+			},
+		},
+		{
+			Name: "TestCentralExternalOidcAuthorizationRequiresClaimMapping",
+			Values: map[string]string{
+				"orchestration.enabled":                                          "false",
+				"orchestration.security.authentication.oidc.type":                "MICROSOFT",
+				"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "with a non-Keycloak OIDC provider requires")
+			},
+		},
+		{
+			Name: "TestPingClientSecretExistingSecretRequiresKey",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                              "elasticsearch",
+				"orchestration.security.authentication.method":                          "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":      "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey":   "secret",
+				"orchestration.hub.ping.endpoint":                                       "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientSecret.secret.existingSecret": "s",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "must be set together")
+			},
+		},
+		{
+			Name: "TestPingClientSecretExistingSecretWithoutEndpointDoesNotFail",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                              "elasticsearch",
+				"orchestration.hub.ping.credentials.clientSecret.secret.existingSecret": "s",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithOidcRequiresUsableClientSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":     "elasticsearch",
+				"orchestration.security.authentication.method": "oidc",
+				"orchestration.hub.ping.endpoint":              "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "requires a usable client secret")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithOidcSecretRenders",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithNonKeycloakOidcRequiresTokenEndpoint",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"global.identity.auth.type":                                           "MICROSOFT",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "could not resolve a token endpoint")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithComponentNonKeycloakOidcRequiresTokenEndpoint",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.type":                     "MICROSOFT",
+				"orchestration.security.authentication.oidc.issuer":                   "https://login.microsoftonline.com/tenant/v2.0",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "could not resolve a token endpoint")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithNonKeycloakOidcAndExplicitTokenEndpointRenders",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"global.identity.auth.type":                                           "MICROSOFT",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.tokenEndpoint":                    "https://idp.example/token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithExplicitSecretDoesNotRequireOidcSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithOrchestrationDisabledDoesNotFail",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.enabled":                    "false",
+				"orchestration.hub.ping.endpoint":          "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestCaBundleConsoleCertKeyFilenameWarningRendersOk() {
 	testCases := []testhelpers.TestCase{
 		{

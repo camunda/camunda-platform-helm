@@ -1157,6 +1157,10 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 
 		applyTopologyReleaseOverrides(flags, crossRefEnv)
+		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+		}
 
 		deployErr := deploy.Execute(ctx, flags)
 		cleanup()
@@ -1272,7 +1276,7 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		extraValues = []string{filepath.Join("values", rel.Values)}
 	}
 
-	return matrix.Entry{
+	releaseEntry := matrix.Entry{
 		Version:      entry.Version,
 		ChartPath:    entry.ChartPath,
 		Scenario:     entry.Scenario,
@@ -1288,6 +1292,10 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Dependencies: rel.ResolvedDependencies,
 		ExtraValues:  extraValues,
 	}
+	if rel.Role == "orchestration" {
+		releaseEntry.PostDeploy = entry.PostDeploy
+	}
+	return releaseEntry
 }
 
 // synthesizeReleaseOpts builds the matrix.RunOptions for one topology

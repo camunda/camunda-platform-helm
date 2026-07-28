@@ -149,7 +149,8 @@ func TestSynthesizeReleaseEntry_ManagementCarriesOwnLayers(t *testing.T) {
 }
 
 func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak"}
+	hook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: hook}
 	releases := testTopologyReleases()
 
 	for _, rel := range releases[1:] {
@@ -169,6 +170,13 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 		if len(orchEntry.ExtraValues) != 0 {
 			t.Errorf("orchestration release %q ExtraValues = %v, want empty", rel.NamespaceSuffix, orchEntry.ExtraValues)
 		}
+		if orchEntry.PostDeploy != hook {
+			t.Errorf("orchestration release %q PostDeploy = %v, want scenario hook", rel.NamespaceSuffix, orchEntry.PostDeploy)
+		}
+	}
+	mgmtEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	if mgmtEntry.PostDeploy != nil {
+		t.Errorf("management PostDeploy = %v, want nil so the hook runs after orchestration", mgmtEntry.PostDeploy)
 	}
 }
 

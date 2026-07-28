@@ -3,6 +3,7 @@ auth: keycloak
 flows:
   - install
 skip-e2e: true
+post-deploy: hub-ping
 platforms:
   - gke
 infra-type:

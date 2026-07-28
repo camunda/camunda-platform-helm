@@ -98,7 +98,7 @@ data:
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         {{- end }}
-        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
         orchestration:
           applications:
             - name: Orchestration
@@ -108,6 +108,12 @@ data:
               permissions:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
+                {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (not .Values.orchestration.hub.ping.credentials.clientId) }}
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: create:*
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: update:*
+                {{- end }}
               root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
@@ -173,6 +179,34 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
+            {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+            - name: "CamundaHub - Cluster Ping"
+              description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
+              permissions:
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: create:*
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: update:*
+            {{- end }}
+
+      {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
+      {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
+      {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (or (eq (include "orchestration.authIssuerType" .) "KEYCLOAK") (and $pingClaimName $pingClaimValue)) }}
+      mapping-rules:
+        - name: "CamundaHub - Cluster Ping Access"
+          claim-name: {{ $pingClaimName | default "sub" | quote }}
+          {{- if $pingClaimValue }}
+          claim-value: {{ tpl $pingClaimValue . | quote }}
+          {{- else if .Values.orchestration.hub.ping.credentials.clientId }}
+          claim-value: "service-account-{{ .Values.orchestration.hub.ping.credentials.clientId }}"
+          {{- else }}
+          claim-value: "service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}"
+          {{- end }}
+          operator: EQUALS
+          rule-type: ROLE
+          applied-role-names:
+            - "CamundaHub - Cluster Ping"
+      {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -195,7 +229,7 @@ data:
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         {{- end }}
-        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+        {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
@@ -214,7 +248,7 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: read:*
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
@@ -260,7 +294,7 @@ data:
             - Web Modeler
             - Web Modeler Admin
             {{- end }}
-            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister }}
+            {{- if or (eq (include "orchestration.authMethod" .) "oidc") .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
             - Orchestration
             {{- end }}
           {{- end }}

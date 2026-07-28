@@ -959,6 +959,21 @@
                                             "type": "boolean",
                                             "description": "if true, this Identity always provisions the Orchestration Cluster's Keycloak client and resource server (audience), even when the Orchestration Cluster's OIDC auth method is not active in this release. Defaults to registering only when the Orchestration Cluster uses OIDC. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.",
                                             "default": false
+                                        },
+                                        "hubPingAuthorizationEnabled": {
+                                            "type": "boolean",
+                                            "description": "if true, this Identity provisions the Orchestration client's Camunda Hub ping permissions and role mapping. Enable this in a central Identity release when the Orchestration workload runs in another release.",
+                                            "default": false
+                                        },
+                                        "hubPingClaimName": {
+                                            "type": "string",
+                                            "description": "defines the token claim used to map an external OIDC client to the Hub ping role. Keycloak defaults to the sub claim when empty.",
+                                            "default": ""
+                                        },
+                                        "hubPingClaimValue": {
+                                            "type": "string",
+                                            "description": "defines the claim value used to map an external OIDC client to the Hub ping role. Required with hubPingClaimName for non-Keycloak providers and supports Helm templating.",
+                                            "default": ""
                                         }
                                     }
                                 },
@@ -4221,6 +4236,66 @@
                                     "description": "define authorizations for Identity as Code.",
                                     "default": [],
                                     "items": {}
+                                }
+                            }
+                        }
+                    }
+                },
+                "hub": {
+                    "type": "object",
+                    "properties": {
+                        "ping": {
+                            "type": "object",
+                            "properties": {
+                                "endpoint": {
+                                    "type": "string",
+                                    "description": "defines the Camunda Hub POST /clusters endpoint pings are sent to. Setting it renders the ping connectivity/credentials config and, when Identity is enabled in this release, provisions the inherited client's Hub permissions. In split deployments, set the same value in the central Identity release to provision authorization and in each Orchestration release to send pings. Enable the ping via orchestration.extraConfiguration.",
+                                    "default": ""
+                                },
+                                "credentials": {
+                                    "type": "object",
+                                    "properties": {
+                                        "tokenEndpoint": {
+                                            "type": "string",
+                                            "description": "defines the OAuth2 token endpoint used to request an access token. Defaults to the orchestration client token endpoint when empty.",
+                                            "default": ""
+                                        },
+                                        "tokenRequestParameters": {
+                                            "type": "object",
+                                            "description": "defines additional form parameters sent to the OAuth2 token endpoint. For example, Auth0 uses audience and Microsoft Entra uses scope. grant_type, client_id, and client_secret are reserved.",
+                                            "default": {}
+                                        },
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the M2M client id. Defaults to the orchestration client id when empty. A custom client must be provisioned separately in the IdP, requires an explicit clientSecret below, and in split deployments must also be set in the central Identity release so its role mapping targets the same client.",
+                                            "default": ""
+                                        },
+                                        "clientSecret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the client secret. Must be set together with existingSecretKey.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object. Must be set together with existingSecret.",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

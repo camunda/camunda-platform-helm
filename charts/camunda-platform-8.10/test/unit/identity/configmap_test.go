@@ -641,6 +641,84 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(applicationYaml, "resourceServerId: optimize-api",
 					"admin permissions should not reference the literal default optimize-api once a custom audience is set")
 			},
+		}, {
+			Name: "TestHubPingAddsOrchestrationPermissionsAndMappingRule",
+			Values: map[string]string{
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"orchestration.hub.ping.endpoint":                                "https://hub.example/api/v1/clusters",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping")
+				s.Require().Contains(applicationYaml, "audience: \"web-modeler-public-api\"")
+				s.Require().Contains(applicationYaml, "claim-value: \"service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}\"")
+			},
+		}, {
+			Name: "TestHubPingMapsCustomClient",
+			Values: map[string]string{
+				"identity.enabled":                                                    "true",
+				"global.identity.auth.enabled":                                        "true",
+				"global.security.authentication.method":                               "oidc",
+				"orchestration.hub.ping.endpoint":                                     "https://hub.example/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "ping-secret",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret":      "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "claim-value: \"service-account-ping-client\"")
+				s.Require().NotContains(applicationYaml, "audience: \"web-modeler-public-api\"\n                  definition: create:*")
+			},
+		}, {
+			Name: "TestHubPingAuthorizationRendersForCentralIdentity",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+				"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
+				"orchestration.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping")
+				s.Require().Contains(applicationYaml, "claim-value: \"service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}\"")
+			},
+		}, {
+			Name: "TestHubPingRendersConfiguredMappingForExternalOidc",
+			Values: map[string]string{
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"orchestration.hub.ping.endpoint":                                "https://hub.example/api/v1/clusters",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.type":                "MICROSOFT",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+				"orchestration.security.authentication.oidc.tokenUrl":            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token",
+				"global.identity.auth.orchestration.hubPingClaimName":            "azp",
+				"global.identity.auth.orchestration.hubPingClaimValue":           "orchestration-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping")
+				s.Require().Contains(applicationYaml, "CamundaHub - Cluster Ping Access")
+				s.Require().Contains(applicationYaml, "claim-name: \"azp\"")
+				s.Require().Contains(applicationYaml, "claim-value: \"orchestration-client\"")
+			},
 		},
 	}
 

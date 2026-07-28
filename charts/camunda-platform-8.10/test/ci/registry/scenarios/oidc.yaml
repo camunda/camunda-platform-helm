@@ -1,11 +1,13 @@
 name: oidc
 auth: oidc
 flows:
-  - upgrade-minor
+  - install
 identity: oidc
 persistence: elasticsearch
 features:
   - postgresql-companion
+  - hub-ping
+  - hub-ping-token-params-test-image
 platforms:
   - gke
 exclude:
@@ -16,6 +18,7 @@ infra-type:
   eks: preemptible
   gke: distroci
 skip-e2e: true
+post-deploy: hub-ping
 dependencies:
   - postgresql
   - elasticsearch
