@@ -61,7 +61,7 @@ func noSleep(ctx context.Context, _ time.Duration) error {
 }
 
 func TestResolveIngressReadyHostWith(t *testing.T) {
-	t.Run("explicit ingress hostname remains the full override", func(t *testing.T) {
+	t.Run("deployed routing host wins over explicit ingress hostname", func(t *testing.T) {
 		flags := &config.RuntimeFlags{
 			Ingress: config.IngressFlags{IngressHostname: "override.example.com"},
 		}
@@ -79,11 +79,37 @@ func TestResolveIngressReadyHostWith(t *testing.T) {
 			},
 		)
 
-		if got != "override.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want explicit override", got)
+		if got != "rendered.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want rendered host", got)
 		}
-		if lookupCalled {
-			t.Fatal("cluster lookup should not run when --ingress-hostname is set")
+		if !lookupCalled {
+			t.Fatal("cluster lookup should determine the effective rendered host")
+		}
+	})
+
+	t.Run("explicit ingress hostname remains a fallback", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Ingress: config.IngressFlags{IngressHostname: "override.example.com"},
+		}
+		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
+		lookupCalled := false
+
+		got := resolveIngressReadyHostWith(
+			context.Background(),
+			flags,
+			scenarioCtx,
+			func(string) string { return "env.example.com" },
+			func(context.Context, string, string, string) string {
+				lookupCalled = true
+				return ""
+			},
+		)
+
+		if got != "override.example.com" {
+			t.Fatalf("resolveIngressReadyHostWith() = %q, want explicit fallback", got)
+		}
+		if !lookupCalled {
+			t.Fatal("cluster lookup should run before using --ingress-hostname as a fallback")
 		}
 	})
 
@@ -188,11 +214,12 @@ func TestResolveIngressReadyHostWith(t *testing.T) {
 		}
 	})
 
-	t.Run("concrete configured host remains a fallback when discovery fails", func(t *testing.T) {
+	t.Run("extra Helm host wins over explicit ingress fallback", func(t *testing.T) {
 		flags := &config.RuntimeFlags{
 			Deployment: config.DeploymentFlags{
 				ExtraHelmSets: map[string]string{"global.host": "configured.example.com"},
 			},
+			Ingress: config.IngressFlags{IngressHostname: "override.example.com"},
 		}
 		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
 
@@ -258,12 +285,14 @@ func TestResolveIngressReadyHostAfterLookup(t *testing.T) {
 		errors.New("denied"),
 	)
 	tests := []struct {
-		name         string
-		flags        *config.RuntimeFlags
-		getenv       func(string) string
-		computedHost string
-		want         string
-		wantErr      bool
+		name          string
+		flags         *config.RuntimeFlags
+		getenv        func(string) string
+		computedHost  string
+		lookupErr     error
+		want          string
+		wantForbidden bool
+		wantErr       string
 	}{
 		{
 			name: "configured host survives forbidden discovery",
@@ -272,21 +301,42 @@ func TestResolveIngressReadyHostAfterLookup(t *testing.T) {
 			}}},
 			getenv:       func(string) string { return "env.example.com" },
 			computedHost: "computed.example.com",
+			lookupErr:    forbiddenErr,
 			want:         "configured.example.com",
+		},
+		{
+			name:         "explicit ingress host survives forbidden discovery",
+			flags:        &config.RuntimeFlags{Ingress: config.IngressFlags{IngressHostname: "override.example.com"}},
+			getenv:       func(string) string { return "env.example.com" },
+			computedHost: "computed.example.com",
+			lookupErr:    forbiddenErr,
+			want:         "override.example.com",
 		},
 		{
 			name:         "environment host survives forbidden discovery",
 			flags:        &config.RuntimeFlags{},
 			getenv:       func(string) string { return "env.example.com" },
 			computedHost: "computed.example.com",
+			lookupErr:    forbiddenErr,
 			want:         "env.example.com",
 		},
 		{
-			name:         "forbidden discovery wins over computed fallback",
-			flags:        &config.RuntimeFlags{},
-			getenv:       func(string) string { return "" },
+			name:          "forbidden discovery wins over computed fallback",
+			flags:         &config.RuntimeFlags{},
+			getenv:        func(string) string { return "" },
+			computedHost:  "computed.example.com",
+			lookupErr:     forbiddenErr,
+			wantForbidden: true,
+		},
+		{
+			name: "unexpected discovery error does not use configured fallback",
+			flags: &config.RuntimeFlags{Deployment: config.DeploymentFlags{ExtraHelmSets: map[string]string{
+				"global.host": "configured.example.com",
+			}}},
+			getenv:       func(string) string { return "env.example.com" },
 			computedHost: "computed.example.com",
-			wantErr:      true,
+			lookupErr:    errors.New("connection reset"),
+			wantErr:      "connection reset",
 		},
 	}
 
@@ -297,11 +347,17 @@ func TestResolveIngressReadyHostAfterLookup(t *testing.T) {
 				&ScenarioContext{IngressHost: tt.computedHost},
 				tt.getenv,
 				"",
-				forbiddenErr,
+				tt.lookupErr,
 			)
-			if tt.wantErr {
+			if tt.wantForbidden {
 				if !apierrors.IsForbidden(err) {
 					t.Fatalf("resolveIngressReadyHostAfterLookup() error = %v, want Forbidden", err)
+				}
+				return
+			}
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("resolveIngressReadyHostAfterLookup() error = %v, want %q", err, tt.wantErr)
 				}
 				return
 			}
@@ -317,11 +373,12 @@ func TestResolveIngressReadyHostAfterLookup(t *testing.T) {
 
 func TestResolveDeployedRoutingHostWith(t *testing.T) {
 	tests := []struct {
-		name    string
-		outputs map[string][]unstructured.Unstructured
-		errors  map[string]error
-		want    string
-		wantErr bool
+		name          string
+		outputs       map[string][]unstructured.Unstructured
+		errors        map[string]error
+		want          string
+		wantForbidden bool
+		wantErr       string
 	}{
 		{
 			name: "classic ingress host wins",
@@ -381,16 +438,28 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 			want:   "gateway.example.com",
 		},
 		{
-			name:   "no routing host returns empty",
-			errors: map[string]error{"ingresses": errors.New("not found"), "httproutes": errors.New("not found"), "gateways": errors.New("not found")},
-			want:   "",
+			name: "missing routing APIs return empty",
+			errors: map[string]error{
+				"ingresses":  apierrors.NewNotFound(schema.GroupResource{Group: "networking.k8s.io", Resource: "ingresses"}, ""),
+				"httproutes": apierrors.NewNotFound(schema.GroupResource{Group: "gateway.networking.k8s.io", Resource: "httproutes"}, ""),
+				"gateways":   apierrors.NewNotFound(schema.GroupResource{Group: "gateway.networking.k8s.io", Resource: "gateways"}, ""),
+			},
+			want: "",
+		},
+		{
+			name: "unexpected discovery failure takes precedence over forbidden",
+			errors: map[string]error{
+				"ingresses":  apierrors.NewForbidden(schema.GroupResource{Group: "networking.k8s.io", Resource: "ingresses"}, "", errors.New("denied")),
+				"httproutes": errors.New("connection reset"),
+			},
+			wantErr: "connection reset",
 		},
 		{
 			name: "forbidden discovery without an owned route returns an error",
 			errors: map[string]error{
 				"ingresses": apierrors.NewForbidden(schema.GroupResource{Group: "networking.k8s.io", Resource: "ingresses"}, "", errors.New("denied")),
 			},
-			wantErr: true,
+			wantForbidden: true,
 		},
 	}
 
@@ -413,9 +482,15 @@ func TestResolveDeployedRoutingHostWith(t *testing.T) {
 			}
 
 			got, err := resolveDeployedRoutingHostWith(context.Background(), "test", "integration", listResources)
-			if tt.wantErr {
+			if tt.wantForbidden {
 				if !apierrors.IsForbidden(err) {
 					t.Fatalf("resolveDeployedRoutingHostWith() error = %v, want Forbidden", err)
+				}
+				return
+			}
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("resolveDeployedRoutingHostWith() error = %v, want %q", err, tt.wantErr)
 				}
 				return
 			}

@@ -516,7 +516,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 			return result
 		}
 		if ingressHost == "" {
-			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set global.host, --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
+			result.Error = fmt.Errorf("--wait-ingress-ready is set but no ingress host could be determined: set global.ingress.host, global.host, --ingress-hostname, --ingress-base-domain, CAMUNDA_HOSTNAME, or TEST_INGRESS_HOST")
 			return result
 		}
 		timeoutMinutes := flags.Deployment.IngressReadyTimeoutMinutes

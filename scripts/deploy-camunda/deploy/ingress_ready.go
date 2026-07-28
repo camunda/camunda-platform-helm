@@ -63,10 +63,6 @@ type routingResourceLister func(
 // resolveIngressReadyHost selects the public host that was actually applied
 // to the deployment before falling back to the precomputed scenario host.
 func resolveIngressReadyHost(ctx context.Context, flags *config.RuntimeFlags, scenarioCtx *ScenarioContext) (string, error) {
-	if host := concreteRoutingHost(flags.Ingress.IngressHostname); host != "" {
-		return host, nil
-	}
-
 	deployedHost, err := resolveDeployedRoutingHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
 	return resolveIngressReadyHostAfterLookup(flags, scenarioCtx, os.Getenv, deployedHost, err)
 }
@@ -79,6 +75,9 @@ func resolveIngressReadyHostAfterLookup(
 	lookupErr error,
 ) (string, error) {
 	if lookupErr != nil {
+		if !apierrors.IsForbidden(lookupErr) {
+			return "", lookupErr
+		}
 		if host := configuredIngressReadyHostFallback(flags, getenv); host != "" {
 			return host, nil
 		}
@@ -94,10 +93,6 @@ func resolveIngressReadyHostWith(
 	getenv func(string) string,
 	lookupDeployedHost func(context.Context, string, string, string) string,
 ) string {
-	if host := concreteRoutingHost(flags.Ingress.IngressHostname); host != "" {
-		return host
-	}
-
 	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
 	return ingressReadyHostFallback(flags, scenarioCtx, getenv, deployedHost)
 }
@@ -119,6 +114,7 @@ func configuredIngressReadyHostFallback(flags *config.RuntimeFlags, getenv func(
 	return config.FirstNonEmpty(
 		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.ingress.host"]),
 		concreteRoutingHost(flags.Deployment.ExtraHelmSets["global.host"]),
+		concreteRoutingHost(flags.Ingress.IngressHostname),
 		getenv("CAMUNDA_HOSTNAME"),
 		getenv("TEST_INGRESS_HOST"),
 	)
@@ -150,12 +146,20 @@ func resolveDeployedRoutingHostWith(
 		{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "gateways"},
 	}
 
-	var forbiddenErr error
+	var forbiddenErr, discoveryErr error
 	for _, resource := range resources {
 		resourceList, err := listResources(ctx, namespace, resource)
 		if err != nil {
-			if apierrors.IsForbidden(err) && forbiddenErr == nil {
-				forbiddenErr = fmt.Errorf("list %s while resolving readiness host in namespace %q: %w", resource.Resource, namespace, err)
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			wrappedErr := fmt.Errorf("list %s while resolving readiness host in namespace %q: %w", resource.Resource, namespace, err)
+			if apierrors.IsForbidden(err) {
+				if forbiddenErr == nil {
+					forbiddenErr = wrappedErr
+				}
+			} else if discoveryErr == nil {
+				discoveryErr = wrappedErr
 			}
 			continue
 		}
@@ -169,6 +173,9 @@ func resolveDeployedRoutingHostWith(
 		}
 	}
 
+	if discoveryErr != nil {
+		return "", discoveryErr
+	}
 	return "", forbiddenErr
 }
 
@@ -315,6 +322,7 @@ func waitIngressReadyWithDeps(ctx context.Context, deps ingressReadyDeps, host s
 		}
 	}
 }
+
 // probeIngressOnce runs one DNS + HTTPS attempt bounded by perAttemptCap.
 // It returns (nil, nil) on success; otherwise the DNS and/or HTTP error seen.
 func probeIngressOnce(loopCtx context.Context, deps ingressReadyDeps, host string, perAttemptCap time.Duration, attempt int, start time.Time) (dnsErr, httpErr error) {
