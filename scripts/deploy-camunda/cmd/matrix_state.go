@@ -28,6 +28,9 @@ var newCleanupKubeClient = func(kubeContext string) (cleanupKubeClient, error) {
 	return kube.NewClient("", kubeContext)
 }
 
+var cleanupEntraResources = entra.CleanupVenomAppStrict
+var cleanupAuth0Resources = auth0.CleanupClientsStrict
+
 func defaultMatrixStateRoot(explicit string) (string, error) {
 	if explicit != "" {
 		return filepath.Abs(explicit)
@@ -190,15 +193,15 @@ func newMatrixCleanupCommand() *cobra.Command {
 					envPath = ".env"
 				}
 				values, _ := env.ReadFile(envPath)
-				if item.EntraObjectID != "" {
-					err = entra.CleanupVenomAppObjectStrict(cleanupCtx, entra.Options{
+				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
+					err = cleanupEntraResources(cleanupCtx, entra.Options{
 						Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
-					}, item.EntraObjectID)
+					})
 				}
-				if err == nil && len(item.Auth0ClientIDs) > 0 {
-					err = auth0.CleanupClientIDsStrict(cleanupCtx, auth0.Options{
+				if err == nil && item.Entry.Identity == "auth0" {
+					err = cleanupAuth0Resources(cleanupCtx, auth0.Options{
 						Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
-					}, item.Auth0ClientIDs)
+					})
 				}
 				if err != nil {
 					cancel()

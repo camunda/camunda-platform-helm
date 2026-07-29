@@ -3,11 +3,13 @@ package cmd
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/types"
+	"scripts/deploy-camunda/entra"
 	"scripts/deploy-camunda/matrix"
 )
 
@@ -99,5 +101,35 @@ func TestMatrixCleanupMarksOwnedEntryCleaned(t *testing.T) {
 	}
 	if !state.Entries[0].Cleaned {
 		t.Fatal("entry was not marked cleaned")
+	}
+}
+
+func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
+	root := t.TempDir()
+	entry := matrix.Entry{Version: "8.10", Shortname: "oidc", Scenario: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeCleanupClient{}
+	originalClient, originalEntra := newCleanupKubeClient, cleanupEntraResources
+	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
+	cleanupEntraResources = func(context.Context, entra.Options) error { return errors.New("provider unavailable") }
+	t.Cleanup(func() { newCleanupKubeClient, cleanupEntraResources = originalClient, originalEntra })
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected identity cleanup failure")
+	}
+	if fake.deleted {
+		t.Fatal("namespace deleted after identity cleanup failure")
+	}
+	state, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Entries[0].Cleaned {
+		t.Fatal("entry marked cleaned after identity cleanup failure")
 	}
 }

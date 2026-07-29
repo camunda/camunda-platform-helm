@@ -384,7 +384,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		if entryID != "" && item.ID != entryID {
 			continue
 		}
-		if item.Status == RunPassed || item.Status == RunCleaned {
+		if item.Cleaned || item.Status == RunPassed || item.Status == RunCleaned {
 			continue
 		}
 		if item.Attempts > 0 && versionmatrix.IsTwoStepUpgradeFlow(item.Entry.Flow) {
