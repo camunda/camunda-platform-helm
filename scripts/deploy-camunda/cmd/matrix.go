@@ -265,9 +265,6 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			return validateChartRefFlags(chartRef, chartRefVersion)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if deleteNamespace {
-				return fmt.Errorf("--delete-namespace is not supported for durable matrix runs; use `matrix cleanup` after ownership is recorded")
-			}
 			if namespaceOverride != "" && cleanup {
 				return fmt.Errorf("--cleanup cannot be used with --namespace-override because deploy-camunda did not create that namespace")
 			}

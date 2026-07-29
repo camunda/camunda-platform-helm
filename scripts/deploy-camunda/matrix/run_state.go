@@ -385,11 +385,14 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	}
 	var credentialErr error
 	if harborPassword == "" {
-		harborPassword = resumeCredentialPasswordFromFile(state.Options.EnvFile, state.Options.DockerUsername, [][2]string{
+		harborPassword, credentialErr = resumeCredentialPasswordFromFiles(state.Options, entries, state.Options.DockerUsername, [][2]string{
 			{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
 			{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
 			{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
 		})
+	}
+	if credentialErr != nil {
+		return nil, RunOptions{}, fmt.Errorf("restore Harbor credentials: %w", credentialErr)
 	}
 	if harborPassword == "" {
 		harborPassword, credentialErr = resumeCredentialPassword(state.Options.DockerUsername, state.Options.RequiresDockerPassword, [][2]string{
@@ -402,10 +405,13 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		return nil, RunOptions{}, fmt.Errorf("restore Harbor credentials: %w", credentialErr)
 	}
 	if hubPassword == "" {
-		hubPassword = resumeCredentialPasswordFromFile(state.Options.EnvFile, state.Options.DockerHubUsername, [][2]string{
+		hubPassword, credentialErr = resumeCredentialPasswordFromFiles(state.Options, entries, state.Options.DockerHubUsername, [][2]string{
 			{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
 			{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
 		})
+	}
+	if credentialErr != nil {
+		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", credentialErr)
 	}
 	if hubPassword == "" {
 		hubPassword, credentialErr = resumeCredentialPassword(state.Options.DockerHubUsername, state.Options.RequiresDockerHubPassword, [][2]string{
@@ -731,20 +737,34 @@ func resumeCredentialPassword(storedUsername string, required bool, pairs [][2]s
 	return "", errors.New("matching username/password environment pair is required")
 }
 
-func resumeCredentialPasswordFromFile(path, storedUsername string, pairs [][2]string) string {
+func resumeCredentialPasswordFromFiles(options StoredRunOptions, entries []Entry, storedUsername string, pairs [][2]string) (string, error) {
+	paths := map[string]struct{}{}
+	path := options.EnvFile
 	if path == "" {
 		path = ".env"
 	}
-	values, err := env.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	for _, pair := range pairs {
-		if values[pair[0]] == storedUsername && values[pair[1]] != "" {
-			return values[pair[1]]
+	paths[path] = struct{}{}
+	for _, entry := range entries {
+		if versionPath := options.EnvFiles[entry.Version]; versionPath != "" {
+			paths[versionPath] = struct{}{}
 		}
 	}
-	return ""
+	password := ""
+	for path := range paths {
+		values, err := env.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		for _, pair := range pairs {
+			if values[pair[0]] == storedUsername && values[pair[1]] != "" {
+				if password != "" && password != values[pair[1]] {
+					return "", errors.New("selected env files contain different registry passwords")
+				}
+				password = values[pair[1]]
+			}
+		}
+	}
+	return password, nil
 }
 
 func aggregateRunStatus(entries []*EntryRunState) RunStatus {
