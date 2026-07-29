@@ -72,9 +72,9 @@ func TestRunStateRedactsSecrets(t *testing.T) {
 }
 
 func TestRunStatePreservesBenignHelmOverride(t *testing.T) {
-	stored := StoreRunOptions(RunOptions{ExtraHelmSets: []string{"feature.enabled=true"}, ExtraHelmArgs: []string{"--atomic"}})
+	stored := StoreRunOptions(RunOptions{ExtraHelmSets: []string{"feature.enabled=true"}, ExtraHelmArgs: []string{"--atomic", "--wait"}})
 	assert.Equal(t, []string{"feature.enabled=true"}, stored.ExtraHelmSets)
-	assert.Equal(t, []string{"--atomic"}, stored.ExtraHelmArgs)
+	assert.Equal(t, []string{"--atomic", "--wait"}, stored.ExtraHelmArgs)
 }
 
 func TestRunStateRedactsUnknownHelmOverride(t *testing.T) {

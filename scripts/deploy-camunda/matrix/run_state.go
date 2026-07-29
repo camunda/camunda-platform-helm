@@ -701,15 +701,7 @@ func atomicWriteFile(path string, data []byte, mode os.FileMode) error {
 	if err := os.Rename(tmpPath, path); err != nil {
 		return fmt.Errorf("replace state file: %w", err)
 	}
-	d, err := os.Open(dir)
-	if err != nil {
-		return fmt.Errorf("open state directory: %w", err)
-	}
-	defer d.Close()
-	if err := d.Sync(); err != nil {
-		return fmt.Errorf("sync state directory: %w", err)
-	}
-	return nil
+	return syncDirectory(dir)
 }
 
 func EntryID(entry Entry) string { return entryID(entry) }
@@ -863,9 +855,10 @@ func failureMessage(code string) string {
 func redactStoredArgs(args []string) []string {
 	out := make([]string, len(args))
 	for i, arg := range args {
-		if arg == "--atomic" {
+		switch arg {
+		case "--atomic", "--wait", "--create-namespace", "--cleanup-on-fail", "--disable-openapi-validation", "--skip-crds", "--take-ownership":
 			out[i] = arg
-		} else {
+		default:
 			out[i] = "<redacted>"
 		}
 	}
