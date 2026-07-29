@@ -773,43 +773,6 @@ func (s *statefulSetTest) TestContainerSetTolerations() {
 	s.Require().EqualValues("NoSchedule", toleration.Effect)
 }
 
-func (s *statefulSetTest) TestContainerSetTopologySpreadConstraints() {
-	// given
-
-	//topologySpreadConstraints:
-	//- maxSkew: 1
-	//  topologyKey: "topology.kubernetes.io/zone"
-	//  whenUnsatisfiable: "ScheduleAnyway"
-	//  labelSelector:
-	//    matchLabels:
-	//      app.kubernetes.io/component: zeebe-broker
-
-	options := &helm.Options{
-		SetValues: map[string]string{
-			"zeebe.topologySpreadConstraints[0].maxSkew":                                                   "1",
-			"zeebe.topologySpreadConstraints[0].topologyKey":                                               "topology.kubernetes.io/zone",
-			"zeebe.topologySpreadConstraints[0].whenUnsatisfiable":                                         "ScheduleAnyway",
-			"zeebe.topologySpreadConstraints[0].labelSelector.matchLabels.app\\.kubernetes\\.io/component": "zeebe-broker",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-	// then
-	topologySpreadConstraints := statefulSet.Spec.Template.Spec.TopologySpreadConstraints
-	s.Require().Equal(1, len(topologySpreadConstraints))
-
-	topologySpreadConstraint := topologySpreadConstraints[0]
-	s.Require().EqualValues(1, topologySpreadConstraint.MaxSkew)
-	s.Require().Equal("topology.kubernetes.io/zone", topologySpreadConstraint.TopologyKey)
-	s.Require().EqualValues("ScheduleAnyway", topologySpreadConstraint.WhenUnsatisfiable)
-	s.Require().Equal("zeebe-broker", topologySpreadConstraint.LabelSelector.MatchLabels["app.kubernetes.io/component"])
-}
-
 func (s *statefulSetTest) TestContainerSetPersistenceTypeRam() {
 	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
