@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Automatic Capacity Manager | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/capacity-manager"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Automatic Capacity Manager | Camunda Helm Charts"><meta data-rh="true" name="description" content="The capacity manager is an opt-in 8.10 component that coordinates physical orchestration capacity"><meta data-rh="true" property="og:description" content="The capacity manager is an opt-in 8.10 component that coordinates physical orchestration capacity"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6709/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/capacity-manager"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/capacity-manager" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/capacity-manager" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6709/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/runtime~main.4903ae1f.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/main.e9e44f3a.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/runtime~main.0462998f.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/main.da798f2b.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -27,12 +27,13 @@ complete before reducing StatefulSet replicas.</p>
 <p>The component does not change partition count. Size logical partitions for expected peak throughput;
 the manager spreads those partitions across more brokers during peaks and consolidates them off peak.</p>
 <p>Capacity management is disabled by default and currently supports fresh single-region deployments
-with <code>orchestration.clusterSize: &quot;1&quot;</code>. When enabled, Helm omits <code>spec.replicas</code>, giving the manager
-exclusive ownership of runtime replicas across upgrades. Disable or rollback only after setting the
-policy target to one and waiting for the manager to complete safe topology contraction.
-The chart rejects a normal disable while the durable target is greater than one. Rolling back to a
-chart version that predates capacity management cannot enforce this guard and is unsupported until
-the cluster has been safely contracted.</p>
+with <code>orchestration.clusterSize: &quot;1&quot;</code>. Set <code>capacityManager.replicaOwnership: capacityManager</code> to
+explicitly transfer StatefulSet replica ownership from Helm. Advisor-only mode leaves the value empty
+and retains normal Helm ownership.</p>
+<p>Returning ownership is an explicit handback using <code>capacityManager.replicaOwnership: helm</code>. It
+requires live cluster access and succeeds only when the durable target, durable completion marker,
+live replicas, and configured cluster size all match. Offline handback is rejected. Rolling back to a
+chart version that predates this contract is unsupported until the cluster has been safely contracted.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="operator-integration">Operator Integration<a href="#operator-integration" class="hash-link" aria-label="Direct link to Operator Integration" title="Direct link to Operator Integration" translate="no">​</a></h2>
 <p>The implementation under <code>scripts/capacity-manager</code> is an importable Go package. Kubernetes access,
 Camunda topology access, policy loading, pressure measurement, and planning are interfaces. A future
