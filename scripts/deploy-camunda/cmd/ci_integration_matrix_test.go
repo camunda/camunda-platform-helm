@@ -67,3 +67,20 @@ func TestCIIntegrationMatrixWritesFilteredOutput(t *testing.T) {
 		t.Errorf("scenario = %v, want only install", matrix.Scenario)
 	}
 }
+
+func TestCIIntegrationMatrixWritesOverrideWithoutFilters(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "github_output")
+	t.Setenv("GITHUB_OUTPUT", outputPath)
+
+	command := newCIIntegrationMatrixCommand()
+	command.SetArgs([]string{"--matrix-data", `{"distro":[],"scenario":[]}`})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("execute integration-matrix: %v", err)
+	}
+
+	got := strings.TrimSpace(readFile(t, outputPath))
+	want := `matrix={"distro":[],"scenario":[]}`
+	if got != want {
+		t.Errorf("GITHUB_OUTPUT = %q, want %q", got, want)
+	}
+}

@@ -163,8 +163,6 @@ func newCIIntegrationMatrixCommand() *cobra.Command {
 	cmd.Flags().StringVar(&platforms, "platforms", "", "comma-separated platforms to keep, e.g. gke,eks")
 	cmd.Flags().StringVar(&flows, "flows", "", "comma-separated flows to keep, e.g. install,upgrade-patch")
 	cmd.Flags().StringVar(&matrixData, "matrix-data", "", "explicit matrix JSON override; skips filtering when set")
-	_ = cmd.MarkFlagRequired("platforms")
-	_ = cmd.MarkFlagRequired("flows")
 
 	return cmd
 }

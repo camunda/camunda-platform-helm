@@ -6,8 +6,8 @@
 //   - The deploy-camunda scripts (scripts/deploy-camunda/)
 //   - The shared core package that deploy-camunda depends on (scripts/camunda-core/)
 //   - Specific workflow files used in the integration test path
-//   - The e2e execution scripts (scripts/run-e2e-tests.sh, scripts/render-e2e-env.sh,
-//     scripts/generate-chart-matrix.sh) and the playwright-e2e-tests composite action
+//   - The e2e execution scripts (scripts/run-e2e-tests.sh, scripts/render-e2e-env.sh)
+//     and the playwright-e2e-tests composite action
 //
 // If any of these files change, the hash changes, invalidating cached results.
 package hash
@@ -50,7 +50,6 @@ func Compute(repoRoot, version string) (string, error) {
 		filepath.Join("scripts", "camunda-core"),
 		filepath.Join("scripts", "run-e2e-tests.sh"),
 		filepath.Join("scripts", "render-e2e-env.sh"),
-		filepath.Join("scripts", "generate-chart-matrix.sh"),
 	}
 
 	for _, relPath := range paths {
