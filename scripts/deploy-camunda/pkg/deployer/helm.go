@@ -81,7 +81,28 @@ func (e *HelmError) Unwrap() error {
 // base filenames for readability. Full paths in -f values file args and chart
 // paths are replaced with just the filename.
 func (e *HelmError) ShortCommand() string {
-	return shortenPaths(e.Command)
+	return redactHelmCommand(shortenPaths(e.Command))
+}
+
+func redactHelmCommand(command string) string {
+	parts := strings.Fields(command)
+	for i, part := range parts {
+		if i > 0 && (parts[i-1] == "--set" || parts[i-1] == "--set-string" || parts[i-1] == "--set-json") {
+			key, _, ok := strings.Cut(part, "=")
+			if ok && secretHelmKey(key) {
+				parts[i] = key + "=<redacted>"
+			}
+		}
+		if key, _, ok := strings.Cut(strings.TrimLeft(part, "-"), "="); ok && secretHelmKey(key) {
+			parts[i] = "--" + key + "=<redacted>"
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+func secretHelmKey(key string) bool {
+	upper := strings.ToUpper(key)
+	return strings.Contains(upper, "PASSWORD") || strings.Contains(upper, "SECRET") || strings.Contains(upper, "TOKEN") || strings.Contains(upper, "CREDENTIAL") || strings.Contains(upper, "PRIVATE")
 }
 
 // shortenPaths replaces long absolute/relative file paths with just basenames.

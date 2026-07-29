@@ -88,6 +88,17 @@ func TestHelmError_ShortCommand(t *testing.T) {
 	}
 }
 
+func TestHelmErrorShortCommandRedactsSecretSets(t *testing.T) {
+	err := &HelmError{Command: `helm upgrade --install release chart --set global.password=hunter2 --set feature.enabled=true --token=abc123`}
+	short := err.ShortCommand()
+	if strings.Contains(short, "hunter2") || strings.Contains(short, "abc123") {
+		t.Fatalf("secret leaked: %s", short)
+	}
+	if !strings.Contains(short, "feature.enabled=true") {
+		t.Fatalf("benign set removed: %s", short)
+	}
+}
+
 func TestShortenPaths_NoAbsolutePaths(t *testing.T) {
 	cmd := "helm upgrade --install integration camunda/camunda-platform -n ns --version 13.5.0 --wait"
 	got := shortenPaths(cmd)

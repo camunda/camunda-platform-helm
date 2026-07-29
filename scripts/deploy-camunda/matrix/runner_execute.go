@@ -391,6 +391,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	platform := resolvePlatform(opts, entry)
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
 	logLevel := flags.LogLevel
+	var phaseErr error
 
 	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
 	// which we forward to the matrix-level OnPhaseChange callback.
@@ -398,11 +399,11 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		flags.OnPhase = func(phase string) {
 			opts.OnPhaseChange(entry, phase)
 			if opts.StateStore != nil {
-				_ = opts.StateStore.Phase(entry, phase)
+				phaseErr = errors.Join(phaseErr, opts.StateStore.Phase(entry, phase))
 			}
 		}
 	} else if opts.StateStore != nil {
-		flags.OnPhase = func(phase string) { _ = opts.StateStore.Phase(entry, phase) }
+		flags.OnPhase = func(phase string) { phaseErr = errors.Join(phaseErr, opts.StateStore.Phase(entry, phase)) }
 	}
 
 	// Redirect test script output and deploy logs to per-entry files when logDir is set.
@@ -538,7 +539,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 				return result
 			}
 			if err := opts.StateStore.MarkExternalProvisioningComplete(entry); err != nil {
-				result.Error = err
+				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
+				result.Error = errors.Join(err, cleanupErr)
 				return result
 			}
 		}
@@ -677,7 +680,13 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		}
 		if err == nil && opts.StateStore != nil {
 			if stateErr := opts.StateStore.MarkExternalProvisioningComplete(entry); stateErr != nil {
-				result.Error = stateErr
+				ids := make([]string, 0, len(prov.All()))
+				for _, client := range prov.All() {
+					ids = append(ids, client.ClientID)
+				}
+				cleanupErr := auth0.CleanupClientIDsStrict(context.Background(), auth0Options, ids)
+				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
+				result.Error = errors.Join(stateErr, cleanupErr)
 				return result
 			}
 		}
@@ -836,6 +845,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	}
 
 	result = RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts, auth0Opts: auth0Opts}
+	result.Error = errors.Join(result.Error, phaseErr)
 
 	return result
 }
