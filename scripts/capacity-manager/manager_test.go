@@ -55,11 +55,19 @@ type scaleCall struct {
 }
 
 type fakeCluster struct {
-	topology Topology
-	calls    []scaleCall
+	topology   Topology
+	topologies []Topology
+	calls      []scaleCall
 }
 
-func (f *fakeCluster) Topology(context.Context) (Topology, error) { return f.topology, nil }
+func (f *fakeCluster) Topology(context.Context) (Topology, error) {
+	if len(f.topologies) > 0 {
+		topology := f.topologies[0]
+		f.topologies = f.topologies[1:]
+		return topology, nil
+	}
+	return f.topology, nil
+}
 func (f *fakeCluster) Scale(_ context.Context, target int, dryRun bool) (ScalePlan, error) {
 	f.calls = append(f.calls, scaleCall{target: target, dryRun: dryRun})
 	return ScalePlan{ChangeID: 1, ExpectedTopology: make([]Broker, target)}, nil
@@ -119,6 +127,25 @@ func TestManagerDoesNotRemovePodBeforeTopology(t *testing.T) {
 	}
 	if len(cluster.calls) != 2 || !cluster.calls[0].dryRun || cluster.calls[1].dryRun {
 		t.Fatalf("expected dry-run then apply, got %v", cluster.calls)
+	}
+}
+
+func TestManagerDoesNotRemovePodAfterFailedTopologyChange(t *testing.T) {
+	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
+	workload := &fakeWorkload{replicas: 2, started: true}
+	failed := activeTopology(2)
+	failed.LastChange = &Change{ID: 1, Status: "FAILED"}
+	cluster := &fakeCluster{
+		topology:   failed,
+		topologies: []Topology{activeTopology(2), failed},
+	}
+	manager := newTestManager(policy, workload, cluster)
+
+	if err := manager.Reconcile(context.Background()); err == nil {
+		t.Fatal("expected failed topology change")
+	}
+	if len(workload.scales) != 0 {
+		t.Fatalf("pod was removed after failed topology change: %v", workload.scales)
 	}
 }
 
