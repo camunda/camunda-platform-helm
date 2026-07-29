@@ -29,6 +29,7 @@ type KubernetesClient struct {
 }
 
 const targetBrokersAnnotation = "capacity-manager.camunda.io/target-brokers"
+const completedBrokersAnnotation = "capacity-manager.camunda.io/completed-brokers"
 
 func NewInClusterKubernetesClient(namespace, statefulSet string, timeoutClient *http.Client) (KubernetesClient, error) {
 	host := os.Getenv("KUBERNETES_SERVICE_HOST")
@@ -119,6 +120,12 @@ func (c KubernetesClient) Scale(ctx context.Context, replicas int) error {
 	return c.patchStatefulSet(ctx, map[string]any{
 		"metadata": map[string]any{"annotations": map[string]string{targetBrokersAnnotation: strconv.Itoa(replicas)}},
 		"spec":     map[string]int{"replicas": replicas},
+	})
+}
+
+func (c KubernetesClient) MarkCompleted(ctx context.Context, brokers int) error {
+	return c.patchStatefulSet(ctx, map[string]any{
+		"metadata": map[string]any{"annotations": map[string]string{completedBrokersAnnotation: strconv.Itoa(brokers)}},
 	})
 }
 

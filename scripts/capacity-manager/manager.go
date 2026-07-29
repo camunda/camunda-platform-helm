@@ -24,6 +24,7 @@ type WorkloadClient interface {
 	State(context.Context) (WorkloadState, error)
 	SetTarget(context.Context, int) error
 	Scale(context.Context, int) error
+	MarkCompleted(context.Context, int) error
 	PodStarted(context.Context, int) (bool, error)
 }
 
@@ -158,7 +159,7 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 		if workload.Target != current {
 			return m.Workload.SetTarget(ctx, current)
 		}
-		return nil
+		return m.Workload.MarkCompleted(ctx, current)
 	}
 	if decision.Desired > current {
 		target := current + 1
@@ -188,7 +189,10 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 	if err := m.waitForTopology(ctx, target, plan.ChangeID); err != nil {
 		return m.fail(err)
 	}
-	return m.Workload.Scale(ctx, target)
+	if err := m.Workload.Scale(ctx, target); err != nil {
+		return err
+	}
+	return m.Workload.MarkCompleted(ctx, target)
 }
 
 func (m *Manager) join(ctx context.Context, target int) error {
