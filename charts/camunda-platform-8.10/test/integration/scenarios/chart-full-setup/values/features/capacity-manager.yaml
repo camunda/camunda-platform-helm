@@ -4,6 +4,7 @@ capacityManager:
     registry: registry.camunda.cloud
     repository: team-distribution/capacity-manager
     tag: latest
+    digest: ""
     pullSecrets:
       - name: registry-camunda-cloud
   reconcileInterval: 5s
