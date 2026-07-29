@@ -129,7 +129,8 @@ type Options struct {
 	PostgresPasswords map[string]string
 
 	// HTTPClient is an optional HTTP client. Defaults to http.DefaultClient.
-	HTTPClient *http.Client
+	HTTPClient      *http.Client
+	OnClientCreated func(Client) error
 }
 
 // Client is a single provisioned Auth0 client.
@@ -287,6 +288,11 @@ func EnsureClients(ctx context.Context, opts Options) (*Provisioned, error) {
 			Str("clientId", c.ClientID).
 			Msg("Created Auth0 private client")
 		prov.Private = append(prov.Private, c)
+		if opts.OnClientCreated != nil {
+			if err := opts.OnClientCreated(c); err != nil {
+				return prov, fmt.Errorf("auth0: checkpoint client %q: %w", comp, err)
+			}
+		}
 	}
 	for _, comp := range PublicComponents {
 		c, err := createClient(ctx, client, token, &opts, comp, kindSPA)
@@ -298,6 +304,11 @@ func EnsureClients(ctx context.Context, opts Options) (*Provisioned, error) {
 			Str("clientId", c.ClientID).
 			Msg("Created Auth0 public client")
 		prov.Public = append(prov.Public, c)
+		if opts.OnClientCreated != nil {
+			if err := opts.OnClientCreated(c); err != nil {
+				return prov, fmt.Errorf("auth0: checkpoint client %q: %w", comp, err)
+			}
+		}
 	}
 
 	for _, c := range prov.Private {

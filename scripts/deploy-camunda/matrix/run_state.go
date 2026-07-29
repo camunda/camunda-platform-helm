@@ -188,7 +188,16 @@ func (s *RunStateStore) RecordExternalResources(entry Entry, entraObjectID, entr
 			item.Auth0Domain = auth0Domain
 		}
 		if len(auth0ClientIDs) > 0 {
-			item.Auth0ClientIDs = append([]string(nil), auth0ClientIDs...)
+			seen := make(map[string]bool, len(item.Auth0ClientIDs)+len(auth0ClientIDs))
+			for _, id := range item.Auth0ClientIDs {
+				seen[id] = true
+			}
+			for _, id := range auth0ClientIDs {
+				if !seen[id] {
+					item.Auth0ClientIDs = append(item.Auth0ClientIDs, id)
+					seen[id] = true
+				}
+			}
 		}
 		return RunEvent{Time: time.Now().UTC(), RunID: s.runID, EntryID: item.ID, Status: item.Status, Phase: "external-resources"}
 	})

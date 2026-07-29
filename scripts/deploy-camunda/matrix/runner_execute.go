@@ -581,6 +581,11 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			IngressHost:   ingressHost,
 			SkipK8sSecret: true, // Phase 2 deferred to PreInstallHook.
 		}
+		if opts.StateStore != nil {
+			auth0Options.OnClientCreated = func(client auth0.Client) error {
+				return opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, []string{client.ClientID})
+			}
+		}
 
 		// Read AUTH0_* credentials from the version-specific env file (same
 		// pattern as Entra above). The env file is loaded explicitly because

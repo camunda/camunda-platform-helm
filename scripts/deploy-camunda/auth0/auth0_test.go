@@ -422,3 +422,34 @@ func TestCleanupClientsStrictReturnsDeleteFailure(t *testing.T) {
 		t.Fatal("expected strict cleanup failure")
 	}
 }
+
+func TestCleanupClientIDsStrictDeletesOnlyRecordedIDs(t *testing.T) {
+	deleted := map[string]bool{}
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /oauth/token": tokenHandler(),
+		"DELETE /api/v2/clients/": func(w http.ResponseWriter, r *http.Request) {
+			deleted[strings.TrimPrefix(r.URL.Path, "/api/v2/clients/")] = true
+			w.WriteHeader(http.StatusNoContent)
+		},
+	})
+	defer srv.Close()
+	err := CleanupClientIDsStrict(context.Background(), Options{Namespace: "ns", Domain: srv.URL, MgmtClientID: "x", MgmtClientSecret: "y", HTTPClient: srv.Client()}, []string{"id-A", "id-B"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !deleted["id-A"] || !deleted["id-B"] || len(deleted) != 2 {
+		t.Fatalf("deleted = %#v", deleted)
+	}
+}
+
+func TestCleanupClientIDsStrictAggregatesFailures(t *testing.T) {
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /oauth/token":       tokenHandler(),
+		"DELETE /api/v2/clients/": func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) },
+	})
+	defer srv.Close()
+	err := CleanupClientIDsStrict(context.Background(), Options{Namespace: "ns", Domain: srv.URL, MgmtClientID: "x", MgmtClientSecret: "y", HTTPClient: srv.Client()}, []string{"id-A", "id-B"})
+	if err == nil {
+		t.Fatal("expected aggregate failure")
+	}
+}

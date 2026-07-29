@@ -1495,7 +1495,21 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 		logging.Logger.Info().
 			Str("namespace", result.Namespace).
 			Msg("Cleaning up Auth0 clients")
-		if err := auth0.CleanupClientsStrict(identityCtx, *result.auth0Opts); err != nil {
+		if opts.StateStore == nil {
+			return errors.New("Auth0 cleanup requires durable client checkpoints")
+		}
+		state, err := opts.StateStore.Load()
+		if err != nil {
+			return err
+		}
+		var ids []string
+		for _, item := range state.Entries {
+			if item.ID == EntryID(result.Entry) {
+				ids = item.Auth0ClientIDs
+				break
+			}
+		}
+		if err := auth0.CleanupClientIDsStrict(identityCtx, *result.auth0Opts, ids); err != nil {
 			return err
 		}
 	}
