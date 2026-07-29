@@ -115,18 +115,18 @@ func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := store.RecordExternalResources(entry, "", "tenant", "", nil); err != nil {
+	if err := store.RecordExternalResources(entry, "object-id", "tenant", "", nil); err != nil {
 		t.Fatal(err)
 	}
 	fake := &fakeCleanupClient{}
 	providerCalled := false
-	originalClient, originalEntra := newCleanupKubeClient, cleanupEntraResources
+	originalClient, originalEntra := newCleanupKubeClient, cleanupEntraObject
 	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
-	cleanupEntraResources = func(context.Context, entra.Options) error {
+	cleanupEntraObject = func(context.Context, entra.Options, string) error {
 		providerCalled = true
 		return errors.New("provider unavailable")
 	}
-	t.Cleanup(func() { newCleanupKubeClient, cleanupEntraResources = originalClient, originalEntra })
+	t.Cleanup(func() { newCleanupKubeClient, cleanupEntraObject = originalClient, originalEntra })
 	cmd := newMatrixCleanupCommand()
 	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
 	if err := cmd.Execute(); err == nil {
@@ -144,5 +144,43 @@ func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
 	}
 	if state.Entries[0].Cleaned {
 		t.Fatal("entry marked cleaned after identity cleanup failure")
+	}
+}
+
+func TestCleanupCredentialEnvPreservesProcessPrecedence(t *testing.T) {
+	t.Setenv("AUTH0_DOMAIN", "https://process.example")
+	path := filepath.Join(t.TempDir(), ".env")
+	if err := os.WriteFile(path, []byte("AUTH0_DOMAIN=https://file.example\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	values := cleanupCredentialEnv(path)
+	if values["AUTH0_DOMAIN"] != "https://process.example" {
+		t.Fatalf("domain = %q", values["AUTH0_DOMAIN"])
+	}
+}
+
+func TestMatrixCleanupMarksUnprovisionedOIDCEntryCleaned(t *testing.T) {
+	root := t.TempDir()
+	entry := matrix.Entry{Version: "8.10", Shortname: "oidc", Scenario: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeCleanupClient{}
+	original := newCleanupKubeClient
+	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
+	t.Cleanup(func() { newCleanupKubeClient = original })
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	state, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.Entries[0].Cleaned {
+		t.Fatal("unprovisioned entry not marked cleaned")
 	}
 }

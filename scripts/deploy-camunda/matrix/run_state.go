@@ -254,6 +254,26 @@ func (s *RunStateStore) RunDir() string { return filepath.Join(s.root, s.runID) 
 
 func (s *RunStateStore) RunID() string { return s.runID }
 
+func (s *RunStateStore) RecoverStaleLock() error {
+	path := filepath.Join(s.RunDir(), "run.lock")
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("read matrix run lock: %w", err)
+	}
+	var owner lockOwner
+	if err := json.Unmarshal(data, &owner); err != nil {
+		return fmt.Errorf("decode matrix run lock: %w", err)
+	}
+	hostname, _ := os.Hostname()
+	if owner.Hostname != hostname {
+		return fmt.Errorf("refusing to remove lock created on host %q", owner.Hostname)
+	}
+	return os.Remove(path)
+}
+
 func (s *RunStateStore) Acquire() (*RunLock, error) {
 	if err := os.MkdirAll(s.RunDir(), 0o700); err != nil {
 		return nil, fmt.Errorf("create matrix run directory: %w", err)

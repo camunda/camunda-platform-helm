@@ -29,8 +29,8 @@ var newCleanupKubeClient = func(kubeContext string) (cleanupKubeClient, error) {
 	return kube.NewClient("", kubeContext)
 }
 
-var cleanupEntraResources = entra.CleanupVenomAppStrict
-var cleanupAuth0Resources = auth0.CleanupClientsStrict
+var cleanupEntraObject = entra.CleanupVenomAppObjectStrict
+var cleanupAuth0ClientIDs = auth0.CleanupClientIDsStrict
 
 func defaultMatrixStateRoot(explicit string) (string, error) {
 	if explicit != "" {
@@ -100,6 +100,7 @@ func newMatrixStatusCommand() *cobra.Command {
 
 func newMatrixResumeCommand() *cobra.Command {
 	var stateDir, entryID string
+	var recoverStaleLock bool
 	cmd := &cobra.Command{
 		Use:   "resume <run-id>",
 		Short: "Resume failed, interrupted, and pending matrix entries",
@@ -113,6 +114,11 @@ func newMatrixResumeCommand() *cobra.Command {
 				return err
 			}
 			store := matrix.NewRunStateStore(root, args[0])
+			if recoverStaleLock {
+				if err := store.RecoverStaleLock(); err != nil {
+					return err
+				}
+			}
 			lock, err := store.Acquire()
 			if err != nil {
 				return err
@@ -134,12 +140,14 @@ func newMatrixResumeCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&stateDir, "state-dir", "", "Matrix run state directory")
 	cmd.Flags().StringVar(&entryID, "entry", "", "Resume only this entry ID")
+	cmd.Flags().BoolVar(&recoverStaleLock, "recover-stale-lock", false, "Explicitly remove a same-host stale run lock after confirming no deploy-camunda process is active")
 	return cmd
 }
 
 func newMatrixCleanupCommand() *cobra.Command {
 	var stateDir, entryID string
 	var yes bool
+	var recoverStaleLock bool
 	cmd := &cobra.Command{
 		Use:   "cleanup <run-id>",
 		Short: "Delete namespaces recorded by a matrix run",
@@ -156,6 +164,11 @@ func newMatrixCleanupCommand() *cobra.Command {
 				return err
 			}
 			store := matrix.NewRunStateStore(root, args[0])
+			if recoverStaleLock {
+				if err := store.RecoverStaleLock(); err != nil {
+					return err
+				}
+			}
 			lock, err := store.Acquire()
 			if err != nil {
 				return err
@@ -196,33 +209,25 @@ func newMatrixCleanupCommand() *cobra.Command {
 				}
 				values := cleanupCredentialEnv(envPath)
 				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
-					if item.EntraDirectoryID == "" || values["ENTRA_APP_DIRECTORY_ID"] != item.EntraDirectoryID {
+					if item.EntraObjectID == "" {
+						err = nil
+					} else if item.EntraDirectoryID == "" || values["ENTRA_APP_DIRECTORY_ID"] != item.EntraDirectoryID {
 						err = fmt.Errorf("Entra directory does not match recorded tenant")
 					} else if item.EntraObjectID != "" {
-						err = entra.CleanupVenomAppObjectStrict(providerCtx, entra.Options{
+						err = cleanupEntraObject(providerCtx, entra.Options{
 							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
 						}, item.EntraObjectID)
-					} else if uid != "" {
-						err = cleanupEntraResources(providerCtx, entra.Options{
-							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
-						})
-					} else {
-						err = fmt.Errorf("missing Entra resource checkpoint and namespace ownership anchor")
 					}
 				}
 				if err == nil && item.Entry.Identity == "auth0" {
-					if item.Auth0Domain == "" || strings.TrimSuffix(values["AUTH0_DOMAIN"], "/") != strings.TrimSuffix(item.Auth0Domain, "/") {
+					if len(item.Auth0ClientIDs) == 0 {
+						err = nil
+					} else if item.Auth0Domain == "" || strings.TrimSuffix(values["AUTH0_DOMAIN"], "/") != strings.TrimSuffix(item.Auth0Domain, "/") {
 						err = fmt.Errorf("Auth0 domain does not match recorded tenant")
 					} else if len(item.Auth0ClientIDs) > 0 {
-						err = auth0.CleanupClientIDsStrict(providerCtx, auth0.Options{
+						err = cleanupAuth0ClientIDs(providerCtx, auth0.Options{
 							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 						}, item.Auth0ClientIDs)
-					} else if uid != "" {
-						err = cleanupAuth0Resources(providerCtx, auth0.Options{
-							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
-						})
-					} else {
-						err = fmt.Errorf("missing Auth0 resource checkpoints and namespace ownership anchor")
 					}
 				}
 				if err != nil {
@@ -256,6 +261,7 @@ func newMatrixCleanupCommand() *cobra.Command {
 	cmd.Flags().StringVar(&stateDir, "state-dir", "", "Matrix run state directory")
 	cmd.Flags().StringVar(&entryID, "entry", "", "Clean up only this entry ID")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Confirm namespace deletion")
+	cmd.Flags().BoolVar(&recoverStaleLock, "recover-stale-lock", false, "Explicitly remove a same-host stale run lock after confirming no deploy-camunda process is active")
 	return cmd
 }
 
@@ -268,7 +274,9 @@ func cleanupCredentialEnv(envPath string) map[string]string {
 	}
 	if fileValues, err := env.ReadFile(envPath); err == nil {
 		for key, value := range fileValues {
-			values[key] = value
+			if _, exists := values[key]; !exists {
+				values[key] = value
+			}
 		}
 	}
 	return values
