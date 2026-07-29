@@ -85,6 +85,13 @@ func TestReplayCommandIncludesUpgradeSource(t *testing.T) {
 	assert.Contains(t, command, "--upgrade-from-version 13.5.0")
 }
 
+func TestValidateRunIDRejectsTraversal(t *testing.T) {
+	for _, id := range []string{"", "..", "../other", "/tmp/run", "a/b"} {
+		assert.Error(t, ValidateRunID(id), id)
+	}
+	assert.NoError(t, ValidateRunID("20260729T120000Z"))
+}
+
 func TestRunStateRefusesConcurrentLock(t *testing.T) {
 	store := NewRunStateStore(t.TempDir(), "run-1")
 	first, err := store.Acquire()

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -184,6 +185,13 @@ type RunLock struct {
 
 func NewRunStateStore(root, runID string) *RunStateStore {
 	return &RunStateStore{root: root, runID: runID}
+}
+
+func ValidateRunID(runID string) error {
+	if runID == "" || filepath.IsAbs(runID) || filepath.Base(runID) != runID || runID == "." || runID == ".." {
+		return fmt.Errorf("invalid matrix run ID %q", runID)
+	}
+	return nil
 }
 
 func NewRunID(now time.Time) string {
@@ -567,6 +575,30 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 	if opts.UpgradeFromVersion != "" {
 		args = append(args, "--upgrade-from-version", opts.UpgradeFromVersion)
 	}
+	if opts.UseLatest {
+		args = append(args, "--use-latest")
+	}
+	if opts.UseQA {
+		args = append(args, "--use-qa")
+	}
+	if opts.ForceImageOverrides {
+		args = append(args, "--force-image-overrides")
+	}
+	if opts.HelmTimeout > 0 {
+		args = append(args, "--timeout", strconv.Itoa(opts.HelmTimeout))
+	}
+	if opts.WaitIngressReady {
+		args = append(args, "--wait-ingress-ready", "--ingress-ready-timeout", strconv.Itoa(opts.IngressReadyTimeoutMinutes))
+	}
+	if opts.SkipDependencyUpdate {
+		args = append(args, "--skip-dependency-update")
+	}
+	for _, value := range redactStoredArgs(opts.ExtraHelmArgs) {
+		args = append(args, "--extra-helm-arg", value)
+	}
+	for _, value := range redactStoredSets(opts.ExtraHelmSets) {
+		args = append(args, "--extra-helm-set", value)
+	}
 	for _, value := range opts.ExtraValues {
 		args = append(args, "--extra-values", value)
 	}
@@ -581,6 +613,9 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 	}
 	if opts.EnsureDockerHub {
 		args = append(args, "--ensure-docker-hub")
+	}
+	if opts.Cleanup {
+		args = append(args, "--cleanup")
 	}
 	return args
 }

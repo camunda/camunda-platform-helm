@@ -37,6 +37,11 @@ func newMatrixStatusCommand() *cobra.Command {
 		Short: "Show durable matrix run state",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 1 {
+				if err := matrix.ValidateRunID(args[0]); err != nil {
+					return err
+				}
+			}
 			root, err := defaultMatrixStateRoot(stateDir)
 			if err != nil {
 				return err
@@ -87,6 +92,9 @@ func newMatrixResumeCommand() *cobra.Command {
 		Short: "Resume failed, interrupted, and pending matrix entries",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := matrix.ValidateRunID(args[0]); err != nil {
+				return err
+			}
 			root, err := defaultMatrixStateRoot(stateDir)
 			if err != nil {
 				return err
@@ -123,6 +131,9 @@ func newMatrixCleanupCommand() *cobra.Command {
 		Short: "Delete namespaces recorded by a matrix run",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := matrix.ValidateRunID(args[0]); err != nil {
+				return err
+			}
 			if !yes {
 				return fmt.Errorf("cleanup is destructive; pass --yes after reviewing matrix status")
 			}
