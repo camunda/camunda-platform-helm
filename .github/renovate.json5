@@ -357,6 +357,7 @@
       ],
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],
+      prCreation: 'immediate',
       addLabels: ['camunda-platform', 'priority-high'],
       minimumReleaseAge: '6 hours',
     },
@@ -445,7 +446,8 @@
       datasourceTemplate: '{{{datasource}}}',
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}',
     },
-    // This regex manager is used to update the image digests in the values-digest.yaml files.
+    // Keep repository, tag, and digest adjacent so a digest-less image block
+    // cannot consume the digest from the next component.
     {
       customType: 'regex',
       fileMatch: [
@@ -460,7 +462,7 @@
             tag: SNAPSHOT
             digest: "sha256:abcdef123456789..."
         */
-        'repository:\\s+(?<depName>\\S+)[\\s\\S]*?tag:\\s+(?<currentValue>[^\\s]+)[\\s\\S]*?digest:\\s+\"?(?<currentDigest>sha256:[a-f0-9]{64})\"?'
+        'repository:\\s+(?<depName>\\S+)\\s*\\n\\s+tag:\\s+(?<currentValue>\\S+)\\s*\\n\\s+digest:\\s+\"?(?<currentDigest>sha256:[a-f0-9]{64})\"?'
       ],
       datasourceTemplate: 'docker',
       versioningTemplate: 'docker',
