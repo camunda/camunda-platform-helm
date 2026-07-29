@@ -1184,3 +1184,18 @@ Bundled Bitnami subcharts (removed in 8.10)
   "condition" (hasKey .Values "elasticsearch")
   "oldName" "elasticsearch"
 ) }}
+{{- if and .Values.capacityManager.enabled (not .Values.orchestration.enabled) }}
+  {{- fail "[camunda][error] capacityManager.enabled requires orchestration.enabled." }}
+{{- end }}
+{{- if and (eq .Values.capacityManager.replicaOwnership "capacityManager") (not .Values.capacityManager.enabled) }}
+  {{- fail "[camunda][error] capacityManager.replicaOwnership cannot be capacityManager while capacityManager.enabled is false. Safely contract the cluster before disabling the component." }}
+{{- end }}
+{{- if and .Values.capacityManager.enabled (gt (int .Values.global.multiregion.regions) 1) }}
+  {{- fail "[camunda][error] capacityManager does not yet support multi-region deployments." }}
+{{- end }}
+{{- if and (eq .Values.capacityManager.replicaOwnership "capacityManager") (ne (int .Values.orchestration.clusterSize) 1) }}
+  {{- fail "[camunda][error] capacityManager currently requires orchestration.clusterSize to be 1 so Helm never owns the runtime replica count." }}
+{{- end }}
+{{- if and .Values.capacityManager.enabled (not .Values.capacityManager.serviceAccount.enabled) (not .Values.capacityManager.serviceAccount.name) }}
+  {{- fail "[camunda][error] capacityManager.serviceAccount.name is required when service account creation is disabled." }}
+{{- end }}

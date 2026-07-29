@@ -1932,6 +1932,98 @@ connectors:
     ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
+################################################################################
+## @section Capacity Manager Parameters
+## @extra capacityManager configuration for automatic orchestration capacity management.
+capacityManager:
+  ## @param capacityManager.enabled if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.
+  enabled: false
+  ## @param capacityManager.replicaOwnership can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 15.
+  replicaOwnership: ""
+
+  ## @extra capacityManager.image configuration to configure the Capacity Manager image specifics.
+  image:
+    ## @param capacityManager.image.registry can be used to set the container image registry.
+    registry: registry.camunda.cloud
+    ## @param capacityManager.image.repository defines which image repository to use.
+    repository: team-distribution/capacity-manager
+    ## @param capacityManager.image.tag defines the image tag to use.
+    tag: sha-add89bf9be4768010e732666080a35365a6ea426
+    digest: sha256:e5d16ee4d35d454a483666b5237dc5c47ae82febdcd1b7c7470bb075935ca696
+    ## @param capacityManager.image.digest can be used to set the image digest, overriding the tag.
+    ## @param capacityManager.image.pullSecrets can be used to configure image pull secrets.
+    pullSecrets: []
+
+  ## @param capacityManager.reconcileInterval defines how often the capacity policy is evaluated.
+  reconcileInterval: 30s
+  ## @param capacityManager.operationTimeout defines the maximum duration of a Zeebe topology operation.
+  operationTimeout: 20m
+  ## @param capacityManager.prometheusURL can be used to configure the Prometheus server queried for automatic scaling pressure.
+  prometheusURL: ""
+
+  ## @param capacityManager.extraConfiguration can be used to provide application configuration files such as policy.json.
+  extraConfiguration: []
+
+  ## @extra capacityManager.resources configuration to set requests and limits for the container.
+  ## @param capacityManager.resources.requests.cpu
+  ## @param capacityManager.resources.requests.memory
+  ## @param capacityManager.resources.limits.cpu
+  ## @param capacityManager.resources.limits.memory
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+  ## @param capacityManager.podAnnotations can be used to define pod annotations.
+  podAnnotations: {}
+  ## @param capacityManager.podLabels can be used to define pod labels.
+  podLabels: {}
+  ## @param capacityManager.nodeSelector can be used to define on which nodes the pods should run.
+  nodeSelector: {}
+  ## @param capacityManager.tolerations can be used to define pod tolerations.
+  tolerations: []
+  ## @param capacityManager.affinity can be used to define pod affinity.
+  affinity: {}
+
+  ## @extra capacityManager.serviceAccount configuration for the Capacity Manager service account.
+  serviceAccount:
+    ## @param capacityManager.serviceAccount.enabled if true, creates the service account.
+    enabled: true
+    ## @param capacityManager.serviceAccount.name can be used to set the service account name.
+    name: ""
+    ## @param capacityManager.serviceAccount.annotations can be used to set service account annotations.
+    annotations: {}
+    ## @param capacityManager.serviceAccount.labels can be used to set service account labels.
+    labels: {}
+
+  ## @extra capacityManager.podSecurityContext defines pod security options.
+  podSecurityContext:
+    ## @param capacityManager.podSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @extra capacityManager.podSecurityContext.seccompProfile
+    seccompProfile:
+      ## @param capacityManager.podSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+  ## @extra capacityManager.containerSecurityContext defines container security options.
+  containerSecurityContext:
+    ## @param capacityManager.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @extra capacityManager.containerSecurityContext.capabilities
+    capabilities:
+      ## @param capacityManager.containerSecurityContext.capabilities.drop
+      drop: ["ALL"]
+    ## @param capacityManager.containerSecurityContext.privileged
+    privileged: false
+    ## @param capacityManager.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param capacityManager.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param capacityManager.containerSecurityContext.runAsUser
+    runAsUser: 65532
+
 ####################################################################################
 #######
 #     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #

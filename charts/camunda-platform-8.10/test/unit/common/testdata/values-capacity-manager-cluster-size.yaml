@@ -1,0 +1,12 @@
+global:
+  elasticsearch:
+    enabled: true
+
+capacityManager:
+  enabled: true
+  replicaOwnership: capacityManager
+  policy:
+    mode: automatic
+
+orchestration:
+  clusterSize: "3"
