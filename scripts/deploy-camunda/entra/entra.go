@@ -745,9 +745,14 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 // CleanupVenomApp deletes the venom Entra app registration for a namespace.
 // Errors are logged but not returned — cleanup is best-effort.
 func CleanupVenomApp(ctx context.Context, opts Options) {
+	if err := CleanupVenomAppStrict(ctx, opts); err != nil {
+		logging.Logger.Warn().Err(err).Msg("entra cleanup failed")
+	}
+}
+
+func CleanupVenomAppStrict(ctx context.Context, opts Options) error {
 	if err := resolveOpts(&opts); err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra cleanup: invalid options, skipping")
-		return
+		return err
 	}
 
 	displayName := appDisplayName(opts.Namespace)
@@ -762,18 +767,18 @@ func CleanupVenomApp(ctx context.Context, opts Options) {
 	token, err := acquireBearerToken(ctx, &opts)
 	if err != nil {
 		logging.Logger.Warn().Err(err).Msg("entra cleanup: failed to obtain bearer token")
-		return
+		return err
 	}
 
 	// Find the app.
 	_, objectID, err := findApp(ctx, client, token, displayName)
 	if err != nil {
 		logging.Logger.Warn().Err(err).Msg("entra cleanup: failed to search for app")
-		return
+		return err
 	}
 	if objectID == "" {
 		logging.Logger.Info().Str("displayName", displayName).Msg("No Entra app found, nothing to clean up")
-		return
+		return nil
 	}
 
 	// Delete the app.
@@ -781,14 +786,15 @@ func CleanupVenomApp(ctx context.Context, opts Options) {
 	statusCode, err := graphDelete(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
 	if err != nil {
 		logging.Logger.Warn().Err(err).Str("objectId", objectID).Msg("entra cleanup: delete request failed")
-		return
+		return err
 	}
 
 	if statusCode == 204 || statusCode == 404 {
 		logging.Logger.Info().Str("displayName", displayName).Int("status", statusCode).Msg("Successfully deleted Entra app")
 	} else {
-		logging.Logger.Warn().Str("displayName", displayName).Int("status", statusCode).Msg("Unexpected status when deleting Entra app")
+		return fmt.Errorf("unexpected status %d deleting Entra app %q", statusCode, displayName)
 	}
+	return nil
 }
 
 // createVenomK8sSecret creates or updates the venom-entra-credentials Opaque

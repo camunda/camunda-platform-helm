@@ -1480,8 +1480,9 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 		logging.Logger.Info().
 			Str("namespace", result.Namespace).
 			Msg("Cleaning up venom Entra app registration")
-		entra.CleanupVenomApp(identityCtx, *result.venomOpts)
-		return errors.New("Entra cleanup cannot be verified with the current provider API; namespace preserved for retry")
+		if err := entra.CleanupVenomAppStrict(identityCtx, *result.venomOpts); err != nil {
+			return err
+		}
 	}
 
 	// Clean up Auth0 clients for Auth0 entries (best-effort, before namespace deletion).
@@ -1489,8 +1490,9 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 		logging.Logger.Info().
 			Str("namespace", result.Namespace).
 			Msg("Cleaning up Auth0 clients")
-		auth0.CleanupClients(identityCtx, *result.auth0Opts)
-		return errors.New("Auth0 cleanup cannot be verified with the current provider API; namespace preserved for retry")
+		if err := auth0.CleanupClientsStrict(identityCtx, *result.auth0Opts); err != nil {
+			return err
+		}
 	}
 
 	// Delete the namespace.

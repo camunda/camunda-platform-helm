@@ -336,22 +336,27 @@ func EnsureClients(ctx context.Context, opts Options) (*Provisioned, error) {
 // then deletes only the ones we expect for this namespace. This is dramatically
 // kinder on the Auth0 rate limit than the previous per-component lookup loop.
 func CleanupClients(ctx context.Context, opts Options) {
+	if err := CleanupClientsStrict(ctx, opts); err != nil {
+		logging.Logger.Warn().Err(err).Msg("auth0 cleanup failed")
+	}
+}
+
+func CleanupClientsStrict(ctx context.Context, opts Options) error {
 	if err := resolveOpts(&opts, false); err != nil {
-		logging.Logger.Warn().Err(err).Msg("auth0 cleanup: invalid options, skipping")
-		return
+		return err
 	}
 	client := httpClientFor(&opts)
 
 	token, err := acquireManagementToken(ctx, client, &opts)
 	if err != nil {
 		logging.Logger.Warn().Err(err).Msg("auth0 cleanup: failed to acquire management token")
-		return
+		return err
 	}
 
 	allClients, err := listAllClients(ctx, client, token, &opts)
 	if err != nil {
 		logging.Logger.Warn().Err(err).Msg("auth0 cleanup: list failed")
-		return
+		return err
 	}
 
 	all := append([]string{}, PrivateComponents...)
@@ -367,7 +372,7 @@ func CleanupClients(ctx context.Context, opts Options) {
 	// — which Auth0 allows — all get cleaned up.
 	for _, c := range allClients {
 		if !expected[c.Name] {
-			continue
+			return err
 		}
 		if err := deleteClient(ctx, client, token, &opts, c.ClientID); err != nil {
 			logging.Logger.Warn().Err(err).Str("name", c.Name).Str("clientId", c.ClientID).Msg("auth0 cleanup: delete failed")
@@ -375,6 +380,7 @@ func CleanupClients(ctx context.Context, opts Options) {
 		}
 		logging.Logger.Info().Str("name", c.Name).Str("clientId", c.ClientID).Msg("Deleted Auth0 client")
 	}
+	return nil
 }
 
 // CreateK8sSecret creates or updates the K8s secret holding the values the

@@ -450,7 +450,18 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	// Delete namespace first if requested
 	if flags.Deployment.DeleteNamespaceFirst {
 		logging.Logger.Info().Str("namespace", scenarioCtx.Namespace).Str("scenario", scenarioCtx.ScenarioName).Msg("Deleting namespace prior to deployment as requested")
-		if err := deleteNamespace(ctx, flags.Test.KubeContext, scenarioCtx.Namespace); err != nil {
+		var err error
+		if flags.Deployment.MatrixRunID != "" {
+			client, clientErr := kube.NewClient("", flags.Test.KubeContext)
+			if clientErr != nil {
+				err = clientErr
+			} else {
+				err = client.DeleteNamespaceOwnedBy(ctx, scenarioCtx.Namespace, "deploy-camunda-run", flags.Deployment.MatrixRunID)
+			}
+		} else {
+			err = deleteNamespace(ctx, flags.Test.KubeContext, scenarioCtx.Namespace)
+		}
+		if err != nil {
 			logging.Logger.Debug().
 				Err(err).
 				Str("namespace", scenarioCtx.Namespace).

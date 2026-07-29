@@ -87,12 +87,33 @@ type StoredRunOptions struct {
 }
 
 func StoreRunOptions(opts RunOptions) StoredRunOptions {
+	abs := func(path string) string {
+		if path == "" {
+			return ""
+		}
+		if value, err := filepath.Abs(path); err == nil {
+			return value
+		}
+		return path
+	}
+	envFiles := make(map[string]string, len(opts.EnvFiles))
+	for version, path := range opts.EnvFiles {
+		envFiles[version] = abs(path)
+	}
+	extraValues := make([]string, len(opts.ExtraValues))
+	for i, path := range opts.ExtraValues {
+		extraValues[i] = abs(path)
+	}
+	chartRef := opts.ChartRef
+	if strings.HasSuffix(chartRef, ".tgz") {
+		chartRef = abs(chartRef)
+	}
 	return StoredRunOptions{
 		Cleanup:       opts.Cleanup,
 		StopOnFailure: opts.StopOnFailure, KubeContexts: opts.KubeContexts, KubeContext: opts.KubeContext,
 		NamespacePrefix: opts.NamespacePrefix, Platform: opts.Platform, MaxParallel: opts.MaxParallel,
-		TestE2E: opts.TestE2E, TestAll: opts.TestAll, RepoRoot: opts.RepoRoot, EnvFiles: opts.EnvFiles,
-		EnvFile: opts.EnvFile, KeycloakHost: opts.KeycloakHost, KeycloakProtocol: opts.KeycloakProtocol,
+		TestE2E: opts.TestE2E, TestAll: opts.TestAll, RepoRoot: abs(opts.RepoRoot), EnvFiles: envFiles,
+		EnvFile: abs(opts.EnvFile), KeycloakHost: opts.KeycloakHost, KeycloakProtocol: opts.KeycloakProtocol,
 		IngressBaseDomains: opts.IngressBaseDomains, IngressBaseDomain: opts.IngressBaseDomain,
 		LogLevel: opts.LogLevel, SkipDependencyUpdate: opts.SkipDependencyUpdate,
 		VaultBackedSecrets: opts.VaultBackedSecrets, UseVaultBackedSecrets: opts.UseVaultBackedSecrets,
@@ -102,11 +123,11 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		EnsureDockerHub: opts.EnsureDockerHub, DockerHubUsername: opts.DockerHubUsername,
 		RequiresDockerHubPassword: opts.DockerHubPassword != "", UseLatest: opts.UseLatest, UseQA: opts.UseQA,
 		ExtraHelmArgs: redactStoredArgs(opts.ExtraHelmArgs), ExtraHelmSets: redactStoredSets(opts.ExtraHelmSets),
-		ExtraValues: opts.ExtraValues, NamespaceOverride: opts.NamespaceOverride, ChartRef: opts.ChartRef,
+		ExtraValues: extraValues, NamespaceOverride: opts.NamespaceOverride, ChartRef: chartRef,
 		ChartRefVersion: opts.ChartRefVersion, ForceImageOverrides: opts.ForceImageOverrides,
 		WaitIngressReady: opts.WaitIngressReady, IngressReadyTimeoutMinutes: opts.IngressReadyTimeoutMinutes,
 		GeneratePostgresCredentials: opts.GeneratePostgresCredentials,
-		ImportDockerAuth:            opts.ImportDockerAuth, DockerConfigPath: opts.DockerConfigPath,
+		ImportDockerAuth:            opts.ImportDockerAuth, DockerConfigPath: abs(opts.DockerConfigPath),
 	}
 }
 
@@ -241,9 +262,6 @@ func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunStat
 	}
 	if err := os.MkdirAll(s.RunDir(), 0o700); err != nil {
 		return nil, fmt.Errorf("create matrix run directory: %w", err)
-	}
-	if err := os.Chmod(s.root, 0o700); err != nil {
-		return nil, fmt.Errorf("secure matrix state directory: %w", err)
 	}
 	if err := os.Chmod(s.RunDir(), 0o700); err != nil {
 		return nil, fmt.Errorf("secure matrix run directory: %w", err)
