@@ -8,7 +8,11 @@ rules:
   - apiGroups: ["apps"]
     resources: ["statefulsets"]
     resourceNames: [{{ include "orchestration.fullname" . | quote }}]
+    {{- if eq .Values.capacityManager.replicaOwnership "capacityManager" }}
     verbs: ["get", "patch", "update"]
+    {{- else }}
+    verbs: ["get"]
+    {{- end }}
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get"]

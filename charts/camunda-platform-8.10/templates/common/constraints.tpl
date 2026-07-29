@@ -1190,9 +1190,6 @@ Bundled Bitnami subcharts (removed in 8.10)
 {{- if and (eq .Values.capacityManager.replicaOwnership "capacityManager") (not .Values.capacityManager.enabled) }}
   {{- fail "[camunda][error] capacityManager.replicaOwnership cannot be capacityManager while capacityManager.enabled is false. Safely contract the cluster before disabling the component." }}
 {{- end }}
-{{- if and (eq .Values.capacityManager.replicaOwnership "capacityManager") (eq .Values.capacityManager.policy.mode "recommend") }}
-  {{- fail "[camunda][error] capacityManager.replicaOwnership cannot be capacityManager in recommend mode because recommend mode is read-only." }}
-{{- end }}
 {{- if and .Values.capacityManager.enabled (gt (int .Values.global.multiregion.regions) 1) }}
   {{- fail "[camunda][error] capacityManager does not yet support multi-region deployments." }}
 {{- end }}
@@ -1201,17 +1198,4 @@ Bundled Bitnami subcharts (removed in 8.10)
 {{- end }}
 {{- if and .Values.capacityManager.enabled (not .Values.capacityManager.serviceAccount.enabled) (not .Values.capacityManager.serviceAccount.name) }}
   {{- fail "[camunda][error] capacityManager.serviceAccount.name is required when service account creation is disabled." }}
-{{- end }}
-{{- if eq .Values.capacityManager.replicaOwnership "helm" }}
-  {{- $orchestration := lookup "apps/v1" "StatefulSet" .Release.Namespace (include "orchestration.fullname" .) }}
-  {{- if not $orchestration }}
-    {{- fail "[camunda][error] Explicit replica ownership handback requires live cluster access; offline rendering is blocked." }}
-  {{- end }}
-  {{- $target := dig "metadata" "annotations" "capacity-manager.camunda.io/target-brokers" "" $orchestration }}
-  {{- $completed := dig "metadata" "annotations" "capacity-manager.camunda.io/completed-brokers" "" $orchestration }}
-  {{- $replicas := dig "spec" "replicas" -1 $orchestration }}
-  {{- $configured := div (int .Values.orchestration.clusterSize) (int .Values.global.multiregion.regions) }}
-  {{- if or (eq $target "") (eq $completed "") (ne (int $target) $configured) (ne (int $completed) $configured) (ne (int $replicas) $configured) }}
-    {{- fail "[camunda][error] Cannot return orchestration replica ownership to Helm until capacity-manager target, completion marker, live replicas, and configured clusterSize all match." }}
-  {{- end }}
 {{- end }}

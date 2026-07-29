@@ -1938,7 +1938,7 @@ connectors:
 capacityManager:
   ## @param capacityManager.enabled if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.
   enabled: false
-  ## @param capacityManager.replicaOwnership can be used to transfer orchestration StatefulSet replica ownership. Empty keeps ordinary Helm ownership; capacityManager transfers ownership; helm explicitly requests a validated handback.
+  ## @param capacityManager.replicaOwnership can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 15.
   replicaOwnership: ""
 
   ## @extra capacityManager.image configuration to configure the Capacity Manager image specifics.
@@ -1961,32 +1961,8 @@ capacityManager:
   ## @param capacityManager.prometheusURL can be used to configure the Prometheus server queried for automatic scaling pressure.
   prometheusURL: ""
 
-  ## @extra capacityManager.policy configuration for capacity decisions.
-  policy:
-    ## @param capacityManager.policy.mode defines the operating mode: recommend, scheduled, or automatic.
-    mode: recommend
-    ## @param capacityManager.policy.minBrokers defines the minimum broker count.
-    minBrokers: 1
-    ## @param capacityManager.policy.maxBrokers defines the maximum broker count.
-    maxBrokers: 3
-    ## @param capacityManager.policy.targetBrokers can be used to set an explicit target for scheduled validation and controlled operations.
-    targetBrokers: 0
-    ## @param capacityManager.policy.scheduledMinimumBrokers can be used to set a minimum during a time window.
-    scheduledMinimumBrokers: 0
-    ## @param capacityManager.policy.scheduleStartsAt can be used to set the RFC3339 start of a capacity window.
-    scheduleStartsAt: ""
-    ## @param capacityManager.policy.scheduleEndsAt can be used to set the RFC3339 end of a capacity window.
-    scheduleEndsAt: ""
-    ## @param capacityManager.policy.pressureQuery can be used to set the PromQL query used by automatic mode.
-    pressureQuery: max(zeebe_flow_control_partition_load)
-    ## @param capacityManager.policy.scaleUpThreshold defines the pressure threshold for scale-up.
-    scaleUpThreshold: 0.8
-    ## @param capacityManager.policy.scaleDownThreshold defines the pressure threshold for scale-down.
-    scaleDownThreshold: 0.2
-    ## @param capacityManager.policy.scaleUpSamples defines the consecutive samples required before scale-up.
-    scaleUpSamples: 3
-    ## @param capacityManager.policy.scaleDownSamples defines the consecutive samples required before scale-down.
-    scaleDownSamples: 120
+  ## @param capacityManager.extraConfiguration can be used to provide application configuration files such as policy.json.
+  extraConfiguration: []
 
   ## @extra capacityManager.resources configuration to set requests and limits for the container.
   ## @param capacityManager.resources.requests.cpu

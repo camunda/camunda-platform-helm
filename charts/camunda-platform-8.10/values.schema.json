@@ -3999,11 +3999,10 @@
                 },
                 "replicaOwnership": {
                     "type": "string",
-                    "description": "can be used to transfer orchestration StatefulSet replica ownership. Empty keeps ordinary Helm ownership; capacityManager transfers ownership; helm explicitly requests a validated handback.",
+                    "description": "can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 15.",
                     "default": "",
                     "enum": [
                         "",
-                        "helm",
                         "capacityManager"
                     ]
                 },
@@ -4053,83 +4052,11 @@
                     "description": "can be used to configure the Prometheus server queried for automatic scaling pressure.",
                     "default": ""
                 },
-                "policy": {
-                    "type": "object",
-                    "properties": {
-                        "mode": {
-                            "type": "string",
-                            "description": "defines the operating mode: recommend, scheduled, or automatic.",
-                            "default": "recommend",
-                            "enum": [
-                                "recommend",
-                                "scheduled",
-                                "automatic"
-                            ]
-                        },
-                        "minBrokers": {
-                            "type": "integer",
-                            "description": "defines the minimum broker count.",
-                            "default": 1,
-                            "minimum": 1
-                        },
-                        "maxBrokers": {
-                            "type": "integer",
-                            "description": "defines the maximum broker count.",
-                            "default": 3,
-                            "minimum": 1
-                        },
-                        "targetBrokers": {
-                            "type": "integer",
-                            "description": "can be used to set an explicit target for scheduled validation and controlled operations.",
-                            "default": 0,
-                            "minimum": 0
-                        },
-                        "scheduledMinimumBrokers": {
-                            "type": "integer",
-                            "description": "can be used to set a minimum during a time window.",
-                            "default": 0,
-                            "minimum": 0
-                        },
-                        "scheduleStartsAt": {
-                            "type": "string",
-                            "description": "can be used to set the RFC3339 start of a capacity window.",
-                            "default": ""
-                        },
-                        "scheduleEndsAt": {
-                            "type": "string",
-                            "description": "can be used to set the RFC3339 end of a capacity window.",
-                            "default": ""
-                        },
-                        "pressureQuery": {
-                            "type": "string",
-                            "description": "can be used to set the PromQL query used by automatic mode.",
-                            "default": "max(zeebe_flow_control_partition_load)"
-                        },
-                        "scaleUpThreshold": {
-                            "type": "number",
-                            "description": "defines the pressure threshold for scale-up.",
-                            "default": 0.8,
-                            "minimum": 0
-                        },
-                        "scaleDownThreshold": {
-                            "type": "number",
-                            "description": "defines the pressure threshold for scale-down.",
-                            "default": 0.2,
-                            "minimum": 0
-                        },
-                        "scaleUpSamples": {
-                            "type": "integer",
-                            "description": "defines the consecutive samples required before scale-up.",
-                            "default": 3,
-                            "minimum": 1
-                        },
-                        "scaleDownSamples": {
-                            "type": "integer",
-                            "description": "defines the consecutive samples required before scale-down.",
-                            "default": 120,
-                            "minimum": 1
-                        }
-                    }
+                "extraConfiguration": {
+                    "type": "array",
+                    "description": "can be used to provide application configuration files such as policy.json.",
+                    "default": [],
+                    "items": {}
                 },
                 "resources": {
                     "type": "object",
