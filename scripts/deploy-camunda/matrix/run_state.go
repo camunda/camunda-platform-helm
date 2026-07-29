@@ -155,19 +155,33 @@ func (s StoredRunOptions) RunOptions() RunOptions {
 }
 
 type EntryRunState struct {
-	ID          string         `json:"id"`
-	Entry       Entry          `json:"entry"`
-	Status      RunStatus      `json:"status"`
-	Phase       string         `json:"phase,omitempty"`
-	Namespace   string         `json:"namespace"`
-	KubeContext string         `json:"kubeContext,omitempty"`
-	Attempts    int            `json:"attempts"`
-	StartedAt   *time.Time     `json:"startedAt,omitempty"`
-	FinishedAt  *time.Time     `json:"finishedAt,omitempty"`
-	Failure     *Failure       `json:"failure,omitempty"`
-	Diagnostics string         `json:"diagnostics,omitempty"`
-	Replay      ReplayManifest `json:"replay"`
-	Cleaned     bool           `json:"cleaned,omitempty"`
+	ID             string         `json:"id"`
+	Entry          Entry          `json:"entry"`
+	Status         RunStatus      `json:"status"`
+	Phase          string         `json:"phase,omitempty"`
+	Namespace      string         `json:"namespace"`
+	KubeContext    string         `json:"kubeContext,omitempty"`
+	Attempts       int            `json:"attempts"`
+	StartedAt      *time.Time     `json:"startedAt,omitempty"`
+	FinishedAt     *time.Time     `json:"finishedAt,omitempty"`
+	Failure        *Failure       `json:"failure,omitempty"`
+	Diagnostics    string         `json:"diagnostics,omitempty"`
+	Replay         ReplayManifest `json:"replay"`
+	Cleaned        bool           `json:"cleaned,omitempty"`
+	EntraObjectID  string         `json:"entraObjectId,omitempty"`
+	Auth0ClientIDs []string       `json:"auth0ClientIds,omitempty"`
+}
+
+func (s *RunStateStore) RecordExternalResources(entry Entry, entraObjectID string, auth0ClientIDs []string) error {
+	return s.update(entry, func(_ *MatrixRunState, item *EntryRunState) RunEvent {
+		if entraObjectID != "" {
+			item.EntraObjectID = entraObjectID
+		}
+		if len(auth0ClientIDs) > 0 {
+			item.Auth0ClientIDs = append([]string(nil), auth0ClientIDs...)
+		}
+		return RunEvent{Time: time.Now().UTC(), RunID: s.runID, EntryID: item.ID, Status: item.Status, Phase: "external-resources"}
+	})
 }
 
 type MatrixRunState struct {
@@ -266,9 +280,6 @@ func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunStat
 	if err := os.Chmod(s.RunDir(), 0o700); err != nil {
 		return nil, fmt.Errorf("secure matrix run directory: %w", err)
 	}
-	if err := s.write(state); err != nil {
-		return nil, err
-	}
 	if opts.GeneratedPostgresPassword != "" {
 		data, err := json.Marshal(runSecrets{PostgresUsername: opts.GeneratedPostgresUsername, PostgresPassword: opts.GeneratedPostgresPassword})
 		if err != nil {
@@ -277,6 +288,9 @@ func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunStat
 		if err := atomicWriteFile(filepath.Join(s.RunDir(), "run-secrets.json"), append(data, '\n'), 0o600); err != nil {
 			return nil, fmt.Errorf("write matrix run secrets: %w", err)
 		}
+	}
+	if err := s.write(state); err != nil {
+		return nil, err
 	}
 	return state, s.appendEvent(RunEvent{Time: now, RunID: s.runID, Status: RunPending})
 }

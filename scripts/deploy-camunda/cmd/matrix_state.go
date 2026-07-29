@@ -12,8 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"scripts/camunda-core/pkg/kube"
+	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/entra"
 	"scripts/deploy-camunda/matrix"
+	"scripts/prepare-helm-values/pkg/env"
 )
 
 type cleanupKubeClient interface {
@@ -179,9 +182,27 @@ func newMatrixCleanupCommand() *cobra.Command {
 					failures = append(failures, item.ID+": "+err.Error())
 					continue
 				}
-				if item.Entry.Identity == "auth0" || item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
+				envPath := state.Options.EnvFile
+				if path := state.Options.EnvFiles[item.Entry.Version]; path != "" {
+					envPath = path
+				}
+				if envPath == "" {
+					envPath = ".env"
+				}
+				values, _ := env.ReadFile(envPath)
+				if item.EntraObjectID != "" {
+					err = entra.CleanupVenomAppObjectStrict(cleanupCtx, entra.Options{
+						Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
+					}, item.EntraObjectID)
+				}
+				if err == nil && len(item.Auth0ClientIDs) > 0 {
+					err = auth0.CleanupClientIDsStrict(cleanupCtx, auth0.Options{
+						Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
+					}, item.Auth0ClientIDs)
+				}
+				if err != nil {
 					cancel()
-					failures = append(failures, item.ID+": durable cleanup of external identity resources requires persisted provider resource IDs; namespace preserved")
+					failures = append(failures, item.ID+": external identity cleanup: "+err.Error())
 					continue
 				}
 				if uid != "" {

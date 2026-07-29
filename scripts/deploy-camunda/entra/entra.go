@@ -797,6 +797,24 @@ func CleanupVenomAppStrict(ctx context.Context, opts Options) error {
 	return nil
 }
 
+func CleanupVenomAppObjectStrict(ctx context.Context, opts Options, objectID string) error {
+	if err := resolveOpts(&opts); err != nil {
+		return err
+	}
+	token, err := acquireBearerToken(ctx, &opts)
+	if err != nil {
+		return err
+	}
+	status, err := graphDelete(ctx, httpClient(&opts), token, fmt.Sprintf("/applications/%s", objectID))
+	if err != nil {
+		return err
+	}
+	if status != http.StatusNoContent && status != http.StatusNotFound {
+		return fmt.Errorf("unexpected status %d deleting Entra app", status)
+	}
+	return nil
+}
+
 // createVenomK8sSecret creates or updates the venom-entra-credentials Opaque
 // secret in the given namespace using server-side apply.
 func createVenomK8sSecret(ctx context.Context, kubeContext, namespace, venomClientID, venomClientSecret, audience string) error {

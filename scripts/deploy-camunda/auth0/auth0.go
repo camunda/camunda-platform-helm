@@ -18,6 +18,7 @@ import (
 	cryptorand "crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -381,6 +382,24 @@ func CleanupClientsStrict(ctx context.Context, opts Options) error {
 		logging.Logger.Info().Str("name", c.Name).Str("clientId", c.ClientID).Msg("Deleted Auth0 client")
 	}
 	return nil
+}
+
+func CleanupClientIDsStrict(ctx context.Context, opts Options, clientIDs []string) error {
+	if err := resolveOpts(&opts, false); err != nil {
+		return err
+	}
+	client := httpClientFor(&opts)
+	token, err := acquireManagementToken(ctx, client, &opts)
+	if err != nil {
+		return err
+	}
+	var cleanupErr error
+	for _, clientID := range clientIDs {
+		if err := deleteClient(ctx, client, token, &opts, clientID); err != nil {
+			cleanupErr = errors.Join(cleanupErr, err)
+		}
+	}
+	return cleanupErr
 }
 
 // CreateK8sSecret creates or updates the K8s secret holding the values the

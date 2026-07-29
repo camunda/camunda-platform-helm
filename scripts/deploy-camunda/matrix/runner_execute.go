@@ -503,6 +503,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		venomOpts = &entraOpts
 		result.venomOpts = venomOpts
 		canCleanup = true
+		if opts.StateStore != nil {
+			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, nil); err != nil {
+				result.Error = err
+				return result
+			}
+		}
 
 		// Inject VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID via per-entry ExtraEnv
 		// so that buildScenarioEnv merges them into the isolated env map for
@@ -615,6 +621,16 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		auth0Opts = &auth0Options
 
 		prov, err := auth0.EnsureClients(ctx, auth0Options)
+		if opts.StateStore != nil && prov != nil {
+			ids := make([]string, 0, len(prov.All()))
+			for _, client := range prov.All() {
+				ids = append(ids, client.ClientID)
+			}
+			if stateErr := opts.StateStore.RecordExternalResources(entry, "", ids); stateErr != nil {
+				result.Error = stateErr
+				return result
+			}
+		}
 		if err != nil {
 			// Build a result that carries auth0Opts so cleanupEntry tears down
 			// the partial provisioning, then invoke the same cleanup/callback
