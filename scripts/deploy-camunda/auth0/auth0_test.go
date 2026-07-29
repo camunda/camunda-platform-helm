@@ -3,6 +3,8 @@ package auth0
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -451,5 +453,41 @@ func TestCleanupClientIDsStrictAggregatesFailures(t *testing.T) {
 	err := CleanupClientIDsStrict(context.Background(), Options{Namespace: "ns", Domain: srv.URL, MgmtClientID: "x", MgmtClientSecret: "y", HTTPClient: srv.Client()}, []string{"id-A", "id-B"})
 	if err == nil {
 		t.Fatal("expected aggregate failure")
+	}
+}
+
+func TestEnsureClientsInvokesCheckpointForEveryClient(t *testing.T) {
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /oauth/token": tokenHandler(),
+		"POST /api/v2/clients": func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewEncoder(w).Encode(map[string]string{"client_id": fmt.Sprintf("id-%d", time.Now().UnixNano()), "client_secret": "secret", "name": "created"})
+		},
+		"POST /api/v2/client-grants": func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) },
+	})
+	defer srv.Close()
+	var checkpointed []string
+	prov, err := EnsureClients(context.Background(), Options{Namespace: "ns", IngressHost: "host", Domain: srv.URL, MgmtClientID: "x", MgmtClientSecret: "y", HTTPClient: srv.Client(), SkipK8sSecret: true, OnClientCreated: func(client Client) error { checkpointed = append(checkpointed, client.ClientID); return nil }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(checkpointed) != len(prov.All()) || len(checkpointed) == 0 {
+		t.Fatalf("checkpointed=%v clients=%v", checkpointed, prov.All())
+	}
+}
+
+func TestEnsureClientsReturnsPartialOnCheckpointFailure(t *testing.T) {
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /oauth/token": tokenHandler(),
+		"POST /api/v2/clients": func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewEncoder(w).Encode(map[string]string{"client_id": "id-A", "client_secret": "secret", "name": "created"})
+		},
+	})
+	defer srv.Close()
+	prov, err := EnsureClients(context.Background(), Options{Namespace: "ns", IngressHost: "host", Domain: srv.URL, MgmtClientID: "x", MgmtClientSecret: "y", HTTPClient: srv.Client(), SkipK8sSecret: true, OnClientCreated: func(Client) error { return errors.New("checkpoint failed") }})
+	if err == nil {
+		t.Fatal("expected checkpoint failure")
+	}
+	if prov == nil || len(prov.All()) != 1 {
+		t.Fatalf("partial provisioned = %#v", prov)
 	}
 }

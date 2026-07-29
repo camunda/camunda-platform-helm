@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/types"
+	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/entra"
 	"scripts/deploy-camunda/matrix"
 )
@@ -182,5 +183,39 @@ func TestMatrixCleanupMarksUnprovisionedOIDCEntryCleaned(t *testing.T) {
 	}
 	if !state.Entries[0].Cleaned {
 		t.Fatal("unprovisioned entry not marked cleaned")
+	}
+}
+
+func TestMatrixCleanupPreservesNamespaceOnAuth0Failure(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("AUTH0_DOMAIN", "https://tenant.example")
+	entry := matrix.Entry{Version: "8.10", Shortname: "auth0", Scenario: "auth0", Flow: "install", Identity: "auth0"}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.RecordExternalResources(entry, "", "", "https://tenant.example", []string{"client-id"}); err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeCleanupClient{}
+	originalClient, originalAuth0 := newCleanupKubeClient, cleanupAuth0ClientIDs
+	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
+	cleanupAuth0ClientIDs = func(context.Context, auth0.Options, []string) error { return errors.New("provider unavailable") }
+	t.Cleanup(func() { newCleanupKubeClient, cleanupAuth0ClientIDs = originalClient, originalAuth0 })
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected Auth0 cleanup failure")
+	}
+	if fake.deleted {
+		t.Fatal("namespace deleted after Auth0 cleanup failure")
+	}
+	state, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Entries[0].Cleaned {
+		t.Fatal("entry marked cleaned after Auth0 cleanup failure")
 	}
 }

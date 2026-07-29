@@ -1485,7 +1485,24 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 		logging.Logger.Info().
 			Str("namespace", result.Namespace).
 			Msg("Cleaning up venom Entra app registration")
-		if err := entra.CleanupVenomAppStrict(identityCtx, *result.venomOpts); err != nil {
+		if opts.StateStore == nil {
+			return errors.New("Entra cleanup requires durable object checkpoint")
+		}
+		state, err := opts.StateStore.Load()
+		if err != nil {
+			return err
+		}
+		objectID := ""
+		for _, item := range state.Entries {
+			if item.ID == EntryID(result.Entry) {
+				objectID = item.EntraObjectID
+				break
+			}
+		}
+		if objectID == "" {
+			return errors.New("Entra object checkpoint is missing")
+		}
+		if err := entra.CleanupVenomAppObjectStrict(identityCtx, *result.venomOpts, objectID); err != nil {
 			return err
 		}
 	}
