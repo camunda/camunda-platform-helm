@@ -20,6 +20,8 @@ import (
 
 const RunStateSchema = "camunda.matrix-run/v1"
 
+var resumeCredentialStore credentials.Store = credentials.KeyringStore{}
+
 type RunStatus string
 
 const (
@@ -212,8 +214,10 @@ type RunEvent struct {
 }
 
 type runSecrets struct {
-	PostgresUsername string `json:"postgresUsername,omitempty"`
-	PostgresPassword string `json:"postgresPassword,omitempty"`
+	PostgresUsername string   `json:"postgresUsername,omitempty"`
+	PostgresPassword string   `json:"postgresPassword,omitempty"`
+	ExtraHelmArgs    []string `json:"extraHelmArgs,omitempty"`
+	ExtraHelmSets    []string `json:"extraHelmSets,omitempty"`
 }
 
 type RunStateStore struct {
@@ -224,6 +228,11 @@ type RunStateStore struct {
 
 type RunLock struct {
 	path string
+}
+
+type lockOwner struct {
+	Hostname string `json:"hostname"`
+	PID      int    `json:"pid"`
 }
 
 func NewRunStateStore(root, runID string) *RunStateStore {
@@ -252,9 +261,11 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 	path := filepath.Join(s.RunDir(), "run.lock")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
-		pidData, readErr := os.ReadFile(path)
-		pid, parseErr := strconv.Atoi(strings.TrimSpace(string(pidData)))
-		if readErr == nil && parseErr == nil && !processAlive(pid) {
+		ownerData, readErr := os.ReadFile(path)
+		var owner lockOwner
+		parseErr := json.Unmarshal(ownerData, &owner)
+		hostname, _ := os.Hostname()
+		if readErr == nil && parseErr == nil && owner.Hostname == hostname && !processAlive(owner.PID) {
 			if removeErr := os.Remove(path); removeErr == nil {
 				file, err = os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 			}
@@ -263,7 +274,9 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 			return nil, fmt.Errorf("matrix run %q is active in another process", s.runID)
 		}
 	}
-	if _, err := fmt.Fprintf(file, "%d\n", os.Getpid()); err != nil {
+	hostname, _ := os.Hostname()
+	ownerData, _ := json.Marshal(lockOwner{Hostname: hostname, PID: os.Getpid()})
+	if _, err := file.Write(append(ownerData, '\n')); err != nil {
 		file.Close()
 		_ = os.Remove(path)
 		return nil, err
@@ -300,8 +313,8 @@ func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunStat
 	if err := os.Chmod(s.RunDir(), 0o700); err != nil {
 		return nil, fmt.Errorf("secure matrix run directory: %w", err)
 	}
-	if opts.GeneratedPostgresPassword != "" {
-		data, err := json.Marshal(runSecrets{PostgresUsername: opts.GeneratedPostgresUsername, PostgresPassword: opts.GeneratedPostgresPassword})
+	if opts.GeneratedPostgresPassword != "" || len(opts.ExtraHelmArgs) > 0 || len(opts.ExtraHelmSets) > 0 {
+		data, err := json.Marshal(runSecrets{PostgresUsername: opts.GeneratedPostgresUsername, PostgresPassword: opts.GeneratedPostgresPassword, ExtraHelmArgs: opts.ExtraHelmArgs, ExtraHelmSets: opts.ExtraHelmSets})
 		if err != nil {
 			return nil, err
 		}
@@ -419,9 +432,6 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	if len(entries) == 0 {
 		return nil, RunOptions{}, errors.New("matrix run has no incomplete entries")
 	}
-	if hasRedactedArgs(state.Options.ExtraHelmArgs) || hasRedactedArgs(state.Options.ExtraHelmSets) {
-		return nil, RunOptions{}, errors.New("matrix run used secret-bearing Helm arguments; resume cannot reconstruct them safely; replay the recorded command with the required secret inputs")
-	}
 	harborPassword, hubPassword := "", ""
 	var credentialErr error
 	if harborPassword == "" {
@@ -459,9 +469,8 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	if credentialErr != nil {
 		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", credentialErr)
 	}
-	keyringStore := credentials.KeyringStore{}
 	if harborPassword == "" && state.Options.RequiresDockerPassword {
-		credential, found, keyringErr := credentials.GetOptional(keyringStore, credentials.HarborRegistry)
+		credential, found, keyringErr := credentials.GetOptional(resumeCredentialStore, credentials.HarborRegistry)
 		if keyringErr != nil {
 			return nil, RunOptions{}, keyringErr
 		}
@@ -470,7 +479,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		}
 	}
 	if hubPassword == "" && state.Options.RequiresDockerHubPassword {
-		credential, found, keyringErr := credentials.GetOptional(keyringStore, credentials.DockerHubRegistry)
+		credential, found, keyringErr := credentials.GetOptional(resumeCredentialStore, credentials.DockerHubRegistry)
 		if keyringErr != nil {
 			return nil, RunOptions{}, keyringErr
 		}
@@ -507,6 +516,8 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		}
 		opts.GeneratedPostgresUsername = secrets.PostgresUsername
 		opts.GeneratedPostgresPassword = secrets.PostgresPassword
+		opts.ExtraHelmArgs = secrets.ExtraHelmArgs
+		opts.ExtraHelmSets = secrets.ExtraHelmSets
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, RunOptions{}, fmt.Errorf("read matrix run secrets: %w", err)
 	}

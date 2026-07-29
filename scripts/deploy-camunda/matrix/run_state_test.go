@@ -2,6 +2,7 @@ package matrix
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"scripts/deploy-camunda/credentials"
 )
 
 func TestRunStateLifecycleAndResume(t *testing.T) {
@@ -124,10 +126,21 @@ func TestRunStateRefusesConcurrentLock(t *testing.T) {
 func TestRunStateReclaimsStaleLock(t *testing.T) {
 	store := NewRunStateStore(t.TempDir(), "run-1")
 	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), []byte("999999999\n"), 0o600))
+	hostname, _ := os.Hostname()
+	data, _ := json.Marshal(lockOwner{Hostname: hostname, PID: 999999999})
+	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), append(data, '\n'), 0o600))
 	lock, err := store.Acquire()
 	require.NoError(t, err)
 	require.NoError(t, lock.Close())
+}
+
+func TestRunStateDoesNotReclaimForeignHostLock(t *testing.T) {
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
+	data, _ := json.Marshal(lockOwner{Hostname: "other-host", PID: 999999999})
+	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), append(data, '\n'), 0o600))
+	_, err := store.Acquire()
+	require.ErrorContains(t, err, "active in another process")
 }
 
 func TestCleaningFailedEntryPreservesFailedRun(t *testing.T) {
@@ -147,14 +160,18 @@ func TestCleaningFailedEntryPreservesFailedRun(t *testing.T) {
 	assert.Equal(t, "cleaned", state.Entries[0].Phase)
 }
 
-func TestResumeRejectsRedactedArguments(t *testing.T) {
+func TestResumeRestoresRedactedArgumentsFromRunSecrets(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
 	store := NewRunStateStore(t.TempDir(), "run-1")
 	_, err := store.Create([]Entry{entry}, RunOptions{ExtraHelmSets: []string{"global.password=secret"}})
 	require.NoError(t, err)
 
-	_, _, err = store.PrepareResume("")
-	require.ErrorContains(t, err, "cannot reconstruct them safely")
+	_, opts, err := store.PrepareResume("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"global.password=secret"}, opts.ExtraHelmSets)
+	state, err := store.Load()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"<redacted>"}, state.Options.ExtraHelmSets)
 }
 
 func TestRunStatePersistsGeneratedPostgresCredentialsSeparately(t *testing.T) {
@@ -208,6 +225,30 @@ func TestPrepareResumeRestoresImportedDockerCredentials(t *testing.T) {
 	_, opts, err := store.PrepareResume("")
 	require.NoError(t, err)
 	assert.Equal(t, "imported-password", opts.DockerPassword)
+}
+
+type testCredentialStore struct {
+	values map[string]credentials.Credential
+}
+
+func (s testCredentialStore) Get(registry string) (credentials.Credential, bool, error) {
+	value, ok := s.values[registry]
+	return value, ok, nil
+}
+func (testCredentialStore) Set(string, credentials.Credential) error { return nil }
+func (testCredentialStore) Delete(string) error                      { return nil }
+
+func TestPrepareResumeRestoresKeyringCredential(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{DockerUsername: "robot", DockerPassword: "original", EnsureDockerRegistry: true})
+	require.NoError(t, err)
+	original := resumeCredentialStore
+	resumeCredentialStore = testCredentialStore{values: map[string]credentials.Credential{credentials.HarborRegistry: {Username: "robot", Password: "stored-token"}}}
+	t.Cleanup(func() { resumeCredentialStore = original })
+	_, opts, err := store.PrepareResume("")
+	require.NoError(t, err)
+	assert.Equal(t, "stored-token", opts.DockerPassword)
 }
 
 func TestClassifyFailure(t *testing.T) {

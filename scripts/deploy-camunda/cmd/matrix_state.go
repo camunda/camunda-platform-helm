@@ -206,10 +206,12 @@ func newMatrixCleanupCommand() *cobra.Command {
 						err = entra.CleanupVenomAppObjectStrict(providerCtx, entra.Options{
 							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
 						}, item.EntraObjectID)
-					} else {
+					} else if uid != "" {
 						err = cleanupEntraResources(providerCtx, entra.Options{
 							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
 						})
+					} else {
+						err = fmt.Errorf("missing Entra resource checkpoint and namespace ownership anchor")
 					}
 				}
 				if err == nil && item.Entry.Identity == "auth0" {
@@ -219,10 +221,12 @@ func newMatrixCleanupCommand() *cobra.Command {
 						err = auth0.CleanupClientIDsStrict(providerCtx, auth0.Options{
 							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 						}, item.Auth0ClientIDs)
-					} else {
+					} else if uid != "" {
 						err = cleanupAuth0Resources(providerCtx, auth0.Options{
 							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 						})
+					} else {
+						err = fmt.Errorf("missing Auth0 resource checkpoints and namespace ownership anchor")
 					}
 				}
 				if err != nil {

@@ -98,6 +98,25 @@ func TestCredentialsStatusToleratesUnavailableKeyring(t *testing.T) {
 	}
 }
 
+func TestCredentialsConfigureStoresCompletePairWithoutPrintingSecret(t *testing.T) {
+	store := useMemoryCredentialStore(t)
+	cmd := newCredentialsConfigureCommand()
+	cmd.SetArgs([]string{"--registry", "harbor"})
+	cmd.SetIn(bytes.NewBufferString("robot\nsecret-token\n"))
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	stored := store.values[credentials.HarborRegistry]
+	if stored.Username != "robot" || stored.Password != "secret-token" {
+		t.Fatalf("stored = %#v", stored)
+	}
+	if bytes.Contains(out.Bytes(), []byte("secret-token")) {
+		t.Fatal("configure output exposed secret")
+	}
+}
+
 func TestCredentialsCommandRegistered(t *testing.T) {
 	root := NewRootCommand()
 	registerRootCommands(root)
