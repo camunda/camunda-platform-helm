@@ -659,9 +659,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	}
 
 	if appID != "" {
-		portalURL := entraPortalAppURL(opts.DirectoryID, appID)
-		logging.Logger.Info().Str("appId", appID).Str("objectId", objectID).Msg("Found existing venom app")
-		logging.Logger.Debug().Str("portalURL", portalURL).Msg("View app in Azure portal")
+		return &VenomApp{AppID: appID, ObjectID: objectID, Created: false}, fmt.Errorf("entra: app %q already exists and is not owned by this provisioning attempt", displayName)
 	} else {
 		logging.Logger.Info().Str("displayName", displayName).Msg("Creating new venom app registration")
 		appID, objectID, err = createApp(ctx, client, token, displayName, opts.ClientID)

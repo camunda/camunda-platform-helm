@@ -941,6 +941,9 @@ func TestEnsureVenomAppReturnsPartialAppAfterCreationFailure(t *testing.T) {
 	if app == nil || app.ObjectID != "object-id" {
 		t.Fatalf("partial app = %#v", app)
 	}
+	if !app.Created {
+		t.Fatal("partial newly created app must retain Created=true")
+	}
 }
 
 // TestEnsureVenomApp_ExistingApp tests the flow when an existing app is found.
@@ -1017,15 +1020,15 @@ func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 		ClientSecret: "parent-secret",
 		HTTPClient:   srv.Client(),
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err == nil {
+		t.Fatal("expected existing app ownership failure")
 	}
 
 	if app.AppID != "existing-app-id" {
 		t.Errorf("AppID = %q, want %q", app.AppID, "existing-app-id")
 	}
-	if app.ClientSecret != "rotated-secret" {
-		t.Errorf("ClientSecret = %q, want %q", app.ClientSecret, "rotated-secret")
+	if app.ClientSecret != "" {
+		t.Errorf("existing app credential was rotated: %q", app.ClientSecret)
 	}
 	if app.Created {
 		t.Error("existing app must not be marked created")
@@ -1051,14 +1054,13 @@ func TestEnsureVenomApp_SkipK8sSecret(t *testing.T) {
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(r.URL.RawQuery, "filter") {
-				jsonResponse(w, 200, map[string]interface{}{
-					"value": []map[string]string{
-						{"appId": "skip-secret-app-id", "id": "skip-secret-obj-id"},
-					},
-				})
+				jsonResponse(w, 200, map[string]interface{}{"value": []interface{}{}})
 				return
 			}
 			http.NotFound(w, r)
+		},
+		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 201, map[string]string{"appId": "skip-secret-app-id", "id": "skip-secret-obj-id"})
 		},
 		"GET /applications/skip-secret-obj-id": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 200, map[string]interface{}{

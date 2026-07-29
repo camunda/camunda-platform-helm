@@ -377,6 +377,21 @@ func TestPrepareResumeRejectsChartDrift(t *testing.T) {
 	require.ErrorContains(t, err, "changed since run creation")
 }
 
+func TestPrepareResumeRejectsMutableOCIReference(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "one", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{ChartRef: "oci://registry.example/chart", ChartRefVersion: "latest"})
+	require.NoError(t, err)
+	_, _, err = store.PrepareResume("")
+	require.ErrorContains(t, err, "mutable OCI chart references")
+}
+
+func TestRunStatePersistsAuth0Behavior(t *testing.T) {
+	stored := StoreRunOptions(RunOptions{Auth0IngressHost: "host.example", Auth0InitialAdminEmail: "admin@example.com"})
+	assert.Equal(t, "host.example", stored.Auth0IngressHost)
+	assert.Equal(t, "admin@example.com", stored.Auth0InitialAdminEmail)
+}
+
 func TestCreatePersistsAbsoluteLocalDependencyPaths(t *testing.T) {
 	repoRoot := t.TempDir()
 	chartPath := filepath.Join(repoRoot, "charts", "local")

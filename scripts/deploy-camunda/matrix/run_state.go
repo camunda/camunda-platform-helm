@@ -90,6 +90,8 @@ type StoredRunOptions struct {
 	ImportDockerAuth            bool              `json:"importDockerAuth,omitempty"`
 	DockerConfigPath            string            `json:"dockerConfigPath,omitempty"`
 	RequiresRunSecrets          bool              `json:"requiresRunSecrets,omitempty"`
+	Auth0IngressHost            string            `json:"auth0IngressHost,omitempty"`
+	Auth0InitialAdminEmail      string            `json:"auth0InitialAdminEmail,omitempty"`
 }
 
 func StoreRunOptions(opts RunOptions) StoredRunOptions {
@@ -142,6 +144,7 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		WaitIngressReady: opts.WaitIngressReady, IngressReadyTimeoutMinutes: opts.IngressReadyTimeoutMinutes,
 		GeneratePostgresCredentials: opts.GeneratePostgresCredentials,
 		ImportDockerAuth:            opts.ImportDockerAuth, DockerConfigPath: abs(opts.DockerConfigPath), RequiresRunSecrets: opts.GeneratedPostgresPassword != "" || len(opts.ExtraHelmArgs) > 0 || len(opts.ExtraHelmSets) > 0,
+		Auth0IngressHost: opts.Auth0IngressHost, Auth0InitialAdminEmail: opts.Auth0InitialAdminEmail,
 	}
 }
 
@@ -165,6 +168,7 @@ func (s StoredRunOptions) RunOptions() RunOptions {
 		WaitIngressReady: s.WaitIngressReady, IngressReadyTimeoutMinutes: s.IngressReadyTimeoutMinutes,
 		GeneratePostgresCredentials: s.GeneratePostgresCredentials,
 		ImportDockerAuth:            s.ImportDockerAuth, DockerConfigPath: s.DockerConfigPath,
+		Auth0IngressHost: s.Auth0IngressHost, Auth0InitialAdminEmail: s.Auth0InitialAdminEmail,
 	}
 }
 
@@ -543,6 +547,9 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	if err != nil {
 		return nil, RunOptions{}, err
 	}
+	if strings.HasPrefix(state.Options.ChartRef, "oci://") && !strings.Contains(state.Options.ChartRef, "@sha256:") {
+		return nil, RunOptions{}, errors.New("mutable OCI chart references cannot be resumed safely; use a digest-pinned reference")
+	}
 	for path, expected := range state.Options.EnvFileDigests {
 		if observed := fileDigest(path); observed != expected {
 			return nil, RunOptions{}, fmt.Errorf("env file %q changed since run creation; refusing resume", path)
@@ -691,6 +698,9 @@ func fileDigest(path string) string {
 
 func entryInputPaths(entry Entry, opts RunOptions) []string {
 	paths := []string{entry.ChartPath}
+	if strings.HasSuffix(opts.ChartRef, ".tgz") {
+		paths = append(paths, opts.ChartRef)
+	}
 	paths = append(paths, opts.ExtraValues...)
 	paths = append(paths, entry.ExtraValues...)
 	for _, dep := range entry.Dependencies {

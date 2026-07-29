@@ -608,6 +608,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		// clients need the host at creation time (it's baked into redirect
 		// URIs), so fall back to those env vars if the flag is empty.
 		ingressHost := flags.ResolveIngressHostname()
+		if opts.Auth0IngressHost != "" {
+			ingressHost = opts.Auth0IngressHost
+		}
 		if ingressHost == "" {
 			ingressHost = os.Getenv("CAMUNDA_HOSTNAME")
 		}
@@ -746,7 +749,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		// `/<path>` for derived URLs, avoiding `//` in rendered output.
 		flags.ExtraEnv["AUTH0_ISSUER_URL"] = strings.TrimSuffix(auth0Options.Domain, "/")
 		// Initial admin email defaults to the test user. Override via AUTH0_INITIAL_ADMIN_EMAIL.
-		if v := os.Getenv("AUTH0_INITIAL_ADMIN_EMAIL"); v != "" {
+		if v := opts.Auth0InitialAdminEmail; v != "" {
 			flags.ExtraEnv["AUTH0_INITIAL_ADMIN_EMAIL"] = v
 		} else {
 			flags.ExtraEnv["AUTH0_INITIAL_ADMIN_EMAIL"] = "demo@camunda.com"
