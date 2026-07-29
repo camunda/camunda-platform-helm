@@ -32,6 +32,7 @@ func TestRunStateLifecycleAndResume(t *testing.T) {
 	state, err := store.Load()
 	require.NoError(t, err)
 	assert.Equal(t, RunPassed, state.Entries[0].Status)
+	assert.Equal(t, "complete", state.Entries[0].Phase)
 	assert.Equal(t, RunInterrupted, state.Entries[1].Status)
 	assert.Equal(t, "RUN_INTERRUPTED", state.Entries[1].Failure.Code)
 
@@ -143,6 +144,7 @@ func TestCleaningFailedEntryPreservesFailedRun(t *testing.T) {
 	assert.Equal(t, RunFailed, state.Status)
 	assert.Equal(t, RunFailed, state.Entries[0].Status)
 	assert.True(t, state.Entries[0].Cleaned)
+	assert.Equal(t, "cleaned", state.Entries[0].Phase)
 }
 
 func TestResumeRejectsRedactedArguments(t *testing.T) {
@@ -234,6 +236,20 @@ func TestCreatePersistsAbsoluteEntryChartPath(t *testing.T) {
 	assert.True(t, filepath.IsAbs(state.Entries[0].Entry.ChartPath), state.Entries[0].Entry.ChartPath)
 	replay := strings.Join(state.Entries[0].Replay.Command, " ")
 	assert.NotContains(t, replay, "--repo-root ../..")
+}
+
+func TestCreatePersistsAbsoluteLocalDependencyPaths(t *testing.T) {
+	repoRoot := t.TempDir()
+	chartPath := filepath.Join(repoRoot, "charts", "local")
+	require.NoError(t, os.MkdirAll(chartPath, 0o755))
+	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install", Dependencies: []ChartDependency{{Chart: "charts/local", ValuesFile: "values/local.yaml"}}}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{RepoRoot: repoRoot})
+	require.NoError(t, err)
+	state, err := store.Load()
+	require.NoError(t, err)
+	assert.Equal(t, chartPath, state.Entries[0].Entry.Dependencies[0].Chart)
+	assert.Equal(t, filepath.Join(repoRoot, "values/local.yaml"), state.Entries[0].Entry.Dependencies[0].ValuesFile)
 }
 
 func TestClassifyFailureRedactsCredentialValues(t *testing.T) {

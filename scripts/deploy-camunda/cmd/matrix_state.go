@@ -125,8 +125,9 @@ func newMatrixResumeCommand() *cobra.Command {
 				return err
 			}
 			opts.StateStore = store
+			startedAt := time.Now()
 			results, runErr := matrix.Run(cmd.Context(), entries, opts)
-			fmt.Fprintln(cmd.OutOrStdout(), matrix.PrintRunSummary(results, 0, ""))
+			fmt.Fprintln(cmd.OutOrStdout(), matrix.PrintRunSummary(results, time.Since(startedAt), ""))
 			return runErr
 		},
 	}

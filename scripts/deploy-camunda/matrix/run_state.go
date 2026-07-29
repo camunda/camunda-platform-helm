@@ -287,11 +287,7 @@ func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunStat
 	state := &MatrixRunState{Schema: RunStateSchema, ID: s.runID, Status: RunPending, CreatedAt: now, UpdatedAt: now, Options: StoreRunOptions(opts)}
 	replayOpts := state.Options.RunOptions()
 	for _, entry := range entries {
-		if entry.ChartPath != "" && !filepath.IsAbs(entry.ChartPath) {
-			if absolute, err := filepath.Abs(entry.ChartPath); err == nil {
-				entry.ChartPath = absolute
-			}
-		}
+		entry = normalizeEntryPaths(entry, replayOpts.RepoRoot)
 		namespace := ResolveNamespace(opts, entry)
 		state.Entries = append(state.Entries, &EntryRunState{
 			ID: EntryID(entry), Entry: entry, Status: RunPending, Namespace: namespace,
@@ -357,7 +353,7 @@ func (s *RunStateStore) Complete(entry Entry, result RunResult) error {
 		now := time.Now().UTC()
 		item.FinishedAt, item.Diagnostics, item.KubeContext = &now, result.Diagnostics, result.KubeContext
 		if result.Error == nil {
-			item.Status, item.Failure = RunPassed, nil
+			item.Status, item.Phase, item.Failure = RunPassed, "complete", nil
 		} else {
 			item.Status = RunFailed
 			item.Failure = ClassifyFailure(result.Error)
@@ -415,7 +411,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 			return nil, RunOptions{}, fmt.Errorf("entry %q is a partially executed two-step upgrade and cannot be resumed safely; replay it in a clean namespace", item.ID)
 		}
 		item.Status, item.Phase, item.Failure, item.Cleaned = RunPending, "", nil, false
-		entries = append(entries, item.Entry)
+		entries = append(entries, normalizeEntryPaths(item.Entry, state.Options.RepoRoot))
 	}
 	if entryID != "" && len(entries) == 0 {
 		return nil, RunOptions{}, fmt.Errorf("entry %q is not resumable or does not exist", entryID)
@@ -521,9 +517,36 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	return entries, opts, nil
 }
 
+func normalizeEntryPaths(entry Entry, repoRoot string) Entry {
+	if entry.ChartPath != "" && !filepath.IsAbs(entry.ChartPath) {
+		candidate := entry.ChartPath
+		if repoRoot != "" && !strings.HasPrefix(filepath.Clean(candidate), filepath.Clean(repoRoot)+string(filepath.Separator)) {
+			if relative, err := filepath.Rel(filepath.Dir(filepath.Join(repoRoot, "scripts", "deploy-camunda")), candidate); err == nil && !strings.HasPrefix(relative, "..") {
+				candidate = filepath.Join(repoRoot, relative)
+			}
+		}
+		if absolute, err := filepath.Abs(candidate); err == nil {
+			entry.ChartPath = absolute
+		}
+	}
+	for i := range entry.Dependencies {
+		if entry.Dependencies[i].ValuesFile != "" && !filepath.IsAbs(entry.Dependencies[i].ValuesFile) {
+			entry.Dependencies[i].ValuesFile = filepath.Join(repoRoot, entry.Dependencies[i].ValuesFile)
+		}
+		if entry.Dependencies[i].Chart != "" && !filepath.IsAbs(entry.Dependencies[i].Chart) {
+			candidate := filepath.Join(repoRoot, entry.Dependencies[i].Chart)
+			if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+				entry.Dependencies[i].Chart = candidate
+			}
+		}
+	}
+	return entry
+}
+
 func (s *RunStateStore) MarkCleaned(entryID string) error {
 	return s.updateID(entryID, func(state *MatrixRunState, item *EntryRunState) RunEvent {
 		item.Cleaned = true
+		item.Phase = "cleaned"
 		if item.Status != RunFailed && item.Status != RunInterrupted {
 			item.Status = RunCleaned
 		}

@@ -1244,7 +1244,11 @@ func diagnosticsTimestamp(now time.Time) string {
 }
 
 func diagnosticsRunDir(namespace string, now time.Time) string {
-	return filepath.Join(diagnosticsDir, namespace, diagnosticsTimestamp(now))
+	path := filepath.Join(diagnosticsDir, namespace, diagnosticsTimestamp(now))
+	if absolute, err := filepath.Abs(path); err == nil {
+		return absolute
+	}
+	return path
 }
 
 func sanitizeDiagnosticsFilename(name string) string {

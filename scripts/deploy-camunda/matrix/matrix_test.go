@@ -1000,6 +1000,27 @@ func TestBuildEntryFlagsPrefersExplicitGlobalHost(t *testing.T) {
 	}
 }
 
+func TestBuildEntryFlagsPreservesAbsoluteCompanionPaths(t *testing.T) {
+	repoRoot := t.TempDir()
+	chartPath := filepath.Join(repoRoot, "chart")
+	valuesPath := filepath.Join(repoRoot, "values.yaml")
+	if err := os.MkdirAll(chartPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	entry := Entry{Version: "8.10", ChartPath: repoRoot, Scenario: "test", Shortname: "test", Flow: "install", Dependencies: []ChartDependency{{Chart: chartPath, ValuesFile: valuesPath}}}
+	flags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{RepoRoot: repoRoot})
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if flags.CompanionCharts[0].ChartRef != chartPath {
+		t.Fatalf("chart = %q", flags.CompanionCharts[0].ChartRef)
+	}
+	if flags.CompanionCharts[0].ValuesFile != valuesPath {
+		t.Fatalf("values = %q", flags.CompanionCharts[0].ValuesFile)
+	}
+}
+
 func TestBuildEntryFlagsGeneratesPostgresCredentials(t *testing.T) {
 	entry := Entry{
 		Version: "8.10", ChartPath: t.TempDir(), Scenario: "test", Shortname: "test", Flow: "install",

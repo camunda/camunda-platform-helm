@@ -42,7 +42,10 @@ func companionChartsForEntry(entry Entry, repoRoot string) []config.CompanionCha
 	for _, dep := range entry.Dependencies {
 		chartRef := dep.Chart
 		version := dep.Version
-		localChartPath := filepath.Join(repoRoot, dep.Chart)
+		localChartPath := dep.Chart
+		if !filepath.IsAbs(localChartPath) {
+			localChartPath = filepath.Join(repoRoot, localChartPath)
+		}
 		if info, err := os.Stat(localChartPath); err == nil && info.IsDir() {
 			chartRef = localChartPath
 			version = "" // --version is only meaningful for remote charts
@@ -56,7 +59,10 @@ func companionChartsForEntry(entry Entry, repoRoot string) []config.CompanionCha
 			RepoURL:     dep.RepoURL,
 		}
 		if dep.ValuesFile != "" {
-			cc.ValuesFile = filepath.Join(repoRoot, dep.ValuesFile)
+			cc.ValuesFile = dep.ValuesFile
+			if !filepath.IsAbs(cc.ValuesFile) {
+				cc.ValuesFile = filepath.Join(repoRoot, cc.ValuesFile)
+			}
 		}
 		charts = append(charts, cc)
 	}
