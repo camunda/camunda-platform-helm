@@ -130,6 +130,26 @@ func TestAcquireRejectsActiveLockGuard(t *testing.T) {
 	require.ErrorContains(t, err, "lock operation is active")
 }
 
+func TestAcquireReclaimsStaleLockGuard(t *testing.T) {
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
+	hostname, _ := os.Hostname()
+	data, _ := json.Marshal(lockOwner{Hostname: hostname, PID: 999999999, ProcessIdentity: "dead"})
+	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock.guard"), append(data, '\n'), 0o600))
+	lock, err := store.Acquire()
+	require.NoError(t, err)
+	require.NoError(t, lock.Close())
+}
+
+func TestPrepareResumeIgnoresUnusedDockerImport(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{ImportDockerAuth: true, DockerConfigPath: filepath.Join(t.TempDir(), "missing.json")})
+	require.NoError(t, err)
+	_, _, err = store.PrepareResume("")
+	require.NoError(t, err)
+}
+
 func TestValidateRunIDRejectsTraversal(t *testing.T) {
 	for _, id := range []string{"", "..", "../other", "/tmp/run", "a/b"} {
 		assert.Error(t, ValidateRunID(id), id)
@@ -252,7 +272,7 @@ func TestPrepareResumeRestoresImportedDockerCredentials(t *testing.T) {
 	store := NewRunStateStore(t.TempDir(), "run-1")
 	_, err := store.Create([]Entry{entry}, RunOptions{
 		DockerUsername: "imported-user", DockerPassword: "imported-password",
-		ImportDockerAuth: true, DockerConfigPath: configPath,
+		ImportDockerAuth: true, DockerConfigPath: configPath, EnsureDockerRegistry: true,
 	})
 	require.NoError(t, err)
 	_, opts, err := store.PrepareResume("")

@@ -355,7 +355,26 @@ func (s *RunStateStore) acquireLockGuard() (func(), error) {
 	path := filepath.Join(s.RunDir(), "run.lock.guard")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
-		return nil, fmt.Errorf("matrix run %q lock operation is active", s.runID)
+		data, readErr := os.ReadFile(path)
+		var owner lockOwner
+		parseErr := json.Unmarshal(data, &owner)
+		hostname, _ := os.Hostname()
+		alive, known := processState(owner.PID, owner.ProcessIdentity)
+		if readErr == nil && parseErr == nil && owner.Hostname == hostname && known && !alive {
+			if removeErr := os.Remove(path); removeErr == nil {
+				file, err = os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+			}
+		}
+		if err != nil {
+			return nil, fmt.Errorf("matrix run %q lock operation is active", s.runID)
+		}
+	}
+	hostname, _ := os.Hostname()
+	data, _ := json.Marshal(lockOwner{Hostname: hostname, PID: os.Getpid(), ProcessIdentity: processIdentity(os.Getpid())})
+	if _, err := file.Write(append(data, '\n')); err != nil {
+		file.Close()
+		_ = os.Remove(path)
+		return nil, err
 	}
 	if err := file.Close(); err != nil {
 		_ = os.Remove(path)
@@ -566,7 +585,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 			hubPassword = credential.Password
 		}
 	}
-	if state.Options.ImportDockerAuth && (harborPassword == "" || hubPassword == "") {
+	if state.Options.ImportDockerAuth && ((state.Options.RequiresDockerPassword && harborPassword == "") || (state.Options.RequiresDockerHubPassword && hubPassword == "")) {
 		auths, importErr := ImportPlaintextDockerAuth(state.Options.DockerConfigPath, "registry.camunda.cloud", "docker.io")
 		if importErr != nil {
 			return nil, RunOptions{}, fmt.Errorf("restore Docker config credentials: %w", importErr)

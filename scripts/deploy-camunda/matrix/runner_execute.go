@@ -535,6 +535,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			}
 			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil); err != nil {
 				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				if cleanupErr == nil {
+					cleanupErr = opts.StateStore.MarkExternalProvisioningComplete(entry)
+				}
 				result.Error = errors.Join(fmt.Errorf("checkpoint Entra resource: %w", err), cleanupErr)
 				return result
 			}
