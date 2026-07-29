@@ -693,7 +693,13 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 				successes = 0
 			}
 			attempts++
-			time.Sleep(propagationSleepDuration)
+			timer := time.NewTimer(propagationSleepDuration)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return &VenomApp{AppID: appID, ObjectID: objectID, Created: created}, ctx.Err()
+			case <-timer.C:
+			}
 		}
 
 	}

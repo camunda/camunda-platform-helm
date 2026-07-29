@@ -511,7 +511,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 				}
 			}
 		}
-
 		logging.Logger.Info().
 			Str("namespace", namespace).
 			Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")

@@ -463,6 +463,12 @@ func TestEffectiveDomainUsesDefault(t *testing.T) {
 	}
 }
 
+func TestEffectiveDomainTrimsTrailingSlash(t *testing.T) {
+	if got := EffectiveDomain("https://tenant.example/"); got != "https://tenant.example" {
+		t.Fatalf("domain = %q", got)
+	}
+}
+
 func TestEnsureClientsInvokesCheckpointForEveryClient(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /oauth/token": tokenHandler(),

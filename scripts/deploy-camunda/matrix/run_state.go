@@ -578,6 +578,18 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		if item.Attempts > 0 && versionmatrix.IsTwoStepUpgradeFlow(item.Entry.Flow) {
 			return nil, RunOptions{}, fmt.Errorf("entry %q is a partially executed two-step upgrade and cannot be resumed safely; replay it in a clean namespace", item.ID)
 		}
+		if item.Auth0Domain != "" {
+			if state.Options.Auth0Domain != "" && state.Options.Auth0Domain != item.Auth0Domain {
+				return nil, RunOptions{}, errors.New("recorded Auth0 domains conflict")
+			}
+			state.Options.Auth0Domain = item.Auth0Domain
+		}
+		if item.EntraDirectoryID != "" {
+			if state.Options.EntraDirectoryID != "" && state.Options.EntraDirectoryID != item.EntraDirectoryID {
+				return nil, RunOptions{}, errors.New("recorded Entra directories conflict")
+			}
+			state.Options.EntraDirectoryID = item.EntraDirectoryID
+		}
 		item.Status, item.Phase, item.Failure, item.Cleaned = RunPending, "", nil, false
 		entries = append(entries, normalizeEntryPaths(item.Entry, state.Options.RepoRoot))
 	}

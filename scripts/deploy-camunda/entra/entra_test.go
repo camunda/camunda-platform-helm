@@ -946,6 +946,39 @@ func TestEnsureVenomAppReturnsPartialAppAfterCreationFailure(t *testing.T) {
 	}
 }
 
+func TestEnsureVenomAppPropagationStopsOnCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/oauth2/v2.0/token") {
+			_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "token"})
+			return
+		}
+		if r.Method == http.MethodGet {
+			_ = json.NewEncoder(w).Encode(map[string]any{"value": []any{}})
+			return
+		}
+		if r.Method == http.MethodPost {
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]string{"appId": "app", "id": "object"})
+		}
+	}))
+	defer server.Close()
+	originalGraph, originalLogin, originalSleep := graphBaseURL, loginBaseURL, propagationSleepDuration
+	graphBaseURL, loginBaseURL, propagationSleepDuration = server.URL, server.URL, time.Minute
+	t.Cleanup(func() {
+		graphBaseURL, loginBaseURL, propagationSleepDuration = originalGraph, originalLogin, originalSleep
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	start := time.Now()
+	_, err := EnsureVenomApp(ctx, Options{Namespace: "ns", DirectoryID: "dir", ClientID: "client", ClientSecret: "secret", HTTPClient: server.Client(), SkipK8sSecret: true})
+	if err == nil {
+		t.Fatal("expected cancellation")
+	}
+	if time.Since(start) > time.Second {
+		t.Fatal("cancellation was not prompt")
+	}
+}
+
 // TestEnsureVenomApp_ExistingApp tests the flow when an existing app is found.
 func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 	appCreateCalled := false

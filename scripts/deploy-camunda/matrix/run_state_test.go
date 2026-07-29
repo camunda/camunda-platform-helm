@@ -392,6 +392,19 @@ func TestRunStatePersistsAuth0Behavior(t *testing.T) {
 	assert.Equal(t, "admin@example.com", stored.Auth0InitialAdminEmail)
 }
 
+func TestPrepareResumeCarriesRecordedIdentityTenants(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "auth0", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, store.RecordExternalResources(entry, "", "tenant-id", "https://tenant.example", []string{"client"}))
+	require.NoError(t, store.MarkExternalProvisioningComplete(entry))
+	_, opts, err := store.PrepareResume("")
+	require.NoError(t, err)
+	assert.Equal(t, "tenant-id", opts.EntraDirectoryID)
+	assert.Equal(t, "https://tenant.example", opts.Auth0Domain)
+}
+
 func TestCreatePersistsAbsoluteLocalDependencyPaths(t *testing.T) {
 	repoRoot := t.TempDir()
 	chartPath := filepath.Join(repoRoot, "charts", "local")
