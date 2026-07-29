@@ -150,6 +150,24 @@ func TestResolveRegistryCredentialsFromEnvFilesPrefersEnvironmentPair(t *testing
 	}
 }
 
+func TestResolveRegistryCredentialsFromEnvFilesRejectsConflictingVersionPairs(t *testing.T) {
+	useMemoryCredentialStore(t)
+	dir := t.TempDir()
+	firstPath := dir + "/8.9.env"
+	secondPath := dir + "/8.10.env"
+	if err := os.WriteFile(firstPath, []byte("HARBOR_USERNAME=first\nHARBOR_PASSWORD=first-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(secondPath, []byte("HARBOR_USERNAME=second\nHARBOR_PASSWORD=second-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	flags := config.DockerFlags{EnsureDockerRegistry: true}
+	err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.9"}, {Version: "8.10"}}, map[string]string{"8.9": firstPath, "8.10": secondPath}, "")
+	if err == nil {
+		t.Fatal("expected conflicting version credentials error")
+	}
+}
+
 func TestCredentialsConfigureStoresPairWithoutPrintingSecret(t *testing.T) {
 	store := useMemoryCredentialStore(t)
 	cmd := newCredentialsConfigureCommand()

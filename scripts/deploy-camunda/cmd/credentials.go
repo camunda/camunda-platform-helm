@@ -160,27 +160,31 @@ func resolveRegistryCredentialsFromEnvFiles(docker *config.DockerFlags, entries 
 	if err := resolveRegistryCredentialsFromEnvironment(docker); err != nil {
 		return err
 	}
-	paths := map[string]bool{}
+	resolveHarborFromFiles := docker.EnsureDockerRegistry && docker.DockerUsername == ""
+	resolveDockerHubFromFiles := docker.EnsureDockerHub && docker.DockerHubUsername == ""
+	seenPaths := map[string]bool{}
+	var paths []string
 	for _, entry := range entries {
 		path := envFiles[entry.Version]
 		if path == "" {
 			path = fallback
 		}
-		if path != "" {
-			paths[path] = true
+		if path != "" && !seenPaths[path] {
+			seenPaths[path] = true
+			paths = append(paths, path)
 		}
 	}
-	for path := range paths {
+	for _, path := range paths {
 		values, err := env.ReadFile(path)
 		if err != nil {
 			continue
 		}
-		if docker.EnsureDockerRegistry && docker.DockerUsername == "" {
+		if resolveHarborFromFiles {
 			if err := mergeCredentialPair("Harbor", values, &docker.DockerUsername, &docker.DockerPassword, [][2]string{{"HARBOR_USERNAME", "HARBOR_PASSWORD"}, {"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"}, {"NEXUS_USERNAME", "NEXUS_PASSWORD"}}); err != nil {
 				return fmt.Errorf("%s: %w", path, err)
 			}
 		}
-		if docker.EnsureDockerHub && docker.DockerHubUsername == "" {
+		if resolveDockerHubFromFiles {
 			if err := mergeCredentialPair("Docker Hub", values, &docker.DockerHubUsername, &docker.DockerHubPassword, [][2]string{{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"}, {"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"}}); err != nil {
 				return fmt.Errorf("%s: %w", path, err)
 			}
