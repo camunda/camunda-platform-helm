@@ -674,11 +674,20 @@ func redactStoredArgs(args []string) []string {
 		if idx := strings.LastIndex(key, "="); idx >= 0 {
 			key = key[:idx]
 		}
-		if values.IsSecretName(key) {
+		if values.IsSecretName(key) || !safeStoredHelmKey(key) {
 			out[i] = "<redacted>"
 		}
 	}
 	return out
+}
+
+func safeStoredHelmKey(key string) bool {
+	for _, prefix := range []string{"global.host", "orchestration.upgrade.allowPreReleaseImages"} {
+		if key == prefix || strings.HasSuffix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func redactStoredSets(values []string) []string { return redactStoredArgs(values) }

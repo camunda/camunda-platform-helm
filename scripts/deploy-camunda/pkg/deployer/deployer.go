@@ -42,10 +42,23 @@ func Deploy(ctx context.Context, o types.Options) error {
 		return fmt.Errorf("failed to create kube client: %w", err)
 	}
 
+	namespaceExisted, err := kubeClient.NamespaceExists(ctx, o.Namespace)
+	if err != nil {
+		return err
+	}
 	if err := kubeClient.EnsureNamespace(ctx, o.Namespace); err != nil {
 		return err
 	}
 	if o.CIMetadata.MatrixRunID != "" {
+		if namespaceExisted {
+			owner, err := kubeClient.NamespaceLabel(ctx, o.Namespace, "deploy-camunda-run")
+			if err != nil {
+				return err
+			}
+			if owner != o.CIMetadata.MatrixRunID {
+				return fmt.Errorf("namespace %q already existed and is not owned by matrix run %q", o.Namespace, o.CIMetadata.MatrixRunID)
+			}
+		}
 		if err := kubeClient.ClaimNamespaceOwnership(ctx, o.Namespace, "deploy-camunda-run", o.CIMetadata.MatrixRunID); err != nil {
 			return err
 		}

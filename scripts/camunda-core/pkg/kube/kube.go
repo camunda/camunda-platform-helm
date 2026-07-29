@@ -223,6 +223,17 @@ func (c *Client) NamespaceLabel(ctx context.Context, namespace, label string) (s
 	return ns.Labels[label], nil
 }
 
+func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, error) {
+	_, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("get namespace %q: %w", namespace, err)
+	}
+	return true, nil
+}
+
 func (c *Client) ClaimNamespaceOwnership(ctx context.Context, namespace, label, owner string) error {
 	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
@@ -242,30 +253,30 @@ func (c *Client) ClaimNamespaceOwnership(ctx context.Context, namespace, label, 
 }
 
 func (c *Client) DeleteNamespaceOwnedBy(ctx context.Context, namespace, label, owner string) error {
-	uid, err := c.OwnedNamespaceUID(ctx, namespace, label, owner)
+	uid, resourceVersion, err := c.OwnedNamespaceIdentity(ctx, namespace, label, owner)
 	if err != nil || uid == "" {
 		return err
 	}
-	return c.DeleteNamespaceWithUID(ctx, namespace, uid)
+	return c.DeleteNamespaceWithIdentity(ctx, namespace, uid, resourceVersion)
 }
 
-func (c *Client) OwnedNamespaceUID(ctx context.Context, namespace, label, owner string) (types.UID, error) {
+func (c *Client) OwnedNamespaceIdentity(ctx context.Context, namespace, label, owner string) (types.UID, string, error) {
 	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		return "", nil
+		return "", "", nil
 	}
 	if err != nil {
-		return "", fmt.Errorf("get namespace %q: %w", namespace, err)
+		return "", "", fmt.Errorf("get namespace %q: %w", namespace, err)
 	}
 	if actual := ns.Labels[label]; actual != owner {
-		return "", fmt.Errorf("namespace %q is owned by run %q, not %q", namespace, actual, owner)
+		return "", "", fmt.Errorf("namespace %q is owned by run %q, not %q", namespace, actual, owner)
 	}
-	return ns.UID, nil
+	return ns.UID, ns.ResourceVersion, nil
 }
 
-func (c *Client) DeleteNamespaceWithUID(ctx context.Context, namespace string, uid types.UID) error {
+func (c *Client) DeleteNamespaceWithIdentity(ctx context.Context, namespace string, uid types.UID, resourceVersion string) error {
 	if err := c.clientset.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{
-		Preconditions: &metav1.Preconditions{UID: &uid},
+		Preconditions: &metav1.Preconditions{UID: &uid, ResourceVersion: &resourceVersion},
 	}); err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("delete namespace %q: %w", namespace, err)
 	}

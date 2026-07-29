@@ -162,8 +162,9 @@ func newMatrixCleanupCommand() *cobra.Command {
 				cleanupCtx, cancel := context.WithTimeout(cmd.Context(), 2*time.Minute)
 				client, err := kube.NewClient("", item.KubeContext)
 				var uid types.UID
+				var resourceVersion string
 				if err == nil {
-					uid, err = client.OwnedNamespaceUID(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID)
+					uid, resourceVersion, err = client.OwnedNamespaceIdentity(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID)
 				}
 				if err != nil {
 					cancel()
@@ -195,13 +196,13 @@ func newMatrixCleanupCommand() *cobra.Command {
 						MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 					})
 				}
-				if _, ownershipErr := client.OwnedNamespaceUID(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID); ownershipErr != nil {
+				if currentUID, currentVersion, ownershipErr := client.OwnedNamespaceIdentity(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID); ownershipErr != nil || currentUID != uid || currentVersion != resourceVersion {
 					cancel()
 					failures = append(failures, item.ID+": namespace ownership changed during identity cleanup: "+ownershipErr.Error())
 					continue
 				}
 				if uid != "" {
-					err = client.DeleteNamespaceWithUID(cleanupCtx, item.Namespace, uid)
+					err = client.DeleteNamespaceWithIdentity(cleanupCtx, item.Namespace, uid, resourceVersion)
 				}
 				cancel()
 				if err != nil {

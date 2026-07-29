@@ -1473,12 +1473,14 @@ func lastNLines(s string, n int) string {
 // happen after diagnostics have been collected. Errors are logged but do not affect the
 // entry's result.
 func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error {
+	identityCtx, identityCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer identityCancel()
 	// Clean up Entra app registration for OIDC entries (best-effort, before namespace deletion).
 	if result.venomOpts != nil {
 		logging.Logger.Info().
 			Str("namespace", result.Namespace).
 			Msg("Cleaning up venom Entra app registration")
-		entra.CleanupVenomApp(ctx, *result.venomOpts)
+		entra.CleanupVenomApp(identityCtx, *result.venomOpts)
 	}
 
 	// Clean up Auth0 clients for Auth0 entries (best-effort, before namespace deletion).
@@ -1486,7 +1488,7 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 		logging.Logger.Info().
 			Str("namespace", result.Namespace).
 			Msg("Cleaning up Auth0 clients")
-		auth0.CleanupClients(ctx, *result.auth0Opts)
+		auth0.CleanupClients(identityCtx, *result.auth0Opts)
 	}
 
 	// Delete the namespace.
