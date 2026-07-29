@@ -456,6 +456,13 @@ func TestCleanupClientIDsStrictAggregatesFailures(t *testing.T) {
 	}
 }
 
+func TestEffectiveDomainUsesDefault(t *testing.T) {
+	t.Setenv("AUTH0_DOMAIN", "")
+	if got := EffectiveDomain(""); got != auth0BaseURL {
+		t.Fatalf("domain = %q", got)
+	}
+}
+
 func TestEnsureClientsInvokesCheckpointForEveryClient(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /oauth/token": tokenHandler(),

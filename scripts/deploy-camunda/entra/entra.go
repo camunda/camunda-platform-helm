@@ -815,6 +815,24 @@ func CleanupVenomAppObjectStrict(ctx context.Context, opts Options, objectID str
 	return nil
 }
 
+func FindVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
+	if err := resolveOpts(&opts); err != nil {
+		return nil, err
+	}
+	token, err := acquireBearerToken(ctx, &opts)
+	if err != nil {
+		return nil, err
+	}
+	appID, objectID, err := findApp(ctx, httpClient(&opts), token, appDisplayName(opts.Namespace))
+	if err != nil {
+		return nil, err
+	}
+	if objectID == "" {
+		return nil, nil
+	}
+	return &VenomApp{AppID: appID, ObjectID: objectID}, nil
+}
+
 // createVenomK8sSecret creates or updates the venom-entra-credentials Opaque
 // secret in the given namespace using server-side apply.
 func createVenomK8sSecret(ctx context.Context, kubeContext, namespace, venomClientID, venomClientSecret, audience string) error {

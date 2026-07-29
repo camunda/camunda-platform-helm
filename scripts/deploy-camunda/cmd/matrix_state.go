@@ -31,6 +31,7 @@ var newCleanupKubeClient = func(kubeContext string) (cleanupKubeClient, error) {
 
 var cleanupEntraObject = entra.CleanupVenomAppObjectStrict
 var cleanupAuth0ClientIDs = auth0.CleanupClientIDsStrict
+var findEntraObject = entra.FindVenomApp
 
 func defaultMatrixStateRoot(explicit string) (string, error) {
 	if explicit != "" {
@@ -238,14 +239,19 @@ func newMatrixCleanupCommand() *cobra.Command {
 					envPath = ".env"
 				}
 				values := cleanupCredentialEnv(envPath)
-				if item.ExternalProvisioningStarted {
-					providerCancel()
-					failures = append(failures, item.ID+": external provisioning started but no exact provider resource checkpoint exists; namespace preserved")
-					continue
-				}
 				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
 					if item.EntraObjectID == "" {
-						err = nil
+						if item.ExternalProvisioningStarted {
+							app, findErr := findEntraObject(providerCtx, entra.Options{Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]})
+							if findErr != nil {
+								err = findErr
+							} else if app != nil {
+								item.EntraObjectID = app.ObjectID
+								err = cleanupEntraObject(providerCtx, entra.Options{Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]}, app.ObjectID)
+							}
+						} else {
+							err = nil
+						}
 					} else if item.EntraDirectoryID == "" || values["ENTRA_APP_DIRECTORY_ID"] != item.EntraDirectoryID {
 						err = fmt.Errorf("Entra directory does not match recorded tenant")
 					} else if item.EntraObjectID != "" {
@@ -263,6 +269,17 @@ func newMatrixCleanupCommand() *cobra.Command {
 						err = cleanupAuth0ClientIDs(providerCtx, auth0.Options{
 							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 						}, item.Auth0ClientIDs)
+					}
+				}
+				if err == nil && item.ExternalProvisioningStarted {
+					if (item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc") && item.EntraObjectID != "" {
+						if clearErr := store.MarkExternalProvisioningComplete(item.Entry); clearErr != nil {
+							err = clearErr
+						}
+					} else {
+						providerCancel()
+						failures = append(failures, item.ID+": external provisioning remains uncertain after checkpointed cleanup; namespace preserved")
+						continue
 					}
 				}
 				if err != nil {

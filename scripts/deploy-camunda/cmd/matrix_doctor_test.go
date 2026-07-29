@@ -235,6 +235,37 @@ func TestMatrixCleanupRefusesUncheckpointedProviderProvisioning(t *testing.T) {
 	}
 }
 
+func TestMatrixCleanupReconcilesUncheckpointedEntraObject(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("ENTRA_APP_DIRECTORY_ID", "tenant")
+	t.Setenv("ENTRA_APP_CLIENT_ID", "client")
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "secret")
+	entry := matrix.Entry{Version: "8.10", Shortname: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.MarkExternalProvisioningStarted(entry); err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeCleanupClient{}
+	originalClient, originalFind, originalCleanup := newCleanupKubeClient, findEntraObject, cleanupEntraObject
+	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
+	findEntraObject = func(context.Context, entra.Options) (*entra.VenomApp, error) {
+		return &entra.VenomApp{ObjectID: "object-id"}, nil
+	}
+	cleanupEntraObject = func(context.Context, entra.Options, string) error { return nil }
+	t.Cleanup(func() {
+		newCleanupKubeClient, findEntraObject, cleanupEntraObject = originalClient, originalFind, originalCleanup
+	})
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestMatrixCleanupPreservesNamespaceOnAuth0Failure(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("AUTH0_DOMAIN", "https://tenant.example")

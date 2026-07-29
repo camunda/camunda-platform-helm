@@ -37,6 +37,16 @@ import (
 // tests can override with an httptest server URL.
 var auth0BaseURL = "https://distribution-team.eu.auth0.com"
 
+func EffectiveDomain(value string) string {
+	if value != "" {
+		return strings.TrimSuffix(value, "/")
+	}
+	if envValue := os.Getenv("AUTH0_DOMAIN"); envValue != "" {
+		return strings.TrimSuffix(envValue, "/")
+	}
+	return auth0BaseURL
+}
+
 // Retry parameters for Auth0 Management API calls. Variables (not consts) so
 // tests can shrink them to ms scale. The Auth0 tenant has a "global limit"
 // that triggers HTTP 429s under burst load; bounded exponential backoff
@@ -179,10 +189,7 @@ func IsAuth0Identity(identity string) bool {
 // never touches redirect URIs).
 func resolveOpts(opts *Options, requireIngressHost bool) error {
 	if opts.Domain == "" {
-		opts.Domain = os.Getenv("AUTH0_DOMAIN")
-	}
-	if opts.Domain == "" {
-		opts.Domain = auth0BaseURL
+		opts.Domain = EffectiveDomain("")
 	}
 	if opts.Audience == "" {
 		opts.Audience = DefaultAudience

@@ -611,6 +611,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			IngressHost:   ingressHost,
 			SkipK8sSecret: true, // Phase 2 deferred to PreInstallHook.
 		}
+		auth0Options.Domain = auth0.EffectiveDomain(auth0Options.Domain)
 		if opts.StateStore != nil {
 			auth0Options.OnClientCreated = func(client auth0.Client) error {
 				return opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, []string{client.ClientID})
