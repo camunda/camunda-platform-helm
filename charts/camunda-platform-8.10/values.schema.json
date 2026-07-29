@@ -3997,6 +3997,16 @@
                     "description": "if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.",
                     "default": false
                 },
+                "replicaOwnership": {
+                    "type": "string",
+                    "description": "can be used to transfer orchestration StatefulSet replica ownership. Empty keeps ordinary Helm ownership; capacityManager transfers ownership; helm explicitly requests a validated handback.",
+                    "default": "",
+                    "enum": [
+                        "",
+                        "helm",
+                        "capacityManager"
+                    ]
+                },
                 "image": {
                     "type": "object",
                     "properties": {
@@ -4013,12 +4023,12 @@
                         "tag": {
                             "type": "string",
                             "description": "defines the image tag to use.",
-                            "default": "latest"
+                            "default": "dev-20260728-amd64-v6"
                         },
                         "digest": {
                             "type": "string",
                             "description": "can be used to set the image digest, overriding the tag.",
-                            "default": ""
+                            "default": "sha256:b33a63e5029c067c7e1eed427e8d595f83e5e18d8200406843888eae7ebc8867"
                         },
                         "pullSecrets": {
                             "type": "array",

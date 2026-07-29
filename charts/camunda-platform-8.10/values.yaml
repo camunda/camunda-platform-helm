@@ -1938,6 +1938,8 @@ connectors:
 capacityManager:
   ## @param capacityManager.enabled if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.
   enabled: false
+  ## @param capacityManager.replicaOwnership can be used to transfer orchestration StatefulSet replica ownership. Empty keeps ordinary Helm ownership; capacityManager transfers ownership; helm explicitly requests a validated handback.
+  replicaOwnership: ""
 
   ## @extra capacityManager.image configuration to configure the Capacity Manager image specifics.
   image:
@@ -1946,9 +1948,9 @@ capacityManager:
     ## @param capacityManager.image.repository defines which image repository to use.
     repository: team-distribution/capacity-manager
     ## @param capacityManager.image.tag defines the image tag to use.
-    tag: latest
+    tag: dev-20260728-amd64-v6
+    digest: sha256:b33a63e5029c067c7e1eed427e8d595f83e5e18d8200406843888eae7ebc8867
     ## @param capacityManager.image.digest can be used to set the image digest, overriding the tag.
-    digest: ""
     ## @param capacityManager.image.pullSecrets can be used to configure image pull secrets.
     pullSecrets: []
 

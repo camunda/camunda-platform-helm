@@ -4,6 +4,9 @@ global:
 
 capacityManager:
   enabled: true
+  replicaOwnership: capacityManager
+  policy:
+    mode: automatic
 
 orchestration:
   clusterSize: "1"
