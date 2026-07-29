@@ -51,15 +51,18 @@ func main() {
 		os.Exit(1)
 	}
 	var pressure capacity.PressureSource = capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient}
+	var advisorMetrics capacity.GaugeSource = capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient}
 	if prometheusURL != "" && strings.HasSuffix(prometheusURL, "/actuator/prometheus") {
-		pressure = &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient}
+		direct := &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient}
+		pressure = direct
+		advisorMetrics = direct
 	}
 	manager := &capacity.Manager{
 		Policies:       capacity.FilePolicySource{Path: policyPath},
 		Workload:       kubernetes,
 		Cluster:        capacity.ZeebeClient{BaseURL: zeebeURL, Client: httpClient},
 		Pressure:       pressure,
-		AdvisorMetrics: &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient},
+		AdvisorMetrics: advisorMetrics,
 		Planner:        &capacity.Planner{},
 		Advisor:        &capacity.PartitionAdvisor{},
 		Logger:         logger,

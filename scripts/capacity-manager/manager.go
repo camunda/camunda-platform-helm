@@ -136,7 +136,7 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 		m.setStatus(status)
 		return nil
 	}
-	if !policy.BrokerAutoscalingEnabled {
+	if policy.Mode == "recommend" {
 		status.Phase = "recommended"
 		status.Reason = "broker autoscaling disabled"
 		status.DesiredBrokers = current
@@ -177,12 +177,6 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 	status.Reason = decision.Reason
 	status.Pressure = decision.Pressure
 	status.Confidence = decision.Confidence
-	if policy.Mode == "recommend" {
-		status.Phase = "recommended"
-		m.setStatus(status)
-		return nil
-	}
-
 	if decision.Desired == current {
 		status.Phase = "stable"
 		m.setStatus(status)

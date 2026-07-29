@@ -98,7 +98,7 @@ func newTestManager(policy Policy, workload *fakeWorkload, cluster *fakeCluster)
 func TestManagerPublishesPartitionAdviceWithoutMutation(t *testing.T) {
 	load := 0.95
 	policy := Policy{
-		BrokerAutoscalingEnabled: false, Mode: "recommend", MinBrokers: 1, MaxBrokers: 1,
+		Mode: "recommend", MinBrokers: 1, MaxBrokers: 1,
 		PartitionAdvisor: PartitionAdvisorPolicy{Enabled: true, MaxRecommendedPartitions: 4, TargetLoad: 0.7, LoadMetric: "load", LoadMetricType: "gauge", CeilingSamples: 1},
 	}
 	workload := &fakeWorkload{replicas: 1}
@@ -119,7 +119,7 @@ func TestManagerPublishesPartitionAdviceWithoutMutation(t *testing.T) {
 }
 
 func TestManagerScaleUpSequence(t *testing.T) {
-	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
+	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
 	workload := &fakeWorkload{replicas: 1}
 	cluster := &fakeCluster{topology: activeTopology(1)}
 	manager := newTestManager(policy, workload, cluster)
@@ -141,7 +141,7 @@ func TestManagerScaleUpSequence(t *testing.T) {
 }
 
 func TestManagerDoesNotRemovePodBeforeTopology(t *testing.T) {
-	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
+	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
 	workload := &fakeWorkload{replicas: 2, started: true}
 	cluster := &fakeCluster{topology: activeTopology(2)}
 	manager := newTestManager(policy, workload, cluster)
@@ -179,7 +179,7 @@ func TestManagerDoesNotRemovePodAfterFailedTopologyChange(t *testing.T) {
 }
 
 func TestManagerBlocksDuringPendingChange(t *testing.T) {
-	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
+	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
 	workload := &fakeWorkload{replicas: 1}
 	topology := activeTopology(1)
 	topology.PendingChange = &Change{ID: 42, Status: "IN_PROGRESS"}
@@ -195,7 +195,7 @@ func TestManagerBlocksDuringPendingChange(t *testing.T) {
 }
 
 func TestManagerRecoversCompletedScaleDown(t *testing.T) {
-	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
+	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
 	workload := &fakeWorkload{replicas: 2, target: 1, started: true}
 	cluster := &fakeCluster{topology: activeTopology(1)}
 	manager := newTestManager(policy, workload, cluster)

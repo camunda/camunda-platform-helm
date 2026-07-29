@@ -16,22 +16,21 @@ import (
 )
 
 type Policy struct {
-	BrokerAutoscalingEnabled bool                   `json:"brokerAutoscalingEnabled"`
-	Mode                     string                 `json:"mode"`
-	MinBrokers               int                    `json:"minBrokers"`
-	MaxBrokers               int                    `json:"maxBrokers"`
-	TargetBrokers            int                    `json:"targetBrokers,omitempty"`
-	ScheduledMinimum         int                    `json:"scheduledMinimumBrokers,omitempty"`
-	ScheduleStartsAt         string                 `json:"scheduleStartsAt,omitempty"`
-	ScheduleEndsAt           string                 `json:"scheduleEndsAt,omitempty"`
-	PressureQuery            string                 `json:"pressureQuery,omitempty"`
-	ScaleUpThreshold         float64                `json:"scaleUpThreshold,omitempty"`
-	ScaleDownThreshold       float64                `json:"scaleDownThreshold,omitempty"`
-	ScaleUpSamples           int                    `json:"scaleUpSamples,omitempty"`
-	ScaleDownSamples         int                    `json:"scaleDownSamples,omitempty"`
-	ScaleUpStabilization     string                 `json:"scaleUpStabilization,omitempty"`
-	ScaleDownStabilization   string                 `json:"scaleDownStabilization,omitempty"`
-	PartitionAdvisor         PartitionAdvisorPolicy `json:"partitionAdvisor,omitempty"`
+	Mode                   string                 `json:"mode"`
+	MinBrokers             int                    `json:"minBrokers"`
+	MaxBrokers             int                    `json:"maxBrokers"`
+	TargetBrokers          int                    `json:"targetBrokers,omitempty"`
+	ScheduledMinimum       int                    `json:"scheduledMinimumBrokers,omitempty"`
+	ScheduleStartsAt       string                 `json:"scheduleStartsAt,omitempty"`
+	ScheduleEndsAt         string                 `json:"scheduleEndsAt,omitempty"`
+	PressureQuery          string                 `json:"pressureQuery,omitempty"`
+	ScaleUpThreshold       float64                `json:"scaleUpThreshold,omitempty"`
+	ScaleDownThreshold     float64                `json:"scaleDownThreshold,omitempty"`
+	ScaleUpSamples         int                    `json:"scaleUpSamples,omitempty"`
+	ScaleDownSamples       int                    `json:"scaleDownSamples,omitempty"`
+	ScaleUpStabilization   string                 `json:"scaleUpStabilization,omitempty"`
+	ScaleDownStabilization string                 `json:"scaleDownStabilization,omitempty"`
+	PartitionAdvisor       PartitionAdvisorPolicy `json:"partitionAdvisor,omitempty"`
 }
 
 type PartitionAdvisorPolicy struct {
