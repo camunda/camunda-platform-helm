@@ -1,5 +1,6 @@
 capacityManager:
   enabled: true
+  replicaOwnership: capacityManager
   image:
     registry: registry.camunda.cloud
     repository: team-distribution/capacity-manager
