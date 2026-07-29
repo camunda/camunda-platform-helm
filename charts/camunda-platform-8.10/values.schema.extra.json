@@ -313,6 +313,10 @@
         },
         "capacityManager": {
             "properties": {
+                "replicaOwnership": {
+                    "type": "string",
+                    "enum": ["", "helm", "capacityManager"]
+                },
                 "policy": {
                     "properties": {
                         "mode": {

@@ -57,6 +57,7 @@ func TestCapacityManagerDeployment(t *testing.T) {
 		"capacityManager.image.registry":   "registry.example.com",
 		"capacityManager.image.repository": "team/capacity-manager",
 		"capacityManager.image.tag":        "test",
+		"capacityManager.image.digest":     "",
 	})
 	var deployment appsv1.Deployment
 	helm.UnmarshalK8SYaml(t, output, &deployment)

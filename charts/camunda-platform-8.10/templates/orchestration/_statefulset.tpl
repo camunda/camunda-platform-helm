@@ -12,7 +12,7 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
-  {{- if not .Values.capacityManager.enabled }}
+  {{- if ne .Values.capacityManager.replicaOwnership "capacityManager" }}
   replicas: {{ include "orchestration.replicas" . }}
   {{- end }}
   selector:
