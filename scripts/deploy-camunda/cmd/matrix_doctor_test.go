@@ -106,13 +106,12 @@ func TestMatrixCleanupMarksOwnedEntryCleaned(t *testing.T) {
 
 func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
 	root := t.TempDir()
-	envFile := filepath.Join(t.TempDir(), ".env")
-	if err := os.WriteFile(envFile, []byte("ENTRA_APP_DIRECTORY_ID=tenant\nENTRA_APP_CLIENT_ID=client\nENTRA_APP_CLIENT_SECRET=secret\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("ENTRA_APP_DIRECTORY_ID", "tenant")
+	t.Setenv("ENTRA_APP_CLIENT_ID", "client")
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "secret")
 	entry := matrix.Entry{Version: "8.10", Shortname: "oidc", Scenario: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
 	store := matrix.NewRunStateStore(root, "run-1")
-	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test", EnvFile: envFile})
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test", EnvFile: filepath.Join(t.TempDir(), "missing.env")})
 	if err != nil {
 		t.Fatal(err)
 	}

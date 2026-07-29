@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -193,12 +194,7 @@ func newMatrixCleanupCommand() *cobra.Command {
 				if envPath == "" {
 					envPath = ".env"
 				}
-				values, envErr := env.ReadFile(envPath)
-				if envErr != nil && (item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" || item.Entry.Identity == "auth0") {
-					providerCancel()
-					failures = append(failures, item.ID+": read identity cleanup credentials: "+envErr.Error())
-					continue
-				}
+				values := cleanupCredentialEnv(envPath)
 				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
 					if item.EntraDirectoryID == "" || values["ENTRA_APP_DIRECTORY_ID"] != item.EntraDirectoryID {
 						err = fmt.Errorf("Entra directory does not match recorded tenant")
@@ -261,4 +257,19 @@ func newMatrixCleanupCommand() *cobra.Command {
 	cmd.Flags().StringVar(&entryID, "entry", "", "Clean up only this entry ID")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Confirm namespace deletion")
 	return cmd
+}
+
+func cleanupCredentialEnv(envPath string) map[string]string {
+	values := make(map[string]string)
+	for _, item := range os.Environ() {
+		if key, value, ok := strings.Cut(item, "="); ok {
+			values[key] = value
+		}
+	}
+	if fileValues, err := env.ReadFile(envPath); err == nil {
+		for key, value := range fileValues {
+			values[key] = value
+		}
+	}
+	return values
 }
