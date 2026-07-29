@@ -499,6 +499,7 @@ one of these ways (first non-empty wins):
 - `--dockerhub-username` / `--dockerhub-password` CLI flags
 - `DOCKERHUB_USERNAME` / `DOCKERHUB_PASSWORD` env
 - `TEST_DOCKER_USERNAME` / `TEST_DOCKER_PASSWORD` env (CI legacy names)
+- OS keyring entry created by `deploy-camunda credentials configure --registry dockerhub`
 
 Set `--ensure-docker-hub` (or `ensureDockerHub: true` in the config file)
 so the runner creates a pull secret in the target namespace before
@@ -512,6 +513,7 @@ For images from `registry.camunda.cloud` (Harbor):
 - `HARBOR_USERNAME` / `HARBOR_PASSWORD` env
 - `TEST_DOCKER_USERNAME_CAMUNDA_CLOUD` / `TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD` env
 - `NEXUS_USERNAME` / `NEXUS_PASSWORD` env
+- OS keyring entry created by `deploy-camunda credentials configure --registry harbor`
 
 Set `--ensure-docker-registry` (or `ensureDockerRegistry: true`) to
 create the Harbor pull secret. `deploy-camunda doctor` reports both
@@ -520,9 +522,25 @@ registries' credentials as ✓/✗ and only fails when the matching
 
 ### Persisting credentials
 
-Never commit credentials to `.deploy-camunda.yaml`. Persist them in
-`.env` (which `deploy-camunda config init` writes for you) or set them
-via your shell's env-manager. `deploy-camunda config env --show-origin`
+Never commit credentials to `.deploy-camunda.yaml`. For local use, store
+them once in macOS Keychain, Linux Secret Service, or Windows Credential
+Manager:
+
+```bash
+deploy-camunda credentials configure --registry harbor
+deploy-camunda credentials configure --registry dockerhub
+deploy-camunda credentials status
+```
+
+The password/token prompt disables terminal echo. Credentials are not
+written to `.env`, config, logs, replay commands, or matrix state. Use a
+Harbor robot credential and a Docker Hub access token rather than account
+passwords. Headless CI and hosts without an OS keyring continue to use
+environment variables; implicit keyring lookup is skipped when the backend
+is unavailable.
+
+Resolution precedence is CLI/config pair, environment or `.env` pair, OS
+keyring, then opt-in plaintext Docker config import. `deploy-camunda config env --show-origin`
 prints which layer each variable resolved from — process env vs `.env`
 vs per-entry override.
 

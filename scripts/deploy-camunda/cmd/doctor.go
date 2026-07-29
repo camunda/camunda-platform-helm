@@ -62,6 +62,12 @@ Exits non-zero if any required check fails.`,
 					flags.Chart.RepoRoot = detected
 				}
 			}
+			if err := resolveMatrixDockerCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword); err != nil {
+				return err
+			}
+			if err := resolveKeyringCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword, flags.Docker.EnsureDockerRegistry, flags.Docker.EnsureDockerHub); err != nil {
+				return err
+			}
 
 			report := deploy.Preflight(ctx, &flags, deploy.PreflightOptions{
 				ConfigPath:           cfgRes.Path,

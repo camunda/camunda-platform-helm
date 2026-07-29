@@ -97,6 +97,9 @@ func newMatrixDoctorCommand() *cobra.Command {
 			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword); err != nil {
 				return err
 			}
+			if err := resolveKeyringCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
+				return err
+			}
 			if repoRoot == "" {
 				detected, err := config.DetectRepoRoot()
 				if err != nil {

@@ -67,6 +67,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "config" || (cmd.Parent() != nil && cmd.Parent().Name() == "config") {
 					return nil
 				}
+				if cmd.Name() == "credentials" || (cmd.Parent() != nil && cmd.Parent().Name() == "credentials") {
+					return nil
+				}
 				if cmd.Name() == "matrix" || (cmd.Parent() != nil && cmd.Parent().Name() == "matrix") {
 					return nil
 				}
@@ -168,6 +171,12 @@ func NewRootCommand() *cobra.Command {
 				Msg("Loading environment file")
 			if err := env.Load(envFileToLoad); err != nil {
 				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+			}
+			if err := resolveMatrixDockerCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword); err != nil {
+				return err
+			}
+			if err := resolveKeyringCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword, flags.Docker.EnsureDockerRegistry, flags.Docker.EnsureDockerHub); err != nil {
+				return err
 			}
 
 			// Validate merged configuration
@@ -556,19 +565,7 @@ func resolveScenarioPath(cmd *cobra.Command) string {
 // Execute runs the root command.
 func Execute() error {
 	rootCmd := NewRootCommand()
-	rootCmd.AddCommand(newCompletionCommand(rootCmd))
-	rootCmd.AddCommand(newConfigCommand())
-	rootCmd.AddCommand(newMatrixCommand())
-	rootCmd.AddCommand(newPrepareValuesCommand())
-	rootCmd.AddCommand(newEntraCommand())
-	rootCmd.AddCommand(newWatchCommand())
-	rootCmd.AddCommand(newAuth0Command())
-	rootCmd.AddCommand(newDoctorCommand())
-	rootCmd.AddCommand(newTriageCommand())
-	rootCmd.AddCommand(newDiagnosticsCommand())
-	rootCmd.AddCommand(newCICommand())
-	rootCmd.AddCommand(newE2EEnvCommand())
-	rootCmd.AddCommand(newTopologyCommand())
+	registerRootCommands(rootCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {

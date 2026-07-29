@@ -14,6 +14,7 @@ import (
 
 	"golang.org/x/sys/unix"
 	"scripts/camunda-core/pkg/versionmatrix"
+	"scripts/deploy-camunda/credentials"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
 )
@@ -411,18 +412,6 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		return nil, RunOptions{}, errors.New("matrix run used secret-bearing Helm arguments; resume cannot reconstruct them safely; replay the recorded command with the required secret inputs")
 	}
 	harborPassword, hubPassword := "", ""
-	if state.Options.ImportDockerAuth {
-		auths, importErr := ImportPlaintextDockerAuth(state.Options.DockerConfigPath, "registry.camunda.cloud", "docker.io")
-		if importErr != nil {
-			return nil, RunOptions{}, fmt.Errorf("restore Docker config credentials: %w", importErr)
-		}
-		if auth, ok := auths["registry.camunda.cloud"]; ok && auth.Username == state.Options.DockerUsername {
-			harborPassword = auth.Password
-		}
-		if auth, ok := auths["docker.io"]; ok && auth.Username == state.Options.DockerHubUsername {
-			hubPassword = auth.Password
-		}
-	}
 	var credentialErr error
 	if harborPassword == "" {
 		harborPassword, credentialErr = resumeCredentialPasswordFromFiles(state.Options, entries, state.Options.DockerUsername, [][2]string{
@@ -453,14 +442,42 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	if credentialErr != nil {
 		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", credentialErr)
 	}
-	if hubPassword == "" {
-		hubPassword, credentialErr = resumeCredentialPassword(state.Options.DockerHubUsername, state.Options.RequiresDockerHubPassword, [][2]string{
-			{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
-			{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
-		})
+	keyringStore := credentials.KeyringStore{}
+	if harborPassword == "" && state.Options.RequiresDockerPassword {
+		credential, found, keyringErr := credentials.GetOptional(keyringStore, credentials.HarborRegistry)
+		if keyringErr != nil {
+			return nil, RunOptions{}, keyringErr
+		}
+		if keyringErr == nil && found && credential.Username == state.Options.DockerUsername {
+			harborPassword = credential.Password
+		}
 	}
-	if credentialErr != nil {
-		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", credentialErr)
+	if hubPassword == "" && state.Options.RequiresDockerHubPassword {
+		credential, found, keyringErr := credentials.GetOptional(keyringStore, credentials.DockerHubRegistry)
+		if keyringErr != nil {
+			return nil, RunOptions{}, keyringErr
+		}
+		if keyringErr == nil && found && credential.Username == state.Options.DockerHubUsername {
+			hubPassword = credential.Password
+		}
+	}
+	if state.Options.ImportDockerAuth && (harborPassword == "" || hubPassword == "") {
+		auths, importErr := ImportPlaintextDockerAuth(state.Options.DockerConfigPath, "registry.camunda.cloud", "docker.io")
+		if importErr != nil {
+			return nil, RunOptions{}, fmt.Errorf("restore Docker config credentials: %w", importErr)
+		}
+		if auth, ok := auths["registry.camunda.cloud"]; harborPassword == "" && ok && auth.Username == state.Options.DockerUsername {
+			harborPassword = auth.Password
+		}
+		if auth, ok := auths["docker.io"]; hubPassword == "" && ok && auth.Username == state.Options.DockerHubUsername {
+			hubPassword = auth.Password
+		}
+	}
+	if state.Options.RequiresDockerPassword && harborPassword == "" {
+		return nil, RunOptions{}, errors.New("matching Harbor credentials are required to resume")
+	}
+	if state.Options.RequiresDockerHubPassword && hubPassword == "" {
+		return nil, RunOptions{}, errors.New("matching Docker Hub credentials are required to resume")
 	}
 	opts := state.Options.RunOptions()
 	opts.DeleteNamespaceFirst = false
@@ -788,7 +805,7 @@ func resumeCredentialPassword(storedUsername string, required bool, pairs [][2]s
 		}
 		return password, nil
 	}
-	return "", errors.New("matching username/password environment pair is required")
+	return "", nil
 }
 
 func resumeCredentialPasswordFromFiles(options StoredRunOptions, entries []Entry, storedUsername string, pairs [][2]string) (string, error) {
