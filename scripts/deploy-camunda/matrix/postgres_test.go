@@ -25,12 +25,12 @@ func TestResolvePostgresCredentialsUsesEffectiveValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if username != "explicit" || password != "explicit-password" {
-		t.Fatalf("credentials = %q/%q", username, password)
+	if username != "" || password != "" {
+		t.Fatalf("explicit per-entry credentials should not produce a global pair: %q/%q", username, password)
 	}
 }
 
-func TestResolvePostgresCredentialsRejectsPerVersionMismatch(t *testing.T) {
+func TestResolvePostgresCredentialsAllowsIndependentPerVersionPairs(t *testing.T) {
 	chartPath := t.TempDir()
 	first := filepath.Join(t.TempDir(), "first.env")
 	second := filepath.Join(t.TempDir(), "second.env")
@@ -40,11 +40,14 @@ func TestResolvePostgresCredentialsRejectsPerVersionMismatch(t *testing.T) {
 	if err := os.WriteFile(second, []byte("RDBMS_POSTGRESQL_USERNAME=camunda\nRDBMS_POSTGRESQL_PASSWORD=second\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	_, _, err := ResolvePostgresCredentials([]Entry{postgresEntry(chartPath, "8.9"), postgresEntry(chartPath, "8.10")}, RunOptions{
+	username, password, err := ResolvePostgresCredentials([]Entry{postgresEntry(chartPath, "8.9"), postgresEntry(chartPath, "8.10")}, RunOptions{
 		GeneratePostgresCredentials: true, EnvFiles: map[string]string{"8.9": first, "8.10": second},
 	})
-	if err == nil {
-		t.Fatal("expected inconsistent password failure")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if username != "" || password != "" {
+		t.Fatalf("unexpected generated pair %q/%q", username, password)
 	}
 }
 

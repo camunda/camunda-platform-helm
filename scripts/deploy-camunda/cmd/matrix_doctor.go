@@ -302,12 +302,12 @@ func resolveSelectedEnvFileCredentials(entries []matrix.Entry, envFiles map[stri
 		if err != nil {
 			continue
 		}
-		if requireHarbor && *harborUser == "" && *harborPassword == "" {
+		if requireHarbor {
 			if err := mergeCredentialPairFromMap("Harbor", values, harborUser, harborPassword, [][2]string{{"HARBOR_USERNAME", "HARBOR_PASSWORD"}, {"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"}, {"NEXUS_USERNAME", "NEXUS_PASSWORD"}}); err != nil {
 				return fmt.Errorf("%s: %w", path, err)
 			}
 		}
-		if requireHub && *hubUser == "" && *hubPassword == "" {
+		if requireHub {
 			if err := mergeCredentialPairFromMap("Docker Hub", values, hubUser, hubPassword, [][2]string{{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"}, {"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"}}); err != nil {
 				return fmt.Errorf("%s: %w", path, err)
 			}

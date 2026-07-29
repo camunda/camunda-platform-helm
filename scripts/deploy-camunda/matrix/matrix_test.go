@@ -1064,7 +1064,7 @@ func TestBuildEntryFlagsPreservesPostgresCredentials(t *testing.T) {
 	}
 }
 
-func TestBuildEntryFlagsForcesSavedPostgresCredentials(t *testing.T) {
+func TestBuildEntryFlagsPreservesExplicitPostgresCredentialsOverGeneratedFallback(t *testing.T) {
 	envFile := filepath.Join(t.TempDir(), ".env")
 	if err := os.WriteFile(envFile, []byte("RDBMS_POSTGRESQL_USERNAME=changed\nRDBMS_POSTGRESQL_PASSWORD=changed-password\n"), 0o600); err != nil {
 		t.Fatal(err)
@@ -1081,8 +1081,8 @@ func TestBuildEntryFlagsForcesSavedPostgresCredentials(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"] != "saved" || flags.ExtraEnv["RDBMS_POSTGRESQL_PASSWORD"] != "saved-password" {
-		t.Fatalf("saved credentials not forced: %#v", flags.ExtraEnv)
+	if _, exists := flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"]; exists {
+		t.Fatalf("generated fallback overrode explicit credentials: %#v", flags.ExtraEnv)
 	}
 }
 

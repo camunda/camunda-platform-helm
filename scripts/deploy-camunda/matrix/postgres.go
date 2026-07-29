@@ -14,6 +14,7 @@ func ResolvePostgresCredentials(entries []Entry, opts RunOptions) (string, strin
 	}
 	username, password := "", ""
 	requiredAny := false
+	missingAny := false
 	for _, entry := range entries {
 		flags, _, _, _, cleanup, err := BuildEntryFlags(entry, withoutPostgresBootstrap(opts))
 		if err != nil {
@@ -34,20 +35,14 @@ func ResolvePostgresCredentials(entries []Entry, opts RunOptions) (string, strin
 		if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) && (entryUser == "" || entryPassword == "") {
 			return "", "", fmt.Errorf("upgrade-only entry %s requires explicit RDBMS_POSTGRESQL_USERNAME and RDBMS_POSTGRESQL_PASSWORD", EntryID(entry))
 		}
-		if entryUser != "" && username != "" && entryUser != username {
-			return "", "", fmt.Errorf("selected entries resolve different RDBMS_POSTGRESQL_USERNAME values")
-		}
-		if entryPassword != "" && password != "" && entryPassword != password {
-			return "", "", fmt.Errorf("selected entries resolve different RDBMS_POSTGRESQL_PASSWORD values")
-		}
-		if entryUser != "" {
-			username = entryUser
-		}
-		if entryPassword != "" {
-			password = entryPassword
+		if entryUser == "" {
+			missingAny = true
 		}
 	}
 	if !requiredAny {
+		return "", "", nil
+	}
+	if !missingAny {
 		return "", "", nil
 	}
 	if username == "" {

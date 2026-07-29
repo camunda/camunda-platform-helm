@@ -301,7 +301,7 @@ func bootstrapPostgresCredentials(flags *config.RuntimeFlags, generatedUsername,
 	if flags.ExtraEnv == nil {
 		flags.ExtraEnv = make(map[string]string)
 	}
-	if generatedUsername != "" && generatedPassword != "" {
+	if generatedUsername != "" && generatedPassword != "" && effective["RDBMS_POSTGRESQL_USERNAME"] == "" && effective["RDBMS_POSTGRESQL_PASSWORD"] == "" {
 		flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"] = generatedUsername
 		flags.ExtraEnv["RDBMS_POSTGRESQL_PASSWORD"] = generatedPassword
 		return nil

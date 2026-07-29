@@ -223,14 +223,14 @@ func newMatrixCleanupCommand() *cobra.Command {
 				client, err := newCleanupKubeClient(item.KubeContext)
 				var uid types.UID
 				var resourceVersion string
+				var ownershipErr error
 				if err == nil {
-					uid, resourceVersion, err = client.OwnedNamespaceIdentity(providerCtx, item.Namespace, "deploy-camunda-run", state.ID)
+					uid, resourceVersion, ownershipErr = client.OwnedNamespaceIdentity(providerCtx, item.Namespace, "deploy-camunda-run", state.ID)
 				}
 				if err != nil {
-					providerCancel()
-					failures = append(failures, item.ID+": "+err.Error())
-					continue
+					ownershipErr = err
 				}
+				err = nil
 				envPath := state.Options.EnvFile
 				if path := state.Options.EnvFiles[item.Entry.Version]; path != "" {
 					envPath = path
@@ -288,6 +288,10 @@ func newMatrixCleanupCommand() *cobra.Command {
 					continue
 				}
 				providerCancel()
+				if ownershipErr != nil {
+					failures = append(failures, item.ID+": "+ownershipErr.Error())
+					continue
+				}
 				if uid != "" {
 					deleteCtx, deleteCancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
 					err = client.DeleteNamespaceWithIdentity(deleteCtx, item.Namespace, uid, resourceVersion)

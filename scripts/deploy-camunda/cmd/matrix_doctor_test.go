@@ -92,6 +92,17 @@ func TestResolveSelectedEnvFileCredentials(t *testing.T) {
 	}
 }
 
+func TestResolveSelectedEnvFileCredentialsRejectsConflictWithChosenPair(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "8.10.env")
+	if err := os.WriteFile(path, []byte("HARBOR_USERNAME=other\nHARBOR_PASSWORD=other-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	user, password, hubUser, hubPassword := "robot", "token", "", ""
+	if err := resolveSelectedEnvFileCredentials([]matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}, "", &user, &password, &hubUser, &hubPassword, true, false); err == nil {
+		t.Fatal("expected selected env credential conflict")
+	}
+}
+
 func TestMatrixCleanupMarksOwnedEntryCleaned(t *testing.T) {
 	root := t.TempDir()
 	entry := matrix.Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
@@ -250,12 +261,17 @@ func TestMatrixCleanupReconcilesUncheckpointedEntraObject(t *testing.T) {
 		t.Fatal(err)
 	}
 	fake := &fakeCleanupClient{}
+	findCalled, cleanupCalled := false, false
 	originalClient, originalFind, originalCleanup := newCleanupKubeClient, findEntraObject, cleanupEntraObject
 	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
 	findEntraObject = func(context.Context, entra.Options) (*entra.VenomApp, error) {
+		findCalled = true
 		return &entra.VenomApp{ObjectID: "object-id"}, nil
 	}
-	cleanupEntraObject = func(context.Context, entra.Options, string) error { return nil }
+	cleanupEntraObject = func(_ context.Context, _ entra.Options, id string) error {
+		cleanupCalled = id == "object-id"
+		return nil
+	}
 	t.Cleanup(func() {
 		newCleanupKubeClient, findEntraObject, cleanupEntraObject = originalClient, originalFind, originalCleanup
 	})
@@ -263,6 +279,16 @@ func TestMatrixCleanupReconcilesUncheckpointedEntraObject(t *testing.T) {
 	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
+	}
+	if !findCalled || !cleanupCalled || !fake.deleted {
+		t.Fatalf("find=%v cleanup=%v deleted=%v", findCalled, cleanupCalled, fake.deleted)
+	}
+	state, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.Entries[0].Cleaned {
+		t.Fatal("entry not marked cleaned")
 	}
 }
 
