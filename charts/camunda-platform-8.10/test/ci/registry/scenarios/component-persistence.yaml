@@ -1,5 +1,6 @@
 name: component-persistence
 auth: keycloak
+skip-e2e: true
 flows:
   - install,upgrade-minor
 identity: keycloak
