@@ -504,7 +504,11 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		result.venomOpts = venomOpts
 		canCleanup = true
 		if opts.StateStore != nil {
-			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, nil); err != nil {
+			directoryID := entraOpts.DirectoryID
+			if directoryID == "" {
+				directoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")
+			}
+			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil); err != nil {
 				result.Error = err
 				return result
 			}
@@ -626,7 +630,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			for _, client := range prov.All() {
 				ids = append(ids, client.ClientID)
 			}
-			if stateErr := opts.StateStore.RecordExternalResources(entry, "", ids); stateErr != nil {
+			if stateErr := opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, ids); stateErr != nil {
 				result.Error = stateErr
 				return result
 			}

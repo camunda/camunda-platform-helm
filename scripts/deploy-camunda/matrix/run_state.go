@@ -155,27 +155,35 @@ func (s StoredRunOptions) RunOptions() RunOptions {
 }
 
 type EntryRunState struct {
-	ID             string         `json:"id"`
-	Entry          Entry          `json:"entry"`
-	Status         RunStatus      `json:"status"`
-	Phase          string         `json:"phase,omitempty"`
-	Namespace      string         `json:"namespace"`
-	KubeContext    string         `json:"kubeContext,omitempty"`
-	Attempts       int            `json:"attempts"`
-	StartedAt      *time.Time     `json:"startedAt,omitempty"`
-	FinishedAt     *time.Time     `json:"finishedAt,omitempty"`
-	Failure        *Failure       `json:"failure,omitempty"`
-	Diagnostics    string         `json:"diagnostics,omitempty"`
-	Replay         ReplayManifest `json:"replay"`
-	Cleaned        bool           `json:"cleaned,omitempty"`
-	EntraObjectID  string         `json:"entraObjectId,omitempty"`
-	Auth0ClientIDs []string       `json:"auth0ClientIds,omitempty"`
+	ID               string         `json:"id"`
+	Entry            Entry          `json:"entry"`
+	Status           RunStatus      `json:"status"`
+	Phase            string         `json:"phase,omitempty"`
+	Namespace        string         `json:"namespace"`
+	KubeContext      string         `json:"kubeContext,omitempty"`
+	Attempts         int            `json:"attempts"`
+	StartedAt        *time.Time     `json:"startedAt,omitempty"`
+	FinishedAt       *time.Time     `json:"finishedAt,omitempty"`
+	Failure          *Failure       `json:"failure,omitempty"`
+	Diagnostics      string         `json:"diagnostics,omitempty"`
+	Replay           ReplayManifest `json:"replay"`
+	Cleaned          bool           `json:"cleaned,omitempty"`
+	EntraObjectID    string         `json:"entraObjectId,omitempty"`
+	Auth0ClientIDs   []string       `json:"auth0ClientIds,omitempty"`
+	EntraDirectoryID string         `json:"entraDirectoryId,omitempty"`
+	Auth0Domain      string         `json:"auth0Domain,omitempty"`
 }
 
-func (s *RunStateStore) RecordExternalResources(entry Entry, entraObjectID string, auth0ClientIDs []string) error {
+func (s *RunStateStore) RecordExternalResources(entry Entry, entraObjectID, entraDirectoryID, auth0Domain string, auth0ClientIDs []string) error {
 	return s.update(entry, func(_ *MatrixRunState, item *EntryRunState) RunEvent {
 		if entraObjectID != "" {
 			item.EntraObjectID = entraObjectID
+		}
+		if entraDirectoryID != "" {
+			item.EntraDirectoryID = entraDirectoryID
+		}
+		if auth0Domain != "" {
+			item.Auth0Domain = auth0Domain
 		}
 		if len(auth0ClientIDs) > 0 {
 			item.Auth0ClientIDs = append([]string(nil), auth0ClientIDs...)

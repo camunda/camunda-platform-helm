@@ -185,6 +185,11 @@ func newMatrixCleanupCommand() *cobra.Command {
 					failures = append(failures, item.ID+": "+err.Error())
 					continue
 				}
+				if uid == "" {
+					cancel()
+					failures = append(failures, item.ID+": owned namespace no longer exists; external identity cleanup requires an active ownership anchor")
+					continue
+				}
 				envPath := state.Options.EnvFile
 				if path := state.Options.EnvFiles[item.Entry.Version]; path != "" {
 					envPath = path
@@ -192,16 +197,37 @@ func newMatrixCleanupCommand() *cobra.Command {
 				if envPath == "" {
 					envPath = ".env"
 				}
-				values, _ := env.ReadFile(envPath)
+				values, envErr := env.ReadFile(envPath)
+				if envErr != nil && (item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" || item.Entry.Identity == "auth0") {
+					cancel()
+					failures = append(failures, item.ID+": read identity cleanup credentials: "+envErr.Error())
+					continue
+				}
 				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
-					err = cleanupEntraResources(cleanupCtx, entra.Options{
-						Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
-					})
+					if item.EntraDirectoryID == "" || values["ENTRA_APP_DIRECTORY_ID"] != item.EntraDirectoryID {
+						err = fmt.Errorf("Entra directory does not match recorded tenant")
+					} else if item.EntraObjectID != "" {
+						err = entra.CleanupVenomAppObjectStrict(cleanupCtx, entra.Options{
+							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
+						}, item.EntraObjectID)
+					} else {
+						err = cleanupEntraResources(cleanupCtx, entra.Options{
+							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
+						})
+					}
 				}
 				if err == nil && item.Entry.Identity == "auth0" {
-					err = cleanupAuth0Resources(cleanupCtx, auth0.Options{
-						Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
-					})
+					if item.Auth0Domain == "" || strings.TrimSuffix(values["AUTH0_DOMAIN"], "/") != strings.TrimSuffix(item.Auth0Domain, "/") {
+						err = fmt.Errorf("Auth0 domain does not match recorded tenant")
+					} else if len(item.Auth0ClientIDs) > 0 {
+						err = auth0.CleanupClientIDsStrict(cleanupCtx, auth0.Options{
+							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
+						}, item.Auth0ClientIDs)
+					} else {
+						err = cleanupAuth0Resources(cleanupCtx, auth0.Options{
+							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
+						})
+					}
 				}
 				if err != nil {
 					cancel()
