@@ -285,11 +285,17 @@ func (l *RunLock) Close() error {
 func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunState, error) {
 	now := time.Now().UTC()
 	state := &MatrixRunState{Schema: RunStateSchema, ID: s.runID, Status: RunPending, CreatedAt: now, UpdatedAt: now, Options: StoreRunOptions(opts)}
+	replayOpts := state.Options.RunOptions()
 	for _, entry := range entries {
+		if entry.ChartPath != "" && !filepath.IsAbs(entry.ChartPath) {
+			if absolute, err := filepath.Abs(entry.ChartPath); err == nil {
+				entry.ChartPath = absolute
+			}
+		}
 		namespace := ResolveNamespace(opts, entry)
 		state.Entries = append(state.Entries, &EntryRunState{
 			ID: EntryID(entry), Entry: entry, Status: RunPending, Namespace: namespace,
-			KubeContext: ResolveKubeContext(opts, entry), Replay: ReplayManifest{Command: ReplayCommand(entry, opts)},
+			KubeContext: ResolveKubeContext(opts, entry), Replay: ReplayManifest{Command: ReplayCommand(entry, replayOpts)},
 		})
 	}
 	if err := os.MkdirAll(s.RunDir(), 0o700); err != nil {
@@ -738,6 +744,8 @@ func ClassifyFailure(err error) *Failure {
 	case strings.Contains(lower, "ingress") || strings.Contains(lower, "dns"):
 		code = "INGRESS_FAILURE"
 	case strings.Contains(lower, "namespace") || strings.Contains(lower, "kubernetes") || strings.Contains(lower, "kubectl"):
+		code = "KUBERNETES_FAILURE"
+	case strings.Contains(lower, "kube context") || strings.Contains(lower, "kubeconfig") || strings.Contains(lower, "cluster connectivity"):
 		code = "KUBERNETES_FAILURE"
 	}
 	return &Failure{Code: code, Message: failureMessage(code)}

@@ -185,14 +185,14 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	// creates the per-namespace K8s pull secrets without touching `docker login`.
 	if opts.EnsureDockerHub {
 		if err := docker.EnsureDockerHubLogin(ctx, opts.DockerHubUsername, opts.DockerHubPassword); err != nil {
-			completePendingEntries(entries, opts, fmt.Errorf("failed to ensure Docker Hub login: %w", err))
-			return nil, fmt.Errorf("failed to ensure Docker Hub login: %w", err)
+			runErr := fmt.Errorf("failed to ensure Docker Hub login: %w", err)
+			return completePendingEntries(entries, opts, runErr), runErr
 		}
 	}
 	if opts.EnsureDockerRegistry {
 		if err := docker.EnsureHarborLogin(ctx, opts.DockerUsername, opts.DockerPassword); err != nil {
-			completePendingEntries(entries, opts, fmt.Errorf("failed to ensure Harbor login: %w", err))
-			return nil, fmt.Errorf("failed to ensure Harbor login: %w", err)
+			runErr := fmt.Errorf("failed to ensure Harbor login: %w", err)
+			return completePendingEntries(entries, opts, runErr), runErr
 		}
 	}
 
@@ -201,8 +201,7 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	// an interactive browser login. Doing this sequentially ensures only one
 	// login prompt per context, rather than N parallel goroutines racing.
 	if err := warmUpKubeContexts(ctx, entries, opts); err != nil {
-		completePendingEntries(entries, opts, err)
-		return nil, err
+		return completePendingEntries(entries, opts, err), err
 	}
 
 	parallel := opts.MaxParallel > 1
@@ -233,14 +232,16 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	return results, retErr
 }
 
-func completePendingEntries(entries []Entry, opts RunOptions, err error) {
-	if opts.StateStore == nil {
-		return
-	}
+func completePendingEntries(entries []Entry, opts RunOptions, err error) []RunResult {
+	results := make([]RunResult, 0, len(entries))
 	for _, entry := range entries {
 		result := RunResult{Entry: entry, Namespace: resolveNamespace(opts, entry), KubeContext: ResolveKubeContext(opts, entry), Error: err}
-		_ = opts.StateStore.Complete(entry, result)
+		results = append(results, result)
+		if opts.StateStore != nil {
+			_ = opts.StateStore.Complete(entry, result)
+		}
 	}
+	return results
 }
 
 // synthesizeRunError checks completed results for failures and returns a

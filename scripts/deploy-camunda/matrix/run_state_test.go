@@ -217,10 +217,23 @@ func TestClassifyFailure(t *testing.T) {
 		{errors.New("docker registry unauthorized"), "REGISTRY_FAILURE"},
 		{errors.New("Playwright e2e test failed"), "TEST_FAILURE"},
 		{errors.New("context canceled"), "RUN_INTERRUPTED"},
+		{errors.New("cluster connectivity check failed: kube context missing"), "KUBERNETES_FAILURE"},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.code, ClassifyFailure(tt.err).Code)
 	}
+}
+
+func TestCreatePersistsAbsoluteEntryChartPath(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install", ChartPath: "../../charts/example"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	state, err := store.Load()
+	require.NoError(t, err)
+	assert.True(t, filepath.IsAbs(state.Entries[0].Entry.ChartPath), state.Entries[0].Entry.ChartPath)
+	replay := strings.Join(state.Entries[0].Replay.Command, " ")
+	assert.NotContains(t, replay, "--repo-root ../..")
 }
 
 func TestClassifyFailureRedactsCredentialValues(t *testing.T) {
