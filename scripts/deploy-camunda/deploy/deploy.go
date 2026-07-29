@@ -463,7 +463,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 					err = ownerErr
 				} else if owner == "" {
 					err = fmt.Errorf("namespace %q is not owned by a durable matrix run", scenarioCtx.Namespace)
-				} else if owner != flags.Deployment.MatrixRunID {
+				} else if owner != flags.Deployment.MatrixRunID && !flags.Deployment.AdoptMatrixNamespace {
 					err = fmt.Errorf("namespace %q is owned by matrix run %q, not %q", scenarioCtx.Namespace, owner, flags.Deployment.MatrixRunID)
 				} else {
 					err = client.DeleteNamespaceOwnedBy(ctx, scenarioCtx.Namespace, "deploy-camunda-run", flags.Deployment.MatrixRunID)

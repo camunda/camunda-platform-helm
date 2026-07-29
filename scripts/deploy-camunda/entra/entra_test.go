@@ -1079,6 +1079,14 @@ func TestEnsureVenomAppExistingAppIsNotMarkedCreated(t *testing.T) {
 	}
 }
 
+func TestAppDisplayNameIncludesRunIdentity(t *testing.T) {
+	first := appDisplayName("namespace", "20260729T120000.123Z")
+	second := appDisplayName("namespace", "20260729T120001.456Z")
+	if first == second || !strings.HasPrefix(first, "venom-test-namespace-") {
+		t.Fatalf("names = %q / %q", first, second)
+	}
+}
+
 // TestEnsureVenomApp_SkipK8sSecret verifies that when SkipK8sSecret is true,
 // the K8s secret creation is skipped but the Entra provisioning completes.
 func TestEnsureVenomApp_SkipK8sSecret(t *testing.T) {

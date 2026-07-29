@@ -196,6 +196,7 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 			Flow:                       entry.Flow,
 			Timeout:                    opts.HelmTimeout,
 			DeleteNamespaceFirst:       opts.DeleteNamespaceFirst,
+			AdoptMatrixNamespace:       opts.AdoptMatrixNamespace,
 			WaitIngressReady:           opts.WaitIngressReady,
 			IngressReadyTimeoutMinutes: opts.IngressReadyTimeoutMinutes,
 			ExtraHelmArgs:              append([]string(nil), opts.ExtraHelmArgs...),
@@ -484,6 +485,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			Namespace:     namespace,
 			KubeContext:   kubeCtx,
 			SkipK8sSecret: true, // Phase 2 is deferred to PreInstallHook.
+		}
+		if opts.StateStore != nil {
+			entraOpts.RunID = opts.StateStore.RunID()
 		}
 		if opts.EntraDirectoryID != "" {
 			entraOpts.DirectoryID = opts.EntraDirectoryID

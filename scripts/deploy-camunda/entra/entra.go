@@ -79,6 +79,8 @@ type Options struct {
 	// creating the secret later (e.g., via a PreInstallHook after the
 	// namespace exists). Use CreateVenomK8sSecret to create it.
 	SkipK8sSecret bool
+	// RunID scopes durable-run app names so interrupted provisioning can be safely reconciled.
+	RunID string
 }
 
 // VenomApp holds the result of provisioning a venom Entra app registration.
@@ -128,8 +130,16 @@ func httpClient(opts *Options) *http.Client {
 }
 
 // appDisplayName returns the deterministic Entra app display name for a namespace.
-func appDisplayName(namespace string) string {
-	return "venom-test-" + namespace
+func appDisplayName(namespace string, runID ...string) string {
+	name := "venom-test-" + namespace
+	if len(runID) > 0 && runID[0] != "" {
+		suffix := strings.ReplaceAll(runID[0], ".", "")
+		if len(suffix) > 12 {
+			suffix = suffix[len(suffix)-12:]
+		}
+		name += "-" + suffix
+	}
+	return name
 }
 
 // entraPortalAppURL returns the Entra admin center URL for an app registration.
@@ -635,7 +645,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 
-	displayName := appDisplayName(opts.Namespace)
+	displayName := appDisplayName(opts.Namespace, opts.RunID)
 	client := httpClient(&opts)
 
 	logging.Logger.Info().
@@ -765,7 +775,7 @@ func CleanupVenomAppStrict(ctx context.Context, opts Options) error {
 		return err
 	}
 
-	displayName := appDisplayName(opts.Namespace)
+	displayName := appDisplayName(opts.Namespace, opts.RunID)
 	client := httpClient(&opts)
 
 	logging.Logger.Info().
@@ -833,7 +843,7 @@ func FindVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	if err != nil {
 		return nil, err
 	}
-	appID, objectID, err := findApp(ctx, httpClient(&opts), token, appDisplayName(opts.Namespace))
+	appID, objectID, err := findApp(ctx, httpClient(&opts), token, appDisplayName(opts.Namespace, opts.RunID))
 	if err != nil {
 		return nil, err
 	}

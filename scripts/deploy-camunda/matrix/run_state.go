@@ -67,6 +67,7 @@ type StoredRunOptions struct {
 	VaultBackedSecrets          map[string]bool   `json:"vaultBackedSecrets,omitempty"`
 	UseVaultBackedSecrets       bool              `json:"useVaultBackedSecrets,omitempty"`
 	DeleteNamespaceFirst        bool              `json:"deleteNamespaceFirst,omitempty"`
+	AdoptMatrixNamespace        bool              `json:"adoptMatrixNamespace,omitempty"`
 	UpgradeFromVersion          string            `json:"upgradeFromVersion,omitempty"`
 	HelmTimeout                 int               `json:"helmTimeout,omitempty"`
 	EnsureDockerRegistry        bool              `json:"ensureDockerRegistry,omitempty"`
@@ -135,7 +136,7 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		IngressBaseDomains: opts.IngressBaseDomains, IngressBaseDomain: opts.IngressBaseDomain,
 		LogLevel: opts.LogLevel, SkipDependencyUpdate: opts.SkipDependencyUpdate,
 		VaultBackedSecrets: opts.VaultBackedSecrets, UseVaultBackedSecrets: opts.UseVaultBackedSecrets,
-		DeleteNamespaceFirst: opts.DeleteNamespaceFirst, UpgradeFromVersion: opts.UpgradeFromVersion,
+		DeleteNamespaceFirst: opts.DeleteNamespaceFirst, AdoptMatrixNamespace: opts.AdoptMatrixNamespace, UpgradeFromVersion: opts.UpgradeFromVersion,
 		HelmTimeout: opts.HelmTimeout, EnsureDockerRegistry: opts.EnsureDockerRegistry,
 		DockerUsername: opts.DockerUsername, RequiresDockerPassword: opts.EnsureDockerRegistry,
 		EnsureDockerHub: opts.EnsureDockerHub, DockerHubUsername: opts.DockerHubUsername,
@@ -161,7 +162,7 @@ func (s StoredRunOptions) RunOptions() RunOptions {
 		IngressBaseDomains: s.IngressBaseDomains, IngressBaseDomain: s.IngressBaseDomain,
 		LogLevel: s.LogLevel, SkipDependencyUpdate: s.SkipDependencyUpdate,
 		VaultBackedSecrets: s.VaultBackedSecrets, UseVaultBackedSecrets: s.UseVaultBackedSecrets,
-		DeleteNamespaceFirst: s.DeleteNamespaceFirst, UpgradeFromVersion: s.UpgradeFromVersion,
+		DeleteNamespaceFirst: s.DeleteNamespaceFirst, AdoptMatrixNamespace: s.AdoptMatrixNamespace, UpgradeFromVersion: s.UpgradeFromVersion,
 		HelmTimeout: s.HelmTimeout, EnsureDockerRegistry: s.EnsureDockerRegistry,
 		DockerUsername: s.DockerUsername, EnsureDockerHub: s.EnsureDockerHub,
 		DockerHubUsername: s.DockerHubUsername, UseLatest: s.UseLatest, UseQA: s.UseQA,
@@ -970,6 +971,9 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 	}
 	if opts.DeleteNamespaceFirst {
 		args = append(args, "--delete-namespace")
+	}
+	if opts.AdoptMatrixNamespace {
+		args = append(args, "--adopt-matrix-namespace")
 	}
 	if opts.UseVaultBackedSecrets {
 		args = append(args, "--use-vault-backed-secrets")

@@ -86,6 +86,7 @@ type RunOptions struct {
 	// DeleteNamespaceFirst deletes the namespace before deploying each matrix entry.
 	// This ensures a clean-slate deployment by removing any existing resources in the namespace.
 	DeleteNamespaceFirst bool
+	AdoptMatrixNamespace bool
 	// Coverage produces a layer-breakdown report showing what IS tested in the matrix.
 	// Behaves like DryRun (no deployment), but outputs a focused table showing each
 	// scenario's resolved layers (identity, persistence, platform, infra-type, features, flow).

@@ -42,6 +42,7 @@ type DeploymentFlags struct {
 	Timeout              int    // Timeout in minutes for Helm deployment
 	TTL                  string // Ephemeral-namespace TTL (cleaner/janitor), e.g. 60m, 12h; empty falls back to DEPLOY_CAMUNDA_TTL then 60m
 	DeleteNamespaceFirst bool
+	AdoptMatrixNamespace bool
 	RenderTemplates      bool
 	RenderOutputDir      string
 	ExtraValues          []string
