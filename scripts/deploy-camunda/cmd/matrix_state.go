@@ -190,6 +190,22 @@ func newMatrixCleanupCommand() *cobra.Command {
 				return err
 			}
 			var failures []string
+			if entryID != "" {
+				var targetNamespace string
+				for _, item := range state.Entries {
+					if item.ID == entryID {
+						targetNamespace = item.Namespace
+						break
+					}
+				}
+				if targetNamespace != "" {
+					for _, item := range state.Entries {
+						if item.ID != entryID && item.Namespace == targetNamespace && !item.Cleaned {
+							return fmt.Errorf("entry %q shares namespace %q with entry %q; clean the whole run instead", entryID, targetNamespace, item.ID)
+						}
+					}
+				}
+			}
 			matchedEntry := entryID == ""
 			for _, item := range state.Entries {
 				if entryID != "" && entryID != item.ID {

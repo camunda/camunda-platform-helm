@@ -280,6 +280,11 @@ func (s *RunStateStore) RunDir() string { return filepath.Join(s.root, s.runID) 
 func (s *RunStateStore) RunID() string { return s.runID }
 
 func (s *RunStateStore) RecoverStaleLock() error {
+	releaseGuard, err := s.acquireLockGuard()
+	if err != nil {
+		return err
+	}
+	defer releaseGuard()
 	path := filepath.Join(s.RunDir(), "run.lock")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -310,6 +315,11 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 	if err := os.MkdirAll(s.RunDir(), 0o700); err != nil {
 		return nil, fmt.Errorf("create matrix run directory: %w", err)
 	}
+	releaseGuard, err := s.acquireLockGuard()
+	if err != nil {
+		return nil, err
+	}
+	defer releaseGuard()
 	path := filepath.Join(s.RunDir(), "run.lock")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
@@ -339,6 +349,19 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 		return nil, err
 	}
 	return &RunLock{path: path}, nil
+}
+
+func (s *RunStateStore) acquireLockGuard() (func(), error) {
+	path := filepath.Join(s.RunDir(), "run.lock.guard")
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("matrix run %q lock operation is active", s.runID)
+	}
+	if err := file.Close(); err != nil {
+		_ = os.Remove(path)
+		return nil, err
+	}
+	return func() { _ = os.Remove(path) }, nil
 }
 
 func (l *RunLock) Close() error {
@@ -791,6 +814,21 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 	}
 	if opts.Cleanup {
 		args = append(args, "--cleanup")
+	}
+	if opts.DeleteNamespaceFirst {
+		args = append(args, "--delete-namespace")
+	}
+	if opts.UseVaultBackedSecrets {
+		args = append(args, "--use-vault-backed-secrets")
+	}
+	if value, ok := opts.VaultBackedSecrets[entry.Platform]; ok {
+		args = append(args, "--use-vault-backed-secrets-"+entry.Platform+"="+strconv.FormatBool(value))
+	}
+	if opts.KeycloakHost != "" {
+		args = append(args, "--keycloak-host", opts.KeycloakHost)
+	}
+	if opts.KeycloakProtocol != "" {
+		args = append(args, "--keycloak-protocol", opts.KeycloakProtocol)
 	}
 	if !opts.GeneratePostgresCredentials {
 		args = append(args, "--generate-postgres-credentials=false")

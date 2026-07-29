@@ -113,6 +113,23 @@ func TestReplayCommandIncludesUpgradeSource(t *testing.T) {
 	assert.Contains(t, command, "--upgrade-from-version 13.5.0")
 }
 
+func TestReplayCommandIncludesBehaviorFlags(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "one", Flow: "install", Platform: "gke"}
+	command := strings.Join(ReplayCommand(entry, RunOptions{DeleteNamespaceFirst: true, UseVaultBackedSecrets: true, KeycloakHost: "keycloak.example", KeycloakProtocol: "https"}), " ")
+	assert.Contains(t, command, "--delete-namespace")
+	assert.Contains(t, command, "--use-vault-backed-secrets")
+	assert.Contains(t, command, "--keycloak-host keycloak.example")
+	assert.Contains(t, command, "--keycloak-protocol https")
+}
+
+func TestAcquireRejectsActiveLockGuard(t *testing.T) {
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock.guard"), nil, 0o600))
+	_, err := store.Acquire()
+	require.ErrorContains(t, err, "lock operation is active")
+}
+
 func TestValidateRunIDRejectsTraversal(t *testing.T) {
 	for _, id := range []string{"", "..", "../other", "/tmp/run", "a/b"} {
 		assert.Error(t, ValidateRunID(id), id)

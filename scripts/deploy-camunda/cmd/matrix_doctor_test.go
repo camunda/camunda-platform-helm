@@ -251,3 +251,18 @@ func TestMatrixCleanupPreservesNamespaceOnAuth0Failure(t *testing.T) {
 		t.Fatal("entry marked cleaned after Auth0 cleanup failure")
 	}
 }
+
+func TestMatrixCleanupRejectsSharedNamespaceEntry(t *testing.T) {
+	root := t.TempDir()
+	entries := []matrix.Entry{{Version: "8.10", Shortname: "one", Flow: "install"}, {Version: "8.10", Shortname: "two", Flow: "install"}}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create(entries, matrix.RunOptions{NamespaceOverride: "shared"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--entry", matrix.EntryID(entries[0]), "--yes"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected shared namespace rejection")
+	}
+}
