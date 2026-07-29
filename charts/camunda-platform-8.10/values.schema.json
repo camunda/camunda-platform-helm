@@ -4023,12 +4023,12 @@
                         "tag": {
                             "type": "string",
                             "description": "defines the image tag to use.",
-                            "default": "dev-20260728-amd64-v6"
+                            "default": "sha-add89bf9be4768010e732666080a35365a6ea426"
                         },
                         "digest": {
                             "type": "string",
                             "description": "can be used to set the image digest, overriding the tag.",
-                            "default": "sha256:b33a63e5029c067c7e1eed427e8d595f83e5e18d8200406843888eae7ebc8867"
+                            "default": "sha256:e5d16ee4d35d454a483666b5237dc5c47ae82febdcd1b7c7470bb075935ca696"
                         },
                         "pullSecrets": {
                             "type": "array",

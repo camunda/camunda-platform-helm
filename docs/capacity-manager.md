@@ -19,12 +19,14 @@ The component does not change partition count. Size logical partitions for expec
 the manager spreads those partitions across more brokers during peaks and consolidates them off peak.
 
 Capacity management is disabled by default and currently supports fresh single-region deployments
-with `orchestration.clusterSize: "1"`. When enabled, Helm omits `spec.replicas`, giving the manager
-exclusive ownership of runtime replicas across upgrades. Disable or rollback only after setting the
-policy target to one and waiting for the manager to complete safe topology contraction.
-The chart rejects a normal disable while the durable target is greater than one. Rolling back to a
-chart version that predates capacity management cannot enforce this guard and is unsupported until
-the cluster has been safely contracted.
+with `orchestration.clusterSize: "1"`. Set `capacityManager.replicaOwnership: capacityManager` to
+explicitly transfer StatefulSet replica ownership from Helm. Advisor-only mode leaves the value empty
+and retains normal Helm ownership.
+
+Returning ownership is an explicit handback using `capacityManager.replicaOwnership: helm`. It
+requires live cluster access and succeeds only when the durable target, durable completion marker,
+live replicas, and configured cluster size all match. Offline handback is rejected. Rolling back to a
+chart version that predates this contract is unsupported until the cluster has been safely contracted.
 
 ## Operator Integration
 
