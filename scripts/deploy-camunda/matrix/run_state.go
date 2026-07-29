@@ -255,8 +255,9 @@ type RunLock struct {
 }
 
 type lockOwner struct {
-	Hostname string `json:"hostname"`
-	PID      int    `json:"pid"`
+	Hostname        string `json:"hostname"`
+	PID             int    `json:"pid"`
+	ProcessIdentity string `json:"processIdentity"`
 }
 
 func NewRunStateStore(root, runID string) *RunStateStore {
@@ -295,7 +296,7 @@ func (s *RunStateStore) RecoverStaleLock() error {
 	if owner.Hostname != hostname {
 		return fmt.Errorf("refusing to remove lock created on host %q", owner.Hostname)
 	}
-	if processAlive(owner.PID) {
+	if processMatches(owner.PID, owner.ProcessIdentity) {
 		return fmt.Errorf("refusing to remove lock held by live process %d", owner.PID)
 	}
 	return os.Remove(path)
@@ -312,7 +313,7 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 		var owner lockOwner
 		parseErr := json.Unmarshal(ownerData, &owner)
 		hostname, _ := os.Hostname()
-		if readErr == nil && parseErr == nil && owner.Hostname == hostname && !processAlive(owner.PID) {
+		if readErr == nil && parseErr == nil && owner.Hostname == hostname && !processMatches(owner.PID, owner.ProcessIdentity) {
 			if removeErr := os.Remove(path); removeErr == nil {
 				file, err = os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 			}
@@ -322,7 +323,7 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 		}
 	}
 	hostname, _ := os.Hostname()
-	ownerData, _ := json.Marshal(lockOwner{Hostname: hostname, PID: os.Getpid()})
+	ownerData, _ := json.Marshal(lockOwner{Hostname: hostname, PID: os.Getpid(), ProcessIdentity: processIdentity(os.Getpid())})
 	if _, err := file.Write(append(ownerData, '\n')); err != nil {
 		file.Close()
 		_ = os.Remove(path)
@@ -506,6 +507,9 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 			{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
 			{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
 		})
+	}
+	if credentialErr != nil {
+		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", credentialErr)
 	}
 	if hubPassword == "" {
 		hubPassword, credentialErr = resumeCredentialPasswordFromFiles(state.Options, entries, state.Options.DockerHubUsername, [][2]string{

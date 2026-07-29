@@ -2,13 +2,25 @@
 
 package matrix
 
-import "golang.org/x/sys/windows"
+import (
+	"fmt"
 
-func processAlive(pid int) bool {
+	"golang.org/x/sys/windows"
+)
+
+func processMatches(pid int, identity string) bool {
+	return identity != "" && processIdentity(pid) == identity
+}
+
+func processIdentity(pid int) string {
 	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
 	if err != nil {
-		return false
+		return ""
 	}
-	_ = windows.CloseHandle(handle)
-	return true
+	defer windows.CloseHandle(handle) //nolint:errcheck
+	var creation, exit, kernel, user windows.Filetime
+	if err := windows.GetProcessTimes(handle, &creation, &exit, &kernel, &user); err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%d:%d", creation.HighDateTime, creation.LowDateTime)
 }

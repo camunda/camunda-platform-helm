@@ -149,7 +149,7 @@ func TestRecoverStaleLockRejectsLiveProcess(t *testing.T) {
 	store := NewRunStateStore(t.TempDir(), "run-1")
 	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
 	hostname, _ := os.Hostname()
-	data, _ := json.Marshal(lockOwner{Hostname: hostname, PID: os.Getpid()})
+	data, _ := json.Marshal(lockOwner{Hostname: hostname, PID: os.Getpid(), ProcessIdentity: processIdentity(os.Getpid())})
 	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), append(data, '\n'), 0o600))
 	require.ErrorContains(t, store.RecoverStaleLock(), "live process")
 }

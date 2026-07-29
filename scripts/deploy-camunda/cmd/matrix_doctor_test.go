@@ -186,6 +186,38 @@ func TestMatrixCleanupMarksUnprovisionedOIDCEntryCleaned(t *testing.T) {
 	}
 }
 
+func TestMatrixCleanupRefusesUncheckpointedProviderProvisioning(t *testing.T) {
+	root := t.TempDir()
+	entry := matrix.Entry{Version: "8.10", Shortname: "oidc", Scenario: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.MarkExternalProvisioningStarted(entry); err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeCleanupClient{}
+	original := newCleanupKubeClient
+	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
+	t.Cleanup(func() { newCleanupKubeClient = original })
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected uncertain provisioning failure")
+	}
+	if fake.deleted {
+		t.Fatal("namespace deleted despite uncertain provider state")
+	}
+	state, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Entries[0].Cleaned {
+		t.Fatal("uncertain entry marked cleaned")
+	}
+}
+
 func TestMatrixCleanupPreservesNamespaceOnAuth0Failure(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("AUTH0_DOMAIN", "https://tenant.example")
