@@ -509,7 +509,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 				directoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")
 			}
 			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil); err != nil {
-				result.Error = err
+				_ = entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				result.Error = fmt.Errorf("checkpoint Entra resource: %w", err)
 				return result
 			}
 		}
@@ -631,7 +632,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 				ids = append(ids, client.ClientID)
 			}
 			if stateErr := opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, ids); stateErr != nil {
-				result.Error = stateErr
+				_ = auth0.CleanupClientIDsStrict(context.Background(), auth0Options, ids)
+				result.Error = fmt.Errorf("checkpoint Auth0 resources: %w", stateErr)
 				return result
 			}
 		}

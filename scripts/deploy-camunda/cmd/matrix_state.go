@@ -170,24 +170,19 @@ func newMatrixCleanupCommand() *cobra.Command {
 					continue
 				}
 				matchedEntry = true
-				if item.Namespace == "" || item.Status == matrix.RunCleaned {
+				if item.Cleaned || item.Namespace == "" || item.Status == matrix.RunCleaned {
 					continue
 				}
-				cleanupCtx, cancel := context.WithTimeout(cmd.Context(), 2*time.Minute)
+				providerCtx, providerCancel := context.WithTimeout(cmd.Context(), 2*time.Minute)
 				client, err := newCleanupKubeClient(item.KubeContext)
 				var uid types.UID
 				var resourceVersion string
 				if err == nil {
-					uid, resourceVersion, err = client.OwnedNamespaceIdentity(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID)
+					uid, resourceVersion, err = client.OwnedNamespaceIdentity(providerCtx, item.Namespace, "deploy-camunda-run", state.ID)
 				}
 				if err != nil {
-					cancel()
+					providerCancel()
 					failures = append(failures, item.ID+": "+err.Error())
-					continue
-				}
-				if uid == "" {
-					cancel()
-					failures = append(failures, item.ID+": owned namespace no longer exists; external identity cleanup requires an active ownership anchor")
 					continue
 				}
 				envPath := state.Options.EnvFile
@@ -199,7 +194,7 @@ func newMatrixCleanupCommand() *cobra.Command {
 				}
 				values, envErr := env.ReadFile(envPath)
 				if envErr != nil && (item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" || item.Entry.Identity == "auth0") {
-					cancel()
+					providerCancel()
 					failures = append(failures, item.ID+": read identity cleanup credentials: "+envErr.Error())
 					continue
 				}
@@ -207,11 +202,11 @@ func newMatrixCleanupCommand() *cobra.Command {
 					if item.EntraDirectoryID == "" || values["ENTRA_APP_DIRECTORY_ID"] != item.EntraDirectoryID {
 						err = fmt.Errorf("Entra directory does not match recorded tenant")
 					} else if item.EntraObjectID != "" {
-						err = entra.CleanupVenomAppObjectStrict(cleanupCtx, entra.Options{
+						err = entra.CleanupVenomAppObjectStrict(providerCtx, entra.Options{
 							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
 						}, item.EntraObjectID)
 					} else {
-						err = cleanupEntraResources(cleanupCtx, entra.Options{
+						err = cleanupEntraResources(providerCtx, entra.Options{
 							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
 						})
 					}
@@ -220,24 +215,26 @@ func newMatrixCleanupCommand() *cobra.Command {
 					if item.Auth0Domain == "" || strings.TrimSuffix(values["AUTH0_DOMAIN"], "/") != strings.TrimSuffix(item.Auth0Domain, "/") {
 						err = fmt.Errorf("Auth0 domain does not match recorded tenant")
 					} else if len(item.Auth0ClientIDs) > 0 {
-						err = auth0.CleanupClientIDsStrict(cleanupCtx, auth0.Options{
+						err = auth0.CleanupClientIDsStrict(providerCtx, auth0.Options{
 							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 						}, item.Auth0ClientIDs)
 					} else {
-						err = cleanupAuth0Resources(cleanupCtx, auth0.Options{
+						err = cleanupAuth0Resources(providerCtx, auth0.Options{
 							Namespace: item.Namespace, Domain: values["AUTH0_DOMAIN"], MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 						})
 					}
 				}
 				if err != nil {
-					cancel()
+					providerCancel()
 					failures = append(failures, item.ID+": external identity cleanup: "+err.Error())
 					continue
 				}
+				providerCancel()
 				if uid != "" {
-					err = client.DeleteNamespaceWithIdentity(cleanupCtx, item.Namespace, uid, resourceVersion)
+					deleteCtx, deleteCancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
+					err = client.DeleteNamespaceWithIdentity(deleteCtx, item.Namespace, uid, resourceVersion)
+					deleteCancel()
 				}
-				cancel()
 				if err != nil {
 					failures = append(failures, item.ID+": "+err.Error())
 					continue
