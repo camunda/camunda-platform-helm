@@ -520,9 +520,23 @@ registries' credentials as ✓/✗ and only fails when the matching
 
 ### Persisting credentials
 
-Never commit credentials to `.deploy-camunda.yaml`. Persist them in
-`.env` (which `deploy-camunda config init` writes for you) or set them
-via your shell's env-manager. `deploy-camunda config env --show-origin`
+Never commit credentials to `.deploy-camunda.yaml`. For local use, store
+them once in macOS Keychain, Linux Secret Service, or Windows Credential
+Manager:
+
+```bash
+deploy-camunda credentials configure --registry harbor
+deploy-camunda credentials configure --registry dockerhub
+deploy-camunda credentials status
+```
+
+The password/token prompt disables terminal echo. Use a Harbor robot
+credential and a Docker Hub access token rather than account passwords.
+Headless CI continues to use environment variables; unavailable desktop
+keyrings are treated as not configured during implicit lookup.
+
+Credential precedence is CLI/config pair, environment or `.env` pair,
+then OS keyring. `deploy-camunda config env --show-origin`
 prints which layer each variable resolved from — process env vs `.env`
 vs per-entry override.
 

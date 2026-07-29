@@ -548,6 +548,12 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				}
 			}
 			entries = singleEntries
+			dockerFlags := config.DockerFlags{DockerUsername: dockerUsername, DockerPassword: dockerPassword, EnsureDockerRegistry: ensureDockerRegistry || len(topologyEntries) > 0, DockerHubUsername: dockerHubUsername, DockerHubPassword: dockerHubPassword, EnsureDockerHub: ensureDockerHub}
+			allEntries := append(append([]matrix.Entry{}, entries...), topologyEntries...)
+			if err := resolveRegistryCredentialsFromEnvFiles(&dockerFlags, allEntries, envFiles, envFile); err != nil {
+				return err
+			}
+			dockerUsername, dockerPassword, dockerHubUsername, dockerHubPassword = dockerFlags.DockerUsername, dockerFlags.DockerPassword, dockerFlags.DockerHubUsername, dockerFlags.DockerHubPassword
 
 			if len(topologyEntries) > 0 {
 				if dryRun || coverage {
@@ -598,7 +604,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 						HelmTimeout:           helmTimeout,
 						DockerUsername:        dockerUsername,
 						DockerPassword:        dockerPassword,
-						EnsureDockerRegistry:  ensureDockerRegistry,
+						EnsureDockerRegistry:  true,
 						DockerHubUsername:     dockerHubUsername,
 						DockerHubPassword:     dockerHubPassword,
 						EnsureDockerHub:       ensureDockerHub,

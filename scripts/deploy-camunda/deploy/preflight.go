@@ -258,7 +258,7 @@ func checkDockerCredentials(flags *config.RuntimeFlags, envMap map[string]string
 	harborPass := firstNonEmptyEnv(envMap, flags.Docker.DockerPassword, "HARBOR_PASSWORD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD", "NEXUS_PASSWORD")
 	checks = append(checks, dockerCredCheck(
 		"docker creds (Harbor)", harborUser, harborPass, flags.Docker.EnsureDockerRegistry,
-		"set --docker-username/--docker-password or HARBOR_USERNAME/HARBOR_PASSWORD (or TEST_DOCKER_*_CAMUNDA_CLOUD)"))
+		"run `deploy-camunda credentials configure --registry harbor`, or set --docker-username/--docker-password or HARBOR_USERNAME/HARBOR_PASSWORD"))
 
 	// Only probe Docker Hub when its pull secret is requested.
 	if flags.Docker.EnsureDockerHub {
@@ -266,7 +266,7 @@ func checkDockerCredentials(flags *config.RuntimeFlags, envMap map[string]string
 		hubPass := firstNonEmptyEnv(envMap, flags.Docker.DockerHubPassword, "DOCKERHUB_PASSWORD", "TEST_DOCKER_PASSWORD")
 		checks = append(checks, dockerCredCheck(
 			"docker creds (Docker Hub)", hubUser, hubPass, true,
-			"set --dockerhub-username/--dockerhub-password or DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD"))
+			"run `deploy-camunda credentials configure --registry dockerhub`, or set --dockerhub-username/--dockerhub-password or DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD"))
 	}
 
 	return checks

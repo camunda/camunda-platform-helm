@@ -67,6 +67,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "config" || (cmd.Parent() != nil && cmd.Parent().Name() == "config") {
 					return nil
 				}
+				if cmd.Name() == "credentials" || (cmd.Parent() != nil && cmd.Parent().Name() == "credentials") {
+					return nil
+				}
 				if cmd.Name() == "matrix" || (cmd.Parent() != nil && cmd.Parent().Name() == "matrix") {
 					return nil
 				}
@@ -168,6 +171,9 @@ func NewRootCommand() *cobra.Command {
 				Msg("Loading environment file")
 			if err := env.Load(envFileToLoad); err != nil {
 				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+			}
+			if err := resolveRegistryCredentials(&flags.Docker); err != nil {
+				return err
 			}
 
 			// Validate merged configuration
@@ -558,6 +564,7 @@ func Execute() error {
 	rootCmd := NewRootCommand()
 	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 	rootCmd.AddCommand(newConfigCommand())
+	rootCmd.AddCommand(newCredentialsCommand())
 	rootCmd.AddCommand(newMatrixCommand())
 	rootCmd.AddCommand(newPrepareValuesCommand())
 	rootCmd.AddCommand(newEntraCommand())
