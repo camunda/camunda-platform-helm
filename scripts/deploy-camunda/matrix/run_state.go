@@ -572,6 +572,11 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 	if opts.RepoRoot != "" {
 		args = append(args, "--repo-root", opts.RepoRoot)
 	}
+	if path := opts.EnvFiles[entry.Version]; path != "" {
+		args = append(args, "--env-file-"+entry.Version, path)
+	} else if opts.EnvFile != "" {
+		args = append(args, "--env-file", opts.EnvFile)
+	}
 	if opts.NamespacePrefix != "" {
 		args = append(args, "--namespace-prefix", opts.NamespacePrefix)
 	}

@@ -407,3 +407,18 @@ func TestCleanupClients_DeletesByName(t *testing.T) {
 		t.Error("must not delete clients from other namespaces")
 	}
 }
+
+func TestCleanupClientsStrictReturnsDeleteFailure(t *testing.T) {
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /oauth/token": tokenHandler(),
+		"GET /api/v2/clients": func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewEncoder(w).Encode([]map[string]string{{"client_id": "id-A", "name": "ns-identity"}})
+		},
+		"DELETE /api/v2/clients/": func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) },
+	})
+	defer srv.Close()
+	err := CleanupClientsStrict(context.Background(), Options{Namespace: "ns", Domain: srv.URL, MgmtClientID: "x", MgmtClientSecret: "y", HTTPClient: srv.Client()})
+	if err == nil {
+		t.Fatal("expected strict cleanup failure")
+	}
+}

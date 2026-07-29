@@ -372,11 +372,11 @@ func CleanupClientsStrict(ctx context.Context, opts Options) error {
 	// — which Auth0 allows — all get cleaned up.
 	for _, c := range allClients {
 		if !expected[c.Name] {
-			return err
+			continue
 		}
 		if err := deleteClient(ctx, client, token, &opts, c.ClientID); err != nil {
 			logging.Logger.Warn().Err(err).Str("name", c.Name).Str("clientId", c.ClientID).Msg("auth0 cleanup: delete failed")
-			continue
+			return fmt.Errorf("delete Auth0 client %q: %w", c.Name, err)
 		}
 		logging.Logger.Info().Str("name", c.Name).Str("clientId", c.ClientID).Msg("Deleted Auth0 client")
 	}
@@ -767,7 +767,7 @@ func grantAudience(ctx context.Context, client *http.Client, token string, opts 
 		return req, nil
 	}, "grantAudience")
 	if err != nil {
-		return err
+		return fmt.Errorf("grant audience: %w", err)
 	}
 	switch status {
 	case http.StatusCreated, http.StatusOK, http.StatusConflict:

@@ -732,6 +732,27 @@ func TestCleanupVenomApp_InvalidOpts(t *testing.T) {
 	CleanupVenomApp(context.Background(), Options{})
 }
 
+func TestCleanupVenomAppStrictReturnsUnexpectedDeleteStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/oauth2/v2.0/token"):
+			_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "token"})
+		case r.Method == http.MethodGet:
+			_ = json.NewEncoder(w).Encode(map[string]any{"value": []map[string]string{{"id": "object-id", "appId": "app-id"}}})
+		case r.Method == http.MethodDelete:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+	originalGraph, originalLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = server.URL, server.URL
+	t.Cleanup(func() { graphBaseURL, loginBaseURL = originalGraph, originalLogin })
+	err := CleanupVenomAppStrict(context.Background(), Options{Namespace: "ns", DirectoryID: "dir", ClientID: "client", ClientSecret: "secret", HTTPClient: server.Client()})
+	if err == nil {
+		t.Fatal("expected strict cleanup failure")
+	}
+}
+
 // TestEnsureVenomApp_NewApp tests the full happy-path flow when no existing app is found.
 // This tests everything except the K8s secret creation (which requires a real cluster).
 func TestEnsureVenomApp_NewApp(t *testing.T) {
