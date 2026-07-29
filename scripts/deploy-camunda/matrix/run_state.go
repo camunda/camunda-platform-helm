@@ -281,11 +281,20 @@ func (s *RunStateStore) RunDir() string { return filepath.Join(s.root, s.runID) 
 func (s *RunStateStore) RunID() string { return s.runID }
 
 func (s *RunStateStore) RecoverStaleLock() error {
-	releaseGuard, err := s.acquireLockGuard()
+	guardPath := filepath.Join(s.RunDir(), "run.lock.recover")
+	guard, err := os.OpenFile(guardPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
-		return err
+		return errors.New("another stale-lock recovery is active")
 	}
-	defer releaseGuard()
+	_ = guard.Close()
+	defer os.Remove(guardPath)
+	// Explicit recovery may remove malformed operation guards left by a crash.
+	if data, readErr := os.ReadFile(filepath.Join(s.RunDir(), "run.lock.guard")); readErr == nil {
+		var owner lockOwner
+		if json.Unmarshal(data, &owner) != nil {
+			_ = os.Remove(filepath.Join(s.RunDir(), "run.lock.guard"))
+		}
+	}
 	path := filepath.Join(s.RunDir(), "run.lock")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -296,7 +305,7 @@ func (s *RunStateStore) RecoverStaleLock() error {
 	}
 	var owner lockOwner
 	if err := json.Unmarshal(data, &owner); err != nil {
-		return fmt.Errorf("decode matrix run lock: %w", err)
+		return os.Remove(path)
 	}
 	hostname, _ := os.Hostname()
 	if owner.Hostname != hostname {

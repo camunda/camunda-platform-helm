@@ -75,6 +75,21 @@ func TestImportMatrixDockerAuthDoesNotMixExplicitPair(t *testing.T) {
 	}
 }
 
+func TestResolveSelectedEnvFileCredentials(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "8.10.env")
+	if err := os.WriteFile(path, []byte("HARBOR_USERNAME=robot\nHARBOR_PASSWORD=token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	entries := []matrix.Entry{{Version: "8.10"}}
+	user, password, hubUser, hubPassword := "", "", "", ""
+	if err := resolveSelectedEnvFileCredentials(entries, map[string]string{"8.10": path}, "", &user, &password, &hubUser, &hubPassword, true, false); err != nil {
+		t.Fatal(err)
+	}
+	if user != "robot" || password != "token" {
+		t.Fatalf("credentials = %q/%q", user, password)
+	}
+}
+
 func TestMatrixCleanupMarksOwnedEntryCleaned(t *testing.T) {
 	root := t.TempDir()
 	entry := matrix.Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}

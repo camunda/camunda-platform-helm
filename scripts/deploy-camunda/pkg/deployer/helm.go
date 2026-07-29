@@ -103,6 +103,16 @@ func redactHelmCommand(command string) string {
 func redactHelmArgs(args []string) []string {
 	out := append([]string(nil), args...)
 	for i, arg := range out {
+		for _, prefix := range []string{"--set=", "--set-string=", "--set-json="} {
+			if strings.HasPrefix(arg, prefix) {
+				payload := strings.TrimPrefix(arg, prefix)
+				key, _, ok := strings.Cut(payload, "=")
+				if ok && secretHelmKey(key) {
+					out[i] = prefix + key + "=<redacted>"
+					arg = out[i]
+				}
+			}
+		}
 		redactedSetValue := false
 		if i > 0 && (out[i-1] == "--set" || out[i-1] == "--set-string" || out[i-1] == "--set-json") {
 			key, _, ok := strings.Cut(arg, "=")

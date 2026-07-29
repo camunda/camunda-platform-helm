@@ -110,6 +110,13 @@ func TestRedactHelmArgsHandlesWhitespaceSecrets(t *testing.T) {
 	}
 }
 
+func TestRedactHelmArgsHandlesInlineSetSecrets(t *testing.T) {
+	redacted := redactHelmArgs([]string{"upgrade", "--set=global.password=secret value"})
+	if redacted[1] != "--set=global.password=<redacted>" {
+		t.Fatalf("redacted = %#v", redacted)
+	}
+}
+
 func TestShortenPaths_NoAbsolutePaths(t *testing.T) {
 	cmd := "helm upgrade --install integration camunda/camunda-platform -n ns --version 13.5.0 --wait"
 	got := shortenPaths(cmd)

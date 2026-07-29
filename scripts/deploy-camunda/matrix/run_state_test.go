@@ -209,6 +209,13 @@ func TestRecoverStaleLockRejectsLiveProcess(t *testing.T) {
 	require.ErrorContains(t, store.RecoverStaleLock(), "live process")
 }
 
+func TestRecoverStaleLockRemovesMalformedLock(t *testing.T) {
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), []byte("{"), 0o600))
+	require.NoError(t, store.RecoverStaleLock())
+}
+
 func TestCleaningFailedEntryPreservesFailedRun(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
 	store := NewRunStateStore(t.TempDir(), "run-1")

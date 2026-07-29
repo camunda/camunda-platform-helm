@@ -405,14 +405,6 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
 				return err
 			}
-			if err := resolveKeyringCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
-				return err
-			}
-			if importDockerAuth {
-				if err := importMatrixDockerAuth(dockerConfigPath, &dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword); err != nil {
-					return err
-				}
-			}
 
 			if repoRoot == "" {
 				detected, err := config.DetectRepoRoot()
@@ -458,6 +450,17 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				Platform:        platform,
 				Tier:            tier,
 			})
+			if err := resolveSelectedEnvFileCredentials(entries, envFiles, envFile, &dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
+				return err
+			}
+			if err := resolveKeyringCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
+				return err
+			}
+			if importDockerAuth {
+				if err := importMatrixDockerAuth(dockerConfigPath, &dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword); err != nil {
+					return err
+				}
+			}
 
 			// Entries whose scenario declares a topology (multi-namespace
 			// deployment) fan out to N releases and are driven directly via

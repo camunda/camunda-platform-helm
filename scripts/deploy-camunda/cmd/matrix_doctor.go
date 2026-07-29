@@ -97,9 +97,6 @@ func newMatrixDoctorCommand() *cobra.Command {
 			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
 				return err
 			}
-			if err := resolveKeyringCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
-				return err
-			}
 			if repoRoot == "" {
 				detected, err := config.DetectRepoRoot()
 				if err != nil {
@@ -115,6 +112,12 @@ func newMatrixDoctorCommand() *cobra.Command {
 				ScenarioFilter: scenarioFilter, ShortnameFilter: shortnameFilter, ShortnameExact: shortnameExact,
 				FlowFilter: flowFilter, Platform: platform, Tier: tier,
 			})
+			if err := resolveSelectedEnvFileCredentials(entries, envFiles, envFile, &dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
+				return err
+			}
+			if err := resolveKeyringCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
+				return err
+			}
 			if len(entries) == 0 {
 				return fmt.Errorf("no matrix entries matched the filters")
 			}
@@ -276,6 +279,54 @@ func resolveCredentialPair(source string, username, password *string, envPairs [
 		}
 		if user == "" || pass == "" {
 			return fmt.Errorf("%s/%s must both be set", pair[0], pair[1])
+		}
+		*username, *password = user, pass
+		return nil
+	}
+	return nil
+}
+
+func resolveSelectedEnvFileCredentials(entries []matrix.Entry, envFiles map[string]string, fallback string, harborUser, harborPassword, hubUser, hubPassword *string, requireHarbor, requireHub bool) error {
+	paths := map[string]bool{}
+	for _, entry := range entries {
+		path := envFiles[entry.Version]
+		if path == "" {
+			path = fallback
+		}
+		if path != "" {
+			paths[path] = true
+		}
+	}
+	for path := range paths {
+		values, err := env.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		if requireHarbor && *harborUser == "" && *harborPassword == "" {
+			if err := mergeCredentialPairFromMap("Harbor", values, harborUser, harborPassword, [][2]string{{"HARBOR_USERNAME", "HARBOR_PASSWORD"}, {"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"}, {"NEXUS_USERNAME", "NEXUS_PASSWORD"}}); err != nil {
+				return fmt.Errorf("%s: %w", path, err)
+			}
+		}
+		if requireHub && *hubUser == "" && *hubPassword == "" {
+			if err := mergeCredentialPairFromMap("Docker Hub", values, hubUser, hubPassword, [][2]string{{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"}, {"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"}}); err != nil {
+				return fmt.Errorf("%s: %w", path, err)
+			}
+		}
+	}
+	return nil
+}
+
+func mergeCredentialPairFromMap(name string, values map[string]string, username, password *string, pairs [][2]string) error {
+	for _, pair := range pairs {
+		user, pass := values[pair[0]], values[pair[1]]
+		if user == "" && pass == "" {
+			continue
+		}
+		if user == "" || pass == "" {
+			return fmt.Errorf("%s credential pair %s/%s is incomplete", name, pair[0], pair[1])
+		}
+		if *username != "" && (*username != user || *password != pass) {
+			return fmt.Errorf("selected env files contain conflicting %s credentials", name)
 		}
 		*username, *password = user, pass
 		return nil
