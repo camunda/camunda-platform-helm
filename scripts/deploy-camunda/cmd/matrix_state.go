@@ -241,7 +241,8 @@ func newMatrixCleanupCommand() *cobra.Command {
 				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
 					if item.EntraObjectID == "" {
 						if item.ExternalProvisioningStarted {
-							err = fmt.Errorf("unresolved Entra provisioning has no owned object checkpoint")
+							app, findErr := entra.FindVenomApp(providerCtx, entra.Options{Namespace: item.Namespace, RunID: state.ID, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]})
+							if findErr != nil { err = findErr } else if app != nil { err = cleanupEntraObject(providerCtx, entra.Options{Namespace: item.Namespace, RunID: state.ID, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]}, app.ObjectID); if err == nil { item.EntraObjectID, item.EntraCreated = app.ObjectID, true } }
 						} else {
 							err = nil
 						}
