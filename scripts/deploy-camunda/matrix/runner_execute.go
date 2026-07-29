@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"scripts/camunda-core/pkg/executil"
+	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/auth0"
@@ -392,6 +393,17 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
 	logLevel := flags.LogLevel
 	var phaseErr error
+	if opts.StateStore != nil && opts.NamespaceOverride == "" && (entra.IsOIDCEntry(entry.Auth, entry.Identity) || auth0.IsAuth0Identity(entry.Identity)) {
+		client, err := kube.NewClient("", kubeCtx)
+		if err != nil {
+			result.Error = err
+			return result
+		}
+		if err := client.EnsureNamespaceOwned(ctx, namespace, "deploy-camunda-run", opts.StateStore.RunID()); err != nil {
+			result.Error = err
+			return result
+		}
+	}
 
 	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
 	// which we forward to the matrix-level OnPhaseChange callback.

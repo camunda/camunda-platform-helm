@@ -753,6 +753,48 @@ func TestCleanupVenomAppStrictReturnsUnexpectedDeleteStatus(t *testing.T) {
 	}
 }
 
+func TestCleanupVenomAppObjectStrictDeletesExactObject(t *testing.T) {
+	var deletedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/oauth2/v2.0/token"):
+			_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "token"})
+		case r.Method == http.MethodDelete:
+			deletedPath = r.URL.Path
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer server.Close()
+	originalGraph, originalLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = server.URL, server.URL
+	t.Cleanup(func() { graphBaseURL, loginBaseURL = originalGraph, originalLogin })
+	err := CleanupVenomAppObjectStrict(context.Background(), Options{Namespace: "ns", DirectoryID: "dir", ClientID: "client", ClientSecret: "secret", HTTPClient: server.Client()}, "object-id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deletedPath != "/applications/object-id" {
+		t.Fatalf("deleted path = %q", deletedPath)
+	}
+}
+
+func TestCleanupVenomAppObjectStrictRejectsUnexpectedStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/oauth2/v2.0/token") {
+			_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "token"})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+	originalGraph, originalLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = server.URL, server.URL
+	t.Cleanup(func() { graphBaseURL, loginBaseURL = originalGraph, originalLogin })
+	err := CleanupVenomAppObjectStrict(context.Background(), Options{Namespace: "ns", DirectoryID: "dir", ClientID: "client", ClientSecret: "secret", HTTPClient: server.Client()}, "object-id")
+	if err == nil {
+		t.Fatal("expected unexpected status failure")
+	}
+}
+
 // TestEnsureVenomApp_NewApp tests the full happy-path flow when no existing app is found.
 // This tests everything except the K8s secret creation (which requires a real cluster).
 func TestEnsureVenomApp_NewApp(t *testing.T) {

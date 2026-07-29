@@ -107,7 +107,7 @@ func redactHelmArgs(args []string) []string {
 			if strings.HasPrefix(arg, prefix) {
 				payload := strings.TrimPrefix(arg, prefix)
 				key, _, ok := strings.Cut(payload, "=")
-				if ok && secretHelmKey(key) {
+				if ok && !publicHelmKey(key) {
 					out[i] = prefix + key + "=<redacted>"
 					arg = out[i]
 				}
@@ -116,7 +116,7 @@ func redactHelmArgs(args []string) []string {
 		redactedSetValue := false
 		if i > 0 && (out[i-1] == "--set" || out[i-1] == "--set-string" || out[i-1] == "--set-json") {
 			key, _, ok := strings.Cut(arg, "=")
-			if ok && secretHelmKey(key) {
+			if ok && !publicHelmKey(key) {
 				out[i] = key + "=<redacted>"
 				redactedSetValue = true
 			}
@@ -126,6 +126,15 @@ func redactHelmArgs(args []string) []string {
 		}
 	}
 	return out
+}
+
+func publicHelmKey(key string) bool {
+	for _, allowed := range []string{"global.host", "global.ingress.host", "orchestration.upgrade.allowPreReleaseImages", "nodeSelector", "tolerations", "volumeClaimTemplate.storageClassName", "feature.enabled"} {
+		if key == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 func secretHelmKey(key string) bool {
