@@ -240,7 +240,13 @@ func (c *Client) DeleteNamespaceOwnedBy(ctx context.Context, namespace, label, o
 	}); err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("delete namespace %q: %w", namespace, err)
 	}
-	return nil
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+		_, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, err
+	})
 }
 
 // waitForNamespaceNotTerminating checks if a namespace is terminating and waits for deletion to complete

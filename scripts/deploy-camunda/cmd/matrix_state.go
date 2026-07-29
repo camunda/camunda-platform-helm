@@ -11,7 +11,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"scripts/camunda-core/pkg/kube"
+	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/entra"
 	"scripts/deploy-camunda/matrix"
 )
 
@@ -145,6 +147,12 @@ func newMatrixCleanupCommand() *cobra.Command {
 					continue
 				}
 				cleanupCtx, cancel := context.WithTimeout(cmd.Context(), 2*time.Minute)
+				if entra.IsOIDCEntry(item.Entry.Auth, item.Entry.Identity) {
+					entra.CleanupVenomApp(cleanupCtx, entra.Options{Namespace: item.Namespace, KubeContext: item.KubeContext})
+				}
+				if auth0.IsAuth0Identity(item.Entry.Identity) {
+					auth0.CleanupClients(cleanupCtx, auth0.Options{Namespace: item.Namespace, KubeContext: item.KubeContext})
+				}
 				client, err := kube.NewClient("", item.KubeContext)
 				if err == nil {
 					err = client.DeleteNamespaceOwnedBy(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID)

@@ -9,6 +9,8 @@ type RunOptions struct {
 	GeneratePostgresCredentials bool
 	GeneratedPostgresUsername   string
 	GeneratedPostgresPassword   string
+	ImportDockerAuth            bool
+	DockerConfigPath            string
 	// DryRun logs what would be done without executing.
 	DryRun bool
 	// StopOnFailure stops the run on the first failure.

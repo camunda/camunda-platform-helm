@@ -45,6 +45,9 @@ func Doctor(ctx context.Context, entries []Entry, opts RunOptions, doctorOpts Do
 	contexts := map[string]struct{}{}
 	for _, entry := range entries {
 		if entry.Topology != nil {
+			if kubeContext := ResolveKubeContext(opts, entry); kubeContext != "" {
+				contexts[kubeContext] = struct{}{}
+			}
 			report.Entries = append(report.Entries, DoctorEntry{
 				Entry: entry, Namespace: ResolveNamespace(opts, entry),
 				Report: &deploy.Report{Checks: []deploy.Check{{

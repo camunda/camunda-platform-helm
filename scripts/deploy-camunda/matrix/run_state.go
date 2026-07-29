@@ -79,6 +79,8 @@ type StoredRunOptions struct {
 	WaitIngressReady            bool              `json:"waitIngressReady,omitempty"`
 	IngressReadyTimeoutMinutes  int               `json:"ingressReadyTimeoutMinutes,omitempty"`
 	GeneratePostgresCredentials bool              `json:"generatePostgresCredentials,omitempty"`
+	ImportDockerAuth            bool              `json:"importDockerAuth,omitempty"`
+	DockerConfigPath            string            `json:"dockerConfigPath,omitempty"`
 }
 
 func StoreRunOptions(opts RunOptions) StoredRunOptions {
@@ -101,6 +103,7 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		ChartRefVersion: opts.ChartRefVersion, ForceImageOverrides: opts.ForceImageOverrides,
 		WaitIngressReady: opts.WaitIngressReady, IngressReadyTimeoutMinutes: opts.IngressReadyTimeoutMinutes,
 		GeneratePostgresCredentials: opts.GeneratePostgresCredentials,
+		ImportDockerAuth:            opts.ImportDockerAuth, DockerConfigPath: opts.DockerConfigPath,
 	}
 }
 
@@ -123,6 +126,7 @@ func (s StoredRunOptions) RunOptions() RunOptions {
 		ChartRefVersion: s.ChartRefVersion, ForceImageOverrides: s.ForceImageOverrides,
 		WaitIngressReady: s.WaitIngressReady, IngressReadyTimeoutMinutes: s.IngressReadyTimeoutMinutes,
 		GeneratePostgresCredentials: s.GeneratePostgresCredentials,
+		ImportDockerAuth:            s.ImportDockerAuth, DockerConfigPath: s.DockerConfigPath,
 	}
 }
 
@@ -355,20 +359,38 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	if hasRedactedArgs(state.Options.ExtraHelmArgs) || hasRedactedArgs(state.Options.ExtraHelmSets) {
 		return nil, RunOptions{}, errors.New("matrix run used secret-bearing Helm arguments; resume cannot reconstruct them safely; replay the recorded command with the required secret inputs")
 	}
-	harborPassword, err := resumeCredentialPassword(state.Options.DockerUsername, state.Options.RequiresDockerPassword, [][2]string{
-		{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
-		{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
-		{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
-	})
-	if err != nil {
-		return nil, RunOptions{}, fmt.Errorf("restore Harbor credentials: %w", err)
+	harborPassword, hubPassword := "", ""
+	if state.Options.ImportDockerAuth {
+		auths, importErr := ImportPlaintextDockerAuth(state.Options.DockerConfigPath, "registry.camunda.cloud", "docker.io")
+		if importErr != nil {
+			return nil, RunOptions{}, fmt.Errorf("restore Docker config credentials: %w", importErr)
+		}
+		if auth, ok := auths["registry.camunda.cloud"]; ok && auth.Username == state.Options.DockerUsername {
+			harborPassword = auth.Password
+		}
+		if auth, ok := auths["docker.io"]; ok && auth.Username == state.Options.DockerHubUsername {
+			hubPassword = auth.Password
+		}
 	}
-	hubPassword, err := resumeCredentialPassword(state.Options.DockerHubUsername, state.Options.RequiresDockerHubPassword, [][2]string{
-		{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
-		{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
-	})
-	if err != nil {
-		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", err)
+	var credentialErr error
+	if harborPassword == "" {
+		harborPassword, credentialErr = resumeCredentialPassword(state.Options.DockerUsername, state.Options.RequiresDockerPassword, [][2]string{
+			{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
+			{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
+			{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
+		})
+	}
+	if credentialErr != nil {
+		return nil, RunOptions{}, fmt.Errorf("restore Harbor credentials: %w", credentialErr)
+	}
+	if hubPassword == "" {
+		hubPassword, credentialErr = resumeCredentialPassword(state.Options.DockerHubUsername, state.Options.RequiresDockerHubPassword, [][2]string{
+			{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
+			{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
+		})
+	}
+	if credentialErr != nil {
+		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", credentialErr)
 	}
 	state.Status, state.UpdatedAt = RunPending, time.Now().UTC()
 	if err := s.write(state); err != nil {

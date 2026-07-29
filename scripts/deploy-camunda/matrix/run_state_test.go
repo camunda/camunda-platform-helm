@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"encoding/base64"
 	"errors"
 	"os"
 	"path/filepath"
@@ -155,6 +156,22 @@ func TestPrepareResumeRejectsMismatchedDockerCredentials(t *testing.T) {
 	require.NoError(t, err)
 	_, _, err = store.PrepareResume("")
 	require.ErrorContains(t, err, "does not match stored username")
+}
+
+func TestPrepareResumeRestoresImportedDockerCredentials(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	auth := base64.StdEncoding.EncodeToString([]byte("imported-user:imported-password"))
+	require.NoError(t, os.WriteFile(configPath, []byte(`{"auths":{"registry.camunda.cloud":{"auth":"`+auth+`"}}}`), 0o600))
+	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{
+		DockerUsername: "imported-user", DockerPassword: "imported-password",
+		ImportDockerAuth: true, DockerConfigPath: configPath,
+	})
+	require.NoError(t, err)
+	_, opts, err := store.PrepareResume("")
+	require.NoError(t, err)
+	assert.Equal(t, "imported-password", opts.DockerPassword)
 }
 
 func TestClassifyFailure(t *testing.T) {

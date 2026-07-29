@@ -265,6 +265,9 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			return validateChartRefFlags(chartRef, chartRefVersion)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if namespaceOverride != "" && cleanup {
+				return fmt.Errorf("--cleanup cannot be used with --namespace-override because deploy-camunda did not create that namespace")
+			}
 			// Create a signal-aware context so that Ctrl+C (SIGINT) and
 			// SIGTERM cancel the context, which propagates through
 			// matrix.Run → deploy.Execute → executeScript, cleanly
@@ -686,6 +689,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				GeneratePostgresCredentials: generatePostgres,
 				GeneratedPostgresUsername:   runPostgresUsername,
 				GeneratedPostgresPassword:   runPostgresPassword,
+				ImportDockerAuth:            importDockerAuth,
+				DockerConfigPath:            dockerConfigPath,
 				ExtraHelmArgs:               extraHelmArgs,
 				ExtraHelmSets:               extraHelmSets,
 				ExtraValues:                 extraValues,

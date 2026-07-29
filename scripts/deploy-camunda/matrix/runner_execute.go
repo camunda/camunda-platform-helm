@@ -383,7 +383,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		return result
 	}
 	result.KubeContext = kubeCtx
-	if opts.StateStore != nil {
+	if opts.StateStore != nil && opts.NamespaceOverride == "" {
 		flags.Deployment.MatrixRunID = opts.StateStore.RunID()
 	}
 	platform := resolvePlatform(opts, entry)
