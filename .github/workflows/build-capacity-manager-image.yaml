@@ -58,6 +58,5 @@ jobs:
           provenance: false
           tags: |
             registry.camunda.cloud/team-distribution/capacity-manager:sha-${{ github.sha }}
-            registry.camunda.cloud/team-distribution/capacity-manager:latest
           cache-from: type=gha,scope=capacity-manager
           cache-to: type=gha,mode=max,scope=capacity-manager

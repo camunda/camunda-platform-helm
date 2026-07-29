@@ -22,7 +22,7 @@ type DirectMetricsClient struct {
 	URL    string
 	Client *http.Client
 	mu     sync.Mutex
-	last   float64
+	last   map[string]float64
 	at     time.Time
 }
 
@@ -39,37 +39,55 @@ func (c *DirectMetricsClient) Query(ctx context.Context, metric string) (*float6
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("metrics endpoint returned %s", response.Status)
 	}
-	total := 0.0
+	series := map[string]float64{}
 	scanner := bufio.NewScanner(response.Body)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		name, value, ok := strings.Cut(line, " ")
-		if !ok || (name != metric && !strings.HasPrefix(name, metric+"{")) {
+		fields := strings.Fields(line)
+		if len(fields) < 2 || (fields[0] != metric && !strings.HasPrefix(fields[0], metric+"{")) {
 			continue
 		}
-		parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+		parsed, err := strconv.ParseFloat(fields[1], 64)
 		if err != nil {
 			return nil, fmt.Errorf("parse metric %s: %w", metric, err)
 		}
-		total += parsed
+		series[fields[0]] = parsed
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
+	if len(series) == 0 {
+		return nil, nil
+	}
 	now := time.Now()
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.at.IsZero() || total < c.last {
-		c.last = total
+	if c.at.IsZero() {
+		c.last = series
 		c.at = now
 		return nil, nil
 	}
 	elapsed := now.Sub(c.at).Seconds()
-	rate := (total - c.last) / elapsed
-	c.last = total
+	maximum := 0.0
+	hasRate := false
+	for name, current := range series {
+		previous, ok := c.last[name]
+		if !ok || current < previous {
+			continue
+		}
+		rate := (current - previous) / elapsed
+		if !hasRate || rate > maximum {
+			maximum = rate
+			hasRate = true
+		}
+	}
+	c.last = series
 	c.at = now
-	return &rate, nil
+	if !hasRate {
+		return nil, nil
+	}
+	return &maximum, nil
 }
