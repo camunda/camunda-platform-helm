@@ -11,16 +11,20 @@ capacityManager:
   reconcileInterval: 5s
   operationTimeout: 10m
   prometheusURL: http://integration-zeebe-0.integration-zeebe:9600/orchestration/actuator/prometheus
-  policy:
-    mode: automatic
-    minBrokers: 1
-    maxBrokers: 2
-    targetBrokers: 0
-    pressureQuery: zeebe_log_appender_record_appended_total
-    scaleUpThreshold: 20
-    scaleDownThreshold: 5
-    scaleUpSamples: 3
-    scaleDownSamples: 6
+  extraConfiguration:
+    - file: policy.json
+      content: |
+        {
+          "mode": "automatic",
+          "minBrokers": 1,
+          "maxBrokers": 2,
+          "targetBrokers": 0,
+          "pressureQuery": "zeebe_log_appender_record_appended_total",
+          "scaleUpThreshold": 20,
+          "scaleDownThreshold": 5,
+          "scaleUpSamples": 3,
+          "scaleDownSamples": 6
+        }
 
 orchestration:
   clusterSize: "1"
