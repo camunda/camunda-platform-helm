@@ -515,6 +515,9 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		if item.Cleaned || item.Status == RunPassed || item.Status == RunCleaned {
 			continue
 		}
+		if item.ExternalProvisioningStarted {
+			return nil, RunOptions{}, fmt.Errorf("entry %q has unresolved external provisioning and cannot be resumed safely; run cleanup after provider reconciliation", item.ID)
+		}
 		if item.Attempts > 0 && versionmatrix.IsTwoStepUpgradeFlow(item.Entry.Flow) {
 			return nil, RunOptions{}, fmt.Errorf("entry %q is a partially executed two-step upgrade and cannot be resumed safely; replay it in a clean namespace", item.ID)
 		}
@@ -681,10 +684,11 @@ func (s *RunStateStore) updateID(id string, fn func(*MatrixRunState, *EntryRunSt
 		}
 		event := fn(state, item)
 		state.UpdatedAt = time.Now().UTC()
-		if err := s.appendEvent(event); err != nil {
+		if err := s.write(state); err != nil {
 			return err
 		}
-		return s.write(state)
+		_ = s.appendEvent(event)
+		return nil
 	}
 	return fmt.Errorf("matrix entry %q not found in run %q", id, s.runID)
 }

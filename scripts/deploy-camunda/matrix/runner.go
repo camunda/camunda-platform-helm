@@ -1531,9 +1531,6 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 		if err := cleanupAuth0IDs(identityCtx, *result.auth0Opts, ids); err != nil {
 			return err
 		}
-		if err := opts.StateStore.MarkExternalProvisioningComplete(result.Entry); err != nil {
-			return err
-		}
 	}
 
 	// Delete the namespace.

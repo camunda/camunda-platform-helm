@@ -361,6 +361,32 @@ func TestApplyCleanupResultPreservesFailureAndNotCleaned(t *testing.T) {
 	assert.ErrorContains(t, result.Error, "cleanup matrix entry: namespace deletion failed")
 }
 
+func TestExternalCompensationClearsUncertaintyOnlyOnSuccess(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "oidc", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkExternalProvisioningStarted(entry))
+	require.Error(t, completeExternalCompensation(store, entry, errors.New("delete failed")))
+	state, err := store.Load()
+	require.NoError(t, err)
+	assert.True(t, state.Entries[0].ExternalProvisioningStarted)
+	require.NoError(t, completeExternalCompensation(store, entry, nil))
+	state, err = store.Load()
+	require.NoError(t, err)
+	assert.False(t, state.Entries[0].ExternalProvisioningStarted)
+}
+
+func TestPrepareResumeRejectsUncertainExternalProvisioning(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "oidc", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkExternalProvisioningStarted(entry))
+	_, _, err = store.PrepareResume("")
+	require.ErrorContains(t, err, "unresolved external provisioning")
+}
+
 func TestCleanupEntryUsesCheckpointedAuth0IDsAndStopsOnFailure(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "auth0", Scenario: "auth0", Flow: "install", Identity: "auth0"}
 	store := NewRunStateStore(t.TempDir(), "run-1")

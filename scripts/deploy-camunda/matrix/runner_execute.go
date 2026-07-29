@@ -516,9 +516,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 					checkpointErr = opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil)
 				}
 				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
-				if cleanupErr == nil && opts.StateStore != nil {
-					cleanupErr = opts.StateStore.MarkExternalProvisioningComplete(entry)
-				}
+				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
 				result.Error = errors.Join(fmt.Errorf("entra: provision venom app: %w", err), checkpointErr, cleanupErr)
 			} else {
 				result.Error = fmt.Errorf("entra: provision venom app: %w", err)
@@ -535,9 +533,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			}
 			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil); err != nil {
 				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
-				if cleanupErr == nil {
-					cleanupErr = opts.StateStore.MarkExternalProvisioningComplete(entry)
-				}
+				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
 				result.Error = errors.Join(fmt.Errorf("checkpoint Entra resource: %w", err), cleanupErr)
 				return result
 			}
@@ -676,9 +672,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			}
 			if stateErr := opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, ids); stateErr != nil {
 				cleanupErr := auth0.CleanupClientIDsStrict(context.Background(), auth0Options, ids)
-				if cleanupErr == nil {
-					cleanupErr = opts.StateStore.MarkExternalProvisioningComplete(entry)
-				}
+				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
 				result.Error = errors.Join(fmt.Errorf("checkpoint Auth0 resources: %w", stateErr), cleanupErr)
 				return result
 			}
@@ -846,6 +840,13 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	result = RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts, auth0Opts: auth0Opts}
 
 	return result
+}
+
+func completeExternalCompensation(store *RunStateStore, entry Entry, cleanupErr error) error {
+	if cleanupErr != nil || store == nil {
+		return cleanupErr
+	}
+	return store.MarkExternalProvisioningComplete(entry)
 }
 
 func applyCleanupResult(result *RunResult, cleanup func() error) bool {
