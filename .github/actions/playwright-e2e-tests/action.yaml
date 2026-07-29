@@ -296,7 +296,7 @@ runs:
       with:
         name: ${{ steps.e2e_diag_artifact.outputs.name }}
         path: e2e-diagnostics/
-        retention-days: 14
+        retention-days: 1
         if-no-files-found: warn
 
     - name: Upload blob report to GitHub Actions Artifacts
