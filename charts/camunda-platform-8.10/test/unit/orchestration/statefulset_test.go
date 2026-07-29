@@ -61,6 +61,16 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 
 				s.Require().Nil(statefulSet.Spec.Replicas)
 			},
+		}, {
+			Name:        "TestPartitionAdvisorKeepsReplicaOwnership",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-partition-advisor.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				s.Require().NotNil(statefulSet.Spec.Replicas)
+				s.Require().Equal(int32(3), *statefulSet.Spec.Replicas)
+			},
 		},
 		{
 			Name: "TestContainerSetPodLabels",

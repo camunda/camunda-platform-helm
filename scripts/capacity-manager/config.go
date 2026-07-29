@@ -16,20 +16,30 @@ import (
 )
 
 type Policy struct {
-	Mode                   string  `json:"mode"`
-	MinBrokers             int     `json:"minBrokers"`
-	MaxBrokers             int     `json:"maxBrokers"`
-	TargetBrokers          int     `json:"targetBrokers,omitempty"`
-	ScheduledMinimum       int     `json:"scheduledMinimumBrokers,omitempty"`
-	ScheduleStartsAt       string  `json:"scheduleStartsAt,omitempty"`
-	ScheduleEndsAt         string  `json:"scheduleEndsAt,omitempty"`
-	PressureQuery          string  `json:"pressureQuery,omitempty"`
-	ScaleUpThreshold       float64 `json:"scaleUpThreshold,omitempty"`
-	ScaleDownThreshold     float64 `json:"scaleDownThreshold,omitempty"`
-	ScaleUpSamples         int     `json:"scaleUpSamples,omitempty"`
-	ScaleDownSamples       int     `json:"scaleDownSamples,omitempty"`
-	ScaleUpStabilization   string  `json:"scaleUpStabilization,omitempty"`
-	ScaleDownStabilization string  `json:"scaleDownStabilization,omitempty"`
+	Mode                   string                 `json:"mode"`
+	MinBrokers             int                    `json:"minBrokers"`
+	MaxBrokers             int                    `json:"maxBrokers"`
+	TargetBrokers          int                    `json:"targetBrokers,omitempty"`
+	ScheduledMinimum       int                    `json:"scheduledMinimumBrokers,omitempty"`
+	ScheduleStartsAt       string                 `json:"scheduleStartsAt,omitempty"`
+	ScheduleEndsAt         string                 `json:"scheduleEndsAt,omitempty"`
+	PressureQuery          string                 `json:"pressureQuery,omitempty"`
+	ScaleUpThreshold       float64                `json:"scaleUpThreshold,omitempty"`
+	ScaleDownThreshold     float64                `json:"scaleDownThreshold,omitempty"`
+	ScaleUpSamples         int                    `json:"scaleUpSamples,omitempty"`
+	ScaleDownSamples       int                    `json:"scaleDownSamples,omitempty"`
+	ScaleUpStabilization   string                 `json:"scaleUpStabilization,omitempty"`
+	ScaleDownStabilization string                 `json:"scaleDownStabilization,omitempty"`
+	PartitionAdvisor       PartitionAdvisorPolicy `json:"partitionAdvisor,omitempty"`
+}
+
+type PartitionAdvisorPolicy struct {
+	Enabled                  bool    `json:"enabled"`
+	MaxRecommendedPartitions int     `json:"maxRecommendedPartitions"`
+	TargetLoad               float64 `json:"targetLoad"`
+	LoadMetric               string  `json:"loadMetric"`
+	LoadMetricType           string  `json:"loadMetricType"`
+	CeilingSamples           int     `json:"ceilingSamples"`
 }
 
 func (p Policy) validate() error {
@@ -47,6 +57,23 @@ func (p Policy) validate() error {
 	}
 	if p.Mode != "recommend" && p.Mode != "scheduled" && p.Mode != "automatic" {
 		return fmt.Errorf("mode must be recommend, scheduled, or automatic")
+	}
+	if p.PartitionAdvisor.Enabled {
+		if p.PartitionAdvisor.MaxRecommendedPartitions < 1 {
+			return fmt.Errorf("partitionAdvisor.maxRecommendedPartitions must be at least 1")
+		}
+		if p.PartitionAdvisor.TargetLoad <= 0 {
+			return fmt.Errorf("partitionAdvisor.targetLoad must be greater than 0")
+		}
+		if p.PartitionAdvisor.LoadMetric == "" {
+			return fmt.Errorf("partitionAdvisor.loadMetric is required")
+		}
+		if p.PartitionAdvisor.LoadMetricType != "gauge" && p.PartitionAdvisor.LoadMetricType != "counter-rate" {
+			return fmt.Errorf("partitionAdvisor.loadMetricType must be gauge or counter-rate")
+		}
+		if p.PartitionAdvisor.CeilingSamples < 1 {
+			return fmt.Errorf("partitionAdvisor.ceilingSamples must be at least 1")
+		}
 	}
 	if p.ScaleUpSamples < 0 || p.ScaleDownSamples < 0 {
 		return fmt.Errorf("scale sample counts cannot be negative")
