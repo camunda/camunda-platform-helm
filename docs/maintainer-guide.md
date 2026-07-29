@@ -31,12 +31,20 @@ Footprint test: if the change forces other components to be aware of it,
 alters a shared contract (auth, storage, networking), or sets precedent for a
 class of problem, it needs an ADR. A purely local toggle does not.
 
+ADRs should be rare, durable records of architectural decisions. Capture the stable
+problem, decision, constraints, alternatives, and consequences rather than implementation
+steps that are likely to change. Prefer an issue, PR description, or operational guide for
+tactical changes. Amend an existing ADR when the architectural decision remains the same;
+write a new ADR when a materially different decision supersedes or narrows it.
+
 ### ADR process
 
 1. Open an ADR in [`docs/adr/`](https://github.com/camunda/camunda-platform-helm/tree/main/docs/adr) using the [MADR format](https://adr.github.io/madr/).
-2. Announce in the relevant Slack channel so the team can review async.
-3. Wait for majority approval from the Distribution team and any affected stakeholders.
-4. Implement, then open a PR referencing the ADR.
+2. A human author or an AI agent acting on an explicit human request may prepare the draft.
+3. Announce in the relevant Slack channel so the team can review async.
+4. Require human review from the Distribution team and affected stakeholders. AI-generated drafts and automated reviews are inputs, not approval.
+5. Wait for majority human approval from the Distribution team and any affected stakeholders.
+6. Implement, then open a PR referencing the ADR.
 
 :::note
 ADRs in `docs/adr/` are automatically detected by [`crev`](https://github.com/camunda/crev) during AI-assisted review. A well-written ADR directly improves the quality of automated review feedback and reduces back-and-forth with human reviewers.

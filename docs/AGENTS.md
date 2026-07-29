@@ -22,8 +22,15 @@ Applies on top of root `AGENTS.md`. Active when working inside `docs/`.
 If a user requests an ADR for a change that clearly does not warrant one (per
 the maintainer-guide table), ask before drafting.
 
-Never author or amend an ADR proactively — only when a human explicitly asks.
-If you notice rationale that would otherwise become a "why" code comment, surface it to the human as a candidate ADR; only draft/amend the ADR if explicitly asked.
+Agents may draft or amend an ADR only when a human explicitly asks. Every ADR change
+must be reviewed and approved by human maintainers and affected stakeholders before
+acceptance; agent-generated text is never approval. Write ADRs for durable architectural
+decisions and long-lived constraints, not transient implementation details or tactical fixes.
+Prefer amending an applicable decision over creating a short-lived record, but don't
+rewrite historical rationale when the decision has materially changed.
+
+If you notice rationale that would otherwise become a "why" code comment, surface it
+to the human as a candidate ADR. Don't create or edit an ADR without that explicit request.
 
 ## PR title for ADR changes
 
