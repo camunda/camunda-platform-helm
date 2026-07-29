@@ -673,6 +673,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			}
 			if stateErr := opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, ids); stateErr != nil {
 				cleanupErr := auth0.CleanupClientIDsStrict(context.Background(), auth0Options, ids)
+				if cleanupErr == nil {
+					cleanupErr = opts.StateStore.MarkExternalProvisioningComplete(entry)
+				}
 				result.Error = errors.Join(fmt.Errorf("checkpoint Auth0 resources: %w", stateErr), cleanupErr)
 				return result
 			}

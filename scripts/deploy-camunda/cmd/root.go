@@ -172,7 +172,7 @@ func NewRootCommand() *cobra.Command {
 			if err := env.Load(envFileToLoad); err != nil {
 				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
 			}
-			if err := resolveMatrixDockerCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword); err != nil {
+			if err := resolveMatrixDockerCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword, flags.Docker.EnsureDockerRegistry, flags.Docker.EnsureDockerHub); err != nil {
 				return err
 			}
 			if err := resolveKeyringCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword, flags.Docker.EnsureDockerRegistry, flags.Docker.EnsureDockerHub); err != nil {

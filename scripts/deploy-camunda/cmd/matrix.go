@@ -402,7 +402,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			if err := env.Load(envFileToLoad); err != nil {
 				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
 			}
-			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword); err != nil {
+			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
 				return err
 			}
 			if err := resolveKeyringCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
@@ -716,6 +716,23 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 					}
 				},
 				LogDir: logDir,
+			}
+			if runOpts.IngressBaseDomains == nil {
+				runOpts.IngressBaseDomains = map[string]string{}
+			}
+			for _, entry := range entries {
+				entryPlatform := entry.Platform
+				if entryPlatform == "" {
+					entryPlatform = platform
+				}
+				if entryPlatform == "" {
+					entryPlatform = "gke"
+				}
+				if runOpts.IngressBaseDomains[entryPlatform] == "" {
+					if effective := matrix.ResolveIngressBaseDomain(runOpts, entryPlatform); effective != "" {
+						runOpts.IngressBaseDomains[entryPlatform] = effective
+					}
+				}
 			}
 			var credentialErr error
 			runPostgresUsername, runPostgresPassword, credentialErr = matrix.ResolvePostgresCredentials(entries, runOpts)

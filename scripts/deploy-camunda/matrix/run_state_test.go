@@ -89,6 +89,11 @@ func TestRunStateRequiresOnlyEnabledRegistryCredentials(t *testing.T) {
 	assert.True(t, stored.RequiresDockerPassword)
 }
 
+func TestRunStatePersistsEffectiveIngressDomain(t *testing.T) {
+	stored := StoreRunOptions(RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.example.test"}})
+	assert.Equal(t, "ci.example.test", stored.IngressBaseDomains["gke"])
+}
+
 func TestReplayCommandIncludesExecutionTarget(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install", Platform: "gke"}
 	command := ReplayCommand(entry, RunOptions{

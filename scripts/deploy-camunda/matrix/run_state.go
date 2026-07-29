@@ -296,7 +296,11 @@ func (s *RunStateStore) RecoverStaleLock() error {
 	if owner.Hostname != hostname {
 		return fmt.Errorf("refusing to remove lock created on host %q", owner.Hostname)
 	}
-	if processMatches(owner.PID, owner.ProcessIdentity) {
+	alive, known := processState(owner.PID, owner.ProcessIdentity)
+	if !known {
+		return errors.New("cannot verify stale lock owner; refusing recovery")
+	}
+	if alive {
 		return fmt.Errorf("refusing to remove lock held by live process %d", owner.PID)
 	}
 	return os.Remove(path)
@@ -313,7 +317,8 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 		var owner lockOwner
 		parseErr := json.Unmarshal(ownerData, &owner)
 		hostname, _ := os.Hostname()
-		if readErr == nil && parseErr == nil && owner.Hostname == hostname && !processMatches(owner.PID, owner.ProcessIdentity) {
+		alive, known := processState(owner.PID, owner.ProcessIdentity)
+		if readErr == nil && parseErr == nil && owner.Hostname == hostname && known && !alive {
 			if removeErr := os.Remove(path); removeErr == nil {
 				file, err = os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 			}
@@ -768,10 +773,14 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 		args = append(args, "--skip-dependency-update")
 	}
 	for _, value := range redactStoredArgs(opts.ExtraHelmArgs) {
-		args = append(args, "--extra-helm-arg", value)
+		if value != "<redacted>" {
+			args = append(args, "--extra-helm-arg", value)
+		}
 	}
 	for _, value := range redactStoredSets(opts.ExtraHelmSets) {
-		args = append(args, "--extra-helm-set", value)
+		if value != "<redacted>" {
+			args = append(args, "--extra-helm-set", value)
+		}
 	}
 	for _, value := range opts.ExtraValues {
 		args = append(args, "--extra-values", value)
@@ -854,28 +863,27 @@ func failureMessage(code string) string {
 func redactStoredArgs(args []string) []string {
 	out := make([]string, len(args))
 	for i, arg := range args {
-		out[i] = arg
-		key := strings.TrimLeft(arg, "-")
-		if idx := strings.LastIndex(key, "="); idx >= 0 {
-			key = key[:idx]
-		}
-		if values.IsSecretName(key) || !safeStoredHelmKey(key) {
+		if arg == "--atomic" {
+			out[i] = arg
+		} else {
 			out[i] = "<redacted>"
 		}
 	}
 	return out
 }
 
-func safeStoredHelmKey(key string) bool {
-	for _, prefix := range []string{"global.host", "orchestration.upgrade.allowPreReleaseImages", "feature.enabled", "atomic"} {
-		if key == prefix || strings.HasSuffix(key, prefix) {
-			return true
+func redactStoredSets(items []string) []string {
+	out := make([]string, len(items))
+	for i, item := range items {
+		out[i] = item
+		key, _, _ := strings.Cut(item, "=")
+		upper := strings.ToUpper(key)
+		if values.IsSecretName(key) || strings.Contains(upper, "AUTH") || strings.Contains(upper, "CREDENTIAL") || strings.Contains(upper, "PRIVATE") || strings.Contains(upper, "CERT") {
+			out[i] = "<redacted>"
 		}
 	}
-	return false
+	return out
 }
-
-func redactStoredSets(values []string) []string { return redactStoredArgs(values) }
 
 func removeRedactedArgs(values []string) []string {
 	var out []string

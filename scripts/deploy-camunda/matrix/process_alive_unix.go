@@ -10,12 +10,16 @@ import (
 	"syscall"
 )
 
-func processMatches(pid int, identity string) bool {
+func processState(pid int, identity string) (bool, bool) {
 	err := syscall.Kill(pid, 0)
 	if err != nil && !errors.Is(err, syscall.EPERM) {
-		return false
+		return false, true
 	}
-	return identity != "" && processIdentity(pid) == identity
+	observed := processIdentity(pid)
+	if identity == "" || observed == "" {
+		return false, false
+	}
+	return observed == identity, true
 }
 
 func processIdentity(pid int) string {

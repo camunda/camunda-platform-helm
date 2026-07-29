@@ -8,8 +8,12 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func processMatches(pid int, identity string) bool {
-	return identity != "" && processIdentity(pid) == identity
+func processState(pid int, identity string) (bool, bool) {
+	observed := processIdentity(pid)
+	if identity == "" || observed == "" {
+		return false, false
+	}
+	return observed == identity, true
 }
 
 func processIdentity(pid int) string {

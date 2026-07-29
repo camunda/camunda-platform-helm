@@ -42,7 +42,7 @@ func TestImportMatrixDockerAuthPreservesEnvironmentPair(t *testing.T) {
 		t.Fatal(err)
 	}
 	user, password, hubUser, hubPassword := "", "", "", ""
-	if err := resolveMatrixDockerCredentialPairs(&user, &password, &hubUser, &hubPassword); err != nil {
+	if err := resolveMatrixDockerCredentialPairs(&user, &password, &hubUser, &hubPassword, true, true); err != nil {
 		t.Fatal(err)
 	}
 	if err := importMatrixDockerAuth(path, &user, &password, &hubUser, &hubPassword); err != nil {
@@ -70,7 +70,7 @@ func TestImportMatrixDockerAuthDoesNotMixExplicitPair(t *testing.T) {
 		t.Fatal(err)
 	}
 	user, password, hubUser, hubPassword := "explicit-user", "", "", ""
-	if err := resolveMatrixDockerCredentialPairs(&user, &password, &hubUser, &hubPassword); err == nil {
+	if err := resolveMatrixDockerCredentialPairs(&user, &password, &hubUser, &hubPassword, true, true); err == nil {
 		t.Fatal("expected partial explicit credential pair failure")
 	}
 }

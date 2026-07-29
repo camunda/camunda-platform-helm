@@ -94,7 +94,7 @@ func newMatrixDoctorCommand() *cobra.Command {
 				envFileToLoad = ".env"
 			}
 			_ = env.Load(envFileToLoad)
-			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword); err != nil {
+			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
 				return err
 			}
 			if err := resolveKeyringCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword, ensureDockerRegistry, ensureDockerHub); err != nil {
@@ -243,18 +243,23 @@ func importMatrixDockerAuth(configPath string, harborUser, harborPassword, hubUs
 	return nil
 }
 
-func resolveMatrixDockerCredentialPairs(harborUser, harborPassword, hubUser, hubPassword *string) error {
-	if err := resolveCredentialPair("Harbor flags/config", harborUser, harborPassword, [][2]string{
-		{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
-		{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
-		{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
-	}); err != nil {
-		return err
+func resolveMatrixDockerCredentialPairs(harborUser, harborPassword, hubUser, hubPassword *string, requireHarbor, requireHub bool) error {
+	if requireHarbor {
+		if err := resolveCredentialPair("Harbor flags/config", harborUser, harborPassword, [][2]string{
+			{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
+			{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
+			{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
+		}); err != nil {
+			return err
+		}
 	}
-	return resolveCredentialPair("Docker Hub flags/config", hubUser, hubPassword, [][2]string{
-		{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
-		{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
-	})
+	if requireHub {
+		return resolveCredentialPair("Docker Hub flags/config", hubUser, hubPassword, [][2]string{
+			{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
+			{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
+		})
+	}
+	return nil
 }
 
 func resolveCredentialPair(source string, username, password *string, envPairs [][2]string) error {
