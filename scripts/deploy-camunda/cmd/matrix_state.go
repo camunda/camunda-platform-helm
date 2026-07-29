@@ -247,10 +247,12 @@ func newMatrixCleanupCommand() *cobra.Command {
 						}
 					} else if item.EntraDirectoryID == "" || values["ENTRA_APP_DIRECTORY_ID"] != item.EntraDirectoryID {
 						err = fmt.Errorf("Entra directory does not match recorded tenant")
-					} else if item.EntraObjectID != "" {
+					} else if item.EntraObjectID != "" && item.EntraCreated {
 						err = cleanupEntraObject(providerCtx, entra.Options{
 							Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
 						}, item.EntraObjectID)
+					} else if item.EntraObjectID != "" {
+						err = nil
 					}
 				}
 				if err == nil && item.Entry.Identity == "auth0" {

@@ -57,6 +57,7 @@ type StoredRunOptions struct {
 	EnvFiles                    map[string]string `json:"envFiles,omitempty"`
 	EnvFile                     string            `json:"envFile,omitempty"`
 	EnvFileDigests              map[string]string `json:"envFileDigests,omitempty"`
+	InputDigests                map[string]string `json:"inputDigests,omitempty"`
 	KeycloakHost                string            `json:"keycloakHost,omitempty"`
 	KeycloakProtocol            string            `json:"keycloakProtocol,omitempty"`
 	IngressBaseDomains          map[string]string `json:"ingressBaseDomains,omitempty"`
@@ -184,6 +185,7 @@ type EntryRunState struct {
 	EntraObjectID               string         `json:"entraObjectId,omitempty"`
 	Auth0ClientIDs              []string       `json:"auth0ClientIds,omitempty"`
 	EntraDirectoryID            string         `json:"entraDirectoryId,omitempty"`
+	EntraCreated                bool           `json:"entraCreated,omitempty"`
 	Auth0Domain                 string         `json:"auth0Domain,omitempty"`
 	ExternalProvisioningStarted bool           `json:"externalProvisioningStarted,omitempty"`
 }
@@ -202,13 +204,16 @@ func (s *RunStateStore) MarkExternalProvisioningComplete(entry Entry) error {
 	})
 }
 
-func (s *RunStateStore) RecordExternalResources(entry Entry, entraObjectID, entraDirectoryID, auth0Domain string, auth0ClientIDs []string) error {
+func (s *RunStateStore) RecordExternalResources(entry Entry, entraObjectID, entraDirectoryID, auth0Domain string, auth0ClientIDs []string, entraCreated ...bool) error {
 	return s.update(entry, func(_ *MatrixRunState, item *EntryRunState) RunEvent {
 		if entraObjectID != "" {
 			item.EntraObjectID = entraObjectID
 		}
 		if entraDirectoryID != "" {
 			item.EntraDirectoryID = entraDirectoryID
+		}
+		if len(entraCreated) > 0 {
+			item.EntraCreated = entraCreated[0]
 		}
 		if auth0Domain != "" {
 			item.Auth0Domain = auth0Domain
@@ -418,9 +423,15 @@ func (l *RunLock) Close() error {
 func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunState, error) {
 	now := time.Now().UTC()
 	state := &MatrixRunState{Schema: RunStateSchema, ID: s.runID, Status: RunPending, CreatedAt: now, UpdatedAt: now, Options: StoreRunOptions(opts)}
+	state.Options.InputDigests = map[string]string{}
 	replayOpts := state.Options.RunOptions()
 	for _, entry := range entries {
 		entry = normalizeEntryPaths(entry, replayOpts.RepoRoot)
+		for _, path := range entryInputPaths(entry, replayOpts) {
+			if digest := pathDigest(path); digest != "" {
+				state.Options.InputDigests[path] = digest
+			}
+		}
 		namespace := ResolveNamespace(opts, entry)
 		state.Entries = append(state.Entries, &EntryRunState{
 			ID: EntryID(entry), Entry: entry, Status: RunPending, Namespace: namespace,
@@ -535,6 +546,11 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	for path, expected := range state.Options.EnvFileDigests {
 		if observed := fileDigest(path); observed != expected {
 			return nil, RunOptions{}, fmt.Errorf("env file %q changed since run creation; refusing resume", path)
+		}
+	}
+	for path, expected := range state.Options.InputDigests {
+		if observed := pathDigest(path); observed != expected {
+			return nil, RunOptions{}, fmt.Errorf("input %q changed since run creation; refusing resume", path)
 		}
 	}
 	var entries []Entry
@@ -671,6 +687,50 @@ func fileDigest(path string) string {
 	}
 	sum := sha256.Sum256(data)
 	return fmt.Sprintf("sha256:%x", sum[:])
+}
+
+func entryInputPaths(entry Entry, opts RunOptions) []string {
+	paths := []string{entry.ChartPath}
+	paths = append(paths, opts.ExtraValues...)
+	paths = append(paths, entry.ExtraValues...)
+	for _, dep := range entry.Dependencies {
+		paths = append(paths, dep.ValuesFile)
+		if filepath.IsAbs(dep.Chart) {
+			paths = append(paths, dep.Chart)
+		}
+	}
+	return paths
+}
+
+func pathDigest(path string) string {
+	if path == "" {
+		return ""
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return ""
+	}
+	hash := sha256.New()
+	if !info.IsDir() {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return ""
+		}
+		_, _ = hash.Write(data)
+		return fmt.Sprintf("sha256:%x", hash.Sum(nil))
+	}
+	_ = filepath.WalkDir(path, func(current string, entry os.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return nil
+		}
+		relative, _ := filepath.Rel(path, current)
+		_, _ = hash.Write([]byte(relative))
+		if data, readErr := os.ReadFile(current); readErr == nil {
+			_, _ = hash.Write(data)
+		}
+		return nil
+	})
+	return fmt.Sprintf("sha256:%x", hash.Sum(nil))
 }
 
 func normalizeEntryPaths(entry Entry, repoRoot string) Entry {

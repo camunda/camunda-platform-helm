@@ -364,6 +364,19 @@ func TestPrepareResumeRejectsEnvFileDrift(t *testing.T) {
 	require.ErrorContains(t, err, "changed since run creation")
 }
 
+func TestPrepareResumeRejectsChartDrift(t *testing.T) {
+	chartDir := t.TempDir()
+	chartFile := filepath.Join(chartDir, "values.yaml")
+	require.NoError(t, os.WriteFile(chartFile, []byte("value: one\n"), 0o600))
+	entry := Entry{Version: "8.10", Shortname: "one", Flow: "install", ChartPath: chartDir}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(chartFile, []byte("value: two\n"), 0o600))
+	_, _, err = store.PrepareResume("")
+	require.ErrorContains(t, err, "changed since run creation")
+}
+
 func TestCreatePersistsAbsoluteLocalDependencyPaths(t *testing.T) {
 	repoRoot := t.TempDir()
 	chartPath := filepath.Join(repoRoot, "charts", "local")

@@ -144,7 +144,7 @@ func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := store.RecordExternalResources(entry, "object-id", "tenant", "", nil); err != nil {
+	if err := store.RecordExternalResources(entry, "object-id", "tenant", "", nil, true); err != nil {
 		t.Fatal(err)
 	}
 	fake := &fakeCleanupClient{}
@@ -282,6 +282,36 @@ func TestMatrixCleanupReconcilesUncheckpointedEntraObject(t *testing.T) {
 	}
 	if state.Entries[0].Cleaned {
 		t.Fatal("entry marked cleaned")
+	}
+}
+
+func TestMatrixCleanupDoesNotDeleteReusedEntraObject(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("ENTRA_APP_DIRECTORY_ID", "tenant")
+	t.Setenv("ENTRA_APP_CLIENT_ID", "client")
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "secret")
+	entry := matrix.Entry{Version: "8.10", Shortname: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.RecordExternalResources(entry, "existing-id", "tenant", "", nil, false); err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeCleanupClient{}
+	originalClient, originalCleanup := newCleanupKubeClient, cleanupEntraObject
+	called := false
+	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
+	cleanupEntraObject = func(context.Context, entra.Options, string) error { called = true; return nil }
+	t.Cleanup(func() { newCleanupKubeClient, cleanupEntraObject = originalClient, originalCleanup })
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if called {
+		t.Fatal("reused Entra app was deleted")
 	}
 }
 

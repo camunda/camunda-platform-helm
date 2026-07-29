@@ -902,6 +902,9 @@ func TestEnsureVenomApp_NewApp(t *testing.T) {
 	if app.ClientSecret != "generated-secret" {
 		t.Errorf("ClientSecret = %q, want %q", app.ClientSecret, "generated-secret")
 	}
+	if !app.Created {
+		t.Error("new app must be marked created")
+	}
 	if !spCreated {
 		t.Error("expected service principal to be created")
 	}
@@ -1023,6 +1026,9 @@ func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 	}
 	if app.ClientSecret != "rotated-secret" {
 		t.Errorf("ClientSecret = %q, want %q", app.ClientSecret, "rotated-secret")
+	}
+	if app.Created {
+		t.Error("existing app must not be marked created")
 	}
 	if appCreateCalled {
 		t.Error("createApp should not have been called for existing app")

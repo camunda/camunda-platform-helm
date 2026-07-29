@@ -529,7 +529,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 				}
 				var checkpointErr error
 				if opts.StateStore != nil {
-					checkpointErr = opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil)
+					checkpointErr = opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil, venomApp.Created)
 				}
 				var cleanupErr error
 				if venomApp.Created {
@@ -550,7 +550,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			if directoryID == "" {
 				directoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")
 			}
-			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil); err != nil {
+			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil, venomApp.Created); err != nil {
 				var cleanupErr error
 				if venomApp.Created {
 					cleanupErr = entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
