@@ -53,9 +53,8 @@ func main() {
 	var pressure capacity.PressureSource = capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient}
 	var advisorMetrics capacity.GaugeSource = capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient}
 	if prometheusURL != "" && strings.HasSuffix(prometheusURL, "/actuator/prometheus") {
-		direct := &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient}
-		pressure = direct
-		advisorMetrics = direct
+		pressure = &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient}
+		advisorMetrics = &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient}
 	}
 	manager := &capacity.Manager{
 		Policies:       capacity.FilePolicySource{Path: policyPath},
