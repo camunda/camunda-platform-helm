@@ -51,7 +51,7 @@ global:
               - name: registry-camunda-cloud
             containers:
               - name: load-generator
-                image: registry.camunda.cloud/team-distribution/capacity-manager:latest
+                image: registry.camunda.cloud/team-distribution/capacity-manager@sha256:e5d16ee4d35d454a483666b5237dc5c47ae82febdcd1b7c7470bb075935ca696
                 imagePullPolicy: Always
                 command: ["/load-generator"]
                 args:
