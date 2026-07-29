@@ -352,6 +352,18 @@ func TestCreatePersistsAbsoluteEntryChartPath(t *testing.T) {
 	assert.NotContains(t, replay, "--repo-root ../..")
 }
 
+func TestPrepareResumeRejectsEnvFileDrift(t *testing.T) {
+	envFile := filepath.Join(t.TempDir(), ".env")
+	require.NoError(t, os.WriteFile(envFile, []byte("VALUE=one\n"), 0o600))
+	entry := Entry{Version: "8.10", Shortname: "one", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{EnvFile: envFile})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(envFile, []byte("VALUE=two\n"), 0o600))
+	_, _, err = store.PrepareResume("")
+	require.ErrorContains(t, err, "changed since run creation")
+}
+
 func TestCreatePersistsAbsoluteLocalDependencyPaths(t *testing.T) {
 	repoRoot := t.TempDir()
 	chartPath := filepath.Join(repoRoot, "charts", "local")
