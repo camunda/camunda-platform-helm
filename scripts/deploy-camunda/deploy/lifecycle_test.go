@@ -7,6 +7,15 @@ import (
 	"testing"
 )
 
+func TestMatrixNamespaceDeleteOwner(t *testing.T) {
+	if got := matrixNamespaceDeleteOwner("new", "old", false); got != "new" {
+		t.Fatalf("owner = %q", got)
+	}
+	if got := matrixNamespaceDeleteOwner("new", "old", true); got != "old" {
+		t.Fatalf("adopted owner = %q", got)
+	}
+}
+
 func TestSubstituteManifestVars(t *testing.T) {
 	tests := []struct {
 		name    string

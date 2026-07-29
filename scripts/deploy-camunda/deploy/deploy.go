@@ -466,7 +466,8 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 				} else if owner != flags.Deployment.MatrixRunID && !flags.Deployment.AdoptMatrixNamespace {
 					err = fmt.Errorf("namespace %q is owned by matrix run %q, not %q", scenarioCtx.Namespace, owner, flags.Deployment.MatrixRunID)
 				} else {
-					err = client.DeleteNamespaceOwnedBy(ctx, scenarioCtx.Namespace, "deploy-camunda-run", flags.Deployment.MatrixRunID)
+					deleteOwner := matrixNamespaceDeleteOwner(flags.Deployment.MatrixRunID, owner, flags.Deployment.AdoptMatrixNamespace)
+					err = client.DeleteNamespaceOwnedBy(ctx, scenarioCtx.Namespace, "deploy-camunda-run", deleteOwner)
 				}
 			}
 		} else {
@@ -601,6 +602,13 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Msg("Scenario deployment completed successfully")
 
 	return result
+}
+
+func matrixNamespaceDeleteOwner(currentRunID, observedOwner string, adopt bool) string {
+	if adopt {
+		return observedOwner
+	}
+	return currentRunID
 }
 
 // BuildTopologyCrossRefEnv derives the cross-namespace env vars every release

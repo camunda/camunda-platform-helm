@@ -373,6 +373,17 @@ func TestMatrixCleanupPreservesNamespaceOnAuth0Failure(t *testing.T) {
 	}
 }
 
+func TestCleanupUsesEffectiveDefaultAuth0Domain(t *testing.T) {
+	t.Setenv("AUTH0_DOMAIN", "")
+	if auth0.EffectiveDomain("") == "" {
+		t.Fatal("default Auth0 domain is empty")
+	}
+	values := cleanupCredentialEnv(filepath.Join(t.TempDir(), "missing.env"))
+	if auth0.EffectiveDomain(values["AUTH0_DOMAIN"]) != auth0.EffectiveDomain("") {
+		t.Fatal("cleanup default domain differs")
+	}
+}
+
 func TestMatrixCleanupRejectsSharedNamespaceEntry(t *testing.T) {
 	root := t.TempDir()
 	entries := []matrix.Entry{{Version: "8.10", Shortname: "one", Flow: "install"}, {Version: "8.10", Shortname: "two", Flow: "install"}}

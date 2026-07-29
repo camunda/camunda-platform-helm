@@ -242,7 +242,14 @@ func newMatrixCleanupCommand() *cobra.Command {
 					if item.EntraObjectID == "" {
 						if item.ExternalProvisioningStarted {
 							app, findErr := entra.FindVenomApp(providerCtx, entra.Options{Namespace: item.Namespace, RunID: state.ID, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]})
-							if findErr != nil { err = findErr } else if app != nil { err = cleanupEntraObject(providerCtx, entra.Options{Namespace: item.Namespace, RunID: state.ID, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]}, app.ObjectID); if err == nil { item.EntraObjectID, item.EntraCreated = app.ObjectID, true } }
+							if findErr != nil {
+								err = findErr
+							} else if app != nil {
+								err = cleanupEntraObject(providerCtx, entra.Options{Namespace: item.Namespace, RunID: state.ID, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]}, app.ObjectID)
+								if err == nil {
+									item.EntraObjectID, item.EntraCreated = app.ObjectID, true
+								}
+							}
 						} else {
 							err = nil
 						}
@@ -259,7 +266,7 @@ func newMatrixCleanupCommand() *cobra.Command {
 				if err == nil && item.Entry.Identity == "auth0" {
 					if len(item.Auth0ClientIDs) == 0 {
 						err = nil
-					} else if item.Auth0Domain == "" || strings.TrimSuffix(values["AUTH0_DOMAIN"], "/") != strings.TrimSuffix(item.Auth0Domain, "/") {
+					} else if item.Auth0Domain == "" || auth0.EffectiveDomain(values["AUTH0_DOMAIN"]) != auth0.EffectiveDomain(item.Auth0Domain) {
 						err = fmt.Errorf("Auth0 domain does not match recorded tenant")
 					} else if len(item.Auth0ClientIDs) > 0 {
 						err = cleanupAuth0ClientIDs(providerCtx, auth0.Options{
