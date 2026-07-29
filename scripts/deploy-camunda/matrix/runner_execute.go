@@ -20,6 +20,14 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 )
 
+var ensureEntryNamespaceOwned = func(ctx context.Context, kubeContext, namespace, runID string) error {
+	client, err := kube.NewClient("", kubeContext)
+	if err != nil {
+		return err
+	}
+	return client.EnsureNamespaceOwned(ctx, namespace, "deploy-camunda-run", runID)
+}
+
 // ResolveNamespace is the exported form of resolveNamespace, for callers
 // outside the matrix package that need the same "what namespace would a
 // normal (single-namespace) matrix entry get" computation — e.g. the
@@ -394,12 +402,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	logLevel := flags.LogLevel
 	var phaseErr error
 	if opts.StateStore != nil && opts.NamespaceOverride == "" && (entra.IsOIDCEntry(entry.Auth, entry.Identity) || auth0.IsAuth0Identity(entry.Identity)) {
-		client, err := kube.NewClient("", kubeCtx)
-		if err != nil {
-			result.Error = err
-			return result
-		}
-		if err := client.EnsureNamespaceOwned(ctx, namespace, "deploy-camunda-run", opts.StateStore.RunID()); err != nil {
+		if err := ensureEntryNamespaceOwned(ctx, kubeCtx, namespace, opts.StateStore.RunID()); err != nil {
 			result.Error = err
 			return result
 		}

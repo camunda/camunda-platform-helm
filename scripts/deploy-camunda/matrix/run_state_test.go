@@ -458,3 +458,20 @@ func TestCleanupEntryUsesCheckpointedAuth0IDsAndStopsOnFailure(t *testing.T) {
 	require.ErrorContains(t, err, "provider failure")
 	assert.True(t, called)
 }
+
+func TestExecuteEntryOwnershipFailurePreventsProviderProvisioning(t *testing.T) {
+	chartPath := t.TempDir()
+	entry := Entry{Version: "8.10", ChartPath: chartPath, Scenario: "oidc", Shortname: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	original := ensureEntryNamespaceOwned
+	ensureEntryNamespaceOwned = func(context.Context, string, string, string) error { return errors.New("foreign namespace") }
+	t.Cleanup(func() { ensureEntryNamespaceOwned = original })
+	result := executeEntry(context.Background(), entry, RunOptions{StateStore: store})
+	require.ErrorContains(t, result.Error, "foreign namespace")
+	state, err := store.Load()
+	require.NoError(t, err)
+	assert.False(t, state.Entries[0].ExternalProvisioningStarted)
+	assert.Empty(t, state.Entries[0].EntraObjectID)
+}

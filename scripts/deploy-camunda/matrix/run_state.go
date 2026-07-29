@@ -295,6 +295,11 @@ func (s *RunStateStore) RecoverStaleLock() error {
 			_ = os.Remove(filepath.Join(s.RunDir(), "run.lock.guard"))
 		}
 	}
+	releaseGuard, err := s.acquireLockGuard()
+	if err != nil {
+		return err
+	}
+	defer releaseGuard()
 	path := filepath.Join(s.RunDir(), "run.lock")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
