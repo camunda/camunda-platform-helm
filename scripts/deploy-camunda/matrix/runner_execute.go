@@ -493,7 +493,21 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 
 		venomApp, err := entra.EnsureVenomApp(ctx, entraOpts)
 		if err != nil {
-			result.KubeContext, result.Error = kubeCtx, fmt.Errorf("entra: provision venom app: %w", err)
+			result.KubeContext = kubeCtx
+			if venomApp != nil && venomApp.ObjectID != "" {
+				directoryID := entraOpts.DirectoryID
+				if directoryID == "" {
+					directoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")
+				}
+				var checkpointErr error
+				if opts.StateStore != nil {
+					checkpointErr = opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil)
+				}
+				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				result.Error = errors.Join(fmt.Errorf("entra: provision venom app: %w", err), checkpointErr, cleanupErr)
+			} else {
+				result.Error = fmt.Errorf("entra: provision venom app: %w", err)
+			}
 			return result
 		}
 		venomOpts = &entraOpts

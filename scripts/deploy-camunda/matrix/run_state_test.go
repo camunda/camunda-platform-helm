@@ -66,6 +66,12 @@ func TestRunStateRedactsSecrets(t *testing.T) {
 	assert.Contains(t, text, "global.host=example.test")
 }
 
+func TestRunStatePreservesBenignHelmOverride(t *testing.T) {
+	stored := StoreRunOptions(RunOptions{ExtraHelmSets: []string{"feature.enabled=true"}, ExtraHelmArgs: []string{"--atomic"}})
+	assert.Equal(t, []string{"feature.enabled=true"}, stored.ExtraHelmSets)
+	assert.Equal(t, []string{"--atomic"}, stored.ExtraHelmArgs)
+}
+
 func TestReplayCommandIncludesExecutionTarget(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install", Platform: "gke"}
 	command := ReplayCommand(entry, RunOptions{

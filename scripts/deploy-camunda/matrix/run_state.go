@@ -414,7 +414,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	harborPassword, hubPassword := "", ""
 	var credentialErr error
 	if harborPassword == "" {
-		harborPassword, credentialErr = resumeCredentialPasswordFromFiles(state.Options, entries, state.Options.DockerUsername, [][2]string{
+		harborPassword, credentialErr = resumeCredentialPassword(state.Options.DockerUsername, state.Options.RequiresDockerPassword, [][2]string{
 			{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
 			{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
 			{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
@@ -424,7 +424,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		return nil, RunOptions{}, fmt.Errorf("restore Harbor credentials: %w", credentialErr)
 	}
 	if harborPassword == "" {
-		harborPassword, credentialErr = resumeCredentialPassword(state.Options.DockerUsername, state.Options.RequiresDockerPassword, [][2]string{
+		harborPassword, credentialErr = resumeCredentialPasswordFromFiles(state.Options, entries, state.Options.DockerUsername, [][2]string{
 			{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
 			{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
 			{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
@@ -432,6 +432,12 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	}
 	if credentialErr != nil {
 		return nil, RunOptions{}, fmt.Errorf("restore Harbor credentials: %w", credentialErr)
+	}
+	if hubPassword == "" {
+		hubPassword, credentialErr = resumeCredentialPassword(state.Options.DockerHubUsername, state.Options.RequiresDockerHubPassword, [][2]string{
+			{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
+			{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
+		})
 	}
 	if hubPassword == "" {
 		hubPassword, credentialErr = resumeCredentialPasswordFromFiles(state.Options, entries, state.Options.DockerHubUsername, [][2]string{
@@ -751,20 +757,11 @@ func redactStoredArgs(args []string) []string {
 		if idx := strings.LastIndex(key, "="); idx >= 0 {
 			key = key[:idx]
 		}
-		if values.IsSecretName(key) || !safeStoredHelmKey(key) {
+		if values.IsSecretName(key) {
 			out[i] = "<redacted>"
 		}
 	}
 	return out
-}
-
-func safeStoredHelmKey(key string) bool {
-	for _, prefix := range []string{"global.host", "orchestration.upgrade.allowPreReleaseImages"} {
-		if key == prefix || strings.HasSuffix(key, prefix) {
-			return true
-		}
-	}
-	return false
 }
 
 func redactStoredSets(values []string) []string { return redactStoredArgs(values) }

@@ -698,13 +698,13 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	// Step 3: Rotate credentials to get a fresh client secret.
 	secret, err := rotateCredentials(ctx, client, token, objectID)
 	if err != nil {
-		return nil, fmt.Errorf("entra: %w", err)
+		return &VenomApp{AppID: appID, ObjectID: objectID}, fmt.Errorf("entra: %w", err)
 	}
 	logging.Logger.Info().Msg("Venom app client secret created")
 
 	// Step 4: Ensure service principal exists (required for token acquisition).
 	if err := ensureServicePrincipal(ctx, client, token, appID); err != nil {
-		return nil, fmt.Errorf("entra: %w", err)
+		return &VenomApp{AppID: appID, ObjectID: objectID, ClientSecret: secret}, fmt.Errorf("entra: %w", err)
 	}
 
 	// Step 5: Create/update the K8s secret (unless deferred).
@@ -719,7 +719,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Str("secretName", "venom-entra-credentials").
 			Msg("Creating/updating K8s secret with venom credentials")
 		if err := createVenomK8sSecretFunc(ctx, opts.KubeContext, opts.Namespace, appID, secret, opts.ClientID); err != nil {
-			return nil, fmt.Errorf("entra: create K8s secret: %w", err)
+			return &VenomApp{AppID: appID, ObjectID: objectID, ClientSecret: secret}, fmt.Errorf("entra: create K8s secret: %w", err)
 		}
 		logging.Logger.Info().
 			Str("namespace", opts.Namespace).

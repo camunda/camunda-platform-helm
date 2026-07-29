@@ -865,6 +865,39 @@ func TestEnsureVenomApp_NewApp(t *testing.T) {
 	}
 }
 
+func TestEnsureVenomAppReturnsPartialAppAfterCreationFailure(t *testing.T) {
+	originalGraph, originalLogin := graphBaseURL, loginBaseURL
+	originalPropagationSleep := propagationSleepDuration
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/oauth2/v2.0/token"):
+			_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "token"})
+		case r.Method == http.MethodGet && strings.Contains(r.URL.RawQuery, "displayName"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"value": []any{}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/applications"):
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]string{"appId": "app-id", "id": "object-id"})
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/applications/"):
+			w.WriteHeader(http.StatusInternalServerError)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+	graphBaseURL, loginBaseURL = server.URL, server.URL
+	propagationSleepDuration = 0
+	t.Cleanup(func() {
+		graphBaseURL, loginBaseURL, propagationSleepDuration = originalGraph, originalLogin, originalPropagationSleep
+	})
+	app, err := EnsureVenomApp(context.Background(), Options{Namespace: "ns", DirectoryID: "dir", ClientID: "client", ClientSecret: "secret", HTTPClient: server.Client(), SkipK8sSecret: true})
+	if err == nil {
+		t.Fatal("expected post-creation failure")
+	}
+	if app == nil || app.ObjectID != "object-id" {
+		t.Fatalf("partial app = %#v", app)
+	}
+}
+
 // TestEnsureVenomApp_ExistingApp tests the flow when an existing app is found.
 func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 	appCreateCalled := false
