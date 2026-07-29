@@ -1,11 +1,26 @@
 package cmd
 
 import (
+	"context"
 	"encoding/base64"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/types"
+	"scripts/deploy-camunda/matrix"
 )
+
+type fakeCleanupClient struct{ deleted bool }
+
+func (f *fakeCleanupClient) OwnedNamespaceIdentity(context.Context, string, string, string) (types.UID, string, error) {
+	return types.UID("uid-1"), "rv-1", nil
+}
+
+func (f *fakeCleanupClient) DeleteNamespaceWithIdentity(context.Context, string, types.UID, string) error {
+	f.deleted = true
+	return nil
+}
 
 func TestImportMatrixDockerAuthPreservesEnvironmentPair(t *testing.T) {
 	t.Setenv("HARBOR_USERNAME", "environment-user")
@@ -54,5 +69,35 @@ func TestImportMatrixDockerAuthDoesNotMixExplicitPair(t *testing.T) {
 	user, password, hubUser, hubPassword := "explicit-user", "", "", ""
 	if err := resolveMatrixDockerCredentialPairs(&user, &password, &hubUser, &hubPassword); err == nil {
 		t.Fatal("expected partial explicit credential pair failure")
+	}
+}
+
+func TestMatrixCleanupMarksOwnedEntryCleaned(t *testing.T) {
+	root := t.TempDir()
+	entry := matrix.Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
+	store := matrix.NewRunStateStore(root, "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeCleanupClient{}
+	original := newCleanupKubeClient
+	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
+	t.Cleanup(func() { newCleanupKubeClient = original })
+
+	cmd := newMatrixCleanupCommand()
+	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !fake.deleted {
+		t.Fatal("namespace was not deleted")
+	}
+	state, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.Entries[0].Cleaned {
+		t.Fatal("entry was not marked cleaned")
 	}
 }

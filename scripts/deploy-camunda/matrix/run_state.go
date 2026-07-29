@@ -623,6 +623,15 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 	if opts.Cleanup {
 		args = append(args, "--cleanup")
 	}
+	if !opts.GeneratePostgresCredentials {
+		args = append(args, "--generate-postgres-credentials=false")
+	}
+	if opts.ImportDockerAuth {
+		args = append(args, "--import-docker-auth")
+		if opts.DockerConfigPath != "" {
+			args = append(args, "--docker-config", opts.DockerConfigPath)
+		}
+	}
 	return args
 }
 

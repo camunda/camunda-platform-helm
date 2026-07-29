@@ -16,6 +16,15 @@ import (
 	"scripts/deploy-camunda/matrix"
 )
 
+type cleanupKubeClient interface {
+	OwnedNamespaceIdentity(context.Context, string, string, string) (types.UID, string, error)
+	DeleteNamespaceWithIdentity(context.Context, string, types.UID, string) error
+}
+
+var newCleanupKubeClient = func(kubeContext string) (cleanupKubeClient, error) {
+	return kube.NewClient("", kubeContext)
+}
+
 func defaultMatrixStateRoot(explicit string) (string, error) {
 	if explicit != "" {
 		return filepath.Abs(explicit)
@@ -159,7 +168,7 @@ func newMatrixCleanupCommand() *cobra.Command {
 					continue
 				}
 				cleanupCtx, cancel := context.WithTimeout(cmd.Context(), 2*time.Minute)
-				client, err := kube.NewClient("", item.KubeContext)
+				client, err := newCleanupKubeClient(item.KubeContext)
 				var uid types.UID
 				var resourceVersion string
 				if err == nil {
