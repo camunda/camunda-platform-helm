@@ -720,6 +720,11 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				},
 				LogDir: logDir,
 			}
+			runOpts.Auth0IngressHost = os.Getenv("CAMUNDA_HOSTNAME")
+			if runOpts.Auth0IngressHost == "" {
+				runOpts.Auth0IngressHost = os.Getenv("TEST_INGRESS_HOST")
+			}
+			runOpts.Auth0InitialAdminEmail = os.Getenv("AUTH0_INITIAL_ADMIN_EMAIL")
 			if runOpts.IngressBaseDomains == nil {
 				runOpts.IngressBaseDomains = map[string]string{}
 			}
