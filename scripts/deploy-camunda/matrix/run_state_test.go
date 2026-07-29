@@ -63,7 +63,7 @@ func TestRunStateRedactsSecrets(t *testing.T) {
 	text := string(data)
 	assert.NotContains(t, text, "registry-password")
 	assert.NotContains(t, text, "super-secret")
-	assert.NotContains(t, text, "global.host=example.test")
+	assert.Contains(t, text, "global.host=example.test")
 }
 
 func TestReplayCommandIncludesExecutionTarget(t *testing.T) {

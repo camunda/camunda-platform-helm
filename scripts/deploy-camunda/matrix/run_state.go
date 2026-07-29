@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sys/unix"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/prepare-helm-values/pkg/env"
+	"scripts/prepare-helm-values/pkg/values"
 )
 
 const RunStateSchema = "camunda.matrix-run/v1"
@@ -632,8 +633,15 @@ func failureMessage(code string) string {
 
 func redactStoredArgs(args []string) []string {
 	out := make([]string, len(args))
-	for i := range args {
-		out[i] = "<redacted>"
+	for i, arg := range args {
+		out[i] = arg
+		key := strings.TrimLeft(arg, "-")
+		if idx := strings.LastIndex(key, "="); idx >= 0 {
+			key = key[:idx]
+		}
+		if values.IsSecretName(key) {
+			out[i] = "<redacted>"
+		}
 	}
 	return out
 }

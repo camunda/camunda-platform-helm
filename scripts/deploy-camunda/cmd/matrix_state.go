@@ -184,6 +184,11 @@ func newMatrixCleanupCommand() *cobra.Command {
 						MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
 					})
 				}
+				if _, ownershipErr := client.OwnedNamespaceUID(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID); ownershipErr != nil {
+					cancel()
+					failures = append(failures, item.ID+": namespace ownership changed during identity cleanup: "+ownershipErr.Error())
+					continue
+				}
 				if uid != "" {
 					err = client.DeleteNamespaceWithUID(cleanupCtx, item.Namespace, uid)
 				}

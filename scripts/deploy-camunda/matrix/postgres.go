@@ -3,6 +3,7 @@ package matrix
 import (
 	"fmt"
 
+	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 )
@@ -27,6 +28,9 @@ func ResolvePostgresCredentials(entries []Entry, opts RunOptions) (string, strin
 		effective := effectiveCredentialEnv(flags)
 		cleanup()
 		entryUser, entryPassword := effective["RDBMS_POSTGRESQL_USERNAME"], effective["RDBMS_POSTGRESQL_PASSWORD"]
+		if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) && (entryUser == "" || entryPassword == "") {
+			return "", "", fmt.Errorf("upgrade-only entry %s requires explicit RDBMS_POSTGRESQL_USERNAME and RDBMS_POSTGRESQL_PASSWORD", EntryID(entry))
+		}
 		if entryUser != "" && username != "" && entryUser != username {
 			return "", "", fmt.Errorf("selected entries resolve different RDBMS_POSTGRESQL_USERNAME values")
 		}
