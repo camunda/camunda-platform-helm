@@ -328,15 +328,25 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		if result.Duration == 0 {
 			result.Duration = time.Since(start)
 		}
+		cleaned := false
 		if opts.Cleanup && canCleanup {
 			if opts.OnPhaseChange != nil {
 				opts.OnPhaseChange(entry, "cleanup")
 			}
-			cleanupEntry(ctx, result, opts)
+			if err := cleanupEntry(ctx, result, opts); err != nil {
+				result.Error = errors.Join(result.Error, fmt.Errorf("cleanup matrix entry: %w", err))
+			} else {
+				cleaned = true
+			}
 		}
 		if opts.StateStore != nil {
 			if err := opts.StateStore.Complete(entry, result); err != nil {
 				result.Error = errors.Join(result.Error, fmt.Errorf("persist matrix entry completion: %w", err))
+			}
+			if cleaned {
+				if err := opts.StateStore.MarkCleaned(EntryID(entry)); err != nil {
+					result.Error = errors.Join(result.Error, fmt.Errorf("persist matrix cleanup: %w", err))
+				}
 			}
 		}
 		if opts.OnEntryComplete != nil {

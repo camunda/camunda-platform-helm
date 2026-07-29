@@ -1472,7 +1472,7 @@ func lastNLines(s string, n int) string {
 // This runs regardless of whether the entry succeeded or failed — cleanup should always
 // happen after diagnostics have been collected. Errors are logged but do not affect the
 // entry's result.
-func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
+func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error {
 	// Clean up Entra app registration for OIDC entries (best-effort, before namespace deletion).
 	if result.venomOpts != nil {
 		logging.Logger.Info().
@@ -1516,12 +1516,14 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 				Err(cleanupErr).
 				Str("namespace", result.Namespace).
 				Msg("Failed to delete namespace during per-entry cleanup")
+			return cleanupErr
 		} else {
 			logging.Logger.Info().
 				Str("namespace", result.Namespace).
 				Msg("Namespace deleted successfully")
 		}
 	}
+	return nil
 }
 
 // mergeHelmSets returns a new map containing all entries from base, with entries

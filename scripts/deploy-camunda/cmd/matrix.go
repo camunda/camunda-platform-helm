@@ -722,6 +722,9 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 					return stateErr
 				}
 				runID := matrix.NewRunID(runStart)
+				if runOpts.NamespaceOverride == "" {
+					runOpts.NamespacePrefix = matrix.DurableNamespacePrefix(runOpts.NamespacePrefix, runID)
+				}
 				store := matrix.NewRunStateStore(root, runID)
 				lock, stateErr := store.Acquire()
 				if stateErr != nil {

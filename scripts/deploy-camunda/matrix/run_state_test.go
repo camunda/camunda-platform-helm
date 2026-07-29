@@ -78,6 +78,12 @@ func TestReplayCommandIncludesExecutionTarget(t *testing.T) {
 	assert.Contains(t, joined, "--test-e2e")
 }
 
+func TestReplayCommandIncludesUpgradeSource(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "one", Flow: "upgrade-minor"}
+	command := strings.Join(ReplayCommand(entry, RunOptions{UpgradeFromVersion: "13.5.0"}), " ")
+	assert.Contains(t, command, "--upgrade-from-version 13.5.0")
+}
+
 func TestRunStateRefusesConcurrentLock(t *testing.T) {
 	store := NewRunStateStore(t.TempDir(), "run-1")
 	first, err := store.Acquire()

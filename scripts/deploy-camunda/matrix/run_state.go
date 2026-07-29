@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -183,6 +184,11 @@ func NewRunID(now time.Time) string {
 	return now.UTC().Format("20060102T150405.000000000Z")
 }
 
+func DurableNamespacePrefix(prefix, runID string) string {
+	digest := sha256.Sum256([]byte(runID))
+	return fmt.Sprintf("%s-%x", strings.TrimSuffix(prefix, "-"), digest[:3])
+}
+
 func (s *RunStateStore) RunDir() string { return filepath.Join(s.root, s.runID) }
 
 func (s *RunStateStore) RunID() string { return s.runID }
@@ -337,7 +343,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		if item.Status == RunPassed || item.Status == RunCleaned {
 			continue
 		}
-		item.Status, item.Phase, item.Failure = RunPending, "", nil
+		item.Status, item.Phase, item.Failure, item.Cleaned = RunPending, "", nil, false
 		entries = append(entries, item.Entry)
 	}
 	if entryID != "" && len(entries) == 0 {
@@ -519,6 +525,9 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 	}
 	if opts.ChartRefVersion != "" {
 		args = append(args, "--chart-version", opts.ChartRefVersion)
+	}
+	if opts.UpgradeFromVersion != "" {
+		args = append(args, "--upgrade-from-version", opts.UpgradeFromVersion)
 	}
 	for _, value := range opts.ExtraValues {
 		args = append(args, "--extra-values", value)
