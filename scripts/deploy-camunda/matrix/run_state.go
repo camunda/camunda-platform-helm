@@ -690,8 +690,7 @@ func (s *RunStateStore) updateID(id string, fn func(*MatrixRunState, *EntryRunSt
 		if err := s.write(state); err != nil {
 			return err
 		}
-		_ = s.appendEvent(event)
-		return nil
+		return s.appendEvent(event)
 	}
 	return fmt.Errorf("matrix entry %q not found in run %q", id, s.runID)
 }
@@ -814,9 +813,10 @@ func ReplayCommand(entry Entry, opts RunOptions) []string {
 		args = append(args, "--skip-dependency-update")
 	}
 	for _, value := range redactStoredArgs(opts.ExtraHelmArgs) {
-		if value != "<redacted>" {
-			args = append(args, "--extra-helm-arg", value)
+		if value == "<redacted>" {
+			value = "<protected: restore from run-secrets.json>"
 		}
+		args = append(args, "--extra-helm-arg", value)
 	}
 	for _, value := range redactStoredSets(opts.ExtraHelmSets) {
 		if value != "<redacted>" {
@@ -923,10 +923,27 @@ func redactStoredArgs(args []string) []string {
 		case "--atomic", "--wait", "--create-namespace", "--cleanup-on-fail", "--disable-openapi-validation", "--skip-crds", "--take-ownership":
 			out[i] = arg
 		default:
-			out[i] = "<redacted>"
+			if safeScalarHelmArg(arg) {
+				out[i] = arg
+			} else {
+				out[i] = "<redacted>"
+			}
 		}
 	}
 	return out
+}
+
+func safeScalarHelmArg(arg string) bool {
+	key, value, ok := strings.Cut(arg, "=")
+	if !ok {
+		return false
+	}
+	switch key {
+	case "--history-max", "--timeout", "--description", "--max-history":
+		return value != "" && !values.IsSecretName(value)
+	default:
+		return false
+	}
 }
 
 func redactStoredSets(items []string) []string {
@@ -935,11 +952,20 @@ func redactStoredSets(items []string) []string {
 		out[i] = item
 		key, _, _ := strings.Cut(item, "=")
 		upper := strings.ToUpper(key)
-		if values.IsSecretName(key) || strings.Contains(upper, "AUTH") || strings.Contains(upper, "CREDENTIAL") || strings.Contains(upper, "PRIVATE") || strings.Contains(upper, "CERT") {
+		if !safePublicHelmSetKey(key) || values.IsSecretName(key) || strings.Contains(upper, "AUTH") || strings.Contains(upper, "CREDENTIAL") || strings.Contains(upper, "PRIVATE") || strings.Contains(upper, "CERT") {
 			out[i] = "<redacted>"
 		}
 	}
 	return out
+}
+
+func safePublicHelmSetKey(key string) bool {
+	for _, allowed := range []string{"global.host", "orchestration.upgrade.allowPreReleaseImages", "feature.enabled"} {
+		if key == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 func removeRedactedArgs(values []string) []string {

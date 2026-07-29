@@ -82,6 +82,19 @@ func TestRunStateRedactsUnknownHelmOverride(t *testing.T) {
 	assert.Equal(t, []string{"<redacted>"}, stored.ExtraHelmSets)
 }
 
+func TestReplayPreservesSafeScalarAndMarksProtectedHelmArgs(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "one", Flow: "install"}
+	command := strings.Join(ReplayCommand(entry, RunOptions{ExtraHelmArgs: []string{"--history-max=3", "--post-renderer=/private/tool"}}), " ")
+	assert.Contains(t, command, "--extra-helm-arg --history-max=3")
+	assert.Contains(t, command, "<protected: restore from run-secrets.json>")
+	assert.NotContains(t, command, "/private/tool")
+}
+
+func TestRunStateRedactsNonAllowlistedHelmSet(t *testing.T) {
+	stored := StoreRunOptions(RunOptions{ExtraHelmSets: []string{"replicaCount=3"}})
+	assert.Equal(t, []string{"<redacted>"}, stored.ExtraHelmSets)
+}
+
 func TestRunStateRequiresOnlyEnabledRegistryCredentials(t *testing.T) {
 	stored := StoreRunOptions(RunOptions{DockerUsername: "incidental", DockerPassword: "incidental-password"})
 	assert.False(t, stored.RequiresDockerPassword)
