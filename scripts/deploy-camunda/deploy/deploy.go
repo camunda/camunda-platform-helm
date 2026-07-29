@@ -420,9 +420,10 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		RenderOutputDir:        flags.Deployment.RenderOutputDir,
 		IncludeCRDs:            true,
 		CIMetadata: types.CIMetadata{
-			MatrixRunID: flags.Deployment.MatrixRunID,
-			Flow:        flags.Deployment.Flow,
-			GithubRunID: os.Getenv("GITHUB_RUN_ID"),
+			TransferMatrixOwnership: flags.Deployment.TransferMatrixOwnership,
+			MatrixRunID:             flags.Deployment.MatrixRunID,
+			Flow:                    flags.Deployment.Flow,
+			GithubRunID:             os.Getenv("GITHUB_RUN_ID"),
 		},
 		ApplyIntegrationCreds: false,
 		VaultSecretPath:       prepared.VaultSecretPath,

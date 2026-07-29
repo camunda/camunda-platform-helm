@@ -462,10 +462,6 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	if credentialErr != nil {
 		return nil, RunOptions{}, fmt.Errorf("restore Docker Hub credentials: %w", credentialErr)
 	}
-	state.Status, state.UpdatedAt = RunPending, time.Now().UTC()
-	if err := s.write(state); err != nil {
-		return nil, RunOptions{}, err
-	}
 	opts := state.Options.RunOptions()
 	opts.DeleteNamespaceFirst = false
 	opts.DockerPassword, opts.DockerHubPassword = harborPassword, hubPassword
@@ -479,6 +475,10 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		opts.GeneratedPostgresPassword = secrets.PostgresPassword
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, RunOptions{}, fmt.Errorf("read matrix run secrets: %w", err)
+	}
+	state.Status, state.UpdatedAt = RunPending, time.Now().UTC()
+	if err := s.write(state); err != nil {
+		return nil, RunOptions{}, err
 	}
 	return entries, opts, nil
 }
@@ -511,10 +511,10 @@ func (s *RunStateStore) updateID(id string, fn func(*MatrixRunState, *EntryRunSt
 		}
 		event := fn(state, item)
 		state.UpdatedAt = time.Now().UTC()
-		if err := s.write(state); err != nil {
+		if err := s.appendEvent(event); err != nil {
 			return err
 		}
-		return s.appendEvent(event)
+		return s.write(state)
 	}
 	return fmt.Errorf("matrix entry %q not found in run %q", id, s.runID)
 }

@@ -57,6 +57,7 @@ type DeploymentFlags struct {
 	// failing. When <= 0, DefaultIngressReadyTimeoutMinutes is used.
 	IngressReadyTimeoutMinutes int
 	MatrixRunID                string
+	TransferMatrixOwnership    bool
 }
 
 // DefaultIngressReadyTimeoutMinutes is the default timeout for the

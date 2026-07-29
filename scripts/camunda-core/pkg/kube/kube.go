@@ -234,11 +234,20 @@ func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, e
 	return true, nil
 }
 
-func (c *Client) EnsureNamespaceOwned(ctx context.Context, namespace, label, owner string) error {
+func (c *Client) EnsureNamespaceOwned(ctx context.Context, namespace, label, owner string, transfer bool) error {
 	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err == nil {
-		if current := ns.Labels[label]; current != owner {
+		if current := ns.Labels[label]; current != owner && !transfer {
 			return fmt.Errorf("namespace %q already exists and is owned by run %q", namespace, current)
+		}
+		if transfer {
+			if ns.Labels == nil {
+				ns.Labels = map[string]string{}
+			}
+			ns.Labels[label] = owner
+			if _, err := c.clientset.CoreV1().Namespaces().Update(ctx, ns, metav1.UpdateOptions{}); err != nil {
+				return fmt.Errorf("transfer namespace ownership: %w", err)
+			}
 		}
 		return nil
 	}
