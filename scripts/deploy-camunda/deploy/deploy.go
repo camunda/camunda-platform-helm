@@ -457,7 +457,9 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 				err = clientErr
 			} else {
 				owner, ownerErr := client.NamespaceLabel(ctx, scenarioCtx.Namespace, "deploy-camunda-run")
-				if ownerErr != nil {
+				if ownerErr != nil && strings.Contains(strings.ToLower(ownerErr.Error()), "not found") {
+					err = nil
+				} else if ownerErr != nil {
 					err = ownerErr
 				} else if owner == "" {
 					err = fmt.Errorf("namespace %q is not owned by a durable matrix run", scenarioCtx.Namespace)

@@ -86,6 +86,7 @@ type StoredRunOptions struct {
 	GeneratePostgresCredentials bool              `json:"generatePostgresCredentials,omitempty"`
 	ImportDockerAuth            bool              `json:"importDockerAuth,omitempty"`
 	DockerConfigPath            string            `json:"dockerConfigPath,omitempty"`
+	RequiresRunSecrets          bool              `json:"requiresRunSecrets,omitempty"`
 }
 
 func StoreRunOptions(opts RunOptions) StoredRunOptions {
@@ -129,7 +130,7 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		ChartRefVersion: opts.ChartRefVersion, ForceImageOverrides: opts.ForceImageOverrides,
 		WaitIngressReady: opts.WaitIngressReady, IngressReadyTimeoutMinutes: opts.IngressReadyTimeoutMinutes,
 		GeneratePostgresCredentials: opts.GeneratePostgresCredentials,
-		ImportDockerAuth:            opts.ImportDockerAuth, DockerConfigPath: abs(opts.DockerConfigPath),
+		ImportDockerAuth:            opts.ImportDockerAuth, DockerConfigPath: abs(opts.DockerConfigPath), RequiresRunSecrets: opts.GeneratedPostgresPassword != "" || len(opts.ExtraHelmArgs) > 0 || len(opts.ExtraHelmSets) > 0,
 	}
 }
 
@@ -619,6 +620,8 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		opts.GeneratedPostgresPassword = secrets.PostgresPassword
 		opts.ExtraHelmArgs = secrets.ExtraHelmArgs
 		opts.ExtraHelmSets = secrets.ExtraHelmSets
+	} else if errors.Is(err, os.ErrNotExist) && state.Options.RequiresRunSecrets {
+		return nil, RunOptions{}, errors.New("required run-secrets.json is missing; refusing resume")
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, RunOptions{}, fmt.Errorf("read matrix run secrets: %w", err)
 	}

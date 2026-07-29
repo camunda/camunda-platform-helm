@@ -670,10 +670,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			for _, client := range prov.All() {
 				ids = append(ids, client.ClientID)
 			}
-			if stateErr := opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, ids); stateErr != nil {
-				cleanupErr := auth0.CleanupClientIDsStrict(context.Background(), auth0Options, ids)
-				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
-				result.Error = errors.Join(fmt.Errorf("checkpoint Auth0 resources: %w", stateErr), cleanupErr)
+			if stateErr := checkpointAuth0Resources(opts.StateStore, entry, auth0Options, ids, auth0.CleanupClientIDsStrict); stateErr != nil {
+				result.Error = stateErr
 				return result
 			}
 		}
@@ -840,6 +838,15 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	result = RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts, auth0Opts: auth0Opts}
 
 	return result
+}
+
+func checkpointAuth0Resources(store *RunStateStore, entry Entry, options auth0.Options, ids []string, cleanup func(context.Context, auth0.Options, []string) error) error {
+	if err := store.RecordExternalResources(entry, "", "", options.Domain, ids); err != nil {
+		cleanupErr := cleanup(context.Background(), options, ids)
+		cleanupErr = completeExternalCompensation(store, entry, cleanupErr)
+		return errors.Join(fmt.Errorf("checkpoint Auth0 resources: %w", err), cleanupErr)
+	}
+	return nil
 }
 
 func completeExternalCompensation(store *RunStateStore, entry Entry, cleanupErr error) error {

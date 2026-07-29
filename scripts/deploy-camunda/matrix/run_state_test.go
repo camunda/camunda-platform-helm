@@ -387,6 +387,22 @@ func TestPrepareResumeRejectsUncertainExternalProvisioning(t *testing.T) {
 	require.ErrorContains(t, err, "unresolved external provisioning")
 }
 
+func TestCheckpointAuth0FailureRetainsUncertaintyWhenCompensationFails(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "auth0", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkExternalProvisioningStarted(entry))
+	// Make the run directory read-only to force checkpoint persistence failure.
+	require.NoError(t, os.Chmod(store.RunDir(), 0o500))
+	err = checkpointAuth0Resources(store, entry, auth0.Options{Domain: "tenant"}, []string{"id-A"}, func(context.Context, auth0.Options, []string) error { return errors.New("provider delete failed") })
+	require.NoError(t, os.Chmod(store.RunDir(), 0o700))
+	require.ErrorContains(t, err, "provider delete failed")
+	state, loadErr := store.Load()
+	require.NoError(t, loadErr)
+	assert.True(t, state.Entries[0].ExternalProvisioningStarted)
+}
+
 func TestCleanupEntryUsesCheckpointedAuth0IDsAndStopsOnFailure(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "auth0", Scenario: "auth0", Flow: "install", Identity: "auth0"}
 	store := NewRunStateStore(t.TempDir(), "run-1")
