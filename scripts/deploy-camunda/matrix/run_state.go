@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sys/unix"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/credentials"
 	"scripts/prepare-helm-values/pkg/env"
@@ -120,9 +119,9 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		VaultBackedSecrets: opts.VaultBackedSecrets, UseVaultBackedSecrets: opts.UseVaultBackedSecrets,
 		DeleteNamespaceFirst: opts.DeleteNamespaceFirst, UpgradeFromVersion: opts.UpgradeFromVersion,
 		HelmTimeout: opts.HelmTimeout, EnsureDockerRegistry: opts.EnsureDockerRegistry,
-		DockerUsername: opts.DockerUsername, RequiresDockerPassword: opts.DockerPassword != "",
+		DockerUsername: opts.DockerUsername, RequiresDockerPassword: opts.EnsureDockerRegistry,
 		EnsureDockerHub: opts.EnsureDockerHub, DockerHubUsername: opts.DockerHubUsername,
-		RequiresDockerHubPassword: opts.DockerHubPassword != "", UseLatest: opts.UseLatest, UseQA: opts.UseQA,
+		RequiresDockerHubPassword: opts.EnsureDockerHub, UseLatest: opts.UseLatest, UseQA: opts.UseQA,
 		ExtraHelmArgs: redactStoredArgs(opts.ExtraHelmArgs), ExtraHelmSets: redactStoredSets(opts.ExtraHelmSets),
 		ExtraValues: extraValues, NamespaceOverride: opts.NamespaceOverride, ChartRef: chartRef,
 		ChartRefVersion: opts.ChartRefVersion, ForceImageOverrides: opts.ForceImageOverrides,
@@ -224,7 +223,7 @@ type RunStateStore struct {
 }
 
 type RunLock struct {
-	file *os.File
+	path string
 }
 
 func NewRunStateStore(root, runID string) *RunStateStore {
@@ -250,27 +249,28 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 	if err := os.MkdirAll(s.RunDir(), 0o700); err != nil {
 		return nil, fmt.Errorf("create matrix run directory: %w", err)
 	}
-	file, err := os.OpenFile(filepath.Join(s.RunDir(), "run.lock"), os.O_CREATE|os.O_RDWR, 0o600)
+	path := filepath.Join(s.RunDir(), "run.lock")
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
-		return nil, fmt.Errorf("open matrix run lock: %w", err)
-	}
-	if err := unix.Flock(int(file.Fd()), unix.LOCK_EX|unix.LOCK_NB); err != nil {
-		file.Close()
 		return nil, fmt.Errorf("matrix run %q is active in another process", s.runID)
 	}
-	return &RunLock{file: file}, nil
+	if _, err := fmt.Fprintf(file, "%d\n", os.Getpid()); err != nil {
+		file.Close()
+		_ = os.Remove(path)
+		return nil, err
+	}
+	if err := file.Close(); err != nil {
+		_ = os.Remove(path)
+		return nil, err
+	}
+	return &RunLock{path: path}, nil
 }
 
 func (l *RunLock) Close() error {
-	if l == nil || l.file == nil {
+	if l == nil || l.path == "" {
 		return nil
 	}
-	err := unix.Flock(int(l.file.Fd()), unix.LOCK_UN)
-	closeErr := l.file.Close()
-	if err != nil {
-		return err
-	}
-	return closeErr
+	return os.Remove(l.path)
 }
 
 func (s *RunStateStore) Create(entries []Entry, opts RunOptions) (*MatrixRunState, error) {
@@ -757,11 +757,20 @@ func redactStoredArgs(args []string) []string {
 		if idx := strings.LastIndex(key, "="); idx >= 0 {
 			key = key[:idx]
 		}
-		if values.IsSecretName(key) {
+		if values.IsSecretName(key) || !safeStoredHelmKey(key) {
 			out[i] = "<redacted>"
 		}
 	}
 	return out
+}
+
+func safeStoredHelmKey(key string) bool {
+	for _, prefix := range []string{"global.host", "orchestration.upgrade.allowPreReleaseImages", "feature.enabled", "atomic"} {
+		if key == prefix || strings.HasSuffix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func redactStoredSets(values []string) []string { return redactStoredArgs(values) }

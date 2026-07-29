@@ -72,6 +72,18 @@ func TestRunStatePreservesBenignHelmOverride(t *testing.T) {
 	assert.Equal(t, []string{"--atomic"}, stored.ExtraHelmArgs)
 }
 
+func TestRunStateRedactsUnknownHelmOverride(t *testing.T) {
+	stored := StoreRunOptions(RunOptions{ExtraHelmSets: []string{"auth=secret-value"}})
+	assert.Equal(t, []string{"<redacted>"}, stored.ExtraHelmSets)
+}
+
+func TestRunStateRequiresOnlyEnabledRegistryCredentials(t *testing.T) {
+	stored := StoreRunOptions(RunOptions{DockerUsername: "incidental", DockerPassword: "incidental-password"})
+	assert.False(t, stored.RequiresDockerPassword)
+	stored = StoreRunOptions(RunOptions{EnsureDockerRegistry: true})
+	assert.True(t, stored.RequiresDockerPassword)
+}
+
 func TestReplayCommandIncludesExecutionTarget(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install", Platform: "gke"}
 	command := ReplayCommand(entry, RunOptions{
@@ -165,7 +177,7 @@ func TestPrepareResumeRejectsMismatchedDockerCredentials(t *testing.T) {
 	t.Setenv("NEXUS_PASSWORD", "")
 	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
 	store := NewRunStateStore(t.TempDir(), "run-1")
-	_, err := store.Create([]Entry{entry}, RunOptions{DockerUsername: "original-user", DockerPassword: "original-password"})
+	_, err := store.Create([]Entry{entry}, RunOptions{DockerUsername: "original-user", DockerPassword: "original-password", EnsureDockerRegistry: true})
 	require.NoError(t, err)
 	_, _, err = store.PrepareResume("")
 	require.ErrorContains(t, err, "does not match stored username")

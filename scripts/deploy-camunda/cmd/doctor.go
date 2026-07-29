@@ -11,6 +11,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
+	"scripts/prepare-helm-values/pkg/env"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -62,6 +63,11 @@ Exits non-zero if any required check fails.`,
 					flags.Chart.RepoRoot = detected
 				}
 			}
+			envFileToLoad := flags.EnvFile
+			if envFileToLoad == "" {
+				envFileToLoad = ".env"
+			}
+			_ = env.Load(envFileToLoad)
 			if err := resolveMatrixDockerCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword); err != nil {
 				return err
 			}
