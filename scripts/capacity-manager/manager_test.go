@@ -24,10 +24,11 @@ type fakePressure struct{ value *float64 }
 func (f fakePressure) Query(context.Context, string) (*float64, error) { return f.value, nil }
 
 type fakeWorkload struct {
-	replicas int
-	target   int
-	started  bool
-	scales   []int
+	replicas  int
+	target    int
+	started   bool
+	scales    []int
+	completed []int
 }
 
 func (f *fakeWorkload) State(context.Context) (WorkloadState, error) {
@@ -45,6 +46,10 @@ func (f *fakeWorkload) Scale(_ context.Context, replicas int) error {
 	f.replicas = replicas
 	f.target = replicas
 	f.scales = append(f.scales, replicas)
+	return nil
+}
+func (f *fakeWorkload) MarkCompleted(_ context.Context, brokers int) error {
+	f.completed = append(f.completed, brokers)
 	return nil
 }
 func (f *fakeWorkload) PodStarted(context.Context, int) (bool, error) { return f.started, nil }
