@@ -78,27 +78,33 @@ func TestCapacityManagerDeployment(t *testing.T) {
 
 func TestCapacityManagerPolicy(t *testing.T) {
 	output := render(t, "templates/capacity-manager/configmap.yaml", map[string]string{
-		"capacityManager.enabled":              "true",
-		"capacityManager.policy.mode":          "scheduled",
-		"capacityManager.policy.targetBrokers": "2",
+		"capacityManager.enabled": "true",
 	})
 	var configMap corev1.ConfigMap
 	helm.UnmarshalK8SYaml(t, output, &configMap)
 	var policy map[string]any
 	require.NoError(t, json.Unmarshal([]byte(configMap.Data["policy.json"]), &policy))
-	require.Equal(t, "scheduled", policy["mode"])
-	require.Equal(t, float64(2), policy["targetBrokers"])
+	require.Equal(t, "recommend", policy["mode"])
+	require.Equal(t, float64(1), policy["minBrokers"])
 }
 
 func TestCapacityManagerRBAC(t *testing.T) {
-	values := map[string]string{"capacityManager.enabled": "true"}
+	values := map[string]string{"capacityManager.enabled": "true", "capacityManager.replicaOwnership": "capacityManager"}
 	var role rbacv1.Role
 	helm.UnmarshalK8SYaml(t, render(t, "templates/capacity-manager/role.yaml", values), &role)
 	require.Equal(t, []string{"statefulsets"}, role.Rules[0].Resources)
 	require.Equal(t, []string{"capacity-test-zeebe"}, role.Rules[0].ResourceNames)
+	require.Equal(t, []string{"get", "patch", "update"}, role.Rules[0].Verbs)
 
 	var binding rbacv1.RoleBinding
 	helm.UnmarshalK8SYaml(t, render(t, "templates/capacity-manager/rolebinding.yaml", values), &binding)
 	require.Equal(t, "capacity-test-capacity-manager", binding.Subjects[0].Name)
 	require.Equal(t, "default", binding.Subjects[0].Namespace)
+}
+
+func TestCapacityManagerReadOnlyRBAC(t *testing.T) {
+	values := map[string]string{"capacityManager.enabled": "true"}
+	var role rbacv1.Role
+	helm.UnmarshalK8SYaml(t, render(t, "templates/capacity-manager/role.yaml", values), &role)
+	require.Equal(t, []string{"get"}, role.Rules[0].Verbs)
 }

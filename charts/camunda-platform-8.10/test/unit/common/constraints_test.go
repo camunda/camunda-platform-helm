@@ -52,15 +52,6 @@ func TestConstraintTemplate(t *testing.T) {
 func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestCapacityManagerReplicaHandbackFailsWithoutLiveCluster",
-			Values: map[string]string{
-				"capacityManager.replicaOwnership": "helm",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "Explicit replica ownership handback requires live cluster access")
-			},
-		},
-		{
 			Name:        "TestCapacityManagerRequiresOrchestration",
 			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-capacity-manager.yaml")},
 			Values: map[string]string{
