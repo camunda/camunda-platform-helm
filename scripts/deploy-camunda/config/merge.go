@@ -57,7 +57,6 @@ type DeploymentFlags struct {
 	// failing. When <= 0, DefaultIngressReadyTimeoutMinutes is used.
 	IngressReadyTimeoutMinutes int
 	MatrixRunID                string
-	TransferMatrixOwnership    bool
 }
 
 // DefaultIngressReadyTimeoutMinutes is the default timeout for the
@@ -100,6 +99,8 @@ type DockerFlags struct {
 	DockerHubUsername    string
 	DockerHubPassword    string
 	EnsureDockerHub      bool
+	ImportDockerAuth     bool
+	DockerConfigPath     string
 	// SkipDockerLogin skips the `docker login` step inside the deployer.
 	// The matrix runner sets this to true after performing docker login once
 	// before parallel dispatch — preventing concurrent keychain writes.

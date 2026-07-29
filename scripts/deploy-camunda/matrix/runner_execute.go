@@ -333,11 +333,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			if opts.OnPhaseChange != nil {
 				opts.OnPhaseChange(entry, "cleanup")
 			}
-			if err := cleanupEntry(ctx, result, opts); err != nil {
-				result.Error = errors.Join(result.Error, fmt.Errorf("cleanup matrix entry: %w", err))
-			} else {
-				cleaned = true
-			}
+			cleaned = applyCleanupResult(&result, func() error { return cleanupEntry(ctx, result, opts) })
 		}
 		if opts.StateStore != nil {
 			if err := opts.StateStore.Complete(entry, result); err != nil {
@@ -385,7 +381,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	result.KubeContext = kubeCtx
 	if opts.StateStore != nil && opts.NamespaceOverride == "" {
 		flags.Deployment.MatrixRunID = opts.StateStore.RunID()
-		flags.Deployment.TransferMatrixOwnership = versionmatrix.IsUpgradeOnlyFlow(entry.Flow)
 	}
 	platform := resolvePlatform(opts, entry)
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
@@ -795,4 +790,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 	result = RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts, auth0Opts: auth0Opts}
 
 	return result
+}
+
+func applyCleanupResult(result *RunResult, cleanup func() error) bool {
+	if err := cleanup(); err != nil {
+		result.Error = errors.Join(result.Error, fmt.Errorf("cleanup matrix entry: %w", err))
+		return false
+	}
+	return true
 }

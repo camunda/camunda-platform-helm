@@ -178,6 +178,11 @@ func NewRootCommand() *cobra.Command {
 			if err := resolveKeyringCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword, flags.Docker.EnsureDockerRegistry, flags.Docker.EnsureDockerHub); err != nil {
 				return err
 			}
+			if flags.Docker.ImportDockerAuth {
+				if err := importMatrixDockerAuth(flags.Docker.DockerConfigPath, &flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword); err != nil {
+					return err
+				}
+			}
 
 			// Validate merged configuration
 			if err := config.Validate(&flags, cfgRes); err != nil {
@@ -271,6 +276,8 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Docker.DockerHubUsername, "dockerhub-username", "", "Docker Hub registry username")
 	f.StringVar(&flags.Docker.DockerHubPassword, "dockerhub-password", "", "Docker Hub registry password")
 	f.BoolVar(&flags.Docker.EnsureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created")
+	f.BoolVar(&flags.Docker.ImportDockerAuth, "import-docker-auth", false, "Import plaintext auths from Docker config; credential helpers are rejected")
+	f.StringVar(&flags.Docker.DockerConfigPath, "docker-config", "", "Docker config.json path")
 	f.BoolVar(&flags.Deployment.RenderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
 	f.StringVar(&flags.Deployment.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
 	f.StringSliceVar(&flags.Deployment.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")

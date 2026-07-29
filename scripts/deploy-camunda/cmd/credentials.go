@@ -58,7 +58,7 @@ func newCredentialsStatusCommand() *cobra.Command {
 		Use: "status", Short: "Show which registry credentials are configured", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			for _, registry := range []string{credentials.HarborRegistry, credentials.DockerHubRegistry} {
-				credential, found, err := credentialStore.Get(registry)
+				credential, found, err := credentials.GetOptional(credentialStore, registry)
 				if err != nil {
 					return err
 				}

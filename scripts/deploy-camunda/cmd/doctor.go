@@ -68,6 +68,11 @@ Exits non-zero if any required check fails.`,
 			if err := resolveKeyringCredentialPairs(&flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword, flags.Docker.EnsureDockerRegistry, flags.Docker.EnsureDockerHub); err != nil {
 				return err
 			}
+			if flags.Docker.ImportDockerAuth {
+				if err := importMatrixDockerAuth(flags.Docker.DockerConfigPath, &flags.Docker.DockerUsername, &flags.Docker.DockerPassword, &flags.Docker.DockerHubUsername, &flags.Docker.DockerHubPassword); err != nil {
+					return err
+				}
+			}
 
 			report := deploy.Preflight(ctx, &flags, deploy.PreflightOptions{
 				ConfigPath:           cfgRes.Path,
@@ -117,6 +122,8 @@ Exits non-zero if any required check fails.`,
 	f.StringVar(&flags.Docker.DockerPassword, "docker-password", "", "Harbor registry password")
 	f.BoolVar(&flags.Docker.EnsureDockerRegistry, "ensure-docker-registry", false, "Treat Harbor pull secret as required")
 	f.BoolVar(&flags.Docker.EnsureDockerHub, "ensure-docker-hub", false, "Treat Docker Hub pull secret as required")
+	f.BoolVar(&flags.Docker.ImportDockerAuth, "import-docker-auth", false, "Import plaintext auths from Docker config; credential helpers are rejected")
+	f.StringVar(&flags.Docker.DockerConfigPath, "docker-config", "", "Docker config.json path")
 	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
 	f.BoolVar(&skipKube, "skip-kube-check", false, "Skip the cluster reachability probe")
 	f.BoolVar(&fix, "fix", false, "Prompt for missing variables and write them to the .env file")

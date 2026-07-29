@@ -60,3 +60,41 @@ func TestDeleteNamespaceOwnedByPreservesReplacement(t *testing.T) {
 		t.Fatal("expected UID precondition conflict")
 	}
 }
+
+func TestEnsureNamespaceOwnedCreatesLabelledNamespace(t *testing.T) {
+	client := newTestClient()
+	if err := client.EnsureNamespaceOwned(context.Background(), "owned", "deploy-camunda-run", "run-1"); err != nil {
+		t.Fatal(err)
+	}
+	ns, err := client.clientset.CoreV1().Namespaces().Get(context.Background(), "owned", metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ns.Labels["deploy-camunda-run"] != "run-1" {
+		t.Fatalf("labels = %#v", ns.Labels)
+	}
+}
+
+func TestEnsureNamespaceOwnedAllowsSameOwner(t *testing.T) {
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "owned", Labels: map[string]string{"deploy-camunda-run": "run-1"}}}
+	if err := newTestClient(ns).EnsureNamespaceOwned(context.Background(), "owned", "deploy-camunda-run", "run-1"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEnsureNamespaceOwnedRejectsForeignOwner(t *testing.T) {
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "owned", Labels: map[string]string{"deploy-camunda-run": "other"}}}
+	if err := newTestClient(ns).EnsureNamespaceOwned(context.Background(), "owned", "deploy-camunda-run", "run-1"); err == nil {
+		t.Fatal("expected foreign owner rejection")
+	}
+}
+
+func TestEnsureNamespaceOwnedRejectsConcurrentCreate(t *testing.T) {
+	client := newTestClient()
+	client.clientset.(*fake.Clientset).PrependReactor("create", "namespaces", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewAlreadyExists(schema.GroupResource{Resource: "namespaces"}, "owned")
+	})
+	if err := client.EnsureNamespaceOwned(context.Background(), "owned", "deploy-camunda-run", "run-1"); err == nil {
+		t.Fatal("expected concurrent create rejection")
+	}
+}

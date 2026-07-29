@@ -43,7 +43,7 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if o.CIMetadata.MatrixRunID != "" {
-		if err := kubeClient.EnsureNamespaceOwned(ctx, o.Namespace, "deploy-camunda-run", o.CIMetadata.MatrixRunID, o.CIMetadata.TransferMatrixOwnership); err != nil {
+		if err := kubeClient.EnsureNamespaceOwned(ctx, o.Namespace, "deploy-camunda-run", o.CIMetadata.MatrixRunID); err != nil {
 			return err
 		}
 	} else if err := kubeClient.EnsureNamespace(ctx, o.Namespace); err != nil {

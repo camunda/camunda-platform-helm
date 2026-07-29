@@ -202,3 +202,11 @@ func TestClassifyFailureRedactsCredentialValues(t *testing.T) {
 	assert.NotContains(t, failure.Message, "abc123")
 	assert.Equal(t, "deployment failed; inspect the diagnostics bundle", failure.Message)
 }
+
+func TestApplyCleanupResultPreservesFailureAndNotCleaned(t *testing.T) {
+	result := RunResult{Error: errors.New("deployment failed")}
+	cleaned := applyCleanupResult(&result, func() error { return errors.New("namespace deletion failed") })
+	assert.False(t, cleaned)
+	assert.ErrorContains(t, result.Error, "deployment failed")
+	assert.ErrorContains(t, result.Error, "cleanup matrix entry: namespace deletion failed")
+}

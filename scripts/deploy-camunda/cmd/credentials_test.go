@@ -12,6 +12,14 @@ type memoryCredentialStore struct {
 	values map[string]credentials.Credential
 }
 
+type unavailableCredentialStore struct{}
+
+func (unavailableCredentialStore) Get(string) (credentials.Credential, bool, error) {
+	return credentials.Credential{}, false, &credentials.UnavailableError{Err: errors.New("no session bus")}
+}
+func (unavailableCredentialStore) Set(string, credentials.Credential) error { return nil }
+func (unavailableCredentialStore) Delete(string) error                      { return nil }
+
 func (s *memoryCredentialStore) Get(registry string) (credentials.Credential, bool, error) {
 	value, ok := s.values[registry]
 	return value, ok, nil
@@ -72,6 +80,21 @@ func TestCredentialsStatusDoesNotPrintSecrets(t *testing.T) {
 	}
 	if !bytes.Contains(out.Bytes(), []byte("robot")) {
 		t.Fatal("status omitted username")
+	}
+}
+
+func TestCredentialsStatusToleratesUnavailableKeyring(t *testing.T) {
+	original := credentialStore
+	credentialStore = unavailableCredentialStore{}
+	t.Cleanup(func() { credentialStore = original })
+	cmd := newCredentialsStatusCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("not configured")) {
+		t.Fatalf("output = %q", out.String())
 	}
 }
 

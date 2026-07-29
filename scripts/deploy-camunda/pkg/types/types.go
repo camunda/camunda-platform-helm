@@ -118,12 +118,11 @@ type CompanionChart struct {
 }
 
 type CIMetadata struct {
-	TransferMatrixOwnership bool
-	MatrixRunID             string
-	GithubRunID             string
-	GithubJobID             string
-	GithubOrg               string
-	GithubRepo              string
-	WorkflowURL             string
-	Flow                    string
+	MatrixRunID string
+	GithubRunID string
+	GithubJobID string
+	GithubOrg   string
+	GithubRepo  string
+	WorkflowURL string
+	Flow        string
 }
