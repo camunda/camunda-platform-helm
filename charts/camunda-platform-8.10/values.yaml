@@ -821,6 +821,18 @@ global:
             ## @param global.documentStore.type.azure.connectionString.secret.existingSecretKey defines the key within the existing secret object.
             existingSecretKey: "connection-string"
 
+  ## Secret Store Configuration
+  ## @extra global.secretStore These parameters configure centralized secret resolution via the Orchestration Cluster (Zeebe), backed by file, AWS Secrets Manager, or GCP Secret Manager. Only one store may be configured at a time per tenant (across all providers), and external stores use identity-based authentication only (no static credentials are injected into pods). Renders the corresponding `camunda.secrets.stores.*` application configuration.
+  secretStore:
+    ## @param global.secretStore.file can be used to configure file-based secret stores as a map keyed by store id. Each entry supports `path` (directory the store reads secrets from, one file per secret; defaults to "/etc/camunda/secrets") and the chart-only `existingSecret` (a Kubernetes Secret mounted read-only at `path`). Example: `myfilestore: {existingSecret: my-secrets, path: /etc/camunda/secrets}`.
+    file: {}
+    ## @param global.secretStore.aws can be used to configure AWS Secrets Manager stores as a map keyed by store id. Authentication is identity-based only (IRSA / EKS Pod Identity); no static credentials are accepted. Each entry supports `region`, `pathPrefix`, `batchEnabled`, `batchSize` (1-20), `containerSecretId` (mutually exclusive with `batchEnabled`), and the chart-only `roleArn` (sets the `eks.amazonaws.com/role-arn` annotation on the Orchestration ServiceAccount). Example: `myawsstore: {region: us-east-1, roleArn: arn:aws:iam::123456789012:role/camunda-secrets}`.
+    aws: {}
+    ## @param global.secretStore.gcp can be used to configure GCP Secret Manager stores as a map keyed by store id. Authentication is identity-based only (GKE Workload Identity); no static credentials are accepted. Each entry supports `projectId`, `pathPrefix`, `endpoint`, `containerSecretId`, and the chart-only `gcpServiceAccount` (sets the `iam.gke.io/gcp-service-account` annotation on the Orchestration ServiceAccount). Example: `mygcpstore: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.
+    gcp: {}
+    ## @param global.secretStore.physicalTenants can be used to override the secret stores per physical tenant as a map keyed by physical tenant id. Each entry mirrors the top-level `file`, `aws`, and `gcp` maps and renders `camunda.physical-tenants.<id>.secrets.stores.*`, replacing the default-tenant stores for that tenant. The one-store-per-tenant rule applies to each tenant independently. Because a single ServiceAccount can carry only one IRSA role and one GCP service account, `roleArn` and `gcpServiceAccount` must be identical across all tenants that set them. Example: `tenantA: {aws: {store: {region: us-east-1}}}`.
+    physicalTenants: {}
+
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:
   # extraManifests:
