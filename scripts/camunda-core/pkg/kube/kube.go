@@ -234,6 +234,29 @@ func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, e
 	return true, nil
 }
 
+func (c *Client) EnsureNamespaceOwned(ctx context.Context, namespace, label, owner string) error {
+	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err == nil {
+		if current := ns.Labels[label]; current != owner {
+			return fmt.Errorf("namespace %q already exists and is owned by run %q", namespace, current)
+		}
+		return nil
+	}
+	if !apierrors.IsNotFound(err) {
+		return fmt.Errorf("get namespace %q: %w", namespace, err)
+	}
+	_, err = c.clientset.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+		Name: namespace, Labels: map[string]string{label: owner},
+	}}, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("namespace %q was created concurrently; refusing ownership adoption", namespace)
+	}
+	if err != nil {
+		return fmt.Errorf("create owned namespace %q: %w", namespace, err)
+	}
+	return nil
+}
+
 func (c *Client) ClaimNamespaceOwnership(ctx context.Context, namespace, label, owner string) error {
 	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
