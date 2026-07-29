@@ -103,6 +103,30 @@ func TestResolveSelectedEnvFileCredentialsRejectsConflictWithChosenPair(t *testi
 	}
 }
 
+func TestCaptureAuth0RunEnvironmentPersistsAcrossResume(t *testing.T) {
+	t.Setenv("CAMUNDA_HOSTNAME", "captured.example")
+	t.Setenv("TEST_INGRESS_HOST", "fallback.example")
+	t.Setenv("AUTH0_INITIAL_ADMIN_EMAIL", "admin@example.com")
+	opts := matrix.RunOptions{}
+	captureAuth0RunEnvironment(&opts)
+	entry := matrix.Entry{Version: "8.10", Shortname: "auth0", Flow: "install"}
+	store := matrix.NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]matrix.Entry{entry}, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CAMUNDA_HOSTNAME", "")
+	t.Setenv("TEST_INGRESS_HOST", "")
+	t.Setenv("AUTH0_INITIAL_ADMIN_EMAIL", "")
+	_, resumed, err := store.PrepareResume("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resumed.Auth0IngressHost != "captured.example" || resumed.Auth0InitialAdminEmail != "admin@example.com" {
+		t.Fatalf("resumed = %#v", resumed)
+	}
+}
+
 func TestMatrixCleanupMarksOwnedEntryCleaned(t *testing.T) {
 	root := t.TempDir()
 	entry := matrix.Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}

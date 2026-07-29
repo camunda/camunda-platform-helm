@@ -92,6 +92,8 @@ type StoredRunOptions struct {
 	RequiresRunSecrets          bool              `json:"requiresRunSecrets,omitempty"`
 	Auth0IngressHost            string            `json:"auth0IngressHost,omitempty"`
 	Auth0InitialAdminEmail      string            `json:"auth0InitialAdminEmail,omitempty"`
+	Auth0Domain                 string            `json:"auth0Domain,omitempty"`
+	EntraDirectoryID            string            `json:"entraDirectoryId,omitempty"`
 }
 
 func StoreRunOptions(opts RunOptions) StoredRunOptions {
@@ -145,6 +147,7 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		GeneratePostgresCredentials: opts.GeneratePostgresCredentials,
 		ImportDockerAuth:            opts.ImportDockerAuth, DockerConfigPath: abs(opts.DockerConfigPath), RequiresRunSecrets: opts.GeneratedPostgresPassword != "" || len(opts.ExtraHelmArgs) > 0 || len(opts.ExtraHelmSets) > 0,
 		Auth0IngressHost: opts.Auth0IngressHost, Auth0InitialAdminEmail: opts.Auth0InitialAdminEmail,
+		Auth0Domain: opts.Auth0Domain, EntraDirectoryID: opts.EntraDirectoryID,
 	}
 }
 
@@ -169,6 +172,7 @@ func (s StoredRunOptions) RunOptions() RunOptions {
 		GeneratePostgresCredentials: s.GeneratePostgresCredentials,
 		ImportDockerAuth:            s.ImportDockerAuth, DockerConfigPath: s.DockerConfigPath,
 		Auth0IngressHost: s.Auth0IngressHost, Auth0InitialAdminEmail: s.Auth0InitialAdminEmail,
+		Auth0Domain: s.Auth0Domain, EntraDirectoryID: s.EntraDirectoryID,
 	}
 }
 

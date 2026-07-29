@@ -485,6 +485,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			KubeContext:   kubeCtx,
 			SkipK8sSecret: true, // Phase 2 is deferred to PreInstallHook.
 		}
+		if opts.EntraDirectoryID != "" {
+			entraOpts.DirectoryID = opts.EntraDirectoryID
+		}
 
 		// Populate Entra credentials from the version-specific env file.
 		// resolveOpts in entra.go falls back to os.Getenv, but the version-specific
@@ -622,6 +625,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			KubeContext:   kubeCtx,
 			IngressHost:   ingressHost,
 			SkipK8sSecret: true, // Phase 2 deferred to PreInstallHook.
+		}
+		if opts.Auth0Domain != "" {
+			auth0Options.Domain = opts.Auth0Domain
 		}
 		auth0Options.Domain = auth0.EffectiveDomain(auth0Options.Domain)
 		if opts.StateStore != nil {

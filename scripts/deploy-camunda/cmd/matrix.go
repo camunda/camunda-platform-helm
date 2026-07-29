@@ -720,11 +720,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				},
 				LogDir: logDir,
 			}
-			runOpts.Auth0IngressHost = os.Getenv("CAMUNDA_HOSTNAME")
-			if runOpts.Auth0IngressHost == "" {
-				runOpts.Auth0IngressHost = os.Getenv("TEST_INGRESS_HOST")
-			}
-			runOpts.Auth0InitialAdminEmail = os.Getenv("AUTH0_INITIAL_ADMIN_EMAIL")
+			captureAuth0RunEnvironment(&runOpts)
 			if runOpts.IngressBaseDomains == nil {
 				runOpts.IngressBaseDomains = map[string]string{}
 			}
@@ -879,6 +875,14 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	annotateFlagGroups(cmd, matrixRunFlagGroups())
 
 	return cmd
+}
+
+func captureAuth0RunEnvironment(opts *matrix.RunOptions) {
+	opts.Auth0IngressHost = os.Getenv("CAMUNDA_HOSTNAME")
+	if opts.Auth0IngressHost == "" {
+		opts.Auth0IngressHost = os.Getenv("TEST_INGRESS_HOST")
+	}
+	opts.Auth0InitialAdminEmail = os.Getenv("AUTH0_INITIAL_ADMIN_EMAIL")
 }
 
 // registerMatrixShortnameCompletion adds tab completion for the --shortname-filter flag.

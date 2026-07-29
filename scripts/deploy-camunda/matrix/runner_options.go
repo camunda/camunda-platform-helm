@@ -4,6 +4,8 @@ package matrix
 type RunOptions struct {
 	Auth0IngressHost       string
 	Auth0InitialAdminEmail string
+	Auth0Domain            string
+	EntraDirectoryID       string
 	// StateStore persists parent and entry transitions for status and resume.
 	StateStore *RunStateStore
 	// GeneratePostgresCredentials supplies entry-local credentials when a
