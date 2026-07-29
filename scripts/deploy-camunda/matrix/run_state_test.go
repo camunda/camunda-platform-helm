@@ -390,6 +390,23 @@ func TestExternalCompensationClearsUncertaintyOnlyOnSuccess(t *testing.T) {
 	assert.False(t, state.Entries[0].ExternalProvisioningStarted)
 }
 
+func TestPartialEntraCheckpointCompensationState(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "oidc", Flow: "install"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkExternalProvisioningStarted(entry))
+	require.NoError(t, store.RecordExternalResources(entry, "object-id", "tenant", "", nil))
+	require.Error(t, completeExternalCompensation(store, entry, errors.New("strict deletion failed")))
+	state, err := store.Load()
+	require.NoError(t, err)
+	assert.True(t, state.Entries[0].ExternalProvisioningStarted)
+	require.NoError(t, completeExternalCompensation(store, entry, nil))
+	state, err = store.Load()
+	require.NoError(t, err)
+	assert.False(t, state.Entries[0].ExternalProvisioningStarted)
+}
+
 func TestPrepareResumeRejectsUncertainExternalProvisioning(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "oidc", Flow: "install"}
 	store := NewRunStateStore(t.TempDir(), "run-1")

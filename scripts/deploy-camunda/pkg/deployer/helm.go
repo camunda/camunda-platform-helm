@@ -100,6 +100,24 @@ func redactHelmCommand(command string) string {
 	return strings.Join(parts, " ")
 }
 
+func redactHelmArgs(args []string) []string {
+	out := append([]string(nil), args...)
+	for i, arg := range out {
+		redactedSetValue := false
+		if i > 0 && (out[i-1] == "--set" || out[i-1] == "--set-string" || out[i-1] == "--set-json") {
+			key, _, ok := strings.Cut(arg, "=")
+			if ok && secretHelmKey(key) {
+				out[i] = key + "=<redacted>"
+				redactedSetValue = true
+			}
+		}
+		if key, _, ok := strings.Cut(strings.TrimLeft(arg, "-"), "="); !redactedSetValue && ok && strings.HasPrefix(arg, "--") && secretHelmKey(key) {
+			out[i] = "--" + key + "=<redacted>"
+		}
+	}
+	return out
+}
+
 func secretHelmKey(key string) bool {
 	upper := strings.ToUpper(key)
 	return strings.Contains(upper, "PASSWORD") || strings.Contains(upper, "SECRET") || strings.Contains(upper, "TOKEN") || strings.Contains(upper, "CREDENTIAL") || strings.Contains(upper, "PRIVATE")
@@ -201,7 +219,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 	if runErr != nil {
 		return &HelmError{
 			Reason:  "helm upgrade --install failed",
-			Command: "helm " + formatArgs(args),
+			Command: "helm " + formatArgs(redactHelmArgs(args)),
 			Cause:   runErr,
 		}
 	}
@@ -341,7 +359,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	}
 	return &HelmError{
 		Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
-		Command: "helm " + formatArgs(args),
+		Command: "helm " + formatArgs(redactHelmArgs(args)),
 		Cause:   runErr,
 	}
 }
