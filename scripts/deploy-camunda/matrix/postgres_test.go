@@ -47,3 +47,15 @@ func TestResolvePostgresCredentialsRejectsPerVersionMismatch(t *testing.T) {
 		t.Fatal("expected inconsistent password failure")
 	}
 }
+
+func TestResolvePostgresCredentialsRejectsPartialPair(t *testing.T) {
+	chartPath := t.TempDir()
+	envFile := filepath.Join(t.TempDir(), "partial.env")
+	if err := os.WriteFile(envFile, []byte("RDBMS_POSTGRESQL_USERNAME=camunda\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := ResolvePostgresCredentials([]Entry{postgresEntry(chartPath, "8.10")}, RunOptions{GeneratePostgresCredentials: true, EnvFile: envFile})
+	if err == nil {
+		t.Fatal("expected partial credential pair failure")
+	}
+}

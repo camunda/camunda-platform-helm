@@ -28,6 +28,9 @@ func ResolvePostgresCredentials(entries []Entry, opts RunOptions) (string, strin
 		effective := effectiveCredentialEnv(flags)
 		cleanup()
 		entryUser, entryPassword := effective["RDBMS_POSTGRESQL_USERNAME"], effective["RDBMS_POSTGRESQL_PASSWORD"]
+		if (entryUser == "") != (entryPassword == "") {
+			return "", "", fmt.Errorf("entry %s must provide both RDBMS_POSTGRESQL_USERNAME and RDBMS_POSTGRESQL_PASSWORD", EntryID(entry))
+		}
 		if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) && (entryUser == "" || entryPassword == "") {
 			return "", "", fmt.Errorf("upgrade-only entry %s requires explicit RDBMS_POSTGRESQL_USERNAME and RDBMS_POSTGRESQL_PASSWORD", EntryID(entry))
 		}

@@ -106,16 +106,27 @@ func TestMatrixCleanupMarksOwnedEntryCleaned(t *testing.T) {
 
 func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
 	root := t.TempDir()
+	envFile := filepath.Join(t.TempDir(), ".env")
+	if err := os.WriteFile(envFile, []byte("ENTRA_APP_DIRECTORY_ID=tenant\nENTRA_APP_CLIENT_ID=client\nENTRA_APP_CLIENT_SECRET=secret\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	entry := matrix.Entry{Version: "8.10", Shortname: "oidc", Scenario: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}
 	store := matrix.NewRunStateStore(root, "run-1")
-	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test"})
+	_, err := store.Create([]matrix.Entry{entry}, matrix.RunOptions{NamespacePrefix: "matrix", KubeContext: "test", EnvFile: envFile})
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := store.RecordExternalResources(entry, "", "tenant", "", nil); err != nil {
+		t.Fatal(err)
+	}
 	fake := &fakeCleanupClient{}
+	providerCalled := false
 	originalClient, originalEntra := newCleanupKubeClient, cleanupEntraResources
 	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
-	cleanupEntraResources = func(context.Context, entra.Options) error { return errors.New("provider unavailable") }
+	cleanupEntraResources = func(context.Context, entra.Options) error {
+		providerCalled = true
+		return errors.New("provider unavailable")
+	}
 	t.Cleanup(func() { newCleanupKubeClient, cleanupEntraResources = originalClient, originalEntra })
 	cmd := newMatrixCleanupCommand()
 	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
@@ -124,6 +135,9 @@ func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
 	}
 	if fake.deleted {
 		t.Fatal("namespace deleted after identity cleanup failure")
+	}
+	if !providerCalled {
+		t.Fatal("provider cleanup was not called")
 	}
 	state, err := store.Load()
 	if err != nil {

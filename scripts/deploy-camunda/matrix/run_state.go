@@ -252,7 +252,16 @@ func (s *RunStateStore) Acquire() (*RunLock, error) {
 	path := filepath.Join(s.RunDir(), "run.lock")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
-		return nil, fmt.Errorf("matrix run %q is active in another process", s.runID)
+		pidData, readErr := os.ReadFile(path)
+		pid, parseErr := strconv.Atoi(strings.TrimSpace(string(pidData)))
+		if readErr == nil && parseErr == nil && !processAlive(pid) {
+			if removeErr := os.Remove(path); removeErr == nil {
+				file, err = os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+			}
+		}
+		if err != nil {
+			return nil, fmt.Errorf("matrix run %q is active in another process", s.runID)
+		}
 	}
 	if _, err := fmt.Fprintf(file, "%d\n", os.Getpid()); err != nil {
 		file.Close()

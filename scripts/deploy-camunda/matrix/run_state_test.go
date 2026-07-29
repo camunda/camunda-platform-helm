@@ -120,6 +120,15 @@ func TestRunStateRefusesConcurrentLock(t *testing.T) {
 	require.ErrorContains(t, err, "active in another process")
 }
 
+func TestRunStateReclaimsStaleLock(t *testing.T) {
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), []byte("999999999\n"), 0o600))
+	lock, err := store.Acquire()
+	require.NoError(t, err)
+	require.NoError(t, lock.Close())
+}
+
 func TestCleaningFailedEntryPreservesFailedRun(t *testing.T) {
 	entry := Entry{Version: "8.10", Shortname: "one", Scenario: "first", Flow: "install"}
 	store := NewRunStateStore(t.TempDir(), "run-1")
