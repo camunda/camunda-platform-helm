@@ -496,6 +496,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		logging.Logger.Info().
 			Str("namespace", namespace).
 			Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")
+		if opts.StateStore != nil {
+			if err := opts.StateStore.MarkExternalProvisioningStarted(entry); err != nil {
+				result.Error = err
+				return result
+			}
+		}
 
 		venomApp, err := entra.EnsureVenomApp(ctx, entraOpts)
 		if err != nil {
@@ -527,6 +533,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil); err != nil {
 				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
 				result.Error = errors.Join(fmt.Errorf("checkpoint Entra resource: %w", err), cleanupErr)
+				return result
+			}
+			if err := opts.StateStore.MarkExternalProvisioningComplete(entry); err != nil {
+				result.Error = err
 				return result
 			}
 		}
@@ -639,6 +649,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 		logging.Logger.Info().
 			Str("namespace", namespace).
 			Msg("Auth0 entry detected — provisioning per-component clients (Phase 1: API + env vars)")
+		if opts.StateStore != nil {
+			if err := opts.StateStore.MarkExternalProvisioningStarted(entry); err != nil {
+				result.Error = err
+				return result
+			}
+		}
 
 		// Capture credentials for cleanup BEFORE provisioning so a partial
 		// failure inside EnsureClients (e.g. clients 1-3 of 6 created, then
@@ -655,6 +671,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			if stateErr := opts.StateStore.RecordExternalResources(entry, "", "", auth0Options.Domain, ids); stateErr != nil {
 				cleanupErr := auth0.CleanupClientIDsStrict(context.Background(), auth0Options, ids)
 				result.Error = errors.Join(fmt.Errorf("checkpoint Auth0 resources: %w", stateErr), cleanupErr)
+				return result
+			}
+		}
+		if err == nil && opts.StateStore != nil {
+			if stateErr := opts.StateStore.MarkExternalProvisioningComplete(entry); stateErr != nil {
+				result.Error = stateErr
 				return result
 			}
 		}

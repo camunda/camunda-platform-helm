@@ -64,6 +64,17 @@ func newMatrixStatusCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
+				if output == "json" {
+					states := make([]*matrix.MatrixRunState, 0, len(ids))
+					for _, id := range ids {
+						if state, err := matrix.NewRunStateStore(root, id).Load(); err == nil {
+							states = append(states, state)
+						}
+					}
+					encoder := json.NewEncoder(cmd.OutOrStdout())
+					encoder.SetIndent("", "  ")
+					return encoder.Encode(states)
+				}
 				for _, id := range ids {
 					state, err := matrix.NewRunStateStore(root, id).Load()
 					if err != nil {
@@ -208,6 +219,11 @@ func newMatrixCleanupCommand() *cobra.Command {
 					envPath = ".env"
 				}
 				values := cleanupCredentialEnv(envPath)
+				if item.ExternalProvisioningStarted {
+					providerCancel()
+					failures = append(failures, item.ID+": external provisioning started but no exact provider resource checkpoint exists; namespace preserved")
+					continue
+				}
 				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
 					if item.EntraObjectID == "" {
 						err = nil

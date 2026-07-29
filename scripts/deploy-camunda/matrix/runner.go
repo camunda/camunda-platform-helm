@@ -466,6 +466,8 @@ var (
 	dryDim  = func(s string) string { return logging.Emphasize(s, gchalk.WithBrightBlack().Italic) }
 )
 
+var cleanupAuth0IDs = auth0.CleanupClientIDsStrict
+
 // resolveUpgradeFromVersionQuiet resolves the "from" chart version for upgrade flows.
 // Returns empty string for non-upgrade flows or on error (dry-run is best-effort).
 // If overrideVersion is non-empty, it is returned directly for upgrade flows.
@@ -1526,7 +1528,7 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 				break
 			}
 		}
-		if err := auth0.CleanupClientIDsStrict(identityCtx, *result.auth0Opts, ids); err != nil {
+		if err := cleanupAuth0IDs(identityCtx, *result.auth0Opts, ids); err != nil {
 			return err
 		}
 	}

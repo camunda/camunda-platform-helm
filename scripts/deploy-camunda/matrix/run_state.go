@@ -157,23 +157,38 @@ func (s StoredRunOptions) RunOptions() RunOptions {
 }
 
 type EntryRunState struct {
-	ID               string         `json:"id"`
-	Entry            Entry          `json:"entry"`
-	Status           RunStatus      `json:"status"`
-	Phase            string         `json:"phase,omitempty"`
-	Namespace        string         `json:"namespace"`
-	KubeContext      string         `json:"kubeContext,omitempty"`
-	Attempts         int            `json:"attempts"`
-	StartedAt        *time.Time     `json:"startedAt,omitempty"`
-	FinishedAt       *time.Time     `json:"finishedAt,omitempty"`
-	Failure          *Failure       `json:"failure,omitempty"`
-	Diagnostics      string         `json:"diagnostics,omitempty"`
-	Replay           ReplayManifest `json:"replay"`
-	Cleaned          bool           `json:"cleaned,omitempty"`
-	EntraObjectID    string         `json:"entraObjectId,omitempty"`
-	Auth0ClientIDs   []string       `json:"auth0ClientIds,omitempty"`
-	EntraDirectoryID string         `json:"entraDirectoryId,omitempty"`
-	Auth0Domain      string         `json:"auth0Domain,omitempty"`
+	ID                          string         `json:"id"`
+	Entry                       Entry          `json:"entry"`
+	Status                      RunStatus      `json:"status"`
+	Phase                       string         `json:"phase,omitempty"`
+	Namespace                   string         `json:"namespace"`
+	KubeContext                 string         `json:"kubeContext,omitempty"`
+	Attempts                    int            `json:"attempts"`
+	StartedAt                   *time.Time     `json:"startedAt,omitempty"`
+	FinishedAt                  *time.Time     `json:"finishedAt,omitempty"`
+	Failure                     *Failure       `json:"failure,omitempty"`
+	Diagnostics                 string         `json:"diagnostics,omitempty"`
+	Replay                      ReplayManifest `json:"replay"`
+	Cleaned                     bool           `json:"cleaned,omitempty"`
+	EntraObjectID               string         `json:"entraObjectId,omitempty"`
+	Auth0ClientIDs              []string       `json:"auth0ClientIds,omitempty"`
+	EntraDirectoryID            string         `json:"entraDirectoryId,omitempty"`
+	Auth0Domain                 string         `json:"auth0Domain,omitempty"`
+	ExternalProvisioningStarted bool           `json:"externalProvisioningStarted,omitempty"`
+}
+
+func (s *RunStateStore) MarkExternalProvisioningStarted(entry Entry) error {
+	return s.update(entry, func(_ *MatrixRunState, item *EntryRunState) RunEvent {
+		item.ExternalProvisioningStarted = true
+		return RunEvent{Time: time.Now().UTC(), RunID: s.runID, EntryID: item.ID, Status: item.Status, Phase: "external-provisioning"}
+	})
+}
+
+func (s *RunStateStore) MarkExternalProvisioningComplete(entry Entry) error {
+	return s.update(entry, func(_ *MatrixRunState, item *EntryRunState) RunEvent {
+		item.ExternalProvisioningStarted = false
+		return RunEvent{Time: time.Now().UTC(), RunID: s.runID, EntryID: item.ID, Status: item.Status, Phase: "external-provisioned"}
+	})
 }
 
 func (s *RunStateStore) RecordExternalResources(entry Entry, entraObjectID, entraDirectoryID, auth0Domain string, auth0ClientIDs []string) error {
@@ -279,6 +294,9 @@ func (s *RunStateStore) RecoverStaleLock() error {
 	hostname, _ := os.Hostname()
 	if owner.Hostname != hostname {
 		return fmt.Errorf("refusing to remove lock created on host %q", owner.Hostname)
+	}
+	if processAlive(owner.PID) {
+		return fmt.Errorf("refusing to remove lock held by live process %d", owner.PID)
 	}
 	return os.Remove(path)
 }

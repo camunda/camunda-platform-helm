@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/credentials"
 )
 
@@ -141,6 +143,15 @@ func TestRunStateDoesNotReclaimForeignHostLock(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), append(data, '\n'), 0o600))
 	_, err := store.Acquire()
 	require.ErrorContains(t, err, "active in another process")
+}
+
+func TestRecoverStaleLockRejectsLiveProcess(t *testing.T) {
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	require.NoError(t, os.MkdirAll(store.RunDir(), 0o700))
+	hostname, _ := os.Hostname()
+	data, _ := json.Marshal(lockOwner{Hostname: hostname, PID: os.Getpid()})
+	require.NoError(t, os.WriteFile(filepath.Join(store.RunDir(), "run.lock"), append(data, '\n'), 0o600))
+	require.ErrorContains(t, store.RecoverStaleLock(), "live process")
 }
 
 func TestCleaningFailedEntryPreservesFailedRun(t *testing.T) {
@@ -306,4 +317,23 @@ func TestApplyCleanupResultPreservesFailureAndNotCleaned(t *testing.T) {
 	assert.False(t, cleaned)
 	assert.ErrorContains(t, result.Error, "deployment failed")
 	assert.ErrorContains(t, result.Error, "cleanup matrix entry: namespace deletion failed")
+}
+
+func TestCleanupEntryUsesCheckpointedAuth0IDsAndStopsOnFailure(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "auth0", Scenario: "auth0", Flow: "install", Identity: "auth0"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, store.RecordExternalResources(entry, "", "", "https://tenant.example", []string{"id-A"}))
+	original := cleanupAuth0IDs
+	called := false
+	cleanupAuth0IDs = func(context.Context, auth0.Options, []string) error {
+		called = true
+		return errors.New("provider failure")
+	}
+	t.Cleanup(func() { cleanupAuth0IDs = original })
+	result := RunResult{Entry: entry, Namespace: "namespace", auth0Opts: &auth0.Options{Namespace: "namespace"}}
+	err = cleanupEntry(context.Background(), result, RunOptions{StateStore: store})
+	require.ErrorContains(t, err, "provider failure")
+	assert.True(t, called)
 }
