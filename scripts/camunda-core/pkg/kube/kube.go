@@ -224,17 +224,28 @@ func (c *Client) NamespaceLabel(ctx context.Context, namespace, label string) (s
 }
 
 func (c *Client) DeleteNamespaceOwnedBy(ctx context.Context, namespace, label, owner string) error {
+	uid, err := c.OwnedNamespaceUID(ctx, namespace, label, owner)
+	if err != nil || uid == "" {
+		return err
+	}
+	return c.DeleteNamespaceWithUID(ctx, namespace, uid)
+}
+
+func (c *Client) OwnedNamespaceUID(ctx context.Context, namespace, label, owner string) (types.UID, error) {
 	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		return nil
+		return "", nil
 	}
 	if err != nil {
-		return fmt.Errorf("get namespace %q: %w", namespace, err)
+		return "", fmt.Errorf("get namespace %q: %w", namespace, err)
 	}
 	if actual := ns.Labels[label]; actual != owner {
-		return fmt.Errorf("namespace %q is owned by run %q, not %q", namespace, actual, owner)
+		return "", fmt.Errorf("namespace %q is owned by run %q, not %q", namespace, actual, owner)
 	}
-	uid := ns.UID
+	return ns.UID, nil
+}
+
+func (c *Client) DeleteNamespaceWithUID(ctx context.Context, namespace string, uid types.UID) error {
 	if err := c.clientset.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{
 		Preconditions: &metav1.Preconditions{UID: &uid},
 	}); err != nil && !apierrors.IsNotFound(err) {

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"golang.org/x/sys/unix"
+	"scripts/camunda-core/pkg/versionmatrix"
 )
 
 const RunStateSchema = "camunda.matrix-run/v1"
@@ -190,7 +191,7 @@ func NewRunID(now time.Time) string {
 
 func DurableNamespacePrefix(prefix, runID string) string {
 	digest := sha256.Sum256([]byte(runID))
-	return fmt.Sprintf("%s-%x", strings.TrimSuffix(prefix, "-"), digest[:3])
+	return fmt.Sprintf("%s-%x", strings.TrimSuffix(prefix, "-"), digest[:8])
 }
 
 func (s *RunStateStore) RunDir() string { return filepath.Join(s.root, s.runID) }
@@ -329,7 +330,10 @@ func (s *RunStateStore) MarkInterrupted() error {
 		return nil
 	}
 	state.Status, state.UpdatedAt = RunInterrupted, time.Now().UTC()
-	return s.write(state)
+	if err := s.write(state); err != nil {
+		return err
+	}
+	return s.appendEvent(RunEvent{Time: state.UpdatedAt, RunID: s.runID, Status: RunInterrupted, Code: "RUN_INTERRUPTED"})
 }
 
 func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, error) {
@@ -346,6 +350,9 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		}
 		if item.Status == RunPassed || item.Status == RunCleaned {
 			continue
+		}
+		if item.Attempts > 0 && versionmatrix.IsTwoStepUpgradeFlow(item.Entry.Flow) {
+			return nil, RunOptions{}, fmt.Errorf("entry %q is a partially executed two-step upgrade and cannot be resumed safely; replay it in a clean namespace", item.ID)
 		}
 		item.Status, item.Phase, item.Failure, item.Cleaned = RunPending, "", nil, false
 		entries = append(entries, item.Entry)
@@ -443,8 +450,7 @@ func (s *RunStateStore) updateID(id string, fn func(*MatrixRunState, *EntryRunSt
 		if err := s.write(state); err != nil {
 			return err
 		}
-		_ = s.appendEvent(event)
-		return nil
+		return s.appendEvent(event)
 	}
 	return fmt.Errorf("matrix entry %q not found in run %q", id, s.runID)
 }

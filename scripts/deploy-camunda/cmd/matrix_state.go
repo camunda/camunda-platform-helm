@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/types"
 
 	"scripts/camunda-core/pkg/kube"
 	"scripts/deploy-camunda/auth0"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/entra"
 	"scripts/deploy-camunda/matrix"
+	"scripts/prepare-helm-values/pkg/env"
 )
 
 func defaultMatrixStateRoot(explicit string) (string, error) {
@@ -147,15 +149,35 @@ func newMatrixCleanupCommand() *cobra.Command {
 					continue
 				}
 				cleanupCtx, cancel := context.WithTimeout(cmd.Context(), 2*time.Minute)
+				client, err := kube.NewClient("", item.KubeContext)
+				var uid types.UID
+				if err == nil {
+					uid, err = client.OwnedNamespaceUID(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID)
+				}
+				if err != nil {
+					cancel()
+					failures = append(failures, item.ID+": "+err.Error())
+					continue
+				}
+				envFile := state.Options.EnvFile
+				if versionFile := state.Options.EnvFiles[item.Entry.Version]; versionFile != "" {
+					envFile = versionFile
+				}
+				values, _ := env.ReadFile(envFile)
 				if entra.IsOIDCEntry(item.Entry.Auth, item.Entry.Identity) {
-					entra.CleanupVenomApp(cleanupCtx, entra.Options{Namespace: item.Namespace, KubeContext: item.KubeContext})
+					entra.CleanupVenomApp(cleanupCtx, entra.Options{
+						Namespace: item.Namespace, KubeContext: item.KubeContext,
+						DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"],
+					})
 				}
 				if auth0.IsAuth0Identity(item.Entry.Identity) {
-					auth0.CleanupClients(cleanupCtx, auth0.Options{Namespace: item.Namespace, KubeContext: item.KubeContext})
+					auth0.CleanupClients(cleanupCtx, auth0.Options{
+						Namespace: item.Namespace, KubeContext: item.KubeContext, Domain: values["AUTH0_DOMAIN"],
+						MgmtToken: values["AUTH0_MGMT_TOKEN"], MgmtClientID: values["AUTH0_MGMT_CLIENT_ID"], MgmtClientSecret: values["AUTH0_MGMT_CLIENT_SECRET"],
+					})
 				}
-				client, err := kube.NewClient("", item.KubeContext)
-				if err == nil {
-					err = client.DeleteNamespaceOwnedBy(cleanupCtx, item.Namespace, "deploy-camunda-run", state.ID)
+				if uid != "" {
+					err = client.DeleteNamespaceWithUID(cleanupCtx, item.Namespace, uid)
 				}
 				cancel()
 				if err != nil {

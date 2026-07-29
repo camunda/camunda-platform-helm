@@ -7,7 +7,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 func TestDeleteNamespaceOwnedBy(t *testing.T) {
@@ -37,5 +41,22 @@ func TestDeleteNamespaceOwnedByRejectsMismatch(t *testing.T) {
 func TestDeleteNamespaceOwnedByAllowsMissing(t *testing.T) {
 	if err := newTestClient().DeleteNamespaceOwnedBy(context.Background(), "missing", "deploy-camunda-run", "run-1"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDeleteNamespaceOwnedByPreservesReplacement(t *testing.T) {
+	original := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+		Name: "owned", UID: types.UID("uid-1"), Labels: map[string]string{"deploy-camunda-run": "run-1"},
+	}}
+	client := newTestClient(original)
+	client.clientset.(*fake.Clientset).PrependReactor("delete", "namespaces", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		deleteAction := action.(k8stesting.DeleteAction)
+		if deleteAction.GetDeleteOptions().Preconditions != nil && deleteAction.GetDeleteOptions().Preconditions.UID != nil && *deleteAction.GetDeleteOptions().Preconditions.UID == types.UID("uid-1") {
+			return true, nil, apierrors.NewConflict(schema.GroupResource{Resource: "namespaces"}, "owned", nil)
+		}
+		return false, nil, nil
+	})
+	if err := client.DeleteNamespaceOwnedBy(context.Background(), "owned", "deploy-camunda-run", "run-1"); err == nil {
+		t.Fatal("expected UID precondition conflict")
 	}
 }
