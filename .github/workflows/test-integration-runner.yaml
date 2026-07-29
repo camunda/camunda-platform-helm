@@ -1250,6 +1250,7 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
         with:
+          binary-artifact-name: ${{ inputs.binary-artifact-name }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
@@ -1327,6 +1328,7 @@ jobs:
           PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS: "1"
           PLAYWRIGHT_E2E_RETRIES: "0"
         with:
+          binary-artifact-name: ${{ inputs.binary-artifact-name }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
@@ -1508,6 +1510,7 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
         with:
+          binary-artifact-name: ${{ inputs.binary-artifact-name }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
