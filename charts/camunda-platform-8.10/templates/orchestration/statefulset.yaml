@@ -263,6 +263,24 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
+            {{- range $id, $cfg := (.Values.global.secretStore.file | default dict) }}
+            {{- if $cfg.existingSecret }}
+            {{- $volName := (printf "secretstore-file-%s" ($id | kebabcase) | trunc 63 | trimSuffix "-") }}
+            - name: {{ $volName }}
+              mountPath: {{ $cfg.path | default "/etc/camunda/secrets" | quote }}
+              readOnly: true
+            {{- end }}
+            {{- end }}
+            {{- range $tid, $providers := (.Values.global.secretStore.physicalTenants | default dict) }}
+            {{- range $id, $cfg := ($providers.file | default dict) }}
+            {{- if $cfg.existingSecret }}
+            {{- $volName := (printf "secretstore-file-%s-%s" ($tid | kebabcase) ($id | kebabcase) | trunc 63 | trimSuffix "-") }}
+            - name: {{ $volName }}
+              mountPath: {{ $cfg.path | default "/etc/camunda/secrets" | quote }}
+              readOnly: true
+            {{- end }}
+            {{- end }}
+            {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
@@ -299,6 +317,22 @@ spec:
             "config" .Values.global.documentStore.type.gcp
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
+        {{- end }}
+        {{- range $id, $cfg := (.Values.global.secretStore.file | default dict) }}
+        {{- if $cfg.existingSecret }}
+        - name: secretstore-file-{{ $id }}
+          secret:
+            secretName: {{ $cfg.existingSecret | quote }}
+        {{- end }}
+        {{- end }}
+        {{- range $tid, $providers := (.Values.global.secretStore.physicalTenants | default dict) }}
+        {{- range $id, $cfg := ($providers.file | default dict) }}
+        {{- if $cfg.existingSecret }}
+        - name: secretstore-file-{{ $tid }}-{{ $id }}
+          secret:
+            secretName: {{ $cfg.existingSecret | quote }}
+        {{- end }}
+        {{- end }}
         {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}

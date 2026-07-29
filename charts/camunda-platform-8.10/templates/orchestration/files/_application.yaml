@@ -51,6 +51,10 @@ camunda:
         connection-string: "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}"
     {{- end }}
   {{- end }}
+  {{- $secretStoreConfig := include "camundaPlatform.secretStore.renderConfig" . | trim }}
+  {{- if $secretStoreConfig }}
+  {{- $secretStoreConfig | nindent 2 }}
+  {{- end }}
 
   system:
     cpu-thread-count: {{ .Values.orchestration.cpuThreadCount }}
