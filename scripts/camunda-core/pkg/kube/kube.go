@@ -215,6 +215,34 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 	return nil
 }
 
+func (c *Client) NamespaceLabel(ctx context.Context, namespace, label string) (string, error) {
+	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("get namespace %q: %w", namespace, err)
+	}
+	return ns.Labels[label], nil
+}
+
+func (c *Client) DeleteNamespaceOwnedBy(ctx context.Context, namespace, label, owner string) error {
+	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("get namespace %q: %w", namespace, err)
+	}
+	if actual := ns.Labels[label]; actual != owner {
+		return fmt.Errorf("namespace %q is owned by run %q, not %q", namespace, actual, owner)
+	}
+	uid := ns.UID
+	if err := c.clientset.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{
+		Preconditions: &metav1.Preconditions{UID: &uid},
+	}); err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("delete namespace %q: %w", namespace, err)
+	}
+	return nil
+}
+
 // waitForNamespaceNotTerminating checks if a namespace is terminating and waits for deletion to complete
 func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace string, timeout time.Duration) error {
 	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})

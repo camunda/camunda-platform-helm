@@ -118,6 +118,7 @@ type CompanionChart struct {
 }
 
 type CIMetadata struct {
+	MatrixRunID string
 	GithubRunID string
 	GithubJobID string
 	GithubOrg   string

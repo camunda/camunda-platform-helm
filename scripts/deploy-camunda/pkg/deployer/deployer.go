@@ -46,7 +46,7 @@ func Deploy(ctx context.Context, o types.Options) error {
 		return err
 	}
 
-	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
+	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL, o.CIMetadata.MatrixRunID); err != nil {
 		// Non-fatal: namespace labels are CI housekeeping metadata (TTL, GitHub run IDs).
 		// On some clusters (e.g., EKS via Teleport) the user may lack namespace PATCH RBAC.
 		logging.Logger.Warn().Err(err).Str("namespace", o.Namespace).

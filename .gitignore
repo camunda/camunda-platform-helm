@@ -46,6 +46,7 @@ charts/camunda-platform*/test/e2e/package-lock.json
 
 diagnostics/
 deployment-logs/
+.deploy-camunda/
 STATE.md
 
 **/.omc

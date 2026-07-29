@@ -30,6 +30,10 @@ func newMatrixCommand() *cobra.Command {
 
 	matrixCmd.AddCommand(newMatrixListCommand())
 	matrixCmd.AddCommand(newMatrixRunCommand())
+	matrixCmd.AddCommand(newMatrixDoctorCommand())
+	matrixCmd.AddCommand(newMatrixStatusCommand())
+	matrixCmd.AddCommand(newMatrixResumeCommand())
+	matrixCmd.AddCommand(newMatrixCleanupCommand())
 
 	return matrixCmd
 }
@@ -194,6 +198,12 @@ func newMatrixRunCommand() *cobra.Command {
 		chartRefVersion          string
 		waitIngressReady         bool
 		ingressReadyTimeout      int
+		stateDir                 string
+		generatePostgres         bool
+		importDockerAuth         bool
+		dockerConfigPath         string
+		runPostgresUsername      string
+		runPostgresPassword      string
 	)
 
 	cmd := &cobra.Command{
@@ -389,6 +399,14 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			if err := env.Load(envFileToLoad); err != nil {
 				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
 			}
+			if err := resolveMatrixDockerCredentialPairs(&dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword); err != nil {
+				return err
+			}
+			if importDockerAuth {
+				if err := importMatrixDockerAuth(dockerConfigPath, &dockerUsername, &dockerPassword, &dockerHubUsername, &dockerHubPassword); err != nil {
+					return err
+				}
+			}
 
 			if repoRoot == "" {
 				detected, err := config.DetectRepoRoot()
@@ -473,48 +491,61 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 					// topology deploys (this fixed the 3rd and 4th such bug:
 					// IngressBaseDomains, HelmTimeout, and DeleteNamespaceFirst).
 					baseTopologyRunOpts := matrix.RunOptions{
-						DryRun:                dryRun,
-						Coverage:              coverage,
-						StopOnFailure:         stopOnFailure,
-						Cleanup:               cleanup,
-						DeleteNamespaceFirst:  deleteNamespace,
-						KubeContexts:          kubeContexts,
-						KubeContext:           kubeContext,
-						NamespacePrefix:       namespacePrefix,
-						Platform:              platform,
-						MaxParallel:           maxParallel,
-						TestE2E:               testE2E,
-						TestAll:               testAll,
-						RepoRoot:              repoRoot,
-						EnvFiles:              envFiles,
-						EnvFile:               envFile,
-						IngressBaseDomains:    ingressBaseDomains,
-						IngressBaseDomain:     ingressBaseDomain,
-						LogLevel:              logLevel,
-						SkipDependencyUpdate:  skipDependencyUpdate,
-						VaultBackedSecrets:    vaultBackedSecrets,
-						UseVaultBackedSecrets: useVaultBackedSecrets,
-						KeycloakHost:          keycloakHost,
-						KeycloakProtocol:      keycloakProtocol,
-						UpgradeFromVersion:    upgradeFromVersion,
-						HelmTimeout:           helmTimeout,
-						DockerUsername:        dockerUsername,
-						DockerPassword:        dockerPassword,
-						EnsureDockerRegistry:  ensureDockerRegistry,
-						DockerHubUsername:     dockerHubUsername,
-						DockerHubPassword:     dockerHubPassword,
-						EnsureDockerHub:       ensureDockerHub,
-						UseLatest:             useLatest,
-						UseQA:                 useQA,
-						ForceImageOverrides:   forceImageOverrides,
-						ExtraHelmArgs:         extraHelmArgs,
-						ExtraHelmSets:         extraHelmSets,
-						ExtraValues:           extraValues,
-						NamespaceOverride:     namespaceOverride,
-						ChartRef:              chartRef,
-						ChartRefVersion:       chartRefVersion,
-						LogDir:                logDir,
+						DryRun:                      dryRun,
+						Coverage:                    coverage,
+						StopOnFailure:               stopOnFailure,
+						Cleanup:                     cleanup,
+						DeleteNamespaceFirst:        deleteNamespace,
+						KubeContexts:                kubeContexts,
+						KubeContext:                 kubeContext,
+						NamespacePrefix:             namespacePrefix,
+						Platform:                    platform,
+						MaxParallel:                 maxParallel,
+						TestE2E:                     testE2E,
+						TestAll:                     testAll,
+						RepoRoot:                    repoRoot,
+						EnvFiles:                    envFiles,
+						EnvFile:                     envFile,
+						IngressBaseDomains:          ingressBaseDomains,
+						IngressBaseDomain:           ingressBaseDomain,
+						LogLevel:                    logLevel,
+						SkipDependencyUpdate:        skipDependencyUpdate,
+						VaultBackedSecrets:          vaultBackedSecrets,
+						UseVaultBackedSecrets:       useVaultBackedSecrets,
+						KeycloakHost:                keycloakHost,
+						KeycloakProtocol:            keycloakProtocol,
+						UpgradeFromVersion:          upgradeFromVersion,
+						HelmTimeout:                 helmTimeout,
+						DockerUsername:              dockerUsername,
+						DockerPassword:              dockerPassword,
+						EnsureDockerRegistry:        ensureDockerRegistry,
+						DockerHubUsername:           dockerHubUsername,
+						DockerHubPassword:           dockerHubPassword,
+						EnsureDockerHub:             ensureDockerHub,
+						UseLatest:                   useLatest,
+						UseQA:                       useQA,
+						ForceImageOverrides:         forceImageOverrides,
+						ExtraHelmArgs:               extraHelmArgs,
+						ExtraHelmSets:               extraHelmSets,
+						ExtraValues:                 extraValues,
+						NamespaceOverride:           namespaceOverride,
+						ChartRef:                    chartRef,
+						ChartRefVersion:             chartRefVersion,
+						LogDir:                      logDir,
+						GeneratePostgresCredentials: generatePostgres,
 					}
+					var topologyCredentialEntries []matrix.Entry
+					for _, topologyEntry := range topologyEntries {
+						for _, release := range topologyEntry.Topology.Releases {
+							topologyCredentialEntries = append(topologyCredentialEntries, synthesizeReleaseEntry(topologyEntry, release, platform))
+						}
+					}
+					topologyUser, topologyPassword, credentialErr := matrix.ResolvePostgresCredentials(topologyCredentialEntries, baseTopologyRunOpts)
+					if credentialErr != nil {
+						return credentialErr
+					}
+					baseTopologyRunOpts.GeneratedPostgresUsername = topologyUser
+					baseTopologyRunOpts.GeneratedPostgresPassword = topologyPassword
 
 					for _, e := range topologyEntries {
 						if err := runTopologyEntry(ctx, e, baseTopologyRunOpts); err != nil {
@@ -615,49 +646,52 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			}
 
 			runStart := time.Now()
-			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
-				DryRun:                     dryRun,
-				Coverage:                   coverage,
-				StopOnFailure:              stopOnFailure,
-				Cleanup:                    cleanup,
-				DeleteNamespaceFirst:       deleteNamespace,
-				KubeContexts:               kubeContexts,
-				KubeContext:                kubeContext,
-				NamespacePrefix:            namespacePrefix,
-				Platform:                   platform,
-				MaxParallel:                maxParallel,
-				TestE2E:                    testE2E,
-				TestAll:                    testAll,
-				RepoRoot:                   repoRoot,
-				EnvFiles:                   envFiles,
-				EnvFile:                    envFile,
-				IngressBaseDomains:         ingressBaseDomains,
-				IngressBaseDomain:          ingressBaseDomain,
-				LogLevel:                   logLevel,
-				SkipDependencyUpdate:       skipDependencyUpdate,
-				VaultBackedSecrets:         vaultBackedSecrets,
-				UseVaultBackedSecrets:      useVaultBackedSecrets,
-				KeycloakHost:               keycloakHost,
-				KeycloakProtocol:           keycloakProtocol,
-				UpgradeFromVersion:         upgradeFromVersion,
-				HelmTimeout:                helmTimeout,
-				DockerUsername:             dockerUsername,
-				DockerPassword:             dockerPassword,
-				EnsureDockerRegistry:       ensureDockerRegistry,
-				DockerHubUsername:          dockerHubUsername,
-				DockerHubPassword:          dockerHubPassword,
-				EnsureDockerHub:            ensureDockerHub,
-				UseLatest:                  useLatest,
-				UseQA:                      useQA,
-				ForceImageOverrides:        forceImageOverrides,
-				WaitIngressReady:           waitIngressReady,
-				IngressReadyTimeoutMinutes: ingressReadyTimeout,
-				ExtraHelmArgs:              extraHelmArgs,
-				ExtraHelmSets:              extraHelmSets,
-				ExtraValues:                extraValues,
-				NamespaceOverride:          namespaceOverride,
-				ChartRef:                   chartRef,
-				ChartRefVersion:            chartRefVersion,
+			runOpts := matrix.RunOptions{
+				DryRun:                      dryRun,
+				Coverage:                    coverage,
+				StopOnFailure:               stopOnFailure,
+				Cleanup:                     cleanup,
+				DeleteNamespaceFirst:        deleteNamespace,
+				KubeContexts:                kubeContexts,
+				KubeContext:                 kubeContext,
+				NamespacePrefix:             namespacePrefix,
+				Platform:                    platform,
+				MaxParallel:                 maxParallel,
+				TestE2E:                     testE2E,
+				TestAll:                     testAll,
+				RepoRoot:                    repoRoot,
+				EnvFiles:                    envFiles,
+				EnvFile:                     envFile,
+				IngressBaseDomains:          ingressBaseDomains,
+				IngressBaseDomain:           ingressBaseDomain,
+				LogLevel:                    logLevel,
+				SkipDependencyUpdate:        skipDependencyUpdate,
+				VaultBackedSecrets:          vaultBackedSecrets,
+				UseVaultBackedSecrets:       useVaultBackedSecrets,
+				KeycloakHost:                keycloakHost,
+				KeycloakProtocol:            keycloakProtocol,
+				UpgradeFromVersion:          upgradeFromVersion,
+				HelmTimeout:                 helmTimeout,
+				DockerUsername:              dockerUsername,
+				DockerPassword:              dockerPassword,
+				EnsureDockerRegistry:        ensureDockerRegistry,
+				DockerHubUsername:           dockerHubUsername,
+				DockerHubPassword:           dockerHubPassword,
+				EnsureDockerHub:             ensureDockerHub,
+				UseLatest:                   useLatest,
+				UseQA:                       useQA,
+				ForceImageOverrides:         forceImageOverrides,
+				WaitIngressReady:            waitIngressReady,
+				IngressReadyTimeoutMinutes:  ingressReadyTimeout,
+				GeneratePostgresCredentials: generatePostgres,
+				GeneratedPostgresUsername:   runPostgresUsername,
+				GeneratedPostgresPassword:   runPostgresPassword,
+				ExtraHelmArgs:               extraHelmArgs,
+				ExtraHelmSets:               extraHelmSets,
+				ExtraValues:                 extraValues,
+				NamespaceOverride:           namespaceOverride,
+				ChartRef:                    chartRef,
+				ChartRefVersion:             chartRefVersion,
 				OnEntryStart: func(entry matrix.Entry, namespace string) {
 					if statusDisplay != nil {
 						statusDisplay.OnEntryStart(entry, namespace)
@@ -674,7 +708,33 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 					}
 				},
 				LogDir: logDir,
-			})
+			}
+			var credentialErr error
+			runPostgresUsername, runPostgresPassword, credentialErr = matrix.ResolvePostgresCredentials(entries, runOpts)
+			if credentialErr != nil {
+				return credentialErr
+			}
+			runOpts.GeneratedPostgresUsername = runPostgresUsername
+			runOpts.GeneratedPostgresPassword = runPostgresPassword
+			if !dryRun && !coverage {
+				root, stateErr := defaultMatrixStateRoot(stateDir)
+				if stateErr != nil {
+					return stateErr
+				}
+				runID := matrix.NewRunID(runStart)
+				store := matrix.NewRunStateStore(root, runID)
+				lock, stateErr := store.Acquire()
+				if stateErr != nil {
+					return stateErr
+				}
+				defer lock.Close()
+				if _, stateErr := store.Create(entries, runOpts); stateErr != nil {
+					return stateErr
+				}
+				runOpts.StateStore = store
+				fmt.Fprintf(os.Stdout, "Matrix run ID: %s\n", runID)
+			}
+			results, err := matrix.Run(ctx, entries, runOpts)
 
 			// Close the log file if we opened one.
 			if logFile != nil {
@@ -765,6 +825,10 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
 	f.BoolVar(&waitIngressReady, "wait-ingress-ready", false, "After a successful helm install/upgrade, fail the entry unless its ingress host becomes publicly DNS-resolvable and HTTP-reachable within --ingress-ready-timeout")
 	f.IntVar(&ingressReadyTimeout, "ingress-ready-timeout", config.DefaultIngressReadyTimeoutMinutes, "Timeout in minutes for --wait-ingress-ready")
+	f.StringVar(&stateDir, "state-dir", "", "Matrix run state directory (default: <repo>/.deploy-camunda/runs)")
+	f.BoolVar(&generatePostgres, "generate-postgres-credentials", true, "Generate entry-local PostgreSQL credentials when required")
+	f.BoolVar(&importDockerAuth, "import-docker-auth", false, "Import plaintext auths from Docker config; credential helpers are rejected")
+	f.StringVar(&dockerConfigPath, "docker-config", "", "Docker config.json path")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

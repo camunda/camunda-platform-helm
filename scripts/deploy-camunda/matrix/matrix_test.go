@@ -1000,6 +1000,71 @@ func TestBuildEntryFlagsPrefersExplicitGlobalHost(t *testing.T) {
 	}
 }
 
+func TestBuildEntryFlagsGeneratesPostgresCredentials(t *testing.T) {
+	entry := Entry{
+		Version: "8.10", ChartPath: t.TempDir(), Scenario: "test", Shortname: "test", Flow: "install",
+		Dependencies: []ChartDependency{{
+			Chart: "postgresql", ValuesFile: "postgres.yaml",
+			EnvVars: []string{"RDBMS_POSTGRESQL_USERNAME", "RDBMS_POSTGRESQL_PASSWORD"},
+		}},
+	}
+	flags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{RepoRoot: t.TempDir(), GeneratePostgresCredentials: true})
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"]; got != "camunda" {
+		t.Fatalf("username = %q, want camunda", got)
+	}
+	if got := flags.ExtraEnv["RDBMS_POSTGRESQL_PASSWORD"]; len(got) != 32 {
+		t.Fatalf("password length = %d, want 32", len(got))
+	}
+}
+
+func TestBuildEntryFlagsPreservesPostgresCredentials(t *testing.T) {
+	envFile := filepath.Join(t.TempDir(), ".env")
+	if err := os.WriteFile(envFile, []byte("RDBMS_POSTGRESQL_USERNAME=existing\nRDBMS_POSTGRESQL_PASSWORD=existing-password\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	entry := Entry{
+		Version: "8.10", ChartPath: t.TempDir(), Scenario: "test", Shortname: "test", Flow: "install",
+		Dependencies: []ChartDependency{{EnvVars: []string{"RDBMS_POSTGRESQL_USERNAME", "RDBMS_POSTGRESQL_PASSWORD"}}},
+	}
+	flags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{EnvFile: envFile, GeneratePostgresCredentials: true})
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"]; ok {
+		t.Fatal("explicit username was overridden")
+	}
+	if _, ok := flags.ExtraEnv["RDBMS_POSTGRESQL_PASSWORD"]; ok {
+		t.Fatal("explicit password was overridden")
+	}
+}
+
+func TestBuildEntryFlagsForcesSavedPostgresCredentials(t *testing.T) {
+	envFile := filepath.Join(t.TempDir(), ".env")
+	if err := os.WriteFile(envFile, []byte("RDBMS_POSTGRESQL_USERNAME=changed\nRDBMS_POSTGRESQL_PASSWORD=changed-password\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	entry := Entry{
+		Version: "8.10", ChartPath: t.TempDir(), Scenario: "test", Shortname: "test", Flow: "install",
+		Dependencies: []ChartDependency{{EnvVars: []string{"RDBMS_POSTGRESQL_USERNAME", "RDBMS_POSTGRESQL_PASSWORD"}}},
+	}
+	flags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{
+		EnvFile: envFile, GeneratePostgresCredentials: true,
+		GeneratedPostgresUsername: "saved", GeneratedPostgresPassword: "saved-password",
+	})
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"] != "saved" || flags.ExtraEnv["RDBMS_POSTGRESQL_PASSWORD"] != "saved-password" {
+		t.Fatalf("saved credentials not forced: %#v", flags.ExtraEnv)
+	}
+}
+
 func TestDryRunPrefersExplicitGlobalHost(t *testing.T) {
 	opts := RunOptions{
 		IngressBaseDomain: "ci.distro.ultrawombat.com",

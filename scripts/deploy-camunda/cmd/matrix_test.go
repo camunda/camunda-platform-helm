@@ -7,6 +7,16 @@ import (
 	"scripts/deploy-camunda/matrix"
 )
 
+func TestMatrixLifecycleCommandsRegistered(t *testing.T) {
+	cmd := newMatrixCommand()
+	for _, name := range []string{"doctor", "status", "resume", "cleanup"} {
+		found, _, err := cmd.Find([]string{name})
+		if err != nil || found.Name() != name {
+			t.Fatalf("matrix %s command not registered: %v", name, err)
+		}
+	}
+}
+
 // Pins inc-5975: --extra-values must exist on `matrix run` so that
 // flags.Deployment.ExtraValues — the only input to the digest-overlay strip —
 // gets populated. StringArray (not StringSlice) so paths aren't comma-split.

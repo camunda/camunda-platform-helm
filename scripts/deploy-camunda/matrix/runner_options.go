@@ -2,6 +2,13 @@ package matrix
 
 // RunOptions controls matrix execution.
 type RunOptions struct {
+	// StateStore persists parent and entry transitions for status and resume.
+	StateStore *RunStateStore
+	// GeneratePostgresCredentials supplies entry-local credentials when a
+	// selected scenario requires RDBMS_POSTGRESQL_* and no explicit value exists.
+	GeneratePostgresCredentials bool
+	GeneratedPostgresUsername   string
+	GeneratedPostgresPassword   string
 	// DryRun logs what would be done without executing.
 	DryRun bool
 	// StopOnFailure stops the run on the first failure.

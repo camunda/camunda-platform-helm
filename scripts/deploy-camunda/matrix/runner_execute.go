@@ -2,6 +2,7 @@ package matrix
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -255,6 +256,11 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 
 	// Wire companion chart dependencies from ci-test-config.yaml.
 	flags.CompanionCharts = append(flags.CompanionCharts, companionChartsForEntry(entry, opts.RepoRoot)...)
+	if opts.GeneratePostgresCredentials {
+		if err := bootstrapPostgresCredentials(flags, opts.GeneratedPostgresUsername, opts.GeneratedPostgresPassword); err != nil {
+			return nil, namespace, kubeCtx, envFile, cleanup, err
+		}
+	}
 
 	// Populate the vault secret mapping up front so the fail-fast preflight sees
 	// it; prepareScenarioValues otherwise resolves it only after preflight runs.
@@ -269,6 +275,41 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 	return flags, namespace, kubeCtx, envFile, cleanup, nil
 }
 
+func bootstrapPostgresCredentials(flags *config.RuntimeFlags, generatedUsername, generatedPassword string) error {
+	if !requiresPostgresCredentials(flags.CompanionCharts) {
+		return nil
+	}
+	effective := make(map[string]string)
+	for _, item := range deploy.EnvProvenance(flags) {
+		effective[item.Name] = item.Value
+	}
+	if flags.ExtraEnv == nil {
+		flags.ExtraEnv = make(map[string]string)
+	}
+	if generatedUsername != "" && generatedPassword != "" {
+		flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"] = generatedUsername
+		flags.ExtraEnv["RDBMS_POSTGRESQL_PASSWORD"] = generatedPassword
+		return nil
+	}
+	if effective["RDBMS_POSTGRESQL_USERNAME"] == "" {
+		if generatedUsername == "" {
+			generatedUsername = "camunda"
+		}
+		flags.ExtraEnv["RDBMS_POSTGRESQL_USERNAME"] = generatedUsername
+	}
+	if effective["RDBMS_POSTGRESQL_PASSWORD"] == "" {
+		if generatedPassword == "" {
+			password, err := deploy.RandomSecret()
+			if err != nil {
+				return fmt.Errorf("generate ephemeral PostgreSQL password: %w", err)
+			}
+			generatedPassword = password
+		}
+		flags.ExtraEnv["RDBMS_POSTGRESQL_PASSWORD"] = generatedPassword
+	}
+	return nil
+}
+
 func explicitIngressHost(opts RunOptions) string {
 	return parseHelmSetPairs(opts.ExtraHelmSets)["global.host"]
 }
@@ -278,12 +319,39 @@ func explicitIngressHost(opts RunOptions) string {
 //   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
 //   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
 //   - Install (default): Single-step fresh install.
-func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
+func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result RunResult) {
 	start := time.Now()
 	namespace := resolveNamespace(opts, entry)
+	result = RunResult{Entry: entry, Namespace: namespace}
+	canCleanup := false
+	defer func() {
+		if result.Duration == 0 {
+			result.Duration = time.Since(start)
+		}
+		if opts.Cleanup && canCleanup {
+			if opts.OnPhaseChange != nil {
+				opts.OnPhaseChange(entry, "cleanup")
+			}
+			cleanupEntry(ctx, result, opts)
+		}
+		if opts.StateStore != nil {
+			if err := opts.StateStore.Complete(entry, result); err != nil {
+				result.Error = errors.Join(result.Error, fmt.Errorf("persist matrix entry completion: %w", err))
+			}
+		}
+		if opts.OnEntryComplete != nil {
+			opts.OnEntryComplete(entry, result)
+		}
+	}()
 
 	if opts.OnEntryStart != nil {
 		opts.OnEntryStart(entry, namespace)
+	}
+	if opts.StateStore != nil {
+		if err := opts.StateStore.Start(entry, namespace); err != nil {
+			result.Error = fmt.Errorf("persist matrix entry start: %w", err)
+			return result
+		}
 	}
 
 	// Fire "preparing" phase and wire flags.OnPhase so deploy/test callbacks
@@ -291,11 +359,22 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	if opts.OnPhaseChange != nil {
 		opts.OnPhaseChange(entry, "preparing")
 	}
+	if opts.StateStore != nil {
+		if err := opts.StateStore.Phase(entry, "preparing"); err != nil {
+			result.Error = fmt.Errorf("persist matrix entry phase: %w", err)
+			return result
+		}
+	}
 
 	flags, namespace, kubeCtx, envFile, cleanupEnvFile, err := BuildEntryFlags(entry, opts)
 	defer cleanupEnvFile() // safe: cleanup is always a valid no-op func even on error
 	if err != nil {
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+		result.KubeContext, result.Error = kubeCtx, err
+		return result
+	}
+	result.KubeContext = kubeCtx
+	if opts.StateStore != nil {
+		flags.Deployment.MatrixRunID = opts.StateStore.RunID()
 	}
 	platform := resolvePlatform(opts, entry)
 	useVault := resolveUseVaultBackedSecrets(opts, platform)
@@ -306,7 +385,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	if opts.OnPhaseChange != nil {
 		flags.OnPhase = func(phase string) {
 			opts.OnPhaseChange(entry, phase)
+			if opts.StateStore != nil {
+				_ = opts.StateStore.Phase(entry, phase)
+			}
 		}
+	} else if opts.StateStore != nil {
+		flags.OnPhase = func(phase string) { _ = opts.StateStore.Phase(entry, phase) }
 	}
 
 	// Redirect test script output and deploy logs to per-entry files when logDir is set.
@@ -403,7 +487,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 
 		venomApp, err := entra.EnsureVenomApp(ctx, entraOpts)
 		if err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("entra: provision venom app: %w", err)}
+			result.KubeContext, result.Error = kubeCtx, fmt.Errorf("entra: provision venom app: %w", err)
+			return result
 		}
 		venomOpts = &entraOpts
 
@@ -437,6 +522,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// so it survives namespace recreation by deploy.Execute().
 	var auth0Opts *auth0.Options
 	if auth0.IsAuth0Identity(entry.Identity) {
+		canCleanup = true
 		// Per-entry ingress host. flags.ResolveIngressHostname() is empty in CI
 		// because test-integration-runner.yaml passes the host via
 		// `--extra-helm-set global.host=...` + the CAMUNDA_HOSTNAME /
@@ -521,22 +607,13 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			// Build a result that carries auth0Opts so cleanupEntry tears down
 			// the partial provisioning, then invoke the same cleanup/callback
 			// path the success branch uses at the bottom of executeEntry.
-			result := RunResult{
+			result = RunResult{
 				Entry:       entry,
 				Namespace:   namespace,
 				KubeContext: kubeCtx,
 				Error:       fmt.Errorf("auth0: provision clients: %w", err),
 				Duration:    time.Since(start),
 				auth0Opts:   auth0Opts,
-			}
-			if opts.Cleanup {
-				if opts.OnPhaseChange != nil {
-					opts.OnPhaseChange(entry, "cleanup")
-				}
-				cleanupEntry(ctx, result, opts)
-			}
-			if opts.OnEntryComplete != nil {
-				opts.OnEntryComplete(entry, result)
 			}
 			return result
 		}
@@ -625,15 +702,18 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	isUpgradeOnly := versionmatrix.IsUpgradeOnlyFlow(entry.Flow)
 	if !isTwoStepUpgrade && !isUpgradeOnly {
 		if err := registerDeclarativePreInstallHook(flags, entry.PreInstall, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, Error: err}
+			result.Error = err
+			return result
 		}
 		if err := registerDeclarativePostInfraHook(flags, entry.PostInfra, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, Error: err}
+			result.Error = err
+			return result
 		}
 	}
 	if !isTwoStepUpgrade {
 		if err := registerDeclarativePostDeployHook(flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, Error: err}
+			result.Error = err
+			return result
 		}
 	}
 
@@ -649,13 +729,15 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// declare the same prefix-key.
 	if entry.PrefixKey != "" {
 		if err := deploy.PinScenarioPrefixes(entry.PrefixKey, flags); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("pin scenario prefixes (prefix-key=%s): %w", entry.PrefixKey, err)}
+			result.KubeContext, result.Error = kubeCtx, fmt.Errorf("pin scenario prefixes (prefix-key=%s): %w", entry.PrefixKey, err)
+			return result
 		}
 	}
 
 	// Override chart source when --chart-ref is set (OCI install path).
 	// See applyChartRefOverride for details.
 	applyChartRefOverride(&flags.Chart, opts)
+	canCleanup = true
 
 	// Two-step upgrade flow: install old version first, then upgrade to current.
 	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
@@ -675,20 +757,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		diag = appendTestOutputToDiagnostics(deployErr, namespace, diag)
 	}
 
-	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts, auth0Opts: auth0Opts}
-
-	// Per-entry cleanup: delete namespace and Entra app after deployment + tests complete.
-	// This runs regardless of success/failure, after diagnostics have been collected.
-	if opts.Cleanup {
-		if opts.OnPhaseChange != nil {
-			opts.OnPhaseChange(entry, "cleanup")
-		}
-		cleanupEntry(ctx, result, opts)
-	}
-
-	if opts.OnEntryComplete != nil {
-		opts.OnEntryComplete(entry, result)
-	}
+	result = RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts, auth0Opts: auth0Opts}
 
 	return result
 }

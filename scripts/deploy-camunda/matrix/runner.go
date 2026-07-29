@@ -185,11 +185,13 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	// creates the per-namespace K8s pull secrets without touching `docker login`.
 	if opts.EnsureDockerHub {
 		if err := docker.EnsureDockerHubLogin(ctx, opts.DockerHubUsername, opts.DockerHubPassword); err != nil {
+			completePendingEntries(entries, opts, fmt.Errorf("failed to ensure Docker Hub login: %w", err))
 			return nil, fmt.Errorf("failed to ensure Docker Hub login: %w", err)
 		}
 	}
 	if opts.EnsureDockerRegistry {
 		if err := docker.EnsureHarborLogin(ctx, opts.DockerUsername, opts.DockerPassword); err != nil {
+			completePendingEntries(entries, opts, fmt.Errorf("failed to ensure Harbor login: %w", err))
 			return nil, fmt.Errorf("failed to ensure Harbor login: %w", err)
 		}
 	}
@@ -199,6 +201,7 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	// an interactive browser login. Doing this sequentially ensures only one
 	// login prompt per context, rather than N parallel goroutines racing.
 	if err := warmUpKubeContexts(ctx, entries, opts); err != nil {
+		completePendingEntries(entries, opts, err)
 		return nil, err
 	}
 
@@ -228,6 +231,16 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	}
 
 	return results, retErr
+}
+
+func completePendingEntries(entries []Entry, opts RunOptions, err error) {
+	if opts.StateStore == nil {
+		return
+	}
+	for _, entry := range entries {
+		result := RunResult{Entry: entry, Namespace: resolveNamespace(opts, entry), KubeContext: ResolveKubeContext(opts, entry), Error: err}
+		_ = opts.StateStore.Complete(entry, result)
+	}
 }
 
 // synthesizeRunError checks completed results for failures and returns a
@@ -964,12 +977,16 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 			// Check again after acquiring semaphore slot.
 			if runCtx.Err() != nil {
 				results[idx] = RunResult{
-					Entry:     e,
-					Namespace: resolveNamespace(opts, e),
-					Error:     fmt.Errorf("skipped: run cancelled"),
+					Entry:       e,
+					Namespace:   resolveNamespace(opts, e),
+					KubeContext: ResolveKubeContext(opts, e),
+					Error:       fmt.Errorf("skipped: run cancelled"),
 				}
 				if opts.OnEntryComplete != nil {
 					opts.OnEntryComplete(e, results[idx])
+				}
+				if opts.StateStore != nil {
+					_ = opts.StateStore.Complete(e, results[idx])
 				}
 				return
 			}
@@ -1483,9 +1500,20 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		if err := kube.DeleteNamespace(cleanupCtx, "", result.KubeContext, result.Namespace); err != nil {
+		var cleanupErr error
+		if opts.StateStore != nil {
+			client, err := kube.NewClient("", result.KubeContext)
+			if err != nil {
+				cleanupErr = err
+			} else {
+				cleanupErr = client.DeleteNamespaceOwnedBy(cleanupCtx, result.Namespace, "deploy-camunda-run", opts.StateStore.RunID())
+			}
+		} else {
+			cleanupErr = kube.DeleteNamespace(cleanupCtx, "", result.KubeContext, result.Namespace)
+		}
+		if cleanupErr != nil {
 			logging.Logger.Error().
-				Err(err).
+				Err(cleanupErr).
 				Str("namespace", result.Namespace).
 				Msg("Failed to delete namespace during per-entry cleanup")
 		} else {

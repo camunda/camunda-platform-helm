@@ -13,7 +13,7 @@ import (
 )
 
 // labelAndAnnotateNamespace adds Camunda/GitHub-specific labels and annotations
-func labelAndAnnotateNamespace(ctx context.Context, kubeClient *kube.Client, namespace, identifier, flow, ttl string, ghRunID string, ghJobID string, ghOrg string, ghRepo string, workflowURL string) error {
+func labelAndAnnotateNamespace(ctx context.Context, kubeClient *kube.Client, namespace, identifier, flow, ttl string, ghRunID string, ghJobID string, ghOrg string, ghRepo string, workflowURL string, matrixRunID string) error {
 	// Build labels map
 	labels := make(map[string]string)
 	if strings.TrimSpace(identifier) != "" {
@@ -33,6 +33,9 @@ func labelAndAnnotateNamespace(ctx context.Context, kubeClient *kube.Client, nam
 	}
 	if strings.TrimSpace(ghRepo) != "" {
 		labels["github-repo"] = ghRepo
+	}
+	if strings.TrimSpace(matrixRunID) != "" {
+		labels["deploy-camunda-run"] = matrixRunID
 	}
 
 	// Build annotations map

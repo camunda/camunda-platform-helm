@@ -56,6 +56,7 @@ type DeploymentFlags struct {
 	// IngressReadyTimeoutMinutes bounds how long WaitIngressReady polls before
 	// failing. When <= 0, DefaultIngressReadyTimeoutMinutes is used.
 	IngressReadyTimeoutMinutes int
+	MatrixRunID                string
 }
 
 // DefaultIngressReadyTimeoutMinutes is the default timeout for the
