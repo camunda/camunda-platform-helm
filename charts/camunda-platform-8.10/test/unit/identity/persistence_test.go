@@ -271,6 +271,26 @@ func TestDeploymentStrategyInvalidValueFails(t *testing.T) {
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/deployment.yaml"}, []testhelpers.TestCase{testCase})
 }
 
+func TestDeploymentStrategyRecreateRequiresPersistence(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyRecreateRequiresPersistence",
+		Values: map[string]string{
+			"identity.enabled":                        "true",
+			"global.elasticsearch.enabled":            "true",
+			"identity.persistence.deploymentStrategy": "Recreate",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "Recreate requires identity.persistence.enabled: true")
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/deployment.yaml"}, []testhelpers.TestCase{testCase})
+}
+
 func tmpVolume(t *testing.T, deployment appsv1.Deployment) *corev1.Volume {
 	t.Helper()
 
