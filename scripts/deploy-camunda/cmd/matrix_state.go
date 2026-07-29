@@ -31,7 +31,6 @@ var newCleanupKubeClient = func(kubeContext string) (cleanupKubeClient, error) {
 
 var cleanupEntraObject = entra.CleanupVenomAppObjectStrict
 var cleanupAuth0ClientIDs = auth0.CleanupClientIDsStrict
-var findEntraObject = entra.FindVenomApp
 
 func defaultMatrixStateRoot(explicit string) (string, error) {
 	if explicit != "" {
@@ -242,13 +241,7 @@ func newMatrixCleanupCommand() *cobra.Command {
 				if item.Entry.Auth == "oidc" || item.Entry.Identity == "oidc" {
 					if item.EntraObjectID == "" {
 						if item.ExternalProvisioningStarted {
-							app, findErr := findEntraObject(providerCtx, entra.Options{Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]})
-							if findErr != nil {
-								err = findErr
-							} else if app != nil {
-								item.EntraObjectID = app.ObjectID
-								err = cleanupEntraObject(providerCtx, entra.Options{Namespace: item.Namespace, DirectoryID: values["ENTRA_APP_DIRECTORY_ID"], ClientID: values["ENTRA_APP_CLIENT_ID"], ClientSecret: values["ENTRA_APP_CLIENT_SECRET"]}, app.ObjectID)
-							}
+							err = fmt.Errorf("unresolved Entra provisioning has no owned object checkpoint")
 						} else {
 							err = nil
 						}
@@ -330,9 +323,7 @@ func cleanupCredentialEnv(envPath string) map[string]string {
 	}
 	if fileValues, err := env.ReadFile(envPath); err == nil {
 		for key, value := range fileValues {
-			if _, exists := values[key]; !exists {
-				values[key] = value
-			}
+			values[key] = value
 		}
 	}
 	return values

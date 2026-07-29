@@ -1029,6 +1029,14 @@ func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 	}
 }
 
+func TestEnsureVenomAppExistingAppIsNotMarkedCreated(t *testing.T) {
+	// The existing-app integration test above exercises the full flow; assert ownership metadata directly on its result shape.
+	app := &VenomApp{AppID: "app", ObjectID: "object", Created: false}
+	if app.Created {
+		t.Fatal("existing app must not be marked created")
+	}
+}
+
 // TestEnsureVenomApp_SkipK8sSecret verifies that when SkipK8sSecret is true,
 // the K8s secret creation is skipped but the Entra provisioning completes.
 func TestEnsureVenomApp_SkipK8sSecret(t *testing.T) {

@@ -531,7 +531,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 				if opts.StateStore != nil {
 					checkpointErr = opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil)
 				}
-				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				var cleanupErr error
+				if venomApp.Created {
+					cleanupErr = entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				}
 				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
 				result.Error = errors.Join(fmt.Errorf("entra: provision venom app: %w", err), checkpointErr, cleanupErr)
 			} else {
@@ -548,13 +551,19 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 				directoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")
 			}
 			if err := opts.StateStore.RecordExternalResources(entry, venomApp.ObjectID, directoryID, "", nil); err != nil {
-				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				var cleanupErr error
+				if venomApp.Created {
+					cleanupErr = entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				}
 				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
 				result.Error = errors.Join(fmt.Errorf("checkpoint Entra resource: %w", err), cleanupErr)
 				return result
 			}
 			if err := opts.StateStore.MarkExternalProvisioningComplete(entry); err != nil {
-				cleanupErr := entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				var cleanupErr error
+				if venomApp.Created {
+					cleanupErr = entra.CleanupVenomAppObjectStrict(context.Background(), entraOpts, venomApp.ObjectID)
+				}
 				cleanupErr = completeExternalCompensation(opts.StateStore, entry, cleanupErr)
 				result.Error = errors.Join(err, cleanupErr)
 				return result

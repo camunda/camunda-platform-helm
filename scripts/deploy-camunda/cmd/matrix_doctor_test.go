@@ -176,14 +176,14 @@ func TestMatrixCleanupPreservesNamespaceOnIdentityFailure(t *testing.T) {
 	}
 }
 
-func TestCleanupCredentialEnvPreservesProcessPrecedence(t *testing.T) {
+func TestCleanupCredentialEnvMatchesProvisioningFilePrecedence(t *testing.T) {
 	t.Setenv("AUTH0_DOMAIN", "https://process.example")
 	path := filepath.Join(t.TempDir(), ".env")
 	if err := os.WriteFile(path, []byte("AUTH0_DOMAIN=https://file.example\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	values := cleanupCredentialEnv(path)
-	if values["AUTH0_DOMAIN"] != "https://process.example" {
+	if values["AUTH0_DOMAIN"] != "https://file.example" {
 		t.Fatalf("domain = %q", values["AUTH0_DOMAIN"])
 	}
 }
@@ -261,34 +261,27 @@ func TestMatrixCleanupReconcilesUncheckpointedEntraObject(t *testing.T) {
 		t.Fatal(err)
 	}
 	fake := &fakeCleanupClient{}
-	findCalled, cleanupCalled := false, false
-	originalClient, originalFind, originalCleanup := newCleanupKubeClient, findEntraObject, cleanupEntraObject
+	originalClient, originalCleanup := newCleanupKubeClient, cleanupEntraObject
 	newCleanupKubeClient = func(string) (cleanupKubeClient, error) { return fake, nil }
-	findEntraObject = func(context.Context, entra.Options) (*entra.VenomApp, error) {
-		findCalled = true
-		return &entra.VenomApp{ObjectID: "object-id"}, nil
-	}
-	cleanupEntraObject = func(_ context.Context, _ entra.Options, id string) error {
-		cleanupCalled = id == "object-id"
-		return nil
-	}
+	cleanupCalled := false
+	cleanupEntraObject = func(context.Context, entra.Options, string) error { cleanupCalled = true; return nil }
 	t.Cleanup(func() {
-		newCleanupKubeClient, findEntraObject, cleanupEntraObject = originalClient, originalFind, originalCleanup
+		newCleanupKubeClient, cleanupEntraObject = originalClient, originalCleanup
 	})
 	cmd := newMatrixCleanupCommand()
 	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--yes"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatal(err)
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected unresolved Entra failure")
 	}
-	if !findCalled || !cleanupCalled || !fake.deleted {
-		t.Fatalf("find=%v cleanup=%v deleted=%v", findCalled, cleanupCalled, fake.deleted)
+	if cleanupCalled || fake.deleted {
+		t.Fatalf("cleanup=%v deleted=%v", cleanupCalled, fake.deleted)
 	}
 	state, err := store.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !state.Entries[0].Cleaned {
-		t.Fatal("entry not marked cleaned")
+	if state.Entries[0].Cleaned {
+		t.Fatal("entry marked cleaned")
 	}
 }
 

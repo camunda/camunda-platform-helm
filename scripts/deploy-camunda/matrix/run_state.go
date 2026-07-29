@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -55,6 +56,7 @@ type StoredRunOptions struct {
 	RepoRoot                    string            `json:"repoRoot"`
 	EnvFiles                    map[string]string `json:"envFiles,omitempty"`
 	EnvFile                     string            `json:"envFile,omitempty"`
+	EnvFileDigests              map[string]string `json:"envFileDigests,omitempty"`
 	KeycloakHost                string            `json:"keycloakHost,omitempty"`
 	KeycloakProtocol            string            `json:"keycloakProtocol,omitempty"`
 	IngressBaseDomains          map[string]string `json:"ingressBaseDomains,omitempty"`
@@ -100,8 +102,16 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		return path
 	}
 	envFiles := make(map[string]string, len(opts.EnvFiles))
+	envFileDigests := map[string]string{}
 	for version, path := range opts.EnvFiles {
 		envFiles[version] = abs(path)
+		if digest := fileDigest(envFiles[version]); digest != "" {
+			envFileDigests[envFiles[version]] = digest
+		}
+	}
+	absEnvFile := abs(opts.EnvFile)
+	if digest := fileDigest(absEnvFile); digest != "" {
+		envFileDigests[absEnvFile] = digest
 	}
 	extraValues := make([]string, len(opts.ExtraValues))
 	for i, path := range opts.ExtraValues {
@@ -116,7 +126,7 @@ func StoreRunOptions(opts RunOptions) StoredRunOptions {
 		StopOnFailure: opts.StopOnFailure, KubeContexts: opts.KubeContexts, KubeContext: opts.KubeContext,
 		NamespacePrefix: opts.NamespacePrefix, Platform: opts.Platform, MaxParallel: opts.MaxParallel,
 		TestE2E: opts.TestE2E, TestAll: opts.TestAll, RepoRoot: abs(opts.RepoRoot), EnvFiles: envFiles,
-		EnvFile: abs(opts.EnvFile), KeycloakHost: opts.KeycloakHost, KeycloakProtocol: opts.KeycloakProtocol,
+		EnvFile: absEnvFile, EnvFileDigests: envFileDigests, KeycloakHost: opts.KeycloakHost, KeycloakProtocol: opts.KeycloakProtocol,
 		IngressBaseDomains: opts.IngressBaseDomains, IngressBaseDomain: opts.IngressBaseDomain,
 		LogLevel: opts.LogLevel, SkipDependencyUpdate: opts.SkipDependencyUpdate,
 		VaultBackedSecrets: opts.VaultBackedSecrets, UseVaultBackedSecrets: opts.UseVaultBackedSecrets,
@@ -522,6 +532,11 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	if err != nil {
 		return nil, RunOptions{}, err
 	}
+	for path, expected := range state.Options.EnvFileDigests {
+		if observed := fileDigest(path); observed != expected {
+			return nil, RunOptions{}, fmt.Errorf("env file %q changed since run creation; refusing resume", path)
+		}
+	}
 	var entries []Entry
 	for _, item := range state.Entries {
 		if entryID != "" && item.ID != entryID {
@@ -644,6 +659,18 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		return nil, RunOptions{}, err
 	}
 	return entries, opts, nil
+}
+
+func fileDigest(path string) string {
+	if path == "" {
+		return ""
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(data)
+	return fmt.Sprintf("sha256:%x", sum[:])
 }
 
 func normalizeEntryPaths(entry Entry, repoRoot string) Entry {
