@@ -223,6 +223,24 @@ func (c *Client) NamespaceLabel(ctx context.Context, namespace, label string) (s
 	return ns.Labels[label], nil
 }
 
+func (c *Client) ClaimNamespaceOwnership(ctx context.Context, namespace, label, owner string) error {
+	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get namespace %q for ownership claim: %w", namespace, err)
+	}
+	if current := ns.Labels[label]; current != "" && current != owner {
+		return fmt.Errorf("namespace %q is already owned by run %q", namespace, current)
+	}
+	if ns.Labels == nil {
+		ns.Labels = map[string]string{}
+	}
+	ns.Labels[label] = owner
+	if _, err := c.clientset.CoreV1().Namespaces().Update(ctx, ns, metav1.UpdateOptions{}); err != nil {
+		return fmt.Errorf("claim namespace %q ownership: %w", namespace, err)
+	}
+	return nil
+}
+
 func (c *Client) DeleteNamespaceOwnedBy(ctx context.Context, namespace, label, owner string) error {
 	uid, err := c.OwnedNamespaceUID(ctx, namespace, label, owner)
 	if err != nil || uid == "" {

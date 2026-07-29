@@ -163,7 +163,15 @@ func newMatrixCleanupCommand() *cobra.Command {
 				if versionFile := state.Options.EnvFiles[item.Entry.Version]; versionFile != "" {
 					envFile = versionFile
 				}
-				values, _ := env.ReadFile(envFile)
+				if envFile == "" {
+					envFile = ".env"
+				}
+				values, envErr := env.ReadFile(envFile)
+				if envErr != nil && (entra.IsOIDCEntry(item.Entry.Auth, item.Entry.Identity) || auth0.IsAuth0Identity(item.Entry.Identity)) {
+					cancel()
+					failures = append(failures, item.ID+": read identity cleanup credentials: "+envErr.Error())
+					continue
+				}
 				if entra.IsOIDCEntry(item.Entry.Auth, item.Entry.Identity) {
 					entra.CleanupVenomApp(cleanupCtx, entra.Options{
 						Namespace: item.Namespace, KubeContext: item.KubeContext,

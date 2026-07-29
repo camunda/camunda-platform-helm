@@ -45,6 +45,11 @@ func Deploy(ctx context.Context, o types.Options) error {
 	if err := kubeClient.EnsureNamespace(ctx, o.Namespace); err != nil {
 		return err
 	}
+	if o.CIMetadata.MatrixRunID != "" {
+		if err := kubeClient.ClaimNamespaceOwnership(ctx, o.Namespace, "deploy-camunda-run", o.CIMetadata.MatrixRunID); err != nil {
+			return err
+		}
+	}
 
 	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL, o.CIMetadata.MatrixRunID); err != nil {
 		if o.CIMetadata.MatrixRunID != "" {

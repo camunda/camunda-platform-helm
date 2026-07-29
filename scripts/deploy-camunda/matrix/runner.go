@@ -1497,7 +1497,7 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 			Msg("Deleting namespace (per-entry cleanup)")
 
 		// Do not let cleanup block matrix completion for too long.
-		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
 		var cleanupErr error

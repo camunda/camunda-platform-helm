@@ -1,7 +1,6 @@
 package matrix
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 
 	"golang.org/x/sys/unix"
 	"scripts/camunda-core/pkg/versionmatrix"
+	"scripts/prepare-helm-values/pkg/env"
 )
 
 const RunStateSchema = "camunda.matrix-run/v1"
@@ -187,11 +187,6 @@ func NewRunStateStore(root, runID string) *RunStateStore {
 
 func NewRunID(now time.Time) string {
 	return now.UTC().Format("20060102T150405.000000000Z")
-}
-
-func DurableNamespacePrefix(prefix, runID string) string {
-	digest := sha256.Sum256([]byte(runID))
-	return fmt.Sprintf("%s-%x", strings.TrimSuffix(prefix, "-"), digest[:8])
 }
 
 func (s *RunStateStore) RunDir() string { return filepath.Join(s.root, s.runID) }
@@ -381,6 +376,13 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	}
 	var credentialErr error
 	if harborPassword == "" {
+		harborPassword = resumeCredentialPasswordFromFile(state.Options.EnvFile, state.Options.DockerUsername, [][2]string{
+			{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
+			{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
+			{"NEXUS_USERNAME", "NEXUS_PASSWORD"},
+		})
+	}
+	if harborPassword == "" {
 		harborPassword, credentialErr = resumeCredentialPassword(state.Options.DockerUsername, state.Options.RequiresDockerPassword, [][2]string{
 			{"HARBOR_USERNAME", "HARBOR_PASSWORD"},
 			{"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"},
@@ -389,6 +391,12 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 	}
 	if credentialErr != nil {
 		return nil, RunOptions{}, fmt.Errorf("restore Harbor credentials: %w", credentialErr)
+	}
+	if hubPassword == "" {
+		hubPassword = resumeCredentialPasswordFromFile(state.Options.EnvFile, state.Options.DockerHubUsername, [][2]string{
+			{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"},
+			{"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"},
+		})
 	}
 	if hubPassword == "" {
 		hubPassword, credentialErr = resumeCredentialPassword(state.Options.DockerHubUsername, state.Options.RequiresDockerHubPassword, [][2]string{
@@ -404,6 +412,7 @@ func (s *RunStateStore) PrepareResume(entryID string) ([]Entry, RunOptions, erro
 		return nil, RunOptions{}, err
 	}
 	opts := state.Options.RunOptions()
+	opts.DeleteNamespaceFirst = false
 	opts.DockerPassword, opts.DockerHubPassword = harborPassword, hubPassword
 	secretData, err := os.ReadFile(filepath.Join(s.RunDir(), "run-secrets.json"))
 	if err == nil {
@@ -668,6 +677,22 @@ func resumeCredentialPassword(storedUsername string, required bool, pairs [][2]s
 		return password, nil
 	}
 	return "", errors.New("matching username/password environment pair is required")
+}
+
+func resumeCredentialPasswordFromFile(path, storedUsername string, pairs [][2]string) string {
+	if path == "" {
+		path = ".env"
+	}
+	values, err := env.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	for _, pair := range pairs {
+		if values[pair[0]] == storedUsername && values[pair[1]] != "" {
+			return values[pair[1]]
+		}
+	}
+	return ""
 }
 
 func aggregateRunStatus(entries []*EntryRunState) RunStatus {

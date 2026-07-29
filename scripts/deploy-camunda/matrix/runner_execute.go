@@ -501,6 +501,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) (result Run
 			return result
 		}
 		venomOpts = &entraOpts
+		result.venomOpts = venomOpts
+		canCleanup = true
 
 		// Inject VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID via per-entry ExtraEnv
 		// so that buildScenarioEnv merges them into the isolated env map for
