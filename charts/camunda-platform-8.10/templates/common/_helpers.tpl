@@ -1774,3 +1774,111 @@ Usage:
 {{- end -}}
 {{- $found -}}
 {{- end -}}
+
+{{/*
+secretStore._storesDict
+Builds the "stores" map (file/aws/gcp -> id -> fields) for a single "{file,aws,gcp}"
+provider map (either the default-tenant "global.secretStore" or one physical-tenant
+override), skipping chart-only plumbing keys and empty/nil fields, and converting
+camelCase value keys to the kebab-case property names the runtime expects. Returns the
+YAML of the stores map, or an empty string when no store is configured.
+Usage:
+  {{- $stores := include "camundaPlatform.secretStore._storesDict" $providers | fromYaml -}}
+*/}}
+{{- define "camundaPlatform.secretStore._storesDict" -}}
+{{- $providers := . | default dict -}}
+{{- $reserved := list "existingSecret" "roleArn" "gcpServiceAccount" -}}
+{{- $stores := dict -}}
+{{- range $type := (list "file" "aws" "gcp") -}}
+  {{- $entries := index $providers $type -}}
+  {{- if $entries -}}
+    {{- $renderedEntries := dict -}}
+    {{- range $id, $cfg := $entries -}}
+      {{- $rendered := dict -}}
+      {{- range $key, $value := $cfg -}}
+        {{- if not (has $key $reserved) -}}
+          {{- if not (or (kindIs "invalid" $value) (and (kindIs "string" $value) (eq $value ""))) -}}
+            {{- $_ := set $rendered (kebabcase $key) $value -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if eq $type "file" -}}
+        {{- if not (hasKey $rendered "path") -}}
+          {{- $_ := set $rendered "path" "/etc/camunda/secrets" -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if $rendered -}}
+        {{- $_ := set $renderedEntries $id $rendered -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $_ := set $stores $type $renderedEntries -}}
+  {{- end -}}
+{{- end -}}
+{{- if $stores -}}
+{{ toYaml $stores }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+secretStore.renderConfig
+Renders the "camunda.secrets.stores.*" application configuration (default tenant) plus any
+"camunda.physical-tenants.<id>.secrets.stores.*" per-physical-tenant overrides from the
+map-keyed "global.secretStore" values. Emits nothing when no store is configured.
+Usage:
+  {{- include "camundaPlatform.secretStore.renderConfig" . | trim | nindent 2 }}
+*/}}
+{{- define "camundaPlatform.secretStore.renderConfig" -}}
+{{- $secretStore := .Values.global.secretStore | default dict -}}
+{{- $result := dict -}}
+{{- $defaultStores := include "camundaPlatform.secretStore._storesDict" $secretStore | fromYaml -}}
+{{- if $defaultStores -}}
+  {{- $_ := set $result "secrets" (dict "stores" $defaultStores) -}}
+{{- end -}}
+{{- $tenants := dict -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- $tenantStores := include "camundaPlatform.secretStore._storesDict" $providers | fromYaml -}}
+  {{- if $tenantStores -}}
+    {{- $_ := set $tenants $tid (dict "secrets" (dict "stores" $tenantStores)) -}}
+  {{- end -}}
+{{- end -}}
+{{- if $tenants -}}
+  {{- $_ := set $result "physical-tenants" $tenants -}}
+{{- end -}}
+{{- if $result -}}
+{{ toYaml $result }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+secretStore.serviceAccountAnnotations
+Returns the identity-based-auth annotations (as YAML) that must be applied to the
+Orchestration ServiceAccount for the configured AWS/GCP secret stores, aggregated across
+the default tenant and every physical-tenant override, or an empty string when none apply.
+A single ServiceAccount can carry only one IRSA role and one Workload-Identity GCP service
+account; "constraints.tpl" fails the render when conflicting identities are configured.
+Usage:
+  {{- $annotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
+*/}}
+{{- define "camundaPlatform.secretStore.serviceAccountAnnotations" -}}
+{{- $secretStore := .Values.global.secretStore | default dict -}}
+{{- $providerSets := list $secretStore -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- $providerSets = append $providerSets $providers -}}
+{{- end -}}
+{{- $annotations := dict -}}
+{{- range $providers := $providerSets -}}
+  {{- range $id, $cfg := ($providers.aws | default dict) -}}
+    {{- if $cfg.roleArn -}}
+      {{- $_ := set $annotations "eks.amazonaws.com/role-arn" $cfg.roleArn -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $id, $cfg := ($providers.gcp | default dict) -}}
+    {{- if $cfg.gcpServiceAccount -}}
+      {{- $_ := set $annotations "iam.gke.io/gcp-service-account" $cfg.gcpServiceAccount -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if $annotations -}}
+{{ toYaml $annotations }}
+{{- end -}}
+{{- end -}}
