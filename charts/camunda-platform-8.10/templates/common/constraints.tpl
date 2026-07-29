@@ -1072,6 +1072,96 @@ Global - Document Store
 
 {{/*
 *******************************************************************************
+Global - Secret Store
+*******************************************************************************
+*/}}
+
+{{- $secretStore := .Values.global.secretStore | default dict -}}
+{{- $secretStoreTenants := list (dict "label" "global.secretStore" "providers" $secretStore) -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- $secretStoreTenants = append $secretStoreTenants (dict "label" (printf "global.secretStore.physicalTenants.%s" $tid) "providers" $providers) -}}
+{{- end -}}
+{{- $secretStoreRoleArns := list -}}
+{{- $secretStoreGcpAccounts := list -}}
+{{- $secretStoreFileMountPaths := dict -}}
+{{- range $tenant := $secretStoreTenants -}}
+  {{- $label := $tenant.label -}}
+  {{- $providers := $tenant.providers -}}
+  {{- $secretStoreCount := add (len ($providers.file | default dict)) (len ($providers.aws | default dict)) (len ($providers.gcp | default dict)) -}}
+  {{- if gt $secretStoreCount 1 -}}
+    {{- $errorMessage := printf "[camunda][error] %s supports only one secret store at a time (across file, aws, and gcp), but multiple were configured. The Orchestration Cluster registers at most one secret store per physical tenant." $label -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end -}}
+  {{- range $id, $cfg := ($providers.file | default dict) -}}
+    {{- if $cfg.existingSecret -}}
+      {{- $path := toString ($cfg.path | default "/etc/camunda/secrets") -}}
+      {{- if hasKey $secretStoreFileMountPaths $path -}}
+        {{- $errorMessage := printf "[camunda][error] global.secretStore configures multiple file secret stores with the same effective path '%s'. When using existingSecret, each store must use a unique path to avoid duplicate volumeMount mountPaths." $path -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end -}}
+      {{- $_ := set $secretStoreFileMountPaths $path (printf "%s.file.%s" $label $id) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $id, $cfg := ($providers.aws | default dict) -}}
+    {{- if hasKey $cfg "batchSize" -}}
+      {{- if or (lt (int $cfg.batchSize) 1) (gt (int $cfg.batchSize) 20) -}}
+        {{- $errorMessage := printf "[camunda][error] %s.aws.%s.batchSize must be between 1 and 20, but was %v." $label $id $cfg.batchSize -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end -}}
+    {{- end -}}
+    {{- if and (hasKey $cfg "containerSecretId") (eq (trim (toString $cfg.containerSecretId)) "") -}}
+      {{- $errorMessage := printf "[camunda][error] %s.aws.%s.containerSecretId must not be blank when set." $label $id -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end -}}
+    {{- if and ($cfg.batchEnabled) (trim (toString ($cfg.containerSecretId | default ""))) -}}
+      {{- $errorMessage := printf "[camunda][error] %s.aws.%s.batchEnabled and .containerSecretId are mutually exclusive, but both were configured." $label $id -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end -}}
+    {{- if $cfg.roleArn -}}
+      {{- $secretStoreRoleArns = append $secretStoreRoleArns (toString $cfg.roleArn) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $id, $cfg := ($providers.gcp | default dict) -}}
+    {{- range $field := (list "projectId" "endpoint" "containerSecretId") -}}
+      {{- if and (hasKey $cfg $field) (eq (trim (toString (index $cfg $field))) "") -}}
+        {{- $errorMessage := printf "[camunda][error] %s.gcp.%s.%s must not be blank when set." $label $id $field -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end -}}
+    {{- end -}}
+    {{- $prefix := toString ($cfg.pathPrefix | default "") -}}
+    {{- $containerSecretId := toString ($cfg.containerSecretId | default "") -}}
+    {{- if and $prefix (not (regexMatch "^[a-zA-Z0-9_-]*$" $prefix)) -}}
+      {{- $errorMessage := printf "[camunda][error] %s.gcp.%s.pathPrefix must contain only [a-zA-Z0-9_-] to form valid GCP secret ids, but was '%s'." $label $id $prefix -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end -}}
+    {{- if and $containerSecretId (not (regexMatch "^[a-zA-Z0-9_-]*$" $containerSecretId)) -}}
+      {{- $errorMessage := printf "[camunda][error] %s.gcp.%s.containerSecretId must contain only [a-zA-Z0-9_-] to be a valid GCP secret id, but was '%s'." $label $id $containerSecretId -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end -}}
+    {{- if and $containerSecretId (gt (add (len $prefix) (len $containerSecretId)) 255) -}}
+      {{- $errorMessage := printf "[camunda][error] %s.gcp.%s effective container secret id (pathPrefix + containerSecretId) must be at most 255 characters." $label $id -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end -}}
+    {{- if $cfg.gcpServiceAccount -}}
+      {{- $secretStoreGcpAccounts = append $secretStoreGcpAccounts (toString $cfg.gcpServiceAccount) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if gt (len ($secretStoreRoleArns | uniq)) 1 -}}
+  {{- $errorMessage := printf "[camunda][error] %s"
+      "global.secretStore configures multiple distinct aws.*.roleArn values, but the Orchestration ServiceAccount can carry only one eks.amazonaws.com/role-arn annotation. Use a single IAM role with access to all AWS secret stores."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+{{- end -}}
+{{- if gt (len ($secretStoreGcpAccounts | uniq)) 1 -}}
+  {{- $errorMessage := printf "[camunda][error] %s"
+      "global.secretStore configures multiple distinct gcp.*.gcpServiceAccount values, but the Orchestration ServiceAccount can carry only one iam.gke.io/gcp-service-account annotation. Use a single Google service account with access to all GCP secret stores."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+{{- end -}}
+
+{{/*
+*******************************************************************************
 Identity
 *******************************************************************************
 */}}
