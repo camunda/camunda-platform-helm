@@ -55,16 +55,26 @@ func (c PrometheusClient) Query(ctx context.Context, query string) (*float64, er
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, err
 	}
-	if response.Status != "success" || len(response.Data.Result) == 0 || len(response.Data.Result[0].Value) < 2 {
+	if response.Status != "success" || len(response.Data.Result) == 0 {
 		return nil, nil
 	}
-	var raw string
-	if err := json.Unmarshal(response.Data.Result[0].Value[1], &raw); err != nil {
-		return nil, err
+	var maximum *float64
+	for _, result := range response.Data.Result {
+		if len(result.Value) < 2 {
+			continue
+		}
+		var raw string
+		if err := json.Unmarshal(result.Value[1], &raw); err != nil {
+			return nil, err
+		}
+		value, err := strconv.ParseFloat(raw, 64)
+		if err != nil {
+			return nil, err
+		}
+		if maximum == nil || value > *maximum {
+			copy := value
+			maximum = &copy
+		}
 	}
-	value, err := strconv.ParseFloat(raw, 64)
-	if err != nil {
-		return nil, err
-	}
-	return &value, nil
+	return maximum, nil
 }
