@@ -459,6 +459,17 @@ func TestCleanupEntryUsesCheckpointedAuth0IDsAndStopsOnFailure(t *testing.T) {
 	assert.True(t, called)
 }
 
+func TestCleanupEntryRefusesUnresolvedAuth0Provisioning(t *testing.T) {
+	entry := Entry{Version: "8.10", Shortname: "auth0", Flow: "install", Identity: "auth0"}
+	store := NewRunStateStore(t.TempDir(), "run-1")
+	_, err := store.Create([]Entry{entry}, RunOptions{})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkExternalProvisioningStarted(entry))
+	result := RunResult{Entry: entry, Namespace: "namespace", auth0Opts: &auth0.Options{Namespace: "namespace"}}
+	err = cleanupEntry(context.Background(), result, RunOptions{StateStore: store})
+	require.ErrorContains(t, err, "provisioning remains unresolved")
+}
+
 func TestExecuteEntryOwnershipFailurePreventsProviderProvisioning(t *testing.T) {
 	chartPath := t.TempDir()
 	entry := Entry{Version: "8.10", ChartPath: chartPath, Scenario: "oidc", Shortname: "oidc", Flow: "install", Auth: "oidc", Identity: "oidc"}

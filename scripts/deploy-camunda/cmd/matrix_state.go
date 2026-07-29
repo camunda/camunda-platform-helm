@@ -65,10 +65,12 @@ func newMatrixStatusCommand() *cobra.Command {
 					return err
 				}
 				if output == "json" {
-					states := make([]*matrix.MatrixRunState, 0, len(ids))
+					states := make([]any, 0, len(ids))
 					for _, id := range ids {
 						if state, err := matrix.NewRunStateStore(root, id).Load(); err == nil {
 							states = append(states, state)
+						} else {
+							states = append(states, map[string]any{"id": id, "status": "corrupt", "error": err.Error()})
 						}
 					}
 					encoder := json.NewEncoder(cmd.OutOrStdout())
@@ -78,6 +80,7 @@ func newMatrixStatusCommand() *cobra.Command {
 				for _, id := range ids {
 					state, err := matrix.NewRunStateStore(root, id).Load()
 					if err != nil {
+						fmt.Fprintf(cmd.OutOrStdout(), "%s\tcorrupt\t%s\n", id, err)
 						continue
 					}
 					fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%d entries\t%s\n", state.ID, state.Status, len(state.Entries), state.UpdatedAt.Format(time.RFC3339))

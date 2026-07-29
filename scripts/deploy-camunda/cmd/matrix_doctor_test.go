@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -279,5 +281,26 @@ func TestMatrixCleanupRejectsSharedNamespaceEntry(t *testing.T) {
 	cmd.SetArgs([]string{"run-1", "--state-dir", root, "--entry", matrix.EntryID(entries[0]), "--yes"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected shared namespace rejection")
+	}
+}
+
+func TestMatrixStatusListsCorruptRun(t *testing.T) {
+	root := t.TempDir()
+	runDir := filepath.Join(root, "broken-run")
+	if err := os.MkdirAll(runDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "matrix-state.json"), []byte("{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := newMatrixStatusCommand()
+	cmd.SetArgs([]string{"--state-dir", root})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "broken-run\tcorrupt") {
+		t.Fatalf("output = %q", out.String())
 	}
 }

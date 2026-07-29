@@ -1524,6 +1524,9 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) error 
 		var ids []string
 		for _, item := range state.Entries {
 			if item.ID == EntryID(result.Entry) {
+				if item.ExternalProvisioningStarted {
+					return errors.New("Auth0 provisioning remains unresolved; namespace preserved")
+				}
 				ids = item.Auth0ClientIDs
 				break
 			}
