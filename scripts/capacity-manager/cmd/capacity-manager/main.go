@@ -55,14 +55,16 @@ func main() {
 		pressure = &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient}
 	}
 	manager := &capacity.Manager{
-		Policies:      capacity.FilePolicySource{Path: policyPath},
-		Workload:      kubernetes,
-		Cluster:       capacity.ZeebeClient{BaseURL: zeebeURL, Client: httpClient},
-		Pressure:      pressure,
-		Planner:       &capacity.Planner{},
-		Logger:        logger,
-		OperationWait: operationWait,
-		OperationPoll: 5 * time.Second,
+		Policies:       capacity.FilePolicySource{Path: policyPath},
+		Workload:       kubernetes,
+		Cluster:        capacity.ZeebeClient{BaseURL: zeebeURL, Client: httpClient},
+		Pressure:       pressure,
+		AdvisorMetrics: &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient},
+		Planner:        &capacity.Planner{},
+		Advisor:        &capacity.PartitionAdvisor{},
+		Logger:         logger,
+		OperationWait:  operationWait,
+		OperationPoll:  5 * time.Second,
 	}
 
 	mux := http.NewServeMux()
@@ -78,6 +80,10 @@ func main() {
 		status := manager.Status()
 		response.Header().Set("Content-Type", "text/plain; version=0.0.4")
 		phase := strings.NewReplacer("\\", "\\\\", "\"", "\\\"").Replace(status.Phase)
+		ceiling := "0"
+		if status.PartitionAdvisor.CeilingDetected {
+			ceiling = "1"
+		}
 		_, _ = response.Write([]byte(
 			"# TYPE camunda_capacity_manager_current_brokers gauge\n" +
 				"camunda_capacity_manager_current_brokers " + strconv.Itoa(status.CurrentBrokers) + "\n" +
@@ -88,7 +94,13 @@ func main() {
 				"# TYPE camunda_capacity_manager_pressure gauge\n" +
 				"camunda_capacity_manager_pressure " + strconv.FormatFloat(status.Pressure, 'g', -1, 64) + "\n" +
 				"# TYPE camunda_capacity_manager_phase gauge\n" +
-				"camunda_capacity_manager_phase{phase=\"" + phase + "\"} 1\n"))
+				"camunda_capacity_manager_phase{phase=\"" + phase + "\"} 1\n" +
+				"# TYPE camunda_capacity_manager_current_partitions gauge\n" +
+				"camunda_capacity_manager_current_partitions " + strconv.Itoa(status.PartitionAdvisor.Current) + "\n" +
+				"# TYPE camunda_capacity_manager_recommended_partitions gauge\n" +
+				"camunda_capacity_manager_recommended_partitions " + strconv.Itoa(status.PartitionAdvisor.Recommended) + "\n" +
+				"# TYPE camunda_capacity_manager_partition_ceiling_detected gauge\n" +
+				"camunda_capacity_manager_partition_ceiling_detected " + ceiling + "\n"))
 	})
 	server := &http.Server{Addr: listenAddress, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	go func() {

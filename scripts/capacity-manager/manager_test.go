@@ -22,6 +22,7 @@ func (s staticPolicies) Policy() (Policy, error) { return s.policy, nil }
 type fakePressure struct{ value *float64 }
 
 func (f fakePressure) Query(context.Context, string) (*float64, error) { return f.value, nil }
+func (f fakePressure) Gauge(context.Context, string) (*float64, error) { return f.value, nil }
 
 type fakeWorkload struct {
 	replicas  int
@@ -89,13 +90,36 @@ func activeTopology(count int) Topology {
 func newTestManager(policy Policy, workload *fakeWorkload, cluster *fakeCluster) *Manager {
 	return &Manager{
 		Policies: staticPolicies{policy: policy}, Workload: workload, Cluster: cluster,
-		Pressure: fakePressure{}, Planner: &Planner{}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Pressure: fakePressure{}, AdvisorMetrics: fakePressure{}, Planner: &Planner{}, Advisor: &PartitionAdvisor{}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		OperationWait: time.Millisecond, OperationPoll: time.Millisecond,
 	}
 }
 
+func TestManagerPublishesPartitionAdviceWithoutMutation(t *testing.T) {
+	load := 0.95
+	policy := Policy{
+		BrokerAutoscalingEnabled: false, Mode: "recommend", MinBrokers: 1, MaxBrokers: 1,
+		PartitionAdvisor: PartitionAdvisorPolicy{Enabled: true, MaxRecommendedPartitions: 4, TargetLoad: 0.7, LoadMetric: "load", LoadMetricType: "gauge", CeilingSamples: 1},
+	}
+	workload := &fakeWorkload{replicas: 1}
+	cluster := &fakeCluster{topology: activeTopology(1)}
+	manager := newTestManager(policy, workload, cluster)
+	manager.AdvisorMetrics = fakePressure{value: &load}
+
+	if err := manager.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	status := manager.Status()
+	if !status.PartitionAdvisor.CeilingDetected || status.PartitionAdvisor.Recommended != 2 {
+		t.Fatalf("unexpected advisor status: %#v", status.PartitionAdvisor)
+	}
+	if len(workload.scales) != 0 || len(cluster.calls) != 0 {
+		t.Fatalf("advisor mutated capacity: scales=%v clusterCalls=%v", workload.scales, cluster.calls)
+	}
+}
+
 func TestManagerScaleUpSequence(t *testing.T) {
-	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
+	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
 	workload := &fakeWorkload{replicas: 1}
 	cluster := &fakeCluster{topology: activeTopology(1)}
 	manager := newTestManager(policy, workload, cluster)
@@ -117,7 +141,7 @@ func TestManagerScaleUpSequence(t *testing.T) {
 }
 
 func TestManagerDoesNotRemovePodBeforeTopology(t *testing.T) {
-	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
+	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
 	workload := &fakeWorkload{replicas: 2, started: true}
 	cluster := &fakeCluster{topology: activeTopology(2)}
 	manager := newTestManager(policy, workload, cluster)
@@ -155,7 +179,7 @@ func TestManagerDoesNotRemovePodAfterFailedTopologyChange(t *testing.T) {
 }
 
 func TestManagerBlocksDuringPendingChange(t *testing.T) {
-	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
+	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
 	workload := &fakeWorkload{replicas: 1}
 	topology := activeTopology(1)
 	topology.PendingChange = &Change{ID: 42, Status: "IN_PROGRESS"}
@@ -171,7 +195,7 @@ func TestManagerBlocksDuringPendingChange(t *testing.T) {
 }
 
 func TestManagerRecoversCompletedScaleDown(t *testing.T) {
-	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
+	policy := Policy{BrokerAutoscalingEnabled: true, Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
 	workload := &fakeWorkload{replicas: 2, target: 1, started: true}
 	cluster := &fakeCluster{topology: activeTopology(1)}
 	manager := newTestManager(policy, workload, cluster)

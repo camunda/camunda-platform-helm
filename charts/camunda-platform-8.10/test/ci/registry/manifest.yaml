@@ -134,6 +134,10 @@ integration:
       shortname: acm
       tier: 2
       enabled: true
+    - id: partition-advisor
+      shortname: padv
+      tier: 2
+      enabled: true
     - id: qa-elasticsearch-upg-install
       shortname: qaelupg
       enabled: false

@@ -26,6 +26,45 @@ type DirectMetricsClient struct {
 	at     time.Time
 }
 
+func (c *DirectMetricsClient) Gauge(ctx context.Context, metric string) (*float64, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := c.Client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("metrics endpoint returned %s", response.Status)
+	}
+	var maximum *float64
+	scanner := bufio.NewScanner(response.Body)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		name, value, ok := strings.Cut(line, " ")
+		if !ok || (name != metric && !strings.HasPrefix(name, metric+"{")) {
+			continue
+		}
+		parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse metric %s: %w", metric, err)
+		}
+		if maximum == nil || parsed > *maximum {
+			copy := parsed
+			maximum = &copy
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return maximum, nil
+}
+
 func (c *DirectMetricsClient) Query(ctx context.Context, metric string) (*float64, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL, nil)
 	if err != nil {

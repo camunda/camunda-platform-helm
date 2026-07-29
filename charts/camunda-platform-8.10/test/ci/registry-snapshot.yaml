@@ -1055,6 +1055,35 @@ integration:
               Waits for process load to trigger scale-up from one to two brokers, deletes
               the load generator, then verifies idle traffic triggers topology evacuation
               before the orchestration StatefulSet contracts.
+        - name: partition-advisor
+          enabled: true
+          shortname: padv
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - partition-advisor
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          post-deploy:
+            script: verify-partition-advisor.sh
+            description: |
+              Waits for sustained process load to produce a partition-count recommendation,
+              then verifies the advisor did not change replicas, brokers, partitions, or
+              topology change ID.
         - name: qa-elasticsearch-upg
           enabled: false
           shortname: qaelupg

@@ -42,17 +42,23 @@ type PressureSource interface {
 	Query(context.Context, string) (*float64, error)
 }
 
+type GaugeSource interface {
+	Gauge(context.Context, string) (*float64, error)
+	Query(context.Context, string) (*float64, error)
+}
+
 type Status struct {
-	ObservedAt       time.Time `json:"observedAt"`
-	Mode             string    `json:"mode"`
-	Phase            string    `json:"phase"`
-	Reason           string    `json:"reason"`
-	CurrentBrokers   int       `json:"currentBrokers"`
-	DesiredBrokers   int       `json:"desiredBrokers"`
-	WorkloadReplicas int       `json:"workloadReplicas"`
-	Pressure         float64   `json:"pressure,omitempty"`
-	Confidence       string    `json:"confidence"`
-	LastError        string    `json:"lastError,omitempty"`
+	ObservedAt       time.Time               `json:"observedAt"`
+	Mode             string                  `json:"mode"`
+	Phase            string                  `json:"phase"`
+	Reason           string                  `json:"reason"`
+	CurrentBrokers   int                     `json:"currentBrokers"`
+	DesiredBrokers   int                     `json:"desiredBrokers"`
+	WorkloadReplicas int                     `json:"workloadReplicas"`
+	Pressure         float64                 `json:"pressure,omitempty"`
+	Confidence       string                  `json:"confidence"`
+	LastError        string                  `json:"lastError,omitempty"`
+	PartitionAdvisor PartitionRecommendation `json:"partitionAdvisor"`
 }
 
 func (s Status) JSON() []byte {
@@ -61,16 +67,18 @@ func (s Status) JSON() []byte {
 }
 
 type Manager struct {
-	Policies      PolicySource
-	Workload      WorkloadClient
-	Cluster       ClusterClient
-	Pressure      PressureSource
-	Planner       *Planner
-	Logger        *slog.Logger
-	OperationWait time.Duration
-	OperationPoll time.Duration
-	mu            sync.RWMutex
-	status        Status
+	Policies       PolicySource
+	Workload       WorkloadClient
+	Cluster        ClusterClient
+	Pressure       PressureSource
+	AdvisorMetrics GaugeSource
+	Planner        *Planner
+	Advisor        *PartitionAdvisor
+	Logger         *slog.Logger
+	OperationWait  time.Duration
+	OperationPoll  time.Duration
+	mu             sync.RWMutex
+	status         Status
 }
 
 func (m *Manager) Status() Status {
@@ -101,6 +109,21 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 	}
 	current := topology.ActiveBrokerCount()
 	status := Status{ObservedAt: time.Now().UTC(), Mode: policy.Mode, Phase: "observing", CurrentBrokers: current, DesiredBrokers: workload.Target, WorkloadReplicas: workload.Replicas, Confidence: "high"}
+	var partitionLoad *float64
+	if policy.PartitionAdvisor.Enabled && m.AdvisorMetrics != nil {
+		if policy.PartitionAdvisor.LoadMetricType == "counter-rate" {
+			partitionLoad, err = m.AdvisorMetrics.Query(ctx, policy.PartitionAdvisor.LoadMetric)
+		} else {
+			partitionLoad, err = m.AdvisorMetrics.Gauge(ctx, policy.PartitionAdvisor.LoadMetric)
+		}
+		if err != nil {
+			m.Logger.Warn("partition advisor metric query failed", "error", err)
+			partitionLoad = nil
+		}
+	}
+	if m.Advisor != nil {
+		status.PartitionAdvisor = m.Advisor.Advise(policy.PartitionAdvisor, topology, partitionLoad)
+	}
 	if topology.PendingChange != nil {
 		status.Phase = "blocked"
 		status.Reason = fmt.Sprintf("topology change %d is %s", topology.PendingChange.ID, topology.PendingChange.Status)
@@ -110,6 +133,13 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 	if !topology.Healthy() {
 		status.Phase = "blocked"
 		status.Reason = "cluster topology is not healthy"
+		m.setStatus(status)
+		return nil
+	}
+	if !policy.BrokerAutoscalingEnabled {
+		status.Phase = "recommended"
+		status.Reason = "broker autoscaling disabled"
+		status.DesiredBrokers = current
 		m.setStatus(status)
 		return nil
 	}
