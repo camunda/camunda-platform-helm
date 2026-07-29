@@ -15,6 +15,13 @@ import (
 
 var credentialStore credentials.Store = credentials.KeyringStore{}
 
+type registryCredentialSource struct {
+	registry           string
+	username, password *string
+	required           bool
+	envPairs           [][2]string
+}
+
 func newCredentialsCommand() *cobra.Command {
 	cmd := &cobra.Command{Use: "credentials", Short: "Manage registry credentials in the OS keyring"}
 	cmd.AddCommand(newCredentialsConfigureCommand(), newCredentialsStatusCommand(), newCredentialsDeleteCommand())
@@ -95,12 +102,26 @@ func canonicalCredentialRegistry(value string) (string, error) {
 }
 
 func resolveRegistryCredentials(docker *config.DockerFlags) error {
-	for _, item := range []struct {
-		registry           string
-		username, password *string
-		required           bool
-		envPairs           [][2]string
-	}{{credentials.HarborRegistry, &docker.DockerUsername, &docker.DockerPassword, docker.EnsureDockerRegistry, [][2]string{{"HARBOR_USERNAME", "HARBOR_PASSWORD"}, {"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"}, {"NEXUS_USERNAME", "NEXUS_PASSWORD"}}}, {credentials.DockerHubRegistry, &docker.DockerHubUsername, &docker.DockerHubPassword, docker.EnsureDockerHub, [][2]string{{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"}, {"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"}}}} {
+	if err := resolveRegistryCredentialsFromEnvironment(docker); err != nil {
+		return err
+	}
+	for _, item := range registryCredentialSources(docker) {
+		if !item.required || *item.username != "" {
+			continue
+		}
+		credential, found, err := credentials.GetOptional(credentialStore, item.registry)
+		if err != nil {
+			return err
+		}
+		if found {
+			*item.username, *item.password = credential.Username, credential.Password
+		}
+	}
+	return nil
+}
+
+func resolveRegistryCredentialsFromEnvironment(docker *config.DockerFlags) error {
+	for _, item := range registryCredentialSources(docker) {
 		if !item.required {
 			continue
 		}
@@ -124,18 +145,21 @@ func resolveRegistryCredentials(docker *config.DockerFlags) error {
 		if *item.username != "" {
 			continue
 		}
-		credential, found, err := credentials.GetOptional(credentialStore, item.registry)
-		if err != nil {
-			return err
-		}
-		if found {
-			*item.username, *item.password = credential.Username, credential.Password
-		}
 	}
 	return nil
 }
 
+func registryCredentialSources(docker *config.DockerFlags) []registryCredentialSource {
+	return []registryCredentialSource{
+		{credentials.HarborRegistry, &docker.DockerUsername, &docker.DockerPassword, docker.EnsureDockerRegistry, [][2]string{{"HARBOR_USERNAME", "HARBOR_PASSWORD"}, {"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"}, {"NEXUS_USERNAME", "NEXUS_PASSWORD"}}},
+		{credentials.DockerHubRegistry, &docker.DockerHubUsername, &docker.DockerHubPassword, docker.EnsureDockerHub, [][2]string{{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"}, {"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"}}},
+	}
+}
+
 func resolveRegistryCredentialsFromEnvFiles(docker *config.DockerFlags, entries []matrix.Entry, envFiles map[string]string, fallback string) error {
+	if err := resolveRegistryCredentialsFromEnvironment(docker); err != nil {
+		return err
+	}
 	paths := map[string]bool{}
 	for _, entry := range entries {
 		path := envFiles[entry.Version]
@@ -151,12 +175,12 @@ func resolveRegistryCredentialsFromEnvFiles(docker *config.DockerFlags, entries 
 		if err != nil {
 			continue
 		}
-		if docker.EnsureDockerRegistry {
+		if docker.EnsureDockerRegistry && docker.DockerUsername == "" {
 			if err := mergeCredentialPair("Harbor", values, &docker.DockerUsername, &docker.DockerPassword, [][2]string{{"HARBOR_USERNAME", "HARBOR_PASSWORD"}, {"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"}, {"NEXUS_USERNAME", "NEXUS_PASSWORD"}}); err != nil {
 				return fmt.Errorf("%s: %w", path, err)
 			}
 		}
-		if docker.EnsureDockerHub {
+		if docker.EnsureDockerHub && docker.DockerHubUsername == "" {
 			if err := mergeCredentialPair("Docker Hub", values, &docker.DockerHubUsername, &docker.DockerHubPassword, [][2]string{{"DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"}, {"TEST_DOCKER_USERNAME", "TEST_DOCKER_PASSWORD"}}); err != nil {
 				return fmt.Errorf("%s: %w", path, err)
 			}

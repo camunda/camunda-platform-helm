@@ -118,6 +118,38 @@ func TestResolveRegistryCredentialsFromVersionEnvFile(t *testing.T) {
 	}
 }
 
+func TestResolveRegistryCredentialsFromEnvFilesPreservesExplicitPair(t *testing.T) {
+	useMemoryCredentialStore(t)
+	path := t.TempDir() + "/8.10.env"
+	if err := os.WriteFile(path, []byte("HARBOR_USERNAME=file\nHARBOR_PASSWORD=file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	flags := config.DockerFlags{EnsureDockerRegistry: true, DockerUsername: "explicit", DockerPassword: "explicit-token"}
+	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}, ""); err != nil {
+		t.Fatal(err)
+	}
+	if flags.DockerUsername != "explicit" || flags.DockerPassword != "explicit-token" {
+		t.Fatalf("flags=%#v", flags)
+	}
+}
+
+func TestResolveRegistryCredentialsFromEnvFilesPrefersEnvironmentPair(t *testing.T) {
+	useMemoryCredentialStore(t)
+	path := t.TempDir() + "/8.10.env"
+	if err := os.WriteFile(path, []byte("HARBOR_USERNAME=file\nHARBOR_PASSWORD=file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HARBOR_USERNAME", "environment")
+	t.Setenv("HARBOR_PASSWORD", "environment-token")
+	flags := config.DockerFlags{EnsureDockerRegistry: true}
+	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}, ""); err != nil {
+		t.Fatal(err)
+	}
+	if flags.DockerUsername != "environment" || flags.DockerPassword != "environment-token" {
+		t.Fatalf("flags=%#v", flags)
+	}
+}
+
 func TestCredentialsConfigureStoresPairWithoutPrintingSecret(t *testing.T) {
 	store := useMemoryCredentialStore(t)
 	cmd := newCredentialsConfigureCommand()
