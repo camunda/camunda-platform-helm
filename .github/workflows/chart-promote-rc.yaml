@@ -204,12 +204,17 @@ jobs:
           package_file=$(ls /tmp/camunda-platform-*.tgz)
           echo "✅ Dev package exists: ${package_file}"
           echo "package_file=${package_file}" | tee -a $GITHUB_OUTPUT
-          
+
+          package_root=/tmp/camunda-platform-package
+          mkdir -p "${package_root}"
+          tar -xzf "${package_file}" -C "${package_root}"
+          package_chart_dir="${package_root}/camunda-platform"
+          echo "package_chart_dir=${package_chart_dir}" | tee -a $GITHUB_OUTPUT
+
           # Extract camunda_version (appVersion, .x-stripped), chart_dir_id, the
           # component-image-versions annotation and has_image_overrides from the
           # package's Chart.yaml → $GITHUB_OUTPUT.
-          tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
-          /tmp/release-tools chart-metadata --chart-yaml /tmp/Chart.yaml
+          /tmp/release-tools chart-metadata --chart-yaml "${package_chart_dir}/Chart.yaml"
 
       - name: Install release-please
         run: npm i release-please -g
@@ -296,12 +301,14 @@ jobs:
 
           # Chart.yaml release annotations + RELEASE-NOTES.md (body + image footer).
           /tmp/release-tools release-notes --main "${chart_path}"
-          /tmp/release-tools release-notes --footer "${chart_path}"
+          /tmp/release-tools release-notes --footer "${chart_path}" \
+            --images-chart-dir "${{ steps.package.outputs.package_chart_dir }}"
 
           # version-matrix entry (standard + enterprise images) + per-app + index READMEs.
           version_matrix_file="version-matrix/camunda-${app_version}/version-matrix.json"
           /tmp/release-tools update-matrix \
-            --chart-dir "${chart_path}" \
+            --chart-yaml "${{ steps.package.outputs.package_chart_dir }}/Chart.yaml" \
+            --chart-dir "${{ steps.package.outputs.package_chart_dir }}" \
             --chart-version "${chart_version}" \
             --matrix-file "${version_matrix_file}" \
             --app "${app_version}"

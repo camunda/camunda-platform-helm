@@ -31,7 +31,7 @@ import (
 //
 //	--readme <app>  regenerate version-matrix/camunda-<app>/README.md in full
 //	                from its version-matrix.json (summary table + per-version
-//	                sections).
+//	                sections). --chart-version refreshes one published section.
 //	--index         scan version-matrix/ dirs, write version-matrix/README.md.
 //
 // Both modes read the lifecycle classification from charts/chart-versions.yaml
@@ -39,8 +39,10 @@ import (
 func runVersionMatrix(args []string) error {
 	fs := flag.NewFlagSet("version-matrix", flag.ContinueOnError)
 	var app string
+	var chartVersion string
 	var index bool
 	fs.StringVar(&app, "readme", "", "app version (e.g. 8.7) — regenerates version-matrix/camunda-<app>/README.md")
+	fs.StringVar(&chartVersion, "chart-version", "", "published chart version whose preserved README section should be refreshed from JSON")
 	fs.BoolVar(&index, "index", false, "render version-matrix/README.md from all camunda-* dirs")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -48,8 +50,10 @@ func runVersionMatrix(args []string) error {
 	switch {
 	case app != "" && index:
 		return fmt.Errorf("--readme and --index are mutually exclusive")
+	case chartVersion != "" && app == "":
+		return fmt.Errorf("--chart-version requires --readme")
 	case app != "":
-		return renderVersionMatrixReadme(app)
+		return renderVersionMatrixReadme(app, chartVersion)
 	case index:
 		return renderVersionMatrixIndex()
 	default:
@@ -73,7 +77,7 @@ func loadMatrixEntries(app string) ([]versionmatrix.ChartEntry, error) {
 
 // renderVersionMatrixReadme regenerates the per-app README in full from the
 // app's version-matrix.json and the lifecycle config.
-func renderVersionMatrixReadme(app string) error {
+func renderVersionMatrixReadme(app, refreshVersion string) error {
 	cfg, err := versionmatrix.LoadChartVersionsConfig(versionmatrix.ChartVersionsPath("."))
 	if err != nil {
 		return err
@@ -93,13 +97,31 @@ func renderVersionMatrixReadme(app string) error {
 		return fmt.Errorf("read %s: %w", outPath, err)
 	}
 
+	sections, err := readmeSectionsForRender(string(existing), entries, refreshVersion)
+	if err != nil {
+		return err
+	}
 	readme := versionmatrix.RenderMinorReadme(app, entries, bucket,
-		cfg.CamundaSupportLifecycle[app], versionmatrix.ParseReadmeSections(string(existing)))
+		cfg.CamundaSupportLifecycle[app], sections)
 	if err := os.WriteFile(outPath, []byte(readme), 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", outPath, err)
 	}
 	fmt.Fprintf(os.Stderr, "wrote %s (%d chart versions)\n", outPath, len(entries))
 	return nil
+}
+
+func readmeSectionsForRender(existing string, entries []versionmatrix.ChartEntry, refreshVersion string) (map[string]string, error) {
+	sections := versionmatrix.ParseReadmeSections(existing)
+	if refreshVersion == "" {
+		return sections, nil
+	}
+	for _, entry := range entries {
+		if entry.ChartVersion == refreshVersion {
+			delete(sections, refreshVersion)
+			return sections, nil
+		}
+	}
+	return nil, fmt.Errorf("chart version %s is not present in the matrix", refreshVersion)
 }
 
 func renderVersionMatrixIndex() error {

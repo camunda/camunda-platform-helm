@@ -109,9 +109,9 @@ Camunda images:
 - docker.io/camunda/console:8.8.137
 - docker.io/camunda/identity:8.8.15
 - docker.io/camunda/optimize:8.8.31
-- docker.io/camunda/web-modeler-restapi:8.8.16
-- docker.io/camunda/web-modeler-webapp:8.8.16
-- docker.io/camunda/web-modeler-websockets:8.8.16
+- docker.io/camunda/web-modeler-restapi:8.8.17
+- docker.io/camunda/web-modeler-webapp:8.8.17
+- docker.io/camunda/web-modeler-websockets:8.8.17
 - registry.camunda.cloud/camunda/keycloak:26.3.3
 
 Non-Camunda images:

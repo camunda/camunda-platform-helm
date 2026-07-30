@@ -49,31 +49,107 @@ func TestUpdateMatrixHardFailsOnMissingAnnotation(t *testing.T) {
 	}
 }
 
-// TestUpdateMatrixRequiresInputMode pins that exactly one of --chart-yaml /
-// --chart is required.
+// TestUpdateMatrixRequiresInputMode pins that at least one input is required.
 func TestUpdateMatrixRequiresInputMode(t *testing.T) {
 	dir := t.TempDir()
 	matrixFile := filepath.Join(dir, "version-matrix.json")
 
-	cases := map[string][]string{
-		"neither": {"--chart-version", "15.0.0", "--matrix-file", matrixFile},
-		"both": {
-			"--chart-yaml", filepath.Join(dir, "Chart.yaml"),
-			"--chart-dir", dir,
-			"--chart-version", "15.0.0",
-			"--matrix-file", matrixFile,
-		},
+	err := runUpdateMatrix([]string{"--chart-version", "15.0.0", "--matrix-file", matrixFile})
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
-	for name, args := range cases {
-		t.Run(name, func(t *testing.T) {
-			err := runUpdateMatrix(args)
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), "--chart-yaml") || !strings.Contains(err.Error(), "--chart-dir") {
-				t.Errorf("error should reference both flags, got: %v", err)
-			}
-		})
+	if !strings.Contains(err.Error(), "--chart-yaml") || !strings.Contains(err.Error(), "--chart-dir") {
+		t.Errorf("error should reference both flags, got: %v", err)
+	}
+}
+
+func TestUpdateMatrixRejectsMissingChartDir(t *testing.T) {
+	dir := t.TempDir()
+	chartYAML := filepath.Join(dir, "Chart.yaml")
+	chart := "name: camunda-platform\nversion: 14.7.0\nannotations:\n" +
+		"  camunda.io/chart-images: |\n    docker.io/camunda/camunda:8.9.13\n"
+	if err := os.WriteFile(chartYAML, []byte(chart), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	matrixFile := filepath.Join(dir, "version-matrix.json")
+	existing := `[{"chart_version":"14.7.0","chart_enterprise_images":["registry.camunda.cloud/vendor-ee/elasticsearch:8.19.0"]}]`
+	if err := os.WriteFile(matrixFile, []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runUpdateMatrix([]string{
+		"--chart-yaml", chartYAML,
+		"--chart-dir", filepath.Join(dir, "missing"),
+		"--chart-version", "14.7.0",
+		"--matrix-file", matrixFile,
+	})
+	if err == nil {
+		t.Fatal("expected missing chart directory error, got nil")
+	}
+	data, readErr := os.ReadFile(matrixFile)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(data) != existing {
+		t.Errorf("matrix changed after invalid chart directory:\n%s", data)
+	}
+}
+
+// TestUpdateMatrixArtifactImagesWithEnterpriseChart pins artifact precedence
+// when the package image set differs from source-controlled values.
+func TestUpdateMatrixArtifactImagesWithEnterpriseChart(t *testing.T) {
+	dir := t.TempDir()
+	chartYAML := filepath.Join(dir, "Chart.yaml")
+	chart := "name: camunda-platform\nversion: 14.7.0\nannotations:\n" +
+		"  camunda.io/chart-images: |\n    docker.io/camunda/camunda:8.9.13\n"
+	if err := os.WriteFile(chartYAML, []byte(chart), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "values.yaml"), []byte(`
+global:
+  image:
+    registry: docker.io
+orchestration:
+  image:
+    repository: camunda/camunda
+    tag: 8.9.12
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "values-enterprise.yaml"), []byte(`
+orchestration:
+  image:
+    registry: registry.camunda.cloud
+    repository: camunda/camunda
+    tag: 8.9.13
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	matrixFile := filepath.Join(dir, "version-matrix.json")
+
+	if err := runUpdateMatrix([]string{
+		"--chart-yaml", chartYAML,
+		"--chart-dir", dir,
+		"--chart-version", "14.7.0",
+		"--matrix-file", matrixFile,
+	}); err != nil {
+		t.Fatalf("runUpdateMatrix: %v", err)
+	}
+
+	data, err := os.ReadFile(matrixFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"docker.io/camunda/camunda:8.9.13",
+		"registry.camunda.cloud/camunda/camunda:8.9.13",
+	} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("matrix missing %q:\n%s", want, data)
+		}
+	}
+	if strings.Contains(string(data), "docker.io/camunda/camunda:8.9.12") {
+		t.Errorf("matrix used source standard image instead of artifact annotation:\n%s", data)
 	}
 }
 
@@ -148,6 +224,7 @@ func TestUpdateMatrixKeepsStampedFacts(t *testing.T) {
   {
     "chart_version": "13.4.0",
     "chart_images": ["docker.io/camunda/camunda:8.8.0"],
+    "chart_enterprise_images": ["registry.camunda.cloud/vendor-ee/elasticsearch:8.19.0"],
     "release_date": "2026-07-08",
     "helm_cli": "3.20.2",
     "release_tag": "camunda-platform-8.8-13.4.0"
@@ -183,6 +260,7 @@ func TestUpdateMatrixKeepsStampedFacts(t *testing.T) {
 		`"release_date": "2026-07-08"`,
 		`"helm_cli": "3.20.2"`,
 		`"docker.io/camunda/camunda:8.8.1"`,
+		`"registry.camunda.cloud/vendor-ee/elasticsearch:8.19.0"`,
 	} {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("stamped entry lost %q:\n%s", want, data)

@@ -251,7 +251,7 @@ func normalizeRef(ref string) string {
 // --- subchart discovery + vendored values ---
 
 type subchartDep struct {
-	name  string // dependency chart name (matches vendored <name>-<ver>.tgz)
+	name  string // dependency chart name (matches expanded dir or <name>-<ver>.tgz)
 	alias string // values key under which it is configured (alias or name)
 }
 
@@ -289,12 +289,23 @@ func bundledSubcharts(chartDir string) ([]subchartDep, error) {
 	return out, nil
 }
 
-// vendoredSubchartValues extracts <name>/values.yaml from the vendored
-// charts/<name>-<version>.tgz produced by `helm dependency update`.
+// vendoredSubchartValues reads <name>/values.yaml from either an expanded Helm
+// package or the charts/<name>-<version>.tgz produced by dependency update.
 func vendoredSubchartValues(chartDir, name string) (map[string]any, error) {
+	expandedValues := filepath.Join(chartDir, "charts", name, "values.yaml")
+	if _, err := os.Stat(expandedValues); err == nil {
+		values, err := readValues(expandedValues)
+		if err != nil {
+			return nil, fmt.Errorf("read expanded subchart %s: %w", name, err)
+		}
+		return values, nil
+	} else if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("stat expanded subchart %s: %w", name, err)
+	}
+
 	matches, err := filepath.Glob(filepath.Join(chartDir, "charts", name+"-*.tgz"))
 	if err != nil || len(matches) == 0 {
-		return nil, fmt.Errorf("vendored subchart %s-*.tgz not found in %s/charts (run helm dependency update)", name, chartDir)
+		return nil, fmt.Errorf("vendored subchart %s not found in %s/charts (run helm dependency update)", name, chartDir)
 	}
 	f, err := os.Open(matches[0])
 	if err != nil {

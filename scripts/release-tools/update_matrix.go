@@ -31,15 +31,14 @@ import (
 // replacements out of an image set rendered with values-enterprise.yaml.
 const enterpriseRegistryPrefix = "registry.camunda.cloud/"
 
-// runUpdateMatrix upserts a version-matrix.json entry for a chart version. Two
-// input modes (exactly one):
+// runUpdateMatrix upserts a version-matrix.json entry for a chart version.
 //
 //	--chart-yaml <Chart.yaml>  read the recorded camunda.io/chart-images annotation
 //	                           (Promote-RC: the artifact's baked-in image set).
-//	--chart-dir <chart-dir>    derive the image set from the chart's values
-//	                           (chores/source-sync). chart_enterprise_images is
-//	                           derived automatically when values-enterprise.yaml
-//	                           exists (its registry.camunda.cloud images).
+//	--chart-dir <chart-dir>    derive the image set from the chart's values when
+//	                           --chart-yaml is absent (chores/source-sync), and
+//	                           derive chart_enterprise_images when
+//	                           values-enterprise.yaml exists.
 //
 // When --app is given, the entry also records its release-time facts:
 // helm_cli (the .tool-versions pin clamped per minor) and release_tag (the
@@ -71,14 +70,19 @@ func runUpdateMatrix(args []string) error {
 	if chartVersion == "" || matrixFile == "" {
 		return fmt.Errorf("--chart-version and --matrix-file are required")
 	}
-	if (chartYAML == "") == (chartDir == "") {
-		return fmt.Errorf("exactly one of --chart-yaml or --chart-dir is required")
+	if chartYAML == "" && chartDir == "" {
+		return fmt.Errorf("at least one of --chart-yaml or --chart-dir is required")
+	}
+	if chartDir != "" {
+		valuesFile := filepath.Join(chartDir, "values.yaml")
+		if _, err := os.Stat(valuesFile); err != nil {
+			return fmt.Errorf("read --chart-dir values %s: %w", valuesFile, err)
+		}
 	}
 
 	var images, enterpriseImages []string
 	var err error
-	switch {
-	case chartYAML != "":
+	if chartYAML != "" {
 		// Read the image set the artifact recorded at build time.
 		if images, err = chartmeta.ChartImages(chartYAML); err != nil {
 			return err
@@ -86,7 +90,7 @@ func runUpdateMatrix(args []string) error {
 		if len(images) == 0 {
 			return fmt.Errorf("%s annotation in %s is empty or missing; it must be recorded at build time before promote", chartmeta.ChartImagesAnnotation, chartYAML)
 		}
-	default:
+	} else {
 		// Derive from the chart's values (same tooling the build embeds with).
 		if images, err = chartmeta.ImageSet(chartDir); err != nil {
 			return fmt.Errorf("derive image set: %w", err)
@@ -94,6 +98,8 @@ func runUpdateMatrix(args []string) error {
 		if len(images) == 0 {
 			return fmt.Errorf("no images derived from %s/values.yaml", chartDir)
 		}
+	}
+	if chartDir != "" {
 		if enterpriseImages, err = enterpriseImageSet(chartDir); err != nil {
 			return err
 		}
@@ -113,9 +119,11 @@ func runUpdateMatrix(args []string) error {
 	}
 	entry.ChartVersion = chartVersion
 	entry.ChartImages = images
-	entry.ChartEnterpriseImages = nil
-	if len(enterpriseImages) > 0 {
-		entry.ChartEnterpriseImages = enterpriseImages
+	if chartDir != "" {
+		entry.ChartEnterpriseImages = nil
+		if len(enterpriseImages) > 0 {
+			entry.ChartEnterpriseImages = enterpriseImages
+		}
 	}
 	switch {
 	case app != "" && entry.ReleaseDate != "":

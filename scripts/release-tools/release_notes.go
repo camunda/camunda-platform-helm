@@ -35,13 +35,13 @@ const cliffConfigFile = ".github/config/cliff.toml"
 // through yq to preserve formatting and comments.
 //
 //	release-tools release-notes --main   <chart-dir>
-//	release-tools release-notes --footer <chart-dir>
+//	release-tools release-notes --footer <chart-dir> [--images-chart-dir <dir>]
 //
 // Run from the repository root (paths like .tool-versions and cliff.toml are
 // repo-root-relative).
 func runReleaseNotes(args []string) error {
-	if len(args) != 2 {
-		return fmt.Errorf("usage: release-notes --main|--footer <chart-dir>")
+	if len(args) < 2 {
+		return fmt.Errorf("usage: release-notes --main|--footer <chart-dir> [--images-chart-dir <dir>]")
 	}
 	mode, chartDir := args[0], args[1]
 	if chartDir == "" {
@@ -50,9 +50,20 @@ func runReleaseNotes(args []string) error {
 	ctx := context.Background()
 	switch mode {
 	case "--main":
+		if len(args) != 2 {
+			return fmt.Errorf("usage: release-notes --main <chart-dir>")
+		}
 		return releaseNotesMain(ctx, chartDir)
 	case "--footer":
-		return releaseNotesFooter(ctx, chartDir)
+		imagesChartDir := chartDir
+		useRecordedImages := false
+		if len(args) == 4 && args[2] == "--images-chart-dir" && args[3] != "" {
+			imagesChartDir = args[3]
+			useRecordedImages = true
+		} else if len(args) != 2 {
+			return fmt.Errorf("usage: release-notes --footer <chart-dir> [--images-chart-dir <dir>]")
+		}
+		return releaseNotesFooter(ctx, chartDir, imagesChartDir, useRecordedImages)
 	default:
 		return fmt.Errorf("unknown mode %q (want --main or --footer)", mode)
 	}
@@ -178,7 +189,7 @@ func releaseNotesMain(ctx context.Context, chartDir string) error {
 	return nil
 }
 
-func releaseNotesFooter(_ context.Context, chartDir string) error {
+func releaseNotesFooter(_ context.Context, chartDir, imagesChartDir string, useRecordedImages bool) error {
 	chartFile := filepath.Join(chartDir, "Chart.yaml")
 	chartBytes, err := os.ReadFile(chartFile)
 	if err != nil {
@@ -191,11 +202,22 @@ func releaseNotesFooter(_ context.Context, chartDir string) error {
 	appVersion := releasenotes.AppStripLastSegment(id.AppVersion)
 	chartReleaseName := id.Name + "-" + id.Version
 
-	images, err := chartmeta.ImageSet(chartDir)
-	if err != nil {
-		return fmt.Errorf("derive image set: %w", err)
+	var images []string
+	if useRecordedImages {
+		images, err = chartmeta.ChartImages(filepath.Join(imagesChartDir, "Chart.yaml"))
+		if err != nil {
+			return err
+		}
+		if len(images) == 0 {
+			return fmt.Errorf("%s annotation is empty or missing in %s", chartmeta.ChartImagesAnnotation, filepath.Join(imagesChartDir, "Chart.yaml"))
+		}
+	} else {
+		images, err = chartmeta.ImageSet(imagesChartDir)
+		if err != nil {
+			return fmt.Errorf("derive image set: %w", err)
+		}
 	}
-	enterpriseImgs, err := enterpriseImageSet(chartDir)
+	enterpriseImgs, err := enterpriseImageSet(imagesChartDir)
 	if err != nil {
 		return err
 	}
