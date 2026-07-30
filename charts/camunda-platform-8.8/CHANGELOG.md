@@ -1,5 +1,20 @@
 # Changelog
 
+## [13.12.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.3...camunda-platform-8.8-13.12.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* normalize orchestration internal REST URL when contextPath is root ([#6679](https://github.com/camunda/camunda-platform-helm/issues/6679)) ([a462489](https://github.com/camunda/camunda-platform-helm/commit/a462489877aedf4636c74c2a547f179aba560ff7))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#6713](https://github.com/camunda/camunda-platform-helm/issues/6713)) ([2219961](https://github.com/camunda/camunda-platform-helm/commit/221996188bf63178b7d9886cc885938fa9bc7291))
+* update camunda-platform-images to v8.8.33 ([#6717](https://github.com/camunda/camunda-platform-helm/issues/6717)) ([75a5102](https://github.com/camunda/camunda-platform-helm/commit/75a5102a78996706bfd8ff653c9a215e2aa4a454))
+* update patch-updates (patch) ([#6682](https://github.com/camunda/camunda-platform-helm/issues/6682)) ([759f232](https://github.com/camunda/camunda-platform-helm/commit/759f23228c3547d221c70d3da8981660165e7041))
+* update patch-updates (patch) ([#6720](https://github.com/camunda/camunda-platform-helm/issues/6720)) ([7a6f547](https://github.com/camunda/camunda-platform-helm/commit/7a6f547c8e9dc9c3c8b041b4ba5395893ce8aeee))
+
 ## [13.12.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.2...camunda-platform-8.8-13.12.3) (2026-07-23)
 
 
