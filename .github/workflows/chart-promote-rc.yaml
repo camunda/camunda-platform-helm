@@ -301,6 +301,7 @@ jobs:
           # version-matrix entry (standard + enterprise images) + per-app + index READMEs.
           version_matrix_file="version-matrix/camunda-${app_version}/version-matrix.json"
           /tmp/release-tools update-matrix \
+            --chart-yaml /tmp/Chart.yaml \
             --chart-dir "${chart_path}" \
             --chart-version "${chart_version}" \
             --matrix-file "${version_matrix_file}" \
