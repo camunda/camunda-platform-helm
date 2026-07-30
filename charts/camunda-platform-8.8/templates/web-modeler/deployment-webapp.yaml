@@ -75,26 +75,8 @@ spec:
             {{- with .Values.webModeler.webapp.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
-            - name: AWS_ACCESS_KEY_ID
-              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
-                  "secretType" "accessKeyId"
-                  "context" .
-              ) | nindent 14 }}
-            - name: AWS_SECRET_ACCESS_KEY
-              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
-                  "secretType" "secretAccessKey"
-                  "context" .
-              ) | nindent 14 }}
-            {{- end }}
-            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
-            {{- end }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.webModeler.webapp.envFrom }}
+          envFrom:
             {{- .Values.webModeler.webapp.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.webapp.command }}
@@ -159,11 +141,6 @@ spec:
               mountPath: /home/webapp/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
-            {{- if .Values.global.documentStore.type.gcp.enabled }}
-            - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
-              readOnly: true
-            {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
@@ -178,14 +155,6 @@ spec:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-webapp-configuration
-        {{- if .Values.global.documentStore.type.gcp.enabled }}
-        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
-            "volumeName" "gcp-credentials-volume"
-            "config" .Values.global.documentStore.type.gcp
-            "legacyKeyField" "credentialsKey"
-            "fileName" .Values.global.documentStore.type.gcp.fileName
-        ) | nindent 8 }}
-        {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}

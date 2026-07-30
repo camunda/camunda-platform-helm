@@ -109,16 +109,9 @@ spec:
           {{- with (or .Values.camundaHub.restapi.env .Values.webModeler.restapi.env) }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-          {{- $documentStoreEnvFrom := ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" (or .Values.camundaHub.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration) "path" (list "camunda" "document"))) "true" }}
-          {{- if or $documentStoreEnvFrom (or .Values.camundaHub.restapi.envFrom .Values.webModeler.restapi.envFrom) }}
-          envFrom:
-          {{- if $documentStoreEnvFrom }}
-            - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
-          {{- end }}
           {{- if (or .Values.camundaHub.restapi.envFrom .Values.webModeler.restapi.envFrom) }}
+          envFrom:
             {{- (or .Values.camundaHub.restapi.envFrom .Values.webModeler.restapi.envFrom) | toYaml | nindent 12 }}
-          {{- end }}
           {{- end }}
           {{- if (or .Values.camundaHub.restapi.command .Values.webModeler.restapi.command) }}
           command: {{ toYaml (or .Values.camundaHub.restapi.command .Values.webModeler.restapi.command) | nindent 10 }}

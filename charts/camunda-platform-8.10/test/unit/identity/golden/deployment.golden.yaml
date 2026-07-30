@@ -61,9 +61,6 @@ spec:
                   name: kc-secret
                   key: password
             
-          envFrom:
-            - configMapRef:
-                name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m

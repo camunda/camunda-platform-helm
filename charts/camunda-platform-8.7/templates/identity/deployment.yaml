@@ -180,18 +180,6 @@ spec:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
             {{- end }}
-            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
-            {{- end }}
             {{- if .Values.identity.users}}
             {{- range $index, $user := .Values.identity.users }}
             {{- if $user.secret.inlineSecret }}
@@ -205,10 +193,6 @@ spec:
                   key: {{ $user.secret.existingSecretKey }}
             {{- end }}
             {{- end }}
-            {{- end }}
-            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
             {{- end }}
           {{- if .Values.identity.clients}}
             {{- range $index, $client := .Values.identity.clients }}
@@ -227,10 +211,8 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.identity.envFrom }}
+          envFrom:
             {{- .Values.identity.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.identity.command}}
@@ -295,11 +277,6 @@ spec:
               mountPath: /app/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
-            {{- if .Values.global.documentStore.type.gcp.enabled }}
-            - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
-              readOnly: true
-            {{- end }}
             {{- if .Values.identity.extraVolumeMounts}}
               {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
@@ -313,14 +290,6 @@ spec:
         - name: config
           configMap:
             name: {{ include "identity.fullname" . }}-configuration
-        {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
-        {{- end }}
         {{- if .Values.identity.extraVolumes}}
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
