@@ -57,6 +57,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
 				helm.UnmarshalK8SYaml(s.T(), output, &service)
+				s.Require().NoError(err)
 
 				// then
 				s.Require().False(service.Spec.PublishNotReadyAddresses)

@@ -57,9 +57,8 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
 				helm.UnmarshalK8SYaml(s.T(), output, &service)
+				s.Require().NoError(err)
 
-				// Required for broker-to-broker cluster formation: peers must be
-				// reachable via this headless service before they become Ready.
 				s.Require().True(service.Spec.PublishNotReadyAddresses)
 			},
 		}, {
