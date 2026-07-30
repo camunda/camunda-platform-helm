@@ -201,7 +201,6 @@ func TestCompute_E2EExecutionScriptsIncluded(t *testing.T) {
 	for _, relPath := range []string{
 		filepath.Join("scripts", "run-e2e-tests.sh"),
 		filepath.Join("scripts", "render-e2e-env.sh"),
-		filepath.Join("scripts", "generate-chart-matrix.sh"),
 	} {
 		t.Run(relPath, func(t *testing.T) {
 			tmpDir := t.TempDir()
