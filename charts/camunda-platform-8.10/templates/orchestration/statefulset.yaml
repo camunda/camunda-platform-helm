@@ -344,6 +344,10 @@ spec:
       tolerations:
         {{- toYamlPretty . | nindent 8 }}
       {{- end }}
+      {{- with .Values.orchestration.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYamlPretty . | nindent 8 }}
+      {{- end }}
   {{- if eq .Values.orchestration.persistenceType "disk" }}
   volumeClaimTemplates:
     - apiVersion: v1

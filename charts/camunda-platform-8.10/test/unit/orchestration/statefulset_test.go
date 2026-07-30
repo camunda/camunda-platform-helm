@@ -518,6 +518,36 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				s.Require().EqualValues("NoSchedule", toleration.Effect)
 			},
 		}, {
+			// https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+			//topologySpreadConstraints:
+			//- maxSkew: 1
+			//  topologyKey: "topology.kubernetes.io/zone"
+			//  whenUnsatisfiable: "ScheduleAnyway"
+			//  labelSelector:
+			//    matchLabels:
+			//      app.kubernetes.io/component: zeebe-broker
+			Name: "TestContainerSetTopologySpreadConstraints",
+			Values: map[string]string{
+				"orchestration.topologySpreadConstraints[0].maxSkew":                                                   "1",
+				"orchestration.topologySpreadConstraints[0].topologyKey":                                               "topology.kubernetes.io/zone",
+				"orchestration.topologySpreadConstraints[0].whenUnsatisfiable":                                         "ScheduleAnyway",
+				"orchestration.topologySpreadConstraints[0].labelSelector.matchLabels.app\\.kubernetes\\.io/component": "zeebe-broker",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then
+				topologySpreadConstraints := statefulSet.Spec.Template.Spec.TopologySpreadConstraints
+				s.Require().Equal(1, len(topologySpreadConstraints))
+
+				topologySpreadConstraint := topologySpreadConstraints[0]
+				s.Require().EqualValues(1, topologySpreadConstraint.MaxSkew)
+				s.Require().Equal("topology.kubernetes.io/zone", topologySpreadConstraint.TopologyKey)
+				s.Require().EqualValues("ScheduleAnyway", topologySpreadConstraint.WhenUnsatisfiable)
+				s.Require().Equal("zeebe-broker", topologySpreadConstraint.LabelSelector.MatchLabels["app.kubernetes.io/component"])
+			},
+		}, {
 			Name:                 "TestContainerSetPersistenceTypeRam",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
