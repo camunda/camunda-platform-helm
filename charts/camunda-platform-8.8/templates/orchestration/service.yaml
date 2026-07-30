@@ -15,7 +15,6 @@ metadata:
     ) | nindent 4 }}
 spec:
   type: {{ .Values.orchestration.service.type }}
-  publishNotReadyAddresses: true
   {{- if .Values.orchestration.service.loadBalancerIP}}
   loadBalancerIP: {{ .Values.orchestration.service.loadBalancerIP }}
   {{- end }}

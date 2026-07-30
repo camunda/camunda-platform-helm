@@ -52,6 +52,17 @@ func TestGatewayServiceTemplate(t *testing.T) {
 func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Name:   "TestPublishNotReadyAddressesEnabled",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// Required for broker-to-broker cluster formation: peers must be
+				// reachable via this headless service before they become Ready.
+				s.Require().True(service.Spec.PublishNotReadyAddresses)
+			},
+		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"global.annotations.foo": "bar-global-annotation",

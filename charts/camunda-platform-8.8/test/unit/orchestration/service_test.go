@@ -52,6 +52,16 @@ func TestServiceTemplate(t *testing.T) {
 func (s *ServiceTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Name:   "TestPublishNotReadyAddressesDisabled",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().False(service.Spec.PublishNotReadyAddresses)
+			},
+		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"global.annotations.foo": "bar-global-annotation",
