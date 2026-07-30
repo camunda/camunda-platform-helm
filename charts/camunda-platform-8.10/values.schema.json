@@ -996,7 +996,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "The default document store to use. Valid values: inmemory, aws, and gcp.",
+                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, and azure.",
                             "default": "inmemory"
                         },
                         "type": {
