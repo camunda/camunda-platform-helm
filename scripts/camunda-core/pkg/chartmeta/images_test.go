@@ -161,6 +161,45 @@ func TestImageSetMissingValuesIsError(t *testing.T) {
 	}
 }
 
+func TestImageSetExpandedSubchart(t *testing.T) {
+	dir := writeValues(t, `
+identityPostgresql:
+  image:
+    repository: bitnamilegacy/postgresql
+`)
+	chart := `
+dependencies:
+  - name: postgresql
+    alias: identityPostgresql
+    repository: file://../identity-postgresql-16
+`
+	if err := os.WriteFile(filepath.Join(dir, "Chart.yaml"), []byte(chart), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	subchartDir := filepath.Join(dir, "charts", "postgresql")
+	if err := os.MkdirAll(subchartDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	subchartValues := `
+image:
+  registry: docker.io
+  repository: bitnami/postgresql
+  tag: 16.0.0
+`
+	if err := os.WriteFile(filepath.Join(subchartDir, "values.yaml"), []byte(subchartValues), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := ImageSet(dir)
+	if err != nil {
+		t.Fatalf("ImageSet: %v", err)
+	}
+	want := []string{"docker.io/bitnamilegacy/postgresql:16.0.0"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ImageSet expanded subchart:\n got: %v\nwant: %v", got, want)
+	}
+}
+
 // TestImageSetRealChartContract is the structural contract test from the plan:
 // run against the real chart values and assert the result is non-empty and
 // every ref is well-formed (no render). Skips if the chart dir is absent.

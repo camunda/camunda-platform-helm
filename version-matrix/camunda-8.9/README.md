@@ -40,11 +40,11 @@ Supported versions:
 
 Camunda images:
 
-- docker.io/camunda/camunda:8.9.12
+- docker.io/camunda/camunda:8.9.13
 - docker.io/camunda/connectors-bundle:8.9.6
-- docker.io/camunda/console:8.9.65
+- docker.io/camunda/console:8.9.66
 - docker.io/camunda/identity:8.9.6
-- docker.io/camunda/optimize:8.9.12
+- docker.io/camunda/optimize:8.9.13
 - docker.io/camunda/web-modeler-restapi:8.9.6
 - docker.io/camunda/web-modeler-websockets:8.9.6
 - registry.camunda.cloud/camunda/keycloak:26.3.3
@@ -79,8 +79,8 @@ Camunda images:
 - docker.io/camunda/console:8.9.63
 - docker.io/camunda/identity:8.9.6
 - docker.io/camunda/optimize:8.9.12
-- docker.io/camunda/web-modeler-restapi:8.9.5
-- docker.io/camunda/web-modeler-websockets:8.9.5
+- docker.io/camunda/web-modeler-restapi:8.9.6
+- docker.io/camunda/web-modeler-websockets:8.9.6
 - registry.camunda.cloud/camunda/keycloak:26.3.3
 
 Non-Camunda images:

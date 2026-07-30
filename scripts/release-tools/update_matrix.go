@@ -73,6 +73,12 @@ func runUpdateMatrix(args []string) error {
 	if chartYAML == "" && chartDir == "" {
 		return fmt.Errorf("at least one of --chart-yaml or --chart-dir is required")
 	}
+	if chartDir != "" {
+		valuesFile := filepath.Join(chartDir, "values.yaml")
+		if _, err := os.Stat(valuesFile); err != nil {
+			return fmt.Errorf("read --chart-dir values %s: %w", valuesFile, err)
+		}
+	}
 
 	var images, enterpriseImages []string
 	var err error

@@ -63,6 +63,38 @@ func TestUpdateMatrixRequiresInputMode(t *testing.T) {
 	}
 }
 
+func TestUpdateMatrixRejectsMissingChartDir(t *testing.T) {
+	dir := t.TempDir()
+	chartYAML := filepath.Join(dir, "Chart.yaml")
+	chart := "name: camunda-platform\nversion: 14.7.0\nannotations:\n" +
+		"  camunda.io/chart-images: |\n    docker.io/camunda/camunda:8.9.13\n"
+	if err := os.WriteFile(chartYAML, []byte(chart), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	matrixFile := filepath.Join(dir, "version-matrix.json")
+	existing := `[{"chart_version":"14.7.0","chart_enterprise_images":["registry.camunda.cloud/vendor-ee/elasticsearch:8.19.0"]}]`
+	if err := os.WriteFile(matrixFile, []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runUpdateMatrix([]string{
+		"--chart-yaml", chartYAML,
+		"--chart-dir", filepath.Join(dir, "missing"),
+		"--chart-version", "14.7.0",
+		"--matrix-file", matrixFile,
+	})
+	if err == nil {
+		t.Fatal("expected missing chart directory error, got nil")
+	}
+	data, readErr := os.ReadFile(matrixFile)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(data) != existing {
+		t.Errorf("matrix changed after invalid chart directory:\n%s", data)
+	}
+}
+
 // TestUpdateMatrixArtifactImagesWithEnterpriseChart pins artifact precedence
 // when the package image set differs from source-controlled values.
 func TestUpdateMatrixArtifactImagesWithEnterpriseChart(t *testing.T) {
