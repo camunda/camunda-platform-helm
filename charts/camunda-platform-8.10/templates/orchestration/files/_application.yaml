@@ -44,8 +44,8 @@ camunda:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
   {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
   document:
-    store:
-      azure:
+    azure:
+      {{ lower .Values.global.documentStore.activeStoreId }}:
         connection-string: "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}"
   {{- end }}
 
