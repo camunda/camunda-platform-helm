@@ -245,7 +245,7 @@ func TestRenderIndex(t *testing.T) {
 		"[All 7 chart versions for Camunda 8.9 →](./camunda-8.9/)",
 		"## Camunda 8.8 — Standard support until 2027-04-13",
 		// Extended support: one compact row per minor.
-		"## Extended support — contact your CSM",
+		"## Extended support",
 		"| Camunda | Released | Latest chart | Full matrix |",
 		"| 8.6 | 2024-10-08 | [11.12.3](./camunda-8.6/#helm-chart-11123) | [camunda-8.6](./camunda-8.6/) |",
 		// EOL: compact row from lifecycle data (no JSON needed).
