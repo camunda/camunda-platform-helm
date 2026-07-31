@@ -33,8 +33,6 @@ dependencies:
 maintainers:
   - name: eamonnmoloney
     email: eamonn.moloney@camunda.com
-  - name: Ian-wang-liyang
-    email: ian.wang@camunda.com
   - name: hisImminence
     email: immanuel.monma@camunda.com
   - name: bkenez
