@@ -1,5 +1,39 @@
 # Changelog
 
+## [14.8.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.7.0...camunda-platform-8.9-14.8.0) (2026-07-31)
+
+
+### Features
+
+* **8.9:** support shared and cross-namespace Gateway via global.gateway.name and namespace ([#6618](https://github.com/camunda/camunda-platform-helm/issues/6618)) ([180f4f0](https://github.com/camunda/camunda-platform-helm/commit/180f4f0de78848076242fa22c51857725587425f))
+* support topologySpreadConstraints for zeebe brokers and gateway ([#6690](https://github.com/camunda/camunda-platform-helm/issues/6690)) ([b3a0e93](https://github.com/camunda/camunda-platform-helm/commit/b3a0e93632eb69d974499a5b1fe564f3fb91397e))
+
+
+### Bug Fixes
+
+* allow Web Modeler and Console with external management Identity ([#6583](https://github.com/camunda/camunda-platform-helm/issues/6583)) ([0054251](https://github.com/camunda/camunda-platform-helm/commit/00542517d2af39af66997eae9836a3f00887e2f4))
+* decouple requestBodySize from Zeebe maxMessageSize ([#6628](https://github.com/camunda/camunda-platform-helm/issues/6628)) ([7193ef6](https://github.com/camunda/camunda-platform-helm/commit/7193ef6c415587f1c97586d2274db385d042be31))
+* normalize orchestration internal REST URL when contextPath is root ([#6679](https://github.com/camunda/camunda-platform-helm/issues/6679)) ([a462489](https://github.com/camunda/camunda-platform-helm/commit/a462489877aedf4636c74c2a547f179aba560ff7))
+* remove publishNotReadyAddresses from orchestration client-facing service ([#6731](https://github.com/camunda/camunda-platform-helm/issues/6731)) ([d3cf11d](https://github.com/camunda/camunda-platform-helm/commit/d3cf11d114f897ed471903f4191d0851237d070f))
+* respect explicit empty global.identity.keycloak.contextPath ([#6577](https://github.com/camunda/camunda-platform-helm/issues/6577)) ([d75be11](https://github.com/camunda/camunda-platform-helm/commit/d75be1136c945b0598abfe8d588242e1fb8b5238))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6613](https://github.com/camunda/camunda-platform-helm/issues/6613)) ([96ae143](https://github.com/camunda/camunda-platform-helm/commit/96ae14323384bd7bceeb89e48dff5a89962d0f65))
+* update camunda-platform-images (patch) ([#6666](https://github.com/camunda/camunda-platform-helm/issues/6666)) ([aa1ea36](https://github.com/camunda/camunda-platform-helm/commit/aa1ea36df957686ecb2b9cfffa5a85b93fbe1325))
+* update camunda/console docker tag to v8.9.71 ([#6652](https://github.com/camunda/camunda-platform-helm/issues/6652)) ([9a78300](https://github.com/camunda/camunda-platform-helm/commit/9a783004bf36275d30caa6a01331d22878894af4))
+* update camunda/console docker tag to v8.9.72 ([#6654](https://github.com/camunda/camunda-platform-helm/issues/6654)) ([08ce6f4](https://github.com/camunda/camunda-platform-helm/commit/08ce6f4437d023a5a3d8da18faf24b29f7e9f957))
+* update camunda/console docker tag to v8.9.74 ([#6662](https://github.com/camunda/camunda-platform-helm/issues/6662)) ([f538237](https://github.com/camunda/camunda-platform-helm/commit/f538237368bfdc7083c2adc4ad8a91599ec3d64f))
+* update camunda/console docker tag to v8.9.75 ([#6674](https://github.com/camunda/camunda-platform-helm/issues/6674)) ([30731dc](https://github.com/camunda/camunda-platform-helm/commit/30731dc9b9b560268518b1cd4aa167b5be7af27c))
+* update camunda/console docker tag to v8.9.76 ([#6676](https://github.com/camunda/camunda-platform-helm/issues/6676)) ([40d355d](https://github.com/camunda/camunda-platform-helm/commit/40d355d4723e07d4ec6cc1b112850f6db749e6d6))
+* update camunda/console docker tag to v8.9.77 ([#6678](https://github.com/camunda/camunda-platform-helm/issues/6678)) ([bbf60a6](https://github.com/camunda/camunda-platform-helm/commit/bbf60a6518c6a5e9c25402d24d45458baa7246e3))
+* update camunda/console docker tag to v8.9.80 ([#6692](https://github.com/camunda/camunda-platform-helm/issues/6692)) ([b12c9ca](https://github.com/camunda/camunda-platform-helm/commit/b12c9ca026011b3f961d544c276e8d0ae6021964))
+* update camunda/identity docker tag to v8.9.7 ([#6693](https://github.com/camunda/camunda-platform-helm/issues/6693)) ([de89f72](https://github.com/camunda/camunda-platform-helm/commit/de89f72d7d388f43204da7577502f84bd726d52c))
+* update patch-updates (patch) ([#6625](https://github.com/camunda/camunda-platform-helm/issues/6625)) ([e673379](https://github.com/camunda/camunda-platform-helm/commit/e673379119693e926e0f8e35ec9816690f5a2c40))
+* update patch-updates (patch) ([#6682](https://github.com/camunda/camunda-platform-helm/issues/6682)) ([759f232](https://github.com/camunda/camunda-platform-helm/commit/759f23228c3547d221c70d3da8981660165e7041))
+* update patch-updates (patch) ([#6694](https://github.com/camunda/camunda-platform-helm/issues/6694)) ([5edd3c2](https://github.com/camunda/camunda-platform-helm/commit/5edd3c2c156189e2fca32f969ba226a1c4b31409))
+
 ## [14.7.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.6.1...camunda-platform-8.9-14.7.0) (2026-07-16)
 
 
