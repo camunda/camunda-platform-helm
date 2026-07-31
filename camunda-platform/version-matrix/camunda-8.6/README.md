@@ -3,7 +3,7 @@
 
 # Camunda 8.6 Helm Chart Version Matrix
 
-Extended support — contact your CSM
+Extended support
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|

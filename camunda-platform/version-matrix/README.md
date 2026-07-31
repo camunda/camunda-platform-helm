@@ -61,7 +61,7 @@ helm search repo camunda/camunda-platform --devel --versions
 
 [All 36 chart versions for Camunda 8.7 →](./camunda-8.7/)
 
-## Extended support — contact your CSM
+## Extended support
 
 | Camunda | Released | Latest chart | Full matrix |
 |---|---|---|---|
@@ -83,7 +83,6 @@ helm search repo camunda/camunda-platform --devel --versions
 - The `Camunda` column is the chart's core application version — find your exact Camunda patch (for example, 8.8.5) there. Pre-release charts carry an `-alpha`/`-rc` suffix in the chart version: previews, not for production use and without a support SLA.
 - The Camunda `application version` (`appVersion` in the chart) is different from the Helm `chart version` (`version` in the chart). Without `--devel`, `helm search repo` hides the pre-release charts listed on this page.
 - The `Helm CLI` column lists the Helm CLI version(s) each chart was released and tested with (recorded at release in the chart annotation `camunda.io/helmCLIVersion`). Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3; Camunda 8.10 (chart 15.x) and later require Helm v4. Older CLI versions may lack template functions the chart uses (for example, `toYamlPretty` requires 3.17+).
-- Extended support is available under contract — contact your Customer Success Manager (CSM).
 - For a rollback option when upgrading, take a [backup](https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/) before each hop.
 
 ---
