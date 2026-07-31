@@ -146,6 +146,9 @@ spec:
       {{- (or .Values.camundaHub.websockets.extraVolumes .Values.webModeler.websockets.extraVolumes) | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if kindIs "bool" .Values.camundaHub.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ .Values.camundaHub.automountServiceAccountToken }}
+      {{- end }}
       {{- if (or .Values.camundaHub.websockets.dnsConfig .Values.webModeler.websockets.dnsConfig) }}
       dnsConfig: {{- toYaml (or .Values.camundaHub.websockets.dnsConfig .Values.webModeler.websockets.dnsConfig) | nindent 8 }}
       {{- end }}

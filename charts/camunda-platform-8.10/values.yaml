@@ -1061,6 +1061,9 @@ identity:
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: true
 
+  ## @param identity.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
+  automountServiceAccountToken:
+
   ## External PostgreSQL configuration
   ## Identity requires an external PostgreSQL database; configure the connection here.
   ## @param identity.externalDatabase.enabled
@@ -1174,6 +1177,8 @@ camundaHub:
     service: {}
   ## @skip camundaHub.serviceAccount
   serviceAccount: {}
+  ## @param camundaHub.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
+  automountServiceAccountToken:
   ## @skip camundaHub.persistence
   persistence: {}
 
@@ -1875,6 +1880,9 @@ connectors:
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
+  ## @param connectors.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
+  automountServiceAccountToken:
+
   ## @extra connectors.podSecurityContext defines the security options the Connectors pod should be run with
   podSecurityContext:
     ## @param connectors.podSecurityContext.runAsNonRoot run as non root
@@ -2227,6 +2235,9 @@ orchestration:
     labels: {}
     ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
+
+  ## @param orchestration.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
+  automountServiceAccountToken:
 
   gateway:
     grpc:
@@ -2809,6 +2820,9 @@ optimize:
     labels: {}
     ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
+
+  ## @param optimize.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
+  automountServiceAccountToken:
 
   ## @extra optimize.service configuration to configure the Optimize service.
   service:

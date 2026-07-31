@@ -198,6 +198,43 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("accName", serviceAccName)
 			},
 		}, {
+			Name: "TestPodOmitsAutomountServiceAccountTokenByDefault",
+			Values: map[string]string{
+				"connectors.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().Nil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name: "TestPodDisablesAutomountServiceAccountToken",
+			Values: map[string]string{
+				"connectors.enabled":                      "true",
+				"connectors.automountServiceAccountToken": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().False(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name: "TestPodEnablesAutomountServiceAccountToken",
+			Values: map[string]string{
+				"connectors.enabled":                      "true",
+				"connectors.automountServiceAccountToken": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().True(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
 				"connectors.enabled":                      "true",

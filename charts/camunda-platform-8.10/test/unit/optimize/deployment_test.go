@@ -50,6 +50,55 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
+func (s *DeploymentTemplateTest) TestAutomountServiceAccountToken() {
+	baseValues := func() map[string]string {
+		return map[string]string{
+			"identity.enabled": "true",
+			"optimize.enabled": "true",
+		}
+	}
+
+	disabledValues := baseValues()
+	disabledValues["optimize.automountServiceAccountToken"] = "false"
+	enabledValues := baseValues()
+	enabledValues["optimize.automountServiceAccountToken"] = "true"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestPodOmitsAutomountServiceAccountTokenByDefault",
+			Values: baseValues(),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				s.Require().Nil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name:   "TestPodDisablesAutomountServiceAccountToken",
+			Values: disabledValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().False(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name:   "TestPodEnablesAutomountServiceAccountToken",
+			Values: enabledValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().True(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
