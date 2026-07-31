@@ -75,6 +75,16 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Make Gateway API listener port and route sectionName configurable"
+      description: "Support shared and cross-namespace Gateway via global.gateway.name and namespace"
+    - kind: added
+      description: "Support topologySpreadConstraints for zeebe brokers and gateway"
     - kind: fixed
-      description: "Omit empty zeebe.broker.exporters map for no-exporter scenarios"
+      description: "Respect explicit empty global.identity.keycloak.contextPath"
+    - kind: fixed
+      description: "Allow Web Modeler and Console with external management Identity"
+    - kind: fixed
+      description: "Decouple requestBodySize from Zeebe maxMessageSize"
+    - kind: fixed
+      description: "Normalize orchestration internal REST URL when contextPath is root"
+    - kind: fixed
+      description: "Remove publishNotReadyAddresses from orchestration client-facing service"
