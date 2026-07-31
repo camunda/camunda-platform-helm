@@ -16,7 +16,6 @@ metadata:
     {}
 spec:
   type: ClusterIP
-  publishNotReadyAddresses: true
   ports:
     - port: 9600
       protocol: TCP
