@@ -70,6 +70,7 @@ on:
         type: choice
         options:
           - all
+          - component-persistence
           - elasticsearch
           - elasticsearch-arm
           - elasticsearch-basic

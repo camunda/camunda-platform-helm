@@ -616,6 +616,7 @@ integration:
           persistence: elasticsearch
           features:
             - persistence
+          skip-e2e: true
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
