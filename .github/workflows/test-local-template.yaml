@@ -123,11 +123,40 @@ jobs:
         run: |
           test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
             TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
+          if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.8" ]]; then
+            TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} \
+              --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c \
+              --set orchestration.service.appProtocols.management=http \
+              --set orchestration.service.appProtocols.internal=kubernetes.io/h2c \
+              --set orchestration.service.appProtocols.command=kubernetes.io/h2c"
+          fi
           helm install camunda-platform *.tgz --wait --timeout 10m0s \
             --namespace ${{ env.TEST_NAMESPACE }} \
             --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
             --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
             ${TEST_HELM_EXTRA_ARGS}
+      - name: Verify appProtocol is set on live Service objects (8.10, 8.8)
+        if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.10' || inputs.camunda-helm-dir == 'camunda-platform-8.8' }}
+        run: |
+          set -euo pipefail
+          check() {
+            local svc="$1" port="$2" expected="$3"
+            actual=$(kubectl get svc "$svc" -n ${{ env.TEST_NAMESPACE }} \
+              -o jsonpath="{.spec.ports[?(@.name==\"$port\")].appProtocol}")
+            if [[ "$actual" != "$expected" ]]; then
+              echo "FAIL: $svc port $port appProtocol='$actual', expected '$expected'"
+              exit 1
+            fi
+            echo "OK: $svc port $port appProtocol=$expected"
+          }
+          check camunda-platform-zeebe-gateway grpc kubernetes.io/h2c
+          check camunda-platform-zeebe-gateway server http
+          # camunda-platform-zeebe (headless) shares the same orchestration.service.appProtocols
+          # map as camunda-platform-zeebe-gateway above, with a wider knownPorts allow-list
+          # (internal/command are headless-only ports) -- exercise both to guard against the
+          # two manifests validating against divergent port allow-lists.
+          check camunda-platform-zeebe internal kubernetes.io/h2c
+          check camunda-platform-zeebe command kubernetes.io/h2c
       - name: Get Pods
         if: failure()
         run: |
