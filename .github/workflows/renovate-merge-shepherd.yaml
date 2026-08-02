@@ -73,7 +73,7 @@ jobs:
           exportEnv: false
 
       - name: Shepherd PR through merge queue
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@8f6fae58d4594d3a700982c6642d9de28a950fcc # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@472b20a51fb5c7c9ff991ed6177769eab487eb34 # main
         with:
           pr-number: ${{ matrix.pr }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
