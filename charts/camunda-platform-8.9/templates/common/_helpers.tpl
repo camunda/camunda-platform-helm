@@ -330,7 +330,8 @@ Get the external url for keycloak
     {{- $proto := ternary "https" "http" .Values.identityKeycloak.ingress.tls -}}
     {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
   {{ else if .Values.identityKeycloak.enabled -}}
-    {{- $proto := ternary "https" "http" (or .Values.global.ingress.tls.enabled .Values.global.gateway.tls.enabled) -}}
+    {{- $tlsEnabled := ternary .Values.global.gateway.tls.enabled .Values.global.ingress.tls.enabled .Values.global.gateway.enabled -}}
+    {{- $proto := ternary "https" "http" $tlsEnabled -}}
     {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default (tpl .Values.global.ingress.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
 {{- end -}}
@@ -656,7 +657,7 @@ Zeebe templates.
 [camunda-platform] Zeebe Gateway GRPC external URL.
 */}}
 {{- define "camundaPlatform.orchestrationGRPCExternalURL" -}}
-  {{- if .Values.global.gateway.enabled -}}
+  {{- if and .Values.global.gateway.enabled .Values.orchestration.gateway.grpc.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.gateway.tls.enabled -}}
     {{- printf "%s://%s" $proto (tpl .Values.orchestration.gateway.grpc.host $) -}}
   {{- else -}}
