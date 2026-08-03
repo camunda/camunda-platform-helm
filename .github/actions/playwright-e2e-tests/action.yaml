@@ -78,9 +78,12 @@ inputs:
     required: false
     default: ""
   binary-artifact-name:
-    description: Name of the uploaded deploy-camunda binary artifact to download (only used when management-namespace is set).
+    description: >
+      Name of the uploaded deploy-camunda binary artifact to download. When set, the
+      binary is placed on PATH for multi-namespace credential merging and for the
+      on-failure namespace diagnostics capture. Empty skips the download.
     required: false
-    default: deploy-camunda-binary
+    default: ""
 runs:
   using: composite
   steps:
@@ -164,14 +167,14 @@ runs:
           zbctl
           jq
 
-    - name: Download deploy-camunda binary (multi-namespace topology)
-      if: inputs.management-namespace != ''
+    - name: Download deploy-camunda binary
+      if: inputs.binary-artifact-name != ''
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: ${{ inputs.binary-artifact-name }}
         path: ${{ runner.temp }}/bin
-    - name: Add deploy-camunda to PATH (multi-namespace topology)
-      if: inputs.management-namespace != ''
+    - name: Add deploy-camunda to PATH
+      if: inputs.binary-artifact-name != ''
       shell: bash
       run: |
         chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
@@ -258,6 +261,43 @@ runs:
         [[ -n "$MANAGEMENT_NAMESPACE" ]] && E2E_ARGS+=(--management-namespace "${MANAGEMENT_NAMESPACE}")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
+
+    - name: Capture namespace diagnostics
+      if: ${{ failure() && !cancelled() }}
+      shell: bash
+      env:
+        TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+      run: |
+        mkdir -p "${GITHUB_WORKSPACE}/e2e-diagnostics"
+        out="${GITHUB_WORKSPACE}/e2e-diagnostics/namespace-diagnostics.txt"
+        if ! command -v deploy-camunda >/dev/null 2>&1; then
+          echo "deploy-camunda not on PATH; no diagnostics captured" | tee "$out"
+          exit 0
+        fi
+        deploy-camunda diagnostics print \
+          --namespace "${TEST_NAMESPACE}" \
+          --include-ready \
+          > "$out" 2>&1 || true
+        echo "::group::Namespace diagnostics"
+        cat "$out"
+        echo "::endgroup::"
+
+    - name: Compute diagnostics artifact name
+      id: e2e_diag_artifact
+      if: ${{ failure() && !cancelled() }}
+      shell: bash
+      run: |
+        raw="diagnostics-e2e-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ github.run_id }}-${{ github.run_attempt }}"
+        echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
+
+    - name: Upload namespace diagnostics
+      if: ${{ failure() && !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: ${{ steps.e2e_diag_artifact.outputs.name }}
+        path: e2e-diagnostics/
+        retention-days: 1
+        if-no-files-found: warn
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}

@@ -31,7 +31,7 @@ func TestPrintNamespaceDiagnostics(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 500)
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 500, false)
 	out := buf.String()
 
 	for _, want := range []string{"Pods", "Events", "PersistentVolumeClaims", "PVC describe", "Non-ready pod: pod-a", "FailedMount", "pod-a current log"} {
@@ -60,10 +60,66 @@ func TestPrintNamespaceDiagnosticsErrorsAreInline(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	// Must not panic and must surface the errors rather than aborting.
-	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 10)
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 10, false)
 	out := buf.String()
 	if !strings.Contains(out, "(error: boom)") || !strings.Contains(out, "(error: list failed)") {
 		t.Errorf("expected inline errors, got:\n%s", out)
+	}
+}
+
+func TestPrintNamespaceDiagnosticsIncludeReady(t *testing.T) {
+	t.Parallel()
+
+	var describedPods []string
+	nonReadyCalls := 0
+	src := podDiagnosticsSource{
+		GetPods:      func(_ context.Context, _, _ string) (string, error) { return "keycloak 1/1 Running", nil },
+		GetEvents:    func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetPVCs:      func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		DescribePVCs: func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetNonReadyPods: func(_ context.Context, _, _ string) ([]string, error) {
+			nonReadyCalls++
+			return nil, nil
+		},
+		GetPodNames: func(_ context.Context, _, _ string) ([]string, error) {
+			return []string{"orchestration-0", "keycloak-0"}, nil
+		},
+		DescribePod: func(_ context.Context, _, _, pod string) (string, error) {
+			describedPods = append(describedPods, pod)
+			return "Name: " + pod, nil
+		},
+		GetPodLogs: func(_ context.Context, _, _, pod string, _ int) (string, error) {
+			return pod + ": Unexpected error when handling authentication request", nil
+		},
+		GetPodLogsPrevious: func(_ context.Context, _, _, _ string, _ int) (string, error) { return "", nil },
+	}
+
+	var buf bytes.Buffer
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 500, true)
+	out := buf.String()
+
+	// Every pod is Ready, so the default mode would have collected no logs at all.
+	for _, want := range []string{
+		"Pod: keycloak-0 — describe",
+		"Pod: orchestration-0 — describe",
+		"Unexpected error when handling authentication request",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	if len(describedPods) != 2 {
+		t.Errorf("expected both pods described, got %v", describedPods)
+	}
+	// Sorted, so keycloak-0 precedes orchestration-0.
+	if describedPods[0] != "keycloak-0" {
+		t.Errorf("expected sorted pod order, got %v", describedPods)
+	}
+	if nonReadyCalls != 0 {
+		t.Errorf("include-ready must not call GetNonReadyPods, got %d calls", nonReadyCalls)
+	}
+	if strings.Contains(out, "Non-ready pod:") {
+		t.Errorf("include-ready output should not use the non-ready label:\n%s", out)
 	}
 }
 
