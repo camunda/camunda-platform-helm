@@ -17,6 +17,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -88,5 +89,45 @@ orchestration:
 	}
 	if got, want := string(artifactHub), "- image: docker.io/camunda/camunda:8.9.13\n"; got != want {
 		t.Errorf("Artifact Hub output = %q, want %q", got, want)
+	}
+}
+
+func TestBuildWorkflowRecordsImageAnnotations(t *testing.T) {
+	workflowPath := filepath.Join("..", "..", ".github", "workflows", "chart-build-dev.yaml")
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("read build workflow: %v", err)
+	}
+
+	var workflow struct {
+		Jobs map[string]struct {
+			Steps []struct {
+				Name string `yaml:"name"`
+				Run  string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &workflow); err != nil {
+		t.Fatalf("parse build workflow: %v", err)
+	}
+
+	var annotationStep string
+	for _, step := range workflow.Jobs["build"].Steps {
+		if step.Name == "Record chart image annotations" {
+			annotationStep = step.Run
+			break
+		}
+	}
+	if annotationStep == "" {
+		t.Fatal("build workflow has no image annotation step")
+	}
+	for _, required := range []string{
+		"--artifacthub-out /tmp/artifacthub-images.yaml",
+		`.annotations."camunda.io/chart-images"`,
+		`.annotations."artifacthub.io/images"`,
+	} {
+		if !strings.Contains(annotationStep, required) {
+			t.Errorf("image annotation step missing %q", required)
+		}
 	}
 }
