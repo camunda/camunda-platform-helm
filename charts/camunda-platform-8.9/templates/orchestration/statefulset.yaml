@@ -134,13 +134,15 @@ spec:
                 "config" .Values.orchestration.data.secondaryStorage.elasticsearch.auth
             ) | nindent 12 }}
             {{- end }}
-            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- $hasTasklistGlobalOpenSearchReader := and .Values.orchestration.profiles.tasklist .Values.global.opensearch.enabled }}
+            {{- $hasOpenSearchConsumer := or (eq (include "orchestration.secondaryStorage" .) "opensearch") (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true") $hasTasklistGlobalOpenSearchReader }}
+            {{- if and $hasOpenSearchConsumer (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_OPENSEARCH_PASSWORD"
                 "config" .Values.global.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
-            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.auth)) "true") }}
+            {{- if and $hasOpenSearchConsumer (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_OPENSEARCH_PASSWORD"
                 "config" .Values.orchestration.data.secondaryStorage.opensearch.auth

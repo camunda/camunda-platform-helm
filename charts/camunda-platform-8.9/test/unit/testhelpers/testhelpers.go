@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package testhelpers provides utilities for testing Helm charts.
 // To enable verbose logging, set the VERBOSE_TEST_LOGGING environment variable to "true".
 // Example: VERBOSE_TEST_LOGGING=true go test ./...
@@ -86,11 +100,12 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 	if values == nil {
 		values = make(map[string]string)
 	}
-	// Add default Elasticsearch flags if not already present
-	if _, hasGlobalES := values["global.elasticsearch.enabled"]; !hasGlobalES {
+	_, hasSecondaryStorageType := values["orchestration.data.secondaryStorage.type"]
+	// Add default Elasticsearch flags if no current storage selector is provided.
+	if _, hasGlobalES := values["global.elasticsearch.enabled"]; !hasGlobalES && !hasSecondaryStorageType {
 		values["global.elasticsearch.enabled"] = "true"
 	}
-	if _, hasES := values["elasticsearch.enabled"]; !hasES {
+	if _, hasES := values["elasticsearch.enabled"]; !hasES && !hasSecondaryStorageType {
 		values["elasticsearch.enabled"] = "true"
 	}
 
