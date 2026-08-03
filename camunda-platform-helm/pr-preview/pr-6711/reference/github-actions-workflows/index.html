@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">GitHub Actions Workflows | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6711/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6711/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6711/reference/github-actions-workflows"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="GitHub Actions Workflows | Camunda Helm Charts"><meta data-rh="true" name="description" content="This repo has many GitHub Actions workflows for different aspects of the CI pipelines."><meta data-rh="true" property="og:description" content="This repo has many GitHub Actions workflows for different aspects of the CI pipelines."><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6711/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6711/reference/github-actions-workflows"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6711/reference/github-actions-workflows" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6711/reference/github-actions-workflows" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"GitHub Actions Workflows","item":"https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6711/reference/github-actions-workflows"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6711/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6711/assets/js/runtime~main.59d35ebd.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6711/assets/js/main.680b8ae0.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6711/assets/js/runtime~main.85149db3.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6711/assets/js/main.20d1025f.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -131,14 +131,14 @@
 </blockquote>
 <p>Generates the full <strong>platform × flow</strong> matrix and dispatches each combination to Layer 3.</p>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-matrix-generation-works">How matrix generation works<a href="#how-matrix-generation-works" class="hash-link" aria-label="Direct link to How matrix generation works" title="Direct link to How matrix generation works" translate="no">​</a></h4>
-<p>The <code>init</code> job reads <a href="https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/test-integration-matrix.yaml" target="_blank" rel="noopener noreferrer" class=""><code>.github/config/test-integration-matrix.yaml</code></a> — a YAML file with <code>$VARIABLE</code> placeholders in <code>if</code> fields. The job:</p>
+<p>The <code>init</code> job restores or builds <code>deploy-camunda</code>, then runs <code>deploy-camunda ci integration-matrix</code>. The command:</p>
 <ol>
-<li class="">Exports boolean env vars (<code>INPUTS_PLATFORMS_GKE=true</code>, <code>INPUTS_FLOWS_INSTALL=false</code>, etc.) based on the workflow inputs.</li>
-<li class="">Runs <code>envsubst</code> to replace the <code>$VARIABLE</code> references with <code>true</code>/<code>false</code>.</li>
-<li class="">Relies on the matrix <code>exclude</code> block to remove entries where <code>if: false</code>.</li>
-<li class="">Converts the result to JSON via <code>yq</code> for the runner&#x27;s <code>strategy.matrix</code>.</li>
+<li class="">Reads <a href="https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/test-integration-matrix.yaml" target="_blank" rel="noopener noreferrer" class=""><code>.github/config/test-integration-matrix.yaml</code></a>.</li>
+<li class="">Normalizes the comma-separated platform and flow inputs.</li>
+<li class="">Filters distro entries by platform and scenario entries by flow.</li>
+<li class="">Writes the compact JSON matrix to <code>$GITHUB_OUTPUT</code> for the runner&#x27;s <code>strategy.matrix</code>.</li>
 </ol>
-<p>The <code>matrix-data</code> input can override the file-based matrix entirely.</p>
+<p>The <code>matrix-data</code> input can override the file-based matrix entirely. The command validates and compacts the supplied JSON without applying the platform and flow filters.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="layer-3-test-integration-runner">Layer 3: <code>test-integration-runner</code><a href="#layer-3-test-integration-runner" class="hash-link" aria-label="Direct link to layer-3-test-integration-runner" title="Direct link to layer-3-test-integration-runner" translate="no">​</a></h3>
 <blockquote>
 <p><a href="https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/test-integration-runner.yaml" target="_blank" rel="noopener noreferrer" class=""><code>.github/workflows/test-integration-runner.yaml</code></a></p>
@@ -161,7 +161,7 @@
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="modular-upgrade-minor"><code>modular-upgrade-minor</code><a href="#modular-upgrade-minor" class="hash-link" aria-label="Direct link to modular-upgrade-minor" title="Direct link to modular-upgrade-minor" translate="no">​</a></h4>
 <p>Component-by-component upgrade from a previous minor version. This flow <strong>skips the install job</strong> — it expects the namespace and Helm release to already exist from a prior deployment. It uses the same namespace (no suffix) as the install flow and runs only the upgrade job.</p>
 <blockquote>
-<p><strong>Important:</strong> This flow cannot be invoked via <code>generate-chart-matrix.sh</code>. It must be called directly on <code>test-integration-template.yaml</code>. When used alongside <code>install</code> in the same flows string (e.g. <code>&quot;install,modular-upgrade-minor&quot;</code>), the two run as independent shards with <strong>no ordering guarantee</strong>.</p>
+<p><strong>Important:</strong> This flow cannot be selected with <code>deploy-camunda matrix plan --manual-flow</code>. It must be passed directly to <code>test-integration-template.yaml</code>. When used alongside <code>install</code> in the same flows string (e.g. <code>&quot;install,modular-upgrade-minor&quot;</code>), the two run as independent shards with <strong>no ordering guarantee</strong>.</p>
 </blockquote>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="namespace-management">Namespace management<a href="#namespace-management" class="hash-link" aria-label="Direct link to Namespace management" title="Direct link to Namespace management" translate="no">​</a></h3>
 <p>Each flow creates (or reuses) a namespace with a flow-specific suffix:</p>
