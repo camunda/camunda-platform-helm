@@ -1852,6 +1852,21 @@ Usage (inside the Orchestration pod template's metadata.annotations):
   {{- $hashes = append $hashes (get $data $certRef.key) -}}
 {{- end -}}
 
+{{- if $tls.privateKey.secret.inlineSecret -}}
+  {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
+{{- else if $keyRef.name -}}
+  {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}
+  {{- $data := ($s | default dict).data | default dict -}}
+  {{- $hashes = append $hashes (get $data $keyRef.key) -}}
+{{- end -}}
+{{- if $hashes -}}
+{{- printf "\nchecksum/orchestration-tls-%s: %s" $proto (join "" $hashes | sha256sum) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{/* Returns the Secret data key that holds the Connectors server certificate. */}}
 {{- define "camundaPlatform.connectorsSecretCertKey" -}}
 {{- $c := .Values.global.tls.connectors -}}
@@ -1874,20 +1889,6 @@ keystore.p12
 {{- $secret := lookup "v1" "Secret" .Release.Namespace $c.cert.secret.existingSecret -}}
 {{- $data := ($secret | default dict).data | default dict -}}
 checksum/connectors-tls: {{ get $data (include "camundaPlatform.connectorsSecretCertKey" .) | sha256sum }}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- if $tls.privateKey.secret.inlineSecret -}}
-  {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
-{{- else if $keyRef.name -}}
-  {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}
-  {{- $data := ($s | default dict).data | default dict -}}
-  {{- $hashes = append $hashes (get $data $keyRef.key) -}}
-{{- end -}}
-{{- if $hashes -}}
-{{- printf "\nchecksum/orchestration-tls-%s: %s" $proto (join "" $hashes | sha256sum) -}}
-{{- end -}}
-{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
