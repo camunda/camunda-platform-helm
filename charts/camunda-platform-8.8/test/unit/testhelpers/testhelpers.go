@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package testhelpers provides utilities for testing Helm charts.
 // To enable verbose logging, set the VERBOSE_TEST_LOGGING environment variable to "true".
 // Example: VERBOSE_TEST_LOGGING=true go test ./...
@@ -61,6 +75,9 @@ type TestCase struct {
 	// For ConfigMap tests, keys can be direct data keys or dot-notation paths into application.yaml
 	Expected map[string]string
 
+	// Unexpected contains paths that must NOT be present in the rendered output
+	Unexpected []string
+
 	// Verifier is a custom function for complex validation scenarios
 	// When provided, it overrides the default validation logic
 	// It receives the rendered output and any error that occurred during rendering
@@ -116,6 +133,8 @@ func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates
 }
 
 func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates []string, tc TestCase) {
+	require.NoError(t, validateTestCase(tc), "invalid test case %q", tc.Name)
+
 	var caseTemplates []string
 	if tc.Template != "" {
 		caseTemplates = []string{tc.Template}
@@ -135,15 +154,20 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 
 	if expectedErr, ok := tc.Expected["ERROR"]; ok {
 		require.ErrorContains(t, err, expectedErr)
-	} else if err != nil {
+		return
+	}
+	if err != nil {
 		t.Fatalf("Unexpected error during rendering: %v", err)
 	}
 
-	if tc.ExpectedObject != nil && err == nil {
+	if len(tc.Expected) > 0 || len(tc.Unexpected) > 0 {
+		verifyRenderedPaths(t, output, tc.Expected, tc.Unexpected)
+		return
+	}
+
+	if tc.ExpectedObject != nil {
 		helm.UnmarshalK8SYaml(t, output, tc.ExpectedObject)
-		if tc.ObjectAsserter != nil {
-			tc.ObjectAsserter(t, tc.ExpectedObject)
-		}
+		tc.ObjectAsserter(t, tc.ExpectedObject)
 	}
 }
 

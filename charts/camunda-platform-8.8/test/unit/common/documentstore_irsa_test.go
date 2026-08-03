@@ -122,9 +122,10 @@ func awsDocumentStoreValuesWithIRSA(irsaEnabled bool) map[string]string {
 	} else {
 		// Credentials mode: credentials are injected from secret
 		values["global.documentStore.type.aws.irsa.enabled"] = "false"
-		values["global.documentStore.type.aws.existingSecret"] = "aws-credentials"
-		values["global.documentStore.type.aws.accessKeyIdKey"] = "awsAccessKeyId"
-		values["global.documentStore.type.aws.secretAccessKeyKey"] = "awsSecretAccessKey"
+		values["global.documentStore.type.aws.accessKeyId.secret.existingSecret"] = "aws-credentials"
+		values["global.documentStore.type.aws.accessKeyId.secret.existingSecretKey"] = "awsAccessKeyId"
+		values["global.documentStore.type.aws.secretAccessKey.secret.existingSecret"] = "aws-credentials"
+		values["global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey"] = "awsSecretAccessKey"
 	}
 	return values
 }

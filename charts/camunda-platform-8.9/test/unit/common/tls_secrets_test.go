@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package camunda
 
 import (
@@ -328,9 +342,9 @@ func (s *tlsSecretsTest) TestElasticsearchTLSEnabledNoSecret() {
 				"global.elasticsearch.tls.enabled": "true",
 			},
 			Expected: map[string]string{
-				// Volume should not exist when no secret is provided
-				"spec.template.spec.volumes[?(@.name=='keystore')]": "null",
+				"kind": "StatefulSet",
 			},
+			Unexpected: []string{"spec.template.spec.volumes[?(@.name=='keystore')]"},
 		},
 	}
 
@@ -351,11 +365,9 @@ func (s *tlsSecretsTest) TestConsoleTLSEnabledNoSecret() {
 				"console.tls.certKeyFilename":  "ca.crt",
 			},
 			Expected: map[string]string{
-				// Volume should not exist when no secret is provided
-				"spec.template.spec.volumes[?(@.name=='console-certificates')]": "null",
-				// But NODE_EXTRA_CA_CERTS should still be rendered
 				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/usr/local/console/certificates/ca.crt",
 			},
+			Unexpected: []string{"spec.template.spec.volumes[?(@.name=='console-certificates')]"},
 		},
 	}
 
@@ -376,11 +388,9 @@ func (s *tlsSecretsTest) TestConsoleTLSDisabled() {
 				"console.tls.certKeyFilename":  "ca.crt",
 			},
 			Expected: map[string]string{
-				// Volume should not exist when TLS is disabled
-				"spec.template.spec.volumes[?(@.name=='console-certificates')]": "null",
-				// But NODE_EXTRA_CA_CERTS should still be rendered (reference doc says "always rendered")
 				"spec.template.spec.containers[0].env[?(@.name=='NODE_EXTRA_CA_CERTS')].value": "/usr/local/console/certificates/ca.crt",
 			},
+			Unexpected: []string{"spec.template.spec.volumes[?(@.name=='console-certificates')]"},
 		},
 	}
 
@@ -762,9 +772,11 @@ func (s *tlsSecretsTest) TestCaBundleInitContainerSecurityContext() {
 				"global.compatibility.openshift.adaptSecurityContext": "force",
 			},
 			Expected: map[string]string{
-				// dropped → extractor returns "" for an absent path
-				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].securityContext.runAsUser":  "",
-				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].securityContext.runAsGroup": "",
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].name": "ca-bundle-truststore-init",
+			},
+			Unexpected: []string{
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].securityContext.runAsUser",
+				"spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].securityContext.runAsGroup",
 			},
 		},
 	}
@@ -796,8 +808,9 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
 				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
 			},
 			Expected: map[string]string{
-				"spec.template.metadata.annotations.checksum/ca-bundle": "",
+				"kind": "StatefulSet",
 			},
+			Unexpected: []string{"spec.template.metadata.annotations.checksum/ca-bundle"},
 		},
 		{
 			Name:     "no checksum/ca-bundle annotation when caBundle is unset",
@@ -806,8 +819,9 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotation() {
 				"orchestration.enabled": "true",
 			},
 			Expected: map[string]string{
-				"spec.template.metadata.annotations.checksum/ca-bundle": "",
+				"kind": "StatefulSet",
 			},
+			Unexpected: []string{"spec.template.metadata.annotations.checksum/ca-bundle"},
 		},
 	}
 
@@ -857,8 +871,9 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
 				"global.tls.caBundle.secret.existingSecret": "my-ca-bundle",
 			},
 			Expected: map[string]string{
-				"spec.template.metadata.annotations.checksum/ca-bundle": "",
+				"kind": "Deployment",
 			},
+			Unexpected: []string{"spec.template.metadata.annotations.checksum/ca-bundle"},
 		},
 	}
 

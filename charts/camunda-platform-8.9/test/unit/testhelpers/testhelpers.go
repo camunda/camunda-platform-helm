@@ -76,6 +76,9 @@ type TestCase struct {
 	// For ConfigMap tests, keys can be direct data keys or dot-notation paths into application.yaml
 	Expected map[string]string
 
+	// Unexpected contains paths that must NOT be present in the rendered output
+	Unexpected []string
+
 	// Verifier is a custom function for complex validation scenarios
 	// When provided, it overrides the default validation logic
 	// It receives the rendered output and any error that occurred during rendering
@@ -97,9 +100,11 @@ func quietLogger() *logger.Logger {
 }
 
 type storageFixtureState struct {
-	typeSet                bool
-	globalElasticsearchSet bool
-	elasticsearchSet       bool
+	typeSet            bool
+	legacySelectionSet bool
+	noSecondaryStorage bool
+	rdbmsEnabled       bool
+	openSearchEnabled  bool
 }
 
 func mergeStorageFixtureValues(base, overlay map[string]any) {
@@ -134,15 +139,16 @@ func storageFixtureValue(values map[string]any, path ...string) (any, bool) {
 	return current, true
 }
 
-func storageFixtureBoolSet(values map[string]any, path ...string) (bool, error) {
+func storageFixtureBool(values map[string]any, path ...string) (bool, bool, error) {
 	rawValue, ok := storageFixtureValue(values, path...)
 	if !ok {
-		return false, nil
+		return false, false, nil
 	}
-	if _, ok := rawValue.(bool); !ok {
-		return false, fmt.Errorf("storage fixture value %s must be a boolean", strings.Join(path, "."))
+	value, ok := rawValue.(bool)
+	if !ok {
+		return false, false, fmt.Errorf("storage fixture value %s must be a boolean", strings.Join(path, "."))
 	}
-	return true, nil
+	return value, true, nil
 }
 
 func loadStorageFixtureState(valuesFiles []string, values map[string]string) (storageFixtureState, error) {
@@ -167,11 +173,18 @@ func loadStorageFixtureState(valuesFiles []string, values map[string]string) (st
 		}
 		state.typeSet = true
 	}
+	_, elasticsearchSet := storageFixtureValue(mergedValues, "global", "elasticsearch", "enabled")
+	_, openSearchSet := storageFixtureValue(mergedValues, "global", "opensearch", "enabled")
+	state.legacySelectionSet = elasticsearchSet || openSearchSet
+
 	var err error
-	if state.globalElasticsearchSet, err = storageFixtureBoolSet(mergedValues, "global", "elasticsearch", "enabled"); err != nil {
+	if state.noSecondaryStorage, _, err = storageFixtureBool(mergedValues, "global", "noSecondaryStorage"); err != nil {
 		return state, err
 	}
-	if state.elasticsearchSet, err = storageFixtureBoolSet(mergedValues, "elasticsearch", "enabled"); err != nil {
+	if state.rdbmsEnabled, _, err = storageFixtureBool(mergedValues, "orchestration", "exporters", "rdbms", "enabled"); err != nil {
+		return state, err
+	}
+	if state.openSearchEnabled, _, err = storageFixtureBool(mergedValues, "optimize", "database", "opensearch", "enabled"); err != nil {
 		return state, err
 	}
 
@@ -179,10 +192,19 @@ func loadStorageFixtureState(valuesFiles []string, values map[string]string) (st
 		state.typeSet = true
 	}
 	if _, ok := values["global.elasticsearch.enabled"]; ok {
-		state.globalElasticsearchSet = true
+		state.legacySelectionSet = true
 	}
-	if _, ok := values["elasticsearch.enabled"]; ok {
-		state.elasticsearchSet = true
+	if _, ok := values["global.opensearch.enabled"]; ok {
+		state.legacySelectionSet = true
+	}
+	if value, ok := values["global.noSecondaryStorage"]; ok {
+		state.noSecondaryStorage = strings.EqualFold(value, "true")
+	}
+	if value, ok := values["orchestration.exporters.rdbms.enabled"]; ok {
+		state.rdbmsEnabled = strings.EqualFold(value, "true")
+	}
+	if value, ok := values["optimize.database.opensearch.enabled"]; ok {
+		state.openSearchEnabled = strings.EqualFold(value, "true")
 	}
 
 	return state, nil
@@ -197,12 +219,12 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 	if err != nil {
 		return nil, err
 	}
-	// Add default Elasticsearch flags if no current storage selector is provided.
-	if !storageState.typeSet && !storageState.globalElasticsearchSet {
-		values["global.elasticsearch.enabled"] = "true"
-	}
-	if !storageState.typeSet && !storageState.elasticsearchSet {
-		values["elasticsearch.enabled"] = "true"
+	if !storageState.typeSet && !storageState.legacySelectionSet && !storageState.noSecondaryStorage && !storageState.rdbmsEnabled {
+		secondaryStorageType := "elasticsearch"
+		if storageState.openSearchEnabled {
+			secondaryStorageType = "opensearch"
+		}
+		values["orchestration.data.secondaryStorage.type"] = secondaryStorageType
 	}
 
 	options := &helm.Options{
@@ -242,6 +264,8 @@ func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates
 }
 
 func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates []string, tc TestCase) {
+	require.NoError(t, validateTestCase(tc), "invalid test case %q", tc.Name)
+
 	var caseTemplates []string
 	if tc.Template != "" {
 		caseTemplates = []string{tc.Template}
@@ -261,15 +285,20 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 
 	if expectedErr, ok := tc.Expected["ERROR"]; ok {
 		require.ErrorContains(t, err, expectedErr)
-	} else if err != nil {
+		return
+	}
+	if err != nil {
 		t.Fatalf("Unexpected error during rendering: %v", err)
 	}
 
-	if tc.ExpectedObject != nil && err == nil {
+	if len(tc.Expected) > 0 || len(tc.Unexpected) > 0 {
+		verifyRenderedPaths(t, output, tc.Expected, tc.Unexpected)
+		return
+	}
+
+	if tc.ExpectedObject != nil {
 		helm.UnmarshalK8SYaml(t, output, tc.ExpectedObject)
-		if tc.ObjectAsserter != nil {
-			tc.ObjectAsserter(t, tc.ExpectedObject)
-		}
+		tc.ObjectAsserter(t, tc.ExpectedObject)
 	}
 }
 

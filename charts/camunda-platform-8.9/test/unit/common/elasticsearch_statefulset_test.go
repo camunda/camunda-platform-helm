@@ -34,6 +34,9 @@ func TestGoldenElasticsearchDefaults(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda",
 		GoldenFileName: "elasticsearch-statefulset",
+		SetValues: map[string]string{
+			"elasticsearch.enabled": "true",
+		},
 		IgnoredLines: []string{
 			`\s+.*-secret:\s+.*`,    // ignore auto-generated secrets
 			`\s+checksum/.+?:\s+.*`, // ignore configmap checksums
