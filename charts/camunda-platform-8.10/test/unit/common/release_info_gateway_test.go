@@ -57,8 +57,11 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 				"global.gateway.tls.enabled":               "true",
 				"global.gateway.tls.secretName":            "camunda-tls",
 				"global.host":                              "camunda.example.com",
+				"global.identity.keycloak.internal":        "true",
+				"identity.enabled":                         "true",
 				"optimize.enabled":                         "true",
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.gateway.grpc.enabled":       "true",
 			},
 			Template: "templates/common/configmap-release.yaml",
 			Verifier: func(t *testing.T, output string, err error) {
@@ -67,9 +70,44 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 				require.Contains(t, output, "url: https://camunda.example.com/tasklist")
 				require.Contains(t, output, "grpc: https://grpc-camunda.example.com")
 				require.Contains(t, output, "http: https://camunda.example.com")
+				require.Contains(t, output, "https://camunda.example.com/auth")
 				require.NotContains(t, output, "http://localhost:8080")
 				require.NotContains(t, output, "http://localhost:26500")
 				require.NotContains(t, output, "http://localhost:8083")
+			},
+		},
+		{
+			Name: "GatewayWithoutGRPCRouteUsesLocalEndpoint",
+			Values: map[string]string{
+				"global.ingress.enabled":        "false",
+				"global.gateway.enabled":        "true",
+				"global.gateway.tls.enabled":    "true",
+				"global.gateway.tls.secretName": "camunda-tls",
+				"global.host":                   "camunda.example.com",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "grpc: http://localhost:26500")
+				require.NotContains(t, output, "grpc: https://grpc-camunda.example.com")
+			},
+		},
+		{
+			Name: "PlaintextGatewayIgnoresInactiveIngressTLS",
+			Values: map[string]string{
+				"global.ingress.enabled":            "false",
+				"global.ingress.tls.enabled":        "true",
+				"global.gateway.enabled":            "true",
+				"global.gateway.tls.enabled":        "false",
+				"global.host":                       "camunda.example.com",
+				"global.identity.keycloak.internal": "true",
+				"identity.enabled":                  "true",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "http://camunda.example.com/auth")
+				require.NotContains(t, output, "https://camunda.example.com/auth")
 			},
 		},
 	}
