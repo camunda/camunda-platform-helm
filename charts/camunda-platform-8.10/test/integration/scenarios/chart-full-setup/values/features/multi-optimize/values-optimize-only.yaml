@@ -1,0 +1,67 @@
+---
+global:
+  host: camunda.example.com
+  ingress:
+    enabled: true
+    className: nginx
+    tls:
+      enabled: true
+      secretName: camunda-platform-tls
+  elasticsearch:
+    enabled: false
+  identity:
+    service:
+      url: "http://platform-identity:80/identity"
+    keycloak:
+      url:
+        protocol: http
+        host: keycloak
+        port: "80"
+      contextPath: /auth/
+      realm: /realms/camunda-platform
+    auth:
+      enabled: true
+      type: KEYCLOAK
+      issuerBackendUrl: >-
+        http://keycloak:80/auth/realms/camunda-platform
+      publicIssuerUrl: >-
+        https://camunda.example.com/auth/realms/camunda-platform
+      optimize:
+        clientId: optimize-team-b
+        redirectUrl: "https://camunda.example.com/optimize-team-b"
+        secret:
+          existingSecret: multi-optimize-credentials
+          existingSecretKey: optimize-team-b-client-secret
+  security:
+    authentication:
+      method: oidc
+
+identity:
+  enabled: false
+
+camundaHub:
+  enabled: false
+
+webModeler:
+  enabled: false
+
+connectors:
+  enabled: false
+
+orchestration:
+  enabled: false
+
+optimize:
+  enabled: true
+  contextPath: /optimize-team-b
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      url:
+        protocol: http
+        host: elasticsearch-master
+        port: 9200
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: optimize-team-b

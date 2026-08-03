@@ -1,0 +1,123 @@
+---
+global:
+  host: camunda.example.com
+  ingress:
+    enabled: true
+    className: nginx
+    tls:
+      enabled: true
+      secretName: camunda-platform-tls
+  elasticsearch:
+    enabled: false
+  identity:
+    service:
+      url: "http://platform-identity:80/identity"
+    keycloak:
+      internal: true
+      url:
+        protocol: http
+        host: keycloak
+        port: "80"
+      contextPath: /auth/
+      realm: /realms/camunda-platform
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: multi-optimize-credentials
+          existingSecretKey: keycloak-admin-password
+    auth:
+      enabled: true
+      type: KEYCLOAK
+      issuerBackendUrl: >-
+        http://keycloak:80/auth/realms/camunda-platform
+      publicIssuerUrl: >-
+        https://camunda.example.com/auth/realms/camunda-platform
+      camundaHub:
+        redirectUrl: "https://camunda.example.com/modeler"
+      optimize:
+        clientId: optimize-team-a
+        redirectUrl: "https://camunda.example.com/optimize-team-a"
+        secret:
+          existingSecret: multi-optimize-credentials
+          existingSecretKey: optimize-team-a-client-secret
+  security:
+    authentication:
+      method: oidc
+
+identity:
+  enabled: true
+  contextPath: /identity
+  firstUser:
+    secret:
+      existingSecret: multi-optimize-credentials
+      existingSecretKey: identity-first-user-password
+  clients:
+    - id: optimize-team-b
+      name: Optimize Team B
+      type: confidential
+      secret:
+        existingSecret: multi-optimize-credentials
+        existingSecretKey: optimize-team-b-client-secret
+      rootUrl: "https://camunda.example.com/optimize-team-b"
+      redirectUris: /api/authentication/callback
+      permissions:
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: camunda-identity-resource-server
+          definition: read:users
+
+camundaHub:
+  enabled: true
+  contextPath: /modeler
+  restapi:
+    mail:
+      fromAddress: noreply@example.com
+    pusher:
+      secret:
+        existingSecret: multi-optimize-credentials
+        existingSecretKey: web-modeler-pusher-app-secret
+      client:
+        secret:
+          existingSecret: multi-optimize-credentials
+          existingSecretKey: web-modeler-pusher-app-key
+
+connectors:
+  enabled: true
+  contextPath: /connectors
+  security:
+    authentication:
+      oidc:
+        secret:
+          existingSecret: multi-optimize-credentials
+          existingSecretKey: connectors-client-secret
+
+orchestration:
+  enabled: true
+  contextPath: /orchestration
+  security:
+    authentication:
+      oidc:
+        redirectUrl: "https://camunda.example.com/orchestration"
+        secret:
+          existingSecret: multi-optimize-credentials
+          existingSecretKey: orchestration-client-secret
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://elasticsearch-master:9200"
+
+optimize:
+  enabled: true
+  contextPath: /optimize-team-a
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      url:
+        protocol: http
+        host: elasticsearch-master
+        port: 9200
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: optimize-team-a
