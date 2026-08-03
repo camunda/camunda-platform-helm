@@ -324,7 +324,9 @@ global:
   ## flags (Kubernetes last-wins on duplicate env names). The chart cannot
   ## detect this at template time. Either include the truststore flags in
   ## your override (`-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit`)
-  ## or use <component>.javaOpts (which the chart appends to, not replaces).
+  ## or use orchestration.javaOpts or optimize.javaOpts; the chart composes
+  ## those values into JAVA_TOOL_OPTIONS. webModeler.restapi.javaOpts feeds
+  ## JAVA_OPTIONS instead, so do not put truststore flags there.
   tls:
     ## @extra global.tls.caBundle Optional OS-level CA bundle for SSL_CERT_FILE
     caBundle:

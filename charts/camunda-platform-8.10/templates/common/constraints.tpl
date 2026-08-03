@@ -483,7 +483,7 @@ The following values inside your values.yaml need to be set but were not:
           {{- $warningMessage := printf "%s %s %s"
               "[camunda][warning]"
               (printf "global.tls.caBundle is set, but %s.env sets JAVA_TOOL_OPTIONS directly." $c.comp)
-              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Components that expose a 'javaOpts' value (orchestration, optimize, web-modeler restapi) can set that instead — the chart appends its truststore flags to it."
+              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Orchestration and Optimize can set their 'javaOpts' values instead; the chart composes those values into JAVA_TOOL_OPTIONS. webModeler.restapi.javaOpts feeds JAVA_OPTIONS, not JAVA_TOOL_OPTIONS, so it is not an alternative for truststore flags."
           -}}
           {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
         {{- end }}
