@@ -126,70 +126,32 @@ The charts are built, linted, and tested on every push to the main branch. The r
    - [Version matrix](https://helm.camunda.io/camunda-platform/version-matrix/) (component versions for each chart release).
    - Public values files at `helm.camunda.io/camunda-platform/values/`.
 
-## Helm-Only Re-Release (Without Release Train)
+## Helm-Only Ad-Hoc Release
 
-Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, chart misconfiguration) that does not require a full release train. No application components are re-released.
+Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, chart misconfiguration) and no application components need to be re-released. It requests an ad-hoc release train scoped to **HC** (Helm Chart) only, rather than a full multi-component train.
 
 ### When to Use
 
 - A released Helm Chart contains an error (e.g. wrong image tag, misconfigured value).
 - The fix is limited to the Helm Chart — no new application component versions are involved.
-- A full release train would be overkill.
-
-### Prerequisites
-
-- The fix is already merged to `main` (via Renovatebot automerge or a manual PR).
+- A full multi-component release train would be overkill.
 
 ### Steps
 
-1. **Trigger a dev build** — Manually trigger [`chart-build-dev.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-build-dev.yaml) if the automatic post-merge build has not yet produced a package, or if you need to pin specific component image versions rather than taking the latest. Individual component version inputs can be overridden in the workflow dispatch form.
+1. **Make sure the fix is merged to `main` and a dev package was built** — the post-merge build is automatic; manually trigger [`chart-build-dev.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-build-dev.yaml) only if it hasn't run yet, or if you need to pin specific component image versions rather than taking the latest.
 
-2. **Promote a new RC** — Manually trigger [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) with the dev tag produced in Step 1 (e.g. `{version}-dev-{sha}` or `{chart-major}-dev-latest`). This creates a new RC tag (e.g. `{chart-major}-rc-latest`).
+2. **Request the ad-hoc release train** — In [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6), trigger the **"Ad-Hoc Release Train Request"** Slack workflow. Fill in:
+   - Reason for the ad-hoc release (link the Jira/support ticket).
+   - Which minor version(s) are included (e.g. `8.9`).
+   - Due date.
+   - Released artifact — select **HC** (Helm Chart) only; do not select other components.
 
-3. **Notify QA** — Ping `@qa-automated-release-manager` in [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6) using the QA notification template below, requesting validation of the RC.
-   - QA inputs: Branch = `main`, Directory = `camunda-platform-{CAMUNDA_VERSION}`.
-   - Do not specify individual component versions — use the RC tag directly.
-
-4. **Await QA sign-off** — **Do not trigger the public release until QA confirms all test runs passed.**
-
-5. **Trigger public release** — Manually trigger [`chart-release-public.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml) with the RC tag. This publishes the corrected chart to GitHub Releases and updates the Helm repo index.
-
-6. **Make sure the release-please PR is merged** — The workflow shepherds the release-please PR through the merge queue and re-enables auto-merge after evictions. If it still does not merge within the timeout, a Slack alert pings the distribution release manager; merge it manually with the correct released version. The daily PR reminder also flags any published-but-unmerged release PR as a backstop.
-
-7. **Notify support** — Post a message in `#ask-support` using the support template below.
+   Submitting posts a formatted announcement in the channel that pings the release train manager. This is a request, not a self-service trigger: the release train manager makes the final call and coordinates whether other components join. RC promotion, QA testing, the public release, and the release-please PR merge are all automated on your side and require no further manual action once the train is kicked off.
 
 ### Notes
 
 - **Chart versioning:** the release version is determined by the workflows — [`chart-build-dev.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-build-dev.yaml) derives the version from a release-please dry-run (falling back to the current `Chart.yaml` version), and [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) forces `--release-as` to the version parsed from the selected dev tag.
 - This process is for Self-Managed only — no SaaS rollout is involved.
-
-### QA Notification Template
-
-Post in [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6):
-
-```
-@qa-automated-release-manager can you please trigger a Helm Chart release test against {CHART_MAJOR}-rc-latest?
-
-Branch: main
-Directory: camunda-platform-{CAMUNDA_VERSION}
-
-Do not specify individual component versions — use the RC tag directly.
-```
-
-### #ask-support Notification Template
-
-```
-Hi team,
-
-We have released a Helm Chart correction for Camunda {CAMUNDA_VERSION} (Self-Managed only — no release train).
-
-*Reason:* {BRIEF_DESCRIPTION_OF_THE_FIX}
-
-*What's new in this release:*
-- Camunda Platform (Helm) {CAMUNDA_VERSION}-{HELM_VERSION} (https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-{CAMUNDA_VERSION}-{HELM_VERSION})
-
-@distribution-release-manager
-```
 
 ## Release Process Flowchart
 
