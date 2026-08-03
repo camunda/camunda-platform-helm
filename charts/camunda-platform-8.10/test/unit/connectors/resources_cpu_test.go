@@ -55,13 +55,13 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":                   "true",
-			"orchestration.enabled":                "true",
-			"global.elasticsearch.enabled":         "true",
-			"connectors.resources.requests.cpu":    "500m",
-			"connectors.resources.limits.cpu":      "1.5",
-			"connectors.resources.requests.memory": "512Mi",
-			"connectors.resources.limits.memory":   "1Gi",
+			"connectors.enabled":                       "true",
+			"orchestration.enabled":                    "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"connectors.resources.requests.cpu":        "500m",
+			"connectors.resources.limits.cpu":          "1.5",
+			"connectors.resources.requests.memory":     "512Mi",
+			"connectors.resources.limits.memory":       "1Gi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -95,13 +95,13 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"connectors.enabled":                   "true",
-			"orchestration.enabled":                "true",
-			"global.elasticsearch.enabled":         "true",
-			"connectors.resources.requests.cpu":    "1000m",
-			"connectors.resources.limits.cpu":      "2000m",
-			"connectors.resources.requests.memory": "1Gi",
-			"connectors.resources.limits.memory":   "2Gi",
+			"connectors.enabled":                       "true",
+			"orchestration.enabled":                    "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"connectors.resources.requests.cpu":        "1000m",
+			"connectors.resources.limits.cpu":          "2000m",
+			"connectors.resources.requests.memory":     "1Gi",
+			"connectors.resources.limits.memory":       "2Gi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

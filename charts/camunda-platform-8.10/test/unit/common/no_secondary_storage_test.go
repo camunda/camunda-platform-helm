@@ -54,8 +54,6 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.noSecondaryStorage":                    "true",
-				"global.elasticsearch.enabled":                 "false",
-				"global.opensearch.enabled":                    "false",
 				"orchestration.security.authentication.method": "oidc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

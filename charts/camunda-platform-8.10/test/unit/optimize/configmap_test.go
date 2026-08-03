@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package optimize
 
 import (
@@ -63,9 +77,10 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestCustomZeebeName",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                       "true",
-				"optimize.enabled":                       "true",
-				"optimize.database.elasticsearch.prefix": "custom-prefix",
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+				"optimize.database.elasticsearch.prefix":  "custom-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -89,12 +104,12 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestElasticsearchPrefixOverriddenByOptimizeDatabase",
+			Name: "TestElasticsearchPrefixFromOptimizeDatabase",
 			Values: map[string]string{
-				"identity.enabled":                       "true",
-				"optimize.enabled":                       "true",
-				"global.elasticsearch.prefix":            "global-prefix",
-				"optimize.database.elasticsearch.prefix": "optimize-prefix",
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+				"optimize.database.elasticsearch.prefix":  "component-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -107,37 +122,15 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
 
-				s.Require().Equal("optimize-prefix", configmapApplication.Zeebe.Name)
-			},
-		},
-		{
-			Name: "TestElasticsearchPrefixUsesComponentKeyDirectly",
-			Values: map[string]string{
-				"identity.enabled":                       "true",
-				"optimize.enabled":                       "true",
-				"global.elasticsearch.prefix":            "global-prefix",
-				"optimize.database.elasticsearch.prefix": "component-prefix",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configmap corev1.ConfigMap
-				var configmapApplication OptimizeConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// In 8.10 global keys are deprecated; component key takes effect directly
 				s.Require().Equal("component-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
 		{
-			Name: "TestElasticsearchPortOverriddenInConfigMap",
+			Name: "TestElasticsearchPortFromOptimizeDatabase",
 			Values: map[string]string{
 				"identity.enabled":                         "true",
 				"optimize.enabled":                         "true",
+				"optimize.database.elasticsearch.enabled":  "true",
 				"optimize.database.elasticsearch.url.port": "9201",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -155,33 +148,12 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestElasticsearchPortFallsBackToGlobalInConfigMap",
-			Values: map[string]string{
-				"identity.enabled":              "true",
-				"optimize.enabled":              "true",
-				"global.elasticsearch.url.port": "9300",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configmap corev1.ConfigMap
-				var configmapApplication OptimizeConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				s.Require().Equal(9300, configmapApplication.Es.Connection.Nodes[0].HttpPort)
-			},
-		},
-		{
 			Name: "TestElasticsearchExternalSecurityUsernameFromOptimizeDatabase",
 			Values: map[string]string{
 				"identity.enabled":                              "true",
 				"optimize.enabled":                              "true",
-				"global.elasticsearch.external":                 "true",
-				"global.elasticsearch.auth.username":            "global-es-user",
+				"optimize.database.elasticsearch.enabled":       "true",
+				"optimize.database.elasticsearch.external":      "true",
 				"optimize.database.elasticsearch.auth.username": "optimize-es-user",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -199,33 +171,12 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestElasticsearchExternalSecurityUsernameFallsBackToGlobal",
-			Values: map[string]string{
-				"identity.enabled":                   "true",
-				"optimize.enabled":                   "true",
-				"global.elasticsearch.external":      "true",
-				"global.elasticsearch.auth.username": "global-es-user",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configmap corev1.ConfigMap
-				var configmapApplication OptimizeConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				s.Require().Equal("global-es-user", configmapApplication.Es.Security.Username)
-			},
-		},
-		{
 			Name: "TestElasticsearchSslEnabledWhenProtocolHttpsFromOptimizeDatabase",
 			Values: map[string]string{
 				"identity.enabled":                             "true",
 				"optimize.enabled":                             "true",
-				"global.elasticsearch.external":                "true",
+				"optimize.database.elasticsearch.enabled":      "true",
+				"optimize.database.elasticsearch.external":     "true",
 				"optimize.database.elasticsearch.url.protocol": "https",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -245,8 +196,9 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 		{
 			Name: "TestElasticsearchNoSecuritySectionWhenNotExternal",
 			Values: map[string]string{
-				"identity.enabled": "true",
-				"optimize.enabled": "true",
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -263,14 +215,13 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestOpensearchPrefixUsesComponentKeyDirectly",
+			Name: "TestOpensearchPrefixFromOptimizeDatabase",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"optimize.enabled":                    "true",
-				"global.elasticsearch.enabled":        "false",
-				"global.opensearch.enabled":           "true",
-				"global.opensearch.url.host":          "opensearch-host",
-				"optimize.database.opensearch.prefix": "os-component-prefix",
+				"identity.enabled":                      "true",
+				"optimize.enabled":                      "true",
+				"optimize.database.opensearch.enabled":  "true",
+				"optimize.database.opensearch.url.host": "opensearch-host",
+				"optimize.database.opensearch.prefix":   "os-component-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -283,32 +234,7 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
 
-				// In 8.10 global keys are deprecated; component key takes effect directly
 				s.Require().Equal("os-component-prefix", configmapApplication.Zeebe.Name)
-			},
-		},
-		{
-			Name: "TestOpensearchPrefixOverriddenByOptimizeDatabase",
-			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"optimize.enabled":                    "true",
-				"global.elasticsearch.enabled":        "false",
-				"global.opensearch.enabled":           "true",
-				"global.opensearch.url.host":          "opensearch-host",
-				"optimize.database.opensearch.prefix": "my-optimize-os-prefix",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configmap corev1.ConfigMap
-				var configmapApplication OptimizeConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				s.Require().Equal("my-optimize-os-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
 	}

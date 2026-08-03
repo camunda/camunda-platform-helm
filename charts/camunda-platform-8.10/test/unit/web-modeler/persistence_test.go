@@ -58,10 +58,10 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledUsesEmptyDir",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"global.elasticsearch.enabled":        "true",
-				"camundaHub.enabled":                  "true",
-				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"identity.enabled":                         "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "example@example.com",
 				// persistence.enabled defaults to false
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -86,13 +86,13 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
-				"identity.enabled":                      "true",
-				"global.elasticsearch.enabled":          "true",
-				"camundaHub.enabled":                    "true",
-				"camundaHub.restapi.mail.fromAddress":   "example@example.com",
-				"camundaHub.persistence.enabled":        "true",
-				"camundaHub.persistence.size":           "5Gi",
-				"camundaHub.persistence.accessModes[0]": "ReadWriteOnce",
+				"identity.enabled":                         "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+				"camundaHub.persistence.enabled":           "true",
+				"camundaHub.persistence.size":              "5Gi",
+				"camundaHub.persistence.accessModes[0]":    "ReadWriteOnce",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -120,12 +120,12 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceWithExistingClaimCreatesVolume",
 			Values: map[string]string{
-				"identity.enabled":                     "true",
-				"global.elasticsearch.enabled":         "true",
-				"camundaHub.enabled":                   "true",
-				"camundaHub.restapi.mail.fromAddress":  "example@example.com",
-				"camundaHub.persistence.enabled":       "true",
-				"camundaHub.persistence.existingClaim": "my-existing-pvc",
+				"identity.enabled":                         "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+				"camundaHub.persistence.enabled":           "true",
+				"camundaHub.persistence.existingClaim":     "my-existing-pvc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -149,12 +149,12 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledWhenComponentDisabled",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"global.elasticsearch.enabled":        "true",
-				"webModeler.enabled":                  "false",
-				"camundaHub.restapi.mail.fromAddress": "example@example.com",
-				"camundaHub.persistence.enabled":      "true",
-				"camundaHub.persistence.size":         "5Gi",
+				"identity.enabled":                         "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"webModeler.enabled":                       "false",
+				"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+				"camundaHub.persistence.enabled":           "true",
+				"camundaHub.persistence.size":              "5Gi",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// When component is disabled, no deployment should be created
@@ -198,7 +198,6 @@ func TestDeploymentStrategyDefaultsToRollingUpdate(t *testing.T) {
 		Name: "TestDeploymentStrategyDefaultsToRollingUpdate",
 		Values: map[string]string{
 			"identity.enabled":                    "true",
-			"global.elasticsearch.enabled":        "true",
 			"webModeler.enabled":                  "true",
 			"camundaHub.restapi.mail.fromAddress": "example@example.com",
 		},
@@ -224,7 +223,6 @@ func TestDeploymentStrategyRecreateOptIn(t *testing.T) {
 		Name: "TestDeploymentStrategyRecreateOptIn",
 		Values: map[string]string{
 			"identity.enabled":                          "true",
-			"global.elasticsearch.enabled":              "true",
 			"webModeler.enabled":                        "true",
 			"camundaHub.restapi.mail.fromAddress":       "example@example.com",
 			"camundaHub.persistence.enabled":            "true",
@@ -248,7 +246,6 @@ func TestDeploymentStrategyInvalidValueFails(t *testing.T) {
 		Name: "TestDeploymentStrategyInvalidValueFails",
 		Values: map[string]string{
 			"identity.enabled":                          "true",
-			"global.elasticsearch.enabled":              "true",
 			"webModeler.enabled":                        "true",
 			"camundaHub.restapi.mail.fromAddress":       "example@example.com",
 			"camundaHub.persistence.deploymentStrategy": "InvalidStrategy",
@@ -271,7 +268,6 @@ func TestDeploymentStrategyRecreateRequiresPersistence(t *testing.T) {
 		Name: "TestDeploymentStrategyRecreateRequiresPersistence",
 		Values: map[string]string{
 			"identity.enabled":                          "true",
-			"global.elasticsearch.enabled":              "true",
 			"webModeler.enabled":                        "true",
 			"camundaHub.restapi.mail.fromAddress":       "example@example.com",
 			"camundaHub.persistence.deploymentStrategy": "Recreate",

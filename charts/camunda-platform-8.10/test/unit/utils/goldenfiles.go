@@ -17,6 +17,7 @@ package utils
 import (
 	"flag"
 	"io/ioutil"
+	"maps"
 	"regexp"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
@@ -39,19 +40,11 @@ type TemplateGoldenTest struct {
 	ExtraHelmArgs  []string
 }
 
-func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
-	if s.SetValues == nil {
-		s.SetValues = map[string]string{
-			"connectors.security.authentication.oidc.secret.existingSecret":       "camunda-credentials",
-			"connectors.security.authentication.oidc.secret.existingSecretKey":    "client-secret",
-			"orchestration.security.authentication.oidc.secret.existingSecret":    "camunda-credentials",
-			"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
-			"global.identity.auth.console.existingSecret.name":                    "camunda-credentials",
-			"global.identity.auth.optimize.secret.existingSecret":                 "camunda-credentials",
-			"global.identity.auth.optimize.secret.existingSecretKey":              "identity-optimize-client-token",
-		}
+func goldenValues(setValues map[string]string) map[string]string {
+	values := maps.Clone(setValues)
+	if values == nil {
+		values = make(map[string]string)
 	}
-	values := s.SetValues
 	values["connectors.security.authentication.oidc.secret.existingSecret"] = "camunda-credentials"
 	values["connectors.security.authentication.oidc.secret.existingSecretKey"] = "client-secret"
 	values["orchestration.security.authentication.oidc.secret.existingSecret"] = "camunda-credentials"
@@ -59,7 +52,19 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	values["global.identity.auth.console.existingSecret.name"] = "camunda-credentials"
 	values["global.identity.auth.optimize.secret.existingSecret"] = "camunda-credentials"
 	values["global.identity.auth.optimize.secret.existingSecretKey"] = "identity-optimize-client-token"
-	values["global.elasticsearch.enabled"] = "true"
+	if _, ok := values["orchestration.data.secondaryStorage.type"]; !ok {
+		values["orchestration.data.secondaryStorage.type"] = "elasticsearch"
+	}
+	return values
+}
+
+func goldenIgnoredLines(ignoredLines []string) []string {
+	lines := append([]string(nil), ignoredLines...)
+	return append(lines, `\s+helm.sh/chart:\s+.*`)
+}
+
+func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
+	values := goldenValues(s.SetValues)
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
 		SetValues:      values,
@@ -67,9 +72,8 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
 
-	s.IgnoredLines = append(s.IgnoredLines, `\s+helm.sh/chart:\s+.*`)
 	bytes := []byte(output)
-	for _, ignoredLine := range s.IgnoredLines {
+	for _, ignoredLine := range goldenIgnoredLines(s.IgnoredLines) {
 		regex := regexp.MustCompile(ignoredLine)
 		bytes = regex.ReplaceAll(bytes, []byte(""))
 	}

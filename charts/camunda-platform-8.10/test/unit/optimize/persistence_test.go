@@ -178,9 +178,9 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			helmChartPath, err := filepath.Abs(s.chartPath)
 			s.Require().NoError(err)
 
-			// Merge test values with required elasticsearch flags
+			// Merge test values with the required secondary storage type
 			mergedValues := make(map[string]string)
-			mergedValues["global.elasticsearch.enabled"] = "true"
+			mergedValues["orchestration.data.secondaryStorage.type"] = "elasticsearch"
 			for k, v := range testCase.Values {
 				mergedValues[k] = v
 			}

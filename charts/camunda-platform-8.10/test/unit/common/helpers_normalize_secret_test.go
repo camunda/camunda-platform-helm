@@ -52,48 +52,48 @@ func (s *normalizeSecretConfigTest) TestSecretHelperFunctionsWithOpenSearch() {
 		{
 			Name: "opensearch new style secret creates env vars",
 			Values: map[string]string{
-				"orchestration.enabled":                           "true",
-				"global.opensearch.enabled":                       "true",
-				"global.opensearch.auth.secret.existingSecret":    "my-opensearch-secret",
-				"global.opensearch.auth.secret.existingSecretKey": "my-key",
+				"orchestration.enabled":                                                        "true",
+				"orchestration.data.secondaryStorage.type":                                     "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecret":    "my-opensearch-secret",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecretKey": "my-key",
 			},
 			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "my-opensearch-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "my-key",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "my-opensearch-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "my-key",
 			},
 		},
 		{
 			Name: "opensearch inline secret creates env vars with direct values",
 			Values: map[string]string{
-				"orchestration.enabled":                      "true",
-				"global.opensearch.enabled":                  "true",
-				"global.opensearch.auth.secret.inlineSecret": "my-password",
+				"orchestration.enabled":                                                   "true",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "my-password",
 			},
 			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].value": "my-password",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].value": "my-password",
 			},
 		},
 		{
 			Name: "no opensearch config means no env vars",
 			Values: map[string]string{
-				"orchestration.enabled":     "true",
-				"global.opensearch.enabled": "true",
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "opensearch",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any opensearch password env vars
-				require.NotContains(t, output, "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD")
+				require.NoError(t, err)
+				require.NotContains(t, output, "VALUES_OPENSEARCH_PASSWORD")
 			},
 		},
 		{
 			Name: "opensearch disabled means no env vars",
 			Values: map[string]string{
-				"orchestration.enabled":                      "true",
-				"global.opensearch.enabled":                  "false",
-				"global.opensearch.auth.secret.inlineSecret": "password",
+				"orchestration.enabled":                                                   "true",
+				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any opensearch password env vars when opensearch is disabled
-				require.NotContains(t, output, "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD")
+				require.NoError(t, err)
+				require.NotContains(t, output, "VALUES_OPENSEARCH_PASSWORD")
 			},
 		},
 	}

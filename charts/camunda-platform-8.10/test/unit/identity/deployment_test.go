@@ -325,7 +325,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "global.elasticsearch.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "orchestration.data.secondaryStorage.type=elasticsearch")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// given
@@ -353,7 +353,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "global.elasticsearch.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "orchestration.data.secondaryStorage.type=elasticsearch")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
@@ -384,7 +384,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes, volumemounts array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "global.elasticsearch.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "orchestration.data.secondaryStorage.type=elasticsearch")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)

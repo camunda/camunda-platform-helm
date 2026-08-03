@@ -66,10 +66,9 @@ func (s *CamundaHubShimTemplateTest) TestEnablementMatrix() {
 		{
 			name: "HubDisabledLegacyFalse",
 			values: map[string]string{
-				"camundaHub.enabled":           "false",
-				"webModeler.enabled":           "false",
-				"console.enabled":              "false",
-				"global.elasticsearch.enabled": "true",
+				"camundaHub.enabled": "false",
+				"webModeler.enabled": "false",
+				"console.enabled":    "false",
 			},
 		},
 		{
@@ -286,10 +285,10 @@ func (s *CamundaHubShimTemplateTest) TestOIDCClientIDPreserved() {
 	for _, camundaHubEnabled := range []string{"false", "true"} {
 		s.Run("camundaHub.enabled="+camundaHubEnabled, func() {
 			values := map[string]string{
-				"camundaHub.enabled":           camundaHubEnabled,
-				"webModeler.enabled":           "true",
-				"global.identity.auth.enabled": "true",
-				"global.elasticsearch.enabled": "true",
+				"camundaHub.enabled":                       camundaHubEnabled,
+				"webModeler.enabled":                       "true",
+				"global.identity.auth.enabled":             "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
 			}
 			config := s.renderRestAPIConfigMap(values)
 			s.Require().Equal("web-modeler", config.Camunda.Modeler.OAuth2.ClientId)
@@ -362,9 +361,9 @@ func (s *CamundaHubShimTemplateTest) renderWebModelerRestAPI(values map[string]s
 
 func (s *CamundaHubShimTemplateTest) renderWebModeler(values map[string]string, templates []string) (string, error) {
 	for key, value := range map[string]string{
-		"global.elasticsearch.enabled":        "true",
-		"identity.enabled":                    "true",
-		"webModeler.restapi.mail.fromAddress": "example@example.com",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"identity.enabled":                         "true",
+		"webModeler.restapi.mail.fromAddress":      "example@example.com",
 	} {
 		if _, ok := values[key]; !ok {
 			values[key] = value

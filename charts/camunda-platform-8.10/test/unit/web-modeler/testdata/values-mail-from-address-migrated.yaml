@@ -3,9 +3,10 @@
 # from-address must be omitted (so the imported file wins) and helm install must not fail.
 identity:
   enabled: true
-global:
-  elasticsearch:
-    enabled: true
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
 webModeler:
   enabled: true
   restapi:

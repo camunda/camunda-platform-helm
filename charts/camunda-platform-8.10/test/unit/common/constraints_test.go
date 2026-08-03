@@ -105,9 +105,8 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 		{
 			Name: "TestSecondaryStorageConstraintFailsWhenOrchestrationEnabledAndNoStorageConfigured",
 			Values: map[string]string{
-				"orchestration.enabled":        "true",
-				"global.elasticsearch.enabled": "false",
-				"global.opensearch.enabled":    "false",
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().ErrorContains(err, "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`")
@@ -116,42 +115,38 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 		{
 			Name: "TestSecondaryStorageConstraintDoesNotFireWhenOrchestrationDisabled",
 			Values: map[string]string{
-				"orchestration.enabled":        "false",
-				"global.elasticsearch.enabled": "false",
-				"global.opensearch.enabled":    "false",
+				"orchestration.enabled":                    "false",
+				"orchestration.data.secondaryStorage.type": "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
 			},
 		},
 		{
-			Name: "TestSecondaryStorageConstraintDoesNotFireWhenElasticsearchEnabled",
-			Values: map[string]string{
-				"orchestration.enabled":        "true",
-				"global.elasticsearch.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			Name: "TestSecondaryStorageConstraintDoesNotFireWhenOpensearchEnabled",
-			Values: map[string]string{
-				"orchestration.enabled":        "true",
-				"global.elasticsearch.enabled": "false",
-				"global.opensearch.enabled":    "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			Name: "TestSecondaryStorageConstraintDoesNotFireWhenStorageTypeExplicitlySet",
+			Name: "TestSecondaryStorageConstraintDoesNotFireForElasticsearch",
 			Values: map[string]string{
 				"orchestration.enabled":                    "true",
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
-				"global.elasticsearch.enabled":             "false",
-				"global.opensearch.enabled":                "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireForOpenSearch",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "opensearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireForRDBMS",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "rdbms",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
@@ -289,7 +284,7 @@ func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
 // `helm template` (the framework these tests use), so warning-content
 // assertions live only in manual `helm install --dry-run` / production
 // install verification — same constraint that applies to the existing
-// global.elasticsearch.tls.secret and Bitnami subchart deprecation
+// datastore TLS secret and Bitnami subchart deprecation
 // warnings.
 func (s *ConstraintTemplateTest) TestLegacyJksTruststoreFieldsRenderWithoutCrash() {
 	testCases := []testhelpers.TestCase{
@@ -326,72 +321,6 @@ func (s *ConstraintTemplateTest) TestLegacyJksTruststoreFieldsRenderWithoutCrash
 			Name: "TestOptimizeOpensearchTlsSecretRendersOk",
 			Values: map[string]string{
 				"optimize.database.opensearch.tls.secret.existingSecret": "my-legacy-jks",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			// Minimal config: only existingSecret set, existingSecretKey defaults to "".
-			// Pins the round-2 P1 fix: deprecation gate must fire on existingSecret-only,
-			// not require both fields (which the old hasSecretConfig-based gate did).
-			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk_ExistingSecretOnly",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":           "elasticsearch",
-				"global.elasticsearch.tls.jks.secret.existingSecret": "my-jks-pw-secret",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			Name: "TestGlobalOpensearchTlsJksSecretRendersOk_ExistingSecretOnly",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":        "opensearch",
-				"global.opensearch.tls.jks.secret.existingSecret": "my-jks-pw-secret",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			// Exercises the inlineSecret branch of the gate
-			// (or .secret.existingSecret .secret.inlineSecret).
-			// Both branches must fire the warning independently.
-			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk_InlineSecret",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":         "elasticsearch",
-				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			Name: "TestGlobalOpensearchTlsJksSecretRendersOk_InlineSecret",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":      "opensearch",
-				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			Name: "TestGlobalElasticsearchTlsSecretRendersOk",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":       "elasticsearch",
-				"global.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
-			},
-		},
-		{
-			Name: "TestGlobalOpensearchTlsSecretRendersOk",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":    "opensearch",
-				"global.opensearch.tls.secret.existingSecret": "my-legacy-jks",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
@@ -459,9 +388,7 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name:   "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
-			Values: map[string]string{
-				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
-			},
+			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
 			},
@@ -469,7 +396,6 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 		{
 			Name: "TestRenderSucceedsWithAllBitnamiSubchartsDisabled",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":             "false",
 				"orchestration.data.secondaryStorage.type": "rdbms",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -516,46 +442,6 @@ func (s *ConstraintTemplateTest) TestCamundaHubConsolidationDeprecationWarningsR
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
-
-// TestWebModelerExternalDatabaseUserRemovedGate verifies the
-// webModeler.restapi.externalDatabase.user removal check (camundaPlatform.keyRemoved,
-// which calls fail and IS surfaced by helm template) fires on both enablement
-// paths: the legacy webModeler.enabled key and the new camundaHub.enabled key.
-func (s *ConstraintTemplateTest) TestWebModelerExternalDatabaseUserRemovedGate() {
-	testCases := []testhelpers.TestCase{
-		{
-			Name: "TestRemovedKeyFailsViaCamundaHubEnabled",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type": "elasticsearch",
-				"identity.enabled":                         "true",
-				"camundaHub.enabled":                       "true",
-				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
-				"webModeler.restapi.externalDatabase.user": "modeler-user",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "webModeler.restapi.externalDatabase.user")
-				s.Require().ErrorContains(err, "has been removed")
-			},
-		},
-		{
-			Name: "TestRemovedKeyFailsViaLegacyWebModelerEnabled",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type": "elasticsearch",
-				"identity.enabled":                         "true",
-				"webModeler.enabled":                       "true",
-				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
-				"webModeler.restapi.externalDatabase.user": "modeler-user",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "webModeler.restapi.externalDatabase.user")
-				s.Require().ErrorContains(err, "has been removed")
-			},
-		},
-	}
-
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
-}
-
 func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 	testCases := []testhelpers.TestCase{
 		{
