@@ -5571,7 +5571,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.13"
+                            "default": "8.9.14"
                         },
                         "digest": {
                             "type": "string",
@@ -6851,7 +6851,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.13"
+                            "default": "8.9.14"
                         },
                         "digest": {
                             "type": "string",
