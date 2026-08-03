@@ -444,16 +444,24 @@ jobs:
           make -C ../.. helm.dependency-update \
             chartPath=${{ matrix.chart.directory }}
 
-      - name: Record chart-images annotation
+      - name: Record chart image annotations
         if: env.SKIP_BUILD == 'false'
         run: |
-          # Record the full image set (components + bundled subcharts), read from
-          # values.yaml, as the camunda.io/chart-images annotation. Runs after the
-          # dependency update so the vendored subchart values are present to read.
-          /tmp/release-tools chart-images --chart-dir "$(pwd)" > /tmp/chart-images.txt
-          yq -i '.annotations."camunda.io/chart-images" = load_str("/tmp/chart-images.txt")' Chart.yaml
+          # Record components and bundled subcharts from finalized values and
+          # vendored dependencies in the internal and Artifact Hub formats.
+          /tmp/release-tools chart-images --chart-dir "$(pwd)" \
+            --artifacthub-out /tmp/artifacthub-images.yaml \
+            > /tmp/chart-images.txt
+          yq -i '
+            .annotations."camunda.io/chart-images" =
+              load_str("/tmp/chart-images.txt") |
+            .annotations."artifacthub.io/images" =
+              load_str("/tmp/artifacthub-images.yaml")
+          ' Chart.yaml
           echo "Added camunda.io/chart-images annotation:"
           yq '.annotations."camunda.io/chart-images"' Chart.yaml
+          echo "Added artifacthub.io/images annotation:"
+          yq '.annotations."artifacthub.io/images"' Chart.yaml
 
       #
       # Generate release notes

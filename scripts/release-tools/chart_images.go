@@ -20,8 +20,21 @@ import (
 	"os"
 	"strings"
 
+	"gopkg.in/yaml.v3"
 	"scripts/camunda-core/pkg/chartmeta"
 )
+
+type artifactHubImage struct {
+	Image string `yaml:"image"`
+}
+
+func artifactHubImagesYAML(images []string) ([]byte, error) {
+	entries := make([]artifactHubImage, len(images))
+	for i, image := range images {
+		entries[i] = artifactHubImage{Image: image}
+	}
+	return yaml.Marshal(entries)
+}
 
 // runChartImages derives the chart's declared image set from its values.yaml
 // (plus the chart-full-setup scenario layers) and prints it one fully-qualified
@@ -30,12 +43,14 @@ import (
 //	release-tools chart-images --chart-dir "$chart_dir" > /tmp/chart-images.txt
 //	yq -i '.annotations."camunda.io/chart-images" = load_str("/tmp/chart-images.txt")' "$chart_dir/Chart.yaml"
 //
-// It fails loud on an empty result rather than recording an empty set: a valid
-// chart always declares images.
+// With --artifacthub-out, it also writes the same references in the structured
+// artifacthub.io/images format. It fails loud on an empty result rather than
+// recording an empty set: a valid chart always declares images.
 func runChartImages(args []string) error {
 	fs := flag.NewFlagSet("chart-images", flag.ContinueOnError)
-	var chartDir string
+	var chartDir, artifactHubOut string
 	fs.StringVar(&chartDir, "chart-dir", "", "chart directory (the finalized chart, e.g. charts/camunda-platform-<v>)")
+	fs.StringVar(&artifactHubOut, "artifacthub-out", "", "file to write artifacthub.io/images YAML")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -49,6 +64,15 @@ func runChartImages(args []string) error {
 	}
 	if len(images) == 0 {
 		return fmt.Errorf("no images declared in %s/values.yaml; refusing to record an empty chart-images set", chartDir)
+	}
+	if artifactHubOut != "" {
+		artifactHubImages, err := artifactHubImagesYAML(images)
+		if err != nil {
+			return fmt.Errorf("serialize Artifact Hub images: %w", err)
+		}
+		if err := os.WriteFile(artifactHubOut, artifactHubImages, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", artifactHubOut, err)
+		}
 	}
 
 	_, err = fmt.Fprintln(os.Stdout, strings.Join(images, "\n"))

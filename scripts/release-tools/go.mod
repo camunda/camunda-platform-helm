@@ -2,7 +2,10 @@ module scripts/release-tools
 
 go 1.25.0
 
-require scripts/camunda-core v0.0.0
+require (
+	gopkg.in/yaml.v3 v3.0.1
+	scripts/camunda-core v0.0.0
+)
 
 require (
 	github.com/jwalton/gchalk v1.3.0 // indirect
@@ -12,7 +15,6 @@ require (
 	github.com/rs/zerolog v1.35.1 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace scripts/camunda-core => ../camunda-core
