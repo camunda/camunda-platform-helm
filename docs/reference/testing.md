@@ -49,6 +49,62 @@ For example, for the Orchestration StatefulSet manifest we have the test `charts
 
 It is always helpful to check existing tests to get a better understanding of how to write new tests, so do not hesitate to read and copy from them.
 
+### Source-owned branch contracts
+
+When a template or helper branches on a feature flag, backend, authentication mode, or TLS state, keep the semantic contract beside the test for the template that owns that predicate. Add a valid positive endpoint and the relevant negative or alternate endpoint. These rows describe intended behavior; generated combinations cannot infer that semantic oracle.
+
+Set competing values explicitly, including `false` values needed to neutralize another backend or a version-local fixture default. Use the current values for the chart version under test. Do not use deprecated global datastore values as ordinary test scaffolding.
+
+For Kubernetes object paths, the 8.8+ `RunTestCasesE` implementations apply deterministic semantics. Charts 8.7 and older do not execute ordinary `Expected` paths and do not provide `Unexpected`; use an explicit typed `Verifier` for those versions.
+
+- `Expected` paths must resolve to exactly one scalar value in exactly one rendered object.
+- `Unexpected` paths must resolve to zero values and therefore assert structural absence.
+- `Expected: ""` means a present empty string, not an absent field.
+- `Expected: "null"` matches the scalar representation `null`; it does not distinguish a YAML null from the literal string `"null"`. Use a typed verifier when the YAML type matters.
+- Empty maps and lists are present non-scalar values. Use a typed verifier when their exact shape matters.
+
+Anchor an absent leaf to a positive parent or sibling when deleting the whole structure would otherwise make the test pass. For example:
+
+```go
+testCases := []testhelpers.TestCase{
+	{
+		Name: "OpenSearch password is rendered for OpenSearch storage",
+		Values: map[string]string{
+			"orchestration.data.secondaryStorage.type":                                "opensearch",
+			"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "test-password",
+		},
+		Expected: map[string]string{
+			"spec.template.spec.containers[0].name": "orchestration",
+			"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].name": "VALUES_OPENSEARCH_PASSWORD",
+		},
+	},
+	{
+		Name: "OpenSearch password is absent for Elasticsearch storage",
+		Values: map[string]string{
+			"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+			"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "test-password",
+		},
+		Expected: map[string]string{
+			"spec.template.spec.containers[0].name": "orchestration",
+		},
+		Unexpected: []string{
+			"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')]",
+		},
+	},
+}
+```
+
+Use an explicit typed `Verifier` instead of Kubernetes paths for embedded payloads such as `ConfigMap.data["application.yaml"]`. Unmarshal the rendered Kubernetes object, then unmarshal the embedded YAML into a small struct containing the fields under test. A verifier must not be combined with `Expected`, `Unexpected`, or object assertions in the same test case.
+
+Current version-owned examples include:
+
+- [`TestOpenSearchPasswordEnv` in the 8.10 Orchestration StatefulSet tests](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform-8.10/test/unit/orchestration/statefulset_test.go)
+- [`TestCaBundleInitContainerSecurityContext` in the 8.9 TLS tests](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform-8.9/test/unit/common/tls_secrets_test.go)
+- [`TestGlobalIngressHostTemplating` in the 8.10 Web Modeler ConfigMap tests](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform-8.10/test/unit/web-modeler/configmap_restapi_test.go)
+- [8.7 document-store IRSA tests using explicit verifiers](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform-8.7/test/unit/common/documentstore_irsa_test.go)
+
+Exhaustively enumerate a branch domain only when it is genuinely tiny and local. Source predicates and the values schema can suggest factors and boundaries, but they cannot generate the expected behavior. Pairwise coverage, MC/DC percentages, mutation scores, metamorphic relations, and solver-selected rows are optional maintainer audit tools, not contributor or merge gates.
+
 ## Test license headers
 
 Make sure that new Go tests contain the Apache license headers, otherwise the CI license check will fail.
