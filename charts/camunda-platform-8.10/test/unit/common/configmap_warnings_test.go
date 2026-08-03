@@ -82,6 +82,26 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(output, "kind: ConfigMap")
 			},
 		},
+		{
+			Name: "TestJavaToolOptionsWarningNamesCompatibleJavaOpts",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":  "elasticsearch",
+				"global.tls.caBundle.secret.existingSecret": "camunda-ca-bundle",
+				"orchestration.env[0].name":                 "JAVA_TOOL_OPTIONS",
+				"orchestration.env[0].value":                "-Xmx1g",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"Orchestration and Optimize can set their 'javaOpts' values instead")
+				s.Require().Contains(configmap.Data["warnings"],
+					"webModeler.restapi.javaOpts feeds JAVA_OPTIONS, not JAVA_TOOL_OPTIONS")
+				s.Require().NotContains(configmap.Data["warnings"],
+					"web-modeler restapi) can set that instead")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
