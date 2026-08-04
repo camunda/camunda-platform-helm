@@ -203,8 +203,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"connectors.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				s.Require().Nil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
 			},
@@ -215,8 +217,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"connectors.automountServiceAccountToken": "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
 				s.Require().False(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
@@ -228,8 +232,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"connectors.automountServiceAccountToken": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
 				s.Require().True(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
