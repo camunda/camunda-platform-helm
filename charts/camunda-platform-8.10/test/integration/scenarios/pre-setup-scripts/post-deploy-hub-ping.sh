@@ -12,10 +12,7 @@ fi
 
 for attempt in {1..60}; do
   query_result="$(kubectl exec -n "${database_namespace}" deployment/postgresql -- \
-    sh -c 'psql --set ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname webmodeler --tuples-only --no-align --field-separator="|" --command "SELECT c.name, p.property_value FROM clusters c JOIN cluster_discovered_properties p ON p.cluster_id = c.id WHERE c.name = '\''$1'\'' AND p.property_key = '\''verification'\''"' sh "${expected_cluster_name}")" || {
-      echo "Failed to query Hub registration state in namespace ${database_namespace}." >&2
-      exit 1
-    }
+    sh -c 'psql --set ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname webmodeler --tuples-only --no-align --field-separator="|" --command "SELECT c.name, p.property_value FROM clusters c JOIN cluster_discovered_properties p ON p.cluster_id = c.id WHERE c.name = '\''$1'\'' AND p.property_key = '\''verification'\''"' sh "${expected_cluster_name}" 2>/dev/null)" || true
   if [[ "${query_result}" == "${expected_cluster_name}|inherited-oidc-credentials" ]]; then
     echo "Authenticated Hub ping registered the orchestration cluster."
     exit 0
