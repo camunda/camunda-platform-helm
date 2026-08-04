@@ -828,6 +828,51 @@ integration:
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
               chart upgrade). This keeps users/realm alive across the upgrade that removes the
               bundled Bitnami subcharts.
+        - name: hub-database-migration
+          enabled: true
+          shortname: hubmig
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-legacy
+            - postgresql-companion
+            - hub-database-migration
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          post-infra:
+            script: post-infra-hub-database-migration.sh
+            description: |
+              Seed representative 8.9 Web Modeler hierarchy data, then migrate the source
+              Web Modeler PostgreSQL database to the 8.10 companion PostgreSQL before the
+              Hub startup Flyway migration runs.
+          post-deploy:
+            script: post-deploy-hub-database-migration.sh
+            description: |
+              Verify lifted projects and IDP applications, catch-all relocation, migration
+              provenance, and stable IDs after 8.10 startup Flyway, then activate the normal
+              Hub serving phase.
         - name: hub-mixed
           enabled: true
           shortname: hubmu
