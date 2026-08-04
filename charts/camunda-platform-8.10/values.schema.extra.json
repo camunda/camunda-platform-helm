@@ -31,9 +31,6 @@
                 "properties": {
                     "region": {"type": "string"},
                     "pathPrefix": {"type": "string"},
-                    "batchEnabled": {"type": "boolean"},
-                    "batchSize": {"type": "integer", "minimum": 1, "maximum": 20},
-                    "containerSecretId": {"type": "string", "minLength": 1},
                     "roleArn": {"type": "string", "minLength": 1}
                 },
                 "additionalProperties": false

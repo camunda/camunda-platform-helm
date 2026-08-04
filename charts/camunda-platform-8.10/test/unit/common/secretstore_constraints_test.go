@@ -63,30 +63,6 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
-			Name:     "AWS batchSize above 20 is rejected",
-			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.a.batchSize": "50",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "batchSize")
-				s.Require().Contains(err.Error(), "maximum")
-			},
-		},
-		{
-			Name:     "AWS batchEnabled with containerSecretId is rejected",
-			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.a.batchEnabled":      "true",
-				"orchestration.secretStore.aws.a.containerSecretId": "app-config",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "mutually exclusive")
-			},
-		},
-		{
 			Name:     "More than one store within a physical tenant is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
@@ -193,6 +169,18 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
 				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
+			},
+		},
+		{
+			Name:     "Non-canonical file mount path is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":           "/etc//camunda/secrets",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "must be canonical")
 			},
 		},
 		{

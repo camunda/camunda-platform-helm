@@ -1807,7 +1807,7 @@ Usage:
           {{- $_ := set $rendered "path" "/etc/camunda/secrets" -}}
         {{- end -}}
       {{- end -}}
-      {{- if $rendered -}}
+      {{- if or $rendered (eq $type "aws") -}}
         {{- $_ := set $renderedEntries $id $rendered -}}
       {{- end -}}
     {{- end -}}
@@ -1836,7 +1836,9 @@ Usage:
 {{- end -}}
 {{- $tenants := dict -}}
 {{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
-  {{- $tenantStores := include "camundaPlatform.secretStore._storesDict" $providers | fromYaml -}}
+  {{- $effectiveProviders := mergeOverwrite (deepCopy $secretStore) $providers -}}
+  {{- $_ := unset $effectiveProviders "physicalTenants" -}}
+  {{- $tenantStores := include "camundaPlatform.secretStore._storesDict" $effectiveProviders | fromYaml -}}
   {{- if $tenantStores -}}
     {{- $_ := set $tenants $tid (dict "secrets" (dict "stores" $tenantStores)) -}}
   {{- end -}}

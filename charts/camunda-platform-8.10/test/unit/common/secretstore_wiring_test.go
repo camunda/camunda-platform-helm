@@ -223,6 +223,27 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 				s.Fail("tenant file store mount was not rendered")
 			},
 		},
+		{
+			Name:     "Inherited identical file mount is deduplicated",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.shared.path":                                   "/etc/camunda/secrets",
+				"orchestration.secretStore.file.shared.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.shared.existingSecret": "shared-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var sts appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &sts)
+				count := 0
+				for _, mount := range sts.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if mount.MountPath == "/etc/camunda/secrets" {
+						count++
+					}
+				}
+				s.Require().Equal(1, count)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
