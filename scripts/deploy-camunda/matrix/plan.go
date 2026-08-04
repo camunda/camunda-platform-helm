@@ -79,6 +79,7 @@ type topologySmokeEntry struct {
 	ModelerClusterID    string `json:"modeler_cluster_id"`
 	ModelerClusterName  string `json:"modeler_cluster_name"`
 	ShardIndex          string `json:"shard_index"`
+	TestGrep            string `json:"test_grep"`
 }
 
 // PlanResult is the computed build matrix.
@@ -388,11 +389,16 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 				hubSuffix = release.NamespaceSuffix
 			}
 			if release.Role == "orchestration" {
+				testGrep := ""
+				if len(smoke) > 0 {
+					testGrep = "Basic Login|Basic Navigation"
+				}
 				smoke = append(smoke, topologySmokeEntry{
 					OrchestrationSuffix: release.NamespaceSuffix,
 					ModelerClusterID:    release.ModelerClusterID,
 					ModelerClusterName:  release.ModelerClusterName,
 					ShardIndex:          strconv.Itoa(len(smoke) + 1),
+					TestGrep:            testGrep,
 				})
 			}
 		}
