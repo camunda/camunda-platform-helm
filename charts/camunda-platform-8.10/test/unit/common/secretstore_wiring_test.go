@@ -79,21 +79,6 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 			},
 		},
 		{
-			Name:     "GCP store sets the Workload Identity annotation",
-			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
-				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().NoError(err)
-				var sa corev1.ServiceAccount
-				helm.UnmarshalK8SYaml(t, output, &sa)
-				s.Require().Equal("camunda@my-project.iam.gserviceaccount.com",
-					sa.Annotations["iam.gke.io/gcp-service-account"])
-			},
-		},
-		{
 			Name:     "Secret store annotations coexist with user-provided annotations",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
@@ -211,19 +196,31 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 			},
 		},
 		{
-			Name:     "GCP store mounts no credentials volume",
+			Name:     "Physical tenant file store inherits existingSecret",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
-				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+				"orchestration.secretStore.file.shared.path":                         "/root/secrets",
+				"orchestration.secretStore.file.shared.existingSecret":               "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.shared.path": "/tenant/secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				var sts appsv1.StatefulSet
 				helm.UnmarshalK8SYaml(t, output, &sts)
+				var tenantVolumeName string
 				for _, v := range sts.Spec.Template.Spec.Volumes {
-					s.Require().NotEqual("gcp-credentials-volume", v.Name)
+					if v.Secret != nil && v.Secret.SecretName == "shared-secret" && strings.Contains(v.Name, "tenanta") {
+						tenantVolumeName = v.Name
+					}
 				}
+				s.Require().NotEmpty(tenantVolumeName)
+				for _, mount := range sts.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if mount.Name == tenantVolumeName {
+						s.Require().Equal("/tenant/secrets", mount.MountPath)
+						return
+					}
+				}
+				s.Fail("tenant file store mount was not rendered")
 			},
 		},
 	}

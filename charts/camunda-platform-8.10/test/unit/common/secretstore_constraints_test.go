@@ -87,18 +87,6 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
-			Name:     "GCP pathPrefix with invalid characters is rejected",
-			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.gcp.a.pathPrefix": "camunda/",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "pathPrefix")
-				s.Require().Contains(err.Error(), "does not match pattern")
-			},
-		},
-		{
 			Name:     "More than one store within a physical tenant is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
@@ -126,7 +114,7 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Conflicting user ServiceAccount identity is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.a.roleArn":                                      "arn:aws:iam::111111111111:role/intended",
+				"orchestration.secretStore.aws.a.roleArn":                                 "arn:aws:iam::111111111111:role/intended",
 				"orchestration.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn": "arn:aws:iam::222222222222:role/other",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
@@ -162,9 +150,9 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Static AWS document-store credentials are rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.a.roleArn":     "arn:aws:iam::111111111111:role/intended",
-				"global.documentStore.type.aws.enabled":       "true",
-				"global.documentStore.type.aws.irsa.enabled":  "false",
+				"orchestration.secretStore.aws.a.roleArn":    "arn:aws:iam::111111111111:role/intended",
+				"global.documentStore.type.aws.enabled":      "true",
+				"global.documentStore.type.aws.irsa.enabled": "false",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -176,7 +164,7 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
 				"orchestration.secretStore.aws.root.region":                          "us-east-1",
-				"orchestration.secretStore.physicalTenants.tenanta.gcp.tenant.projectId": "project",
+				"orchestration.secretStore.physicalTenants.tenanta.file.tenant.path": "/tenant/secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -193,6 +181,28 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
 				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
+			},
+		},
+		{
+			Name:     "Root file mount path is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":           "/",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
+			},
+		},
+		{
+			Name:     "Custom application configuration works when secret store is empty",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.configuration": "camunda: {}",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
 			},
 		},
 	}

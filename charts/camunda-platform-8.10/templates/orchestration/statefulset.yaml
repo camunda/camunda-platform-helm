@@ -274,10 +274,11 @@ spec:
             {{- end }}
             {{- range $tid, $providers := (.Values.orchestration.secretStore.physicalTenants | default dict) }}
             {{- range $id, $cfg := ($providers.file | default dict) }}
-            {{- if $cfg.existingSecret }}
+            {{- $effectiveCfg := mergeOverwrite (deepCopy (index ($.Values.orchestration.secretStore.file | default dict) $id | default dict)) $cfg }}
+            {{- if $effectiveCfg.existingSecret }}
             {{- $volName := include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id) }}
             - name: {{ $volName }}
-              mountPath: {{ $cfg.path | default "/etc/camunda/secrets" | quote }}
+              mountPath: {{ $effectiveCfg.path | default "/etc/camunda/secrets" | quote }}
               readOnly: true
             {{- end }}
             {{- end }}
@@ -328,10 +329,11 @@ spec:
         {{- end }}
         {{- range $tid, $providers := (.Values.orchestration.secretStore.physicalTenants | default dict) }}
         {{- range $id, $cfg := ($providers.file | default dict) }}
-        {{- if $cfg.existingSecret }}
+        {{- $effectiveCfg := mergeOverwrite (deepCopy (index ($.Values.orchestration.secretStore.file | default dict) $id | default dict)) $cfg }}
+        {{- if $effectiveCfg.existingSecret }}
         - name: {{ include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id) }}
           secret:
-            secretName: {{ $cfg.existingSecret | quote }}
+            secretName: {{ $effectiveCfg.existingSecret | quote }}
         {{- end }}
         {{- end }}
         {{- end }}

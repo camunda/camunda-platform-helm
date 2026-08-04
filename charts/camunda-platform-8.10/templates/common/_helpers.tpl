@@ -1777,7 +1777,7 @@ Usage:
 
 {{/*
 secretStore._storesDict
-Builds the "stores" map (file/aws/gcp -> id -> fields) for a single "{file,aws,gcp}"
+Builds the "stores" map (file/aws -> id -> fields) for a single "{file,aws}"
 provider map (either the default-tenant "orchestration.secretStore" or one physical-tenant
 override), skipping chart-only plumbing keys and empty/nil fields, and converting
 camelCase value keys to the kebab-case property names the runtime expects. Returns the
@@ -1787,9 +1787,9 @@ Usage:
 */}}
 {{- define "camundaPlatform.secretStore._storesDict" -}}
 {{- $providers := . | default dict -}}
-{{- $reserved := list "existingSecret" "roleArn" "gcpServiceAccount" -}}
+{{- $reserved := list "existingSecret" "roleArn" -}}
 {{- $stores := dict -}}
-{{- range $type := (list "file" "aws" "gcp") -}}
+{{- range $type := (list "file" "aws") -}}
   {{- $entries := index $providers $type -}}
   {{- if $entries -}}
     {{- $renderedEntries := dict -}}
@@ -1852,10 +1852,10 @@ Usage:
 {{/*
 secretStore.serviceAccountAnnotations
 Returns the identity-based-auth annotations (as YAML) that must be applied to the
-Orchestration ServiceAccount for the configured AWS/GCP secret stores, aggregated across
+Orchestration ServiceAccount for configured AWS secret stores, aggregated across
 the default tenant and every physical-tenant override, or an empty string when none apply.
-A single ServiceAccount can carry only one IRSA role and one Workload-Identity GCP service
-account; "constraints.tpl" fails the render when conflicting identities are configured.
+A single ServiceAccount can carry only one IRSA role; "constraints.tpl" fails the render
+when conflicting identities are configured.
 Usage:
   {{- $annotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
 */}}
@@ -1870,11 +1870,6 @@ Usage:
   {{- range $id, $cfg := ($providers.aws | default dict) -}}
     {{- if $cfg.roleArn -}}
       {{- $_ := set $annotations "eks.amazonaws.com/role-arn" $cfg.roleArn -}}
-    {{- end -}}
-  {{- end -}}
-  {{- range $id, $cfg := ($providers.gcp | default dict) -}}
-    {{- if $cfg.gcpServiceAccount -}}
-      {{- $_ := set $annotations "iam.gke.io/gcp-service-account" $cfg.gcpServiceAccount -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
