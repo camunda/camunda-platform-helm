@@ -1072,14 +1072,14 @@ Global - Document Store
 
 {{/*
 *******************************************************************************
-Global - Secret Store
+Orchestration - Secret Store
 *******************************************************************************
 */}}
 
-{{- $secretStore := .Values.global.secretStore | default dict -}}
-{{- $secretStoreTenants := list (dict "label" "global.secretStore" "providers" $secretStore) -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $secretStoreTenants := list (dict "label" "orchestration.secretStore" "providers" $secretStore) -}}
 {{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
-  {{- $secretStoreTenants = append $secretStoreTenants (dict "label" (printf "global.secretStore.physicalTenants.%s" $tid) "providers" $providers) -}}
+  {{- $secretStoreTenants = append $secretStoreTenants (dict "label" (printf "orchestration.secretStore.physicalTenants.%s" $tid) "providers" $providers) -}}
 {{- end -}}
 {{- $secretStoreRoleArns := list -}}
 {{- $secretStoreGcpAccounts := list -}}
@@ -1093,10 +1093,16 @@ Global - Secret Store
     {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
   {{- end -}}
   {{- range $id, $cfg := ($providers.file | default dict) -}}
+    {{- $path := toString ($cfg.path | default "/etc/camunda/secrets") -}}
+    {{- if or (contains "/../" (printf "%s/" $path)) (hasSuffix "/.." $path) -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path must not contain '..' path segments." $label $id) -}}
+    {{- end -}}
+    {{- if has $path (list "/usr/local/camunda/config" "/usr/local/bin" "/usr/local/camunda/data" "/exporters" "/tmp") -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with a required Orchestration volume mount." $label $id $path) -}}
+    {{- end -}}
     {{- if $cfg.existingSecret -}}
-      {{- $path := toString ($cfg.path | default "/etc/camunda/secrets") -}}
       {{- if hasKey $secretStoreFileMountPaths $path -}}
-        {{- $errorMessage := printf "[camunda][error] global.secretStore configures multiple file secret stores with the same effective path '%s'. When using existingSecret, each store must use a unique path to avoid duplicate volumeMount mountPaths." $path -}}
+        {{- $errorMessage := printf "[camunda][error] orchestration.secretStore configures multiple file secret stores with the same effective path '%s'. When using existingSecret, each store must use a unique path to avoid duplicate volumeMount mountPaths." $path -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end -}}
       {{- $_ := set $secretStoreFileMountPaths $path (printf "%s.file.%s" $label $id) -}}
@@ -1149,15 +1155,56 @@ Global - Secret Store
 {{- end -}}
 {{- if gt (len ($secretStoreRoleArns | uniq)) 1 -}}
   {{- $errorMessage := printf "[camunda][error] %s"
-      "global.secretStore configures multiple distinct aws.*.roleArn values, but the Orchestration ServiceAccount can carry only one eks.amazonaws.com/role-arn annotation. Use a single IAM role with access to all AWS secret stores."
+      "orchestration.secretStore configures multiple distinct aws.*.roleArn values, but the Orchestration ServiceAccount can carry only one eks.amazonaws.com/role-arn annotation. Use a single IAM role with access to all AWS secret stores."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
 {{- end -}}
 {{- if gt (len ($secretStoreGcpAccounts | uniq)) 1 -}}
   {{- $errorMessage := printf "[camunda][error] %s"
-      "global.secretStore configures multiple distinct gcp.*.gcpServiceAccount values, but the Orchestration ServiceAccount can carry only one iam.gke.io/gcp-service-account annotation. Use a single Google service account with access to all GCP secret stores."
+      "orchestration.secretStore configures multiple distinct gcp.*.gcpServiceAccount values, but the Orchestration ServiceAccount can carry only one iam.gke.io/gcp-service-account annotation. Use a single Google service account with access to all GCP secret stores."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+{{- end -}}
+
+{{- $secretStoreAnnotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
+{{- $secretStoreUserAnnotations := .Values.orchestration.serviceAccount.annotations | default dict -}}
+{{- if and $secretStoreAnnotations (not .Values.orchestration.serviceAccount.enabled) -}}
+  {{- fail "[camunda][error] orchestration.secretStore workload identity requires orchestration.serviceAccount.enabled=true so the chart can apply the required annotations." -}}
+{{- end -}}
+{{- range $key, $generatedValue := ($secretStoreAnnotations | default dict) -}}
+  {{- $userValue := index $secretStoreUserAnnotations $key -}}
+  {{- if and $userValue (ne (toString $userValue) (toString $generatedValue)) -}}
+    {{- fail (printf "[camunda][error] orchestration.serviceAccount.annotations.%s conflicts with the identity configured by orchestration.secretStore." $key) -}}
+  {{- end -}}
+{{- end -}}
+{{- if and $secretStore .Values.orchestration.configuration -}}
+  {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.configuration because the custom application.yaml replaces the generated secret-store configuration. Configure camunda.secrets.* directly in orchestration.configuration instead." -}}
+{{- end -}}
+{{- if and $secretStoreAnnotations .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) (hasKey $secretStoreAnnotations "eks.amazonaws.com/role-arn") -}}
+  {{- fail "[camunda][error] orchestration.secretStore AWS workload identity cannot be combined with static AWS document-store credentials because the AWS SDK credential chain selects environment credentials before IRSA." -}}
+{{- end -}}
+{{- if and $secretStoreAnnotations (eq (lower .Values.global.documentStore.activeStoreId) "gcp") (hasKey $secretStoreAnnotations "iam.gke.io/gcp-service-account") -}}
+  {{- fail "[camunda][error] orchestration.secretStore GCP workload identity cannot be combined with GCP document-store credentials because GOOGLE_APPLICATION_CREDENTIALS takes precedence over Workload Identity." -}}
+{{- end -}}
+
+{{- $rootStoreType := "" -}}
+{{- $rootStoreID := "" -}}
+{{- range $type := (list "file" "aws" "gcp") -}}
+  {{- range $id, $_ := (index $secretStore $type | default dict) -}}
+    {{- $rootStoreType = $type -}}
+    {{- $rootStoreID = $id -}}
+  {{- end -}}
+{{- end -}}
+{{- if $rootStoreType -}}
+  {{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+    {{- range $type := (list "file" "aws" "gcp") -}}
+      {{- range $id, $_ := (index $providers $type | default dict) -}}
+        {{- if or (ne $type $rootStoreType) (ne $id $rootStoreID) -}}
+          {{- fail (printf "[camunda][error] orchestration.secretStore.physicalTenants.%s must override the inherited %s.%s store using the same provider and store id; physical-tenant overlays cannot remove root stores." $tid $rootStoreType $rootStoreID) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*

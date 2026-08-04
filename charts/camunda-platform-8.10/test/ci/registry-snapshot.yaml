@@ -531,6 +531,39 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
+        - name: secretstore-file
+          enabled: true
+          shortname: secfl
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - secretstore-file
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            script: pre-install-secretstore-file.sh
+            description: |
+              Creates the Kubernetes Secret mounted by the file secret store before the
+              Orchestration StatefulSet is installed.
+          post-deploy:
+            script: post-deploy-secretstore-file.sh
+            description: |
+              Resolves a value from the mounted file secret store through the v2 gateway
+              API and verifies that the runtime returns the expected value.
         - name: rdbms-self-signed
           enabled: true
           shortname: rdbss

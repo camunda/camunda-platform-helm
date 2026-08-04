@@ -1778,7 +1778,7 @@ Usage:
 {{/*
 secretStore._storesDict
 Builds the "stores" map (file/aws/gcp -> id -> fields) for a single "{file,aws,gcp}"
-provider map (either the default-tenant "global.secretStore" or one physical-tenant
+provider map (either the default-tenant "orchestration.secretStore" or one physical-tenant
 override), skipping chart-only plumbing keys and empty/nil fields, and converting
 camelCase value keys to the kebab-case property names the runtime expects. Returns the
 YAML of the stores map, or an empty string when no store is configured.
@@ -1823,12 +1823,12 @@ Usage:
 secretStore.renderConfig
 Renders the "camunda.secrets.stores.*" application configuration (default tenant) plus any
 "camunda.physical-tenants.<id>.secrets.stores.*" per-physical-tenant overrides from the
-map-keyed "global.secretStore" values. Emits nothing when no store is configured.
+map-keyed "orchestration.secretStore" values. Emits nothing when no store is configured.
 Usage:
   {{- include "camundaPlatform.secretStore.renderConfig" . | trim | nindent 2 }}
 */}}
 {{- define "camundaPlatform.secretStore.renderConfig" -}}
-{{- $secretStore := .Values.global.secretStore | default dict -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
 {{- $result := dict -}}
 {{- $defaultStores := include "camundaPlatform.secretStore._storesDict" $secretStore | fromYaml -}}
 {{- if $defaultStores -}}
@@ -1860,7 +1860,7 @@ Usage:
   {{- $annotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
 */}}
 {{- define "camundaPlatform.secretStore.serviceAccountAnnotations" -}}
-{{- $secretStore := .Values.global.secretStore | default dict -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
 {{- $providerSets := list $secretStore -}}
 {{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
   {{- $providerSets = append $providerSets $providers -}}
@@ -1881,4 +1881,14 @@ Usage:
 {{- if $annotations -}}
 {{ toYaml $annotations }}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Returns a stable DNS-label volume name for one file secret store.
+*/}}
+{{- define "camundaPlatform.secretStore.fileVolumeName" -}}
+{{- $tenantID := .tenantId | default "default" -}}
+{{- $identity := printf "%s/%s" $tenantID .storeId -}}
+{{- $slug := printf "%s-%s" $tenantID .storeId | kebabcase | trunc 41 | trimSuffix "-" -}}
+{{- printf "secretstore-%s-%s" $slug (sha256sum $identity | trunc 8) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

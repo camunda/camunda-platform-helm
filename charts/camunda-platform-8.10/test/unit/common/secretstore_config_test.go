@@ -76,8 +76,8 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Name:     "File secret store renders camunda.secrets.stores.file",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.file.primary.path":           "/etc/camunda/secrets",
-				"global.secretStore.file.primary.existingSecret": "my-secrets",
+				"orchestration.secretStore.file.primary.path":           "/etc/camunda/secrets",
+				"orchestration.secretStore.file.primary.existingSecret": "my-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -93,11 +93,11 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Name:     "AWS secret store renders kebab-case keys and strips roleArn",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.aws.primary.region":       "us-east-1",
-				"global.secretStore.aws.primary.pathPrefix":   "camunda/",
-				"global.secretStore.aws.primary.batchEnabled": "true",
-				"global.secretStore.aws.primary.batchSize":    "10",
-				"global.secretStore.aws.primary.roleArn":      "arn:aws:iam::123456789012:role/camunda-secrets",
+				"orchestration.secretStore.aws.primary.region":       "us-east-1",
+				"orchestration.secretStore.aws.primary.pathPrefix":   "camunda/",
+				"orchestration.secretStore.aws.primary.batchEnabled": "true",
+				"orchestration.secretStore.aws.primary.batchSize":    "10",
+				"orchestration.secretStore.aws.primary.roleArn":      "arn:aws:iam::123456789012:role/camunda-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -116,9 +116,9 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Name:     "GCP secret store renders kebab-case keys and strips gcpServiceAccount",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.gcp.primary.projectId":         "my-project",
-				"global.secretStore.gcp.primary.endpoint":          "secretmanager.example.com:443",
-				"global.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
+				"orchestration.secretStore.gcp.primary.endpoint":          "secretmanager.example.com:443",
+				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -145,15 +145,15 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Name:     "Physical tenant override renders camunda.physical-tenants.<id>.secrets",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.aws.primary.region":                          "us-east-1",
-				"global.secretStore.physicalTenants.tenantA.gcp.store.projectId": "tenant-a-project",
+				"orchestration.secretStore.aws.primary.region":                          "us-east-1",
+				"orchestration.secretStore.physicalTenants.tenanta.aws.primary.region": "us-west-2",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				config := s.applicationConfig(output)
 				s.Require().Contains(config, "physical-tenants:")
-				s.Require().Contains(config, "tenantA:")
-				s.Require().Contains(config, "project-id: tenant-a-project")
+				s.Require().Contains(config, "tenanta:")
+				s.Require().Contains(config, "region: us-west-2")
 				// The default-tenant store still renders.
 				s.Require().Contains(config, "region: us-east-1")
 			},
