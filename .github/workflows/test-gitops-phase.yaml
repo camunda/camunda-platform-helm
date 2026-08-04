@@ -1,0 +1,66 @@
+name: Test - Camunda Hub GitOps Phases
+
+"on":
+  workflow_call:
+    inputs:
+      camunda-helm-git-ref:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    name: ${{ matrix.controller }} reconciliation
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        controller: ${{ fromJSON(github.event_name == 'merge_group' && '["helm","argocd","flux"]' || '["helm"]') }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        with:
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            kind
+            kubectl
+
+      - name: Create KIND cluster
+        run: kind create cluster --name camunda-hub-gitops-${{ matrix.controller }}
+
+      - name: Install Argo CD
+        if: matrix.controller == 'argocd'
+        run: |
+          kubectl create namespace argocd
+          kubectl apply --server-side -n argocd -f \
+            https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.0/manifests/install.yaml
+          kubectl wait -n argocd --for=jsonpath='{.status.readyReplicas}'=1 \
+            statefulset/argocd-application-controller --timeout=5m
+          kubectl wait -n argocd --for=condition=Available \
+            deployment/argocd-repo-server --timeout=5m
+
+      - name: Install Flux
+        if: matrix.controller == 'flux'
+        run: |
+          kubectl apply --server-side -f \
+            https://github.com/fluxcd/flux2/releases/download/v2.9.3/install.yaml
+          kubectl wait -n flux-system --for=condition=Available deployment/source-controller --timeout=5m
+          kubectl wait -n flux-system --for=condition=Available deployment/helm-controller --timeout=5m
+
+      - name: Test lifecycle reconciliation
+        working-directory: scripts/gitops-phase-test
+        run: |
+          go run . \
+            --controller "${{ matrix.controller }}" \
+            --revision "${{ inputs.camunda-helm-git-ref }}"
+
+      - name: Delete KIND cluster
+        if: always()
+        run: kind delete cluster --name camunda-hub-gitops-${{ matrix.controller }}

@@ -1,5 +1,6 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 {{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- $upgradePhase := include "camundaHub.upgradePhase" . -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -32,4 +33,5 @@ spec:
       {{- end }}
   selector:
     {{- include "webModeler.restapi.matchLabels" . | nindent 4 }}
+    camunda.io/upgrade-phase: normal
 {{- end }}

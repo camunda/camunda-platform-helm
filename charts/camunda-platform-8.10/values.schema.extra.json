@@ -1427,6 +1427,20 @@
                     "default": {},
                     "additionalProperties": true
                 },
+                "upgrade": {
+                    "type": "object",
+                    "properties": {
+                        "phase": {
+                            "type": "string",
+                            "enum": [
+                                "normal",
+                                "quiesce",
+                                "migrate"
+                            ],
+                            "default": "normal"
+                        }
+                    }
+                },
                 "persistence": {
                     "properties": {
                         "deploymentStrategy": {
