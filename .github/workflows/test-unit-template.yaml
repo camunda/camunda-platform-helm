@@ -21,6 +21,7 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   init:
@@ -48,6 +49,7 @@ jobs:
     name: UnitTest Scripts
     runs-on: ubuntu-latest
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -61,6 +63,16 @@ jobs:
       - name: Run bats
         run: |
           bats test/scripts/*.bats
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   unit:
     name: Unit - ${{ matrix.test.name }}
@@ -74,6 +86,7 @@ jobs:
     env:
       chartPath: "charts/${{ inputs.camunda-helm-dir }}"
     steps:
+    - uses: camunda/infra-global-github-actions/start-build-monitor@main
     - name: ℹ️ Print workflow inputs ℹ️
       env:
         GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -118,3 +131,13 @@ jobs:
       run: |
         cd charts/${{ inputs.camunda-helm-dir }}/test/unit
         go test $(printf "./%s " ${{ matrix.test.packages }})
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}

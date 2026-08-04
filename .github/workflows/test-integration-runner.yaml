@@ -350,6 +350,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -843,6 +844,16 @@ jobs:
           path: diagnostics/
           retention-days: 14
           if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   upgrade:
     if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
@@ -873,6 +884,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -1227,6 +1239,16 @@ jobs:
           path: diagnostics/
           retention-days: 14
           if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   playwright-e2e-tests-after-install:
     name: Playwright e2e ${{ matrix.suite }} after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shard_index }} of ${{ matrix.shard_total }})
@@ -1257,6 +1279,7 @@ jobs:
       deployments: write
       packages: read
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1309,6 +1332,16 @@ jobs:
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: ${{ matrix.suite == 'smoke' }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Shadow job: runs the full E2E suite for the dedicated 'shadow-e2e' scenario.
   # Tier 2 (merge queue only). Non-blocking during observation period.
@@ -1334,6 +1367,7 @@ jobs:
       deployments: write
       packages: read
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1388,6 +1422,16 @@ jobs:
           shard-index: "1"
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Multi-namespace topology job: runs the smoke suite against each
   # topology scenario's orchestration releases, with credentials
@@ -1420,6 +1464,7 @@ jobs:
       deployments: write
       packages: read
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1495,6 +1540,16 @@ jobs:
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "true"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
@@ -1522,6 +1577,7 @@ jobs:
       deployments: write
       packages: read
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1574,6 +1630,16 @@ jobs:
           test-stage: after-upgrade
           shard-index: ${{ matrix.shardIndex }}
           scenario: ${{ inputs.scenario }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   merge-e2e-reports:
     name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
