@@ -8,7 +8,7 @@ Use this file as the practical guide. For architecture and CI context, also read
 - NEVER assume templates are identical across chart versions — always check the target version first.
 - NEVER hand-edit generated artifacts — regenerate them (see Generated Artifacts below).
 - NEVER implement CI logic (>20 lines) in bash — use Go scripts in `scripts/` with unit tests.
-- NEVER write reasoning/"why"/narration comments — comments explain only non-obvious HOW. Architectural rationale belongs in an ADR under `docs/adr/`, human-authored; tactical rationale (bug-fix defaults, timeouts, label choices) goes in the PR body or commit message. Agents NEVER create or edit ADRs proactively. Keep only required structured comments: Apache license headers, `## @param`/`## @extra`, the `{{- /* NOTE */ -}}` helper convention, and lint/build pragmas (`//nolint`, `//go:build`, `# yamllint disable`, `# yamllint disable-line`, `# shellcheck disable`).
+- NEVER write reasoning/"why"/narration comments — comments explain only non-obvious HOW. Architectural rationale belongs in a durable ADR under `docs/adr/`; tactical rationale (bug-fix defaults, timeouts, label choices) goes in the PR body or commit message. Agents may draft or edit an ADR only when a human explicitly requests it, and every ADR change requires human review and approval under `docs/maintainer-guide.md` before acceptance. Keep only required structured comments: Apache license headers, `## @param`/`## @extra`, the `{{- /* NOTE */ -}}` helper convention, and lint/build pragmas (`//nolint`, `//go:build`, `# yamllint disable`, `# yamllint disable-line`, `# shellcheck disable`).
 - ALWAYS run `make helm.dependency-update chartPath=...` before testing/linting a chart.
 - ALWAYS keep diffs small and version-scoped.
 - ALWAYS preserve existing patterns before introducing new abstractions.
@@ -162,7 +162,7 @@ Procedures live as on-demand skills under `.claude/skills/<name>/SKILL.md` (Agen
 - `CLAUDE.md` — thin redirect for Claude Code (imports this file)
 - `.github/instructions/*.instructions.md` — **authoritative path-scoped chart-coding conventions.** These files carry Copilot/VS Code `applyTo:` globs that are NOT auto-applied by Claude Code, so read the matching guide explicitly BEFORE editing: `values-yaml.instructions.md` (values.yaml authoring — `@param` conjunctions, secret-block shape), `helm-templates.instructions.md` (templates, NOTES.txt, constraints/warnings), `code-review.instructions.md`, `go-tests.instructions.md`, `scripting.instructions.md`, `github-actions.instructions.md`.
 - `.github/AGENTS.md` — CI/CD architecture, repo structure, values files
-- `docs/AGENTS.md` — **ADR authoring rules**. Read before drafting, amending, or reviewing any ADR.
+- `docs/AGENTS.md` — **ADR authoring rules**. Read before drafting, editing, or reviewing any ADR.
 - `STATE.md` — session continuity (gitignored, read on session start)
 - `helm-values-mcp/` — MCP server exposing chart values schema; tool list and setup in `helm-values-mcp/README.md`.
 - `scripts/helm_unused_values/` — CLI to find values declared in `values.yaml` but never referenced in templates.
