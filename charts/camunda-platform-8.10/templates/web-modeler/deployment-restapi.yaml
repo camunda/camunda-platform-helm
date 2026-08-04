@@ -1,4 +1,5 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $upgradePhase := include "camundaHub.upgradePhase" . -}}
 {{- $deploymentStrategy := (or .Values.camundaHub.persistence.deploymentStrategy .Values.webModeler.persistence.deploymentStrategy) | default "RollingUpdate" -}}
 {{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
 {{- fail "webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy) value must be one of 'RollingUpdate', 'Recreate'" -}}
@@ -15,12 +16,13 @@ metadata:
 spec:
   strategy:
     type: {{ $deploymentStrategy }}
-  replicas: {{ (or .Values.camundaHub.restapi.replicas .Values.webModeler.restapi.replicas) }}
+  replicas: {{ ternary 0 (ternary 1 (or .Values.camundaHub.restapi.replicas .Values.webModeler.restapi.replicas) (eq $upgradePhase "migrate")) (eq $upgradePhase "quiesce") }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels: {{- include "webModeler.restapi.labels" . | nindent 8 }}
+        camunda.io/upgrade-phase: {{ $upgradePhase | quote }}
       {{- if (or .Values.camundaHub.restapi.podLabels .Values.webModeler.restapi.podLabels) }}
       {{- tpl (toYaml (or .Values.camundaHub.restapi.podLabels .Values.webModeler.restapi.podLabels)) $ | nindent 8 }}
       {{- end }}

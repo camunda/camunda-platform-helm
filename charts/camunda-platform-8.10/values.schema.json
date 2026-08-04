@@ -2020,6 +2020,21 @@
                     "description": "if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.",
                     "default": false
                 },
+                "upgrade": {
+                    "type": "object",
+                    "properties": {
+                        "phase": {
+                            "type": "string",
+                            "description": "defines the Camunda Hub lifecycle phase. Use `normal` for fresh installs and normal operation, `quiesce` to stop Hub workloads before taking a database backup, and `migrate` to run one Hub REST API pod for the startup database migration without serving traffic.",
+                            "default": "normal",
+                            "enum": [
+                                "normal",
+                                "quiesce",
+                                "migrate"
+                            ]
+                        }
+                    }
+                },
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",

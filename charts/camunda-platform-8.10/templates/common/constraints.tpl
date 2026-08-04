@@ -131,6 +131,12 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
 {{- define "camunda.constraints.warnings" }}
+  {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
+  {{- if eq $hubUpgradePhase "quiesce" }}
+    {{- printf "\n%s" "[camunda][warning] Camunda Hub is quiesced for the 8.9 to 8.10 database migration. Confirm all external writers are stopped and create a verified database backup before setting camundaHub.upgrade.phase to migrate." }}
+  {{- else if eq $hubUpgradePhase "migrate" }}
+    {{- printf "\n%s" "[camunda][warning] Camunda Hub is running the 8.9 to 8.10 database migration without serving traffic. Validate the migrated data before setting camundaHub.upgrade.phase back to normal." }}
+  {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 

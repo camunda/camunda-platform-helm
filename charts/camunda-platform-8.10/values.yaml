@@ -1128,6 +1128,11 @@ camundaHub:
   ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
   enabled: false
 
+  ## @extra camundaHub.upgrade configuration for the 8.9 to 8.10 Camunda Hub database migration.
+  upgrade:
+    ## @param camundaHub.upgrade.phase defines the Camunda Hub lifecycle phase. Use `normal` for fresh installs and normal operation, `quiesce` to stop Hub workloads before taking a database backup, and `migrate` to run one Hub REST API pod for the startup database migration without serving traffic.
+    phase: normal
+
   ## @param camundaHub.contextPath can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.
   contextPath: ""
 

@@ -18,3 +18,14 @@ in the common shim layer. For now, no additional helpers are needed because:
     value-merge logic
 ********************************************************************************
 */}}
+
+{{/*
+Returns the active Camunda Hub upgrade phase.
+*/}}
+{{- define "camundaHub.upgradePhase" -}}
+  {{- $phase := .Values.camundaHub.upgrade.phase | default "normal" -}}
+  {{- if not (has $phase (list "normal" "quiesce" "migrate")) -}}
+    {{- fail "camundaHub.upgrade.phase must be one of 'normal', 'quiesce', 'migrate'" -}}
+  {{- end -}}
+  {{- $phase -}}
+{{- end -}}
