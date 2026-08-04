@@ -1336,6 +1336,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		for _, release := range releases {
 			if release.Role == "orchestration" {
 				crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
+				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
 		return
@@ -1353,10 +1354,14 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		if release.Role != "orchestration" {
 			continue
 		}
-		crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = (&config.IngressFlags{
+		host := (&config.IngressFlags{
 			IngressSubdomain:  contexts[i].Namespace,
 			IngressBaseDomain: baseDomain,
 		}).ResolveIngressHostname()
+		crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = host
+		if orchestrationCount == 1 {
+			crossRefEnv["ORCH_HOST"] = host
+		}
 	}
 }
 

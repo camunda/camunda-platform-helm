@@ -325,6 +325,9 @@ func TestAddTopologyIngressHosts_DerivesPerReleaseHosts(t *testing.T) {
 	if got, want := env["ORCHA_HOST"], "matrix-810-mns-orcha.ci.distro.ultrawombat.com"; got != want {
 		t.Errorf("ORCHA_HOST = %q, want %q", got, want)
 	}
+	if got, want := env["ORCH_HOST"], "matrix-810-mns-orcha.ci.distro.ultrawombat.com"; got != want {
+		t.Errorf("ORCH_HOST = %q, want %q", got, want)
+	}
 }
 
 func TestAddTopologyIngressHosts_DerivesEveryOrchestrationHost(t *testing.T) {
@@ -394,7 +397,7 @@ func TestAddTopologyIngressHosts_UsesExplicitSharedHost(t *testing.T) {
 		[]*deploy.ScenarioContext{{Namespace: "matrix-810-mns-hub"}, {Namespace: "matrix-810-mns-orcha"}},
 	)
 
-	for _, key := range []string{"HUB_HOST", "ORCHA_HOST"} {
+	for _, key := range []string{"HUB_HOST", "ORCHA_HOST", "ORCH_HOST"} {
 		if got, want := env[key], "abc123-mns.ci.distro.ultrawombat.com"; got != want {
 			t.Errorf("%s = %q, want %q", key, got, want)
 		}
