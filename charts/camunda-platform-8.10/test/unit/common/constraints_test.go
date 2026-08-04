@@ -442,6 +442,40 @@ func (s *ConstraintTemplateTest) TestCamundaHubConsolidationDeprecationWarningsR
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestWebModelerExternalDatabaseUserRemovedGate() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRemovedKeyFailsViaCamundaHubEnabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+				"webModeler.restapi.externalDatabase.user": "modeler-user",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "webModeler.restapi.externalDatabase.user" has been removed.`,
+			},
+		},
+		{
+			Name: "TestRemovedKeyFailsViaLegacyWebModelerEnabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+				"webModeler.restapi.externalDatabase.user": "modeler-user",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "webModeler.restapi.externalDatabase.user" has been removed.`,
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 	testCases := []testhelpers.TestCase{
 		{

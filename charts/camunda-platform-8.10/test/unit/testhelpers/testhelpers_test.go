@@ -247,6 +247,14 @@ func TestSetupHelmOptionsUsesSupportedStorageDefaults(t *testing.T) {
 			expected: "opensearch",
 		},
 		{
+			name: "prefers Elasticsearch when both Optimize selectors are enabled",
+			values: map[string]string{
+				"optimize.database.elasticsearch.enabled": "true",
+				"optimize.database.opensearch.enabled":    "true",
+			},
+			expected: "elasticsearch",
+		},
+		{
 			name: "preserves an explicit type",
 			values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "rdbms",
@@ -316,6 +324,17 @@ func TestSetupHelmOptionsHonorsValuesFileStorageSelection(t *testing.T) {
       enabled: true
 `,
 			expectedSetValue: "opensearch",
+		},
+		{
+			name: "Optimize Elasticsearch takes precedence over OpenSearch",
+			valuesYAML: `optimize:
+  database:
+    elasticsearch:
+      enabled: true
+    opensearch:
+      enabled: true
+`,
+			expectedSetValue: "elasticsearch",
 		},
 	}
 
@@ -434,6 +453,11 @@ func TestValidateStorageFixtureRenderArgs(t *testing.T) {
 			expectedErr: "optimize.database.opensearch.enabled must be provided through TestCase.Values",
 		},
 		{
+			name:        "combined Optimize Elasticsearch set",
+			args:        []string{"--set", "identity.enabled=true,optimize.database.elasticsearch.enabled=true"},
+			expectedErr: "optimize.database.elasticsearch.enabled must be provided through TestCase.Values",
+		},
+		{
 			name:        "set JSON secondary storage parent",
 			args:        []string{"--set-json", `orchestration.data.secondaryStorage={"type":"opensearch"}`},
 			expectedErr: "orchestration.data.secondaryStorage must be provided through TestCase.Values",
@@ -456,6 +480,11 @@ func TestValidateStorageFixtureRenderArgs(t *testing.T) {
 		{
 			name:        "values file",
 			args:        []string{"--values", "storage.yaml"},
+			expectedErr: "values files must be provided through TestCase.ValuesFiles",
+		},
+		{
+			name:        "compact values file",
+			args:        []string{"-fstorage.yaml"},
 			expectedErr: "values files must be provided through TestCase.ValuesFiles",
 		},
 	}
