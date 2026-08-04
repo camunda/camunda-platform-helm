@@ -164,8 +164,8 @@ on:
         required: false
         default: "[]"
         type: string
-      topology-management-suffix:
-        description: "Namespace suffix of the topology management release"
+      topology-hub-suffix:
+        description: "Namespace suffix of the topology Hub release"
         required: false
         default: ""
         type: string
@@ -1382,7 +1382,7 @@ jobs:
 
   # Multi-namespace topology job: runs the smoke suite against each
   # topology scenario's orchestration releases, with credentials
-  # merged from the management release via `deploy-camunda e2e-env merge`.
+  # merged from the Hub release via `deploy-camunda e2e-env merge`.
   # Fully additive/opt-in — gated tightly on topology scenarios, so it cannot
   # affect any other scenario's e2e path. Blocking: a smoke-suite
   # failure fails this check.
@@ -1417,7 +1417,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - name: Resolve base namespace and derive management namespace
+      - name: Resolve base namespace and derive Hub namespace
         id: base-vars
         uses: ./.github/actions/workflow-vars
         with:
@@ -1477,7 +1477,7 @@ jobs:
           identifier: ${{ inputs.identifier }}
           namespace-prefix: ${{ inputs.namespace-prefix }}
           namespace-override: "${{ steps.base-vars.outputs.namespace }}-${{ matrix.orchestration_suffix }}"
-          management-namespace: "${{ steps.base-vars.outputs.namespace }}-${{ inputs.topology-management-suffix }}"
+          hub-namespace: "${{ steps.base-vars.outputs.namespace }}-${{ inputs.topology-hub-suffix }}"
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}

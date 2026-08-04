@@ -2,7 +2,7 @@ global:
   elasticsearch:
     enabled: false
   topology:
-    mode: management
+    mode: hub
     clusters:
       - id: orcha
         name: Orchestration A

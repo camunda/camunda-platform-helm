@@ -3,19 +3,19 @@
 # releases in the multinamespace topology. Unlike identity/keycloak.yaml
 # (which points at a companion Keycloak deployed in the SAME namespace via
 # the bare "keycloak" service name), this layer points at the bundled
-# Keycloak/Identity running in the MANAGEMENT namespace, reached
+# Keycloak/Identity running in the Hub namespace, reached
 # cross-namespace by FQDN.
 #
 # Cross-namespace env placeholders (resolved at deploy time — every release's
 # namespace/realm is computed up front by deploy.GenerateTopologyContexts and
 # injected via ExtraEnv before render/preflight, see
 # scripts/deploy-camunda/cmd/matrix.go's runTopologyEntry):
-#   MGMT_NAMESPACE   — the management release's namespace
-#   MGMT_HOST        — the management release's ingress host
-#   KEYCLOAK_REALM   — the realm name provisioned in the management release
+#   HUB_NAMESPACE    - the Hub release's namespace
+#   HUB_HOST         - the Hub release's ingress host
+#   KEYCLOAK_REALM   - the realm name provisioned in the Hub release
 #
 # This release deploys no Identity, Keycloak, Web Modeler, or Camunda Hub of
-# its own — auth and modeling are centralized in the management namespace.
+# its own - auth and modeling are centralized in the Hub namespace.
 
 global:
   host: "$CAMUNDA_HOSTNAME"
@@ -30,12 +30,12 @@ global:
       external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
     service:
-      url: "http://integration-identity.${MGMT_NAMESPACE}.svc.cluster.local:80/identity"
+      url: "http://integration-identity.${HUB_NAMESPACE}.svc.cluster.local:80/identity"
     auth:
       enabled: true
       type: KEYCLOAK
-      issuerBackendUrl: "http://keycloak.${MGMT_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
-      publicIssuerUrl: "https://${MGMT_HOST}/auth/realms/camunda-platform"
+      issuerBackendUrl: "http://keycloak.${HUB_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://${HUB_HOST}/auth/realms/camunda-platform"
       admin:
         enabled: true
         secret:

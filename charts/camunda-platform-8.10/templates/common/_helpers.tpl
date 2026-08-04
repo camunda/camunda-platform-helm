@@ -604,15 +604,15 @@ Identity Auth.
 {{- end -}}
 
 {{- define "camundaPlatform.orchestrationEnabled" -}}
-  {{- if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.connectorsEnabled" -}}
-  {{- if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.optimizeEnabled" -}}
-  {{- if and .Values.optimize.enabled (ne (include "camundaPlatform.topologyMode" .) "management") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.optimize.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.identityEnabled" -}}
@@ -854,7 +854,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
 {{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - id: "management-cluster"
-  name: "management"
+  name: "hub"
   version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" (mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict)))) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:

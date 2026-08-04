@@ -66,12 +66,12 @@ data:
           url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
           https-only: {{ hasPrefix "https://" (tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $) | quote }}
 
-        {{- if or .Values.orchestration.enabled (eq (include "camundaPlatform.topologyMode" .) "management") (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
+        {{- if or .Values.orchestration.enabled (eq (include "camundaPlatform.topologyMode" .) "hub") (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
         clusters:
           {{- if (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
             {{- (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) | toYaml | nindent 10 }}
           {{- else}}
-            {{- if eq (include "camundaPlatform.topologyMode" .) "management" }}
+            {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
               {{- include "camundaPlatform.topologyWebModelerClusters" . | nindent 10 }}
             {{- else }}
               {{- include "camundaPlatform.defaultWebModelerCluster" . | nindent 10 }}

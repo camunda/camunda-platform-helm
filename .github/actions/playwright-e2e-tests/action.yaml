@@ -60,7 +60,7 @@ inputs:
     description: If true, run only the smoke-tests project. If false, run the full-suite project.
     required: false
     default: "true"
-  management-namespace:
+  hub-namespace:
     description: >-
       For a multi-namespace topology scenario: the namespace running the
       central Identity/Keycloak. A deploy-camunda binary is downloaded so
@@ -231,8 +231,8 @@ runs:
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
         TEST_EXCLUDE: ${{ inputs.exclude }}
         TEST_AUTH_TYPE: ${{ inputs.auth }}
-        MANAGEMENT_NAMESPACE: ${{ inputs.management-namespace }}
-        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.management-namespace != '' }}
+        HUB_NAMESPACE: ${{ inputs.hub-namespace }}
+        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -259,7 +259,7 @@ runs:
         [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
         E2E_ARGS+=(--trace retain-on-failure --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
-        [[ -n "$MANAGEMENT_NAMESPACE" ]] && E2E_ARGS+=(--management-namespace "${MANAGEMENT_NAMESPACE}")
+        [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 

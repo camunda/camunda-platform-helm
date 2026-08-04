@@ -8,7 +8,7 @@ import (
 )
 
 // Topology describes a multi-namespace deployment shape for a scenario: one
-// "management" release (Identity, Console, Web Modeler, bundled Keycloak)
+// "hub" release (Identity, Console, Web Modeler, bundled Keycloak)
 // plus one or more "orchestration" releases (Zeebe/Operate/Tasklist,
 // Connectors, Optimize) that share a single logical cluster via a central
 // Identity and a shared secondary storage backend.
@@ -16,14 +16,14 @@ import (
 // Scenarios without a Topology behave byte-for-byte as today — this field is
 // additive and opt-in (see registryScenario.Topology / CIScenario.Topology).
 type Topology struct {
-	// Name is a human-readable label for the topology shape, e.g. "mgmt-2orch".
+	// Name is a human-readable label for the topology shape, e.g. "hub-2orch".
 	Name string `yaml:"name" json:"name"`
 
 	// Releases lists every namespace/release this scenario fans out to.
 	Releases []TopologyRelease `yaml:"releases" json:"releases"`
 
 	// SharedStorage names the companion dependency (e.g. "elasticsearch")
-	// deployed once (into the management namespace) and referenced by every
+	// deployed once (into the Hub namespace) and referenced by every
 	// orchestration release via FQDN, rather than deployed per-release.
 	SharedStorage string `yaml:"shared-storage,omitempty" json:"sharedStorage,omitempty"`
 
@@ -33,14 +33,14 @@ type Topology struct {
 
 // TopologyRelease is one namespace/release within a Topology. Each release
 // can select its own identity/persistence/features/dependencies layers —
-// e.g. the management release uses the bundled-Keycloak identity layer and
+// e.g. the Hub release uses the bundled-Keycloak identity layer and
 // deploys keycloak/postgresql/elasticsearch, while orchestration releases
-// use an external-Keycloak layer pointed back at management and deploy no
-// companions of their own (they consume the management release's shared
+// use an external-Keycloak layer pointed back at Hub and deploy no
+// companions of their own (they consume the Hub release's shared
 // Elasticsearch and Identity/Keycloak cross-namespace by FQDN).
 type TopologyRelease struct {
-	// Role is either "management" or "orchestration". Exactly one
-	// "management" role must be declared per Topology.
+	// Role is either "hub" or "orchestration". Exactly one
+	// "hub" role must be declared per Topology.
 	Role string `yaml:"role" json:"role"`
 
 	// NamespaceSuffix is appended to the base namespace to form this
@@ -53,13 +53,13 @@ type TopologyRelease struct {
 	Values string `yaml:"values" json:"values"`
 
 	// DependsOn, when set, names the Role of a release that must be deployed
-	// (and, for "management", ready) before this one.
+	// (and, for "hub", ready) before this one.
 	DependsOn string `yaml:"depends-on,omitempty" json:"dependsOn,omitempty"`
 
 	// Identity, when set, overrides the scenario-level Identity layer for
-	// this release only (e.g. "keycloak" for management vs
+	// this release only (e.g. "keycloak" for Hub vs
 	// "keycloak-external" for orchestration releases that point back at the
-	// management namespace's Keycloak/Identity instead of deploying their
+	// Hub namespace's Keycloak/Identity instead of deploying their
 	// own).
 	Identity string `yaml:"identity,omitempty" json:"identity,omitempty"`
 
@@ -75,7 +75,7 @@ type TopologyRelease struct {
 	// registry/dependencies/, resolved the same way a scenario's top-level
 	// dependencies are) to deploy alongside THIS release only. Empty means
 	// this release deploys no companions of its own (e.g. an orchestration
-	// release that consumes the management release's shared Elasticsearch
+	// release that consumes the Hub release's shared Elasticsearch
 	// cross-namespace instead of deploying its own copy).
 	Dependencies []string `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
 
@@ -104,7 +104,7 @@ type TopologyRelease struct {
 //   - every release's Dependencies IDs (when set) resolve to a file under
 //     <depsDir>/<id>.yaml;
 //   - every release's DependsOn (when set) references a declared Role;
-//   - exactly one release has Role == "management";
+//   - exactly one release has Role == "hub";
 //   - NamespaceSuffix values are unique and non-empty.
 //
 // ctx is prepended to error messages, e.g. `scenario "multinamespace": topology: ...`.
@@ -120,7 +120,7 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 
 	roles := map[string]bool{}
 	suffixes := map[string]bool{}
-	managementCount := 0
+	hubCount := 0
 	orchestrationCount := 0
 	modelerClusterIDs := map[string]bool{}
 	modelerClusterNames := map[string]bool{}
@@ -129,8 +129,8 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		label := fmt.Sprintf("%s: topology %q: release[%d] (role %q, namespace-suffix %q)", ctx, t.Name, i, r.Role, r.NamespaceSuffix)
 
 		switch r.Role {
-		case "management":
-			managementCount++
+		case "hub":
+			hubCount++
 		case "orchestration":
 			orchestrationCount++
 			if strings.TrimSpace(r.ModelerClusterID) == "" {
@@ -148,7 +148,7 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 				modelerClusterNames[r.ModelerClusterName] = true
 			}
 		default:
-			problems = append(problems, fmt.Sprintf("%s: role must be \"management\" or \"orchestration\", got %q", label, r.Role))
+			problems = append(problems, fmt.Sprintf("%s: role must be \"hub\" or \"orchestration\", got %q", label, r.Role))
 		}
 		roles[r.Role] = true
 
@@ -200,8 +200,8 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		}
 	}
 
-	if managementCount != 1 {
-		problems = append(problems, fmt.Sprintf("%s: topology %q: exactly one release with role \"management\" is required, found %d", ctx, t.Name, managementCount))
+	if hubCount != 1 {
+		problems = append(problems, fmt.Sprintf("%s: topology %q: exactly one release with role \"hub\" is required, found %d", ctx, t.Name, hubCount))
 	}
 	if orchestrationCount == 0 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release with role \"orchestration\" is required", ctx, t.Name))

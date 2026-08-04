@@ -48,7 +48,7 @@ spec:
             ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
-            {{- if eq (include "camundaPlatform.topologyMode" .) "management" }}
+            {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
             {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
             {{- $token := include "camundaPlatform.topologyEnvToken" $cluster.id }}
             {{- $orchestration := dig "components" "orchestration" dict $cluster }}
@@ -65,7 +65,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- end }}
-            {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "connectors.authMethod" .) "oidc")) }}
+            {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc")) }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
                 "config"        .Values.connectors.security.authentication.oidc
@@ -73,7 +73,7 @@ spec:
             - name: CAMUNDA_CONNECTORS_CLIENT_ID
               value: {{ .Values.connectors.security.authentication.oidc.clientId | default "connectors" | quote }}
             {{- end }}
-            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "orchestration.authMethod" .) "oidc")) }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
                 "config"        .Values.orchestration.security.authentication.oidc
@@ -81,7 +81,7 @@ spec:
             - name: CAMUNDA_ORCHESTRATION_CLIENT_ID
               value: {{ include "orchestration.authClientId" . | quote }}
             {{- end }}
-            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
@@ -111,7 +111,7 @@ spec:
               "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
               "config" .Values.global.identity.auth.identity
             ) | nindent 12 }}
-            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "CAMUNDA_OPTIMIZE_SECRET"
               "config" .Values.global.identity.auth.optimize

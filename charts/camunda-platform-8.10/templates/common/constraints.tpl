@@ -34,11 +34,11 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
-{{- if not (has $topologyMode (list "combined" "management" "orchestration")) }}
-  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, management, or orchestration; got %q." $topologyMode) }}
+{{- if not (has $topologyMode (list "combined" "hub" "orchestration")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, or orchestration; got %q." $topologyMode) }}
 {{- end }}
-{{- if and (eq $topologyMode "management") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
-  {{- fail "[camunda][error] global.topology.mode=management requires identity.enabled=true." }}
+{{- if and (eq $topologyMode "hub") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=hub requires identity.enabled=true." }}
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") (not .Values.global.identity.auth.enabled) }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
@@ -52,9 +52,9 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
 {{- end }}
-{{- if eq $topologyMode "management" }}
+{{- if eq $topologyMode "hub" }}
   {{- if ne (include "webModeler.authMethod" .) "oidc" }}
-    {{- fail "[camunda][error] global.topology.mode=management requires OIDC authentication for Camunda Hub topology connections." }}
+    {{- fail "[camunda][error] global.topology.mode=hub requires OIDC authentication for Camunda Hub topology connections." }}
   {{- end }}
   {{- $seenSlugs := dict "management-cluster" "management-cluster" }}
   {{- $seenIds := dict

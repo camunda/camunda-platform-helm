@@ -4,9 +4,9 @@ set -euo pipefail
 
 : "${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 
-database_namespace="${MGMT_NAMESPACE:-${TEST_NAMESPACE}}"
+database_namespace="${HUB_NAMESPACE:-${TEST_NAMESPACE}}"
 expected_cluster_name="authenticated-hub-ping"
-if [[ -n "${MGMT_NAMESPACE:-}" ]]; then
+if [[ -n "${HUB_NAMESPACE:-}" ]]; then
   expected_cluster_name="${TEST_NAMESPACE}"
 fi
 

@@ -23,9 +23,9 @@ import (
 
 func topologyTestReleases() []TopologyRelease {
 	return []TopologyRelease{
-		{Role: "management", NamespaceSuffix: "mgmt", Values: "multinamespace/management.yaml"},
-		{Role: "orchestration", NamespaceSuffix: "orcha", Values: "multinamespace/orchestration.yaml", DependsOn: "management"},
-		{Role: "orchestration", NamespaceSuffix: "orchb", Values: "multinamespace/orchestration.yaml", DependsOn: "management"},
+		{Role: "hub", NamespaceSuffix: "hub", Values: "multinamespace/hub.yaml"},
+		{Role: "orchestration", NamespaceSuffix: "orcha", Values: "multinamespace/orchestration.yaml", DependsOn: "hub"},
+		{Role: "orchestration", NamespaceSuffix: "orchb", Values: "multinamespace/orchestration.yaml", DependsOn: "hub"},
 	}
 }
 
@@ -69,7 +69,7 @@ func TestGenerateTopologyContexts_DistinctNamespaces(t *testing.T) {
 	}
 
 	want := map[string]bool{
-		"matrix-810-mns-mgmt":  true,
+		"matrix-810-mns-hub":   true,
 		"matrix-810-mns-orcha": true,
 		"matrix-810-mns-orchb": true,
 	}
@@ -148,11 +148,11 @@ func TestDeriveReleaseNamespace_DistinctSuffixesYieldDistinctNamespaces(t *testi
 }
 
 func TestDeriveReleaseNamespace_NoTruncationWhenWithinLimit(t *testing.T) {
-	got, err := DeriveReleaseNamespace("matrix-810-mns", "mgmt")
+	got, err := DeriveReleaseNamespace("matrix-810-mns", "hub")
 	if err != nil {
 		t.Fatalf("DeriveReleaseNamespace() returned unexpected error: %v", err)
 	}
-	want := "matrix-810-mns-mgmt"
+	want := "matrix-810-mns-hub"
 	if got != want {
 		t.Fatalf("DeriveReleaseNamespace() = %q, want %q", got, want)
 	}

@@ -4,7 +4,7 @@ global:
       method: oidc
   identity:
     service:
-      url: http://camunda-identity.camunda-management.svc.cluster.local:80/identity
+      url: http://camunda-identity.camunda-hub.svc.cluster.local:80/identity
     auth:
       enabled: true
       type: GENERIC

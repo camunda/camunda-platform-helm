@@ -17,12 +17,12 @@
 #
 # Orchestration release — Zeebe/Operate/Tasklist,
 # Connectors, and Optimize only. Auth (Identity/Keycloak wiring, pointed at
-# the management namespace) is owned entirely by
+# the Hub namespace) is owned entirely by
 # identity/keycloak-external.yaml (this release's `identity` layer selection
 # — see the scenario's topology block) so it is not duplicated here.
 #
 # The secondary storage backend is the Elasticsearch companion deployed once
-# into the management namespace (shared-storage: elasticsearch in the
+# into the Hub namespace (shared-storage: elasticsearch in the
 # scenario's topology block), referenced here by FQDN via the
 # EXTERNAL_ELASTICSEARCH_* env vars, resolved the same way persistence/
 # elasticsearch-external.yaml resolves them for a single-namespace scenario.
@@ -35,9 +35,9 @@ orchestration:
           fieldPath: metadata.namespace
   hub:
     ping:
-      endpoint: "http://integration-web-modeler-restapi.${MGMT_NAMESPACE}/modeler/api/v1/clusters"
+      endpoint: "http://integration-web-modeler-restapi.${HUB_NAMESPACE}/modeler/api/v1/clusters"
       credentials:
-        tokenEndpoint: "https://${MGMT_HOST}/auth/realms/camunda-platform/protocol/openid-connect/token"
+        tokenEndpoint: "https://${HUB_HOST}/auth/realms/camunda-platform/protocol/openid-connect/token"
   extraConfiguration:
     - file: hub-ping.yaml
       content: |

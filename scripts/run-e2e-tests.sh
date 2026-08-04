@@ -70,7 +70,7 @@ Options:
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
   --retries N                                 Number of test retries (overrides playwright.config value)
   --local-test-suite DIR                      Use a local checkout of c8-cross-component-e2e-tests instead of the npm package
-  --management-namespace NAMESPACE            For a multi-namespace topology: the namespace running the central
+  --hub-namespace NAMESPACE                   For a multi-namespace topology: the namespace running the central
                                                Identity/Keycloak. --namespace is then the orchestration namespace.
                                                Requires deploy-camunda on PATH (used to merge the .env).
   -v | --verbose                              Show verbose output.
@@ -102,7 +102,7 @@ VIDEO_MODE=""
 TRACE_MODE=""
 RETRIES=""
 LOCAL_TEST_SUITE=""
-MANAGEMENT_NAMESPACE=""
+HUB_NAMESPACE=""
 
 check_required_cmds
 
@@ -181,8 +181,8 @@ while [[ $# -gt 0 ]]; do
       LOCAL_TEST_SUITE="$2"
       shift 2
       ;;
-    --management-namespace)
-      MANAGEMENT_NAMESPACE="$2"
+    --hub-namespace)
+      HUB_NAMESPACE="$2"
       shift 2
       ;;
     -v | --verbose)
@@ -235,11 +235,11 @@ log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
 trap 'rm -f "$ENV_FILE"' EXIT
 
-if [[ -n "$MANAGEMENT_NAMESPACE" ]]; then
-  log "DEBUG: Multi-namespace topology — merging orchestration ($NAMESPACE) + management ($MANAGEMENT_NAMESPACE) into $ENV_FILE"
+if [[ -n "$HUB_NAMESPACE" ]]; then
+  log "DEBUG: Multi-namespace topology - merging orchestration ($NAMESPACE) + Hub ($HUB_NAMESPACE) into $ENV_FILE"
   deploy-camunda e2e-env merge \
     --orchestration-namespace "$NAMESPACE" \
-    --management-namespace "$MANAGEMENT_NAMESPACE" \
+    --hub-namespace "$HUB_NAMESPACE" \
     --absolute-chart-path "$ABSOLUTE_CHART_PATH" \
     --output "$ENV_FILE" \
     --ci="$IS_CI" \

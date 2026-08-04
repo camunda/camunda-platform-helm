@@ -291,7 +291,7 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 // multi-namespace topology (matrix.TopologyRelease, mirrored here to avoid an
 // import cycle — the matrix package already imports deploy).
 type TopologyRelease struct {
-	// Role is either "management" or "orchestration".
+	// Role is either "hub" or "orchestration".
 	Role string
 	// NamespaceSuffix is appended to the base namespace to form this
 	// release's namespace (<base>-<namespace-suffix>).
@@ -375,10 +375,10 @@ func generateTopologyContexts(scenario string, releases []TopologyRelease, flags
 // for callers outside the deploy package (the topology deploy driver in
 // cmd's runTopologyEntry) that need to predict every release's namespace,
 // Keycloak realm, and index prefixes UP FRONT — before any release is
-// deployed — so cross-namespace env vars (MGMT_NAMESPACE, KEYCLOAK_REALM,
+// deployed - so cross-namespace env vars (HUB_NAMESPACE, KEYCLOAK_REALM,
 // EXTERNAL_ELASTICSEARCH_HOST) can be computed once and injected into every
 // release's ExtraEnv ahead of render/preflight, rather than only being
-// available after the management release finishes deploying.
+// available after the Hub release finishes deploying.
 //
 // flags only needs Deployment.Namespace (and, optionally, Ingress fields) set
 // — EffectiveNamespace() and ResolveIngressHostname() are the only fields

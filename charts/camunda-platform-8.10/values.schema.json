@@ -10,17 +10,17 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "description": "defines the role of this release in the deployment topology. Supported values are combined, management, and orchestration.",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, and orchestration.",
                             "default": "combined",
                             "enum": [
                                 "combined",
-                                "management",
+                                "hub",
                                 "orchestration"
                             ]
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used by a management release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.",
+                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.",
                             "default": [],
                             "items": {
                                 "$ref": "#/$defs/topologyCluster"

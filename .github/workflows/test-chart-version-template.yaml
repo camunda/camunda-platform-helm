@@ -137,8 +137,8 @@ on:
         required: false
         default: "[]"
         type: string
-      topology-management-suffix:
-        description: "Namespace suffix of the topology management release"
+      topology-hub-suffix:
+        description: "Namespace suffix of the topology Hub release"
         required: false
         default: ""
         type: string
@@ -248,7 +248,7 @@ jobs:
       skip-e2e: ${{ inputs.skip-e2e }}
       is-topology: ${{ inputs.is-topology }}
       topology-namespace-suffixes: ${{ inputs.topology-namespace-suffixes }}
-      topology-management-suffix: ${{ inputs.topology-management-suffix }}
+      topology-hub-suffix: ${{ inputs.topology-hub-suffix }}
       topology-smoke-matrix: ${{ inputs.topology-smoke-matrix }}
       helm-version: ${{ inputs.helm-version }}
       pr-head-sha: ${{ inputs.pr-head-sha }}

@@ -1664,11 +1664,11 @@ integration:
               Waits for the authenticated Orchestration Cluster ping to register its
               uniquely named cluster in Hub's database.
           topology:
-            name: mgmt-1orch
+            name: hub-1orch
             releases:
-              - role: management
-                namespace-suffix: mgmt
-                values: features/multinamespace-management.yaml
+              - role: hub
+                namespace-suffix: hub
+                values: features/multinamespace-hub.yaml
                 identity: keycloak
                 dependencies:
                   - keycloak
@@ -1677,7 +1677,7 @@ integration:
               - role: orchestration
                 namespace-suffix: orcha
                 values: features/multinamespace-orchestration.yaml
-                depends-on: management
+                depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 env:
@@ -1702,11 +1702,11 @@ integration:
           infra-type:
             gke: distroci
           topology:
-            name: mgmt-2orch
+            name: hub-2orch
             releases:
-              - role: management
-                namespace-suffix: mgmt
-                values: features/multinamespace-2orch-management.yaml
+              - role: hub
+                namespace-suffix: hub
+                values: features/multinamespace-2orch-hub.yaml
                 identity: keycloak
                 features:
                   - multinamespace-reset-clients
@@ -1717,7 +1717,7 @@ integration:
               - role: orchestration
                 namespace-suffix: orcha
                 values: features/multinamespace-orchestration.yaml
-                depends-on: management
+                depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 env:
@@ -1731,7 +1731,7 @@ integration:
               - role: orchestration
                 namespace-suffix: orchb
                 values: features/multinamespace-orchestration.yaml
-                depends-on: management
+                depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 env:

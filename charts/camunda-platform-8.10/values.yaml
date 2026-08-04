@@ -44,9 +44,9 @@
 global:
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
-    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, management, and orchestration.
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, and orchestration.
     mode: combined
-    ## @param global.topology.clusters can be used by a management release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
+    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
     clusters: []
     # - id: production-a
     #   name: Production A

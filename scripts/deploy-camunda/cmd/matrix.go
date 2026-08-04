@@ -1090,7 +1090,7 @@ func pluralEntry(n int) string {
 //
 // Each release gets its OWN identity/persistence/features/dependencies layer
 // selection (per matrix.TopologyRelease) rather than the scenario's uniform
-// layers — e.g. the management release uses the bundled-Keycloak identity
+// layers - e.g. the Hub release uses the bundled-Keycloak identity
 // layer and deploys keycloak/postgresql/elasticsearch, while orchestration
 // releases use the external-Keycloak layer and deploy no companions of their
 // own. For each release, a matrix.Entry is synthesized carrying that
@@ -1102,14 +1102,14 @@ func pluralEntry(n int) string {
 // Every release's namespace and Keycloak realm are computed UP FRONT (via
 // deploy.GenerateTopologyContexts — pure, no cluster access) since all
 // namespaces are known before any release is deployed. The resulting
-// cross-ref env (MGMT_NAMESPACE, KEYCLOAK_REALM, EXTERNAL_ELASTICSEARCH_*) is
-// injected into EVERY release's ExtraEnv, including the management release
+// cross-ref env (HUB_NAMESPACE, KEYCLOAK_REALM, EXTERNAL_ELASTICSEARCH_*) is
+// injected into EVERY release's ExtraEnv, including the Hub release
 // itself — its inherited placeholders (it has none today, but future layers
 // might) resolve harmlessly since the values are self-consistent.
 //
-// Deploy order is management-first: its Keycloak/Identity/shared-storage
+// Deploy order is Hub-first: its Keycloak/Identity/shared-storage
 // companions must be reachable before orchestration releases render (their
-// external-Keycloak layer points straight at the management namespace) or
+// external-Keycloak layer points straight at the Hub namespace) or
 // start.
 
 // buildOrchestrationZeebeEnv derives ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST from the
@@ -1233,32 +1233,32 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
 
-	managementIdx := -1
+	hubIdx := -1
 	var orchestrationIndices []int
 	for i, r := range entry.Topology.Releases {
-		if r.Role == "management" {
-			managementIdx = i
+		if r.Role == "hub" {
+			hubIdx = i
 		}
 		if r.Role == "orchestration" {
 			orchestrationIndices = append(orchestrationIndices, i)
 		}
 	}
-	if managementIdx == -1 {
-		return fmt.Errorf("topology entry %s/%s: topology has no \"management\" release", entry.Version, entry.Scenario)
+	if hubIdx == -1 {
+		return fmt.Errorf("topology entry %s/%s: topology has no \"hub\" release", entry.Version, entry.Scenario)
 	}
 
-	sharedStorageService := resolveSharedStorageServiceName(entry.Topology, entry.Topology.Releases[managementIdx].ResolvedDependencies)
+	sharedStorageService := resolveSharedStorageServiceName(entry.Topology, entry.Topology.Releases[hubIdx].ResolvedDependencies)
 
-	crossRefEnv := deploy.BuildTopologyCrossRefEnv(contexts[managementIdx], sharedStorageService, "9200", "http")
+	crossRefEnv := deploy.BuildTopologyCrossRefEnv(contexts[hubIdx], sharedStorageService, "9200", "http")
 
-	// ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST let the management release (Web
+	// ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST let the Hub release (Web
 	// Modeler) register the orchestration release's Zeebe gateway as a
 	// cluster, reaching it cross-namespace by FQDN — the same
 	// "<release>-zeebe-gateway.<namespace>.svc.cluster.local" Service the
 	// orchestration release itself exposes (orchestration.serviceName in
 	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
-	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[managementIdx], entry.Topology.Releases, contexts)
+	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
 	for _, i := range orchestrationIndices {
 		token := topologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
@@ -1274,7 +1274,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 	}
 
-	// Deploy order honors each release's depends-on (management, which the
+	// Deploy order honors each release's depends-on (Hub, which the
 	// orchestration releases depend on, therefore deploys first).
 	order, err := topologyDeployOrder(entry.Topology.Releases)
 	if err != nil {
@@ -1288,7 +1288,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
 		if len(orchestrationIndices) > 1 {
-			hostKey := "MGMT_HOST"
+			hostKey := "HUB_HOST"
 			if rel.Role == "orchestration" {
 				hostKey = topologyEnvToken(rel.NamespaceSuffix) + "_HOST"
 			}
@@ -1324,7 +1324,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	return nil
 }
 
-func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, managementCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
+func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
 	orchestrationCount := 0
 	for _, release := range releases {
 		if release.Role == "orchestration" {
@@ -1332,7 +1332,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		}
 	}
 	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" && orchestrationCount <= 1 {
-		crossRefEnv["MGMT_HOST"] = sharedHost
+		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
 				crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
@@ -1345,8 +1345,8 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 	if baseDomain == "" {
 		return
 	}
-	crossRefEnv["MGMT_HOST"] = (&config.IngressFlags{
-		IngressSubdomain:  managementCtx.Namespace,
+	crossRefEnv["HUB_HOST"] = (&config.IngressFlags{
+		IngressSubdomain:  hubCtx.Namespace,
 		IngressBaseDomain: baseDomain,
 	}).ResolveIngressHostname()
 	for i, release := range releases {
@@ -1362,7 +1362,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 
 // topologyDeployOrder returns release indices in a depends-on-respecting order:
 // a release whose DependsOn names another release's Role is always emitted after
-// that release. Ties break by declaration order, so the management release the
+// that release. Ties break by declaration order, so the Hub release the
 // orchestration releases depend on is deployed first. Errors on a cycle or an
 // unresolvable dependency (Topology.Validate already rejects unknown roles, so
 // this is defense-in-depth).
@@ -1480,10 +1480,10 @@ func synthesizeReleaseOpts(base matrix.RunOptions, platform string, namespaceOve
 // every release's flags need on top of matrix.BuildEntryFlags' normal
 // assembly, mutating flags in place:
 //
-//   - ExtraEnv: the cross-ref env (MGMT_NAMESPACE, KEYCLOAK_REALM,
-//     EXTERNAL_ELASTICSEARCH_*, MGMT_HOST, ORCH_HOST, ORCH_ZEEBE_GRPC,
+//   - ExtraEnv: the cross-ref env (HUB_NAMESPACE, KEYCLOAK_REALM,
+//     EXTERNAL_ELASTICSEARCH_*, HUB_HOST, ORCH_HOST, ORCH_ZEEBE_GRPC,
 //     ORCH_ZEEBE_REST) computed up front, MERGED into EVERY
-//     release (management included) before render/preflight, on top of
+//     release (Hub included) before render/preflight, on top of
 //     any pre-existing ExtraEnv (cross-ref wins on key conflict). The
 //     topology path currently bypasses executeEntry (where per-entry
 //     client-IDs like VENOM_CLIENT_ID/CONNECTORS_CLIENT_ID and
@@ -1504,7 +1504,7 @@ func synthesizeReleaseOpts(base matrix.RunOptions, platform string, namespaceOve
 //     cluster-setup-secrets action run for it — so the topology driver
 //     itself must own provisioning integration-test-credentials (and other
 //     external secrets) into every release namespace from the same Vault
-//     path, or dependent companions like the management release's bundled
+//     path, or dependent companions like the Hub release's bundled
 //     Keycloak CreateContainerConfigError on the missing secret.
 //     NOTE for Stage 3 (CI wiring): when a topology scenario is wired into
 //     CI, the workflow must NOT also invoke cluster-setup-secrets for these

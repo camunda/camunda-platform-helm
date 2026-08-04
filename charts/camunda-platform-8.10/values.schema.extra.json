@@ -35,7 +35,7 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "enum": ["combined", "management", "orchestration"],
+                            "enum": ["combined", "hub", "orchestration"],
                             "default": "combined"
                         },
                         "clusters": {

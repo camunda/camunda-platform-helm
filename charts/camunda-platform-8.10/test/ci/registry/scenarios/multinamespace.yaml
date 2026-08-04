@@ -8,18 +8,18 @@ platforms:
 infra-type:
   gke: distroci
 topology:
-  name: mgmt-1orch
+  name: hub-1orch
   shared-storage: elasticsearch
   shared-storage-service: elasticsearch-master
   releases:
-    - role: management
-      namespace-suffix: mgmt
+    - role: hub
+      namespace-suffix: hub
       identity: keycloak
       dependencies:
         - keycloak
         - postgresql
         - elasticsearch
-      values: features/multinamespace-management.yaml
+      values: features/multinamespace-hub.yaml
     - role: orchestration
       namespace-suffix: orcha
       modeler-cluster-id: orchestration
@@ -28,7 +28,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       values: features/multinamespace-orchestration.yaml
-      depends-on: management
+      depends-on: hub
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-api

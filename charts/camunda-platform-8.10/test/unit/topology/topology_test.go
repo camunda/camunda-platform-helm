@@ -38,8 +38,8 @@ func render(t *testing.T, valuesFile string, templates ...string) string {
 	return helm.RenderTemplate(t, options, chartPath(t), "camunda", templates)
 }
 
-func TestManagementTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testing.T) {
-	output := render(t, "management-generic.yaml",
+func TestHubTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testing.T) {
+	output := render(t, "hub-generic.yaml",
 		"templates/identity/configmap.yaml",
 		"templates/web-modeler/configmap-restapi.yaml",
 	)
@@ -60,16 +60,16 @@ func TestManagementTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testin
 	require.NotContains(t, output, `keycloak:\n`)
 }
 
-func TestManagementTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
-	output := render(t, "management-generic.yaml")
+func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
+	output := render(t, "hub-generic.yaml")
 
 	require.Contains(t, output, "name: camunda-identity")
 	require.NotContains(t, output, "name: camunda-zeebe")
 	require.NotContains(t, output, "name: camunda-connectors")
 }
 
-func TestManagementTopologyKeycloakRendersInitAndSecretReferences(t *testing.T) {
-	output := render(t, "management-keycloak.yaml",
+func TestHubTopologyKeycloakRendersInitAndSecretReferences(t *testing.T) {
+	output := render(t, "hub-keycloak.yaml",
 		"templates/identity/configmap.yaml",
 		"templates/identity/deployment.yaml",
 	)
@@ -80,8 +80,8 @@ func TestManagementTopologyKeycloakRendersInitAndSecretReferences(t *testing.T) 
 	require.Contains(t, output, "key: orchestration-secret")
 }
 
-func TestManagementTopologyPreservesLegacyAlwaysRegister(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-keycloak.yaml")
+func TestHubTopologyPreservesLegacyAlwaysRegister(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -100,8 +100,8 @@ func TestManagementTopologyPreservesLegacyAlwaysRegister(t *testing.T) {
 	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET")
 }
 
-func TestManagementTopologyRejectsLegacyRegistrationCollision(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-keycloak.yaml")
+func TestHubTopologyRejectsLegacyRegistrationCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -114,8 +114,8 @@ func TestManagementTopologyRejectsLegacyRegistrationCollision(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration"`)
 }
 
-func TestManagementTopologyRejectsReservedSharedRoleName(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+func TestHubTopologyRejectsReservedSharedRoleName(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -139,7 +139,7 @@ func TestOrchestrationTopologyUsesExistingComponentAndIdentityConfiguration(t *t
 	require.Contains(t, output, `client-id: "orchestration-east"`)
 	require.Contains(t, output, `- "orchestration-east-api"`)
 	require.Contains(t, output, `redirect-uri: "https://east.example.com/orchestration/sso-callback"`)
-	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "http://camunda-identity.camunda-management.svc.cluster.local:80/identity"`)
+	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "http://camunda-identity.camunda-hub.svc.cluster.local:80/identity"`)
 
 	var statefulSet appsv1.StatefulSet
 	for _, document := range splitDocuments(output) {
@@ -162,8 +162,8 @@ func TestOrchestrationTopologyUsesExistingComponentAndIdentityConfiguration(t *t
 	require.Contains(t, output, "key: connectors-secret")
 }
 
-func TestManagementTopologyRejectsDuplicateClientIds(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+func TestHubTopologyRejectsDuplicateClientIds(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -175,8 +175,8 @@ func TestManagementTopologyRejectsDuplicateClientIds(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
 }
 
-func TestManagementTopologyRejectsAdminClientCollision(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+func TestHubTopologyRejectsAdminClientCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -189,8 +189,8 @@ func TestManagementTopologyRejectsAdminClientCollision(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
 }
 
-func TestManagementTopologyRejectsCustomClientCollision(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+func TestHubTopologyRejectsCustomClientCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -207,8 +207,8 @@ func TestManagementTopologyRejectsCustomClientCollision(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
 }
 
-func TestManagementTopologyRejectsReservedHubClusterId(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+func TestHubTopologyRejectsReservedHubClusterId(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -220,8 +220,8 @@ func TestManagementTopologyRejectsReservedHubClusterId(t *testing.T) {
 	require.ErrorContains(t, err, `normalize to the same key "management-cluster"`)
 }
 
-func TestManagementTopologyRequiresOIDC(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+func TestHubTopologyRequiresOIDC(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -230,11 +230,11 @@ func TestManagementTopologyRequiresOIDC(t *testing.T) {
 	}
 
 	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
-	require.ErrorContains(t, err, "global.topology.mode=management requires OIDC authentication")
+	require.ErrorContains(t, err, "global.topology.mode=hub requires OIDC authentication")
 }
 
-func TestManagementTopologyUsesHubEndpointOverrides(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-generic.yaml")
+func TestHubTopologyUsesHubEndpointOverrides(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -268,8 +268,8 @@ func TestManagementTopologyUsesHubEndpointOverrides(t *testing.T) {
 	}
 }
 
-func TestManagementTopologyKeycloakRejectsMissingSecret(t *testing.T) {
-	valuesFile := filepath.Join("testdata", "management-keycloak.yaml")
+func TestHubTopologyKeycloakRejectsMissingSecret(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
@@ -313,30 +313,30 @@ func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
-			"global.identity.service.url": "https://management.example.com/identity",
+			"global.identity.service.url": "https://hub.example.com/identity",
 		},
 	}
 
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/configmap-identity-auth.yaml"})
-	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://management.example.com/identity"`)
+	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://hub.example.com/identity"`)
 }
 
 func TestTopologyPreservesSuppressedPersistentVolumeClaims(t *testing.T) {
-	managementOptions := &helm.Options{
-		ValuesFiles: []string{filepath.Join("testdata", "management-generic.yaml")},
+	hubOptions := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
 		SetValues: map[string]string{
 			"connectors.persistence.enabled": "true",
 			"optimize.persistence.enabled":   "true",
 		},
 	}
-	managementTemplates := []string{
+	hubTemplates := []string{
 		"templates/connectors/persistentvolumeclaim.yaml",
 		"templates/optimize/persistentvolumeclaim.yaml",
 	}
 	for _, args := range [][]string{nil, {"--is-upgrade"}} {
-		managementOutput := helm.RenderTemplate(t, managementOptions, chartPath(t), "camunda", managementTemplates, args...)
-		require.Contains(t, managementOutput, "name: camunda-camunda-platform-connectors-data")
-		require.Contains(t, managementOutput, "name: camunda-camunda-platform-optimize-data")
+		hubOutput := helm.RenderTemplate(t, hubOptions, chartPath(t), "camunda", hubTemplates, args...)
+		require.Contains(t, hubOutput, "name: camunda-camunda-platform-connectors-data")
+		require.Contains(t, hubOutput, "name: camunda-camunda-platform-optimize-data")
 	}
 
 	orchestrationOptions := &helm.Options{

@@ -22,11 +22,11 @@ import (
 func TestMergeEnvOverridesReplacesExistingKey(t *testing.T) {
 	content := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\nKEYCLOAK_URL=https://orcha.example.com\n"
 	overrides := map[string]string{
-		"KEYCLOAK_URL": "https://mgmt.example.com",
+		"KEYCLOAK_URL": "https://hub.example.com",
 	}
 
 	got := mergeEnvOverrides(content, overrides)
-	want := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\nKEYCLOAK_URL=https://mgmt.example.com\n"
+	want := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\nKEYCLOAK_URL=https://hub.example.com\n"
 
 	if got != want {
 		t.Fatalf("mergeEnvOverrides() = %q, want %q", got, want)
@@ -63,19 +63,19 @@ func TestDecodeSecretValueRejectsInvalidBase64(t *testing.T) {
 func TestMergeEnvOverridesAppendsMissingKeysSorted(t *testing.T) {
 	content := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\n"
 	overrides := map[string]string{
-		"OAUTH_URL":           "https://mgmt.example.com/token",
-		"MANAGEMENT_BASE_URL": "https://mgmt.example.com",
+		"OAUTH_URL":           "https://hub.example.com/token",
+		"MANAGEMENT_BASE_URL": "https://hub.example.com",
 	}
 
 	got := mergeEnvOverrides(content, overrides)
-	want := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\nMANAGEMENT_BASE_URL=https://mgmt.example.com\nOAUTH_URL=https://mgmt.example.com/token\n"
+	want := "PLAYWRIGHT_BASE_URL=https://orcha.example.com\nMANAGEMENT_BASE_URL=https://hub.example.com\nOAUTH_URL=https://hub.example.com/token\n"
 
 	if got != want {
 		t.Fatalf("mergeEnvOverrides() = %q, want %q", got, want)
 	}
 }
 
-func TestMergeEnvOverridesRoutesManagementApplicationsToManagementHost(t *testing.T) {
+func TestMergeEnvOverridesRoutesHubApplicationsToHubHost(t *testing.T) {
 	content := strings.Join([]string{
 		"PLAYWRIGHT_BASE_URL=https://orcha.example.com",
 		"CONSOLE_BASE_URL=https://orcha.example.com",
@@ -85,13 +85,13 @@ func TestMergeEnvOverridesRoutesManagementApplicationsToManagementHost(t *testin
 		"",
 	}, "\n")
 	overrides := map[string]string{
-		"CONSOLE_BASE_URL":                 "https://mgmt.example.com",
-		"CONSOLE_CONTEXT_PATH":             "https://mgmt.example.com/modeler",
-		"IDENTITY_BASE_URL":                "https://mgmt.example.com/identity/",
-		"KEYCLOAK_BASE_URL":                "https://mgmt.example.com/auth",
-		"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://mgmt.example.com/identity",
-		"MODELER_CONTEXT_PATH":             "https://mgmt.example.com/modeler",
-		"WEBMODELER_BASE_URL":              "https://mgmt.example.com/modeler",
+		"CONSOLE_BASE_URL":                 "https://hub.example.com",
+		"CONSOLE_CONTEXT_PATH":             "https://hub.example.com/modeler",
+		"IDENTITY_BASE_URL":                "https://hub.example.com/identity/",
+		"KEYCLOAK_BASE_URL":                "https://hub.example.com/auth",
+		"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://hub.example.com/identity",
+		"MODELER_CONTEXT_PATH":             "https://hub.example.com/modeler",
+		"WEBMODELER_BASE_URL":              "https://hub.example.com/modeler",
 	}
 
 	got := mergeEnvOverrides(content, overrides)
@@ -100,7 +100,7 @@ func TestMergeEnvOverridesRoutesManagementApplicationsToManagementHost(t *testin
 	}
 	for key, value := range overrides {
 		if !strings.Contains(got, key+"="+value+"\n") {
-			t.Errorf("mergeEnvOverrides() missing %s management URL: %q", key, got)
+			t.Errorf("mergeEnvOverrides() missing %s Hub URL: %q", key, got)
 		}
 	}
 }
@@ -108,11 +108,11 @@ func TestMergeEnvOverridesRoutesManagementApplicationsToManagementHost(t *testin
 func TestMergeEnvOverridesPreservesNoTrailingNewline(t *testing.T) {
 	content := "PLAYWRIGHT_BASE_URL=https://orcha.example.com"
 	overrides := map[string]string{
-		"PLAYWRIGHT_BASE_URL": "https://mgmt.example.com",
+		"PLAYWRIGHT_BASE_URL": "https://hub.example.com",
 	}
 
 	got := mergeEnvOverrides(content, overrides)
-	want := "PLAYWRIGHT_BASE_URL=https://mgmt.example.com"
+	want := "PLAYWRIGHT_BASE_URL=https://hub.example.com"
 
 	if got != want {
 		t.Fatalf("mergeEnvOverrides() = %q, want %q", got, want)
@@ -123,7 +123,7 @@ func TestE2EEnvMergeFailsOnMissingRenderScript(t *testing.T) {
 	cmd := newE2EEnvMergeCommand()
 	cmd.SetArgs([]string{
 		"--orchestration-namespace", "matrix-810-mns-orcha",
-		"--management-namespace", "matrix-810-mns-mgmt",
+		"--hub-namespace", "matrix-810-mns-hub",
 		"--absolute-chart-path", "/workspace/charts/camunda-platform-8.10",
 		"--render-script", "/nonexistent/render-e2e-env.sh",
 	})
@@ -140,13 +140,13 @@ func TestE2EEnvMergeFailsOnMissingRenderScript(t *testing.T) {
 }
 
 func TestSelectIngressHostFiltersZeebeAndGrpcHosts(t *testing.T) {
-	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com zeebe-matrix-810-mns-mgmt.ci.distro.ultrawombat.com grpc-matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+	raw := "matrix-810-mns-hub.ci.distro.ultrawombat.com zeebe-matrix-810-mns-hub.ci.distro.ultrawombat.com grpc-matrix-810-mns-hub.ci.distro.ultrawombat.com"
 
 	got, err := selectIngressHost(raw)
 	if err != nil {
 		t.Fatalf("selectIngressHost() unexpected error: %v", err)
 	}
-	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+	want := "matrix-810-mns-hub.ci.distro.ultrawombat.com"
 
 	if got != want {
 		t.Fatalf("selectIngressHost() = %q, want %q", got, want)
@@ -154,13 +154,13 @@ func TestSelectIngressHostFiltersZeebeAndGrpcHosts(t *testing.T) {
 }
 
 func TestSelectIngressHostPassesThroughSingleHost(t *testing.T) {
-	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+	raw := "matrix-810-mns-hub.ci.distro.ultrawombat.com"
 
 	got, err := selectIngressHost(raw)
 	if err != nil {
 		t.Fatalf("selectIngressHost() unexpected error: %v", err)
 	}
-	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+	want := "matrix-810-mns-hub.ci.distro.ultrawombat.com"
 
 	if got != want {
 		t.Fatalf("selectIngressHost() = %q, want %q", got, want)
@@ -183,13 +183,13 @@ func TestSelectIngressHostEmptyInputReturnsEmpty(t *testing.T) {
 // ({.items[*].spec.rules[*].host}) emits it N times. selectIngressHost must
 // collapse the repeats into a single host rather than joining "host,host,host".
 func TestSelectIngressHostDedupesRepeatedHost(t *testing.T) {
-	raw := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com matrix-810-mns-mgmt.ci.distro.ultrawombat.com matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+	raw := "matrix-810-mns-hub.ci.distro.ultrawombat.com matrix-810-mns-hub.ci.distro.ultrawombat.com matrix-810-mns-hub.ci.distro.ultrawombat.com"
 
 	got, err := selectIngressHost(raw)
 	if err != nil {
 		t.Fatalf("selectIngressHost() unexpected error: %v", err)
 	}
-	want := "matrix-810-mns-mgmt.ci.distro.ultrawombat.com"
+	want := "matrix-810-mns-hub.ci.distro.ultrawombat.com"
 
 	if got != want {
 		t.Fatalf("selectIngressHost() = %q, want %q (repeated host must collapse to one)", got, want)
@@ -211,11 +211,11 @@ func TestSelectIngressHostRejectsMultipleDistinctHosts(t *testing.T) {
 func TestMergeEnvOverridesIgnoresLinesWithoutEquals(t *testing.T) {
 	content := "# a comment\n\nPLAYWRIGHT_BASE_URL=https://orcha.example.com\n"
 	overrides := map[string]string{
-		"PLAYWRIGHT_BASE_URL": "https://mgmt.example.com",
+		"PLAYWRIGHT_BASE_URL": "https://hub.example.com",
 	}
 
 	got := mergeEnvOverrides(content, overrides)
-	want := "# a comment\n\nPLAYWRIGHT_BASE_URL=https://mgmt.example.com\n"
+	want := "# a comment\n\nPLAYWRIGHT_BASE_URL=https://hub.example.com\n"
 
 	if got != want {
 		t.Fatalf("mergeEnvOverrides() = %q, want %q", got, want)

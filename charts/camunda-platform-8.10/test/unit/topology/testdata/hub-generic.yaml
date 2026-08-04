@@ -8,7 +8,7 @@ global:
       type: GENERIC
       issuer: https://issuer.example.com
   topology:
-    mode: management
+    mode: hub
     clusters:
       - id: east
         name: East

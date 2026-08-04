@@ -43,7 +43,7 @@ data:
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
       {{- end }}
       component-presets:
-        {{- if eq (include "camundaPlatform.topologyMode" .) "management" }}
+        {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
         {{- $hasSharedOrchestrationRole := false }}
         {{- $hasSharedOptimizeRole := false }}
         {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
@@ -164,7 +164,7 @@ data:
           {{- end }}
         {{- end }}
         {{- end }}
-        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "connectors.authMethod" .) "oidc")) }}
+        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc")) }}
         connectors:
           applications:
             - name: Connectors
@@ -194,7 +194,7 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
+        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
         optimize:
           applications:
             - name: Optimize
@@ -219,7 +219,7 @@ data:
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
         {{- end }}
-        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
+        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "orchestration.authMethod" .) "oidc")) }}
         orchestration:
           applications:
             - name: Orchestration
@@ -342,7 +342,7 @@ data:
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       {{- end }}
       init:
-        {{- if and (eq (include "camundaPlatform.topologyMode" .) "management") (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") }}
+        {{- if and (eq (include "camundaPlatform.topologyMode" .) "hub") (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") }}
         {{- $hasSharedTopologyRole := false }}
         {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
         {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
@@ -358,15 +358,15 @@ data:
         "topology-shared-roles": {}
         {{- end }}
         {{- end }}
-        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "connectors.authMethod" .) "oidc")) }}
+        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc")) }}
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         {{- end }}
-        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
+        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         {{- end }}
-        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
+        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "orchestration.authMethod" .) "oidc")) }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
@@ -385,13 +385,13 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "orchestration.authMethod" .) "oidc")) }}
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: read:*
             - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
               definition: write:*
             {{- end }}
-            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
             - resourceServerId: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
               definition: write:*
             {{- end }}
@@ -424,7 +424,7 @@ data:
           {{- if .Values.global.identity.auth.enabled }}
           roles:
             - ManagementIdentity
-            {{- if eq (include "camundaPlatform.topologyMode" .) "management" }}
+            {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
             {{- $hasSharedOrchestrationRole := false }}
             {{- $hasSharedOptimizeRole := false }}
             {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
@@ -452,14 +452,14 @@ data:
             - "Optimize"
             {{- end }}
             {{- end }}
-            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "management") .Values.optimize.enabled) }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
             - Optimize
             {{- end }}
             {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
             - Web Modeler
             - Web Modeler Admin
             {{- end }}
-            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "management") (eq (include "orchestration.authMethod" .) "oidc")) }}
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "orchestration.authMethod" .) "oidc")) }}
             - Orchestration
             {{- end }}
           {{- end }}
