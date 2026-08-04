@@ -81,6 +81,9 @@ spec:
               value: "false"
             - name: CAMUNDA_MODELER_FEATURE_GLOBAL_NAVIGATION_V2_ENABLED
               value: "false"
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
               cpu: 1800m

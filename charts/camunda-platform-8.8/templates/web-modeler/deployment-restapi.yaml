@@ -116,8 +116,10 @@ spec:
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-          {{- if .Values.webModeler.restapi.envFrom }}
           envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.webModeler.restapi.envFrom }}
             {{- .Values.webModeler.restapi.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.restapi.command }}

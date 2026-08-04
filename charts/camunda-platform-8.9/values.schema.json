@@ -1025,7 +1025,7 @@
                                         },
                                         "bucketPath": {
                                             "type": "string",
-                                            "description": "(Optional) Path/prefix within the S3 bucket.",
+                                            "description": "can be used to define a key prefix within the S3 bucket (for example documents/invoices), not an endpoint URL.",
                                             "default": ""
                                         },
                                         "bucketTtl": {
