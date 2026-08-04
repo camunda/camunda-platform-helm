@@ -33,7 +33,7 @@ func main() {
 	var err error
 	switch sub := os.Args[1]; sub {
 	case "chart-images":
-		err = runChartImages(os.Args[2:])
+		err = runChartImages(os.Args[2:], os.Stdout)
 	case "update-matrix":
 		err = runUpdateMatrix(os.Args[2:])
 	case "resolve-tag":

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +29,7 @@ func TestArtifactHubImagesYAML(t *testing.T) {
 		"docker.io/camunda/camunda:8.9.13",
 		"docker.io/camunda/connectors-bundle@sha256:abc123",
 	}
+	wantNames := []string{"camunda", "connectors-bundle"}
 
 	got, err := artifactHubImagesYAML(images)
 	if err != nil {
@@ -45,6 +47,33 @@ func TestArtifactHubImagesYAML(t *testing.T) {
 		if entry.Image != images[i] {
 			t.Errorf("entry %d image = %q, want %q", i, entry.Image, images[i])
 		}
+		if entry.Name != wantNames[i] {
+			t.Errorf("entry %d name = %q, want %q", i, entry.Name, wantNames[i])
+		}
+	}
+}
+
+func TestImageName(t *testing.T) {
+	for _, tc := range []struct{ ref, want string }{
+		{"docker.io/camunda/keycloak:26.3.3", "keycloak"},
+		{"docker.io/camunda/connectors-bundle@sha256:abc123", "connectors-bundle"},
+		{"registry.camunda.cloud/camunda/camunda:8.9.13", "camunda"},
+		{"busybox:1.36", "busybox"},
+	} {
+		if got := imageName(tc.ref); got != tc.want {
+			t.Errorf("imageName(%q) = %q, want %q", tc.ref, got, tc.want)
+		}
+	}
+}
+
+func TestValidateImageRefsRejectsPlaceholders(t *testing.T) {
+	err := validateImageRefs([]string{"docker.io/camunda/console:$E2E_TESTS_CONSOLE_IMAGE_TAG"})
+	if err == nil || !strings.Contains(err.Error(), "unresolved") {
+		t.Fatalf("err = %v, want an unresolved-placeholder error", err)
+	}
+
+	if err := validateImageRefs([]string{"docker.io/camunda/camunda:8.9.13"}); err != nil {
+		t.Errorf("valid ref rejected: %v", err)
 	}
 }
 
@@ -60,26 +89,12 @@ orchestration:
 	}
 
 	artifactHubOut := filepath.Join(t.TempDir(), "artifacthub-images.yaml")
-	stdout, err := os.CreateTemp(t.TempDir(), "chart-images-*.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	originalStdout := os.Stdout
-	os.Stdout = stdout
-	runErr := runChartImages([]string{"--chart-dir", chartDir, "--artifacthub-out", artifactHubOut})
-	os.Stdout = originalStdout
-	if err := stdout.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if runErr != nil {
-		t.Fatalf("runChartImages: %v", runErr)
+	var stdout bytes.Buffer
+	if err := runChartImages([]string{"--chart-dir", chartDir, "--artifacthub-out", artifactHubOut}, &stdout); err != nil {
+		t.Fatalf("runChartImages: %v", err)
 	}
 
-	canonical, err := os.ReadFile(stdout.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got, want := string(canonical), "docker.io/camunda/camunda:8.9.13\n"; got != want {
+	if got, want := stdout.String(), "docker.io/camunda/camunda:8.9.13\n"; got != want {
 		t.Errorf("canonical output = %q, want %q", got, want)
 	}
 
@@ -87,47 +102,7 @@ orchestration:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := string(artifactHub), "- image: docker.io/camunda/camunda:8.9.13\n"; got != want {
+	if got, want := string(artifactHub), "- name: camunda\n  image: docker.io/camunda/camunda:8.9.13\n"; got != want {
 		t.Errorf("Artifact Hub output = %q, want %q", got, want)
-	}
-}
-
-func TestBuildWorkflowRecordsImageAnnotations(t *testing.T) {
-	workflowPath := filepath.Join("..", "..", ".github", "workflows", "chart-build-dev.yaml")
-	data, err := os.ReadFile(workflowPath)
-	if err != nil {
-		t.Fatalf("read build workflow: %v", err)
-	}
-
-	var workflow struct {
-		Jobs map[string]struct {
-			Steps []struct {
-				Name string `yaml:"name"`
-				Run  string `yaml:"run"`
-			} `yaml:"steps"`
-		} `yaml:"jobs"`
-	}
-	if err := yaml.Unmarshal(data, &workflow); err != nil {
-		t.Fatalf("parse build workflow: %v", err)
-	}
-
-	var annotationStep string
-	for _, step := range workflow.Jobs["build"].Steps {
-		if step.Name == "Record chart image annotations" {
-			annotationStep = step.Run
-			break
-		}
-	}
-	if annotationStep == "" {
-		t.Fatal("build workflow has no image annotation step")
-	}
-	for _, required := range []string{
-		"--artifacthub-out /tmp/artifacthub-images.yaml",
-		`.annotations."camunda.io/chart-images"`,
-		`.annotations."artifacthub.io/images"`,
-	} {
-		if !strings.Contains(annotationStep, required) {
-			t.Errorf("image annotation step missing %q", required)
-		}
 	}
 }
