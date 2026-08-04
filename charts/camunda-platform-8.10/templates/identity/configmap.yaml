@@ -65,6 +65,12 @@ data:
               permissions:
                 - audience: {{ $orchestration.audience | quote }}
                   definition: write:*
+                {{- if $.Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
+                  definition: create:*
+                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
+                  definition: update:*
+                {{- end }}
               root-url: {{ tpl $orchestration.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"

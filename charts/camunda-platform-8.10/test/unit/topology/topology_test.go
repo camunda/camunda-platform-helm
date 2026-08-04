@@ -81,6 +81,21 @@ func TestHubTopologyKeycloakRendersInitAndSecretReferences(t *testing.T) {
 	require.Contains(t, output, "key: orchestration-secret")
 }
 
+func TestHubTopologyKeycloakRendersHubPingAudience(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.Contains(t, output, `audience: "web-modeler-public-api"`)
+	require.Contains(t, output, `definition: create:*`)
+	require.Contains(t, output, `definition: update:*`)
+}
+
 func TestHubTopologyPreservesLegacyAlwaysRegister(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
 	options := &helm.Options{
