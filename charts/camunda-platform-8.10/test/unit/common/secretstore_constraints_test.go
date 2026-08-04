@@ -237,6 +237,33 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Path-only file store can use extra volume mount",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":         "/custom/secrets",
+				"orchestration.extraVolumeMounts[0].name":       "custom",
+				"orchestration.extraVolumeMounts[0].mountPath":  "/custom/secrets",
+				"orchestration.extraVolumes[0].name":            "custom",
+				"orchestration.extraVolumes[0].emptyDir.medium": "Memory",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Generated volume name collision is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.primary.existingSecret": "s",
+				"orchestration.extraVolumes[0].name":                    "secretstore-default-primary-dbe46d5f",
+				"orchestration.extraVolumes[0].emptyDir.medium":         "Memory",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "generated volume name")
+			},
+		},
+		{
 			Name:     "GCP document store mount collision is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
