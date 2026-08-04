@@ -97,7 +97,7 @@ identityKeycloak:
   #     - name: index-docker-io
   #     - name: ghcr-io
   image:
-    registry: registry.camunda.cloud
+    registry: docker.io
     repository: camunda/keycloak
     tag: "26.3.3"
     pullSecrets:
