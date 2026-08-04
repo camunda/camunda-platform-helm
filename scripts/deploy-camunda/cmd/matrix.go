@@ -548,6 +548,12 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				}
 			}
 			entries = singleEntries
+			dockerFlags := config.DockerFlags{DockerUsername: dockerUsername, DockerPassword: dockerPassword, EnsureDockerRegistry: ensureDockerRegistry || len(topologyEntries) > 0, DockerHubUsername: dockerHubUsername, DockerHubPassword: dockerHubPassword, EnsureDockerHub: ensureDockerHub}
+			allEntries := append(append([]matrix.Entry{}, entries...), topologyEntries...)
+			if err := resolveRegistryCredentialsFromEnvFiles(&dockerFlags, allEntries, envFiles, envFile); err != nil {
+				return err
+			}
+			dockerUsername, dockerPassword, dockerHubUsername, dockerHubPassword = dockerFlags.DockerUsername, dockerFlags.DockerPassword, dockerFlags.DockerHubUsername, dockerFlags.DockerHubPassword
 
 			if len(topologyEntries) > 0 {
 				if dryRun || coverage {
@@ -598,7 +604,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 						HelmTimeout:           helmTimeout,
 						DockerUsername:        dockerUsername,
 						DockerPassword:        dockerPassword,
-						EnsureDockerRegistry:  ensureDockerRegistry,
+						EnsureDockerRegistry:  ensureDockerRegistry || len(topologyEntries) > 0,
 						DockerHubUsername:     dockerHubUsername,
 						DockerHubPassword:     dockerHubPassword,
 						EnsureDockerHub:       ensureDockerHub,
@@ -845,7 +851,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
 	f.StringVar(&dockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env var)")
 	f.StringVar(&dockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env var)")
-	f.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created in each entry's namespace")
+	f.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created in each entry's namespace (always enabled for topology entries, which pull Camunda images from Harbor)")
 	f.StringVar(&dockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
 	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")

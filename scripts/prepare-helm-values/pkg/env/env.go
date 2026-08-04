@@ -3,6 +3,7 @@ package env
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,7 +20,7 @@ func Load(path string) error {
 	if err := godotenv.Load(path); err != nil {
 		// Only return error if it's not a "path not found" type of error
 		if !os.IsNotExist(err) {
-			return err
+			return sanitizeParseError(path, err)
 		}
 		logging.Logger.Debug().Str("path", path).Msg(".env file not found, skipping")
 	} else {
@@ -38,10 +39,26 @@ func ReadFile(path string) (map[string]string, error) {
 			logging.Logger.Debug().Str("path", path).Msg(".env file not found, returning empty map")
 			return make(map[string]string), nil
 		}
-		return nil, err
+		return nil, sanitizeParseError(path, err)
 	}
 	logging.Logger.Debug().Str("path", path).Int("count", len(m)).Msg("Read .env file into map")
 	return m, nil
+}
+
+// sanitizeParseError makes a godotenv failure safe to log or print. File-open
+// failures (permission denied, is-a-directory, ...) surface as *os.PathError
+// and carry no file content, so they pass through unchanged. Malformed-syntax
+// failures are plain errors from godotenv's line parser, which quotes the
+// offending raw line in its message — for a credentials .env file, that line
+// can be "HARBOR_PASSWORD=<token>", so its text must never reach a caller that
+// logs or prints it (e.g. matrix run's stderr, which CI captures). Those are
+// replaced with a generic message; the path alone is enough to locate the fix.
+func sanitizeParseError(path string, err error) error {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		return err
+	}
+	return fmt.Errorf("%s: malformed .env syntax; check the file by hand", path)
 }
 
 // fileMutexes provides per-file locking so that concurrent goroutines

@@ -30,6 +30,54 @@ func readFile(t *testing.T, path string) string {
 }
 
 // ---------------------------------------------------------------------------
+// Load / ReadFile — parse-error sanitization
+// ---------------------------------------------------------------------------
+
+func TestReadFileSanitizesParseErrorContent(t *testing.T) {
+	p := writeTempEnv(t, `HARBOR_PASSWORD="supersecrettoken`+"\n")
+	_, err := ReadFile(p)
+	if err == nil {
+		t.Fatal("expected a parse error for the unterminated quote")
+	}
+	if strings.Contains(err.Error(), "supersecrettoken") {
+		t.Fatalf("parse error leaked file content: %v", err)
+	}
+	if !strings.Contains(err.Error(), p) {
+		t.Fatalf("expected error to reference the path %q: %v", p, err)
+	}
+}
+
+func TestLoadSanitizesParseErrorContent(t *testing.T) {
+	p := writeTempEnv(t, `HARBOR_PASSWORD="supersecrettoken`+"\n")
+	err := Load(p)
+	if err == nil {
+		t.Fatal("expected a parse error for the unterminated quote")
+	}
+	if strings.Contains(err.Error(), "supersecrettoken") {
+		t.Fatalf("parse error leaked file content: %v", err)
+	}
+}
+
+func TestReadFilePreservesPermissionError(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root ignores file permissions")
+	}
+	p := writeTempEnv(t, "FOO=bar\n")
+	if err := os.Chmod(p, 0o000); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(p, 0o644) })
+
+	_, err := ReadFile(p)
+	if err == nil {
+		t.Fatal("expected a permission error")
+	}
+	if !strings.Contains(err.Error(), "permission denied") {
+		t.Fatalf("expected permission error to pass through, got: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // extractKey
 // ---------------------------------------------------------------------------
 

@@ -11,6 +11,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
+	"scripts/prepare-helm-values/pkg/env"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -62,6 +63,16 @@ Exits non-zero if any required check fails.`,
 					flags.Chart.RepoRoot = detected
 				}
 			}
+			envFileToLoad := flags.EnvFile
+			if envFileToLoad == "" {
+				envFileToLoad = ".env"
+			}
+			if err := env.Load(envFileToLoad); err != nil {
+				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+			}
+			if err := resolveRegistryCredentials(&flags.Docker); err != nil {
+				return err
+			}
 
 			report := deploy.Preflight(ctx, &flags, deploy.PreflightOptions{
 				ConfigPath:           cfgRes.Path,
@@ -111,6 +122,8 @@ Exits non-zero if any required check fails.`,
 	f.StringVar(&flags.Docker.DockerPassword, "docker-password", "", "Harbor registry password")
 	f.BoolVar(&flags.Docker.EnsureDockerRegistry, "ensure-docker-registry", false, "Treat Harbor pull secret as required")
 	f.BoolVar(&flags.Docker.EnsureDockerHub, "ensure-docker-hub", false, "Treat Docker Hub pull secret as required")
+	f.StringVar(&flags.Docker.DockerHubUsername, "dockerhub-username", "", "Docker Hub registry username")
+	f.StringVar(&flags.Docker.DockerHubPassword, "dockerhub-password", "", "Docker Hub registry password")
 	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
 	f.BoolVar(&skipKube, "skip-kube-check", false, "Skip the cluster reachability probe")
 	f.BoolVar(&fix, "fix", false, "Prompt for missing variables and write them to the .env file")

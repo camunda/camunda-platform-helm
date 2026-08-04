@@ -56,3 +56,6 @@ c8e2e-results/
 
 # crev (code-review tool) local run artifacts
 .crev/
+
+# deploy-camunda local run state (matrix run/watch tracking, may contain generated secrets)
+.deploy-camunda/
