@@ -34,8 +34,9 @@ class of problem, it needs an ADR. A purely local toggle does not.
 ADRs should be rare, durable records of architectural decisions. Capture the stable
 problem, decision, constraints, alternatives, and consequences rather than implementation
 steps that are likely to change. Prefer an issue, PR description, or operational guide for
-tactical changes. Amend an existing ADR when the architectural decision remains the same;
-write a new ADR when a materially different decision supersedes or narrows it.
+tactical changes. Edit an accepted ADR in place only for non-semantic corrections. When
+constraints or conclusions change, write a new ADR that links to the earlier decision with
+`Amends:`. When replacing a decision, write a new ADR that links to it with `Supersedes:`.
 
 ### ADR process
 
