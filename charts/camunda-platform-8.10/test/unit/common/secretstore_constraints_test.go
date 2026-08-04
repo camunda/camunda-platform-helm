@@ -253,6 +253,20 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Extra configuration mount collision is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":           "/usr/local/camunda/config/custom.yaml",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+				"orchestration.extraConfiguration[0].file":        "custom.yaml",
+				"orchestration.extraConfiguration[0].content":     "camunda: {}",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
+			},
+		},
+		{
 			Name:     "Custom application configuration works when secret store is empty",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
