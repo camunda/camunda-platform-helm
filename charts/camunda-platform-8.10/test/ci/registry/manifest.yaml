@@ -99,6 +99,10 @@ integration:
       shortname: hublu
       tier: 2
       enabled: true
+    - id: hub-database-migration
+      shortname: hubmig
+      tier: 1
+      enabled: true
     - id: hub-mixed
       shortname: hubmu
       tier: 2
