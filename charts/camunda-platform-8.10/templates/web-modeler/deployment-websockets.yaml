@@ -15,10 +15,10 @@ spec:
   template:
     metadata:
       labels: {{- include "webModeler.websockets.labels" . | nindent 8 }}
-        camunda.io/upgrade-phase: {{ $upgradePhase | quote }}
       {{- if (or .Values.camundaHub.websockets.podLabels .Values.webModeler.websockets.podLabels) }}
       {{- tpl (toYaml (or .Values.camundaHub.websockets.podLabels .Values.webModeler.websockets.podLabels)) $ | nindent 8 }}
       {{- end }}
+        camunda.io/upgrade-phase: {{ $upgradePhase | quote }}
       {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) (or .Values.camundaHub.websockets.podAnnotations .Values.webModeler.websockets.podAnnotations) }}
       annotations:
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}

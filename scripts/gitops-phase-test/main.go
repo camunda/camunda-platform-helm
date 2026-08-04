@@ -36,6 +36,9 @@ type config struct {
 }
 
 type deployment struct {
+	Metadata struct {
+		Generation int64 `json:"generation"`
+	} `json:"metadata"`
 	Spec struct {
 		Replicas int32 `json:"replicas"`
 		Strategy struct {
@@ -47,12 +50,25 @@ type deployment struct {
 			} `json:"metadata"`
 		} `json:"template"`
 	} `json:"spec"`
+	Status struct {
+		ObservedGeneration int64 `json:"observedGeneration"`
+		Replicas           int32 `json:"replicas"`
+		UpdatedReplicas    int32 `json:"updatedReplicas"`
+		ReadyReplicas      int32 `json:"readyReplicas"`
+		AvailableReplicas  int32 `json:"availableReplicas"`
+	} `json:"status"`
 }
 
 type service struct {
 	Spec struct {
 		Selector map[string]string `json:"selector"`
 	} `json:"spec"`
+}
+
+type endpoints struct {
+	Subsets []struct {
+		Addresses []json.RawMessage `json:"addresses"`
+	} `json:"subsets"`
 }
 
 func main() {
@@ -82,12 +98,16 @@ func (c config) apply(phase string) error {
 		args = append(args, helmSetArgs(phase)...)
 		return run(nil, "helm", args...)
 	case "argocd":
+		valuesJSON, err := json.Marshal(values(phase))
+		if err != nil {
+			return err
+		}
 		manifest := map[string]any{
 			"apiVersion": "argoproj.io/v1alpha1", "kind": "Application",
 			"metadata": map[string]any{"name": release, "namespace": "argocd"},
 			"spec": map[string]any{
 				"project":     "default",
-				"source":      map[string]any{"repoURL": c.repo, "targetRevision": c.revision, "path": c.chartPath, "helm": map[string]any{"parameters": helmParameters(phase)}},
+				"source":      map[string]any{"repoURL": c.repo, "targetRevision": c.revision, "path": c.chartPath, "helm": map[string]any{"values": string(valuesJSON)}},
 				"destination": map[string]any{"server": "https://kubernetes.default.svc", "namespace": c.namespace},
 				"syncPolicy":  map[string]any{"automated": map[string]any{"prune": true, "selfHeal": true}, "syncOptions": []string{"CreateNamespace=true"}},
 			},
@@ -130,22 +150,22 @@ func values(phase string) map[string]any {
 				},
 			},
 		},
+		"webModeler": map[string]any{
+			"image": map[string]any{"tag": "1.36.1"},
+			"restapi": map[string]any{
+				"image":   map[string]any{"repository": "busybox"},
+				"command": []string{"sh", "-c", "mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"},
+			},
+			"websockets": map[string]any{
+				"image":          map[string]any{"repository": "busybox"},
+				"command":        []string{"sleep", "3600"},
+				"readinessProbe": map[string]any{"enabled": false},
+			},
+		},
 		"global":   map[string]any{"identity": map[string]any{"service": map[string]any{"url": "http://identity"}}},
 		"identity": map[string]any{"enabled": false}, "orchestration": map[string]any{"enabled": false},
 		"connectors": map[string]any{"enabled": false}, "optimize": map[string]any{"enabled": false},
 	}
-}
-
-func helmParameters(phase string) []map[string]string {
-	params := []map[string]string{}
-	for _, arg := range helmSetArgs(phase) {
-		if !strings.Contains(arg, "=") {
-			continue
-		}
-		parts := strings.SplitN(arg, "=", 2)
-		params = append(params, map[string]string{"name": parts[0], "value": parts[1]})
-	}
-	return params
 }
 
 func helmSetArgs(phase string) []string {
@@ -155,11 +175,17 @@ func helmSetArgs(phase string) []string {
 		"camundaHub.restapi.pusher.secret.inlineSecret=gitops-test-secret", "camundaHub.restapi.pusher.client.secret.inlineSecret=gitops-test-key",
 		"global.identity.service.url=http://identity", "identity.enabled=false", "orchestration.enabled=false",
 		"connectors.enabled=false", "optimize.enabled=false",
+		"webModeler.image.tag=1.36.1", "webModeler.restapi.image.repository=busybox", "webModeler.websockets.image.repository=busybox",
 	}
 	args := make([]string, 0, len(sets)*2)
 	for _, value := range sets {
 		args = append(args, "--set", value)
 	}
+	args = append(args,
+		"--set-json", `webModeler.restapi.command=["sh","-c","mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"]`,
+		"--set-json", `webModeler.websockets.command=["sleep","3600"]`,
+		"--set", "webModeler.websockets.readinessProbe.enabled=false",
+	)
 	return args
 }
 
@@ -182,15 +208,68 @@ func waitForPhase(namespace, phase string) error {
 		} else if phase == "migrate" {
 			expectedRest, expectedWebsockets = 1, 0
 		}
-		if rest.Spec.Replicas == expectedRest && websockets.Spec.Replicas == expectedWebsockets && rest.Spec.Strategy.Type == "RollingUpdate" && rest.Spec.Template.Metadata.Labels["camunda.io/upgrade-phase"] == phase && websockets.Spec.Template.Metadata.Labels["camunda.io/upgrade-phase"] == phase {
+		if deploymentConverged(rest, expectedRest, phase) && deploymentConverged(websockets, expectedWebsockets, phase) && rest.Spec.Strategy.Type == "RollingUpdate" {
 			if err := assertServiceSelector(namespace, release+"-web-modeler-restapi"); err != nil {
 				return err
 			}
-			return assertServiceSelector(namespace, release+"-web-modeler-websockets")
+			if err := assertServiceSelector(namespace, release+"-web-modeler-websockets"); err != nil {
+				return err
+			}
+			if err := assertPhasePods(namespace, phase, expectedRest+expectedWebsockets); err != nil {
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			expectEndpoints := phase == "normal"
+			if err := assertEndpoints(namespace, release+"-web-modeler-restapi", expectEndpoints); err != nil {
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			return assertEndpoints(namespace, release+"-web-modeler-websockets", expectEndpoints)
 		}
 		time.Sleep(5 * time.Second)
 	}
 	return fmt.Errorf("timed out waiting for phase %q", phase)
+}
+
+func deploymentConverged(value deployment, replicas int32, phase string) bool {
+	return value.Spec.Replicas == replicas &&
+		value.Metadata.Generation == value.Status.ObservedGeneration &&
+		value.Status.Replicas == replicas &&
+		value.Status.UpdatedReplicas == replicas &&
+		value.Status.ReadyReplicas == replicas &&
+		value.Status.AvailableReplicas == replicas &&
+		value.Spec.Template.Metadata.Labels["camunda.io/upgrade-phase"] == phase
+}
+
+func assertPhasePods(namespace, phase string, expected int32) error {
+	data, err := output("kubectl", "-n", namespace, "get", "pods", "-l", "camunda.io/upgrade-phase="+phase, "-o", `jsonpath={.items[*].metadata.name}`)
+	if err != nil {
+		return err
+	}
+	count := len(strings.Fields(string(data)))
+	if count != int(expected) {
+		return fmt.Errorf("phase %s has %d pods, expected %d", phase, count, expected)
+	}
+	return nil
+}
+
+func assertEndpoints(namespace, name string, expected bool) error {
+	data, err := output("kubectl", "-n", namespace, "get", "endpoints", name, "-o", "json")
+	if err != nil {
+		return err
+	}
+	var result endpoints
+	if err := json.Unmarshal(data, &result); err != nil {
+		return err
+	}
+	hasAddresses := false
+	for _, subset := range result.Subsets {
+		hasAddresses = hasAddresses || len(subset.Addresses) > 0
+	}
+	if hasAddresses != expected {
+		return fmt.Errorf("endpoints %s address presence is %t, expected %t", name, hasAddresses, expected)
+	}
+	return nil
 }
 
 func getDeployment(namespace, name string) (deployment, error) {
