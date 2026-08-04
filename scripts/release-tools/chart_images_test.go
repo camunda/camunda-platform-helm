@@ -29,7 +29,6 @@ func TestArtifactHubImagesYAML(t *testing.T) {
 		"docker.io/camunda/camunda:8.9.13",
 		"docker.io/camunda/connectors-bundle@sha256:abc123",
 	}
-	wantNames := []string{"camunda", "connectors-bundle"}
 
 	got, err := artifactHubImagesYAML(images)
 	if err != nil {
@@ -46,22 +45,6 @@ func TestArtifactHubImagesYAML(t *testing.T) {
 	for i, entry := range entries {
 		if entry.Image != images[i] {
 			t.Errorf("entry %d image = %q, want %q", i, entry.Image, images[i])
-		}
-		if entry.Name != wantNames[i] {
-			t.Errorf("entry %d name = %q, want %q", i, entry.Name, wantNames[i])
-		}
-	}
-}
-
-func TestImageName(t *testing.T) {
-	for _, tc := range []struct{ ref, want string }{
-		{"docker.io/camunda/keycloak:26.3.3", "keycloak"},
-		{"docker.io/camunda/connectors-bundle@sha256:abc123", "connectors-bundle"},
-		{"registry.camunda.cloud/camunda/camunda:8.9.13", "camunda"},
-		{"busybox:1.36", "busybox"},
-	} {
-		if got := imageName(tc.ref); got != tc.want {
-			t.Errorf("imageName(%q) = %q, want %q", tc.ref, got, tc.want)
 		}
 	}
 }
@@ -102,7 +85,7 @@ orchestration:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := string(artifactHub), "- name: camunda\n  image: docker.io/camunda/camunda:8.9.13\n"; got != want {
+	if got, want := string(artifactHub), "- image: docker.io/camunda/camunda:8.9.13\n"; got != want {
 		t.Errorf("Artifact Hub output = %q, want %q", got, want)
 	}
 }

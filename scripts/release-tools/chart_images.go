@@ -26,28 +26,15 @@ import (
 )
 
 type artifactHubImage struct {
-	Name  string `yaml:"name"`
 	Image string `yaml:"image"`
 }
 
 func artifactHubImagesYAML(images []string) ([]byte, error) {
 	entries := make([]artifactHubImage, len(images))
 	for i, image := range images {
-		entries[i] = artifactHubImage{Name: imageName(image), Image: image}
+		entries[i] = artifactHubImage{Image: image}
 	}
 	return yaml.Marshal(entries)
-}
-
-// imageName extracts the repo basename Artifact Hub's security-report UI
-// labels the image with, e.g. "docker.io/camunda/keycloak:26.3.3" -> "keycloak".
-func imageName(ref string) string {
-	if i := strings.LastIndex(ref, "/"); i != -1 {
-		ref = ref[i+1:]
-	}
-	if i := strings.IndexAny(ref, "@:"); i != -1 {
-		ref = ref[:i]
-	}
-	return ref
 }
 
 // validateImageRefs rejects any ref carrying an unresolved placeholder (e.g. a
