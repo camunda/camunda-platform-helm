@@ -7,8 +7,11 @@ repo_root="$(git rev-parse --show-toplevel)"
 NS="${NAMESPACE:-${TEST_NAMESPACE}}"
 RELEASE="${RELEASE_NAME:-integration}"
 
-go run "${repo_root}/scripts/hub-migration-integration" \
-    --namespace "${NS}" \
-    --release "${RELEASE}" \
-    --chart-path "${repo_root}/charts/camunda-platform-8.10" \
-    verify-and-activate
+(
+    cd "${repo_root}/scripts/hub-migration-integration"
+    go run . \
+        --namespace "${NS}" \
+        --release "${RELEASE}" \
+        --chart-path "${repo_root}/charts/camunda-platform-8.10" \
+        verify-and-activate
+)
