@@ -3,7 +3,7 @@
         "secretStoreFileEntries": {
             "type": "object",
             "propertyNames": {
-                "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
             },
             "additionalProperties": {
                 "type": "object",
@@ -24,7 +24,7 @@
         "secretStoreAwsEntries": {
             "type": "object",
             "propertyNames": {
-                "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
             },
             "additionalProperties": {
                 "type": "object",
@@ -39,29 +39,11 @@
                 "additionalProperties": false
             }
         },
-        "secretStoreGcpEntries": {
-            "type": "object",
-            "propertyNames": {
-                "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
-            },
-            "additionalProperties": {
-                "type": "object",
-                "properties": {
-                    "projectId": {"type": "string", "minLength": 1},
-                    "pathPrefix": {"type": "string", "pattern": "^[a-zA-Z0-9_-]*$"},
-                    "endpoint": {"type": "string", "minLength": 1},
-                    "containerSecretId": {"type": "string", "pattern": "^[a-zA-Z0-9_-]+$"},
-                    "gcpServiceAccount": {"type": "string", "minLength": 1}
-                },
-                "additionalProperties": false
-            }
-        },
         "secretStoreProviderSet": {
             "type": "object",
             "properties": {
                 "file": {"$ref": "#/definitions/secretStoreFileEntries"},
-                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
-                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"}
+                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"}
             },
             "additionalProperties": false
         },
@@ -70,7 +52,6 @@
             "properties": {
                 "file": {"$ref": "#/definitions/secretStoreFileEntries"},
                 "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
-                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"},
                 "physicalTenants": {
                     "type": "object",
                     "propertyNames": {
