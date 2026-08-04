@@ -148,6 +148,39 @@ func (s *ConfigmapLegacyTemplateTest) TestRequestBodySizeConfiguresUploadLimits(
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapLegacyTemplateTest) TestAzureDocumentStoreConnectionStringBinding() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestAzureDocumentStoreConnectionStringBinding",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                        "Azure",
+				"global.documentStore.type.azure.connectionString.secret.existingSecret":    "azure-document-store",
+				"global.documentStore.type.azure.connectionString.secret.existingSecretKey": "connection-string",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				var application struct {
+					Camunda struct {
+						Document struct {
+							Azure map[string]struct {
+								ConnectionString string `json:"connection-string"`
+							} `yaml:"azure"`
+						} `yaml:"document"`
+					} `yaml:"camunda"`
+				}
+				helm.UnmarshalK8SYaml(t, configmap.Data["application.yaml"], &application)
+
+				require.Equal(t, "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}", application.Camunda.Document.Azure["azure"].ConnectionString)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapLegacyTemplateTest) TestZeebeMaxMessageSizeUsesEngineDefault() {
 	testCases := []testhelpers.TestCase{
 		{
