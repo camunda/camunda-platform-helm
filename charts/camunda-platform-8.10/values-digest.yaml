@@ -14,7 +14,7 @@ connectors:
   image:
     repository: camunda/connectors-bundle
     tag: 8.10-SNAPSHOT
-    digest: "sha256:9e0acc4eec7e5f2362d6d055ab44095c980f0d81e4eb5e9965f5802197039786"
+    digest: "sha256:628b7044c994e778f7672cadf7326261382bda267d85e62b56455bdbb6925486"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
