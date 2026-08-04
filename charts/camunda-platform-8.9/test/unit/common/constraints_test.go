@@ -199,9 +199,9 @@ func (s *ConstraintTemplateTest) TestGatewayConstraints() {
 func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:   "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
+			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
 			Values: map[string]string{
-				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+				"elasticsearch.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
@@ -210,7 +210,7 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 		{
 			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithMultipleSubcharts",
 			Values: map[string]string{
-				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+				"elasticsearch.enabled":      "true",
 				"identityPostgresql.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -220,7 +220,7 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 		{
 			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithAllSubcharts",
 			Values: map[string]string{
-				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+				"elasticsearch.enabled":        "true",
 				"identityPostgresql.enabled":   "true",
 				"identityKeycloak.enabled":     "true",
 				"identity.enabled":             "true",
