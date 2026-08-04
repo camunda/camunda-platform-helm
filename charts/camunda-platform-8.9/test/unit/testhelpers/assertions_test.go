@@ -94,6 +94,14 @@ func TestSetupHelmOptionsUsesCurrentStorageFixtures(t *testing.T) {
 			expectedSetValue: "opensearch",
 		},
 		{
+			name: "prefers Elasticsearch when both Optimize selectors are enabled",
+			values: map[string]string{
+				"optimize.database.elasticsearch.enabled": "true",
+				"optimize.database.opensearch.enabled":    "true",
+			},
+			expectedSetValue: "elasticsearch",
+		},
+		{
 			name: "preserves explicit current type",
 			values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "rdbms",
@@ -145,6 +153,42 @@ func TestSetupHelmOptionsHonorsValuesFileStorageSelection(t *testing.T) {
 	require.NoError(t, err)
 	require.NotContains(t, options.SetValues, "orchestration.data.secondaryStorage.type")
 	require.NotContains(t, options.SetValues, "global.elasticsearch.enabled")
+}
+
+func TestSetupHelmOptionsPreservesValuesFileStoragePrecedence(t *testing.T) {
+	t.Parallel()
+
+	valuesFile := filepath.Join(t.TempDir(), "values.yaml")
+	require.NoError(t, os.WriteFile(valuesFile, []byte(`optimize:
+  database:
+    elasticsearch:
+      enabled: true
+    opensearch:
+      enabled: true
+`), 0o600))
+
+	options, err := setupHelmOptions("test", nil, []string{valuesFile}, nil)
+	require.NoError(t, err)
+	require.Equal(t, "elasticsearch", options.SetValues["orchestration.data.secondaryStorage.type"])
+	require.NotContains(t, options.SetValues, "global.elasticsearch.enabled")
+}
+
+func TestValidateStorageFixtureRenderArgs(t *testing.T) {
+	t.Parallel()
+
+	require.ErrorContains(
+		t,
+		validateStorageFixtureRenderArgs([]string{"--set", "optimize.database.elasticsearch.enabled=true"}),
+		"optimize.database.elasticsearch.enabled must be provided through TestCase.Values",
+	)
+	require.ErrorContains(
+		t,
+		validateStorageFixtureRenderArgs([]string{"-fstorage.yaml"}),
+		"values files must be provided through TestCase.ValuesFiles",
+	)
+	require.NoError(t, validateStorageFixtureRenderArgs([]string{
+		"--set-string", "orchestration.env[0].value=true",
+	}))
 }
 
 func TestSetupHelmOptionsHonorsLayeredNullOverrides(t *testing.T) {

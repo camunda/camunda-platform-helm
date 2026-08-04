@@ -100,11 +100,12 @@ func quietLogger() *logger.Logger {
 }
 
 type storageFixtureState struct {
-	typeSet            bool
-	legacySelectionSet bool
-	noSecondaryStorage bool
-	rdbmsEnabled       bool
-	openSearchEnabled  bool
+	typeSet              bool
+	legacySelectionSet   bool
+	noSecondaryStorage   bool
+	rdbmsEnabled         bool
+	elasticsearchEnabled bool
+	openSearchEnabled    bool
 }
 
 func mergeStorageFixtureValues(base, overlay map[string]any) {
@@ -184,6 +185,9 @@ func loadStorageFixtureState(valuesFiles []string, values map[string]string) (st
 	if state.rdbmsEnabled, _, err = storageFixtureBool(mergedValues, "orchestration", "exporters", "rdbms", "enabled"); err != nil {
 		return state, err
 	}
+	if state.elasticsearchEnabled, _, err = storageFixtureBool(mergedValues, "optimize", "database", "elasticsearch", "enabled"); err != nil {
+		return state, err
+	}
 	if state.openSearchEnabled, _, err = storageFixtureBool(mergedValues, "optimize", "database", "opensearch", "enabled"); err != nil {
 		return state, err
 	}
@@ -203,6 +207,9 @@ func loadStorageFixtureState(valuesFiles []string, values map[string]string) (st
 	if value, ok := values["orchestration.exporters.rdbms.enabled"]; ok {
 		state.rdbmsEnabled = strings.EqualFold(value, "true")
 	}
+	if value, ok := values["optimize.database.elasticsearch.enabled"]; ok {
+		state.elasticsearchEnabled = strings.EqualFold(value, "true")
+	}
 	if value, ok := values["optimize.database.opensearch.enabled"]; ok {
 		state.openSearchEnabled = strings.EqualFold(value, "true")
 	}
@@ -221,7 +228,7 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 	}
 	if !storageState.typeSet && !storageState.legacySelectionSet && !storageState.noSecondaryStorage && !storageState.rdbmsEnabled {
 		secondaryStorageType := "elasticsearch"
-		if storageState.openSearchEnabled {
+		if !storageState.elasticsearchEnabled && storageState.openSearchEnabled {
 			secondaryStorageType = "opensearch"
 		}
 		values["orchestration.data.secondaryStorage.type"] = secondaryStorageType
@@ -237,7 +244,45 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 	return options, nil
 }
 
+func validateStorageFixtureRenderArgs(renderTemplateExtraArgs []string) error {
+	storageKeys := []string{
+		"global.elasticsearch.enabled",
+		"global.opensearch.enabled",
+		"global.noSecondaryStorage",
+		"orchestration.data.secondaryStorage.type",
+		"orchestration.exporters.rdbms.enabled",
+		"optimize.database.elasticsearch.enabled",
+		"optimize.database.opensearch.enabled",
+		"global.elasticsearch",
+		"global.opensearch",
+		"global",
+		"orchestration.data.secondaryStorage",
+		"orchestration.data",
+		"orchestration.exporters.rdbms",
+		"orchestration.exporters",
+		"orchestration",
+		"optimize.database.elasticsearch",
+		"optimize.database.opensearch",
+		"optimize.database",
+		"optimize",
+	}
+	for _, argument := range renderTemplateExtraArgs {
+		if argument == "--values" || strings.HasPrefix(argument, "--values=") || strings.HasPrefix(argument, "-f") {
+			return fmt.Errorf("values files must be provided through TestCase.ValuesFiles, not RenderTemplateExtraArgs")
+		}
+		for _, key := range storageKeys {
+			if strings.Contains(argument, key+"=") {
+				return fmt.Errorf("storage fixture value %s must be provided through TestCase.Values, not RenderTemplateExtraArgs", key)
+			}
+		}
+	}
+	return nil
+}
+
 func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, valuesFiles []string, extraArgs map[string][]string, renderTemplateExtraArgs []string) (string, error) {
+	if err := validateStorageFixtureRenderArgs(renderTemplateExtraArgs); err != nil {
+		return "", err
+	}
 	options, err := setupHelmOptions(namespace, values, valuesFiles, extraArgs)
 	if err != nil {
 		return "", err
