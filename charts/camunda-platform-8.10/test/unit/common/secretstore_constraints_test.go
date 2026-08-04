@@ -219,7 +219,7 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
+				s.Require().Contains(err.Error(), "conflicts with orchestration.extraVolumeMounts")
 			},
 		},
 		{

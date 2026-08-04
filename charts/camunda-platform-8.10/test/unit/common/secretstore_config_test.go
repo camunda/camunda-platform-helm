@@ -153,7 +153,8 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
 				"orchestration.secretStore.file.shared.path":                                   "/root/secrets",
-				"orchestration.secretStore.physicalTenants.tenanta.file.shared.existingSecret": "tenant-secret",
+				"orchestration.secretStore.file.shared.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.shared.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
