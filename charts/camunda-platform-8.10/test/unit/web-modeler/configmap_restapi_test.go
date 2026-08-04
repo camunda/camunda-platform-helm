@@ -511,7 +511,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 
 			mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
 			s.Require().Equal("management-cluster", mgmtCluster.Id)
-			s.Require().Equal("management", mgmtCluster.Name)
+			s.Require().Equal("hub", mgmtCluster.Name)
 			s.Require().Equal(false, mgmtCluster.Authorizations.Enabled)
 			s.Require().Equal(tc.expectedAuthentication, mgmtCluster.Authentication)
 			var identityComp ComponentYAML
