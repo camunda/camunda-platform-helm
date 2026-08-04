@@ -28,6 +28,7 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        checksum/secret-store-identity: {{ include "camundaPlatform.secretStore.serviceAccountAnnotations" . | sha256sum }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- if .Values.orchestration.podAnnotations }}
         {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}
@@ -263,18 +264,18 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
-            {{- range $id, $cfg := (.Values.global.secretStore.file | default dict) }}
+            {{- range $id, $cfg := (.Values.orchestration.secretStore.file | default dict) }}
             {{- if $cfg.existingSecret }}
-            {{- $volName := (printf "secretstore-file-%s" ($id | kebabcase) | trunc 63 | trimSuffix "-") }}
+            {{- $volName := include "camundaPlatform.secretStore.fileVolumeName" (dict "storeId" $id) }}
             - name: {{ $volName }}
               mountPath: {{ $cfg.path | default "/etc/camunda/secrets" | quote }}
               readOnly: true
             {{- end }}
             {{- end }}
-            {{- range $tid, $providers := (.Values.global.secretStore.physicalTenants | default dict) }}
+            {{- range $tid, $providers := (.Values.orchestration.secretStore.physicalTenants | default dict) }}
             {{- range $id, $cfg := ($providers.file | default dict) }}
             {{- if $cfg.existingSecret }}
-            {{- $volName := (printf "secretstore-file-%s-%s" ($tid | kebabcase) ($id | kebabcase) | trunc 63 | trimSuffix "-") }}
+            {{- $volName := include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id) }}
             - name: {{ $volName }}
               mountPath: {{ $cfg.path | default "/etc/camunda/secrets" | quote }}
               readOnly: true
@@ -318,17 +319,17 @@ spec:
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}
-        {{- range $id, $cfg := (.Values.global.secretStore.file | default dict) }}
+        {{- range $id, $cfg := (.Values.orchestration.secretStore.file | default dict) }}
         {{- if $cfg.existingSecret }}
-        - name: secretstore-file-{{ $id }}
+        - name: {{ include "camundaPlatform.secretStore.fileVolumeName" (dict "storeId" $id) }}
           secret:
             secretName: {{ $cfg.existingSecret | quote }}
         {{- end }}
         {{- end }}
-        {{- range $tid, $providers := (.Values.global.secretStore.physicalTenants | default dict) }}
+        {{- range $tid, $providers := (.Values.orchestration.secretStore.physicalTenants | default dict) }}
         {{- range $id, $cfg := ($providers.file | default dict) }}
         {{- if $cfg.existingSecret }}
-        - name: secretstore-file-{{ $tid }}-{{ $id }}
+        - name: {{ include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id) }}
           secret:
             secretName: {{ $cfg.existingSecret | quote }}
         {{- end }}

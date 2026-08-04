@@ -74,6 +74,10 @@ integration:
       shortname: docstr
       tier: 2
       enabled: true
+    - id: secretstore-file
+      shortname: secfl
+      tier: 2
+      enabled: true
     - id: rdbms-self-signed
       shortname: rdbss
       tier: 2

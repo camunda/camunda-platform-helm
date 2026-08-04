@@ -54,8 +54,8 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "More than one store is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.file.a.existingSecret": "s",
-				"global.secretStore.aws.b.region":          "us-east-1",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+				"orchestration.secretStore.aws.b.region":          "us-east-1",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -66,19 +66,20 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "AWS batchSize above 20 is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.aws.a.batchSize": "50",
+				"orchestration.secretStore.aws.a.batchSize": "50",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "batchSize must be between 1 and 20")
+				s.Require().Contains(err.Error(), "batchSize")
+				s.Require().Contains(err.Error(), "maximum")
 			},
 		},
 		{
 			Name:     "AWS batchEnabled with containerSecretId is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.aws.a.batchEnabled":      "true",
-				"global.secretStore.aws.a.containerSecretId": "app-config",
+				"orchestration.secretStore.aws.a.batchEnabled":      "true",
+				"orchestration.secretStore.aws.a.containerSecretId": "app-config",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -89,35 +90,109 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "GCP pathPrefix with invalid characters is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.gcp.a.pathPrefix": "camunda/",
+				"orchestration.secretStore.gcp.a.pathPrefix": "camunda/",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "must contain only [a-zA-Z0-9_-]")
+				s.Require().Contains(err.Error(), "pathPrefix")
+				s.Require().Contains(err.Error(), "does not match pattern")
 			},
 		},
 		{
 			Name:     "More than one store within a physical tenant is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.physicalTenants.tenantA.file.a.existingSecret": "s",
-				"global.secretStore.physicalTenants.tenantA.aws.b.region":          "us-east-1",
+				"orchestration.secretStore.physicalTenants.tenanta.file.a.existingSecret": "s",
+				"orchestration.secretStore.physicalTenants.tenanta.aws.b.region":          "us-east-1",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "global.secretStore.physicalTenants.tenantA supports only one secret store at a time")
+				s.Require().Contains(err.Error(), "orchestration.secretStore.physicalTenants.tenanta supports only one secret store at a time")
 			},
 		},
 		{
 			Name:     "Conflicting roleArn across tenants is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"global.secretStore.aws.a.roleArn":                         "arn:aws:iam::111111111111:role/one",
-				"global.secretStore.physicalTenants.tenantA.aws.b.roleArn": "arn:aws:iam::222222222222:role/two",
+				"orchestration.secretStore.aws.a.roleArn":                         "arn:aws:iam::111111111111:role/one",
+				"orchestration.secretStore.physicalTenants.tenanta.aws.a.roleArn": "arn:aws:iam::222222222222:role/two",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
 				s.Require().Contains(err.Error(), "multiple distinct aws.*.roleArn values")
+			},
+		},
+		{
+			Name:     "Conflicting user ServiceAccount identity is rejected",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.aws.a.roleArn":                                      "arn:aws:iam::111111111111:role/intended",
+				"orchestration.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn": "arn:aws:iam::222222222222:role/other",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "conflicts with the identity")
+			},
+		},
+		{
+			Name:     "External ServiceAccount with workload identity is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.aws.a.roleArn": "arn:aws:iam::111111111111:role/intended",
+				"orchestration.serviceAccount.enabled":    "false",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "serviceAccount.enabled=true")
+			},
+		},
+		{
+			Name:     "Custom application configuration is rejected",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path": "/external/secrets",
+				"orchestration.configuration":           "camunda: {}",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "cannot be combined with orchestration.configuration")
+			},
+		},
+		{
+			Name:     "Static AWS document-store credentials are rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.aws.a.roleArn":     "arn:aws:iam::111111111111:role/intended",
+				"global.documentStore.type.aws.enabled":       "true",
+				"global.documentStore.type.aws.irsa.enabled":  "false",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "environment credentials before IRSA")
+			},
+		},
+		{
+			Name:     "Different inherited store is rejected",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.aws.root.region":                          "us-east-1",
+				"orchestration.secretStore.physicalTenants.tenanta.gcp.tenant.projectId": "project",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "physical-tenant overlays cannot remove root stores")
+			},
+		},
+		{
+			Name:     "Reserved file mount path is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":           "/usr/local/camunda/config",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
 			},
 		},
 	}
