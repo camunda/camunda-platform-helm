@@ -288,20 +288,7 @@ spring-imported orchestration.extraConfiguration file, override it.
 ) -}}
 {{- end -}}
 
-{{- define "orchestration.hasCamundaExporter" -}}
-{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) (eq (include "orchestration.camundaExporterEnabled" .) "true") (not .Values.orchestration.exporters.rdbms.enabled) -}}
-{{- end -}}
-
-{{- define "orchestration.hasNoExporter" -}}
-{{-
-and
-(ne (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
-(ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
-(ne (include "orchestration.hasCamundaExporter" .) "true")
--}}
-{{- end -}}
-
-{{- define "orchestration.hasLegacyElasticsearchExporter" -}}
+{{- define "orchestration.hasElasticsearchExporter" -}}
 {{- and
       (or
         (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
@@ -317,7 +304,7 @@ and
 -}}
 {{- end -}}
 
-{{- define "orchestration.hasLegacyOpenSearchExporter" -}}
+{{- define "orchestration.hasOpenSearchExporter" -}}
 {{- and
       (or
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
