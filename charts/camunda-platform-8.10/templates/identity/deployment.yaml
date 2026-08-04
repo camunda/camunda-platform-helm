@@ -73,7 +73,7 @@ spec:
             - name: CAMUNDA_CONNECTORS_CLIENT_ID
               value: {{ .Values.connectors.security.authentication.oidc.clientId | default "connectors" | quote }}
             {{- end }}
-            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "orchestration.authMethod" .) "oidc")) }}
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
                 "config"        .Values.orchestration.security.authentication.oidc

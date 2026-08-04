@@ -94,6 +94,8 @@ func TestHubTopologyKeycloakRendersHubPingAudience(t *testing.T) {
 	require.Contains(t, output, `audience: "web-modeler-public-api"`)
 	require.Contains(t, output, `definition: create:*`)
 	require.Contains(t, output, `definition: update:*`)
+	require.Contains(t, output, `id: "orchestration-east"`)
+	require.NotContains(t, output, `id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:`)
 }
 
 func TestHubTopologyPreservesLegacyAlwaysRegister(t *testing.T) {

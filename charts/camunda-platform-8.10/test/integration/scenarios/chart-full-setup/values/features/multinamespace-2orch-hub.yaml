@@ -1,6 +1,10 @@
 global:
   elasticsearch:
     enabled: false
+  identity:
+    auth:
+      orchestration:
+        hubPingAuthorizationEnabled: true
   topology:
     mode: hub
     clusters:
