@@ -1,10 +1,15 @@
 # Run one Hub REST API pod for startup Flyway while Services continue selecting
 # only normal-phase pods. The post-deploy validation hook activates normal mode.
 camundaHub:
-  upgrade:
-    phase: migrate
+  image:
+    registry: registry.camunda.cloud
+    tag: ci-e43841b2ca68a13fb803994b3ca6190776020cd7
   restapi:
+    image:
+      repository: team-hub/hub-restapi-self-managed
     startupProbe:
       enabled: true
       periodSeconds: 10
       failureThreshold: 180
+  upgrade:
+    phase: migrate
