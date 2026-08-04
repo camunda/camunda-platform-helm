@@ -1097,8 +1097,8 @@ Orchestration - Secret Store
   {{- end -}}
   {{- range $id, $cfg := ($providers.file | default dict) -}}
     {{- $path := toString ($cfg.path | default "/etc/camunda/secrets") -}}
-    {{- if or (contains "//" $path) (contains "/./" (printf "%s/" $path)) (contains "/../" (printf "%s/" $path)) (hasSuffix "/." $path) (hasSuffix "/.." $path) -}}
-      {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain repeated separators, '.' or '..' path segments." $label $id) -}}
+    {{- if or (and (ne $path "/") (hasSuffix "/" $path)) (contains "//" $path) (contains "/./" (printf "%s/" $path)) (contains "/../" (printf "%s/" $path)) (hasSuffix "/." $path) (hasSuffix "/.." $path) -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain a trailing slash, repeated separators, '.' or '..' path segments." $label $id) -}}
     {{- end -}}
     {{- $pathWithSlash := printf "%s/" (trimSuffix "/" $path) -}}
     {{- $reservedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/certificates" "/usr/local/camunda/data" "/etc/camunda/tls" "/var/camunda/tls-truststore" "/var/secrets/gcp" "/exporters" "/tmp" -}}

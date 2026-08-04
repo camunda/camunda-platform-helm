@@ -184,6 +184,31 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Trailing slash file mount path is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":           "/etc/camunda/secrets/",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "must not contain a trailing slash")
+			},
+		},
+		{
+			Name:     "Different Secrets at one inherited path are rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.shared.path":                                   "/etc/camunda/secrets",
+				"orchestration.secretStore.file.shared.existingSecret":                         "root-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.shared.existingSecret": "tenant-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "different Kubernetes Secrets at the same effective path")
+			},
+		},
+		{
 			Name:     "Custom application configuration works when secret store is empty",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
