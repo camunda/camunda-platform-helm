@@ -1084,7 +1084,8 @@ Orchestration - Secret Store
 {{- $secretStoreRoleArns := list -}}
 {{- $secretStoreFileMountPaths := dict -}}
 {{- $secretStoreConfigured := false -}}
-{{- $secretStoreReservedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/certificates" "/usr/local/camunda/data" "/etc/camunda/tls" "/var/camunda/tls-truststore" "/var/secrets/gcp" "/exporters" "/tmp" -}}
+{{- $secretStoreProtectedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/certificates" "/usr/local/camunda/data" "/etc/camunda/tls" "/var/camunda/tls-truststore" "/var/secrets/gcp" "/exporters" "/tmp" -}}
+{{- $secretStoreExternalPaths := list -}}
 {{- $secretStoreDynamicPathError := "" -}}
 {{- $secretStoreReservedVolumeNames := dict -}}
 {{- range $volume := (.Values.orchestration.extraVolumes | default list) -}}
@@ -1102,7 +1103,7 @@ Orchestration - Secret Store
   {{- if or (and (ne $dynamicPath "/") (hasSuffix "/" $dynamicPath)) (contains "//" $dynamicPath) (contains "/./" (printf "%s/" $dynamicPath)) (contains "/../" (printf "%s/" $dynamicPath)) (hasSuffix "/." $dynamicPath) (hasSuffix "/.." $dynamicPath) -}}
     {{- $secretStoreDynamicPathError = "global.documentStore.type.gcp.mountPath" -}}
   {{- end -}}
-  {{- $secretStoreReservedPaths = append $secretStoreReservedPaths $dynamicPath -}}
+  {{- $secretStoreProtectedPaths = append $secretStoreProtectedPaths $dynamicPath -}}
 {{- end -}}
 {{- range $mount := (.Values.orchestration.extraVolumeMounts | default list) -}}
   {{- if $mount.mountPath -}}
@@ -1110,12 +1111,25 @@ Orchestration - Secret Store
     {{- if or (and (ne $dynamicPath "/") (hasSuffix "/" $dynamicPath)) (contains "//" $dynamicPath) (contains "/./" (printf "%s/" $dynamicPath)) (contains "/../" (printf "%s/" $dynamicPath)) (hasSuffix "/." $dynamicPath) (hasSuffix "/.." $dynamicPath) -}}
       {{- $secretStoreDynamicPathError = "orchestration.extraVolumeMounts[].mountPath" -}}
     {{- end -}}
-    {{- $secretStoreReservedPaths = append $secretStoreReservedPaths $dynamicPath -}}
+    {{- $secretStoreExternalPaths = append $secretStoreExternalPaths $dynamicPath -}}
   {{- end -}}
 {{- end -}}
 {{- range $extraConfig := (.Values.orchestration.extraConfiguration | default list) -}}
   {{- if $extraConfig.file -}}
-    {{- $secretStoreReservedPaths = append $secretStoreReservedPaths (printf "/usr/local/camunda/config/%s" $extraConfig.file) -}}
+    {{- $secretStoreProtectedPaths = append $secretStoreProtectedPaths (printf "/usr/local/camunda/config/%s" $extraConfig.file) -}}
+  {{- end -}}
+{{- end -}}
+{{- $secretStoreManagedPaths := dict -}}
+{{- range $tenant := $secretStoreTenants -}}
+  {{- $label := $tenant.label -}}
+  {{- range $id, $cfg := ($tenant.providers.file | default dict) -}}
+    {{- $effectiveCfg := $cfg -}}
+    {{- if ne $label "orchestration.secretStore" -}}
+      {{- $effectiveCfg = mergeOverwrite (deepCopy (index ($secretStore.file | default dict) $id | default dict)) $cfg -}}
+    {{- end -}}
+    {{- if $effectiveCfg.existingSecret -}}
+      {{- $_ := set $secretStoreManagedPaths (toString ($effectiveCfg.path | default "/etc/camunda/secrets")) (toString $effectiveCfg.existingSecret) -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 {{- range $tenant := $secretStoreTenants -}}
@@ -1130,13 +1144,29 @@ Orchestration - Secret Store
     {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
   {{- end -}}
   {{- range $id, $cfg := ($providers.file | default dict) -}}
-    {{- $path := toString ($cfg.path | default "/etc/camunda/secrets") -}}
-    {{- if or (and (ne $path "/") (hasSuffix "/" $path)) (contains "//" $path) (contains "/./" (printf "%s/" $path)) (contains "/../" (printf "%s/" $path)) (hasSuffix "/." $path) (hasSuffix "/.." $path) -}}
-      {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain a trailing slash, repeated separators, '.' or '..' path segments." $label $id) -}}
-    {{- end -}}
     {{- $effectiveCfg := $cfg -}}
     {{- if ne $label "orchestration.secretStore" -}}
       {{- $effectiveCfg = mergeOverwrite (deepCopy (index ($secretStore.file | default dict) $id | default dict)) $cfg -}}
+    {{- end -}}
+    {{- $effectivePath := toString ($effectiveCfg.path | default "/etc/camunda/secrets") -}}
+    {{- if or (and (ne $effectivePath "/") (hasSuffix "/" $effectivePath)) (contains "//" $effectivePath) (contains "/./" (printf "%s/" $effectivePath)) (contains "/../" (printf "%s/" $effectivePath)) (hasSuffix "/." $effectivePath) (hasSuffix "/.." $effectivePath) -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain a trailing slash, repeated separators, '.' or '..' path segments." $label $id) -}}
+    {{- end -}}
+    {{- $pathWithSlash := printf "%s/" (trimSuffix "/" $effectivePath) -}}
+    {{- range $protectedPath := $secretStoreProtectedPaths -}}
+      {{- $protectedWithSlash := printf "%s/" (trimSuffix "/" $protectedPath) -}}
+      {{- if or (eq $effectivePath $protectedPath) (hasPrefix $pathWithSlash $protectedWithSlash) (hasPrefix $protectedWithSlash $pathWithSlash) -}}
+        {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with a required Orchestration volume mount." $label $id $effectivePath) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if and (not $effectiveCfg.existingSecret) (hasKey $secretStoreManagedPaths $effectivePath) -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path '%s' overlaps a chart-managed Secret mount." $label $id $effectivePath) -}}
+    {{- end -}}
+    {{- range $externalPath := $secretStoreExternalPaths -}}
+      {{- $externalWithSlash := printf "%s/" (trimSuffix "/" $externalPath) -}}
+      {{- if and (or $effectiveCfg.existingSecret (ne $effectivePath $externalPath)) (or (eq $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash) (hasPrefix $externalWithSlash $pathWithSlash)) -}}
+        {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with orchestration.extraVolumeMounts." $label $id $effectivePath) -}}
+      {{- end -}}
     {{- end -}}
     {{- if $effectiveCfg.existingSecret -}}
       {{- $tenantID := "" -}}
@@ -1147,19 +1177,7 @@ Orchestration - Secret Store
       {{- if hasKey $secretStoreReservedVolumeNames $generatedVolumeName -}}
         {{- fail (printf "[camunda][error] orchestration.secretStore generated volume name '%s' conflicts with orchestration.extraVolumes or orchestration.extraVolumeClaimTemplates." $generatedVolumeName) -}}
       {{- end -}}
-      {{- $effectivePath := toString ($effectiveCfg.path | default "/etc/camunda/secrets") -}}
       {{- $effectiveSecret := toString $effectiveCfg.existingSecret -}}
-      {{- $pathWithSlash := printf "%s/" (trimSuffix "/" $effectivePath) -}}
-      {{- $pathConflict := false -}}
-      {{- range $reservedPath := $secretStoreReservedPaths -}}
-        {{- $reservedWithSlash := printf "%s/" (trimSuffix "/" $reservedPath) -}}
-        {{- if or (eq $effectivePath $reservedPath) (hasPrefix $pathWithSlash $reservedWithSlash) (hasPrefix $reservedWithSlash $pathWithSlash) -}}
-          {{- $pathConflict = true -}}
-        {{- end -}}
-      {{- end -}}
-      {{- if $pathConflict -}}
-        {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with a required Orchestration volume mount." $label $id $effectivePath) -}}
-      {{- end -}}
       {{- if hasKey $secretStoreFileMountPaths $effectivePath -}}
         {{- if ne (index $secretStoreFileMountPaths $effectivePath) $effectiveSecret -}}
           {{- $errorMessage := printf "[camunda][error] orchestration.secretStore configures different Kubernetes Secrets at the same effective path '%s'. Each path must resolve to one Secret." $effectivePath -}}
