@@ -80,6 +80,10 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 			helm.UnmarshalK8SYaml(t, restapiOutput, &restapiDeployment)
 			require.Equal(t, testCase.restapiReplicas, *restapiDeployment.Spec.Replicas)
 			require.Equal(t, testCase.strategy, restapiDeployment.Spec.Strategy.Type)
+			if testCase.phase == "migrate" {
+				require.Zero(t, restapiDeployment.Spec.Strategy.RollingUpdate.MaxSurge.IntValue())
+				require.Equal(t, "100%", restapiDeployment.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal)
+			}
 			require.Equal(t, testCase.phase, restapiDeployment.Spec.Template.Labels["camunda.io/upgrade-phase"])
 
 			websocketsOutput := helm.RenderTemplate(t, &helm.Options{SetValues: values}, chartPath, "camunda-platform-test", []string{"templates/web-modeler/deployment-websockets.yaml"})
@@ -94,6 +98,37 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 				helm.UnmarshalK8SYaml(t, serviceOutput, &service)
 				require.Equal(t, "normal", service.Spec.Selector["camunda.io/upgrade-phase"])
 			}
+		})
+	}
+}
+
+func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	for _, component := range []struct {
+		name     string
+		labelKey string
+		template string
+	}{
+		{name: "restapi", labelKey: "camundaHub.restapi.podLabels.camunda\\.io/upgrade-phase", template: "templates/web-modeler/deployment-restapi.yaml"},
+		{name: "websockets", labelKey: "camundaHub.websockets.podLabels.camunda\\.io/upgrade-phase", template: "templates/web-modeler/deployment-websockets.yaml"},
+	} {
+		component := component
+		t.Run(component.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := helm.RenderTemplateE(t, &helm.Options{SetValues: map[string]string{
+				"camundaHub.enabled":                  "true",
+				"camundaHub.upgrade.phase":            "migrate",
+				"camundaHub.restapi.mail.fromAddress": "example@example.com",
+				"global.elasticsearch.enabled":        "true",
+				"identity.enabled":                    "true",
+				component.labelKey:                    "normal",
+			}}, chartPath, "camunda-platform-test", []string{component.template})
+
+			require.ErrorContains(t, err, "camunda.io/upgrade-phase is reserved")
 		})
 	}
 }
