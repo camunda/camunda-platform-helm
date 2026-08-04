@@ -1102,6 +1102,11 @@ Orchestration - Secret Store
     {{- $secretStoreReservedPaths = append $secretStoreReservedPaths $dynamicPath -}}
   {{- end -}}
 {{- end -}}
+{{- range $extraConfig := (.Values.orchestration.extraConfiguration | default list) -}}
+  {{- if $extraConfig.file -}}
+    {{- $secretStoreReservedPaths = append $secretStoreReservedPaths (printf "/usr/local/camunda/config/%s" $extraConfig.file) -}}
+  {{- end -}}
+{{- end -}}
 {{- range $tenant := $secretStoreTenants -}}
   {{- $label := $tenant.label -}}
   {{- $providers := $tenant.providers -}}
