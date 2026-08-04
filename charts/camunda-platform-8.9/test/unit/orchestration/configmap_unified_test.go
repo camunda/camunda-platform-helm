@@ -566,6 +566,26 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			},
 		},
 		{
+			Name: "TestDeprecatedGlobalElasticsearchCompatibilityRendersLegacyExporterWithRdbmsAndOptimize",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "true",
+				"elasticsearch.enabled":                                         "false",
+				"global.opensearch.enabled":                                     "false",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+				"optimize.database.elasticsearch.enabled":                       "false",
+				"optimize.database.opensearch.enabled":                          "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"rdbms+optimize with global.elasticsearch.enabled must render legacy ES exporter")
+			},
+		},
+		{
 			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeDatabaseElasticsearchOnly",
 			Values: map[string]string{
 				"global.elasticsearch.enabled":                                  "false",
