@@ -218,6 +218,31 @@ Authentication.
     {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}
 
+{{- define "orchestration.hubPingClientId" -}}
+    {{- .Values.orchestration.hub.ping.credentials.clientId | default (include "orchestration.authClientId" .) -}}
+{{- end -}}
+
+{{- define "orchestration.hubPingTokenEndpoint" -}}
+    {{- if .Values.orchestration.hub.ping.credentials.tokenEndpoint -}}
+        {{- tpl .Values.orchestration.hub.ping.credentials.tokenEndpoint . -}}
+    {{- else if .Values.orchestration.security.authentication.oidc.tokenUrl -}}
+        {{- tpl .Values.orchestration.security.authentication.oidc.tokenUrl . -}}
+    {{- else if .Values.global.identity.auth.tokenUrl -}}
+        {{- tpl .Values.global.identity.auth.tokenUrl . -}}
+    {{- else if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" -}}
+        {{- include "orchestration.authIssuerBackendUrlEndpointToken" . -}}
+    {{- end -}}
+{{- end -}}
+
+{{- define "orchestration.hubPingClientSecretConfig" -}}
+    {{- $cs := .Values.orchestration.hub.ping.credentials.clientSecret.secret -}}
+    {{- if or $cs.inlineSecret (and $cs.existingSecret $cs.existingSecretKey) -}}
+        {{- .Values.orchestration.hub.ping.credentials.clientSecret | toYaml -}}
+    {{- else -}}
+        {{- .Values.orchestration.security.authentication.oidc | toYaml -}}
+    {{- end -}}
+{{- end -}}
+
 {{- define "orchestration.authAudience" -}}
     {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
 {{- end -}}

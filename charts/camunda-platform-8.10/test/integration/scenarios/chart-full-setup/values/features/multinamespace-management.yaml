@@ -42,9 +42,19 @@ orchestration:
     authentication:
       oidc:
         redirectUrl: "https://${ORCH_HOST}/orchestration"
+  hub:
+    ping:
+      endpoint: "http://integration-web-modeler-restapi.${MGMT_NAMESPACE}/modeler/api/v1/clusters"
 
 webModeler:
   restapi:
+    extraConfiguration:
+      - file: dynamic-cluster-management.yaml
+        content: |
+          camunda:
+            modeler:
+              feature:
+                dynamic-cluster-management-enabled: true
     # orchestration.enabled: false above collapses the
     # camundaPlatform.defaultWebModelerCluster helper's orchestration entry
     # (gated on orchestration.enabled — see templates/common/_helpers.tpl),
@@ -84,5 +94,6 @@ global:
         redirectUrl: "https://${ORCH_HOST}/optimize"
       orchestration:
         alwaysRegister: true
+        hubPingAuthorizationEnabled: true
       connectors:
         alwaysRegister: true
