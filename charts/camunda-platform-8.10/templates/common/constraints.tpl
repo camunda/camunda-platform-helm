@@ -1085,12 +1085,21 @@ Orchestration - Secret Store
 {{- $secretStoreFileMountPaths := dict -}}
 {{- $secretStoreConfigured := false -}}
 {{- $secretStoreReservedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/certificates" "/usr/local/camunda/data" "/etc/camunda/tls" "/var/camunda/tls-truststore" "/var/secrets/gcp" "/exporters" "/tmp" -}}
+{{- $secretStoreDynamicPathError := "" -}}
 {{- if .Values.global.documentStore.type.gcp.enabled -}}
-  {{- $secretStoreReservedPaths = append $secretStoreReservedPaths (toString .Values.global.documentStore.type.gcp.mountPath) -}}
+  {{- $dynamicPath := toString .Values.global.documentStore.type.gcp.mountPath -}}
+  {{- if or (and (ne $dynamicPath "/") (hasSuffix "/" $dynamicPath)) (contains "//" $dynamicPath) (contains "/./" (printf "%s/" $dynamicPath)) (contains "/../" (printf "%s/" $dynamicPath)) (hasSuffix "/." $dynamicPath) (hasSuffix "/.." $dynamicPath) -}}
+    {{- $secretStoreDynamicPathError = "global.documentStore.type.gcp.mountPath" -}}
+  {{- end -}}
+  {{- $secretStoreReservedPaths = append $secretStoreReservedPaths $dynamicPath -}}
 {{- end -}}
 {{- range $mount := (.Values.orchestration.extraVolumeMounts | default list) -}}
   {{- if $mount.mountPath -}}
-    {{- $secretStoreReservedPaths = append $secretStoreReservedPaths (toString $mount.mountPath) -}}
+    {{- $dynamicPath := toString $mount.mountPath -}}
+    {{- if or (and (ne $dynamicPath "/") (hasSuffix "/" $dynamicPath)) (contains "//" $dynamicPath) (contains "/./" (printf "%s/" $dynamicPath)) (contains "/../" (printf "%s/" $dynamicPath)) (hasSuffix "/." $dynamicPath) (hasSuffix "/.." $dynamicPath) -}}
+      {{- $secretStoreDynamicPathError = "orchestration.extraVolumeMounts[].mountPath" -}}
+    {{- end -}}
+    {{- $secretStoreReservedPaths = append $secretStoreReservedPaths $dynamicPath -}}
   {{- end -}}
 {{- end -}}
 {{- range $tenant := $secretStoreTenants -}}
@@ -1142,6 +1151,9 @@ Orchestration - Secret Store
       {{- $secretStoreRoleArns = append $secretStoreRoleArns (toString $cfg.roleArn) -}}
     {{- end -}}
   {{- end -}}
+{{- end -}}
+{{- if and $secretStoreConfigured $secretStoreDynamicPathError -}}
+  {{- fail (printf "[camunda][error] %s must be canonical when orchestration.secretStore file mounts are configured." $secretStoreDynamicPathError) -}}
 {{- end -}}
 {{- if gt (len ($secretStoreRoleArns | uniq)) 1 -}}
   {{- $errorMessage := printf "[camunda][error] %s"
