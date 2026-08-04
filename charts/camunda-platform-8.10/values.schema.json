@@ -996,7 +996,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, and azure.",
+                            "description": "defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.",
                             "default": "inmemory"
                         },
                         "type": {
