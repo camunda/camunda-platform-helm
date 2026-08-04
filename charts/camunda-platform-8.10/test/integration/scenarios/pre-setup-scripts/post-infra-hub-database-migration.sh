@@ -7,10 +7,10 @@ repo_root="$(git rev-parse --show-toplevel)"
 NS="${NAMESPACE:-${TEST_NAMESPACE}}"
 RELEASE="${RELEASE_NAME:-integration}"
 
-go run "${repo_root}/scripts/hub-migration-integration" \
-    --namespace "${NS}" \
-    --release "${RELEASE}" \
-    seed
+(
+    cd "${repo_root}/scripts/hub-migration-integration"
+    go run . --namespace "${NS}" --release "${RELEASE}" seed
+)
 
 export MIGRATE_WEBMODELER=true
 export WEBMODELER_SOURCE_DB_NAME=web-modeler
