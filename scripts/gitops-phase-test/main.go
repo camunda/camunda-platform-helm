@@ -100,6 +100,9 @@ func (c config) apply(phase string) error {
 			return err
 		}
 		chartPath := filepath.Join(strings.TrimSpace(string(repoRoot)), c.chartPath)
+		if err := run(nil, "helm", "dependency", "build", chartPath); err != nil {
+			return err
+		}
 		args := []string{"upgrade", "--install", release, chartPath, "--namespace", c.namespace}
 		args = append(args, helmSetArgs(phase)...)
 		return run(nil, "helm", args...)
