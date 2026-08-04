@@ -209,6 +209,36 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Extra volume mount collision is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":           "/custom/secrets",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+				"orchestration.extraVolumeMounts[0].name":         "custom",
+				"orchestration.extraVolumeMounts[0].mountPath":    "/custom/secrets",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
+			},
+		},
+		{
+			Name:     "GCP document store mount collision is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":                  "/custom/gcp",
+				"orchestration.secretStore.file.a.existingSecret":        "s",
+				"global.documentStore.type.gcp.enabled":                  "true",
+				"global.documentStore.type.gcp.mountPath":                "/custom/gcp",
+				"global.documentStore.type.gcp.secret.existingSecret":    "gcp-secret",
+				"global.documentStore.type.gcp.secret.existingSecretKey": "service-account.json",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "conflicts with a required Orchestration volume mount")
+			},
+		},
+		{
 			Name:     "Custom application configuration works when secret store is empty",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{

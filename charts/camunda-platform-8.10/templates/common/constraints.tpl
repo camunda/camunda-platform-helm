@@ -1084,6 +1084,15 @@ Orchestration - Secret Store
 {{- $secretStoreRoleArns := list -}}
 {{- $secretStoreFileMountPaths := dict -}}
 {{- $secretStoreConfigured := false -}}
+{{- $secretStoreReservedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/certificates" "/usr/local/camunda/data" "/etc/camunda/tls" "/var/camunda/tls-truststore" "/var/secrets/gcp" "/exporters" "/tmp" -}}
+{{- if .Values.global.documentStore.type.gcp.enabled -}}
+  {{- $secretStoreReservedPaths = append $secretStoreReservedPaths (toString .Values.global.documentStore.type.gcp.mountPath) -}}
+{{- end -}}
+{{- range $mount := (.Values.orchestration.extraVolumeMounts | default list) -}}
+  {{- if $mount.mountPath -}}
+    {{- $secretStoreReservedPaths = append $secretStoreReservedPaths (toString $mount.mountPath) -}}
+  {{- end -}}
+{{- end -}}
 {{- range $tenant := $secretStoreTenants -}}
   {{- $label := $tenant.label -}}
   {{- $providers := $tenant.providers -}}
@@ -1101,9 +1110,8 @@ Orchestration - Secret Store
       {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain a trailing slash, repeated separators, '.' or '..' path segments." $label $id) -}}
     {{- end -}}
     {{- $pathWithSlash := printf "%s/" (trimSuffix "/" $path) -}}
-    {{- $reservedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/certificates" "/usr/local/camunda/data" "/etc/camunda/tls" "/var/camunda/tls-truststore" "/var/secrets/gcp" "/exporters" "/tmp" -}}
     {{- $pathConflict := false -}}
-    {{- range $reservedPath := $reservedPaths -}}
+    {{- range $reservedPath := $secretStoreReservedPaths -}}
       {{- $reservedWithSlash := printf "%s/" (trimSuffix "/" $reservedPath) -}}
       {{- if or (eq $path $reservedPath) (hasPrefix $pathWithSlash $reservedWithSlash) (hasPrefix $reservedWithSlash $pathWithSlash) -}}
         {{- $pathConflict = true -}}
