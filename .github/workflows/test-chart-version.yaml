@@ -223,6 +223,7 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
+    secrets: inherit
     uses: ./.github/workflows/test-unit-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number || github.ref }}-unit-${{ matrix.version }}"
@@ -253,6 +254,7 @@ jobs:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     permissions:
       contents: read
+      id-token: write
     secrets: inherit
     uses: ./.github/workflows/test-local-template.yaml
     with:
