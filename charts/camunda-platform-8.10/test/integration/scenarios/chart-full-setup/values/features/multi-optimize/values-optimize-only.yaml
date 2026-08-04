@@ -27,7 +27,7 @@ global:
       publicIssuerUrl: >-
         https://camunda.example.com/auth/realms/camunda-platform
       optimize:
-        clientId: optimize-team-b
+        clientId: optimize_team_b
         redirectUrl: "https://camunda.example.com/optimize-team-b"
         secret:
           existingSecret: multi-optimize-credentials

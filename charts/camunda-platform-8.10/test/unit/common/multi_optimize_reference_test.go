@@ -66,8 +66,8 @@ func (s *MultiOptimizeReferenceTemplateTest) TestPlatformReleaseRegistersSecondO
 				helm.UnmarshalK8SYaml(t, output, &configMap)
 				application := configMap.Data["application.yaml"]
 
-				s.Require().Contains(application, "id: optimize-team-b")
-				s.Require().Contains(application, "secret: ${VALUES_OPTIMIZE-TEAM-B_CLIENT_SECRET:}")
+				s.Require().Contains(application, "id: optimize_team_b")
+				s.Require().Contains(application, "secret: ${VALUES_OPTIMIZE_TEAM_B_CLIENT_SECRET:}")
 				s.Require().Contains(application, "redirectUris: /api/authentication/callback")
 				s.Require().Contains(application, "rootUrl: https://camunda.example.com/optimize-team-b")
 				s.Require().Contains(application, "resourceServerId: optimize-api")
@@ -85,7 +85,7 @@ func (s *MultiOptimizeReferenceTemplateTest) TestPlatformReleaseRegistersSecondO
 
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
-				secretEnv := findEnvVar(deployment.Spec.Template.Spec.Containers[0].Env, "VALUES_OPTIMIZE-TEAM-B_CLIENT_SECRET")
+				secretEnv := findEnvVar(deployment.Spec.Template.Spec.Containers[0].Env, "VALUES_OPTIMIZE_TEAM_B_CLIENT_SECRET")
 
 				s.Require().NotNil(secretEnv.ValueFrom)
 				s.Require().NotNil(secretEnv.ValueFrom.SecretKeyRef)
@@ -155,7 +155,7 @@ func (s *MultiOptimizeReferenceTemplateTest) TestOptimizeOnlyRelease() {
 				s.Require().Contains(configuration, `contextPath: "/optimize-team-b"`)
 				s.Require().Contains(configuration, `host: "elasticsearch-master"`)
 				s.Require().Contains(configuration, `redirectRootUrl: "https://camunda.example.com/optimize-team-b"`)
-				s.Require().Contains(authConfiguration, `clientId: "optimize-team-b"`)
+				s.Require().Contains(authConfiguration, `clientId: "optimize_team_b"`)
 			},
 		},
 		{

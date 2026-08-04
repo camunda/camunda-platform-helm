@@ -52,7 +52,7 @@ identity:
       existingSecret: multi-optimize-credentials
       existingSecretKey: identity-first-user-password
   clients:
-    - id: optimize-team-b
+    - id: optimize_team_b
       name: Optimize Team B
       type: confidential
       secret:
