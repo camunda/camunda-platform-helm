@@ -279,7 +279,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/test-gitops-phase.yaml
     with:
-      camunda-helm-git-ref: "${{ needs.init.outputs.pr-head-sha }}"
+      camunda-helm-git-ref: "${{ github.event_name == 'merge_group' && github.sha || needs.init.outputs.pr-head-sha }}"
 
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
