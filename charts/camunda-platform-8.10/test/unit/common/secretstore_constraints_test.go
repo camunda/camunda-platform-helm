@@ -223,6 +223,20 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Non-canonical extra volume mount is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.a.path":           "/custom/secrets",
+				"orchestration.secretStore.file.a.existingSecret": "s",
+				"orchestration.extraVolumeMounts[0].name":         "custom",
+				"orchestration.extraVolumeMounts[0].mountPath":    "/custom/./secrets",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "extraVolumeMounts[].mountPath must be canonical")
+			},
+		},
+		{
 			Name:     "GCP document store mount collision is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
