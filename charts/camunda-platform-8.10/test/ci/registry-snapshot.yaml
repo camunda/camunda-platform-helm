@@ -737,7 +737,7 @@ integration:
               chart upgrade). This keeps users/realm alive across the upgrade that removes the
               bundled Bitnami subcharts.
         - name: hub-database-migration
-          enabled: true
+          enabled: false
           shortname: hubmig
           auth: keycloak
           flow: upgrade-minor
