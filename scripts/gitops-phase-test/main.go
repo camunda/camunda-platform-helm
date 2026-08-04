@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -94,7 +95,12 @@ func main() {
 func (c config) apply(phase string) error {
 	switch c.controller {
 	case "helm":
-		args := []string{"upgrade", "--install", release, c.chartPath, "--namespace", c.namespace}
+		repoRoot, err := output("git", "rev-parse", "--show-toplevel")
+		if err != nil {
+			return err
+		}
+		chartPath := filepath.Join(strings.TrimSpace(string(repoRoot)), c.chartPath)
+		args := []string{"upgrade", "--install", release, chartPath, "--namespace", c.namespace}
 		args = append(args, helmSetArgs(phase)...)
 		return run(nil, "helm", args...)
 	case "argocd":
