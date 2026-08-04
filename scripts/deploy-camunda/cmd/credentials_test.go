@@ -168,6 +168,18 @@ func TestResolveRegistryCredentialsFromEnvFilesRejectsConflictingVersionPairs(t 
 	}
 }
 
+func TestResolveRegistryCredentialsFromEnvFilesSurfacesReadError(t *testing.T) {
+	useMemoryCredentialStore(t)
+	// A directory in place of an env file makes env.ReadFile return a genuine
+	// read error (not file-not-found), which must not be silently swallowed.
+	dir := t.TempDir()
+	flags := config.DockerFlags{EnsureDockerRegistry: true}
+	err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": dir}, "")
+	if err == nil {
+		t.Fatal("expected unreadable env file error to surface")
+	}
+}
+
 func TestCredentialsConfigureStoresPairWithoutPrintingSecret(t *testing.T) {
 	store := useMemoryCredentialStore(t)
 	cmd := newCredentialsConfigureCommand()

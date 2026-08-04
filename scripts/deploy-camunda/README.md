@@ -516,7 +516,10 @@ For images from `registry.camunda.cloud` (Harbor):
 Set `--ensure-docker-registry` (or `ensureDockerRegistry: true`) to
 create the Harbor pull secret. `deploy-camunda doctor` reports both
 registries' credentials as ✓/✗ and only fails when the matching
-`--ensure-docker-*` flag makes the pull secret mandatory.
+`--ensure-docker-*` flag makes the pull secret mandatory. In
+`matrix run`, topology entries always create the Harbor pull secret
+regardless of `--ensure-docker-registry`, since they pull Camunda images
+from Harbor.
 
 ### Persisting credentials
 
@@ -533,7 +536,10 @@ deploy-camunda credentials status
 The password/token prompt disables terminal echo. Use a Harbor robot
 credential and a Docker Hub access token rather than account passwords.
 Headless CI continues to use environment variables; unavailable desktop
-keyrings are treated as not configured during implicit lookup.
+keyrings, and corrupt or incomplete entries, are treated as not
+configured during implicit lookup. `deploy-camunda credentials status`
+still surfaces such entries; run `deploy-camunda credentials delete
+--registry <harbor|dockerhub>` to reset a bad one.
 
 Credential precedence is CLI/config pair, environment or `.env` pair,
 then OS keyring. `deploy-camunda config env --show-origin`

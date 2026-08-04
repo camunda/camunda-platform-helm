@@ -177,7 +177,7 @@ func resolveRegistryCredentialsFromEnvFiles(docker *config.DockerFlags, entries 
 	for _, path := range paths {
 		values, err := env.ReadFile(path)
 		if err != nil {
-			continue
+			return fmt.Errorf("%s: %w", path, err)
 		}
 		if resolveHarborFromFiles {
 			if err := mergeCredentialPair("Harbor", values, &docker.DockerUsername, &docker.DockerPassword, [][2]string{{"HARBOR_USERNAME", "HARBOR_PASSWORD"}, {"TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"}, {"NEXUS_USERNAME", "NEXUS_PASSWORD"}}); err != nil {

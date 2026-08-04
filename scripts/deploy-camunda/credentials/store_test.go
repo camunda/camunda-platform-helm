@@ -27,3 +27,18 @@ func TestGetOptionalIgnoresUnavailableBackend(t *testing.T) {
 		t.Fatalf("found=%v err=%v", found, err)
 	}
 }
+
+type corruptStore struct{}
+
+func (corruptStore) Get(string) (Credential, bool, error) {
+	return Credential{}, false, &CorruptError{Err: errors.New("bad entry")}
+}
+func (corruptStore) Set(string, Credential) error { return nil }
+func (corruptStore) Delete(string) error          { return nil }
+
+func TestGetOptionalIgnoresCorruptEntry(t *testing.T) {
+	_, found, err := GetOptional(corruptStore{}, HarborRegistry)
+	if err != nil || found {
+		t.Fatalf("found=%v err=%v", found, err)
+	}
+}

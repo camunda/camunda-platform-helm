@@ -32,6 +32,15 @@ type UnavailableError struct{ Err error }
 func (e *UnavailableError) Error() string { return e.Err.Error() }
 func (e *UnavailableError) Unwrap() error { return e.Err }
 
+// CorruptError marks a keyring entry that exists but cannot be used (unparseable
+// or missing a username/password). Like UnavailableError, implicit deploy lookup
+// treats it as "not configured" so a single bad entry never blocks every command,
+// while explicit credentials status/configure/delete still surface it.
+type CorruptError struct{ Err error }
+
+func (e *CorruptError) Error() string { return e.Err.Error() }
+func (e *CorruptError) Unwrap() error { return e.Err }
+
 func (KeyringStore) Get(registry string) (Credential, bool, error) {
 	value, err := keyring.Get(Service, registry)
 	if errors.Is(err, keyring.ErrNotFound) {
@@ -42,10 +51,10 @@ func (KeyringStore) Get(registry string) (Credential, bool, error) {
 	}
 	var credential Credential
 	if err := json.Unmarshal([]byte(value), &credential); err != nil {
-		return Credential{}, false, fmt.Errorf("decode %s credential from OS keyring: %w", registry, err)
+		return Credential{}, false, &CorruptError{Err: fmt.Errorf("decode %s credential from OS keyring: %w; run 'deploy-camunda credentials delete --registry %s' to reset", registry, err, registry)}
 	}
 	if credential.Username == "" || credential.Password == "" {
-		return Credential{}, false, fmt.Errorf("OS keyring entry for %s is incomplete", registry)
+		return Credential{}, false, &CorruptError{Err: fmt.Errorf("OS keyring entry for %s is incomplete; run 'deploy-camunda credentials delete --registry %s' to reset", registry, registry)}
 	}
 	return credential, true, nil
 }
@@ -78,7 +87,8 @@ func (KeyringStore) Delete(registry string) error {
 func GetOptional(store Store, registry string) (Credential, bool, error) {
 	credential, found, err := store.Get(registry)
 	var unavailable *UnavailableError
-	if errors.As(err, &unavailable) {
+	var corrupt *CorruptError
+	if errors.As(err, &unavailable) || errors.As(err, &corrupt) {
 		return Credential{}, false, nil
 	}
 	return credential, found, err

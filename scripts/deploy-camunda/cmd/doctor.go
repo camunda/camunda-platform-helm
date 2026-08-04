@@ -67,7 +67,9 @@ Exits non-zero if any required check fails.`,
 			if envFileToLoad == "" {
 				envFileToLoad = ".env"
 			}
-			_ = env.Load(envFileToLoad)
+			if err := env.Load(envFileToLoad); err != nil {
+				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+			}
 			if err := resolveRegistryCredentials(&flags.Docker); err != nil {
 				return err
 			}
