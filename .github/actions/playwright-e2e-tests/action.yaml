@@ -60,10 +60,6 @@ inputs:
     description: If true, run only the smoke-tests project. If false, run the full-suite project.
     required: false
     default: "true"
-  test-grep:
-    description: Optional Playwright test-title regular expression
-    required: false
-    default: ""
   hub-namespace:
     description: >-
       For a multi-namespace topology scenario: the namespace running the
@@ -264,7 +260,6 @@ runs:
         E2E_ARGS+=(--trace retain-on-failure --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
-        [[ -n "${{ inputs.test-grep }}" ]] && E2E_ARGS+=(--test-grep "${{ inputs.test-grep }}")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 

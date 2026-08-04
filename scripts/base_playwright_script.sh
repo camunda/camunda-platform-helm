@@ -1030,7 +1030,6 @@ run_playwright_tests() {
   local kube_context="${10:-}"  # Optional: kubernetes context
   local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
   local is_auth0="${12:-false}"  # Optional: select auth0-smoke project (Auth0 OIDC scenario)
-  local test_grep="${13:-}"  # Optional: Playwright test-title regular expression
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
@@ -1077,7 +1076,6 @@ run_playwright_tests() {
     --reporter="$reporter,json"
   )
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
-  [[ -n "$test_grep" ]] && playwright_args+=(--grep="$test_grep")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
   [[ -n "${PLAYWRIGHT_E2E_TRACE:-}" ]] && playwright_args+=(--trace="$PLAYWRIGHT_E2E_TRACE")
