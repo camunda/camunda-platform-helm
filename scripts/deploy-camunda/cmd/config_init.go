@@ -308,13 +308,16 @@ func promptLine(ctx context.Context, out io.Writer, r *bufio.Reader, label, def 
 func promptSecret(ctx context.Context, out io.Writer, r *bufio.Reader, label string) (string, error) {
 	fmt.Fprintf(out, "%s: ", label)
 	// On a real terminal, read with echo disabled so the secret never appears on
-	// screen or in scrollback. Read directly from the fd unconditionally: a shared
-	// bufio.Reader may have pre-buffered the secret bytes while reading an earlier
-	// line, and honoring r.Buffered() there would silently fall back to the
-	// echo-enabled reader. Piped/redirected input (tests, scripts) has nothing to
-	// hide and uses the buffered line reader.
+	// screen or in scrollback. This only helps when r has nothing buffered yet: a
+	// cooked-mode tty echoes each keystroke as it arrives, before any Go code
+	// runs, so if a prior read already pulled the secret's bytes into r's buffer
+	// (a fast paste of "user\npass\n" delivered in one chunk), those bytes were
+	// echoed at type time and disabling echo now can't retroactively hide them —
+	// it would only strand the buffered bytes and hang waiting on the raw fd for
+	// input the user already sent. Piped/redirected input (tests, scripts) has
+	// nothing to hide and always uses the buffered line reader.
 	stdinFd := int(os.Stdin.Fd())
-	if term.IsTerminal(stdinFd) {
+	if r.Buffered() == 0 && term.IsTerminal(stdinFd) {
 		secret, err := readSecretCtx(ctx, stdinFd)
 		fmt.Fprintln(out)
 		return secret, err
