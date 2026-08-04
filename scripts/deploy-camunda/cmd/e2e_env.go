@@ -83,10 +83,17 @@ func newE2EEnvMergeCommand() *cobra.Command {
 
 			tokenURL := "https://" + mgmtHost + "/auth/realms/camunda-platform/protocol/openid-connect/token"
 			overrides := map[string]string{
-				"MANAGEMENT_BASE_URL": "https://" + mgmtHost,
-				"KEYCLOAK_URL":        "https://" + mgmtHost,
-				"OAUTH_URL":           tokenURL,
-				"AUTH_URL":            tokenURL,
+				"MANAGEMENT_BASE_URL":              "https://" + mgmtHost,
+				"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://" + mgmtHost + "/identity",
+				"MODELER_CONTEXT_PATH":             "https://" + mgmtHost + "/modeler",
+				"CONSOLE_CONTEXT_PATH":             "https://" + mgmtHost + "/modeler",
+				"CONSOLE_BASE_URL":                 "https://" + mgmtHost,
+				"IDENTITY_BASE_URL":                "https://" + mgmtHost + "/identity/",
+				"KEYCLOAK_BASE_URL":                "https://" + mgmtHost + "/auth",
+				"KEYCLOAK_URL":                     "https://" + mgmtHost,
+				"WEBMODELER_BASE_URL":              "https://" + mgmtHost + "/modeler",
+				"OAUTH_URL":                        tokenURL,
+				"AUTH_URL":                         tokenURL,
 				"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD": firstUserPw,
 				"DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD":           kcAdminPw,
 				"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":     clientSecret,
@@ -150,27 +157,25 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 }
 
 // selectIngressHost filters raw whitespace-separated ingress/gateway host
-// tokens (as emitted by a kubectl jsonpath query), dropping any host that
-// looks like the Zeebe gRPC gateway, de-duplicates repeats (a namespace's
-// Ingress can list the same host across multiple rules, e.g. in a
-// shared-host multi-namespace topology), and joins what remains with a
-// comma, preserving first-seen order. Returns "" if no host survives the
-// filter.
-func selectIngressHost(raw string) string {
+// tokens (as emitted by a kubectl jsonpath query), dropping hosts that look
+// like the Zeebe gRPC gateway, and returning the first remaining host.
+// Returns "" if no host survives the filter.
+func selectIngressHost(raw string) (string, error) {
 	tokens := strings.Fields(raw)
-	kept := make([]string, 0, len(tokens))
-	seen := make(map[string]bool, len(tokens))
+	host := ""
 	for _, t := range tokens {
 		if strings.Contains(t, "zeebe") || strings.Contains(t, "grpc") {
 			continue
 		}
-		if seen[t] {
+		if host == "" {
+			host = t
 			continue
 		}
-		seen[t] = true
-		kept = append(kept, t)
+		if t != host {
+			return "", fmt.Errorf("multiple distinct HTTP hosts found: %q and %q", host, t)
+		}
 	}
-	return strings.Join(kept, ",")
+	return host, nil
 }
 
 // resolveIngressHost discovers the live ingress hostname for a namespace by
@@ -189,7 +194,11 @@ func resolveIngressHost(kubeContext, namespace string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve ingress host for namespace %q: %w", namespace, err)
 	}
-	if host := selectIngressHost(string(out)); host != "" {
+	host, err := selectIngressHost(string(out))
+	if err != nil {
+		return "", fmt.Errorf("resolve ingress host for namespace %q: %w", namespace, err)
+	}
+	if host != "" {
 		return host, nil
 	}
 
@@ -200,7 +209,11 @@ func resolveIngressHost(kubeContext, namespace string) (string, error) {
 	gatewayArgs = append(gatewayArgs, "-n", namespace, "get", "gateway",
 		"-o", "jsonpath={.items[*].spec.listeners[*].hostname}")
 	if gwOut, err := exec.Command("kubectl", gatewayArgs...).Output(); err == nil {
-		if host := selectIngressHost(string(gwOut)); host != "" {
+		host, selectErr := selectIngressHost(string(gwOut))
+		if selectErr != nil {
+			return "", fmt.Errorf("resolve gateway host for namespace %q: %w", namespace, selectErr)
+		}
+		if host != "" {
 			return host, nil
 		}
 	}
