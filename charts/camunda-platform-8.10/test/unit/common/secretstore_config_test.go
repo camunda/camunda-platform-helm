@@ -93,11 +93,9 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Name:     "AWS secret store renders kebab-case keys and strips roleArn",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.primary.region":       "us-east-1",
-				"orchestration.secretStore.aws.primary.pathPrefix":   "camunda/",
-				"orchestration.secretStore.aws.primary.batchEnabled": "true",
-				"orchestration.secretStore.aws.primary.batchSize":    "10",
-				"orchestration.secretStore.aws.primary.roleArn":      "arn:aws:iam::123456789012:role/camunda-secrets",
+				"orchestration.secretStore.aws.primary.region":     "us-east-1",
+				"orchestration.secretStore.aws.primary.pathPrefix": "camunda/",
+				"orchestration.secretStore.aws.primary.roleArn":    "arn:aws:iam::123456789012:role/camunda-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -105,11 +103,22 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 				s.Require().Contains(config, "aws:")
 				s.Require().Contains(config, "region: us-east-1")
 				s.Require().Contains(config, "path-prefix: camunda/")
-				s.Require().Contains(config, "batch-enabled: true")
-				s.Require().Contains(config, "batch-size: 10")
 				// roleArn is chart-only plumbing and must not leak into app config.
 				s.Require().NotContains(config, "roleArn")
 				s.Require().NotContains(config, "role-arn")
+			},
+		},
+		{
+			Name:     "AWS role-only store retains its runtime id",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.aws.primary.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				config := s.applicationConfig(output)
+				s.Require().Contains(config, "aws:")
+				s.Require().Contains(config, "primary: {}")
 			},
 		},
 		{
@@ -137,6 +146,20 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 				s.Require().Contains(config, "region: us-west-2")
 				// The default-tenant store still renders.
 				s.Require().Contains(config, "region: us-east-1")
+			},
+		},
+		{
+			Name:     "Physical tenant file store inherits root path",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.shared.path":                                   "/root/secrets",
+				"orchestration.secretStore.physicalTenants.tenanta.file.shared.existingSecret": "tenant-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				config := s.applicationConfig(output)
+				s.Require().Contains(config, "tenanta:")
+				s.Require().Contains(config, "path: /root/secrets")
 			},
 		},
 	}

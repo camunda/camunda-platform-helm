@@ -1097,11 +1097,11 @@ Orchestration - Secret Store
   {{- end -}}
   {{- range $id, $cfg := ($providers.file | default dict) -}}
     {{- $path := toString ($cfg.path | default "/etc/camunda/secrets") -}}
-    {{- if or (contains "/../" (printf "%s/" $path)) (hasSuffix "/.." $path) -}}
-      {{- fail (printf "[camunda][error] %s.file.%s.path must not contain '..' path segments." $label $id) -}}
+    {{- if or (contains "//" $path) (contains "/./" (printf "%s/" $path)) (contains "/../" (printf "%s/" $path)) (hasSuffix "/." $path) (hasSuffix "/.." $path) -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain repeated separators, '.' or '..' path segments." $label $id) -}}
     {{- end -}}
     {{- $pathWithSlash := printf "%s/" (trimSuffix "/" $path) -}}
-    {{- $reservedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/data" "/exporters" "/tmp" -}}
+    {{- $reservedPaths := list "/usr/local/bin/startup.sh" "/usr/local/camunda/config/application.yaml" "/usr/local/camunda/config/log4j2.xml" "/usr/local/camunda/certificates" "/usr/local/camunda/data" "/etc/camunda/tls" "/var/camunda/tls-truststore" "/var/secrets/gcp" "/exporters" "/tmp" -}}
     {{- $pathConflict := false -}}
     {{- range $reservedPath := $reservedPaths -}}
       {{- $reservedWithSlash := printf "%s/" (trimSuffix "/" $reservedPath) -}}
@@ -1112,29 +1112,24 @@ Orchestration - Secret Store
     {{- if $pathConflict -}}
       {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with a required Orchestration volume mount." $label $id $path) -}}
     {{- end -}}
-    {{- if $cfg.existingSecret -}}
-      {{- if hasKey $secretStoreFileMountPaths $path -}}
-        {{- $errorMessage := printf "[camunda][error] orchestration.secretStore configures multiple file secret stores with the same effective path '%s'. When using existingSecret, each store must use a unique path to avoid duplicate volumeMount mountPaths." $path -}}
-        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- $effectiveCfg := $cfg -}}
+    {{- if ne $label "orchestration.secretStore" -}}
+      {{- $effectiveCfg = mergeOverwrite (deepCopy (index ($secretStore.file | default dict) $id | default dict)) $cfg -}}
+    {{- end -}}
+    {{- if $effectiveCfg.existingSecret -}}
+      {{- $effectivePath := toString ($effectiveCfg.path | default "/etc/camunda/secrets") -}}
+      {{- $effectiveSecret := toString $effectiveCfg.existingSecret -}}
+      {{- if hasKey $secretStoreFileMountPaths $effectivePath -}}
+        {{- if ne (index $secretStoreFileMountPaths $effectivePath) $effectiveSecret -}}
+          {{- $errorMessage := printf "[camunda][error] orchestration.secretStore configures different Kubernetes Secrets at the same effective path '%s'. Each path must resolve to one Secret." $effectivePath -}}
+          {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+        {{- end -}}
+      {{- else -}}
+        {{- $_ := set $secretStoreFileMountPaths $effectivePath $effectiveSecret -}}
       {{- end -}}
-      {{- $_ := set $secretStoreFileMountPaths $path (printf "%s.file.%s" $label $id) -}}
     {{- end -}}
   {{- end -}}
   {{- range $id, $cfg := ($providers.aws | default dict) -}}
-    {{- if hasKey $cfg "batchSize" -}}
-      {{- if or (lt (int $cfg.batchSize) 1) (gt (int $cfg.batchSize) 20) -}}
-        {{- $errorMessage := printf "[camunda][error] %s.aws.%s.batchSize must be between 1 and 20, but was %v." $label $id $cfg.batchSize -}}
-        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-      {{- end -}}
-    {{- end -}}
-    {{- if and (hasKey $cfg "containerSecretId") (eq (trim (toString $cfg.containerSecretId)) "") -}}
-      {{- $errorMessage := printf "[camunda][error] %s.aws.%s.containerSecretId must not be blank when set." $label $id -}}
-      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-    {{- end -}}
-    {{- if and ($cfg.batchEnabled) (trim (toString ($cfg.containerSecretId | default ""))) -}}
-      {{- $errorMessage := printf "[camunda][error] %s.aws.%s.batchEnabled and .containerSecretId are mutually exclusive, but both were configured." $label $id -}}
-      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-    {{- end -}}
     {{- if $cfg.roleArn -}}
       {{- $secretStoreRoleArns = append $secretStoreRoleArns (toString $cfg.roleArn) -}}
     {{- end -}}
