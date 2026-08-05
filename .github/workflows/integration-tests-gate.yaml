@@ -65,9 +65,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    defaults:
-      run:
-        working-directory: helm-values-mcp
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -78,11 +75,11 @@ jobs:
           tools: |
             nodejs
       - name: Install dependencies
-        run: npm ci
+        run: make mcp.deps
       - name: Build
-        run: npm run build
+        run: make mcp.build
       - name: Test
-        run: npm test
+        run: make mcp.test
 
   gate:
     name: gate

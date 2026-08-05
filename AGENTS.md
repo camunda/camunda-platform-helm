@@ -28,7 +28,8 @@ make build.dx-tooling                 # Build all Go CLIs
 make build.prepare-helm-values        # Individual Go tools
 make build.deploy-camunda
 make build.vault-secret-mapper
-cd helm-values-mcp && npm run build   # TypeScript MCP server
+make mcp.deps                         # npm ci for the TypeScript MCP server
+make mcp.build                        # TypeScript MCP server (tsc)
 ```
 
 ## Lint Commands
@@ -56,7 +57,7 @@ cd charts/camunda-platform-8.10/test/unit && go test ./orchestration/... -run Te
 
 bats test/scripts/                                           # Bash tests
 
-cd helm-values-mcp && npm test                               # TypeScript tests
+make mcp.test                                                # TypeScript tests (vitest)
 cd helm-values-mcp && npx vitest run src/path/to/file.test.ts   # Single vitest file
 cd helm-values-mcp && npx vitest run -t "test name"             # Single vitest test
 ```
