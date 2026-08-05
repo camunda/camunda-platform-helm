@@ -208,7 +208,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				s.Require().Nil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.Nil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
 			},
 		}, {
 			Name: "TestPodDisablesAutomountServiceAccountToken",
@@ -222,8 +222,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
-				s.Require().False(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.NotNil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.False(t, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
 			},
 		}, {
 			Name: "TestPodEnablesAutomountServiceAccountToken",
@@ -237,8 +237,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
-				s.Require().True(*deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.NotNil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.True(t, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
 			},
 		}, {
 			Name: "TestPodSetSecurityContext",

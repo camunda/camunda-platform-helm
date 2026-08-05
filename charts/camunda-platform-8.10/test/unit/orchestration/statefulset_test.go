@@ -63,30 +63,30 @@ func (s *StatefulSetTest) TestAutomountServiceAccountToken() {
 			Name:   "TestPodOmitsAutomountServiceAccountTokenByDefault",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().NoError(err)
+				require.NoError(t, err)
 				var statefulSet appsv1.StatefulSet
 				helm.UnmarshalK8SYaml(t, output, &statefulSet)
-				s.Require().Nil(statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.Nil(t, statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
 			},
 		}, {
 			Name:   "TestPodDisablesAutomountServiceAccountToken",
 			Values: disabledValues,
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().NoError(err)
+				require.NoError(t, err)
 				var statefulSet appsv1.StatefulSet
 				helm.UnmarshalK8SYaml(t, output, &statefulSet)
-				s.Require().NotNil(statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
-				s.Require().False(*statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.NotNil(t, statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.False(t, *statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
 			},
 		}, {
 			Name:   "TestPodEnablesAutomountServiceAccountToken",
 			Values: enabledValues,
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().NoError(err)
+				require.NoError(t, err)
 				var statefulSet appsv1.StatefulSet
 				helm.UnmarshalK8SYaml(t, output, &statefulSet)
-				s.Require().NotNil(statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
-				s.Require().True(*statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.NotNil(t, statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.True(t, *statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
 			},
 		},
 	}
