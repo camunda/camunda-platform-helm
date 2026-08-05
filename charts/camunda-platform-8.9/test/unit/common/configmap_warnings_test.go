@@ -54,6 +54,8 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestWarningsConfigMapRendersWhenWarningPresent",
 			Values: map[string]string{
+				"elasticsearch.enabled":                                         "true",
+				"global.elasticsearch.enabled":                                  "true",
 				"orchestration.data.secondaryStorage.type":                      "elasticsearch",
 				"identity.enabled":                                              "true",
 				"global.identity.auth.enabled":                                  "true",
@@ -69,6 +71,8 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
 				s.Require().Contains(configmap.Data["warnings"],
 					"the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
+				s.Require().Contains(configmap.Data["warnings"],
+					"The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10: [elasticsearch].")
 			},
 		},
 		{
