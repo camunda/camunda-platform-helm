@@ -2388,3 +2388,82 @@ func (s *StatefulSetTest) TestDocumentStoreEnvFromGatedByExtraConfiguration() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *StatefulSetTest) TestZonedMode() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestZonedModeUsesLocalZoneBrokerCountAndEnvironmentVariable",
+			Values: map[string]string{
+				"global.multiregion.mode":                      "zoned",
+				"global.multiregion.zone":                      "region-b",
+				"global.multiregion.zones[0].name":             "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":  "2",
+				"global.multiregion.zones[0].numberOfReplicas": "2",
+				"global.multiregion.zones[0].priority":         "100",
+				"global.multiregion.zones[1].name":             "region-b",
+				"global.multiregion.zones[1].numberOfBrokers":  "3",
+				"global.multiregion.zones[1].numberOfReplicas": "3",
+				"global.multiregion.zones[1].priority":         "50",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				require.Equal(t, int32(3), *statefulSet.Spec.Replicas)
+				var zoneEnv *corev1.EnvVar
+				for i := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					if statefulSet.Spec.Template.Spec.Containers[0].Env[i].Name == "CAMUNDA_CLUSTER_ZONE" {
+						zoneEnv = &statefulSet.Spec.Template.Spec.Containers[0].Env[i]
+					}
+				}
+				require.NotNil(t, zoneEnv)
+				require.Equal(t, "region-b", zoneEnv.Value)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestLegacyModeCompatibility() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:                    "DefaultModeUsesLegacyReplicaDivision",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=3"},
+			Values: map[string]string{
+				"global.multiregion.regions":  "1",
+				"global.multiregion.regionId": "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+				require.Equal(t, int32(3), *statefulSet.Spec.Replicas)
+				for _, env := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "CAMUNDA_CLUSTER_ZONE", env.Name)
+				}
+			},
+		},
+		{
+			Name:                    "ExplicitLegacyModeUsesLegacyReplicaDivision",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
+			Values: map[string]string{
+				"global.multiregion.mode":     "legacy",
+				"global.multiregion.regions":  "2",
+				"global.multiregion.regionId": "1",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+				require.Equal(t, int32(3), *statefulSet.Spec.Replicas)
+				for _, env := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "CAMUNDA_CLUSTER_ZONE", env.Name)
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

@@ -383,6 +383,13 @@ gRPC server to crash on startup. Fail loudly at render time instead.
 {{- end }}
 
 {{/*
+Fail if zoned mode is combined with the region-based multiregion settings it replaces.
+*/}}
+{{- if and (eq .Values.global.multiregion.mode "zoned") (or (ne (int .Values.global.multiregion.regions) 1) (ne (int .Values.global.multiregion.regionId) 0)) }}
+  {{- fail "[camunda][error] global.multiregion.regions and global.multiregion.regionId cannot be used with zoned mode." -}}
+{{- end }}
+
+{{/*
 Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
 {{- if not (has (include "camundaPlatform.authIssuerType" .) (list "KEYCLOAK" "MICROSOFT" "GENERIC")) }}
