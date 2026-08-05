@@ -24,6 +24,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -997,6 +998,146 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 					},
 					"Camunda Hub ping should use the inline custom secret")
 			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestOpenSearchPasswordEnv() {
+	const (
+		legacyElasticsearchExporterClass = "io.camunda.zeebe.exporter.ElasticsearchExporter"
+		legacyOpenSearchExporterClass    = "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+	)
+
+	verifyOpenSearchPasswordEnv := func(expectedExporterClass, unexpectedExporterClass string, expected ...corev1.EnvVar) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+
+			var statefulSet appsv1.StatefulSet
+			var configMap corev1.ConfigMap
+			for _, manifest := range strings.Split(output, "---") {
+				if strings.TrimSpace(manifest) == "" {
+					continue
+				}
+
+				var renderedObject struct {
+					Kind string `yaml:"kind"`
+				}
+				require.NoError(t, yaml.Unmarshal([]byte(manifest), &renderedObject))
+				switch renderedObject.Kind {
+				case "ConfigMap":
+					helm.UnmarshalK8SYaml(t, manifest, &configMap)
+				case "StatefulSet":
+					helm.UnmarshalK8SYaml(t, manifest, &statefulSet)
+				}
+			}
+			require.NotEmpty(t, statefulSet.Spec.Template.Spec.Containers)
+
+			var actual []corev1.EnvVar
+			for _, envVar := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+				if envVar.Name == "VALUES_OPENSEARCH_PASSWORD" {
+					actual = append(actual, envVar)
+				}
+			}
+			require.Equal(t, expected, actual)
+			if expectedExporterClass != "" {
+				require.Contains(t, configMap.Data["application.yaml"], expectedExporterClass)
+			}
+			if unexpectedExporterClass != "" {
+				require.NotContains(t, configMap.Data["application.yaml"], unexpectedExporterClass)
+			}
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Orchestration OpenSearch emits the configured password",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "false",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "false",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "orchestration-password",
+			},
+			Verifier: verifyOpenSearchPasswordEnv("", "", corev1.EnvVar{Name: "VALUES_OPENSEARCH_PASSWORD", Value: "orchestration-password"}),
+		},
+		{
+			Name: "Optimize OpenSearch legacy exporter retains component password",
+			CaseTemplates: &testhelpers.CaseTemplate{Templates: []string{
+				"templates/orchestration/configmap.yaml",
+				"templates/orchestration/statefulset.yaml",
+			}},
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                            "false",
+				"optimize.enabled":                                                        "true",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "true",
+				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "orchestration-password",
+			},
+			Verifier: verifyOpenSearchPasswordEnv(legacyOpenSearchExporterClass, legacyElasticsearchExporterClass, corev1.EnvVar{Name: "VALUES_OPENSEARCH_PASSWORD", Value: "orchestration-password"}),
+		},
+		{
+			Name: "Optimize OpenSearch legacy exporter retains component secret reference",
+			CaseTemplates: &testhelpers.CaseTemplate{Templates: []string{
+				"templates/orchestration/configmap.yaml",
+				"templates/orchestration/statefulset.yaml",
+			}},
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                                 "false",
+				"optimize.enabled":                                                             "true",
+				"optimize.database.elasticsearch.enabled":                                      "false",
+				"optimize.database.opensearch.enabled":                                         "true",
+				"orchestration.data.secondaryStorage.type":                                     "elasticsearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecret":    "orchestration-secret",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecretKey": "password",
+			},
+			Verifier: verifyOpenSearchPasswordEnv(legacyOpenSearchExporterClass, legacyElasticsearchExporterClass, corev1.EnvVar{
+				Name: "VALUES_OPENSEARCH_PASSWORD",
+				ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "orchestration-secret"},
+					Key:                  "password",
+				}},
+			}),
+		},
+		{
+			Name: "Elasticsearch exporter precedence omits configured OpenSearch password",
+			CaseTemplates: &testhelpers.CaseTemplate{Templates: []string{
+				"templates/orchestration/configmap.yaml",
+				"templates/orchestration/statefulset.yaml",
+			}},
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                            "true",
+				"optimize.enabled":                                                        "true",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "true",
+				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "component-password",
+			},
+			Verifier: verifyOpenSearchPasswordEnv(legacyElasticsearchExporterClass, legacyOpenSearchExporterClass),
+		},
+		{
+			Name: "Orchestration Elasticsearch omits configured OpenSearch password",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "false",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "false",
+				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "component-password",
+			},
+			Verifier: verifyOpenSearchPasswordEnv("", ""),
+		},
+		{
+			Name: "Disabled Optimize OpenSearch omits configured password",
+			Values: map[string]string{
+				"optimize.enabled":                                      "false",
+				"optimize.database.elasticsearch.enabled":               "false",
+				"optimize.database.opensearch.enabled":                  "true",
+				"optimize.database.opensearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":              "elasticsearch",
+			},
+			Verifier: verifyOpenSearchPasswordEnv("", ""),
 		},
 	}
 
