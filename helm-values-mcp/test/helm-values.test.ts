@@ -221,15 +221,11 @@ describe('MCP Tools', () => {
       expect(global?.description).toContain('Global');
       expect(global?.dependency).toBeUndefined();
 
-      // 8.10 dropped the bundled Bitnami subcharts — no top-level dependency components
+      // 8.10 declares no chart dependencies
       expect(result.components.find(c => c.name === 'elasticsearch')).toBeUndefined();
       expect(result.components.find(c => c.name === 'identityKeycloak')).toBeUndefined();
       expect(result.components.filter(c => c.dependency)).toEqual([]);
 
-      // 8.10 dropped the bundled Bitnami subcharts, so no top-level component
-      // in the current version carries chart dependency info. Verify
-      // dependency surfacing on 8.9, which still declares elasticsearch and
-      // identityKeycloak as chart dependencies.
       const result89 = listComponents({ version: '8.9' });
 
       // Check dependency info for chart dependencies
