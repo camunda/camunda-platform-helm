@@ -298,6 +298,20 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
+{{- define "orchestration.effectiveTlsConfig" -}}
+{{- $config := dict -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true" -}}
+    {{- $config = .Values.global.elasticsearch.tls -}}
+{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true" -}}
+    {{- $config = .Values.global.opensearch.tls -}}
+{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true" -}}
+    {{- $config = .Values.orchestration.data.secondaryStorage.elasticsearch.tls -}}
+{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)) "true" -}}
+    {{- $config = .Values.orchestration.data.secondaryStorage.opensearch.tls -}}
+{{- end -}}
+{{- toYaml $config -}}
+{{- end -}}
+
 {{- define "orchestration.persistentSessionsEnabled" -}}
     {{ not .Values.global.noSecondaryStorage -}}
 {{- end -}}

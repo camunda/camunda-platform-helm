@@ -1264,10 +1264,12 @@ they adopt global.<engine>.tls.jks.secret.* — otherwise both flags are present
 the last one, which becomes confusing to debug.
 */}}
 
-{{- /* Internal: resolve the correct TLS JKS config for the currently enabled engine */ -}}
+{{- /* Internal: resolve JKS config from the selected TLS config, with global fallback for legacy callers */ -}}
 {{- define "camundaPlatform._resolve_tls_jks_config" -}}
 {{- $cfg := dict -}}
-{{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") -}}
+{{- if .tlsConfig -}}
+{{-   $cfg = (.tlsConfig.jks | default dict) -}}
+{{- else if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") -}}
 {{-   $cfg = (.Values.global.elasticsearch.tls.jks | default dict) -}}
 {{- else if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") -}}
 {{-   $cfg = (.Values.global.opensearch.tls.jks | default dict) -}}
@@ -1282,7 +1284,7 @@ the last one, which becomes confusing to debug.
 {{- $compVals := (get $vals $comp) | default dict -}}
 {{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
 {{- $truststoreDir := required "camundaPlatform._java_tool_options_tls_env: parameter 'truststoreDir' is required" .truststoreDir -}}
-{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "Values" $vals) -}}
+{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "Values" $vals "config" (.tlsConfig | default dict)) -}}
 {{- $truststorePath := printf "%s/%s" $truststoreDir $secretKey -}}
 {{- $jks := ((include "camundaPlatform._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
 {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
@@ -1313,6 +1315,7 @@ the last one, which becomes confusing to debug.
   "Values" .Values
   "component" .component
   "javaOpts" .javaOpts
+  "tlsConfig" .tlsConfig
   "truststoreDir" "/usr/local/camunda/certificates"
 ) }}
 {{- end }}
@@ -1326,6 +1329,7 @@ See common.java_tool_options_tls_env for full documentation.
   "Values" .Values
   "component" .component
   "javaOpts" .javaOpts
+  "tlsConfig" .tlsConfig
   "truststoreDir" "/optimize/certificates"
 ) }}
 {{- end }}

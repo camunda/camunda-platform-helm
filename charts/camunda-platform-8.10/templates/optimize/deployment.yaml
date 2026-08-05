@@ -1,4 +1,5 @@
 {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage) -}}
+{{- $tlsConfig := include "optimize.effectiveTlsConfig" . | fromYaml -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -80,7 +81,7 @@ spec:
             {{- end}}
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
-            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize") | nindent 12 }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" "tlsConfig" $tlsConfig) | nindent 12 }}
             {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ printf "%s %s" .Values.optimize.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
@@ -135,8 +136,8 @@ spec:
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
             - name: keystore
-              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
-              subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
+              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig)) }}
+              subPath: {{ include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig) }}
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
@@ -189,7 +190,7 @@ spec:
             {{- end}}
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
-            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize") | nindent 12 }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" "tlsConfig" $tlsConfig) | nindent 12 }}
             {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ printf "%s %s" .Values.optimize.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
@@ -345,8 +346,8 @@ spec:
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
             - name: keystore
-              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
-              subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
+              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig)) }}
+              subPath: {{ include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig) }}
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
@@ -388,17 +389,10 @@ spec:
           configMap:
             name: {{ include "optimize.fullname" . }}-configuration
             defaultMode: {{ .Values.optimize.configMap.defaultMode }}
-        {{- $esTls := include "optimize.effectiveEsTlsConfig" . | fromYaml -}}
-        {{- $osTls := include "optimize.effectiveOsTlsConfig" . | fromYaml -}}
-        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esTls)) "true" }}
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $tlsConfig)) "true" }}
         {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
             "volumeName" "keystore"
-            "config" $esTls
-        ) | nindent 8 }}
-        {{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osTls)) "true" }}
-        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
-            "volumeName" "keystore"
-            "config" $osTls
+            "config" $tlsConfig
         ) | nindent 8 }}
         {{- end }}
         {{- if .Values.global.documentStore.type.gcp.enabled }}
