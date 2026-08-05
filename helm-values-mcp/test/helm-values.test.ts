@@ -221,7 +221,6 @@ describe('MCP Tools', () => {
       expect(global?.description).toContain('Global');
       expect(global?.dependency).toBeUndefined();
 
-      // 8.10 declares no chart dependencies
       expect(result.components.find(c => c.name === 'elasticsearch')).toBeUndefined();
       expect(result.components.find(c => c.name === 'identityKeycloak')).toBeUndefined();
       expect(result.components.filter(c => c.dependency)).toEqual([]);
