@@ -387,7 +387,10 @@ jobs:
     if: >-
       ${{
         github.event_name == 'merge_group' ||
-        (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--'))
+        (github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
+          !startsWith(github.head_ref, 'release-please--'))
       }}
     runs-on: ubuntu-latest
     permissions:
