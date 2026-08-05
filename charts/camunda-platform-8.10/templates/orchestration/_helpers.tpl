@@ -578,3 +578,39 @@ URIs.
     {{- $redirectURIDefault := include "orchestration.serviceNameHTTP" . -}}
     {{- tpl .Values.orchestration.security.authentication.oidc.redirectUrl . | default $redirectURIDefault -}}
 {{- end -}}
+
+{{/*
+********************************************************************************
+Bundled Operate / Tasklist Zeebe client security.
+********************************************************************************
+*/}}
+
+{{/*
+[orchestration] Emits the `secure` (and, when a CA bundle is configured,
+`certificatePath`) keys for the bundled Operate and Tasklist
+`camunda.<app>.zeebe` blocks in files/_application.yaml.
+
+Both apps build their own CamundaClient against orchestration.serviceNameGRPC.
+Upstream ZeebeProperties.isSecure defaults to false and the connector passes
+`!isSecure` as the plaintext flag to AddressUtil.composeGrpcAddress, so without
+this the bundled clients dial plaintext against a TLS gateway once
+global.tls.orchestration.grpc is on. `secure` therefore tracks the EFFECTIVE
+gRPC TLS state, matching the scheme camundaPlatform.orchestrationGRPCInternalURL
+hands the out-of-pod clients.
+
+certificatePath is emitted ONLY alongside secure=true and only when
+global.tls.caBundle is set: the connector calls
+CamundaClientBuilder.caCertificatePath() unconditionally when secure, and the
+client rejects an EMPTY path with IllegalArgumentException while treating a
+null/absent one as "use the JVM default truststore".
+
+Usage (inside a camunda.<app>.zeebe block):
+  {{- include "orchestration.operateTasklistZeebeSecurity" . | nindent 6 }}
+*/}}
+{{- define "orchestration.operateTasklistZeebeSecurity" -}}
+{{- $secure := eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" -}}
+secure: {{ $secure }}
+{{- if and $secure (eq (include "camundaPlatform.hasCaBundle" .) "true") }}
+certificatePath: /etc/camunda/tls/ca.crt
+{{- end -}}
+{{- end -}}
