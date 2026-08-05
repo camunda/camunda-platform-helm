@@ -1264,10 +1264,12 @@ they adopt global.<engine>.tls.jks.secret.* — otherwise both flags are present
 the last one, which becomes confusing to debug.
 */}}
 
-{{- /* Internal: resolve the correct TLS JKS config for the currently enabled engine */ -}}
+{{- /* Internal: resolve JKS config from the selected TLS config, with global fallback for legacy callers */ -}}
 {{- define "camundaPlatform._resolve_tls_jks_config" -}}
 {{- $cfg := dict -}}
-{{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") -}}
+{{- if .tlsConfig -}}
+{{-   $cfg = (.tlsConfig.jks | default dict) -}}
+{{- else if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") -}}
 {{-   $cfg = (.Values.global.elasticsearch.tls.jks | default dict) -}}
 {{- else if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") -}}
 {{-   $cfg = (.Values.global.opensearch.tls.jks | default dict) -}}

@@ -1075,7 +1075,7 @@ they adopt global.<engine>.tls.jks.secret.* — otherwise both flags are present
 the last one, which becomes confusing to debug.
 */}}
 
-{{- /* Internal: resolve the correct TLS JKS config for the currently enabled engine */ -}}
+{{- /* Internal: resolve JKS config from the selected TLS config, with global fallback for legacy callers */ -}}
 {{/*
 Activates the JKS block for whichever engine has TLS configured.
 Honours both the legacy single-string `tls.existingSecret` and the 8.9 normalized
@@ -1084,6 +1084,9 @@ when they set the matching `tls.jks.secret.*`.
 */}}
 {{- define "camundaPlatform._resolve_tls_jks_config" -}}
 {{- $cfg := dict -}}
+{{- if .tlsConfig -}}
+{{-   $cfg = (.tlsConfig.jks | default dict) -}}
+{{- else -}}
 {{- $esTls := (.Values.global.elasticsearch.tls | default dict) -}}
 {{- $osTls := (.Values.global.opensearch.tls | default dict) -}}
 {{- $esSecret := ($esTls.secret | default dict) -}}
@@ -1092,6 +1095,7 @@ when they set the matching `tls.jks.secret.*`.
 {{-   $cfg = ($esTls.jks | default dict) -}}
 {{- else if or $osTls.existingSecret $osSecret.existingSecret -}}
 {{-   $cfg = ($osTls.jks | default dict) -}}
+{{- end -}}
 {{- end -}}
 {{- toYaml $cfg -}}
 {{- end -}}
