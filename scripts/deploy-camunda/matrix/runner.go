@@ -1245,8 +1245,7 @@ func writeDiagnosticsSummary(runDir string, summary diagnosticsSummary) error {
 	if err != nil {
 		return fmt.Errorf("marshal diagnostics summary: %w", err)
 	}
-	b = []byte(redaction.Text(string(b)))
-	if err := os.WriteFile(summaryPath, append(b, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(summaryPath, append(b, '\n'), 0o600); err != nil {
 		return fmt.Errorf("write diagnostics summary: %w", err)
 	}
 	return nil
@@ -1267,7 +1266,7 @@ func writeDiagnosticsReadme(runDir string, summary diagnosticsSummary) error {
 	}
 
 	readmePath := filepath.Join(runDir, "README.txt")
-	if err := os.WriteFile(readmePath, []byte(b.String()), 0o644); err != nil {
+	if err := os.WriteFile(readmePath, []byte(b.String()), 0o600); err != nil {
 		return fmt.Errorf("write diagnostics readme: %w", err)
 	}
 	return nil
@@ -1289,7 +1288,7 @@ func collectDiagnostics(namespace, kubeContext string) string {
 
 	runDir := diagnosticsRunDir(namespace, time.Now())
 	logsDir := filepath.Join(runDir, "logs")
-	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+	if err := os.MkdirAll(logsDir, 0o700); err != nil {
 		logging.Logger.Warn().Err(err).Str("path", logsDir).Msg("failed to create diagnostics logs directory")
 		return ""
 	}
@@ -1336,7 +1335,7 @@ func collectDiagnostics(namespace, kubeContext string) string {
 			if logs != "" {
 				relPath := filepath.Join("logs", sanitizeDiagnosticsFilename(pod)+".log")
 				absPath := filepath.Join(runDir, relPath)
-				if err := os.WriteFile(absPath, []byte(redaction.Text(logs)), 0o644); err != nil {
+				if err := os.WriteFile(absPath, []byte(redaction.Text(logs)), 0o600); err != nil {
 					entry.Error = fmt.Sprintf("write log file: %v", err)
 					summary.Errors = append(summary.Errors, fmt.Sprintf("write pod logs (%s): %v", pod, err))
 				} else {
@@ -1397,7 +1396,7 @@ func appendTestOutputToDiagnostics(err error, namespace, diagPath string) string
 	runDir := diagPath
 	if runDir == "" {
 		runDir = diagnosticsRunDir(namespace, time.Now())
-		if err := os.MkdirAll(filepath.Join(runDir, "logs"), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(runDir, "logs"), 0o700); err != nil {
 			logging.Logger.Warn().Err(err).Str("path", runDir).Msg("failed to create diagnostics directory for test output")
 			return ""
 		}
@@ -1426,7 +1425,7 @@ func appendTestOutputToDiagnostics(err error, namespace, diagPath string) string
 	summary.TestOutputLast200 = output
 
 	testOutputPath := filepath.Join(runDir, "test-output.txt")
-	if err := os.WriteFile(testOutputPath, []byte(output), 0o644); err != nil {
+	if err := os.WriteFile(testOutputPath, []byte(output), 0o600); err != nil {
 		logging.Logger.Warn().Err(err).Str("path", testOutputPath).Msg("failed to write test output file")
 		summary.Errors = append(summary.Errors, fmt.Sprintf("write test output: %v", err))
 	}

@@ -15,6 +15,7 @@ import (
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/entra"
+	"scripts/deploy-camunda/pkg/redaction"
 	"scripts/prepare-helm-values/pkg/env"
 )
 
@@ -313,7 +314,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// This keeps output out of the terminal so the status table stays clean.
 	if opts.LogDir != "" {
 		baseName := entryLogFileName(entry)
-		if e2eFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".e2e.log")); err != nil {
+		if e2eFile, err := os.OpenFile(filepath.Join(opts.LogDir, baseName+".e2e.log"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600); err != nil {
 			logging.Logger.Warn().Err(err).Msg("Failed to create e2e log file, output will go to terminal")
 		} else {
 			defer e2eFile.Close()
@@ -323,7 +324,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		// Per-entry deploy log: captures all subprocess output (helm, kubectl, etc.)
 		// plus lifecycle events, giving a complete timeline for this entry.
 		deployLogPath := filepath.Join(opts.LogDir, baseName+".deploy.log")
-		if deployLog, err := os.Create(deployLogPath); err != nil {
+		if deployLog, err := os.OpenFile(deployLogPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600); err != nil {
 			logging.Logger.Warn().Err(err).Msg("Failed to create deploy log file")
 		} else {
 			defer deployLog.Close()
@@ -332,7 +333,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 					return
 				}
 				ts := time.Now().Format("15:04:05")
-				fmt.Fprintf(deployLog, "[%s] %s: %s\n", ts, strings.ToUpper(level), msg)
+				fmt.Fprintf(deployLog, "[%s] %s: %s\n", ts, strings.ToUpper(level), redaction.Text(msg))
 			}
 			writeEntryLog("info", fmt.Sprintf("entry=%s namespace=%s platform=%s flow=%s", entryID(entry), namespace, platform, entry.Flow))
 
@@ -340,6 +341,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			// The callback tees lines to both the per-entry file and the normal logger.
 			ctx = executil.ContextWithBuffer(ctx, func(level, line string) {
 				writeEntryLog(level, line)
+				line = redaction.Text(line)
 				prefix := logging.BuildPrefix(logging.FieldsFromContext(ctx), "")
 				switch strings.ToLower(level) {
 				case "trace":
