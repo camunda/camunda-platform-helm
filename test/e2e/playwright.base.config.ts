@@ -44,8 +44,10 @@ export function makeShadowConfig(opts: {
   timeout?: number;
   workers?: number | string;
 }): ShadowConfig {
-  if (!process.env.CAMUNDA_OPTIMIZE_BASE_URL && process.env.BASE_URL) {
-    process.env.CAMUNDA_OPTIMIZE_BASE_URL = `https://${process.env.BASE_URL}/optimize`;
+  const baseURL = getBaseURL();
+
+  if (!process.env.CAMUNDA_OPTIMIZE_BASE_URL) {
+    process.env.CAMUNDA_OPTIMIZE_BASE_URL = `${baseURL.replace(/\/+$/, "")}/optimize`;
   }
 
   const includeSetupProject = opts.includeSetupProject ?? true;
@@ -98,7 +100,7 @@ export function makeShadowConfig(opts: {
     timeout: opts.timeout ?? 12 * 60 * 1000,
     workers: opts.workers ?? workerCount(opts.version),
     use: {
-      baseURL: getBaseURL(),
+      baseURL,
       actionTimeout: 10000,
       screenshot: "only-on-failure",
       video: "retain-on-failure",
