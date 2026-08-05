@@ -1,7 +1,8 @@
 name: Repo - Auto Approve
 
 on:
-  workflow_dispatch:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -14,7 +15,7 @@ permissions:
 jobs:
   auto-approve:
     name: Auto approve allowlisted authors
-    if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.draft == false }}
+    if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
