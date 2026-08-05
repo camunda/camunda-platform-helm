@@ -1248,6 +1248,7 @@ func writeDiagnosticsSummary(runDir string, summary diagnosticsSummary) error {
 	if err := os.WriteFile(summaryPath, append(b, '\n'), 0o600); err != nil {
 		return fmt.Errorf("write diagnostics summary: %w", err)
 	}
+	_ = os.Chmod(summaryPath, 0o600)
 	return nil
 }
 
@@ -1269,6 +1270,7 @@ func writeDiagnosticsReadme(runDir string, summary diagnosticsSummary) error {
 	if err := os.WriteFile(readmePath, []byte(b.String()), 0o600); err != nil {
 		return fmt.Errorf("write diagnostics readme: %w", err)
 	}
+	_ = os.Chmod(readmePath, 0o600)
 	return nil
 }
 
@@ -1339,6 +1341,7 @@ func collectDiagnostics(namespace, kubeContext string) string {
 					entry.Error = fmt.Sprintf("write log file: %v", err)
 					summary.Errors = append(summary.Errors, fmt.Sprintf("write pod logs (%s): %v", pod, err))
 				} else {
+					_ = os.Chmod(absPath, 0o600)
 					entry.File = relPath
 				}
 			}
@@ -1429,6 +1432,7 @@ func appendTestOutputToDiagnostics(err error, namespace, diagPath string) string
 		logging.Logger.Warn().Err(err).Str("path", testOutputPath).Msg("failed to write test output file")
 		summary.Errors = append(summary.Errors, fmt.Sprintf("write test output: %v", err))
 	}
+	_ = os.Chmod(testOutputPath, 0o600)
 
 	if err := writeDiagnosticsSummary(runDir, summary); err != nil {
 		logging.Logger.Warn().Err(err).Str("path", summaryPath).Msg("failed to write diagnostics summary with test output")

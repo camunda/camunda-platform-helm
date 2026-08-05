@@ -30,12 +30,13 @@ var (
 	jwtPattern           = regexp.MustCompile(`\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+`)
 	urlUserInfoPattern   = regexp.MustCompile(`(://[^\s/:@]+:)[^\s/@]+(@)`)
 	queryPattern         = regexp.MustCompile(`(?i)([?&][A-Za-z0-9_.-]*(?:password|passwd|pwd|secret|token|credential|api[-_.]?key|private[-_.]?key)[A-Za-z0-9_.-]*=)[^&#\s]+`)
+	inlineAssignment     = regexp.MustCompile(`(^|[ \t])([A-Za-z0-9_.-]+)=([^\s,]+)`)
 	privateKeyPattern    = regexp.MustCompile(`(?s)-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----`)
 )
 
 func IsSensitiveName(name string) bool {
 	normalized := strings.ToLower(strings.NewReplacer("-", "", "_", "", ".", "").Replace(name))
-	for _, suffix := range []string{"secretname", "secretkey", "secretkeyref", "tokenurl", "passwordpolicy"} {
+	for _, suffix := range []string{"secretname", "secretkeyref", "tokenurl", "passwordpolicy"} {
 		if strings.HasSuffix(normalized, suffix) {
 			return false
 		}
@@ -58,11 +59,22 @@ func Text(value string) string {
 		colon := strings.Index(match, ":")
 		return match[:colon+1] + ` "` + Placeholder + `"`
 	})
+	value = redactInlineAssignments(value)
 	return assignmentPattern.ReplaceAllStringFunc(value, func(match string) string {
 		parts := assignmentPattern.FindStringSubmatch(match)
 		if len(parts) != 4 || !IsSensitiveName(parts[2]) {
 			return match
 		}
 		return parts[1] + parts[2] + parts[3] + Placeholder
+	})
+}
+
+func redactInlineAssignments(value string) string {
+	return inlineAssignment.ReplaceAllStringFunc(value, func(match string) string {
+		parts := inlineAssignment.FindStringSubmatch(match)
+		if len(parts) != 4 || !IsSensitiveName(parts[2]) {
+			return match
+		}
+		return parts[1] + parts[2] + "=" + Placeholder
 	})
 }

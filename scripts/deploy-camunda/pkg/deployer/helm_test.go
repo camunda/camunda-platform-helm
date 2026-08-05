@@ -93,11 +93,11 @@ func TestHelmErrorShortCommandRedactsSensitiveSetValues(t *testing.T) {
 
 	err := &HelmError{
 		Command: "helm upgrade release chart --set global.identity.clientSecret=super-secret --set global.ingress.host=example.com --set-string=database.password=another-secret",
-		Args:    []string{"upgrade", "release", "chart", "--set", "global.identity.clientSecret=super secret", "--set", "global.ingress.host=example.com,database.password=combined-secret", "--set-string=database.password=another-secret"},
+		Args:    []string{"upgrade", "release", "chart", "--set", "global.identity.clientSecret=super secret", "--set", "global.ingress.host=example.com,database.password=combined-secret", "--set-string=database.password=another-secret", "--password", "registry-secret", "--kube-token=cluster-secret"},
 	}
 	got := err.ShortCommand()
 
-	for _, secret := range []string{"super secret", "combined-secret", "another-secret"} {
+	for _, secret := range []string{"super secret", "combined-secret", "another-secret", "registry-secret", "cluster-secret"} {
 		if strings.Contains(got, secret) {
 			t.Errorf("ShortCommand contains secret %q: %s", secret, got)
 		}

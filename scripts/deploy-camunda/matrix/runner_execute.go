@@ -318,6 +318,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			logging.Logger.Warn().Err(err).Msg("Failed to create e2e log file, output will go to terminal")
 		} else {
 			defer e2eFile.Close()
+			_ = e2eFile.Chmod(0o600)
 			flags.E2EOutputWriter = e2eFile
 		}
 
@@ -328,6 +329,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			logging.Logger.Warn().Err(err).Msg("Failed to create deploy log file")
 		} else {
 			defer deployLog.Close()
+			_ = deployLog.Chmod(0o600)
 			writeEntryLog := func(level, msg string) {
 				if !logging.ShouldLog(logLevel, level) {
 					return

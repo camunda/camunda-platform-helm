@@ -25,6 +25,7 @@ func TestText(t *testing.T) {
 		want string
 	}{
 		{name: "env assignment", in: "DB_PASSWORD=super-secret", want: "DB_PASSWORD=" + Placeholder},
+		{name: "prefixed env assignment", in: "2026-08-05 INFO API_TOKEN=secret", want: "2026-08-05 INFO API_TOKEN=" + Placeholder},
 		{name: "yaml assignment", in: "  clientSecret: 'secret value'", want: "  clientSecret: " + Placeholder},
 		{name: "json value", in: `{"access_token":"secret-token","status":"failed"}`, want: `{"access_token": "[REDACTED]","status":"failed"}`},
 		{name: "authorization header", in: "Authorization: Bearer abc.def-123", want: "Authorization: " + Placeholder},
@@ -57,6 +58,7 @@ func TestIsSensitiveName(t *testing.T) {
 		{name: "global.identity.clientSecret", want: true},
 		{name: "database.password", want: true},
 		{name: "secretKeyRef", want: false},
+		{name: "SECRET_KEY", want: true},
 		{name: "oauth.tokenUrl", want: false},
 		{name: "global.ingress.host", want: false},
 	} {

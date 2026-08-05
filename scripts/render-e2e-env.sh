@@ -269,6 +269,7 @@ render_env_file() {
   # Generate base .env from template
   export TEST_INGRESS_HOST="$hostname"
   envsubst < "$test_suite_path"/.env.template > "$env_file"
+  chmod 600 "$env_file"
 
   # Auth0 scenario short-circuit. The auth0-smoke Playwright project only
   # needs the Auth0 issuer + per-component client_ids; the matrix runner

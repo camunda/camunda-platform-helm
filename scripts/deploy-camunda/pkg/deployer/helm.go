@@ -93,11 +93,14 @@ func (e *HelmError) ShortCommand() string {
 func shortenArgs(args []string) string {
 	parts := append([]string(nil), args...)
 	for i := range parts {
+		if redactSensitiveFlag(parts, i) {
+			continue
+		}
 		if i > 0 && isHelmSetFlag(parts[i-1]) {
 			parts[i] = redactHelmSetArg(parts[i])
 			continue
 		}
-		for _, flag := range []string{"--set=", "--set-string=", "--set-json="} {
+		for _, flag := range []string{"--set=", "--set-string=", "--set-json=", "--set-literal="} {
 			if strings.HasPrefix(parts[i], flag) {
 				parts[i] = flag + redactHelmSetArg(strings.TrimPrefix(parts[i], flag))
 			}
@@ -118,11 +121,14 @@ func shortenArgs(args []string) string {
 func shortenPaths(cmd string) string {
 	parts := strings.Fields(cmd)
 	for i := range parts {
+		if redactSensitiveFlag(parts, i) {
+			continue
+		}
 		if i > 0 && isHelmSetFlag(parts[i-1]) {
 			parts[i] = redactHelmSetArg(parts[i])
 			continue
 		}
-		for _, flag := range []string{"--set=", "--set-string=", "--set-json="} {
+		for _, flag := range []string{"--set=", "--set-string=", "--set-json=", "--set-literal="} {
 			if strings.HasPrefix(parts[i], flag) {
 				parts[i] = flag + redactHelmSetArg(strings.TrimPrefix(parts[i], flag))
 			}
@@ -141,7 +147,7 @@ func shortenPaths(cmd string) string {
 }
 
 func isHelmSetFlag(arg string) bool {
-	return arg == "--set" || arg == "--set-string" || arg == "--set-json"
+	return arg == "--set" || arg == "--set-string" || arg == "--set-json" || arg == "--set-literal"
 }
 
 func redactHelmSetArg(arg string) string {
@@ -152,6 +158,20 @@ func redactHelmSetArg(arg string) string {
 		}
 	}
 	return redaction.Text(arg)
+}
+
+func redactSensitiveFlag(parts []string, i int) bool {
+	for _, flag := range []string{"--password", "--kube-token", "--username"} {
+		if parts[i] == flag && i+1 < len(parts) {
+			parts[i+1] = redaction.Placeholder
+			return true
+		}
+		if strings.HasPrefix(parts[i], flag+"=") {
+			parts[i] = flag + "=" + redaction.Placeholder
+			return true
+		}
+	}
+	return false
 }
 
 // upgradeInstall builds and executes helm upgrade --install with deployer's opinionated policies
