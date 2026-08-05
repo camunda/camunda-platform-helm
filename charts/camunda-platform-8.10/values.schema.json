@@ -4737,6 +4737,11 @@
                             "description": "can be used to configure AWS Secrets Manager connectivity as a map keyed by store id. The application uses the AWS SDK default credential chain. Each entry supports `region`, `pathPrefix`, and the chart-only `roleArn` (sets the `eks.amazonaws.com/role-arn` annotation on the Orchestration ServiceAccount). Configure runtime behavior such as batching or container-secret mode through `orchestration.extraConfiguration`. Example: `myawsstore: {region: us-east-1, roleArn: arn:aws:iam::123456789012:role/camunda-secrets}`.",
                             "default": {}
                         },
+                        "gcp": {
+                            "type": "object",
+                            "description": "can be used to configure GCP Secret Manager connectivity as a map keyed by store id. The application uses the GCP Application Default Credentials chain. Each entry supports `projectId`, `pathPrefix`, `endpoint`, and the chart-only `gcpServiceAccount` (sets the `iam.gke.io/gcp-service-account` annotation on the Orchestration ServiceAccount). Configure runtime behavior such as container-secret mode through `orchestration.extraConfiguration`. Example: `mygcpstore: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.",
+                            "default": {}
+                        },
                         "physicalTenants": {
                             "type": "object",
                             "description": "can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and store id when overriding a root store. File-store `existingSecret` is inherited together with the runtime fields. Physical tenant ids must contain only lowercase letters and digits. Example: `tenanta: {aws: {store: {region: us-east-1}}}`.",
@@ -6867,6 +6872,33 @@
                 "additionalProperties": false
             }
         },
+        "secretStoreGcpEntries": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "projectId": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "pathPrefix": {
+                        "type": "string"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "gcpServiceAccount": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
         "secretStoreProviderSet": {
             "type": "object",
             "properties": {
@@ -6875,6 +6907,9 @@
                 },
                 "aws": {
                     "$ref": "#/definitions/secretStoreAwsEntries"
+                },
+                "gcp": {
+                    "$ref": "#/definitions/secretStoreGcpEntries"
                 }
             },
             "additionalProperties": false
@@ -6887,6 +6922,9 @@
                 },
                 "aws": {
                     "$ref": "#/definitions/secretStoreAwsEntries"
+                },
+                "gcp": {
+                    "$ref": "#/definitions/secretStoreGcpEntries"
                 },
                 "physicalTenants": {
                     "type": "object",
