@@ -16,6 +16,7 @@ package orchestration
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -47,6 +48,34 @@ func TestStatefulSetTemplate(t *testing.T) {
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"templates/orchestration/statefulset.yaml"},
+	})
+}
+
+func TestGoldenStatefulSetWithRDBMSEnabled(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "statefulset-rdbms",
+		Templates:      []string{"templates/orchestration/statefulset.yaml"},
+		SetValues: map[string]string{
+			"global.elasticsearch.enabled":                                       "false",
+			"elasticsearch.enabled":                                              "false",
+			"orchestration.exporters.rdbms.enabled":                              "true",
+			"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://rdbms:5432/camunda",
+			"orchestration.data.secondaryStorage.rdbms.username":                 "camunda",
+			"orchestration.data.secondaryStorage.rdbms.aws.enabled":              "true",
+			"orchestration.data.secondaryStorage.rdbms.secret.existingSecret":    "camunda-rdbms-credentials",
+			"orchestration.data.secondaryStorage.rdbms.secret.existingSecretKey": "password",
+		},
+		IgnoredLines: []string{
+			`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+		},
 	})
 }
 
