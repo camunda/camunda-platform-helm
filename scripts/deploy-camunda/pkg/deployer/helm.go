@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/pkg/redaction"
 	"scripts/deploy-camunda/pkg/types"
 	"strings"
 	"sync"
@@ -89,6 +90,15 @@ func (e *HelmError) ShortCommand() string {
 func shortenPaths(cmd string) string {
 	parts := strings.Fields(cmd)
 	for i := range parts {
+		if i > 0 && isHelmSetFlag(parts[i-1]) {
+			parts[i] = redactHelmSetArg(parts[i])
+			continue
+		}
+		for _, flag := range []string{"--set=", "--set-string=", "--set-json="} {
+			if strings.HasPrefix(parts[i], flag) {
+				parts[i] = flag + redactHelmSetArg(strings.TrimPrefix(parts[i], flag))
+			}
+		}
 		// Shorten -f value file paths
 		if i > 0 && parts[i-1] == "-f" && len(parts[i]) > 0 && (parts[i][0] == '/' || strings.Contains(parts[i], "/")) {
 			parts[i] = filepath.Base(parts[i])
@@ -100,6 +110,18 @@ func shortenPaths(cmd string) string {
 		}
 	}
 	return strings.Join(parts, " ")
+}
+
+func isHelmSetFlag(arg string) bool {
+	return arg == "--set" || arg == "--set-string" || arg == "--set-json"
+}
+
+func redactHelmSetArg(arg string) string {
+	key, _, found := strings.Cut(arg, "=")
+	if !found || !redaction.IsSensitiveName(key) {
+		return redaction.Text(arg)
+	}
+	return key + "=" + redaction.Placeholder
 }
 
 // upgradeInstall builds and executes helm upgrade --install with deployer's opinionated policies

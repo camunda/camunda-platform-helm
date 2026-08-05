@@ -1733,7 +1733,7 @@ func TestAppendTestOutputToDiagnostics_AppendToExistingRunDirectory(t *testing.T
 
 	te := &deploy.TestError{
 		Err:    fmt.Errorf("integration tests failed"),
-		Output: "FAIL: TestSomething\nexpected 200, got 500\n",
+		Output: "FAIL: TestSomething\nexpected 200, got 500\nAPI_TOKEN=test-secret\n",
 	}
 
 	result := appendTestOutputToDiagnostics(te, "test-ns", runDir)
@@ -1747,6 +1747,9 @@ func TestAppendTestOutputToDiagnostics_AppendToExistingRunDirectory(t *testing.T
 	}
 	if !strings.Contains(string(content), "FAIL: TestSomething") {
 		t.Errorf("test-output.txt should contain test output, got:\n%s", string(content))
+	}
+	if strings.Contains(string(content), "test-secret") {
+		t.Errorf("test-output.txt contains an unredacted secret:\n%s", string(content))
 	}
 
 	summaryBytes, err := os.ReadFile(filepath.Join(runDir, "summary.json"))
@@ -1762,6 +1765,9 @@ func TestAppendTestOutputToDiagnostics_AppendToExistingRunDirectory(t *testing.T
 	}
 	if !strings.Contains(summary.TestOutputLast200, "FAIL: TestSomething") {
 		t.Errorf("summary should contain test output, got:\n%s", summary.TestOutputLast200)
+	}
+	if strings.Contains(summary.TestOutputLast200, "test-secret") {
+		t.Errorf("summary contains an unredacted secret:\n%s", summary.TestOutputLast200)
 	}
 }
 
