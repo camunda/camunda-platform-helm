@@ -1596,10 +1596,9 @@ NOTE: reports "true" when a spring-imported <component>.extraConfiguration file 
 given key path (any subkey counts). Used to gate chart-rendered env that would otherwise
 shadow the migration target — e.g. suppress the -documentstore-env-vars envFrom for a
 component that owns document config via camunda.document.* in its extraConfiguration.
-Because any subkey matches, the whole -documentstore-env-vars envFrom is dropped, so a
-component that supplies any camunda.document.* via extraConfiguration owns all of its
-document config (default store id, per-store class/bucket, region). Keys match literally on
-nested map keys (see effectiveExtraConfigValue for the accepted YAML form).
+Because any subkey matches, the whole -documentstore-env-vars envFrom is dropped. Retained
+structured coordination and secret values are rendered directly where needed. Keys match
+literally on nested map keys (see effectiveExtraConfigValue for the accepted YAML form).
 Usage:
 {{ if eq (include "camundaPlatform.extraConfigHasPath" (dict
   "extraConfiguration" .Values.orchestration.extraConfiguration

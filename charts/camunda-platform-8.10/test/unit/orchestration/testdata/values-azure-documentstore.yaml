@@ -1,0 +1,22 @@
+global:
+  documentStore:
+    activeStoreId: Az1
+    type:
+      azure:
+        connectionString:
+          secret:
+            existingSecret: azure-document-store
+            existingSecretKey: connection-string
+
+orchestration:
+  extraConfiguration:
+    - file: azure-documentstore.yaml
+      content: |
+        camunda:
+          document:
+            azure:
+              az1:
+                container-name: my-container
+            aws:
+              aws:
+                bucket-name: my-bucket

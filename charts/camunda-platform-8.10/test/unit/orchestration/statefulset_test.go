@@ -1294,6 +1294,31 @@ func (s *StatefulSetTest) TestDocumentStoreEnvFromGatedByExtraConfiguration() {
 					"documentstore envFrom must remain when camunda.document is not set via extraConfiguration")
 			},
 		},
+		{
+			Name:        "TestAzureSecretSurvivesDocumentStoreEnvFromSuppression",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-azure-documentstore.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				container := statefulSet.Spec.Template.Spec.Containers[0]
+				require.Contains(t, container.Env, corev1.EnvVar{
+					Name: "VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "azure-document-store"},
+							Key:                  "connection-string",
+						},
+					},
+				})
+				for _, envFrom := range container.EnvFrom {
+					if envFrom.ConfigMapRef != nil {
+						require.NotContains(t, envFrom.ConfigMapRef.Name, "documentstore-env-vars")
+					}
+				}
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

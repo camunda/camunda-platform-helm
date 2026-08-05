@@ -688,7 +688,7 @@ global:
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, and gcp.
+    ## @param global.documentStore.activeStoreId defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.
     activeStoreId: "inmemory"
     type:
       aws:

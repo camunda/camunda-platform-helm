@@ -42,11 +42,14 @@ management:
 camunda:
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
-  {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
+  {{- if eq (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "document"))) "true" }}
   document:
-    store:
-      azure:
+    default-store-id: {{ lower .Values.global.documentStore.activeStoreId | quote }}
+    {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
+    azure:
+      {{ lower .Values.global.documentStore.activeStoreId }}:
         connection-string: "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}"
+    {{- end }}
   {{- end }}
 
   system:

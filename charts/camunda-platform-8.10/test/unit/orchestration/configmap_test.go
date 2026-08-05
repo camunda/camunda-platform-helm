@@ -148,6 +148,92 @@ func (s *ConfigmapLegacyTemplateTest) TestRequestBodySizeConfiguresUploadLimits(
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapLegacyTemplateTest) TestAzureDocumentStoreConnectionStringBinding() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestAzureDocumentStoreConnectionStringBindingWhenActive",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-azure-documentstore.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				var application struct {
+					Camunda struct {
+						Document struct {
+							DefaultStoreID string `json:"default-store-id"`
+							Azure          map[string]struct {
+								ConnectionString string `json:"connection-string"`
+							} `json:"azure"`
+						} `json:"document"`
+					} `json:"camunda"`
+				}
+				helm.UnmarshalK8SYaml(t, configmap.Data["application.yaml"], &application)
+
+				require.Equal(t, "az1", application.Camunda.Document.DefaultStoreID)
+				require.Equal(t, "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}", application.Camunda.Document.Azure["az1"].ConnectionString)
+			},
+		},
+		{
+			Name: "TestAzureDocumentStoreConnectionStringOmittedWhenInactive",
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-azure-documentstore.yaml"),
+			},
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": "aws",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				var application struct {
+					Camunda struct {
+						Document struct {
+							DefaultStoreID string `json:"default-store-id"`
+							Azure          map[string]struct {
+								ConnectionString string `json:"connection-string"`
+							} `json:"azure"`
+						} `json:"document"`
+					} `json:"camunda"`
+				}
+				helm.UnmarshalK8SYaml(t, configmap.Data["application.yaml"], &application)
+
+				require.Equal(t, "aws", application.Camunda.Document.DefaultStoreID)
+				require.Empty(t, application.Camunda.Document.Azure)
+			},
+		},
+		{
+			Name: "TestAzureDocumentStoreConnectionStringOmittedWithoutExtraConfiguration",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                        "azure",
+				"global.documentStore.type.azure.connectionString.secret.existingSecret":    "azure-document-store",
+				"global.documentStore.type.azure.connectionString.secret.existingSecretKey": "connection-string",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				var application struct {
+					Camunda struct {
+						Document struct {
+							DefaultStoreID string         `json:"default-store-id"`
+							Azure          map[string]any `json:"azure"`
+						} `json:"document"`
+					} `json:"camunda"`
+				}
+				helm.UnmarshalK8SYaml(t, configmap.Data["application.yaml"], &application)
+
+				require.Empty(t, application.Camunda.Document.DefaultStoreID)
+				require.Empty(t, application.Camunda.Document.Azure)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapLegacyTemplateTest) TestZeebeMaxMessageSizeUsesEngineDefault() {
 	testCases := []testhelpers.TestCase{
 		{

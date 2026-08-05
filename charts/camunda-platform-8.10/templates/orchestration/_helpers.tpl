@@ -360,7 +360,14 @@ and
 {{- end -}}
 
 {{- define "orchestration.hasAzureDocumentStore" -}}
-{{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.documentStore.type.azure.connectionString) -}}
+{{- $storeId := lower .Values.global.documentStore.activeStoreId -}}
+{{- and
+    (eq (include "camundaPlatform.extraConfigHasPath" (dict
+        "extraConfiguration" .Values.orchestration.extraConfiguration
+        "path" (list "camunda" "document" "azure" $storeId)
+    )) "true")
+  (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.documentStore.type.azure.connectionString)) "true")
+-}}
 {{- end -}}
 
 
