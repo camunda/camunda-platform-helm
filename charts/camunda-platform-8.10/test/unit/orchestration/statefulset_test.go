@@ -200,13 +200,13 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraInitContainers",
 			Values: map[string]string{
-				"orchestration.initContainers[0].name":                      "init-container-{{ .Release.Name }}",
-				"orchestration.initContainers[0].image":                     "busybox:1.28",
-				"orchestration.initContainers[0].command[0]":                "sh",
-				"orchestration.initContainers[0].command[1]":                "-c",
-				"orchestration.initContainers[0].command[2]":                "top",
-				"orchestration.initContainers[0].volumeMounts[0].name":      "exporters",
-				"orchestration.initContainers[0].volumeMounts[0].mountPath": "/exporters/",
+				"orchestration.extraInitContainers[0].name":                      "init-container-{{ .Release.Name }}",
+				"orchestration.extraInitContainers[0].image":                     "busybox:1.28",
+				"orchestration.extraInitContainers[0].command[0]":                "sh",
+				"orchestration.extraInitContainers[0].command[1]":                "-c",
+				"orchestration.extraInitContainers[0].command[2]":                "top",
+				"orchestration.extraInitContainers[0].volumeMounts[0].name":      "exporters",
+				"orchestration.extraInitContainers[0].volumeMounts[0].mountPath": "/exporters/",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet

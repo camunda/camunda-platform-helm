@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"maps"
 	"regexp"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -52,7 +53,12 @@ func goldenValues(setValues map[string]string) map[string]string {
 	values["global.identity.auth.console.existingSecret.name"] = "camunda-credentials"
 	values["global.identity.auth.optimize.secret.existingSecret"] = "camunda-credentials"
 	values["global.identity.auth.optimize.secret.existingSecretKey"] = "identity-optimize-client-token"
-	if _, ok := values["orchestration.data.secondaryStorage.type"]; !ok {
+	_, hasStorageType := values["orchestration.data.secondaryStorage.type"]
+	hasNoSecondaryStorage := strings.EqualFold(values["global.noSecondaryStorage"], "true")
+	hasRDBMS := strings.EqualFold(values["orchestration.exporters.rdbms.enabled"], "true")
+	hasOptimizeElasticsearch := strings.EqualFold(values["optimize.database.elasticsearch.enabled"], "true")
+	hasOptimizeOpenSearch := strings.EqualFold(values["optimize.database.opensearch.enabled"], "true")
+	if !hasStorageType && !hasNoSecondaryStorage && !hasRDBMS && !hasOptimizeElasticsearch && !hasOptimizeOpenSearch {
 		values["orchestration.data.secondaryStorage.type"] = "elasticsearch"
 	}
 	return values

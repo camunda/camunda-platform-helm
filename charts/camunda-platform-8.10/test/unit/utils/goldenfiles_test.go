@@ -53,6 +53,42 @@ func TestGoldenValuesPreservesStorageType(t *testing.T) {
 	require.Equal(t, "opensearch", values["orchestration.data.secondaryStorage.type"])
 }
 
+func TestGoldenValuesDoesNotOverrideStorageSelectors(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name  string
+		key   string
+		value string
+	}{
+		{name: "no secondary storage", key: "global.noSecondaryStorage", value: "true"},
+		{name: "RDBMS", key: "orchestration.exporters.rdbms.enabled", value: "true"},
+		{name: "Optimize Elasticsearch", key: "optimize.database.elasticsearch.enabled", value: "true"},
+		{name: "Optimize OpenSearch", key: "optimize.database.opensearch.enabled", value: "true"},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			values := goldenValues(map[string]string{testCase.key: testCase.value})
+
+			require.NotContains(t, values, "orchestration.data.secondaryStorage.type")
+		})
+	}
+}
+
+func TestGoldenValuesDefaultsStorageWhenSelectorsAreDisabled(t *testing.T) {
+	t.Parallel()
+
+	values := goldenValues(map[string]string{
+		"global.noSecondaryStorage":               "false",
+		"orchestration.exporters.rdbms.enabled":   "false",
+		"optimize.database.elasticsearch.enabled": "false",
+		"optimize.database.opensearch.enabled":    "false",
+	})
+
+	require.Equal(t, "elasticsearch", values["orchestration.data.secondaryStorage.type"])
+}
+
 func TestGoldenIgnoredLinesClonesInput(t *testing.T) {
 	t.Parallel()
 
