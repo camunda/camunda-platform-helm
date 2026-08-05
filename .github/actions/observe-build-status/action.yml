@@ -40,7 +40,7 @@ runs:
     # Composite actions cannot access the secrets context directly; callers must
     # pass vault config as inputs so they resolve correctly here via inputs.*.
     continue-on-error: true
-    uses: hashicorp/vault-action@v4.0.0
+    uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
     if: |
       inputs.secret_vault_address != ''
       && inputs.secret_vault_jwt_path != ''
