@@ -87,13 +87,9 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// TestConsoleConfigKeysWarningRendersInConfigMap pins the consolidated
-// "console.* configuration keys have no effect in 8.10" warning (constraints.tpl)
-// to actual rendered output: it sets a non-"enabled" console.* key and asserts
-// the warning text appears in the "-warnings" ConfigMap. Without this test,
-// deleting the warning block in constraints.tpl would still pass
-// coverage_test.go (which only checks the "console.*" string is referenced),
-// leaving a silent regression.
+// TestConsoleConfigKeysWarningRendersInConfigMap asserts that setting a
+// non-"enabled" console.* key renders the consolidated console consolidation
+// warning into the "-warnings" ConfigMap.
 func (s *ConfigMapWarningsTemplateTest) TestConsoleConfigKeysWarningRendersInConfigMap() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -118,12 +114,10 @@ func (s *ConfigMapWarningsTemplateTest) TestConsoleConfigKeysWarningRendersInCon
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap pins the
-// separate global.identity.auth.console keyDeprecated warning (the one whose
-// migration hint Fix A narrowed) to actual rendered output. Setting any child
-// under global.identity.auth.console makes hasKey ".console" true, firing the
-// camundaPlatform.keyDeprecated helper. Assert both the deprecated oldName and
-// the narrowed migration target appear in the rendered "-warnings" ConfigMap.
+// TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap asserts that
+// setting any child under global.identity.auth.console renders the
+// "no replacement" removal warning into the "-warnings" ConfigMap, and that no
+// migration target is suggested for that subtree.
 func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -138,8 +132,10 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecation
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
 				s.Require().Contains(configmap.Data["warnings"],
-					`The Helm values file key "global.identity.auth.console" is deprecated`)
+					`DEPRECATION: "global.identity.auth.console.*" is no longer used in Camunda 8.10.`)
 				s.Require().Contains(configmap.Data["warnings"],
+					"this key has no replacement")
+				s.Require().NotContains(configmap.Data["warnings"],
 					"global.identity.auth.camundaHub.webModeler.*")
 			},
 		},
