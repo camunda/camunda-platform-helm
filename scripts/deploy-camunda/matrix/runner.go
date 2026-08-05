@@ -27,6 +27,7 @@ import (
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/entra"
 	"scripts/deploy-camunda/pkg/deployer"
+	"scripts/deploy-camunda/pkg/redaction"
 	"scripts/prepare-helm-values/pkg/env"
 )
 
@@ -1244,9 +1245,10 @@ func writeDiagnosticsSummary(runDir string, summary diagnosticsSummary) error {
 	if err != nil {
 		return fmt.Errorf("marshal diagnostics summary: %w", err)
 	}
-	if err := os.WriteFile(summaryPath, append(b, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(summaryPath, append(b, '\n'), 0o600); err != nil {
 		return fmt.Errorf("write diagnostics summary: %w", err)
 	}
+	_ = os.Chmod(summaryPath, 0o600)
 	return nil
 }
 
@@ -1265,9 +1267,10 @@ func writeDiagnosticsReadme(runDir string, summary diagnosticsSummary) error {
 	}
 
 	readmePath := filepath.Join(runDir, "README.txt")
-	if err := os.WriteFile(readmePath, []byte(b.String()), 0o644); err != nil {
+	if err := os.WriteFile(readmePath, []byte(b.String()), 0o600); err != nil {
 		return fmt.Errorf("write diagnostics readme: %w", err)
 	}
+	_ = os.Chmod(readmePath, 0o600)
 	return nil
 }
 
@@ -1287,7 +1290,7 @@ func collectDiagnostics(namespace, kubeContext string) string {
 
 	runDir := diagnosticsRunDir(namespace, time.Now())
 	logsDir := filepath.Join(runDir, "logs")
-	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+	if err := os.MkdirAll(logsDir, 0o700); err != nil {
 		logging.Logger.Warn().Err(err).Str("path", logsDir).Msg("failed to create diagnostics logs directory")
 		return ""
 	}
@@ -1301,9 +1304,9 @@ func collectDiagnostics(namespace, kubeContext string) string {
 
 	// Pods
 	if pods, err := kube.GetPods(ctx, kubeContext, namespace); err == nil && pods != "" {
-		summary.Pods = pods
+		summary.Pods = redaction.Text(pods)
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("get pods: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get pods: %v", err)))
 	}
 
 	// Events (truncate to last 20 lines)
@@ -1312,9 +1315,9 @@ func collectDiagnostics(namespace, kubeContext string) string {
 		if len(lines) > 21 { // 1 header + 20 events
 			lines = append(lines[:1], lines[len(lines)-20:]...)
 		}
-		summary.Events = strings.Join(lines, "\n")
+		summary.Events = redaction.Text(strings.Join(lines, "\n"))
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("get events: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get events: %v", err)))
 	}
 
 	// Logs from all pods: one file per pod under logs/.
@@ -1325,19 +1328,20 @@ func collectDiagnostics(namespace, kubeContext string) string {
 
 			logs, logErr := kube.GetPodLogs(ctx, kubeContext, namespace, pod, diagnosticsPodTailLines)
 			if logErr != nil {
-				entry.Error = logErr.Error()
+				entry.Error = redaction.Text(logErr.Error())
 				summary.PodLogs = append(summary.PodLogs, entry)
-				summary.Errors = append(summary.Errors, fmt.Sprintf("get pod logs (%s): %v", pod, logErr))
+				summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get pod logs (%s): %v", pod, logErr)))
 				continue
 			}
 
 			if logs != "" {
 				relPath := filepath.Join("logs", sanitizeDiagnosticsFilename(pod)+".log")
 				absPath := filepath.Join(runDir, relPath)
-				if err := os.WriteFile(absPath, []byte(logs), 0o644); err != nil {
+				if err := os.WriteFile(absPath, []byte(redaction.Text(logs)), 0o600); err != nil {
 					entry.Error = fmt.Sprintf("write log file: %v", err)
 					summary.Errors = append(summary.Errors, fmt.Sprintf("write pod logs (%s): %v", pod, err))
 				} else {
+					_ = os.Chmod(absPath, 0o600)
 					entry.File = relPath
 				}
 			}
@@ -1345,7 +1349,7 @@ func collectDiagnostics(namespace, kubeContext string) string {
 			summary.PodLogs = append(summary.PodLogs, entry)
 		}
 	} else {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("list pod names: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("list pod names: %v", err)))
 	}
 
 	// PVCs: state + describe. Key evidence for volume-mount and provisioning hangs
@@ -1353,14 +1357,14 @@ func collectDiagnostics(namespace, kubeContext string) string {
 	// after per-pod logs so that, under the shared collection deadline, the
 	// higher-value pod logs are not starved by the slower `describe pvc`.
 	if pvcs, err := kube.GetPVCs(ctx, kubeContext, namespace); err == nil && pvcs != "" {
-		summary.PVCs = pvcs
+		summary.PVCs = redaction.Text(pvcs)
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("get pvc: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get pvc: %v", err)))
 	}
 	if pvcDesc, err := kube.DescribePVCs(ctx, kubeContext, namespace); err == nil && pvcDesc != "" {
-		summary.PVCDescribe = pvcDesc
+		summary.PVCDescribe = redaction.Text(pvcDesc)
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("describe pvc: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("describe pvc: %v", err)))
 	}
 
 	if err := writeDiagnosticsSummary(runDir, summary); err != nil {
@@ -1391,11 +1395,11 @@ func appendTestOutputToDiagnostics(err error, namespace, diagPath string) string
 	}
 
 	// Truncate test output to the last 200 lines to keep diagnostics files manageable.
-	output := lastNLines(testErr.Output, 200)
+	output := redaction.Text(lastNLines(testErr.Output, 200))
 	runDir := diagPath
 	if runDir == "" {
 		runDir = diagnosticsRunDir(namespace, time.Now())
-		if err := os.MkdirAll(filepath.Join(runDir, "logs"), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(runDir, "logs"), 0o700); err != nil {
 			logging.Logger.Warn().Err(err).Str("path", runDir).Msg("failed to create diagnostics directory for test output")
 			return ""
 		}
@@ -1424,10 +1428,11 @@ func appendTestOutputToDiagnostics(err error, namespace, diagPath string) string
 	summary.TestOutputLast200 = output
 
 	testOutputPath := filepath.Join(runDir, "test-output.txt")
-	if err := os.WriteFile(testOutputPath, []byte(output), 0o644); err != nil {
+	if err := os.WriteFile(testOutputPath, []byte(output), 0o600); err != nil {
 		logging.Logger.Warn().Err(err).Str("path", testOutputPath).Msg("failed to write test output file")
 		summary.Errors = append(summary.Errors, fmt.Sprintf("write test output: %v", err))
 	}
+	_ = os.Chmod(testOutputPath, 0o600)
 
 	if err := writeDiagnosticsSummary(runDir, summary); err != nil {
 		logging.Logger.Warn().Err(err).Str("path", summaryPath).Msg("failed to write diagnostics summary with test output")

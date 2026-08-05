@@ -12,6 +12,7 @@ import (
 
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/pkg/redaction"
 
 	"github.com/spf13/cobra"
 )
@@ -125,14 +126,14 @@ func printNamespaceDiagnostics(ctx context.Context, w io.Writer, src podDiagnost
 	emit := func(title string, out string, err error) {
 		section(title)
 		if err != nil {
-			fmt.Fprintf(w, "(error: %v)\n", err)
+			fmt.Fprintf(w, "(error: %s)\n", redaction.Text(err.Error()))
 			return
 		}
 		if out == "" {
 			fmt.Fprintln(w, "(none)")
 			return
 		}
-		fmt.Fprintln(w, out)
+		fmt.Fprintln(w, redaction.Text(out))
 	}
 
 	pods, podsErr := src.GetPods(ctx, kubeContext, namespace)
@@ -155,7 +156,7 @@ func printNamespaceDiagnostics(ctx context.Context, w io.Writer, src podDiagnost
 	targets, err := listPods(ctx, kubeContext, namespace)
 	if err != nil {
 		section(listTitle)
-		fmt.Fprintf(w, "(error: %v)\n", err)
+		fmt.Fprintf(w, "(error: %s)\n", redaction.Text(err.Error()))
 		return
 	}
 	sort.Strings(targets)
