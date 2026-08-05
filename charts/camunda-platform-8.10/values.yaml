@@ -620,6 +620,12 @@ global:
   # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
   # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
   multiregion:
+    ## @param global.multiregion.mode defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.
+    mode: legacy
+    ## @param global.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
+    zone: ""
+    ## @param global.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode.
+    zones: []
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
     ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.

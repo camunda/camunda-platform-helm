@@ -69,14 +69,28 @@ camunda:
     {{- end }}
 
   cluster:
+    {{- if ne (include "orchestration.zoned" .) "true" }}
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
     node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
-    size: {{ .Values.orchestration.clusterSize | quote }}
-    replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
+    {{- end }}
+    size: {{ include "orchestration.clusterSize" . | quote }}
+    replication-factor: {{ include "orchestration.replicationFactor" . | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    {{- if eq (include "orchestration.zoned" .) "true" }}
+    partitioning:
+      scheme: ZONE_AWARE
+      zone-aware:
+        zones:
+        {{- range .Values.global.multiregion.zones }}
+          - name: {{ .name | quote }}
+            number-of-brokers: {{ .numberOfBrokers }}
+            number-of-replicas: {{ .numberOfReplicas }}
+            priority: {{ .priority }}
+        {{- end }}
+    {{- end }}
     # zeebe.broker.cluster
-    {{- if le (int .Values.global.multiregion.regions) 1 }}
+    {{- if and (ne (include "orchestration.zoned" .) "true") (le (int .Values.global.multiregion.regions) 1) }}
     initial-contact-points:
     {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
@@ -313,7 +327,7 @@ zeebe:
 
     # zeebe.broker.network
     network:
-      {{- if gt (int .Values.global.multiregion.regions) 1 }}
+      {{- if or (eq (include "orchestration.zoned" .) "true") (gt (int .Values.global.multiregion.regions) 1) }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
       {{- else }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
