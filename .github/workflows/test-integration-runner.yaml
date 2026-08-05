@@ -1338,6 +1338,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: "${{ github.job }}/${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}"
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
@@ -1636,6 +1637,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: "${{ github.job }}/${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}"
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
