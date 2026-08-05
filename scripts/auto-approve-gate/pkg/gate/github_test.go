@@ -183,10 +183,10 @@ func TestGitHubClient_ListReviews_pagination(t *testing.T) {
 			require.NoError(t, json.NewEncoder(w).Encode([]reviewResponse{
 				{ID: 1, User: struct {
 					Login string `json:"login"`
-				}{Login: "github-actions[bot]"}, CommitID: "sha1", State: "APPROVED"},
+				}{Login: "github-actions[bot]"}, CommitID: "sha1", State: "APPROVED", Body: ApprovalBodyRenovate},
 				{ID: 2, User: struct {
 					Login string `json:"login"`
-				}{Login: "distro-ci[bot]"}, CommitID: "sha2", State: "APPROVED"},
+				}{Login: "distro-ci[bot]"}, CommitID: "sha2", State: "APPROVED", Body: ApprovalBodyHuman},
 			}))
 		case "2":
 			require.NoError(t, json.NewEncoder(w).Encode([]reviewResponse{}))
@@ -200,8 +200,8 @@ func TestGitHubClient_ListReviews_pagination(t *testing.T) {
 	reviews, err := testGitHubClient(t, srv).ListReviews(9)
 	require.NoError(t, err)
 	require.Len(t, reviews, 2)
-	assert.Equal(t, Review{ID: 1, UserLogin: "github-actions[bot]", CommitID: "sha1", State: "APPROVED"}, reviews[0])
-	assert.Equal(t, Review{ID: 2, UserLogin: "distro-ci[bot]", CommitID: "sha2", State: "APPROVED"}, reviews[1])
+	assert.Equal(t, Review{ID: 1, UserLogin: "github-actions[bot]", CommitID: "sha1", State: "APPROVED", Body: ApprovalBodyRenovate}, reviews[0])
+	assert.Equal(t, Review{ID: 2, UserLogin: "distro-ci[bot]", CommitID: "sha2", State: "APPROVED", Body: ApprovalBodyHuman}, reviews[1])
 }
 
 func TestGitHubClient_CreateReview(t *testing.T) {

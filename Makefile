@@ -39,7 +39,6 @@ build.vault-secret-mapper:
 install.vault-secret-mapper:
 	cd scripts/vault-secret-mapper && go mod tidy && go install .
 
-
 .PHONY: build.auto-approve-gate
 build.auto-approve-gate:
 	cd scripts/auto-approve-gate && go mod tidy && go build .

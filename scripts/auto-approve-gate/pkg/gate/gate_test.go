@@ -410,6 +410,18 @@ func TestDecide_table(t *testing.T) {
 			warnings: []string{"Could not read PR metadata; requiring human review."},
 		},
 		{
+			name: "fail closed PR meta absent without error",
+			in: Inputs{
+				Author:            "eamonnmoloney",
+				EventActor:        "eamonnmoloney",
+				Allowlist:         []string{"eamonnmoloney"},
+				ProtectedPatterns: defaultProtected,
+			},
+			allowed:  false,
+			lane:     LaneHuman,
+			warnings: []string{"Could not read PR metadata; requiring human review."},
+		},
+		{
 			name: "fail closed PR files API error",
 			in: Inputs{
 				Author:            "eamonnmoloney",

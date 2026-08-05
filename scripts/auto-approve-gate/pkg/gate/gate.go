@@ -127,7 +127,7 @@ func Decide(in Inputs) Decision {
 		}
 	}
 
-	if in.PRMetaErr != nil {
+	if in.PRMetaErr != nil || in.PRMeta == nil {
 		return Decision{
 			Allowed:  false,
 			Lane:     lane,

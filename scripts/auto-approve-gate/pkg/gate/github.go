@@ -76,6 +76,7 @@ type Review struct {
 	UserLogin string
 	CommitID  string
 	State     string
+	Body      string
 }
 
 type reviewResponse struct {
@@ -85,6 +86,7 @@ type reviewResponse struct {
 	} `json:"user"`
 	CommitID string `json:"commit_id"`
 	State    string `json:"state"`
+	Body     string `json:"body"`
 }
 
 func (c *GitHubClient) GetPullRequest(pr int) (PRMeta, error) {
@@ -148,6 +150,7 @@ func (c *GitHubClient) ListReviews(pr int) ([]Review, error) {
 				UserLogin: r.User.Login,
 				CommitID:  r.CommitID,
 				State:     r.State,
+				Body:      r.Body,
 			})
 		}
 		page++

@@ -20,7 +20,13 @@ import (
 	"io"
 )
 
-const RenovateApprover = "github-actions[bot]"
+const (
+	RenovateApprover   = "github-actions[bot]"
+	RenovateApproveApp = "renovate-approve[bot]"
+
+	ApprovalBodyHuman    = "Auto-approved: author is on .github/auto-approve-allowlist.txt."
+	ApprovalBodyRenovate = "Auto-approved: Renovate PR (re-approved on every push)."
+)
 
 type ApproveClient interface {
 	GetPullRequestHeadSHA(pr int) (string, error)
@@ -32,9 +38,9 @@ type ApproveClient interface {
 func resolve(lane string) (approver, body string, err error) {
 	switch lane {
 	case LaneHuman:
-		return DistroCIAuthor, "Auto-approved: author is on .github/auto-approve-allowlist.txt.", nil
+		return DistroCIAuthor, ApprovalBodyHuman, nil
 	case LaneRenovate:
-		return RenovateApprover, "Auto-approved: Renovate PR (re-approved on every push).", nil
+		return RenovateApprover, ApprovalBodyRenovate, nil
 	}
 	return "", "", fmt.Errorf("unknown lane: %s", lane)
 }
@@ -68,13 +74,20 @@ func Apply(lane string, prNumber int, vettedSHA string, client ApproveClient, st
 	return client.CreateReview(prNumber, vettedSHA, "APPROVE", body)
 }
 
-func Dismiss(prNumber int, client ApproveClient, stdout io.Writer) error {
-	botLogins := map[string]bool{
-		"github-actions[bot]":   true,
-		DistroCIAuthor:          true,
-		"renovate-approve[bot]": true,
+func isStaleAutoApproval(r Review) bool {
+	if r.State != "APPROVED" {
+		return false
 	}
+	switch r.UserLogin {
+	case RenovateApprover, DistroCIAuthor:
+		return r.Body == ApprovalBodyHuman || r.Body == ApprovalBodyRenovate
+	case RenovateApproveApp:
+		return true
+	}
+	return false
+}
 
+func Dismiss(prNumber int, client ApproveClient, stdout io.Writer) error {
 	reviews, err := client.ListReviews(prNumber)
 	if err != nil {
 		return err
@@ -82,13 +95,14 @@ func Dismiss(prNumber int, client ApproveClient, stdout io.Writer) error {
 
 	var errs []error
 	for _, r := range reviews {
-		if r.State == "APPROVED" && botLogins[r.UserLogin] {
-			if err := client.DismissReview(prNumber, r.ID, "Head is no longer auto-approvable; dismissing stale bot approval."); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			fmt.Fprintf(stdout, "::notice::dismissed stale bot approval %d\n", r.ID)
+		if !isStaleAutoApproval(r) {
+			continue
 		}
+		if err := client.DismissReview(prNumber, r.ID, "Head is no longer auto-approvable; dismissing stale bot approval."); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		fmt.Fprintf(stdout, "::notice::dismissed stale bot approval %d\n", r.ID)
 	}
 	return errors.Join(errs...)
 }

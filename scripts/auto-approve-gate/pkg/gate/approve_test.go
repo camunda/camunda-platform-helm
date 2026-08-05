@@ -170,14 +170,16 @@ func TestApply_unknownLane(t *testing.T) {
 	assert.Empty(t, client.createCalls)
 }
 
-func TestDismiss_dismissesOnlyApprovedBots(t *testing.T) {
+func TestDismiss_dismissesOnlyOwnApprovals(t *testing.T) {
 	client := &fakeApproveClient{
 		reviews: []Review{
-			{ID: 1, UserLogin: "github-actions[bot]", State: "APPROVED"},
-			{ID: 2, UserLogin: DistroCIAuthor, State: "APPROVED"},
-			{ID: 3, UserLogin: "renovate-approve[bot]", State: "APPROVED"},
+			{ID: 1, UserLogin: RenovateApprover, State: "APPROVED", Body: ApprovalBodyRenovate},
+			{ID: 2, UserLogin: DistroCIAuthor, State: "APPROVED", Body: ApprovalBodyHuman},
+			{ID: 3, UserLogin: RenovateApproveApp, State: "APPROVED"},
 			{ID: 4, UserLogin: "eamonnmoloney", State: "APPROVED"},
-			{ID: 5, UserLogin: "github-actions[bot]", State: "COMMENTED"},
+			{ID: 5, UserLogin: RenovateApprover, State: "COMMENTED", Body: ApprovalBodyRenovate},
+			{ID: 6, UserLogin: RenovateApprover, State: "APPROVED", Body: ""},
+			{ID: 7, UserLogin: DistroCIAuthor, State: "APPROVED", Body: "LGTM"},
 		},
 	}
 	var buf bytes.Buffer
@@ -185,6 +187,22 @@ func TestDismiss_dismissesOnlyApprovedBots(t *testing.T) {
 	err := Dismiss(1, client, &buf)
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []int64{1, 2, 3}, client.dismissedIDs)
+}
+
+// The release-please flow (chart-release-public.yaml) approves its own PR as
+// github-actions[bot] and relies on that approval to auto-merge.
+func TestDismiss_leavesForeignBotApprovalsAlone(t *testing.T) {
+	client := &fakeApproveClient{
+		reviews: []Review{
+			{ID: 1, UserLogin: RenovateApprover, State: "APPROVED", Body: ""},
+			{ID: 2, UserLogin: DistroCIAuthor, State: "APPROVED", Body: "Approved by release automation."},
+		},
+	}
+	var buf bytes.Buffer
+
+	err := Dismiss(1, client, &buf)
+	require.NoError(t, err)
+	assert.Empty(t, client.attemptedIDs)
 }
 
 func TestDismiss_listReviewsError(t *testing.T) {
@@ -199,8 +217,8 @@ func TestDismiss_listReviewsError(t *testing.T) {
 func TestDismiss_bestEffortAttemptsAllOnError(t *testing.T) {
 	client := &fakeApproveClient{
 		reviews: []Review{
-			{ID: 1, UserLogin: "github-actions[bot]", State: "APPROVED"},
-			{ID: 2, UserLogin: DistroCIAuthor, State: "APPROVED"},
+			{ID: 1, UserLogin: RenovateApprover, State: "APPROVED", Body: ApprovalBodyRenovate},
+			{ID: 2, UserLogin: DistroCIAuthor, State: "APPROVED", Body: ApprovalBodyHuman},
 		},
 		failIDs: map[int64]bool{1: true},
 	}
