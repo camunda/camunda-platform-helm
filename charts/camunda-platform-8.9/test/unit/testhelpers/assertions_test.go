@@ -15,7 +15,6 @@
 package testhelpers
 
 import (
-	"flag"
 	"maps"
 	"os"
 	"path/filepath"
@@ -23,8 +22,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-var _ = flag.Bool("update-golden", false, "accepted for chart-wide golden updates")
 
 func TestDeclarativeAssertions(t *testing.T) {
 	t.Parallel()

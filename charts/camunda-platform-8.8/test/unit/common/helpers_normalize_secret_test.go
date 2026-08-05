@@ -78,6 +78,34 @@ func (s *normalizeSecretConfigTest) TestDeprecatedGlobalOpenSearchSecretCompatib
 			},
 		},
 		{
+			Name: "Deprecated global OpenSearch legacy existing-secret compatibility",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"global.elasticsearch.enabled":             "false",
+				"elasticsearch.enabled":                    "false",
+				"global.opensearch.enabled":                "true",
+				"global.opensearch.auth.existingSecret":    "legacy-secret",
+				"global.opensearch.auth.existingSecretKey": "legacy-key",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "legacy-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "legacy-key",
+			},
+		},
+		{
+			Name: "Deprecated global OpenSearch plaintext-password compatibility",
+			Values: map[string]string{
+				"orchestration.enabled":           "true",
+				"global.elasticsearch.enabled":    "false",
+				"elasticsearch.enabled":           "false",
+				"global.opensearch.enabled":       "true",
+				"global.opensearch.auth.password": "plain-password",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].value": "plain-password",
+			},
+		},
+		{
 			Name: "Deprecated global OpenSearch without secret omits password env",
 			Values: map[string]string{
 				"orchestration.enabled":        "true",
@@ -85,10 +113,10 @@ func (s *normalizeSecretConfigTest) TestDeprecatedGlobalOpenSearchSecretCompatib
 				"elasticsearch.enabled":        "false",
 				"global.opensearch.enabled":    "true",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.NotContains(t, output, "VALUES_OPENSEARCH_PASSWORD")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
 			},
+			Unexpected: []string{"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')]"},
 		},
 		{
 			Name: "Deprecated disabled global OpenSearch omits password env",
@@ -97,10 +125,10 @@ func (s *normalizeSecretConfigTest) TestDeprecatedGlobalOpenSearchSecretCompatib
 				"global.opensearch.enabled":                  "false",
 				"global.opensearch.auth.secret.inlineSecret": "password",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.NotContains(t, output, "VALUES_OPENSEARCH_PASSWORD")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
 			},
+			Unexpected: []string{"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')]"},
 		},
 	}
 
@@ -181,10 +209,12 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 				"orchestration.enabled":                 "true",
 				"global.documentStore.type.aws.enabled": "false",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.NotContains(t, output, "AWS_ACCESS_KEY_ID")
-				require.NotContains(t, output, "AWS_SECRET_ACCESS_KEY")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
+			},
+			Unexpected: []string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')]",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')]",
 			},
 		},
 		{
@@ -195,10 +225,12 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 				"global.documentStore.type.aws.accessKeyId.secret.inlineSecret":     "access-key",
 				"global.documentStore.type.aws.secretAccessKey.secret.inlineSecret": "secret-key",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.NotContains(t, output, "AWS_ACCESS_KEY_ID")
-				require.NotContains(t, output, "AWS_SECRET_ACCESS_KEY")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
+			},
+			Unexpected: []string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')]",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')]",
 			},
 		},
 	}
@@ -302,10 +334,10 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 				"global.documentStore.type.gcp.secret.existingSecret":    "should-not-be-used",
 				"global.documentStore.type.gcp.secret.existingSecretKey": "should-not-be-used.json",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any GCP volumes when GCP document store is disabled
-				require.NotContains(t, output, "gcp-credentials-volume")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "connectors",
 			},
+			Unexpected: []string{"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')]"},
 		},
 	}
 

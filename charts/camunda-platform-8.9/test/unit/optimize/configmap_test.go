@@ -108,6 +108,7 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			Values: map[string]string{
 				"identity.enabled":                        "true",
 				"optimize.enabled":                        "true",
+				"global.elasticsearch.prefix":             "global-prefix",
 				"optimize.database.elasticsearch.enabled": "true",
 				"optimize.database.elasticsearch.prefix":  "optimize-prefix",
 			},
