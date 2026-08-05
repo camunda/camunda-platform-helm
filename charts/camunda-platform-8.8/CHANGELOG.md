@@ -1,5 +1,23 @@
 # Changelog
 
+## [13.12.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.4...camunda-platform-8.8-13.12.5) (2026-08-05)
+
+
+### Bug Fixes
+
+* only use document store configuration where required ([#6724](https://github.com/camunda/camunda-platform-helm/issues/6724)) ([7f3bc57](https://github.com/camunda/camunda-platform-helm/commit/7f3bc5765dd4daa0329be92283075bb33ca1267f))
+* remove publishNotReadyAddresses from orchestration client-facing service ([#6731](https://github.com/camunda/camunda-platform-helm/issues/6731)) ([d3cf11d](https://github.com/camunda/camunda-platform-helm/commit/d3cf11d114f897ed471903f4191d0851237d070f))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#6794](https://github.com/camunda/camunda-platform-helm/issues/6794)) ([6638138](https://github.com/camunda/camunda-platform-helm/commit/6638138359e25c035d8fbe9213f709d40fce5edd))
+* update camunda-platform-images (patch) ([#6744](https://github.com/camunda/camunda-platform-helm/issues/6744)) ([23a3e0a](https://github.com/camunda/camunda-platform-helm/commit/23a3e0a18db3f6a8ed22006fb260c69da5585479))
+* update camunda-platform-images (patch) ([#6765](https://github.com/camunda/camunda-platform-helm/issues/6765)) ([1626564](https://github.com/camunda/camunda-platform-helm/commit/1626564b81dd7a89d37e16ae6818a5c9c4ed1ea8))
+* update camunda-platform-images (patch) ([#6786](https://github.com/camunda/camunda-platform-helm/issues/6786)) ([d81c52b](https://github.com/camunda/camunda-platform-helm/commit/d81c52b2ac91f85f8d99816af220c12cff521baa))
+* update camunda-platform-images (patch) ([#6799](https://github.com/camunda/camunda-platform-helm/issues/6799)) ([b0b006b](https://github.com/camunda/camunda-platform-helm/commit/b0b006be9f9eb9d6680244bee4ab8cdffed56a05))
+* update patch-updates (patch) ([#6753](https://github.com/camunda/camunda-platform-helm/issues/6753)) ([077511c](https://github.com/camunda/camunda-platform-helm/commit/077511c5ab6d3c1b5ec34266cafbfca604332d94))
+
 ## [13.12.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.3...camunda-platform-8.8-13.12.4) (2026-07-30)
 
 
