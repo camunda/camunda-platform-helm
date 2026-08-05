@@ -71,4 +71,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Normalize orchestration internal REST URL when contextPath is root"
+      description: "Remove publishNotReadyAddresses from orchestration client-facing service"
+    - kind: fixed
+      description: "Only use document store configuration where required"
