@@ -54,9 +54,40 @@ var freeFormMapParents = map[string]struct{}{
 	"extraManifests":     {},
 }
 
-var handWrittenCovered = []string{
-	"console.enabled",
-	"webModeler.enabled",
+// bespokeWarnings map removed-key sets onto hand-written warning blocks in
+// constraints.tpl. Those blocks carry no "oldName" for the regex to find, so
+// each entry names a marker substring that must still be present in the
+// executable template body for the keys it covers to count as covered.
+var bespokeWarnings = []struct {
+	name   string
+	marker string
+	covers func(key string) bool
+}{
+	{
+		name:   "console.enabled deprecation",
+		marker: `\"console.enabled\" is deprecated and will be removed in a future version.`,
+		covers: func(key string) bool { return key == "console.enabled" },
+	},
+	{
+		name:   "consolidated console.* warning",
+		marker: `console.* configuration keys have no effect in 8.10`,
+		covers: func(key string) bool {
+			return key != "console.enabled" && strings.HasPrefix(key, "console.")
+		},
+	},
+	{
+		name:   "global.identity.auth.console.* removal warning",
+		marker: `\"global.identity.auth.console.*\" is no longer used in Camunda 8.10.`,
+		covers: func(key string) bool {
+			return key == "global.identity.auth.console" ||
+				strings.HasPrefix(key, "global.identity.auth.console.")
+		},
+	},
+	{
+		name:   "webModeler.enabled deprecation",
+		marker: `\"webModeler.enabled\" is deprecated and will be removed in a future version.`,
+		covers: func(key string) bool { return key == "webModeler.enabled" },
+	},
 }
 
 var allowlist = map[string]string{
@@ -84,26 +115,20 @@ func TestDeprecationKeyCoverage89To810(t *testing.T) {
 	constraintsBytes, err := os.ReadFile(constraintsTplPath)
 	require.NoError(t, err)
 
-	covered := parseCoveredKeys(string(constraintsBytes))
-	for _, key := range handWrittenCovered {
-		covered[key] = struct{}{}
-	}
+	executable := stripHelmComments(string(constraintsBytes))
+	covered := parseCoveredKeys(executable)
 
 	var uncovered []string
 	for key := range removed {
 		if _, ok := allowlist[key]; ok {
 			continue
 		}
-		// Exact-string setDifference can't distinguish "key removed" from "key's
-		// empty map grew children" (e.g. global.identity.keycloak.url was {} in
-		// 8.9 and {protocol,host,port} in 8.10). If the prev key has any
-		// descendant in curr, it expanded rather than being removed — not a
-		// deprecation gap. A truly-removed empty-map key has no curr descendant
-		// and is still flagged.
+		// A prev key with a descendant in curr expanded (empty map grew children,
+		// e.g. global.identity.keycloak.url) rather than being removed.
 		if hasDescendantIn(key, currKeys) {
 			continue
 		}
-		if isCovered(key, covered) {
+		if isCovered(key, covered, executable) {
 			continue
 		}
 		uncovered = append(uncovered, key)
@@ -150,11 +175,44 @@ func TestParseCoveredKeysIgnoresComments(t *testing.T) {
   "migration" "bar") }}
 */}}
 `
-	covered := parseCoveredKeys(input)
+	covered := parseCoveredKeys(stripHelmComments(input))
 	_, liveOK := covered["foo.live"]
 	require.True(t, liveOK, "live oldName should be covered")
 	_, commentedOK := covered["foo.commented"]
 	require.False(t, commentedOK, "commented-out oldName must not be covered")
+}
+
+// TestBespokeWarningMarkersPresent fails if a hand-written warning block that
+// bespokeWarnings relies on is removed or reworded, so its keys cannot silently
+// lose coverage.
+func TestBespokeWarningMarkersPresent(t *testing.T) {
+	t.Parallel()
+
+	constraintsBytes, err := os.ReadFile(constraintsTplPath)
+	require.NoError(t, err)
+
+	executable := stripHelmComments(string(constraintsBytes))
+	for _, warning := range bespokeWarnings {
+		// Asserted via strings.Contains rather than require.Contains to keep the
+		// whole constraints.tpl body out of the failure message.
+		require.True(t, strings.Contains(executable, warning.marker),
+			"constraints.tpl no longer contains the %s marker %q; update the warning or bespokeWarnings",
+			warning.name, warning.marker)
+	}
+}
+
+// TestBespokeWarningCoverageRequiresMarker pins that bespoke coverage is tied to
+// the warning text: with the marker absent the key is uncovered, and
+// "console.enabled" is never covered by the consolidated console.* warning.
+func TestBespokeWarningCoverageRequiresMarker(t *testing.T) {
+	t.Parallel()
+
+	covered := map[string]struct{}{}
+	consolidated := `"DEPRECATION: console.* configuration keys have no effect in 8.10 — Console has been consolidated into Camunda Hub."`
+
+	require.True(t, isCovered("console.nodeEnv", covered, consolidated))
+	require.False(t, isCovered("console.nodeEnv", covered, ""))
+	require.False(t, isCovered("console.enabled", covered, consolidated))
 }
 
 func flattenValuesFile(path string) (map[string]struct{}, error) {
@@ -184,8 +242,7 @@ func flattenKeys(prefix string, value any, keys map[string]struct{}) {
 	switch typed := value.(type) {
 	case map[string]any:
 		if len(typed) == 0 {
-			// Record the empty map's own prefix so an empty-map key has presence
-			// in the key set (otherwise a removed empty-map key escapes coverage).
+			// Record an empty map under its own prefix so it has presence in the key set.
 			if prefix != "" {
 				keys[prefix] = struct{}{}
 			}
@@ -238,12 +295,14 @@ func setDifference(a, b map[string]struct{}) map[string]struct{} {
 	return diff
 }
 
-func parseCoveredKeys(constraints string) map[string]struct{} {
-	// Strip Helm comment blocks first: an "oldName" "X" sitting inside a
-	// {{/* ... */}} comment (or a commented-out keyDeprecated invocation) is not
-	// executed and must NOT count as coverage — otherwise a commented-out
-	// warning would falsely pass the coverage check.
-	executable := helmCommentPattern.ReplaceAllString(constraints, "")
+// stripHelmComments removes {{/* ... */}} blocks so only the executable
+// template body is scanned: an "oldName" "X" or a warning marker sitting inside
+// a comment is not executed and must not count as coverage.
+func stripHelmComments(constraints string) string {
+	return helmCommentPattern.ReplaceAllString(constraints, "")
+}
+
+func parseCoveredKeys(executable string) map[string]struct{} {
 	covered := make(map[string]struct{})
 	for _, match := range oldNamePattern.FindAllStringSubmatch(executable, -1) {
 		covered[match[1]] = struct{}{}
@@ -251,9 +310,11 @@ func parseCoveredKeys(constraints string) map[string]struct{} {
 	return covered
 }
 
-func isCovered(key string, covered map[string]struct{}) bool {
-	if strings.HasPrefix(key, "console.") {
-		return true
+func isCovered(key string, covered map[string]struct{}, executable string) bool {
+	for _, warning := range bespokeWarnings {
+		if warning.covers(key) && strings.Contains(executable, warning.marker) {
+			return true
+		}
 	}
 
 	if _, ok := covered[key]; ok {
