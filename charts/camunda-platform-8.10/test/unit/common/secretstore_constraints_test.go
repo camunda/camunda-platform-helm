@@ -87,6 +87,52 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "GCP pathPrefix with invalid characters is rejected",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.a.pathPrefix": "camunda/",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "gcp.a.pathPrefix must contain only [a-zA-Z0-9_-]")
+			},
+		},
+		{
+			Name:     "Blank GCP projectId is rejected",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.a.projectId": "",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "projectId")
+			},
+		},
+		{
+			Name:     "Conflicting gcpServiceAccount across tenants is rejected",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.a.gcpServiceAccount":                         "one@my-project.iam.gserviceaccount.com",
+				"orchestration.secretStore.physicalTenants.tenanta.gcp.a.gcpServiceAccount": "two@my-project.iam.gserviceaccount.com",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "multiple distinct gcp.*.gcpServiceAccount values")
+			},
+		},
+		{
+			Name:     "GCP document-store credentials are rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.a.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+				"global.documentStore.activeStoreId":                "gcp",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "GOOGLE_APPLICATION_CREDENTIALS takes precedence over Workload Identity")
+			},
+		},
+		{
 			Name:     "Conflicting user ServiceAccount identity is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{

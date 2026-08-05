@@ -79,6 +79,21 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 			},
 		},
 		{
+			Name:     "GCP store sets the Workload Identity annotation",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
+				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var sa corev1.ServiceAccount
+				helm.UnmarshalK8SYaml(t, output, &sa)
+				s.Require().Equal("camunda@my-project.iam.gserviceaccount.com",
+					sa.Annotations["iam.gke.io/gcp-service-account"])
+			},
+		},
+		{
 			Name:     "Secret store annotations coexist with user-provided annotations",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
@@ -193,6 +208,24 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 				envNames := containerEnvNames(sts.Spec.Template.Spec.Containers)
 				s.Require().False(envNames["AWS_ACCESS_KEY_ID"])
 				s.Require().False(envNames["AWS_SECRET_ACCESS_KEY"])
+			},
+		},
+		{
+			Name:     "GCP store injects no static credentials",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
+				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var sts appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &sts)
+				envNames := containerEnvNames(sts.Spec.Template.Spec.Containers)
+				s.Require().False(envNames["GOOGLE_APPLICATION_CREDENTIALS"])
+				for _, v := range sts.Spec.Template.Spec.Volumes {
+					s.Require().NotEqual("gcp-credentials-volume", v.Name)
+				}
 			},
 		},
 		{

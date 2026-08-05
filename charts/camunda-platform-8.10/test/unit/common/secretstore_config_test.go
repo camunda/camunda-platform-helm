@@ -122,6 +122,40 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:     "GCP secret store renders kebab-case keys and strips gcpServiceAccount",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
+				"orchestration.secretStore.gcp.primary.pathPrefix":        "camunda",
+				"orchestration.secretStore.gcp.primary.endpoint":          "secretmanager.example.com:443",
+				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				config := s.applicationConfig(output)
+				s.Require().Contains(config, "gcp:")
+				s.Require().Contains(config, "project-id: my-project")
+				s.Require().Contains(config, "path-prefix: camunda")
+				s.Require().Contains(config, "endpoint: secretmanager.example.com:443")
+				// gcpServiceAccount is chart-only plumbing and must not leak into app config.
+				s.Require().NotContains(config, "gcpServiceAccount")
+				s.Require().NotContains(config, "gserviceaccount.com")
+			},
+		},
+		{
+			Name:     "GCP identity-only store retains its runtime id",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				config := s.applicationConfig(output)
+				s.Require().Contains(config, "gcp:")
+				s.Require().Contains(config, "primary: {}")
+			},
+		},
+		{
 			Name:     "No secret store renders no camunda.secrets block",
 			Template: "templates/orchestration/configmap.yaml",
 			Values:   baseValues(),
