@@ -50,27 +50,36 @@ func TestReleaseInfoGateway(t *testing.T) {
 func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "GatewayTLSExternalURLsUseGlobalHost",
+			Name: "GatewayTLSExternalURLsUseGlobalHostAndCustomPort",
 			Values: map[string]string{
 				"global.ingress.enabled":                   "false",
 				"global.gateway.enabled":                   "true",
 				"global.gateway.tls.enabled":               "true",
+				"global.gateway.tls.port":                  "8443",
 				"global.gateway.tls.secretName":            "camunda-tls",
 				"global.host":                              "camunda.example.com",
+				"identity.contextPath":                     "/identity",
 				"identity.enabled":                         "true",
 				"identityKeycloak.enabled":                 "true",
+				"optimize.contextPath":                     "/optimize",
 				"optimize.enabled":                         "true",
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 				"orchestration.gateway.grpc.enabled":       "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.contextPath":                   "/modeler",
+				"webModeler.restapi.mail.fromAddress":      "test@example.com",
 			},
 			Template: "templates/common/configmap-release.yaml",
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "url: https://camunda.example.com/operate")
-				require.Contains(t, output, "url: https://camunda.example.com/tasklist")
-				require.Contains(t, output, "grpc: https://grpc-camunda.example.com")
-				require.Contains(t, output, "http: https://camunda.example.com")
-				require.Contains(t, output, "https://camunda.example.com/auth")
+				require.Contains(t, output, "url: https://camunda.example.com:8443/identity")
+				require.Contains(t, output, "url: https://camunda.example.com:8443/modeler")
+				require.Contains(t, output, "url: https://camunda.example.com:8443/operate")
+				require.Contains(t, output, "url: https://camunda.example.com:8443/optimize")
+				require.Contains(t, output, "url: https://camunda.example.com:8443/tasklist")
+				require.Contains(t, output, "grpc: https://grpc-camunda.example.com:8443")
+				require.Contains(t, output, "http: https://camunda.example.com:8443")
+				require.Contains(t, output, "https://camunda.example.com:8443/auth")
 				require.NotContains(t, output, "http://localhost:8080")
 				require.NotContains(t, output, "http://localhost:26500")
 				require.NotContains(t, output, "http://localhost:8083")
@@ -93,11 +102,12 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 			},
 		},
 		{
-			Name: "PlaintextGatewayIgnoresInactiveIngressTLS",
+			Name: "PlaintextGatewayUsesCustomPortAndIgnoresInactiveIngressTLS",
 			Values: map[string]string{
 				"global.ingress.enabled":     "false",
 				"global.ingress.tls.enabled": "true",
 				"global.gateway.enabled":     "true",
+				"global.gateway.port":        "8080",
 				"global.gateway.tls.enabled": "false",
 				"global.host":                "camunda.example.com",
 				"identity.enabled":           "true",
@@ -106,7 +116,8 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 			Template: "templates/common/configmap-release.yaml",
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "http://camunda.example.com/auth")
+				require.Contains(t, output, "url: http://camunda.example.com:8080/operate")
+				require.Contains(t, output, "http://camunda.example.com:8080/auth")
 				require.NotContains(t, output, "https://camunda.example.com/auth")
 			},
 		},
