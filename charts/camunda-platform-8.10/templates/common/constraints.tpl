@@ -382,43 +382,22 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
 {{- end }}
 
-{{/*
-global.tls.optimize footgun: enabling Optimize TLS without providing
-the server cert material (either via the chart-managed `cert.secret.existingSecret`
-or via an explicit cert path in `optimize.env`) causes Spring Boot to crash
-on startup. Fail loudly at render time instead. This block governs the
-SERVER-side identity surface and is independent of the client-side
-`global.elasticsearch.tls.existingSecret` truststore.
-*/}}
+{{/* Optimize server TLS requires chart-managed or explicitly hand-wired cert material.
+     Governs the SERVER-side identity only; the client-side ES/OS truststore
+     (`optimize.database.*.tls.secret.existingSecret`) is a separate surface. */}}
 {{- if .Values.optimize.enabled }}
   {{- $envNames := list -}}
   {{- range $e := (.Values.optimize.env | default list) -}}
     {{- $envNames = append $envNames ($e.name | default "") -}}
   {{- end }}
   {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
-    {{- if not .Values.global.tls.optimize.cert.secret.existingSecret }}
-      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames)) }}
-        {{- $errorMessage := printf "%s %s %s"
-            "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
-            "Set global.tls.optimize.cert.secret.existingSecret (recommended) so the chart mounts the cert,"
-            "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching optimize.extraVolumes / extraVolumeMounts entries."
-        -}}
-        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-      {{- end }}
-    {{- end }}
-  {{- end }}
-  {{- if .Values.global.tls.optimize.proxyVerify.enabled }}
-    {{- if ne (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
-      {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.optimize.proxyVerify.enabled is true but Optimize server TLS is not enabled."
-          "Upstream verification only makes sense against a TLS backend; set global.tls.optimize.enabled: true (or wire SERVER_SSL_ENABLED=true via optimize.env, or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
-      -}}
-      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-    {{- end }}
-    {{- if not .Values.global.tls.optimize.proxyVerify.caSecret.secret.existingSecret }}
-      {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.optimize.proxyVerify.enabled is true but caSecret.secret.existingSecret is empty."
-          "Provide a Secret holding the CA bundle that the ingress should use to validate the Optimize server cert."
+    {{- $chartMountsCert := and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret -}}
+    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{- if not (or $chartMountsCert $handWiredCert) }}
+      {{- $errorMessage := printf "%s %s %s"
+          "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
+          "Set global.tls.optimize.enabled: true together with global.tls.optimize.cert.secret.existingSecret (recommended) so the chart mounts the cert -- note that existingSecret alone is NOT mounted unless global.tls.optimize.enabled is also true (e.g. when TLS is enabled only via optimize.env's SERVER_SSL_ENABLED=true),"
+          "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching optimize.extraVolumes / extraVolumeMounts entries."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
@@ -627,7 +606,7 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
-  {{- if and .Values.optimize.enabled .Values.global.tls.optimize.enabled (ne (include "camundaPlatform.hasCaBundle" .) "true") -}}
+  {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (ne (include "camundaPlatform.hasCaBundle" .) "true") -}}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "Optimize server TLS is enabled but global.tls.caBundle is not set."
@@ -934,15 +913,15 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{/* Warn when Optimize proxyVerify is enabled under Gateway API (HTTPRoute) — the
-       proxy-ssl-* annotations this block emits are consumed by NGINX Ingress only. */}}
-  {{- if and .Values.optimize.enabled .Values.global.tls.optimize.proxyVerify.enabled }}
-    {{- $warningMessage := printf "%s %s %s"
-        "[camunda][warning]"
-        "global.tls.optimize.proxyVerify is enabled, but Optimize in 8.10 is routed via Gateway API HTTPRoute — the proxy-ssl-* annotations this block emits are consumed by NGINX Ingress only, not by Gateway implementations."
-        "Your proxyVerify configuration is inert today. For Gateway API backend TLS verification, configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Optimize Service, or your gateway implementation's equivalent."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+    {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "Optimize TLS is enabled (the Optimize pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Optimize Service's port."
+          "Inbound routing to the Optimize UI and REST API will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Optimize Service, so the gateway re-encrypts traffic to the TLS-only pod."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
