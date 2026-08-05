@@ -14,12 +14,13 @@ import (
 
 // Style helpers for terminal output.
 var (
-	styleKey  = func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
-	styleVal  = func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleOk   = func(s string) string { return logging.Emphasize(s, gchalk.Green) }
-	styleErr  = func(s string) string { return logging.Emphasize(s, gchalk.Red) }
-	styleHead = func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-	styleWarn = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
+	styleKey   = func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
+	styleVal   = func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
+	styleOk    = func(s string) string { return logging.Emphasize(s, gchalk.Green) }
+	styleErr   = func(s string) string { return logging.Emphasize(s, gchalk.Red) }
+	styleHead  = func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+	styleWarn  = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
+	isTerminal = logging.IsTerminal
 )
 
 // redactDeployOpts returns a copy of deploy options with sensitive fields redacted for logging.
@@ -80,12 +81,7 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 	release := result.Release
 	testEnvFile := result.TestEnvFile
 	layeredFiles := result.LayeredFiles
-	firstPwd := result.FirstUserPassword
-	secondPwd := result.SecondUserPassword
-	thirdPwd := result.ThirdUserPassword
-	clientSecret := result.KeycloakClientsSecret
-
-	if !logging.IsTerminal(os.Stdout.Fd()) {
+	if !isTerminal(os.Stdout.Fd()) {
 		// Plain, machine-friendly output
 		var out strings.Builder
 		fmt.Fprintf(&out, "deployment: success\n")
@@ -99,11 +95,6 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 				fmt.Fprintf(&out, "  - %s\n", f)
 			}
 		}
-		fmt.Fprintf(&out, "credentials:\n")
-		fmt.Fprintf(&out, "  firstUserPassword: %s\n", firstPwd)
-		fmt.Fprintf(&out, "  secondUserPassword: %s\n", secondPwd)
-		fmt.Fprintf(&out, "  thirdUserPassword: %s\n", thirdPwd)
-		fmt.Fprintf(&out, "  keycloakClientsSecret: %s\n", clientSecret)
 		// Add test env file path if generated
 		if testEnvFile != "" {
 			fmt.Fprintf(&out, "testEnvFile: %s\n", testEnvFile)
@@ -151,14 +142,6 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 		}
 	}
 
-	out.WriteString("\n")
-	out.WriteString(styleHead("Test credentials"))
-	out.WriteString("\n")
-	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "First user password")), styleVal(firstPwd))
-	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Second user password")), styleVal(secondPwd))
-	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Third user password")), styleVal(thirdPwd))
-	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak clients secret")), styleVal(clientSecret))
-
 	// Add test env file path if generated
 	if testEnvFile != "" {
 		out.WriteString("\n")
@@ -191,9 +174,6 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 		}
 	}
 
-	out.WriteString("\n")
-	out.WriteString("Please keep these credentials safe. If you have any questions, refer to the documentation or reach out for support. 🚀")
-
 	logging.Logger.Info().Msg(out.String())
 }
 
@@ -209,7 +189,7 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 		}
 	}
 
-	if !logging.IsTerminal(os.Stdout.Fd()) {
+	if !isTerminal(os.Stdout.Fd()) {
 		// Plain, machine-friendly output
 		var out strings.Builder
 		fmt.Fprintf(&out, "parallel deployment: completed\n")
@@ -241,11 +221,6 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 				if r.TestEnvFile != "" {
 					fmt.Fprintf(&out, "  testEnvFile: %s\n", r.TestEnvFile)
 				}
-				fmt.Fprintf(&out, "  credentials:\n")
-				fmt.Fprintf(&out, "    firstUserPassword: %s\n", r.FirstUserPassword)
-				fmt.Fprintf(&out, "    secondUserPassword: %s\n", r.SecondUserPassword)
-				fmt.Fprintf(&out, "    thirdUserPassword: %s\n", r.ThirdUserPassword)
-				fmt.Fprintf(&out, "    keycloakClientsSecret: %s\n", r.KeycloakClientsSecret)
 			}
 		}
 		// Add debug port-forward instructions for machine-friendly output
@@ -325,18 +300,7 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 			if r.TestEnvFile != "" {
 				fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(r.TestEnvFile))
 			}
-			out.WriteString(styleHead("  Credentials:"))
-			out.WriteString("\n")
-			fmt.Fprintf(&out, "    %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey-2, "First user password")), styleVal(r.FirstUserPassword))
-			fmt.Fprintf(&out, "    %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey-2, "Second user password")), styleVal(r.SecondUserPassword))
-			fmt.Fprintf(&out, "    %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey-2, "Third user password")), styleVal(r.ThirdUserPassword))
-			fmt.Fprintf(&out, "    %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey-2, "Keycloak clients secret")), styleVal(r.KeycloakClientsSecret))
 		}
-	}
-
-	out.WriteString("\n")
-	if failureCount == 0 {
-		out.WriteString("Please keep these credentials safe. All deployments are ready to use! 🚀")
 	}
 
 	// Add debug port-forward instructions if debug mode is enabled
