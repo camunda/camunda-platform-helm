@@ -1498,81 +1498,12 @@ jobs:
           scenario: ${{ inputs.scenario }}
 
   merge-e2e-reports:
-    name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    # Run if e2e is enabled AND at least one test job completed (success or failure, not skipped/cancelled)
+    name: E2E Reports Disabled - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     if: ${{ !cancelled() && inputs.e2e-enabled && (needs.playwright-e2e-tests-after-install.result == 'success' || needs.playwright-e2e-tests-after-install.result == 'failure' || needs.playwright-e2e-tests-after-upgrade.result == 'success' || needs.playwright-e2e-tests-after-upgrade.result == 'failure') }}
     needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: camunda/camunda-platform-helm
-          ref: ${{ inputs.camunda-helm-git-ref }}
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: lts/*
-
-      - name: Download blob reports from GitHub Actions Artifacts
-        id: download-reports
-        continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          path: all-blob-reports
-          pattern: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-*
-          merge-multiple: true
-
-      - name: Validate and cleanup blob reports
-        run: |
-          echo "Validating blob report ZIP files..."
-
-          # Check if download succeeded and directory exists with files
-          if [[ "${{ steps.download-reports.outcome }}" != "success" ]] || [[ ! -d "all-blob-reports" ]]; then
-            echo "⚠️ No blob reports were downloaded (download outcome: ${{ steps.download-reports.outcome }})"
-            mkdir -p all-blob-reports
-            exit 0
-          fi
-
-          cd all-blob-reports
-
-          for zip_file in *.zip; do
-            if [[ -f "$zip_file" ]]; then
-              if ! unzip -t "$zip_file" > /dev/null 2>&1; then
-                echo "⚠️ Removing corrupted/incomplete zip file: $zip_file"
-                rm -f "$zip_file"
-              else
-                echo "✅ Valid: $zip_file"
-              fi
-            fi
-          done
-
-          remaining_files=$(ls -1 *.zip 2>/dev/null | wc -l || echo "0")
-          echo "Valid blob reports remaining: $remaining_files"
-
-          if [[ "$remaining_files" -eq 0 ]]; then
-            echo "⚠️ No valid blob reports found to merge"
-            exit 0
-          fi
-
-      - name: Merge into HTML Report
-        run: |
-          # Check if there are any valid reports to merge
-          if [[ ! -d "all-blob-reports" ]] || [[ -z "$(ls -A all-blob-reports/*.zip 2>/dev/null)" ]]; then
-            echo "No valid blob reports found, skipping merge"
-            mkdir -p playwright-report
-            echo "<html><body><h1>No E2E test reports available</h1><p>All blob reports were corrupted or no tests ran.</p></body></html>" > playwright-report/index.html
-            exit 0
-          fi
-
-          npm install -g playwright
-          npx playwright merge-reports --reporter html ./all-blob-reports
-
-      - name: Upload HTML report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: e2e-html-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.shortname }}
-          path: playwright-report
-          retention-days: 5
+      - run: echo "Raw Playwright reports are not retained because they can contain authentication data."
 
   # Record a successful scenario result as a commit status on the PR HEAD commit.
   # This enables progressive CI result caching: future merge queue attempts can

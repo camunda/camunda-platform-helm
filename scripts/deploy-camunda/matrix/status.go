@@ -245,6 +245,7 @@ func (d *StatusDisplay) writeEntrySummary(entry Entry, result RunResult) {
 	}
 
 	_ = os.WriteFile(path, []byte(b.String()), 0o600)
+	_ = os.Chmod(path, 0o600)
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
