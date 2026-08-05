@@ -24,9 +24,9 @@ export default defineConfig({
     baseURL: getBaseURL(),
     actionTimeout: 10000,
     // Also applies to flaky tests
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
-    trace: "on-first-retry",
+    screenshot: "off",
+    video: "off",
+    trace: "off",
   },
 });
 

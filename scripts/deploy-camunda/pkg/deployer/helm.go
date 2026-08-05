@@ -66,6 +66,8 @@ type HelmError struct {
 	Reason string
 	// Command is the full helm command that was executed
 	Command string
+	// Args preserves argument boundaries for safe diagnostic rendering.
+	Args []string
 	// Cause is the underlying error (e.g. exit status 1)
 	Cause error
 }
@@ -82,7 +84,33 @@ func (e *HelmError) Unwrap() error {
 // base filenames for readability. Full paths in -f values file args and chart
 // paths are replaced with just the filename.
 func (e *HelmError) ShortCommand() string {
+	if len(e.Args) > 0 {
+		return shortenArgs(e.Args)
+	}
 	return shortenPaths(e.Command)
+}
+
+func shortenArgs(args []string) string {
+	parts := append([]string(nil), args...)
+	for i := range parts {
+		if i > 0 && isHelmSetFlag(parts[i-1]) {
+			parts[i] = redactHelmSetArg(parts[i])
+			continue
+		}
+		for _, flag := range []string{"--set=", "--set-string=", "--set-json="} {
+			if strings.HasPrefix(parts[i], flag) {
+				parts[i] = flag + redactHelmSetArg(strings.TrimPrefix(parts[i], flag))
+			}
+		}
+		if i > 0 && parts[i-1] == "-f" && strings.Contains(parts[i], "/") {
+			parts[i] = filepath.Base(parts[i])
+			continue
+		}
+		if strings.HasPrefix(parts[i], "/") && !strings.HasPrefix(parts[i], "--") {
+			parts[i] = filepath.Base(parts[i])
+		}
+	}
+	return "helm " + formatArgs(parts)
 }
 
 // shortenPaths replaces long absolute/relative file paths with just basenames.
@@ -117,11 +145,13 @@ func isHelmSetFlag(arg string) bool {
 }
 
 func redactHelmSetArg(arg string) string {
-	key, _, found := strings.Cut(arg, "=")
-	if !found || !redaction.IsSensitiveName(key) {
-		return redaction.Text(arg)
+	for _, assignment := range strings.Split(arg, ",") {
+		key, _, found := strings.Cut(assignment, "=")
+		if found && redaction.IsSensitiveName(key) {
+			return redaction.Placeholder
+		}
 	}
-	return key + "=" + redaction.Placeholder
+	return redaction.Text(arg)
 }
 
 // upgradeInstall builds and executes helm upgrade --install with deployer's opinionated policies
@@ -203,6 +233,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 		return &HelmError{
 			Reason:  "helm upgrade --install failed",
 			Command: "helm " + formatArgs(args),
+			Args:    args,
 			Cause:   runErr,
 		}
 	}
@@ -343,6 +374,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	return &HelmError{
 		Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
 		Command: "helm " + formatArgs(args),
+		Args:    args,
 		Cause:   runErr,
 	}
 }

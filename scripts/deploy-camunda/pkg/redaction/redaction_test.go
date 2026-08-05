@@ -26,10 +26,13 @@ func TestText(t *testing.T) {
 	}{
 		{name: "env assignment", in: "DB_PASSWORD=super-secret", want: "DB_PASSWORD=" + Placeholder},
 		{name: "yaml assignment", in: "  clientSecret: 'secret value'", want: "  clientSecret: " + Placeholder},
-		{name: "json value", in: `{"access_token":"secret-token","status":"failed"}`, want: `{"access_token":"[REDACTED]","status":"failed"}`},
+		{name: "json value", in: `{"access_token":"secret-token","status":"failed"}`, want: `{"access_token": "[REDACTED]","status":"failed"}`},
 		{name: "authorization header", in: "Authorization: Bearer abc.def-123", want: "Authorization: " + Placeholder},
+		{name: "basic authorization header", in: "Authorization: Basic dXNlcjpwYXNz", want: "Authorization: " + Placeholder},
+		{name: "cookie header", in: "Set-Cookie: session=secret; Secure", want: "Set-Cookie: " + Placeholder},
 		{name: "standalone bearer", in: "request failed with Bearer abc.def-123", want: "request failed with Bearer " + Placeholder},
 		{name: "URL user info", in: "postgres://user:secret@database:5432/app", want: "postgres://user:" + Placeholder + "@database:5432/app"},
+		{name: "query token", in: "https://example.test/callback?code=ok&access_token=secret", want: "https://example.test/callback?code=ok&access_token=" + Placeholder},
 		{name: "private key", in: "before\n-----BEGIN PRIVATE KEY-----\nsecret\n-----END PRIVATE KEY-----\nafter", want: "before\n" + Placeholder + "\nafter"},
 		{name: "ordinary diagnostics", in: "pod-a 0/1 Running\nFailedMount: secret volume unavailable", want: "pod-a 0/1 Running\nFailedMount: secret volume unavailable"},
 	}
@@ -53,6 +56,8 @@ func TestIsSensitiveName(t *testing.T) {
 	}{
 		{name: "global.identity.clientSecret", want: true},
 		{name: "database.password", want: true},
+		{name: "secretKeyRef", want: false},
+		{name: "oauth.tokenUrl", want: false},
 		{name: "global.ingress.host", want: false},
 	} {
 		if got := IsSensitiveName(tt.name); got != tt.want {
