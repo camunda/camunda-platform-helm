@@ -236,6 +236,7 @@ func (s *OpenShiftIngressTLSTest) TestHttpIngressOpenShiftTLSAutoManagement() {
 				"global.ingress.tls.enabled":                          "true",
 				"global.ingress.tls.secretName":                       "-",
 				"global.host":                                         "camunda.example.com",
+				"orchestration.contextPath":                           "/orchestration",
 				"global.compatibility.openshift.adaptSecurityContext": "disabled",
 			},
 			Template: "templates/common/ingress-http.yaml",
@@ -260,6 +261,7 @@ func (s *OpenShiftIngressTLSTest) TestHttpIngressOpenShiftTLSAutoManagement() {
 				"global.ingress.tls.enabled":                          "true",
 				"global.ingress.tls.secretName":                       "my-tls-secret",
 				"global.host":                                         "camunda.example.com",
+				"orchestration.contextPath":                           "/orchestration",
 				"global.compatibility.openshift.adaptSecurityContext": "disabled",
 			},
 			Template: "templates/common/ingress-http.yaml",
@@ -280,9 +282,10 @@ func (s *OpenShiftIngressTLSTest) TestHttpIngressOpenShiftTLSAutoManagement() {
 		{
 			Name: "NoTLSBlockWhenTLSDisabled",
 			Values: map[string]string{
-				"global.ingress.enabled":     "true",
-				"global.ingress.tls.enabled": "false",
-				"global.host":                "camunda.example.com",
+				"global.ingress.enabled":                              "true",
+				"global.ingress.tls.enabled":                          "false",
+				"global.host":                                         "camunda.example.com",
+				"orchestration.contextPath":                           "/orchestration",
 				"global.compatibility.openshift.adaptSecurityContext": "disabled",
 			},
 			Template: "templates/common/ingress-http.yaml",
@@ -404,6 +407,7 @@ func (s *OpenShiftCombinedFeaturesTest) TestAllOpenShiftFeaturesEnabled() {
 				"global.ingress.tls.enabled":                          "true",
 				"global.ingress.tls.secretName":                       "-",
 				"global.host":                                         "camunda.example.com",
+				"orchestration.contextPath":                           "/orchestration",
 			},
 			Template: "templates/common/ingress-http.yaml",
 			Verifier: func(t *testing.T, output string, err error) {

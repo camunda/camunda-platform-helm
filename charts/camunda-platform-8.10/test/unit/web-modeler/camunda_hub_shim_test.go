@@ -474,9 +474,9 @@ func (s *CamundaHubShimTemplateTest) TestContextPathResetRemovesIngressPaths() {
 	s.Require().Contains(output, "path: /modeler-ws")
 
 	values["camundaHub.contextPath"] = ""
-	output, err = s.renderWebModeler(values, []string{"templates/common/ingress-http.yaml"})
-	s.Require().NoError(err)
-	s.Require().NotContains(output, "path: /modeler")
+	_, err = s.renderWebModeler(values, []string{"templates/common/ingress-http.yaml"})
+	s.Require().Error(err, "WebModeler is the only route here, so clearing its context path leaves no path and the Ingress is skipped")
+	s.Require().ErrorContains(err, "could not find template")
 }
 
 func (s *CamundaHubShimTemplateTest) TestListValuedOverrideReplacesLegacyList() {
