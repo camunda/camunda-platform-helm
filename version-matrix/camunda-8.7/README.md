@@ -7,6 +7,7 @@ Standard support until 2026-10-13
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
+| [12.13.2](#helm-chart-12132) | 8.7.36 | _pending_ | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.2) |
 | [12.13.1](#helm-chart-12131) | 8.7.35 | 2026-07-09 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.1) |
 | [12.13.0](#helm-chart-12130) | 8.7.34 | 2026-06-26 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.0) |
 | [12.12.1](#helm-chart-12121) | 8.7.33 | 2026-06-18 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.12.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.12.1) |
@@ -48,6 +49,44 @@ _Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when us
 
 
 ---
+
+## Helm chart 12.13.2
+
+Supported versions:
+
+- Camunda applications: [8.7](https://github.com/camunda/camunda/releases?q=tag%3A8.7&expanded=true)
+- Camunda version matrix: [8.7](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.7)
+- Helm values: [12.13.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.2?modal=values)
+- Helm CLI: [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2)
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:8.7.23
+- docker.io/camunda/console:8.7.106
+- docker.io/camunda/identity:8.7.23
+- docker.io/camunda/keycloak:26.3.3
+- docker.io/camunda/operate:8.7.36
+- docker.io/camunda/optimize:8.7.26
+- docker.io/camunda/tasklist:8.7.36
+- docker.io/camunda/web-modeler-restapi:8.7.25
+- docker.io/camunda/web-modeler-webapp:8.7.25
+- docker.io/camunda/web-modeler-websockets:8.7.25
+- docker.io/camunda/zeebe:8.7.36
+
+Non-Camunda images:
+
+- docker.io/bitnamilegacy/elasticsearch:8.17.4
+- docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+- docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+- docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+
+Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.7/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+
+- registry.camunda.cloud/keycloak-ee/keycloak:26.7.0
+- registry.camunda.cloud/vendor-ee/elasticsearch:8.19.19
+- registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43
+- registry.camunda.cloud/vendor-ee/postgresql:14.23.0-debian-12-r19
+- registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r17
 
 ## Helm chart 12.13.1
 
