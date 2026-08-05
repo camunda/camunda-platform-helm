@@ -1933,6 +1933,15 @@
                         }
                     }
                 },
+                "automountServiceAccountToken": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null,
+                    "nullable": true
+                },
                 "externalDatabase": {
                     "type": "object",
                     "properties": {
@@ -2063,6 +2072,15 @@
                     "type": "string",
                     "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
                     "default": ""
+                },
+                "automountServiceAccountToken": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null,
+                    "nullable": true
                 },
                 "persistence": {
                     "properties": {
@@ -3873,6 +3891,15 @@
                         }
                     }
                 },
+                "automountServiceAccountToken": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null,
+                    "nullable": true
+                },
                 "podSecurityContext": {
                     "type": "object",
                     "properties": {
@@ -4680,6 +4707,15 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null,
+                    "nullable": true
                 },
                 "gateway": {
                     "type": "object",
@@ -6106,6 +6142,15 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null,
+                    "nullable": true
                 },
                 "service": {
                     "type": "object",

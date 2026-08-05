@@ -280,6 +280,11 @@
         },
         "connectors": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -397,6 +402,11 @@
         },
         "identity": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -516,6 +526,11 @@
         },
         "optimize": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -738,6 +753,11 @@
         },
         "orchestration": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
                 "exporters": {
                     "properties": {
                         "zeebe": {
@@ -1176,6 +1196,11 @@
             "default": {},
             "additionalProperties": true,
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
                 "persistence": {
                     "properties": {
                         "deploymentStrategy": {

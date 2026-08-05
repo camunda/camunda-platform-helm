@@ -257,6 +257,9 @@ spec:
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "identity.serviceAccountName" . }}
+      {{- if kindIs "bool" .Values.identity.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ .Values.identity.automountServiceAccountToken }}
+      {{- end }}
       {{- if .Values.identity.dnsConfig }}
       dnsConfig: {{- toYaml .Values.identity.dnsConfig | nindent 8 }}
       {{- end }}

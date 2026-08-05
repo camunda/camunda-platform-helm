@@ -325,6 +325,9 @@ spec:
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
+      {{- if kindIs "bool" .Values.orchestration.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ .Values.orchestration.automountServiceAccountToken }}
+      {{- end }}
       {{- if .Values.orchestration.hostNetwork }}
       hostNetwork: true
       {{- end }}

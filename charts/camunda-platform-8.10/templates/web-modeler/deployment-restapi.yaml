@@ -236,6 +236,9 @@ spec:
         {{- (or .Values.camundaHub.restapi.extraVolumes .Values.webModeler.restapi.extraVolumes) | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if kindIs "bool" .Values.camundaHub.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ .Values.camundaHub.automountServiceAccountToken }}
+      {{- end }}
       {{- if (or .Values.camundaHub.restapi.dnsConfig .Values.webModeler.restapi.dnsConfig) }}
       dnsConfig: {{- toYaml (or .Values.camundaHub.restapi.dnsConfig .Values.webModeler.restapi.dnsConfig) | nindent 8 }}
       {{- end }}

@@ -50,6 +50,61 @@ func TestDeploymentTemplate(t *testing.T) {
 	})
 }
 
+func (s *deploymentTemplateTest) TestAutomountServiceAccountToken() {
+	baseValues := func() map[string]string {
+		return map[string]string{
+			"identity.enabled":                                       "true",
+			"global.identity.auth.enabled":                           "true",
+			"global.identity.keycloak.url.protocol":                  "https",
+			"global.identity.keycloak.url.host":                      "keycloak.prod.svc.cluster.local",
+			"global.identity.keycloak.url.port":                      "8443",
+			"global.identity.keycloak.auth.adminUser":                "testAdmin",
+			"global.identity.keycloak.auth.secret.existingSecret":    "identity-secret",
+			"global.identity.keycloak.auth.secret.existingSecretKey": "admin-password",
+		}
+	}
+
+	disabledValues := baseValues()
+	disabledValues["identity.automountServiceAccountToken"] = "false"
+	enabledValues := baseValues()
+	enabledValues["identity.automountServiceAccountToken"] = "true"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestPodOmitsAutomountServiceAccountTokenByDefault",
+			Values: baseValues(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				require.Nil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name:   "TestPodDisablesAutomountServiceAccountToken",
+			Values: disabledValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				require.NotNil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.False(t, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name:   "TestPodEnablesAutomountServiceAccountToken",
+			Values: enabledValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				require.NotNil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.True(t, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{

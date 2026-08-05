@@ -64,6 +64,56 @@ func (s *DeploymentTemplateTest) imageRepo() string {
 	return "camunda/hub-" + s.component
 }
 
+func (s *DeploymentTemplateTest) TestAutomountServiceAccountToken() {
+	baseValues := func() map[string]string {
+		return map[string]string{
+			"camundaHub.enabled":                  "true",
+			"camundaHub.restapi.mail.fromAddress": "example@example.com",
+			"identity.enabled":                    "true",
+		}
+	}
+
+	disabledValues := baseValues()
+	disabledValues["camundaHub.automountServiceAccountToken"] = "false"
+	enabledValues := baseValues()
+	enabledValues["camundaHub.automountServiceAccountToken"] = "true"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestPodOmitsAutomountServiceAccountTokenByDefault",
+			Values: baseValues(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				require.Nil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name:   "TestPodDisablesAutomountServiceAccountToken",
+			Values: disabledValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				require.NotNil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.False(t, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		}, {
+			Name:   "TestPodEnablesAutomountServiceAccountToken",
+			Values: enabledValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				require.NotNil(t, deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				require.True(t, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
