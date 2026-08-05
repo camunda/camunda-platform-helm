@@ -3,7 +3,7 @@ unit:
   enabled: true
   matrix:
     - name: Core
-      packages: identity camunda
+      packages: identity camunda common
     - name: Apps
       packages: connectors operate optimize tasklist
     - name: Zeebe

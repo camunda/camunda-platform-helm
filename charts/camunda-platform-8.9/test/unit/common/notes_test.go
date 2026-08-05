@@ -30,7 +30,7 @@ func TestNotesTemplate(t *testing.T) {
 	require.NoError(t, err)
 	output, err := exec.Command("helm", "install", "credential-output-test", chartPath,
 		"--dry-run=client",
-		"--set", "identity.firstUser.password=credential-output-canary-do-not-print",
+		"--set", "identity.firstUser.secret.inlineSecret=credential-output-canary-do-not-print",
 		"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
 		"--set", "global.elasticsearch.enabled=true",
 		"--set", "global.elasticsearch.external=true",
@@ -40,6 +40,6 @@ func TestNotesTemplate(t *testing.T) {
 
 	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
 	require.True(t, found)
-	require.Contains(t, notes, `Default user: "demo".`)
+	require.Contains(t, notes, "intentionally omitted")
 	require.NotContains(t, notes, "credential-output-canary-do-not-print")
 }

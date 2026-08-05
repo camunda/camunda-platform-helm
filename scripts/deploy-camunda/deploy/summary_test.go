@@ -10,17 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const credentialOutputCanary = "credential-output-canary-do-not-log"
-
 func TestDeploymentSummariesDoNotOutputCredentials(t *testing.T) {
 	result := &ScenarioResult{
-		Scenario:              "canary",
-		Namespace:             "canary-namespace",
-		Release:               "canary-release",
-		FirstUserPassword:     credentialOutputCanary + "-first",
-		SecondUserPassword:    credentialOutputCanary + "-second",
-		ThirdUserPassword:     credentialOutputCanary + "-third",
-		KeycloakClientsSecret: credentialOutputCanary + "-client",
+		Scenario:  "canary",
+		Namespace: "canary-namespace",
+		Release:   "canary-release",
 	}
 	flags := &config.RuntimeFlags{}
 
@@ -43,7 +37,9 @@ func TestDeploymentSummariesDoNotOutputCredentials(t *testing.T) {
 				testCase.print()
 
 				require.Contains(t, output.String(), "canary-namespace")
-				require.NotContains(t, output.String(), credentialOutputCanary)
+				require.NotContains(t, output.String(), "credential")
+				require.NotContains(t, output.String(), "password")
+				require.NotContains(t, output.String(), "secret")
 			})
 		}
 	}

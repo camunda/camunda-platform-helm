@@ -45,10 +45,6 @@ type ScenarioResult struct {
 	KeycloakRealm            string
 	OptimizeIndexPrefix      string
 	OrchestrationIndexPrefix string
-	FirstUserPassword        string
-	SecondUserPassword       string
-	ThirdUserPassword        string
-	KeycloakClientsSecret    string
 	TestEnvFile              string   // Path to generated E2E test .env file
 	LayeredFiles             []string // Source values files resolved from layers (pre-processing)
 	Error                    error
