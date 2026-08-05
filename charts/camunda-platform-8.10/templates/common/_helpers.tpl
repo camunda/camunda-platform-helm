@@ -1506,40 +1506,41 @@ Usage:
 
 {{/*
 orchestrationProxyVerifyCaRef
-Resolves the effective Secret name/namespace holding the CA bundle NGINX
-uses to verify the Orchestration upstream cert, for the given proto:
+Resolves the effective Secret name/namespace holding the CA bundle NGINX uses
+to verify the Orchestration REST upstream cert:
   1. caSecret.secret.inlineSecret (chart generates a Secret, always keyed
      "ca.crt", always in the release namespace — see tls-secret.yaml), or
   2. caSecret.secret.existingSecret (used verbatim, honoring caSecret.namespace).
 nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the FIXED key
 "ca.crt" from the referenced Secret, so an existingSecret with a non-default
 existingSecretKey is NOT repacked (see docs on
-global.tls.orchestration.{rest,grpc}.proxyVerify.caSecret.secret.existingSecretKey);
+global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecretKey);
 use inlineSecret instead when the source key differs.
+
+REST only — there is no gRPC counterpart. See
+camundaPlatform.orchestrationProxyVerifyAnnotations.
+
 Returns a dict {name, namespace}; name is empty when neither is configured.
 Usage:
-  {{ include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" . "proto" "rest") }}
+  {{ include "camundaPlatform.orchestrationProxyVerifyCaRef" . }}
 */}}
 {{- define "camundaPlatform.orchestrationProxyVerifyCaRef" -}}
-{{- $ctx := .context -}}
-{{- $proto := .proto -}}
-{{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
+{{- $pv := .Values.global.tls.orchestration.rest.proxyVerify -}}
 {{- $name := "" -}}
-{{- $ns := $ctx.Release.Namespace -}}
+{{- $ns := .Release.Namespace -}}
 {{- if $pv.caSecret.secret.inlineSecret -}}
-  {{- $name = printf "%s-tls-%s-ca" (include "orchestration.fullname" $ctx) $proto -}}
+  {{- $name = printf "%s-tls-rest-ca" (include "orchestration.fullname" .) -}}
 {{- else if $pv.caSecret.secret.existingSecret -}}
   {{- $name = $pv.caSecret.secret.existingSecret -}}
-  {{- $ns = $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
+  {{- $ns = $pv.caSecret.namespace | default .Release.Namespace -}}
 {{- end -}}
 {{- dict "name" $name "namespace" $ns | toYaml -}}
 {{- end -}}
 
 {{/*
 orchestrationProxyVerifyAnnotations
-Renders the NGINX upstream-TLS-verification annotations for one of the
-Orchestration ingresses (REST or gRPC) based on the matching
-global.tls.orchestration.{rest,grpc}.proxyVerify block.
+Renders the NGINX upstream-TLS-verification annotations for the Orchestration
+REST ingress from global.tls.orchestration.rest.proxyVerify.
 
 Returns nothing when proxyVerify.enabled is false or no CA Secret resolves
 (camundaPlatform.orchestrationProxyVerifyCaRef). Otherwise emits a flat map
@@ -1549,28 +1550,31 @@ of annotation key → value:
   - nginx.ingress.kubernetes.io/proxy-ssl-name: "<sniHost or derived Service DNS>"
   - nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
 
+There is deliberately NO gRPC equivalent: ingress-nginx renders these
+annotations as NGINX `proxy_ssl_*` directives, which apply to `proxy_pass`
+upstreams only. A GRPCS backend is served by `grpc_pass`, which needs the
+separate `grpc_ssl_verify` / `grpc_ssl_trusted_certificate` / `grpc_ssl_name`
+directives — ingress-nginx exposes no annotation for those, so emitting
+proxy-ssl-* on the gRPC ingress would silently verify nothing.
+
 proxy-ssl-name is ALWAYS emitted when verify is on: with ingress-nginx dynamic
 upstreams, absent proxy-ssl-name NGINX validates the upstream cert against the
 proxy host rather than the Orchestration Service DNS, so a cert carrying only
 the Service SAN fails. sniHost wins when set; otherwise the name is derived from
 the bare Orchestration Service DNS (orchestration.serviceName, `<fullname>-gateway`
-with no port — proxy-ssl-name is an SNI hostname, not a URL authority). REST and
-gRPC derive to the SAME name because both ingresses target the same gateway
-Service presenting the same cert.
+with no port — proxy-ssl-name is an SNI hostname, not a URL authority).
 
 The caller is responsible for merging the result into the ingress
-annotations block. Pass `proto` ("rest" or "grpc") to select the source.
+annotations block.
 
 Usage (inside an ingress template's annotations block, e.g. via merge-overwrite):
-  (include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "grpc"))
+  (include "camundaPlatform.orchestrationProxyVerifyAnnotations" .)
 */}}
 {{- define "camundaPlatform.orchestrationProxyVerifyAnnotations" -}}
-{{- $ctx := .context -}}
-{{- $proto := .proto -}}
-{{- $pv := (index $ctx.Values.global.tls.orchestration $proto).proxyVerify -}}
-{{- $caRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" $ctx "proto" $proto) | fromYaml -}}
+{{- $pv := .Values.global.tls.orchestration.rest.proxyVerify -}}
+{{- $caRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" . | fromYaml -}}
 {{- if and $pv.enabled $caRef.name -}}
-{{- $sslName := $pv.sniHost | default (include "orchestration.serviceName" $ctx | trim) -}}
+{{- $sslName := $pv.sniHost | default (include "orchestration.serviceName" . | trim) -}}
 nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
 nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $caRef.namespace $caRef.name | quote }}
 nginx.ingress.kubernetes.io/proxy-ssl-name: {{ $sslName | quote }}

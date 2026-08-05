@@ -345,7 +345,7 @@ global:
             existingSecret: ""
             ## @param global.tls.orchestration.rest.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
             existingSecretKey: "keystore-password"
-        ## @extra global.tls.orchestration.rest.proxyVerify configuration of NGINX upstream cert verification.
+        ## @extra global.tls.orchestration.rest.proxyVerify configuration of NGINX upstream cert verification. REST only: it emits `nginx.ingress.kubernetes.io/proxy-ssl-*` annotations, which ingress-nginx renders as NGINX `proxy_ssl_*` directives. Those apply to `proxy_pass` upstreams only, so there is no equivalent for the gRPC ingress — a `GRPCS` backend uses `grpc_pass`, which needs `grpc_ssl_*` directives that ingress-nginx does not expose through any annotation.
         proxyVerify:
           ## @param global.tls.orchestration.rest.proxyVerify.enabled if true, NGINX verifies the upstream server cert against the CA bundle.
           enabled: false
@@ -387,24 +387,6 @@ global:
             existingSecret: ""
             ## @param global.tls.orchestration.grpc.privateKey.secret.existingSecretKey defines the key within the existing secret object.
             existingSecretKey: "tls.key"
-        ## @extra global.tls.orchestration.grpc.proxyVerify configuration of NGINX upstream cert verification.
-        proxyVerify:
-          ## @param global.tls.orchestration.grpc.proxyVerify.enabled if true, NGINX verifies the upstream server cert against the CA bundle.
-          enabled: false
-          ## @param global.tls.orchestration.grpc.proxyVerify.sniHost can be used to set the SNI hostname NGINX presents when verifying the upstream cert.
-          sniHost: ""
-          ## @extra global.tls.orchestration.grpc.proxyVerify.caSecret configuration to provide the CA bundle Secret for upstream verification.
-          caSecret:
-            ## @extra global.tls.orchestration.grpc.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
-            secret:
-              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret keyed "ca.crt" (the fixed key NGINX reads), so any custom existingSecretKey below is ignored when this is set.
-              inlineSecret: ""
-              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle. nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed "ca.crt" key from this Secret, so the CA bundle must be stored under that key; existingSecretKey is not honored for this path (use inlineSecret if the source key differs).
-              existingSecret: ""
-              ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object. Not honored when existingSecret is used directly; kept for schema consistency with other secret blocks. Retained for future use, e.g. if a repack-from-custom-key path is added.
-              existingSecretKey: "ca.crt"
-            ## @param global.tls.orchestration.grpc.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
-            namespace: ""
 
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes

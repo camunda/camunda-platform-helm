@@ -235,6 +235,21 @@ gRPC server to crash on startup. Fail loudly at render time instead.
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end }}
+    {{- else }}
+      {{- $restManualCertEnv := list -}}
+      {{- range $n := (list "SERVER_SSL_CERTIFICATE" "SERVER_SSL_CERTIFICATE_PRIVATE_KEY" "SERVER_SSL_KEY_STORE") -}}
+        {{- if has $n $envNames -}}
+          {{- $restManualCertEnv = append $restManualCertEnv $n -}}
+        {{- end -}}
+      {{- end }}
+      {{- if $restManualCertEnv }}
+        {{- $errorMessage := printf "%s %s %s"
+            (printf "[camunda][error] Orchestration REST TLS has a chart-managed cert (global.tls.orchestration.rest.cert.secret) AND a manual cert path in orchestration.env: %s." (join ", " $restManualCertEnv))
+            "The chart emits the managed path first and appends orchestration.env last, so the manual entry wins (Kubernetes keeps the last duplicate) and points the server at a path the chart does not mount."
+            "Use one approach only: drop the orchestration.env entries to keep the chart-managed cert, or clear global.tls.orchestration.rest.cert.secret and hand-wire the cert with orchestration.extraVolumes / extraVolumeMounts."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
     {{- end }}
     {{- $rest := .Values.global.tls.orchestration.rest -}}
     {{- $restCertInline := and (eq ($rest.type | default "pkcs12") "pem") $rest.cert.secret.inlineSecret (not $rest.cert.secret.existingSecret) -}}
@@ -258,6 +273,21 @@ gRPC server to crash on startup. Fail loudly at render time instead.
         -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
       {{- end }}
+    {{- else }}
+      {{- $grpcManualCertEnv := list -}}
+      {{- range $n := (list "CAMUNDA_API_GRPC_SSL_CERTIFICATE" "CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY") -}}
+        {{- if has $n $envNames -}}
+          {{- $grpcManualCertEnv = append $grpcManualCertEnv $n -}}
+        {{- end -}}
+      {{- end }}
+      {{- if $grpcManualCertEnv }}
+        {{- $errorMessage := printf "%s %s %s"
+            (printf "[camunda][error] Orchestration gRPC TLS has a chart-managed cert (global.tls.orchestration.grpc.cert.secret) AND a manual cert path in orchestration.env: %s." (join ", " $grpcManualCertEnv))
+            "The chart emits the managed path first and appends orchestration.env last, so the manual entry wins (Kubernetes keeps the last duplicate) and points the server at a path the chart does not mount."
+            "Use one approach only: drop the orchestration.env entries to keep the chart-managed cert, or clear global.tls.orchestration.grpc.cert.secret and hand-wire the cert with orchestration.extraVolumes / extraVolumeMounts."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
     {{- end }}
     {{- $grpc := .Values.global.tls.orchestration.grpc -}}
     {{- $grpcCertInline := and $grpc.cert.secret.inlineSecret (not $grpc.cert.secret.existingSecret) -}}
@@ -271,8 +301,7 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- $restCaRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" . "proto" "rest") | fromYaml -}}
-  {{- $grpcCaRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" (dict "context" . "proto" "grpc") | fromYaml -}}
+  {{- $restCaRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" . | fromYaml -}}
   {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
     {{- if ne (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
       {{- $errorMessage := printf "%s %s"
@@ -289,21 +318,13 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
   {{- end }}
-  {{- if .Values.global.tls.orchestration.grpc.proxyVerify.enabled }}
-    {{- if ne (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
-      {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but Orchestration gRPC TLS is not enabled."
-          "NGINX upstream verification only makes sense against a TLS backend; set global.tls.orchestration.grpc.enabled: true (or wire CAMUNDA_API_GRPC_SSL_ENABLED=true via orchestration.env, or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
-      -}}
-      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-    {{- end }}
-    {{- if not $grpcCaRef.name }}
-      {{- $errorMessage := printf "%s %s"
-          "[camunda][error] global.tls.orchestration.grpc.proxyVerify.enabled is true but caSecret.secret.existingSecret / inlineSecret is empty."
-          "Provide a Secret (or inlineSecret) holding the CA bundle that NGINX should use to validate the Orchestration gRPC server cert."
-      -}}
-      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-    {{- end }}
+  {{- if dig "grpc" "proxyVerify" nil (dig "tls" "orchestration" dict $values.global) }}
+    {{- $errorMessage := printf "%s %s %s"
+        "[camunda][error] global.tls.orchestration.grpc.proxyVerify is not a supported key."
+        "NGINX upstream verification is emitted as nginx.ingress.kubernetes.io/proxy-ssl-* annotations, which ingress-nginx renders as NGINX proxy_ssl_* directives; those apply to proxy_pass upstreams only."
+        "A GRPCS backend is served by grpc_pass, which needs grpc_ssl_* directives that ingress-nginx exposes no annotation for, so the gRPC upstream cert cannot be verified by the controller. Remove the key; global.tls.orchestration.rest.proxyVerify remains supported."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
   {{- end }}
   {{- /* Validate rest.type is one of pkcs12 / pem when a cert secret is referenced. */ -}}
   {{- if and (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") $restCertRef.name }}
