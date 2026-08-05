@@ -335,7 +335,7 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 				"global.documentStore.type.gcp.secret.existingSecretKey": "should-not-be-used.json",
 			},
 			Expected: map[string]string{
-				"spec.template.spec.containers[0].name": "connectors",
+				"spec.template.spec.containers[0].name": "orchestration",
 			},
 			Unexpected: []string{"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')]"},
 		},
