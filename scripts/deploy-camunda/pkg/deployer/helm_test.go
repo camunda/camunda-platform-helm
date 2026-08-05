@@ -88,6 +88,26 @@ func TestHelmError_ShortCommand(t *testing.T) {
 	}
 }
 
+func TestHelmErrorShortCommandRedactsSensitiveSetValues(t *testing.T) {
+	t.Parallel()
+
+	err := &HelmError{
+		Command: "helm upgrade release chart --set global.identity.clientSecret=super-secret --set global.ingress.host=example.com --set-string=database.password=another-secret",
+	}
+	got := err.ShortCommand()
+
+	for _, secret := range []string{"super-secret", "another-secret"} {
+		if strings.Contains(got, secret) {
+			t.Errorf("ShortCommand contains secret %q: %s", secret, got)
+		}
+	}
+	for _, want := range []string{"global.identity.clientSecret=[REDACTED]", "global.ingress.host=example.com", "database.password=[REDACTED]"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("ShortCommand missing %q: %s", want, got)
+		}
+	}
+}
+
 func TestShortenPaths_NoAbsolutePaths(t *testing.T) {
 	cmd := "helm upgrade --install integration camunda/camunda-platform -n ns --version 13.5.0 --wait"
 	got := shortenPaths(cmd)

@@ -325,21 +325,6 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - name: Info - ℹ️ Print workflow inputs ℹ️
-        env:
-          GITHUB_CONTEXT: ${{ toJson(inputs) }}
-        run: |
-          if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
-            echo "::add-mask::${INITIAL_CLAIM_VALUE}"
-          fi
-          # Collapse the multi-KB input dump into a log group so it does not bury
-          # the meaningful lines; expand it in the UI when needed.
-          echo "::group::Workflow Inputs"
-          echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
-          echo "Workflow Inputs - Extra Values:"
-          echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
-          echo "::endgroup::"
-
       - name: CI Setup - Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -802,7 +787,7 @@ jobs:
         with:
           name: ${{ steps.diag-artifact.outputs.name }}
           path: diagnostics/
-          retention-days: 14
+          retention-days: 5
           if-no-files-found: ignore
 
   upgrade:
@@ -834,21 +819,6 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - name: Info - ℹ️ Print workflow inputs ℹ️
-        env:
-          GITHUB_CONTEXT: ${{ toJson(inputs) }}
-        run: |
-          if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
-            echo "::add-mask::${INITIAL_CLAIM_VALUE}"
-          fi
-          # Collapse the multi-KB input dump into a log group so it does not bury
-          # the meaningful lines; expand it in the UI when needed.
-          echo "::group::Workflow Inputs"
-          echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
-          echo "Workflow Inputs - Extra Values:"
-          echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
-          echo "::endgroup::"
-
       - name: CI Setup - Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1186,7 +1156,7 @@ jobs:
         with:
           name: ${{ steps.diag-artifact.outputs.name }}
           path: diagnostics/
-          retention-days: 14
+          retention-days: 5
           if-no-files-found: ignore
 
   playwright-e2e-tests-after-install:
@@ -1602,7 +1572,7 @@ jobs:
         with:
           name: e2e-html-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.shortname }}
           path: playwright-report
-          retention-days: 14
+          retention-days: 5
 
   # Record a successful scenario result as a commit status on the PR HEAD commit.
   # This enables progressive CI result caching: future merge queue attempts can

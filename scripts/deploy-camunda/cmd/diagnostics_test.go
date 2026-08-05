@@ -135,3 +135,32 @@ func TestLastLines(t *testing.T) {
 		t.Errorf("empty input should stay empty, got %q", got)
 	}
 }
+
+func TestPrintNamespaceDiagnosticsRedactsSecrets(t *testing.T) {
+	t.Parallel()
+
+	src := podDiagnosticsSource{
+		GetPods:         func(_ context.Context, _, _ string) (string, error) { return "pod-a 0/1 Running", nil },
+		GetEvents:       func(_ context.Context, _, _ string) (string, error) { return "API_TOKEN=event-secret", nil },
+		GetPVCs:         func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		DescribePVCs:    func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetNonReadyPods: func(_ context.Context, _, _ string) ([]string, error) { return []string{"pod-a"}, nil },
+		DescribePod:     func(_ context.Context, _, _, _ string) (string, error) { return "clientSecret: describe-secret", nil },
+		GetPodLogs: func(_ context.Context, _, _, _ string, _ int) (string, error) {
+			return "Authorization: Bearer log-secret", nil
+		},
+		GetPodLogsPrevious: func(_ context.Context, _, _, _ string, _ int) (string, error) { return "", nil },
+	}
+
+	var buf bytes.Buffer
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 10, false)
+	out := buf.String()
+	for _, secret := range []string{"event-secret", "describe-secret", "log-secret"} {
+		if strings.Contains(out, secret) {
+			t.Errorf("output contains secret %q:\n%s", secret, out)
+		}
+	}
+	if !strings.Contains(out, "[REDACTED]") || !strings.Contains(out, "pod-a 0/1 Running") {
+		t.Errorf("output should retain diagnostics with redaction:\n%s", out)
+	}
+}

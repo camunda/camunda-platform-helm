@@ -141,4 +141,4 @@ jobs:
         name: e2e-readiness-cluster-diagnostics-${{ inputs.namespace }}-${{ env.ARTIFACT_SUFFIX }}
         path: diagnostics/**
         if-no-files-found: ignore
-        retention-days: 14
+        retention-days: 5

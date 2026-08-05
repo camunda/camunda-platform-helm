@@ -263,6 +263,7 @@ render_env_file() {
   # Generate base .env from template
   export TEST_INGRESS_HOST="$hostname"
   envsubst < "$test_suite_path"/.env.template > "$env_file"
+  chmod 600 "$env_file"
 
   # Auth0 scenario short-circuit. The auth0-smoke Playwright project only
   # needs the Auth0 issuer + per-component client_ids; the matrix runner
@@ -311,10 +312,7 @@ render_env_file() {
       [[ -n "${AUTH0_INITIAL_ADMIN_EMAIL:-}" ]] && echo "AUTH0_INITIAL_ADMIN_EMAIL=${AUTH0_INITIAL_ADMIN_EMAIL}"
     } >> "$env_file"
     log "DEBUG: Auth0 env file setup complete (Keycloak resolution skipped)"
-    if [[ "$VERBOSE" == "true" ]]; then
-      log "DEBUG: Contents of .env file:"
-      cat "$env_file"
-    fi
+    [[ "$VERBOSE" == "true" ]] && log "DEBUG: Env file written to $env_file"
     return 0
   fi
 
@@ -380,10 +378,7 @@ render_env_file() {
   } >> "$env_file"
 
   log "DEBUG: Env file setup complete"
-  if [[ "$VERBOSE" == "true" ]]; then
-    log "DEBUG: Contents of .env file:"
-    cat "$env_file"
-  fi
+  [[ "$VERBOSE" == "true" ]] && log "DEBUG: Env file written to $env_file"
 }
 
 # ------------------------------------------------------------------------------

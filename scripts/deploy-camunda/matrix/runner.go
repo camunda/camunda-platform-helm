@@ -27,6 +27,7 @@ import (
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/entra"
 	"scripts/deploy-camunda/pkg/deployer"
+	"scripts/deploy-camunda/pkg/redaction"
 	"scripts/prepare-helm-values/pkg/env"
 )
 
@@ -1244,6 +1245,7 @@ func writeDiagnosticsSummary(runDir string, summary diagnosticsSummary) error {
 	if err != nil {
 		return fmt.Errorf("marshal diagnostics summary: %w", err)
 	}
+	b = []byte(redaction.Text(string(b)))
 	if err := os.WriteFile(summaryPath, append(b, '\n'), 0o644); err != nil {
 		return fmt.Errorf("write diagnostics summary: %w", err)
 	}
@@ -1301,9 +1303,9 @@ func collectDiagnostics(namespace, kubeContext string) string {
 
 	// Pods
 	if pods, err := kube.GetPods(ctx, kubeContext, namespace); err == nil && pods != "" {
-		summary.Pods = pods
+		summary.Pods = redaction.Text(pods)
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("get pods: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get pods: %v", err)))
 	}
 
 	// Events (truncate to last 20 lines)
@@ -1312,9 +1314,9 @@ func collectDiagnostics(namespace, kubeContext string) string {
 		if len(lines) > 21 { // 1 header + 20 events
 			lines = append(lines[:1], lines[len(lines)-20:]...)
 		}
-		summary.Events = strings.Join(lines, "\n")
+		summary.Events = redaction.Text(strings.Join(lines, "\n"))
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("get events: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get events: %v", err)))
 	}
 
 	// Logs from all pods: one file per pod under logs/.
@@ -1325,16 +1327,16 @@ func collectDiagnostics(namespace, kubeContext string) string {
 
 			logs, logErr := kube.GetPodLogs(ctx, kubeContext, namespace, pod, diagnosticsPodTailLines)
 			if logErr != nil {
-				entry.Error = logErr.Error()
+				entry.Error = redaction.Text(logErr.Error())
 				summary.PodLogs = append(summary.PodLogs, entry)
-				summary.Errors = append(summary.Errors, fmt.Sprintf("get pod logs (%s): %v", pod, logErr))
+				summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get pod logs (%s): %v", pod, logErr)))
 				continue
 			}
 
 			if logs != "" {
 				relPath := filepath.Join("logs", sanitizeDiagnosticsFilename(pod)+".log")
 				absPath := filepath.Join(runDir, relPath)
-				if err := os.WriteFile(absPath, []byte(logs), 0o644); err != nil {
+				if err := os.WriteFile(absPath, []byte(redaction.Text(logs)), 0o644); err != nil {
 					entry.Error = fmt.Sprintf("write log file: %v", err)
 					summary.Errors = append(summary.Errors, fmt.Sprintf("write pod logs (%s): %v", pod, err))
 				} else {
@@ -1345,7 +1347,7 @@ func collectDiagnostics(namespace, kubeContext string) string {
 			summary.PodLogs = append(summary.PodLogs, entry)
 		}
 	} else {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("list pod names: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("list pod names: %v", err)))
 	}
 
 	// PVCs: state + describe. Key evidence for volume-mount and provisioning hangs
@@ -1353,14 +1355,14 @@ func collectDiagnostics(namespace, kubeContext string) string {
 	// after per-pod logs so that, under the shared collection deadline, the
 	// higher-value pod logs are not starved by the slower `describe pvc`.
 	if pvcs, err := kube.GetPVCs(ctx, kubeContext, namespace); err == nil && pvcs != "" {
-		summary.PVCs = pvcs
+		summary.PVCs = redaction.Text(pvcs)
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("get pvc: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("get pvc: %v", err)))
 	}
 	if pvcDesc, err := kube.DescribePVCs(ctx, kubeContext, namespace); err == nil && pvcDesc != "" {
-		summary.PVCDescribe = pvcDesc
+		summary.PVCDescribe = redaction.Text(pvcDesc)
 	} else if err != nil {
-		summary.Errors = append(summary.Errors, fmt.Sprintf("describe pvc: %v", err))
+		summary.Errors = append(summary.Errors, redaction.Text(fmt.Sprintf("describe pvc: %v", err)))
 	}
 
 	if err := writeDiagnosticsSummary(runDir, summary); err != nil {
@@ -1391,7 +1393,7 @@ func appendTestOutputToDiagnostics(err error, namespace, diagPath string) string
 	}
 
 	// Truncate test output to the last 200 lines to keep diagnostics files manageable.
-	output := lastNLines(testErr.Output, 200)
+	output := redaction.Text(lastNLines(testErr.Output, 200))
 	runDir := diagPath
 	if runDir == "" {
 		runDir = diagnosticsRunDir(namespace, time.Now())
