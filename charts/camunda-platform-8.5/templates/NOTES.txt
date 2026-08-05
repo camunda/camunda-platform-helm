@@ -152,10 +152,9 @@ as well, otherwise, a login will not be possible. Make sure you use `18080` as a
 Now you can point your browser to one of the service's login pages. Example: http://localhost:8081 for Operate.
 {{ if .Values.identity.firstUser.enabled }}
 {{- if .Values.identity.firstUser.existingSecret }}
-Default user: "{{ .Values.identity.firstUser.username }}", and for password, run:
-> kubectl get secret {{ .Values.identity.firstUser.existingSecret }} -o jsonpath='{.data.identity-firstuser-password}' | base64 -d
+Default user: "{{ .Values.identity.firstUser.username }}". The password is stored in Kubernetes Secret "{{ .Values.identity.firstUser.existingSecret }}" under key "{{ .Values.identity.firstUser.existingSecretKey }}". Retrieve it outside shared or recorded terminals.
 {{- else }}
-Default user: "{{ .Values.identity.firstUser.username }}".
+Default user: "{{ .Values.identity.firstUser.username }}". The password is configured via `identity.firstUser.password` and is intentionally omitted from this output.
 {{- end }}
 {{ end }}
 

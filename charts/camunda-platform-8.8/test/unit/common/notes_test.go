@@ -41,6 +41,6 @@ func TestNotesTemplate(t *testing.T) {
 
 	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
 	require.True(t, found)
-	require.Contains(t, notes, `Default user: "demo".`)
+	require.Contains(t, notes, "intentionally omitted")
 	require.NotContains(t, notes, "credential-output-canary-do-not-print")
 }
