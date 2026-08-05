@@ -72,17 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support shared and cross-namespace Gateway via global.gateway.name and namespace"
-    - kind: added
-      description: "Support topologySpreadConstraints for zeebe brokers and gateway"
     - kind: fixed
-      description: "Respect explicit empty global.identity.keycloak.contextPath"
-    - kind: fixed
-      description: "Allow Web Modeler and Console with external management Identity"
-    - kind: fixed
-      description: "Decouple requestBodySize from Zeebe maxMessageSize"
-    - kind: fixed
-      description: "Normalize orchestration internal REST URL when contextPath is root"
-    - kind: fixed
-      description: "Remove publishNotReadyAddresses from orchestration client-facing service"
+      description: "Only use document store configuration where required"
