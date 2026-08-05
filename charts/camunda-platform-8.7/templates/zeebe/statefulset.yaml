@@ -78,7 +78,7 @@ spec:
               value: {{ .Values.zeebe.logLevel | quote }}
             - name: ZEEBE_BROKER_GATEWAY_ENABLE
               value: "false"
-            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
+            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) .Values.global.documentStore.type.aws.existingSecret }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:

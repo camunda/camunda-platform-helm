@@ -76,6 +76,14 @@ func hasAwsSecretAccessKeyEnvVar(containers []corev1.Container) bool {
 	return false
 }
 
+func requireNoAwsCredentialEnvVars(t *testing.T, containers []corev1.Container) {
+	t.Helper()
+	require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+		"AWS_ACCESS_KEY_ID should not be present when the secret is unset")
+	require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+		"AWS_SECRET_ACCESS_KEY should not be present when the secret is unset")
+}
+
 // Helper function to check if any container references the shared documentstore-env-vars ConfigMap via envFrom
 func hasDocumentStoreEnvFromRef(containers []corev1.Container) bool {
 	for _, container := range containers {
@@ -140,6 +148,7 @@ func awsDocumentStoreValuesWithoutSecret() map[string]string {
 	values["global.documentStore.type.aws.bucket"] = "test-bucket"
 	values["global.documentStore.type.aws.region"] = "us-east-1"
 	values["global.documentStore.type.aws.irsa.enabled"] = "false"
+	values["global.documentStore.type.aws.existingSecret"] = ""
 	return values
 }
 
@@ -176,9 +185,21 @@ func (s *documentStoreIRSATest) TestZeebeStatefulSetWithIRSA() {
 					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
 			},
 		},
+		{
+			Name:   "AWS credentials should NOT be injected when the secret is unset",
+			Values: awsDocumentStoreValuesWithoutSecret(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				containers := statefulSet.Spec.Template.Spec.Containers
+				requireNoAwsCredentialEnvVars(t, containers)
+			},
+		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestZeebeGatewayWithIRSA() {
@@ -214,9 +235,21 @@ func (s *documentStoreIRSATest) TestZeebeGatewayWithIRSA() {
 					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
 			},
 		},
+		{
+			Name:   "Zeebe Gateway: AWS credentials should NOT be injected when the secret is unset",
+			Values: awsDocumentStoreValuesWithoutSecret(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				requireNoAwsCredentialEnvVars(t, containers)
+			},
+		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 // connectors, console, identity and web-modeler-webapp are not document-store
@@ -265,7 +298,7 @@ func (s *documentStoreIRSATest) TestConsoleNeverGetsDocumentStoreCreds() {
 		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 // Connectors reads the AWS credentials as ambient AWS SDK config for connector tasks, so they stay;
@@ -308,9 +341,21 @@ func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
 					"connectors should not reference the documentstore-env-vars ConfigMap")
 			},
 		},
+		{
+			Name:   "Connectors: AWS credentials should NOT be injected when the secret is unset",
+			Values: awsDocumentStoreValuesWithoutSecret(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				requireNoAwsCredentialEnvVars(t, containers)
+			},
+		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestIdentityNeverGetsDocumentStoreCreds() {
@@ -348,7 +393,7 @@ func (s *documentStoreIRSATest) TestIdentityNeverGetsDocumentStoreCreds() {
 		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestOperateWithIRSA() {
@@ -359,6 +404,9 @@ func (s *documentStoreIRSATest) TestOperateWithIRSA() {
 
 	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
 	valuesWithCredentials["operate.enabled"] = "true"
+
+	valuesWithoutSecret := awsDocumentStoreValuesWithoutSecret()
+	valuesWithoutSecret["operate.enabled"] = "true"
 
 	testCases := []testhelpers.TestCase{
 		{
@@ -391,9 +439,21 @@ func (s *documentStoreIRSATest) TestOperateWithIRSA() {
 					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
 			},
 		},
+		{
+			Name:   "Operate: AWS credentials should NOT be injected when the secret is unset",
+			Values: valuesWithoutSecret,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				requireNoAwsCredentialEnvVars(t, containers)
+			},
+		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestTasklistWithIRSA() {
@@ -404,6 +464,9 @@ func (s *documentStoreIRSATest) TestTasklistWithIRSA() {
 
 	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
 	valuesWithCredentials["tasklist.enabled"] = "true"
+
+	valuesWithoutSecret := awsDocumentStoreValuesWithoutSecret()
+	valuesWithoutSecret["tasklist.enabled"] = "true"
 
 	testCases := []testhelpers.TestCase{
 		{
@@ -436,9 +499,21 @@ func (s *documentStoreIRSATest) TestTasklistWithIRSA() {
 					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
 			},
 		},
+		{
+			Name:   "Tasklist: AWS credentials should NOT be injected when the secret is unset",
+			Values: valuesWithoutSecret,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				requireNoAwsCredentialEnvVars(t, containers)
+			},
+		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestExecutionIdentityWithIRSA() {
@@ -449,6 +524,9 @@ func (s *documentStoreIRSATest) TestExecutionIdentityWithIRSA() {
 
 	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
 	valuesWithCredentials["executionIdentity.enabled"] = "true"
+
+	valuesWithoutSecret := awsDocumentStoreValuesWithoutSecret()
+	valuesWithoutSecret["executionIdentity.enabled"] = "true"
 
 	testCases := []testhelpers.TestCase{
 		{
@@ -481,9 +559,21 @@ func (s *documentStoreIRSATest) TestExecutionIdentityWithIRSA() {
 					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
 			},
 		},
+		{
+			Name:   "ExecutionIdentity: AWS credentials should NOT be injected when the secret is unset",
+			Values: valuesWithoutSecret,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				requireNoAwsCredentialEnvVars(t, containers)
+			},
+		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestWebModelerWebappNeverGetsDocumentStoreCreds() {
@@ -530,7 +620,7 @@ func (s *documentStoreIRSATest) TestWebModelerWebappNeverGetsDocumentStoreCreds(
 		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestWebModelerRestapiWithIRSA() {
@@ -543,6 +633,10 @@ func (s *documentStoreIRSATest) TestWebModelerRestapiWithIRSA() {
 	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
 	valuesWithCredentials["webModeler.enabled"] = "true"
 	valuesWithCredentials["webModeler.restapi.mail.fromAddress"] = "test@example.com"
+
+	valuesWithoutSecret := awsDocumentStoreValuesWithoutSecret()
+	valuesWithoutSecret["webModeler.enabled"] = "true"
+	valuesWithoutSecret["webModeler.restapi.mail.fromAddress"] = "test@example.com"
 
 	testCases := []testhelpers.TestCase{
 		{
@@ -579,7 +673,19 @@ func (s *documentStoreIRSATest) TestWebModelerRestapiWithIRSA() {
 					"web-modeler-restapi must keep the documentstore-env-vars ConfigMap, its only AWS_REGION source")
 			},
 		},
+		{
+			Name:   "WebModeler REST API: AWS credentials should NOT be injected when the secret is unset",
+			Values: valuesWithoutSecret,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				requireNoAwsCredentialEnvVars(t, containers)
+			},
+		},
 	}
 
-	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
