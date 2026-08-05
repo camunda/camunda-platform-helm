@@ -79,6 +79,7 @@ on:
           - keycloak-rba
           - oidc
           - opensearch
+          - shadow-e2e
           - upgrade-migration
           - multinamespace
       test-enabled:
