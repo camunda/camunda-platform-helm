@@ -1201,6 +1201,44 @@
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
+                "image": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub image; merged additively over the legacy webModeler.image map, so partial overrides keep the legacy values for the keys left unset.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "security": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub security section; takes precedence over the legacy webModeler.security values.",
+                    "default": {},
+                    "additionalProperties": true,
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "description": "override values for the Camunda Hub authentication section; takes precedence over the legacy webModeler.security.authentication values.",
+                            "default": {},
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "restapi": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub restapi component; takes precedence over the legacy webModeler.restapi values.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "websockets": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub websockets component; takes precedence over the legacy webModeler.websockets values.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "serviceAccount": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub service account; takes precedence over the legacy webModeler.serviceAccount values.",
+                    "default": {},
+                    "additionalProperties": true
+                },
                 "persistence": {
                     "properties": {
                         "deploymentStrategy": {
