@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   preview:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     name: Build and deploy PR preview
     runs-on: ubuntu-latest
     permissions:

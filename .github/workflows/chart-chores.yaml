@@ -19,10 +19,11 @@ permissions:
 jobs:
   chores:
     if: >-
-      (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) &&
-      !startsWith(github.head_ref || github.ref_name, 'renovate/') &&
-      !startsWith(github.head_ref || github.ref_name, 'release-please--') &&
-      (github.head_ref || github.ref_name) != 'main'
+      ${{
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        !startsWith(github.head_ref, 'renovate/') &&
+        !startsWith(github.head_ref, 'release-please--')
+      }}
     name: Chart chores
     runs-on: ubuntu-latest
     timeout-minutes: 60
