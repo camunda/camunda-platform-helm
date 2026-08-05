@@ -56,5 +56,18 @@
     "release_date": "2026-07-09",
     "helm_cli": "4.1.4",
     "release_tag": "camunda-platform-8.10-15.0.0-alpha3"
+  },
+  {
+    "chart_version": "15.0.0-alpha4",
+    "chart_images": [
+      "docker.io/camunda/camunda:8.10.0-alpha4",
+      "docker.io/camunda/connectors-bundle:8.10.0-alpha4",
+      "docker.io/camunda/hub-websockets:8.10.0-alpha4",
+      "docker.io/camunda/hub:8.10.0-alpha4",
+      "docker.io/camunda/identity:8.10.0-alpha4.2",
+      "docker.io/camunda/optimize:8.10.0-alpha4"
+    ],
+    "helm_cli": "4.2.3",
+    "release_tag": "camunda-platform-8.10-15.0.0-alpha4"
   }
 ]

@@ -39,7 +39,7 @@ maintainers:
     email: balazs.kenez@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "4.2.2"
+  camunda.io/helmCLIVersion: "4.2.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -50,30 +50,38 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Deprecate app-config proxy keys in favor of extraConfiguration"
+      description: "Make Gateway API listener port and route sectionName configurable"
     - kind: added
-      description: "Adjust modeler cluster defaults for console migration"
+      description: "Support S3-compatible endpoints in AWS document store"
     - kind: added
-      description: "Rename cluster config types webModelerWebApp→hub, orchestrationIdentity→admin"
+      description: "Add multi-namespace topology CI scenario"
+    - kind: added
+      description: "Support shared and cross-namespace Gateway via global.gateway.name and namespace"
+    - kind: added
+      description: "Support topologySpreadConstraints for zeebe brokers and gateway"
+    - kind: added
+      description: "Add opt-in orchestration.hub.ping values for authenticated Hub ping"
+    - kind: added
+      description: "[TOPOLOGY 3/6] add topology-aware deployment contract"
+    - kind: added
+      description: "Add pod-level service account token automount control"
+    - kind: changed
+      description: "Hoist camundaHub.webModeler.* and console overrides to the camundaHub.* parent"
     - kind: fixed
-      description: "Harden caBundle truststore init container for air-gapped & OpenShift"
+      description: "Omit empty zeebe.broker.exporters map for no-exporter scenarios"
     - kind: fixed
-      description: "Support Orchestration gRPC TLS endpoints"
+      description: "Allow Web Modeler and Console with external management Identity"
     - kind: fixed
-      description: "Trust caBundle CA in console via NODE_EXTRA_CA_CERTS + CRLF-safe init"
+      description: "Decouple requestBodySize from Zeebe maxMessageSize"
     - kind: fixed
-      description: "Remove obsolete backup.webapps workaround when RDBMS is enabled"
+      description: "Correct console deprecation signals after hub consolidation"
     - kind: fixed
-      description: "Align deployment PVC claimName casing to webmodeler-data in 8.9 and 8.10"
+      description: "Normalize orchestration internal REST URL when contextPath is root"
     - kind: fixed
-      description: "Configure index replicas for the legacy Zeebe ES/OS exporter"
+      description: "Remove publishNotReadyAddresses from orchestration client-facing service"
     - kind: fixed
-      description: "Cover keys shipped by default values.yaml across 8.8/8.9/8.10"
+      description: "Only use document store configuration where required"
     - kind: fixed
-      description: "Back Web Modeler restapi /tmp with a per-pod ephemeral volume"
+      description: "Bind azure document store connection string to the unified config path"
     - kind: fixed
-      description: "Complete Camunda Hub consolidation deprecations for console/webModeler"
-    - kind: fixed
-      description: "Fail clearly when an image override has an empty tag and no digest"
-    - kind: fixed
-      description: "Surface deprecation warnings on the gitops render path"
+      description: "Gate OpenSearch password env vars on effective backend"
