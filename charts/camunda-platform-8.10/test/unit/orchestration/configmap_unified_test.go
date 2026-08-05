@@ -721,6 +721,129 @@ func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestLegacyConfigurationCompatibility() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "DefaultModeUsesLegacyNodeIDAndSingleRegionAdvertisedHost",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "${K8S_NAME##*-} * 1 + 0")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
+				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
+				require.NotContains(t, output, "scheme: ZONE_AWARE")
+			},
+		},
+		{
+			Name: "ExplicitLegacyModeUsesLegacyNodeIDAndMultiRegionAdvertisedHost",
+			Values: map[string]string{
+				"global.multiregion.mode":       "legacy",
+				"global.multiregion.regions":    "2",
+				"global.multiregion.regionId":   "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "${K8S_NAME##*-} * 2 + 1")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
+				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
+				require.NotContains(t, output, "scheme: ZONE_AWARE")
+			},
+		},
+		{
+			Name: "LegacyCustomConfigurationRemainsAuthoritative",
+			Values: map[string]string{
+				"global.multiregion.mode":     "legacy",
+				"orchestration.configuration": "camunda:\n  cluster:\n    partition-count: 7\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "partition-count: 7")
+				require.NotContains(t, output, "partition-count: \"3\"")
+				require.Contains(t, output, "${K8S_NAME##*-} * 1 + 0")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainZoneAwareConfiguration",
+			Values: map[string]string{
+				"global.multiregion.mode":                      "zoned",
+				"global.multiregion.zone":                      "region-a",
+				"global.multiregion.zones[0].name":             "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":  "2",
+				"global.multiregion.zones[0].numberOfReplicas": "2",
+				"global.multiregion.zones[0].priority":         "100",
+				"global.multiregion.zones[1].name":             "region-b",
+				"global.multiregion.zones[1].numberOfBrokers":  "3",
+				"global.multiregion.zones[1].numberOfReplicas": "3",
+				"global.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "size: \"5\"")
+				require.Contains(t, output, "replication-factor: \"5\"")
+				require.Contains(t, output, "scheme: ZONE_AWARE")
+				require.Contains(t, output, "name: \"region-a\"")
+				require.Contains(t, output, "name: \"region-b\"")
+				require.NotContains(t, output, "node-id:")
+				require.NotContains(t, output, "VALUES_ORCHESTRATION_NODE_ID")
+				require.NotContains(t, output, "initial-contact-points:")
+			},
+		},
+		{
+			Name: "TestZonedModeDoesNotEnableLegacyElasticsearchExporter",
+			Values: map[string]string{
+				"global.multiregion.mode":                                       "zoned",
+				"global.multiregion.zone":                                       "region-a",
+				"global.multiregion.zones[0].name":                              "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":                   "2",
+				"global.multiregion.zones[0].numberOfReplicas":                  "2",
+				"global.multiregion.zones[0].priority":                          "100",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                                              "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestZonedModeRejectsLegacyRegionSettings() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestZonedModeRejectsLegacyRegions",
+			Values: map[string]string{
+				"global.multiregion.mode":       "zoned",
+				"global.multiregion.regions":    "2",
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.regions and global.multiregion.regionId cannot be used with zoned mode",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestCamundaExporterHonorsAutoconfigureFromExtraConfiguration() {
 	testCases := []testhelpers.TestCase{
 		{

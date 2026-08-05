@@ -12,6 +12,52 @@
     ) -}}
 {{- end -}}
 
+{{- define "orchestration.zoned" -}}
+{{- eq .Values.global.multiregion.mode "zoned" -}}
+{{- end -}}
+
+{{- define "orchestration.clusterSize" -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+  {{- $clusterSize := 0 -}}
+  {{- range .Values.global.multiregion.zones -}}
+    {{- $clusterSize = add $clusterSize (int .numberOfBrokers) -}}
+  {{- end -}}
+  {{- $clusterSize -}}
+{{- else -}}
+  {{- .Values.orchestration.clusterSize -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.replicationFactor" -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+  {{- $replicationFactor := 0 -}}
+  {{- range .Values.global.multiregion.zones -}}
+    {{- $replicationFactor = add $replicationFactor (int .numberOfReplicas) -}}
+  {{- end -}}
+  {{- $replicationFactor -}}
+{{- else -}}
+  {{- .Values.orchestration.replicationFactor -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.zoneBrokers" -}}
+{{- $zoneBrokers := 0 -}}
+{{- range .Values.global.multiregion.zones -}}
+  {{- if eq .name $.Values.global.multiregion.zone -}}
+    {{- $zoneBrokers = int .numberOfBrokers -}}
+  {{- end -}}
+{{- end -}}
+{{- $zoneBrokers -}}
+{{- end -}}
+
+{{- define "orchestration.replicas" -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+{{- include "orchestration.zoneBrokers" . -}}
+{{- else -}}
+{{- div .Values.orchestration.clusterSize .Values.global.multiregion.regions -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 [orchestration] Defines extra labels for orchestration.
 */}}
@@ -310,10 +356,13 @@ and
           (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
         )
       )
-      (or
-        .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
-      )
+       (or
+         .Values.orchestration.exporters.zeebe.enabled
+         (and
+           (ne (include "orchestration.zoned" .) "true")
+           (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+         )
+       )
 -}}
 {{- end -}}
 
@@ -323,10 +372,13 @@ and
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
         (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
       )
-      (or
-        .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
-      )
+       (or
+         .Values.orchestration.exporters.zeebe.enabled
+         (and
+           (ne (include "orchestration.zoned" .) "true")
+           (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+         )
+       )
 -}}
 {{- end -}}
 

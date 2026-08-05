@@ -39,6 +39,10 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
   {{- fail "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`, available values are [elasticsearch, opensearch, rdbms]. For more details, see our documentation here: https://docs.camunda.io/docs/next/self-managed/concepts/secondary-storage/configuring-secondary-storage/" -}}
 {{- end }}
 
+{{- if and (eq .Values.global.multiregion.mode "zoned") (or (ne (int .Values.global.multiregion.regions) 1) (ne (int .Values.global.multiregion.regionId) 0)) }}
+  {{- fail "[camunda][error] global.multiregion.regions and global.multiregion.regionId cannot be used with zoned mode." -}}
+{{- end }}
+
 {{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}

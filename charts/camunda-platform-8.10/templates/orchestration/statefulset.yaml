@@ -10,7 +10,7 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
-  replicas: {{ div .Values.orchestration.clusterSize .Values.global.multiregion.regions }}
+  replicas: {{ include "orchestration.replicas" . }}
   selector:
     matchLabels:
       {{- include "orchestration.matchLabels" . | nindent 6 }}
@@ -97,6 +97,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if eq (include "orchestration.zoned" .) "true" }}
+            - name: CAMUNDA_CLUSTER_ZONE
+              value: {{ .Values.global.multiregion.zone | quote }}
+            {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}

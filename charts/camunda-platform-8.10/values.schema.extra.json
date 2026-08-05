@@ -70,6 +70,22 @@
                     "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production \u2014 see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {},
                     "properties": {
+                        "mode": {
+                            "type": "string",
+                            "description": "defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.",
+                            "default": "legacy"
+                        },
+                        "zone": {
+                            "type": "string",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.",
+                            "default": ""
+                        },
+                        "zones": {
+                            "type": "array",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using zoned mode.",
+                            "default": [],
+                            "items": {}
+                        },
                         "regions": {
                             "type": [
                                 "integer",
