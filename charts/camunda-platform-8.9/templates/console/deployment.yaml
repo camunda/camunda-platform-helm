@@ -72,22 +72,6 @@ spec:
               value: {{ .Values.global.identity.auth.console.clientId | default "console" }}
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
               value: {{ .Values.console.contextPath | quote }}
-            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
-            - name: AWS_ACCESS_KEY_ID
-              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
-                  "secretType" "accessKeyId"
-                  "context" .
-              ) | nindent 14 }}
-            - name: AWS_SECRET_ACCESS_KEY
-              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
-                  "secretType" "secretAccessKey"
-                  "context" .
-              ) | nindent 14 }}
-            {{- end }}
-            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
-            {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- /* Console is Node.js: it trusts custom CAs via NODE_EXTRA_CA_CERTS, NOT
                   SSL_CERT_FILE (Node ignores the latter for its TLS client). Emit both
@@ -98,10 +82,8 @@ spec:
           {{- if .Values.console.env}}
             {{ .Values.console.env | toYaml | nindent 12 }}
           {{- end }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- if .Values.console.envFrom }}
+          envFrom:
             {{- .Values.console.envFrom | toYaml | nindent 12 }}
           {{- end }}
           ports:
@@ -160,11 +142,6 @@ spec:
               mountPath: /usr/local/console/certificates
               readOnly: true
           {{- end }}
-            {{- if .Values.global.documentStore.type.gcp.enabled }}
-            - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
-              readOnly: true
-            {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
@@ -183,13 +160,6 @@ spec:
             "volumeName" "console-certificates"
             "config" .Values.console.tls
         ) | nindent 8 }}
-        {{- if .Values.global.documentStore.type.gcp.enabled }}
-        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
-            "volumeName" "gcp-credentials-volume"
-            "config" .Values.global.documentStore.type.gcp
-            "fileName" .Values.global.documentStore.type.gcp.fileName
-        ) | nindent 8 }}
-        {{- end }}
       {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}

@@ -71,10 +71,6 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING"
-                "config" .Values.global.documentStore.type.azure.connectionString
-            ) | nindent 12 }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
@@ -82,16 +78,11 @@ spec:
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}
-          {{- $documentStoreEnvFrom := ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" .Values.connectors.extraConfiguration "path" (list "camunda" "document"))) "true" }}
-          {{- if or .Values.global.identity.auth.enabled $documentStoreEnvFrom .Values.connectors.envFrom }}
+          {{- if or .Values.global.identity.auth.enabled .Values.connectors.envFrom }}
           envFrom:
           {{- if .Values.global.identity.auth.enabled }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
-          {{- end }}
-          {{- if $documentStoreEnvFrom }}
-            - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
           {{- end }}
           {{- if .Values.connectors.envFrom -}}
             {{ .Values.connectors.envFrom | toYaml | nindent 12 }}

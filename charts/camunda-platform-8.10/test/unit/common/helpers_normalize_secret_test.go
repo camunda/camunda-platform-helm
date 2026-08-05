@@ -165,14 +165,15 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 }
 
 func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
-	// Use connectors deployment template which has GCP volume support
-	templates := []string{"templates/connectors/deployment.yaml"}
+	// Use orchestration statefulset template - the only remaining document-store
+	// consumer (camunda-platform-helm#3741 removed the wiring from connectors, which
+	// this test previously used, since connectors never actually consumed it).
+	templates := []string{"templates/orchestration/statefulset.yaml"}
 
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "gcp document store new style secret creates volume",
 			Values: map[string]string{
-				"connectors.enabled":                                     "true",
 				"global.documentStore.type.gcp.enabled":                  "true",
 				"global.documentStore.type.gcp.secret.existingSecret":    "my-gcp-secret",
 				"global.documentStore.type.gcp.secret.existingSecretKey": "credentials.json",
@@ -186,7 +187,6 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 		{
 			Name: "gcp document store custom fileName creates volume with custom path",
 			Values: map[string]string{
-				"connectors.enabled":                                     "true",
 				"global.documentStore.type.gcp.enabled":                  "true",
 				"global.documentStore.type.gcp.secret.existingSecret":    "custom-gcp-secret",
 				"global.documentStore.type.gcp.secret.existingSecretKey": "custom.json",
@@ -201,7 +201,6 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 		{
 			Name: "gcp document store volume mount is created when secret exists",
 			Values: map[string]string{
-				"connectors.enabled":                                     "true",
 				"global.documentStore.type.gcp.enabled":                  "true",
 				"global.documentStore.type.gcp.secret.existingSecret":    "mount-test-secret",
 				"global.documentStore.type.gcp.secret.existingSecretKey": "mount-test.json",
@@ -215,7 +214,6 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 		{
 			Name: "no gcp document store config means no volume",
 			Values: map[string]string{
-				"connectors.enabled":                    "true",
 				"global.documentStore.type.gcp.enabled": "true",
 				// No secret configuration
 			},
@@ -228,7 +226,6 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 		{
 			Name: "gcp document store disabled means no volume",
 			Values: map[string]string{
-				"connectors.enabled":                                     "true",
 				"global.documentStore.type.gcp.enabled":                  "false",
 				"global.documentStore.type.gcp.secret.existingSecret":    "should-not-be-used",
 				"global.documentStore.type.gcp.secret.existingSecretKey": "should-not-be-used.json",

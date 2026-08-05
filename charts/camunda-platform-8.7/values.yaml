@@ -425,7 +425,7 @@ global:
         region: ""
         ## @param global.documentStore.type.aws.bucket Name of the AWS S3 bucket.
         bucket: "your-aws-bucket"
-        ## @param global.documentStore.type.aws.bucketPath (Optional) Path/prefix within the S3 bucket.
+        ## @param global.documentStore.type.aws.bucketPath can be used to define a key prefix within the S3 bucket (for example documents/invoices), not an endpoint URL.
         bucketPath: ""
         ## @param global.documentStore.type.aws.bucketTtl (Optional) Time-to-live for documents in the S3 bucket (number in days).
         bucketTtl: 0
