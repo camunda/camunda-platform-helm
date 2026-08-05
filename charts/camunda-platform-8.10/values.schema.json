@@ -1262,31 +1262,6 @@
                         }
                     }
                 },
-                "secretStore": {
-                    "type": "object",
-                    "properties": {
-                        "file": {
-                            "type": "object",
-                            "description": "can be used to configure file-based secret stores as a map keyed by store id. Each entry supports `path` (directory the store reads secrets from, one file per secret; defaults to \"/etc/camunda/secrets\") and the chart-only `existingSecret` (a Kubernetes Secret mounted read-only at `path`). Example: `myfilestore: {existingSecret: my-secrets, path: /etc/camunda/secrets}`.",
-                            "default": {}
-                        },
-                        "aws": {
-                            "type": "object",
-                            "description": "can be used to configure AWS Secrets Manager stores as a map keyed by store id. Authentication is identity-based only (IRSA / EKS Pod Identity); no static credentials are accepted. Each entry supports `region`, `pathPrefix`, `batchEnabled`, `batchSize` (1-20), `containerSecretId` (mutually exclusive with `batchEnabled`), and the chart-only `roleArn` (sets the `eks.amazonaws.com/role-arn` annotation on the Orchestration ServiceAccount). Example: `myawsstore: {region: us-east-1, roleArn: arn:aws:iam::123456789012:role/camunda-secrets}`.",
-                            "default": {}
-                        },
-                        "gcp": {
-                            "type": "object",
-                            "description": "can be used to configure GCP Secret Manager stores as a map keyed by store id. Authentication is identity-based only (GKE Workload Identity); no static credentials are accepted. Each entry supports `projectId`, `pathPrefix`, `endpoint`, `containerSecretId`, and the chart-only `gcpServiceAccount` (sets the `iam.gke.io/gcp-service-account` annotation on the Orchestration ServiceAccount). Example: `mygcpstore: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.",
-                            "default": {}
-                        },
-                        "physicalTenants": {
-                            "type": "object",
-                            "description": "can be used to override the secret stores per physical tenant as a map keyed by physical tenant id. Each entry mirrors the top-level `file`, `aws`, and `gcp` maps and renders `camunda.physical-tenants.<id>.secrets.stores.*`, replacing the default-tenant stores for that tenant. The one-store-per-tenant rule applies to each tenant independently. Because a single ServiceAccount can carry only one IRSA role and one GCP service account, `roleArn` and `gcpServiceAccount` must be identical across all tenants that set them. Example: `tenantA: {aws: {store: {region: us-east-1}}}`.",
-                            "default": {}
-                        }
-                    }
-                },
                 "extraManifests": {
                     "type": "array",
                     "description": "Array of extra objects to deploy with the release.",
@@ -4749,6 +4724,27 @@
                     "default": null,
                     "nullable": true
                 },
+                "secretStore": {
+                    "type": "object",
+                    "properties": {
+                        "file": {
+                            "type": "object",
+                            "description": "can be used to configure file-based secret stores as a map keyed by store id. Each entry supports `path` (directory the store reads secrets from, one file per secret; defaults to \"/etc/camunda/secrets\") and the chart-only `existingSecret` (an optional Kubernetes Secret mounted read-only at `path`). Example: `myfilestore: {existingSecret: my-secrets, path: /etc/camunda/secrets}`.",
+                            "default": {}
+                        },
+                        "aws": {
+                            "type": "object",
+                            "description": "can be used to configure AWS Secrets Manager connectivity as a map keyed by store id. The application uses the AWS SDK default credential chain. Each entry supports `region`, `pathPrefix`, and the chart-only `roleArn` (sets the `eks.amazonaws.com/role-arn` annotation on the Orchestration ServiceAccount). Configure runtime behavior such as batching or container-secret mode through `orchestration.extraConfiguration`. Example: `myawsstore: {region: us-east-1, roleArn: arn:aws:iam::123456789012:role/camunda-secrets}`.",
+                            "default": {}
+                        },
+                        "physicalTenants": {
+                            "type": "object",
+                            "description": "can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and store id when overriding a root store. File-store `existingSecret` is inherited together with the runtime fields. Physical tenant ids must contain only lowercase letters and digits. Example: `tenanta: {aws: {store: {region: us-east-1}}}`.",
+                            "default": {}
+                        }
+                    },
+                    "$ref": "#/definitions/secretStore"
+                },
                 "gateway": {
                     "type": "object",
                     "properties": {
@@ -6825,6 +6821,84 @@
                     }
                 }
             }
+        }
+    },
+    "definitions": {
+        "secretStoreFileEntries": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "pattern": "^/",
+                        "minLength": 1
+                    },
+                    "existingSecret": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreAwsEntries": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "region": {
+                        "type": "string"
+                    },
+                    "pathPrefix": {
+                        "type": "string"
+                    },
+                    "roleArn": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreProviderSet": {
+            "type": "object",
+            "properties": {
+                "file": {
+                    "$ref": "#/definitions/secretStoreFileEntries"
+                },
+                "aws": {
+                    "$ref": "#/definitions/secretStoreAwsEntries"
+                }
+            },
+            "additionalProperties": false
+        },
+        "secretStore": {
+            "type": "object",
+            "properties": {
+                "file": {
+                    "$ref": "#/definitions/secretStoreFileEntries"
+                },
+                "aws": {
+                    "$ref": "#/definitions/secretStoreAwsEntries"
+                },
+                "physicalTenants": {
+                    "type": "object",
+                    "propertyNames": {
+                        "pattern": "^[a-z0-9]{1,64}$"
+                    },
+                    "additionalProperties": {
+                        "$ref": "#/definitions/secretStoreProviderSet"
+                    }
+                }
+            },
+            "additionalProperties": false
         }
     },
     "$defs": {
