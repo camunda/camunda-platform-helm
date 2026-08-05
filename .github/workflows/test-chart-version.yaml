@@ -223,7 +223,11 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
     uses: ./.github/workflows/test-unit-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number || github.ref }}-unit-${{ matrix.version }}"
