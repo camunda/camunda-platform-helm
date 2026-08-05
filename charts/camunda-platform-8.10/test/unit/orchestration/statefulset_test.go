@@ -1328,6 +1328,93 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+// A chart-managed cert emits its path before orchestration.env is appended, so a
+// leftover manual cert-path entry wins on Kubernetes last-wins and points the
+// server at a path the chart does not mount.
+func (s *StatefulSetTest) TestOrchestrationTLSRejectsManagedCertPlusManualCertPathEnv() {
+	restDualWiring := func(envName string) testhelpers.TestCase {
+		return testhelpers.TestCase{
+			Name: "REST managed cert plus manual " + envName + " in orchestration.env fails",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"orchestration.env[0].name":                                envName,
+				"orchestration.env[0].value":                               "/legacy/path",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "Orchestration REST TLS has a chart-managed cert")
+				require.Contains(t, err.Error(), envName)
+			},
+		}
+	}
+
+	grpcDualWiring := func(envName string) testhelpers.TestCase {
+		return testhelpers.TestCase{
+			Name: "gRPC managed cert plus manual " + envName + " in orchestration.env fails",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+				"orchestration.env[0].name":                                envName,
+				"orchestration.env[0].value":                               "/legacy/path",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "Orchestration gRPC TLS has a chart-managed cert")
+				require.Contains(t, err.Error(), envName)
+			},
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		restDualWiring("SERVER_SSL_KEY_STORE"),
+		restDualWiring("SERVER_SSL_CERTIFICATE"),
+		restDualWiring("SERVER_SSL_CERTIFICATE_PRIVATE_KEY"),
+		grpcDualWiring("CAMUNDA_API_GRPC_SSL_CERTIFICATE"),
+		grpcDualWiring("CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY"),
+		{
+			Name: "REST managed cert plus an unrelated orchestration.env entry renders",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"orchestration.env[0].name":                                "SOME_UNRELATED_VAR",
+				"orchestration.env[0].value":                               "x",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE", Value: "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12"})
+			},
+		},
+		{
+			Name: "gRPC managed cert plus an unrelated orchestration.env entry renders",
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+				"orchestration.env[0].name":                                "SOME_UNRELATED_VAR",
+				"orchestration.env[0].value":                               "x",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_API_GRPC_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/orchestration/grpc/tls.crt"})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *StatefulSetTest) TestOrchestrationTLSEnabledViaEnvWithManagedCert() {
 	testCases := []testhelpers.TestCase{
 		{
