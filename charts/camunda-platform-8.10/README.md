@@ -651,11 +651,13 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 
 ### CamundaHub Parameters
 
-| Name                     | Description                                                                                                                          | Value   |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| `camundaHub`             | configuration for Camunda Hub (WebModeler + Console).                                                                                |         |
-| `camundaHub.enabled`     | if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.                                              | `false` |
-| `camundaHub.contextPath` | can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath. | `""`    |
+| Name                       | Description                                                                                                                                                                                                                                                           | Value    |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `camundaHub`               | configuration for Camunda Hub (WebModeler + Console).                                                                                                                                                                                                                 |          |
+| `camundaHub.enabled`       | if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.                                                                                                                                                                               | `false`  |
+| `camundaHub.upgrade`       | configuration for the 8.9 to 8.10 Camunda Hub database migration.                                                                                                                                                                                                     |          |
+| `camundaHub.upgrade.phase` | defines the Camunda Hub lifecycle phase. Use `normal` for fresh installs and normal operation, `quiesce` to stop Hub workloads before taking a database backup, and `migrate` to run one Hub REST API pod for the startup database migration without serving traffic. | `normal` |
+| `camundaHub.contextPath`   | can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.                                                                                                                                  | `""`     |
 
 ### WebModeler Parameters
 

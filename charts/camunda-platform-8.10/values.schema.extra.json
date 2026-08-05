@@ -1159,6 +1159,20 @@
             "default": {},
             "additionalProperties": true,
             "properties": {
+                "upgrade": {
+                    "type": "object",
+                    "properties": {
+                        "phase": {
+                            "type": "string",
+                            "enum": [
+                                "normal",
+                                "quiesce",
+                                "migrate"
+                            ],
+                            "default": "normal"
+                        }
+                    }
+                },
                 "persistence": {
                     "properties": {
                         "deploymentStrategy": {

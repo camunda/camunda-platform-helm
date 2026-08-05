@@ -1,0 +1,5 @@
+script: post-infra-hub-database-migration.sh
+description: |
+  Seed representative 8.9 Web Modeler hierarchy data, then migrate the source
+  Web Modeler PostgreSQL database to the 8.10 companion PostgreSQL before the
+  Hub startup Flyway migration runs.
