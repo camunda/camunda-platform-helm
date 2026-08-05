@@ -12,7 +12,7 @@ metadata:
       "context" .
     ) | nindent 4 }}
   annotations:
-    {{- $restProxyVerify := include "camundaPlatform.orchestrationProxyVerifyAnnotations" (dict "context" . "proto" "rest") | fromYaml }}
+    {{- $restProxyVerify := include "camundaPlatform.orchestrationProxyVerifyAnnotations" . | fromYaml }}
     {{- include "common.tplvalues.merge-overwrite" (dict
       "values" (list
         .Values.global.ingress.annotations

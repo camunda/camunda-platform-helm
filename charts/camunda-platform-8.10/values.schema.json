@@ -846,51 +846,6 @@
                                                     }
                                                 }
                                             }
-                                        },
-                                        "proxyVerify": {
-                                            "type": "object",
-                                            "properties": {
-                                                "enabled": {
-                                                    "type": "boolean",
-                                                    "description": "if true, NGINX verifies the upstream server cert against the CA bundle.",
-                                                    "default": false
-                                                },
-                                                "sniHost": {
-                                                    "type": "string",
-                                                    "description": "can be used to set the SNI hostname NGINX presents when verifying the upstream cert.",
-                                                    "default": ""
-                                                },
-                                                "caSecret": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "secret": {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "inlineSecret": {
-                                                                    "type": "string",
-                                                                    "description": "can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret keyed \"ca.crt\" (the fixed key NGINX reads), so any custom existingSecretKey below is ignored when this is set.",
-                                                                    "default": ""
-                                                                },
-                                                                "existingSecret": {
-                                                                    "type": "string",
-                                                                    "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle. nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed \"ca.crt\" key from this Secret, so the CA bundle must be stored under that key; existingSecretKey is not honored for this path (use inlineSecret if the source key differs).",
-                                                                    "default": ""
-                                                                },
-                                                                "existingSecretKey": {
-                                                                    "type": "string",
-                                                                    "description": "defines the key within the existing secret object. Not honored when existingSecret is used directly; kept for schema consistency with other secret blocks. Retained for future use, e.g. if a repack-from-custom-key path is added.",
-                                                                    "default": "ca.crt"
-                                                                }
-                                                            }
-                                                        },
-                                                        "namespace": {
-                                                            "type": "string",
-                                                            "description": "can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.",
-                                                            "default": ""
-                                                        }
-                                                    }
-                                                }
-                                            }
                                         }
                                     }
                                 }
