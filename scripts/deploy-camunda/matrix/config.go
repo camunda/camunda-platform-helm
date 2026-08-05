@@ -234,7 +234,7 @@ type CIScenario struct {
 	PostDeploy *LifecycleHook `yaml:"post-deploy,omitempty"`
 
 	// Topology, when set, describes a multi-namespace deployment shape for
-	// this scenario (management + orchestration releases sharing a central
+	// this scenario (Hub + orchestration releases sharing a central
 	// Identity and secondary storage). Scenarios without it deploy as a
 	// single namespace/release exactly as before.
 	Topology *Topology `yaml:"topology,omitempty"`

@@ -3,28 +3,19 @@
 # releases in the multinamespace topology. Unlike identity/keycloak.yaml
 # (which points at a companion Keycloak deployed in the SAME namespace via
 # the bare "keycloak" service name), this layer points at the bundled
-# Keycloak/Identity running in the MANAGEMENT namespace, reached
+# Keycloak/Identity running in the Hub namespace, reached
 # cross-namespace by FQDN.
 #
 # Cross-namespace env placeholders (resolved at deploy time — every release's
 # namespace/realm is computed up front by deploy.GenerateTopologyContexts and
 # injected via ExtraEnv before render/preflight, see
 # scripts/deploy-camunda/cmd/matrix.go's runTopologyEntry):
-#   MGMT_NAMESPACE   — the management release's namespace
-#   MGMT_HOST        — the management release's ingress host
-#   KEYCLOAK_REALM   — the realm name provisioned in the management release
+#   HUB_NAMESPACE    - the Hub release's namespace
+#   HUB_HOST         - the Hub release's ingress host
+#   KEYCLOAK_REALM   - the realm name provisioned in the Hub release
 #
 # This release deploys no Identity, Keycloak, Web Modeler, or Camunda Hub of
-# its own — auth and modeling are centralized in the management namespace.
-
-identity:
-  enabled: false
-
-webModeler:
-  enabled: false
-
-camundaHub:
-  enabled: false
+# its own - auth and modeling are centralized in the Hub namespace.
 
 global:
   host: "$CAMUNDA_HOSTNAME"
@@ -39,25 +30,32 @@ global:
       external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
     service:
-      url: "http://integration-identity.${MGMT_NAMESPACE}.svc.cluster.local:80/identity"
+      url: "http://integration-identity.${HUB_NAMESPACE}.svc.cluster.local:80/identity"
     auth:
       enabled: true
       type: KEYCLOAK
-      issuerBackendUrl: "http://keycloak.${MGMT_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
-      publicIssuerUrl: "https://${MGMT_HOST}/auth/realms/camunda-platform"
+      issuerBackendUrl: "http://keycloak.${HUB_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://${HUB_HOST}/auth/realms/camunda-platform"
       admin:
         enabled: true
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-admin-client-token"
       optimize:
+        clientId: "${ORCH_OPTIMIZE_CLIENT_ID}"
+        audience: "${ORCH_OPTIMIZE_AUDIENCE}"
         redirectUrl: "https://${ORCH_HOST}/optimize"
         secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-optimize-client-token"
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
+  topology:
+    mode: orchestration
   security:
     authentication:
       method: oidc
+
+identity:
+  enabled: false
 
 optimize:
   enabled: true
@@ -72,11 +70,13 @@ connectors:
   security:
     authentication:
       oidc:
+        clientId: "${ORCH_CONNECTORS_CLIENT_ID}"
         secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-connectors-client-token"
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-connectors-client-token
 
 orchestration:
+  enabled: true
   security:
     initialization:
       defaultRoles:
@@ -88,10 +88,12 @@ orchestration:
     authentication:
       authenticationRefreshInterval: "PT30S"
       oidc:
-        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
+        clientId: "${ORCH_ORCHESTRATION_CLIENT_ID}"
+        audience: "${ORCH_ORCHESTRATION_AUDIENCE}"
+        redirectUrl: "https://${ORCH_HOST}/orchestration"
         secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-orchestration-client-token"
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-orchestration-client-token
         backwardsCompatibleAudiences:
           - operate-api
           - tasklist-api

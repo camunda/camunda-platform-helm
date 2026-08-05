@@ -50,24 +50,35 @@ type PlanOptions struct {
 // string because GHA matrix values are compared as strings (the bash
 // implementation ran `walk(tostring)` over the JSON for the same reason).
 type PlanEntry struct {
-	Version                string `json:"version"`
-	CamundaVersionPrevious string `json:"camundaVersionPrevious"`
-	Case                   string `json:"case"`
-	Platforms              string `json:"platforms"`
-	Scenario               string `json:"scenario"`
-	Shortname              string `json:"shortname"`
-	Auth                   string `json:"auth"`
-	Flow                   string `json:"flow"`
-	Exclude                string `json:"exclude"`
-	InfraTypeGke           string `json:"infraTypeGke"`
-	InfraTypeEks           string `json:"infraTypeEks"`
-	Identity               string `json:"identity"`
-	Persistence            string `json:"persistence"`
-	Features               string `json:"features"`
-	QA                     string `json:"qa"`
-	Upgrade                string `json:"upgrade"`
-	SkipE2E                string `json:"skipE2E"`
-	HelmVersion            string `json:"helmVersion"`
+	Version                   string `json:"version"`
+	CamundaVersionPrevious    string `json:"camundaVersionPrevious"`
+	Case                      string `json:"case"`
+	Platforms                 string `json:"platforms"`
+	Scenario                  string `json:"scenario"`
+	Shortname                 string `json:"shortname"`
+	Auth                      string `json:"auth"`
+	Flow                      string `json:"flow"`
+	Exclude                   string `json:"exclude"`
+	InfraTypeGke              string `json:"infraTypeGke"`
+	InfraTypeEks              string `json:"infraTypeEks"`
+	Identity                  string `json:"identity"`
+	Persistence               string `json:"persistence"`
+	Features                  string `json:"features"`
+	QA                        string `json:"qa"`
+	Upgrade                   string `json:"upgrade"`
+	SkipE2E                   string `json:"skipE2E"`
+	IsTopology                string `json:"isTopology"`
+	TopologyNamespaceSuffixes string `json:"topologyNamespaceSuffixes"`
+	TopologyHubSuffix         string `json:"topologyHubSuffix"`
+	TopologySmokeMatrix       string `json:"topologySmokeMatrix"`
+	HelmVersion               string `json:"helmVersion"`
+}
+
+type topologySmokeEntry struct {
+	OrchestrationSuffix string `json:"orchestration_suffix"`
+	ModelerClusterID    string `json:"modeler_cluster_id"`
+	ModelerClusterName  string `json:"modeler_cluster_name"`
+	ShardIndex          string `json:"shard_index"`
 }
 
 // PlanResult is the computed build matrix.
@@ -336,28 +347,59 @@ func groupPlanEntries(version string, entries []Entry) []PlanEntry {
 			infraEks = "preemptible"
 		}
 
+		topologyNamespaceSuffixes, topologyHubSuffix, topologySmokeMatrix := planTopologyMetadata(first.Topology)
+
 		out = append(out, PlanEntry{
-			Version:                version,
-			CamundaVersionPrevious: previousMinor(version),
-			Case:                   "pr",
-			Platforms:              platformsCSV,
-			Scenario:               first.Scenario,
-			Shortname:              first.Shortname,
-			Auth:                   first.Auth,
-			Flow:                   first.Flow,
-			Exclude:                strings.Join(first.Exclude, "|"),
-			InfraTypeGke:           infraGke,
-			InfraTypeEks:           infraEks,
-			Identity:               first.Identity,
-			Persistence:            first.Persistence,
-			Features:               strings.Join(first.Features, ","),
-			QA:                     strconv.FormatBool(first.QA),
-			Upgrade:                strconv.FormatBool(first.Upgrade),
-			SkipE2E:                strconv.FormatBool(first.SkipE2E),
-			HelmVersion:            first.HelmVersion,
+			Version:                   version,
+			CamundaVersionPrevious:    previousMinor(version),
+			Case:                      "pr",
+			Platforms:                 platformsCSV,
+			Scenario:                  first.Scenario,
+			Shortname:                 first.Shortname,
+			Auth:                      first.Auth,
+			Flow:                      first.Flow,
+			Exclude:                   strings.Join(first.Exclude, "|"),
+			InfraTypeGke:              infraGke,
+			InfraTypeEks:              infraEks,
+			Identity:                  first.Identity,
+			Persistence:               first.Persistence,
+			Features:                  strings.Join(first.Features, ","),
+			QA:                        strconv.FormatBool(first.QA),
+			Upgrade:                   strconv.FormatBool(first.Upgrade),
+			SkipE2E:                   strconv.FormatBool(first.SkipE2E),
+			IsTopology:                strconv.FormatBool(first.Topology != nil),
+			TopologyNamespaceSuffixes: topologyNamespaceSuffixes,
+			TopologyHubSuffix:         topologyHubSuffix,
+			TopologySmokeMatrix:       topologySmokeMatrix,
+			HelmVersion:               first.HelmVersion,
 		})
 	}
 	return out
+}
+
+func planTopologyMetadata(topology *Topology) (string, string, string) {
+	suffixes := []string{}
+	smoke := []topologySmokeEntry{}
+	hubSuffix := ""
+	if topology != nil {
+		for _, release := range topology.Releases {
+			suffixes = append(suffixes, release.NamespaceSuffix)
+			if release.Role == "hub" {
+				hubSuffix = release.NamespaceSuffix
+			}
+			if release.Role == "orchestration" {
+				smoke = append(smoke, topologySmokeEntry{
+					OrchestrationSuffix: release.NamespaceSuffix,
+					ModelerClusterID:    release.ModelerClusterID,
+					ModelerClusterName:  release.ModelerClusterName,
+					ShardIndex:          strconv.Itoa(len(smoke) + 1),
+				})
+			}
+		}
+	}
+	suffixesJSON, _ := json.Marshal(suffixes)
+	smokeJSON, _ := json.Marshal(smoke)
+	return string(suffixesJSON), hubSuffix, string(smokeJSON)
 }
 
 // previousMinor computes the previous chart minor version ("8.10" → "8.9").

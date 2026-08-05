@@ -140,6 +140,26 @@ on:
         required: false
         default: false
         type: boolean
+      is-topology:
+        description: "Whether this scenario declares a multi-release topology"
+        required: false
+        default: false
+        type: boolean
+      topology-namespace-suffixes:
+        description: "JSON array of topology release namespace suffixes"
+        required: false
+        default: "[]"
+        type: string
+      topology-hub-suffix:
+        description: "Namespace suffix of the topology Hub release"
+        required: false
+        default: ""
+        type: string
+      topology-smoke-matrix:
+        description: "JSON matrix derived from topology orchestration releases"
+        required: false
+        default: "[]"
+        type: string
       skip-it:
         # Deprecated no-op: kept so existing external callers (camunda/camunda,
         # camunda/identity, camunda/connectors, …) don't fail on unknown-input.
@@ -368,6 +388,10 @@ jobs:
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
       skip-e2e: ${{ inputs.skip-e2e }}
+      is-topology: ${{ inputs.is-topology }}
+      topology-namespace-suffixes: ${{ inputs.topology-namespace-suffixes }}
+      topology-hub-suffix: ${{ inputs.topology-hub-suffix }}
+      topology-smoke-matrix: ${{ inputs.topology-smoke-matrix }}
       pr-head-sha: ${{ inputs.pr-head-sha }}
       camunda-version: ${{ inputs.camunda-version }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}

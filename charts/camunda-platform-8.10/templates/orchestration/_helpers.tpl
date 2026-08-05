@@ -159,7 +159,7 @@ Authentication.
 */}}
 
 {{- define "orchestration.authMethod" -}}
-    {{- if not .Values.orchestration.enabled -}}
+    {{- if ne (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
         none
     {{- else -}}
         {{- .Values.orchestration.security.authentication.method | default (
@@ -247,6 +247,10 @@ Authentication.
     {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
 {{- end -}}
 
+{{- define "orchestration.authSecretConfig" -}}
+    {{- toYaml .Values.orchestration.security.authentication.oidc -}}
+{{- end -}}
+
 {{- define "orchestration.enabledProfiles" -}}
     {{- $enabledProfiles := list -}}
     {{- range $key, $value := .Values.orchestration.profiles }}
@@ -329,10 +333,10 @@ and
 {{- define "orchestration.hasLegacyElasticsearchExporter" -}}
 {{- and
       (or
-        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         (or
           (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
+          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         )
       )
       (or
@@ -346,7 +350,7 @@ and
 {{- and
       (or
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
+        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled

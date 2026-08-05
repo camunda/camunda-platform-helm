@@ -577,6 +577,48 @@ Identity Auth.
   {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
+{{- define "camundaPlatform.topologySlug" -}}
+  {{- regexReplaceAll "[^a-z0-9]+" (lower (. | toString)) "-" | trimAll "-" -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyMode" -}}
+  {{- dig "mode" "combined" (.Values.global.topology | default dict) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyEnvToken" -}}
+  {{- regexReplaceAll "[^A-Z0-9]+" (upper (. | toString)) "_" | trimAll "_" -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyComponentFullname" -}}
+  {{- $releaseName := .releaseName | trunc 63 | trimSuffix "-" -}}
+  {{- if contains .componentName $releaseName -}}
+    {{- $releaseName -}}
+  {{- else -}}
+    {{- printf "%s-%s" $releaseName .componentName | trunc 63 | trimSuffix "-" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyContextPath" -}}
+  {{- $path := . | default "" | toString | trimAll "/" -}}
+  {{- if $path -}}{{- printf "/%s" $path -}}{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.orchestrationEnabled" -}}
+  {{- if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsEnabled" -}}
+  {{- if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeEnabled" -}}
+  {{- if and .Values.optimize.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.identityEnabled" -}}
+  {{- if and .Values.identity.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
 
 
 {{/*
@@ -597,7 +639,7 @@ Returns "true" if camundaHub.enabled OR webModeler.enabled.
 Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.webModelerEnabled" -}}
-  {{- if or .Values.camundaHub.enabled .Values.webModeler.enabled -}}
+  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
     true
   {{- else -}}
     false
@@ -611,7 +653,7 @@ Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.consoleEnabled" -}}
   {{- $console := default (dict) .Values.console -}}
-  {{- if or .Values.camundaHub.enabled $console.enabled -}}
+  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled $console.enabled) -}}
     true
   {{- else -}}
     false
@@ -664,7 +706,7 @@ Zeebe templates.
 [camunda-platform] Zeebe Gateway REST internal URL.
 */}}
 {{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
-  {{- if .Values.orchestration.enabled -}}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
     {{-
       printf "%s://%s%s"
         (ternary "https" "http" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true"))
@@ -678,7 +720,7 @@ Zeebe templates.
 [camunda-platform] Zeebe Gateway GRPC internal URL.
 */}}
 {{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
-  {{- if .Values.orchestration.enabled -}}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
     {{-
       printf "%s://%s"
         (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true"))
@@ -720,7 +762,7 @@ Release templates.
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
-  {{- if .Values.identity.enabled }}
+  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   {{- if include "camundaPlatform.keycloakExternalURL" . }}
@@ -747,7 +789,7 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.metrics.prometheus .Values.webModeler.restapi.metrics.prometheus))) }}
   {{- end }}
 
-  {{- if .Values.optimize.enabled }}
+  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
   {{-  $proto := (lower .Values.optimize.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
@@ -758,7 +800,7 @@ Release templates.
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
   {{- end }}
 
-  {{- if .Values.connectors.enabled }}
+  {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
   {{-  $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
@@ -769,7 +811,7 @@ Release templates.
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.metrics.prometheus)) }}
   {{- end }}
 
-  {{- if .Values.orchestration.enabled }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
   {{-  $proto := (lower .Values.orchestration.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "orchestration.fullname" . | trimAll "\"") .Release.Namespace .Values.orchestration.service.managementPort }}
   - name: Operate
@@ -810,15 +852,15 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 ********************************************************************************
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
-{{- if or .Values.identity.enabled (eq (include "camundaHub.webModelerEnabled" .) "true") }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - id: "management-cluster"
-  name: "management"
+  name: "hub"
   version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" (mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict)))) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false
   components:
-  {{- if .Values.identity.enabled }}
+  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
   {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
   - name: Identity
@@ -839,7 +881,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}
   {{- end }}
 {{- end }}
-{{- if or .Values.orchestration.enabled .Values.optimize.enabled .Values.connectors.enabled }}
+{{- if or (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "camundaPlatform.connectorsEnabled" .) "true") }}
 - id: "default-cluster"
   name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
@@ -860,7 +902,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
         - name: Camunda Docs
           url: 'https://docs.camunda.io'
   components:
-  {{- if .Values.optimize.enabled }}
+  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
   {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
@@ -870,7 +912,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       webapp: {{ include "camundaPlatform.optimizeExternalURL" . | quote }}
       readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) | quote }}
   {{- end }}
-  {{- if .Values.connectors.enabled }}
+  {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
   {{- $proto := (lower .Values.connectors.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
@@ -880,7 +922,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       rest: {{ include "camundaPlatform.connectorsExternalURL" . | quote }}
       readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) | quote }}
   {{- end }}
-  {{- if .Values.orchestration.enabled }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
   {{- $proto := (lower .Values.orchestration.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "orchestration.fullname" . | trimAll "\"") .Release.Namespace .Values.orchestration.service.managementPort }}
   - name: Operate
@@ -908,6 +950,72 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
       rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyWebModelerClusters" -}}
+{{- include "camundaPlatform.defaultWebModelerCluster" . -}}
+{{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
+{{- $orchestration := dig "components" "orchestration" dict $cluster }}
+{{- $optimize := dig "components" "optimize" dict $cluster }}
+{{- $connectors := dig "components" "connectors" dict $cluster }}
+{{- $orchestrationPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "orchestration" "" $cluster) }}
+{{- $optimizePath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "optimize" "" $cluster) }}
+{{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "" $cluster) }}
+{{- $orchestrationName := $orchestration.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "zeebe")) }}
+{{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
+{{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "optimize")) }}
+{{- $connectorsName := $connectors.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "connectors")) }}
+- id: {{ $cluster.id | quote }}
+  name: {{ ($cluster.name | default $cluster.id) | quote }}
+  version: {{ $cluster.version | quote }}
+  authentication: "BEARER_TOKEN"
+  authorizations:
+    enabled: {{ dig "authorizations" "enabled" false $cluster }}
+  components:
+  {{- if $optimize.enabled }}
+  - name: Optimize
+    type: optimize
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ $optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath) | quote }}
+      readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $cluster.namespace $optimizePath) | quote }}
+  {{- end }}
+  {{- if $connectors.enabled }}
+  - name: Connectors
+    type: connectors
+    version: {{ $cluster.version | quote }}
+    urls:
+      rest: {{ $connectors.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $connectorsName $cluster.namespace $connectorsPath) | quote }}
+      readiness: {{ $connectors.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s/actuator/health/readiness" $connectorsName $cluster.namespace $connectorsPath) | quote }}
+  {{- end }}
+  {{- if $orchestration.enabled }}
+  - name: Operate
+    type: operate
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ $orchestration.operateUrl | default (printf "https://%s%s/operate" $cluster.host $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+  - name: Tasklist
+    type: tasklist
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ $orchestration.tasklistUrl | default (printf "https://%s%s/tasklist" $cluster.host $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+  - name: Orchestration Admin
+    type: admin
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ $orchestration.adminUrl | default (printf "https://%s%s/admin" $cluster.host $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+  - name: Orchestration Cluster
+    type: orchestration
+    version: {{ $cluster.version | quote }}
+    urls:
+      grpc: {{ $orchestration.grpcUrl | default (printf "grpc://%s.%s.svc.cluster.local:26500" $gatewayName $cluster.namespace) | quote }}
+      rest: {{ $orchestration.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $gatewayName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
   {{- end }}
 {{- end }}
 {{- end -}}

@@ -1,0 +1,53 @@
+name: multinamespace-2orch
+auth: keycloak
+flows:
+  - install
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+topology:
+  name: hub-2orch
+  shared-storage: elasticsearch
+  shared-storage-service: elasticsearch-master
+  releases:
+    - role: hub
+      namespace-suffix: hub
+      identity: keycloak
+      dependencies:
+        - keycloak
+        - postgresql
+        - elasticsearch
+      features:
+        - multinamespace-reset-clients
+      values: features/multinamespace-2orch-hub.yaml
+    - role: orchestration
+      namespace-suffix: orcha
+      modeler-cluster-id: orcha
+      modeler-cluster-name: Orchestration A
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      values: features/multinamespace-orchestration.yaml
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
+        ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+    - role: orchestration
+      namespace-suffix: orchb
+      modeler-cluster-id: orchb
+      modeler-cluster-name: Orchestration B
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      values: features/multinamespace-orchestration.yaml
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
+        ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-orchb

@@ -105,6 +105,54 @@ func TestPlanManualScenarioExact(t *testing.T) {
 	}
 }
 
+func TestPlanTopologyWorkflowMetadata(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.10",
+		ManualScenario: "multinamespace-2orch",
+		ManualFlow:     "install",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Include) != 1 {
+		t.Fatalf("entries = %d, want 1", len(result.Include))
+	}
+	entry := result.Include[0]
+	if entry.IsTopology != "true" {
+		t.Errorf("isTopology = %q, want true", entry.IsTopology)
+	}
+	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb"]` {
+		t.Errorf("topologyNamespaceSuffixes = %q", entry.TopologyNamespaceSuffixes)
+	}
+	if entry.TopologyHubSuffix != "hub" {
+		t.Errorf("topologyHubSuffix = %q, want hub", entry.TopologyHubSuffix)
+	}
+	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2"}]`
+	if entry.TopologySmokeMatrix != wantSmoke {
+		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
+	}
+}
+
+func TestPlanOrdinaryScenarioHasEmptyTopologyWorkflowMetadata(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.10",
+		ManualScenario: "elasticsearch",
+		ManualFlow:     "install",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Include) != 1 {
+		t.Fatalf("entries = %d, want 1", len(result.Include))
+	}
+	entry := result.Include[0]
+	if entry.IsTopology != "false" || entry.TopologyNamespaceSuffixes != "[]" || entry.TopologyHubSuffix != "" || entry.TopologySmokeMatrix != "[]" {
+		t.Errorf("unexpected topology metadata: %+v", entry)
+	}
+}
+
 func TestPlanManualScenarioIncludesDisabled(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{
 		ActiveVersions: planActiveVersions,

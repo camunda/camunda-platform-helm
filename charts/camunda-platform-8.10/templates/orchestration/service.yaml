@@ -1,4 +1,4 @@
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 apiVersion: v1
 kind: Service
 metadata:

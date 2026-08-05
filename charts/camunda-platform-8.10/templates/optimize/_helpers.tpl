@@ -49,7 +49,11 @@ Create a default fully qualified app name.
 {{- end -}}
 
 {{- define "optimize.authAudience" -}}
-  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
+  {{- include "camundaPlatform.authAudienceOptimize" . -}}
+{{- end -}}
+
+{{- define "optimize.authSecretConfig" -}}
+  {{- toYaml .Values.global.identity.auth.optimize -}}
 {{- end -}}
 
 {{/*

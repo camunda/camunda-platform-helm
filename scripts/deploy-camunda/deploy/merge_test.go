@@ -213,6 +213,48 @@ global:
 	}
 }
 
+func TestMergeYAMLFiles_NullThenArrayReplacesInheritedArray(t *testing.T) {
+	dir := t.TempDir()
+	base := writeTempYAML(t, dir, "base.yaml", `
+identity:
+  clients:
+    - id: venom
+      permissions:
+        - resourceServerId: orchestration-api
+`)
+	reset := writeTempYAML(t, dir, "reset.yaml", `
+identity:
+  clients: null
+`)
+	replacement := writeTempYAML(t, dir, "replacement.yaml", `
+identity:
+  clients:
+    - id: venom
+      permissions:
+        - resourceServerId: orchestration-orcha-api
+        - resourceServerId: orchestration-orchb-api
+`)
+	outPath := filepath.Join(dir, "merged.yaml")
+
+	if _, err := MergeYAMLFiles([]string{base, reset, replacement}, outPath); err != nil {
+		t.Fatal(err)
+	}
+
+	clients, ok := getPath(readYAMLMap(t, outPath), "identity", "clients").([]any)
+	if !ok || len(clients) != 1 {
+		t.Fatalf("identity.clients = %#v", clients)
+	}
+	permissions := clients[0].(map[string]any)["permissions"].([]any)
+	if len(permissions) != 2 {
+		t.Fatalf("permissions = %#v", permissions)
+	}
+	for _, permission := range permissions {
+		if permission.(map[string]any)["resourceServerId"] == "orchestration-api" {
+			t.Fatal("legacy permission survived null reset")
+		}
+	}
+}
+
 // TestMergeYAMLFiles_EnvOverrideSameName verifies that when two layers define
 // the same env var name, the later layer's value wins.
 func TestMergeYAMLFiles_EnvOverrideSameName(t *testing.T) {

@@ -57,7 +57,7 @@ data:
         clusters:
           
           - id: "management-cluster"
-            name: "management"
+            name: "hub"
             version: "8.10.0-alpha3-rc1"
             authentication: "BASIC"
             authorizations:

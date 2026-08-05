@@ -1,4 +1,4 @@
-{{- if .Values.connectors.enabled -}}
+{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,6 +45,7 @@ spec:
               name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
+            {{- $connectorsAuthSecret := include "connectors.authSecretConfig" . | fromYaml }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
@@ -52,7 +53,7 @@ spec:
             {{- if eq (include "connectors.authMethod" .) "oidc" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
-                "config" .Values.connectors.security.authentication.oidc
+                "config" $connectorsAuthSecret
             ) | nindent 12 }}
             {{- end }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}

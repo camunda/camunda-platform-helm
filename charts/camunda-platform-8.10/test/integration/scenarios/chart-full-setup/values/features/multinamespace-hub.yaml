@@ -1,5 +1,5 @@
-# Management namespace layer for the multinamespace topology (8.10)
-# Selected as a Feature layer (values/features/multinamespace-management.yaml)
+# Hub namespace layer for the multinamespace topology (8.10)
+# Selected as a Feature layer (values/features/multinamespace-hub.yaml)
 # rather than an ExtraValues file so any env-var placeholders go through the
 # normal per-layer substitution pipeline — ExtraValues files are NOT
 # substituted (see scripts/deploy-camunda/deploy/values.go's
@@ -14,7 +14,7 @@
 # will be reported as a "missing required environment variable" at
 # prepare-values / deploy time.
 #
-# Management release — Identity + Camunda Hub (Console +
+# Hub release - Identity + Camunda Hub (Console +
 # Web Modeler) + bundled Keycloak + bundled PostgreSQL, central to the whole
 # logical cluster. Orchestration, Optimize, Connectors, and the secondary
 # storage backend are disabled here — they live in the orchestration
@@ -35,16 +35,9 @@
 
 orchestration:
   enabled: false
-  # The management Identity registers the single orchestration Keycloak
-  # client; its root-url must be the orchestration cluster host (ORCH_HOST,
-  # injected by runTopologyEntry) so browser-login redirect URIs are accepted.
-  security:
-    authentication:
-      oidc:
-        redirectUrl: "https://${ORCH_HOST}/orchestration"
   hub:
     ping:
-      endpoint: "http://integration-web-modeler-restapi.${MGMT_NAMESPACE}/modeler/api/v1/clusters"
+      endpoint: "http://integration-web-modeler-restapi.${HUB_NAMESPACE}/modeler/api/v1/clusters"
 
 webModeler:
   restapi:
@@ -55,23 +48,6 @@ webModeler:
             modeler:
               feature:
                 dynamic-cluster-management-enabled: true
-    # orchestration.enabled: false above collapses the
-    # camundaPlatform.defaultWebModelerCluster helper's orchestration entry
-    # (gated on orchestration.enabled — see templates/common/_helpers.tpl),
-    # leaving Web Modeler's "Deploy & run" cluster dropdown empty. Register
-    # the orchestration release's cross-namespace Zeebe gateway explicitly;
-    # ORCH_ZEEBE_GRPC/ORCH_ZEEBE_REST are injected by runTopologyEntry
-    # alongside ORCH_HOST above.
-    clusters:
-      - id: orchestration-cluster
-        name: orchestration
-        version: "8.10.0-alpha3"
-        authentication: "BEARER_TOKEN"
-        url:
-          grpc: "${ORCH_ZEEBE_GRPC}"
-          rest: "${ORCH_ZEEBE_REST}"
-          web-app: "https://${ORCH_HOST}/operate"
-
 optimize:
   enabled: false
 
@@ -83,17 +59,41 @@ global:
     enabled: false
   identity:
     auth:
-      # This (management) release is the central Identity for the whole
-      # multinamespace topology: it must register Keycloak clients + resource
-      # servers (audiences) for Optimize and the Orchestration Cluster even
-      # though both are disabled in THIS namespace — their workloads run in
-      # the orchestration releases instead (see multinamespace-orchestration.yaml),
-      # which reach back into this namespace's Identity/Keycloak by FQDN.
-      optimize:
-        alwaysRegister: true
-        redirectUrl: "https://${ORCH_HOST}/optimize"
       orchestration:
-        alwaysRegister: true
         hubPingAuthorizationEnabled: true
-      connectors:
-        alwaysRegister: true
+  topology:
+    mode: hub
+    clusters:
+      - id: orchestration
+        name: orchestration
+        namespace: "${ORCH_NAMESPACE}"
+        releaseName: integration
+        host: "${ORCH_HOST}"
+        version: "8.10.0-alpha3"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: /optimize
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration
+            audience: orchestration-api
+            redirectUrl: "https://${ORCH_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize
+            audience: optimize-api
+            redirectUrl: "https://${ORCH_HOST}/optimize"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token

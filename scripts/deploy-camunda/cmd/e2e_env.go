@@ -24,11 +24,11 @@ func newE2EEnvCommand() *cobra.Command {
 // newE2EEnvMergeCommand produces a single merged .env for a multi-namespace
 // topology deploy: endpoints come from the orchestration namespace (via
 // render-e2e-env.sh), while the auth/host vars and credentials are overridden
-// to the management namespace where Identity/Keycloak run.
+// to the Hub namespace where Identity/Keycloak run.
 func newE2EEnvMergeCommand() *cobra.Command {
 	var (
 		orchestrationNamespace string
-		managementNamespace    string
+		hubNamespace           string
 		chartPath              string
 		output                 string
 		renderScript           string
@@ -39,7 +39,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "merge",
-		Short: "Merge orchestration endpoints with management-plane auth into one .env",
+		Short: "Merge orchestration endpoints with Hub auth into one .env",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			renderArgs := []string{
 				renderScript,
@@ -63,35 +63,35 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				return fmt.Errorf("render script failed: %w", err)
 			}
 
-			mgmtHost, err := resolveIngressHost(kubeContext, managementNamespace)
+			hubHost, err := resolveIngressHost(kubeContext, hubNamespace)
 			if err != nil {
 				return err
 			}
 
-			firstUserPw, err := resolveSecretKey(kubeContext, managementNamespace, "identity-user-password")
+			firstUserPw, err := resolveSecretKey(kubeContext, hubNamespace, "identity-user-password")
 			if err != nil {
 				return err
 			}
-			kcAdminPw, err := resolveSecretKey(kubeContext, managementNamespace, "identity-keycloak-admin-password")
+			kcAdminPw, err := resolveSecretKey(kubeContext, hubNamespace, "identity-keycloak-admin-password")
 			if err != nil {
 				return err
 			}
-			clientSecret, err := resolveSecretKey(kubeContext, managementNamespace, "client-secret")
+			clientSecret, err := resolveSecretKey(kubeContext, hubNamespace, "client-secret")
 			if err != nil {
 				return err
 			}
 
-			tokenURL := "https://" + mgmtHost + "/auth/realms/camunda-platform/protocol/openid-connect/token"
+			tokenURL := "https://" + hubHost + "/auth/realms/camunda-platform/protocol/openid-connect/token"
 			overrides := map[string]string{
-				"MANAGEMENT_BASE_URL":              "https://" + mgmtHost,
-				"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://" + mgmtHost + "/identity",
-				"MODELER_CONTEXT_PATH":             "https://" + mgmtHost + "/modeler",
-				"CONSOLE_CONTEXT_PATH":             "https://" + mgmtHost + "/modeler",
-				"CONSOLE_BASE_URL":                 "https://" + mgmtHost,
-				"IDENTITY_BASE_URL":                "https://" + mgmtHost + "/identity/",
-				"KEYCLOAK_BASE_URL":                "https://" + mgmtHost + "/auth",
-				"KEYCLOAK_URL":                     "https://" + mgmtHost,
-				"WEBMODELER_BASE_URL":              "https://" + mgmtHost + "/modeler",
+				"MANAGEMENT_BASE_URL":              "https://" + hubHost,
+				"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://" + hubHost + "/identity",
+				"MODELER_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
+				"CONSOLE_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
+				"CONSOLE_BASE_URL":                 "https://" + hubHost,
+				"IDENTITY_BASE_URL":                "https://" + hubHost + "/identity/",
+				"KEYCLOAK_BASE_URL":                "https://" + hubHost + "/auth",
+				"KEYCLOAK_URL":                     "https://" + hubHost,
+				"WEBMODELER_BASE_URL":              "https://" + hubHost + "/modeler",
 				"OAUTH_URL":                        tokenURL,
 				"AUTH_URL":                         tokenURL,
 				"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD": firstUserPw,
@@ -111,13 +111,13 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintf(os.Stderr, "merged e2e env: mgmtHost=%s overrode %d keys -> %s\n", mgmtHost, len(overrides), output)
+			fmt.Fprintf(os.Stderr, "merged e2e env: hubHost=%s overrode %d keys -> %s\n", hubHost, len(overrides), output)
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&orchestrationNamespace, "orchestration-namespace", "", "orchestration release namespace")
-	cmd.Flags().StringVar(&managementNamespace, "management-namespace", "", "management release namespace")
+	cmd.Flags().StringVar(&hubNamespace, "hub-namespace", "", "Hub release namespace")
 	cmd.Flags().StringVar(&chartPath, "absolute-chart-path", "", "absolute chart path")
 	cmd.Flags().StringVar(&output, "output", ".env", "output .env path")
 	cmd.Flags().StringVar(&renderScript, "render-script", "scripts/render-e2e-env.sh", "path to render-e2e-env.sh")
@@ -125,13 +125,13 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&ci, "ci", false, "set CI=true in the merged .env (matches render-e2e-env.sh's default; pass when running in an actual CI job)")
 	cmd.Flags().BoolVar(&runSmokeTests, "run-smoke-tests", true, "pass --run-smoke-tests to render-e2e-env.sh (sets IS_SMOKE=true)")
 	_ = cmd.MarkFlagRequired("orchestration-namespace")
-	_ = cmd.MarkFlagRequired("management-namespace")
+	_ = cmd.MarkFlagRequired("hub-namespace")
 	_ = cmd.MarkFlagRequired("absolute-chart-path")
 
 	return cmd
 }
 
-// resolveSecretKey reads and base64-decodes one key from the management
+// resolveSecretKey reads and base64-decodes one key from the Hub
 // namespace's shared integration-test-credentials secret. This is the secret
 // that actually backs the users under ExternalSecrets, so it is authoritative
 // (render-e2e-env.sh's DISTRO_QA_* values diverge from it in the topology path).

@@ -237,8 +237,8 @@ func TestRegisterDeclarativePostDeployHook(t *testing.T) {
 }
 
 func TestResolveLifecycleEnv_IncludesTopologyNamespace(t *testing.T) {
-	flags := &config.RuntimeFlags{ExtraEnv: map[string]string{"MGMT_NAMESPACE": "matrix-810-mns-mgmt"}}
-	if got := resolveLifecycleEnv(flags)["MGMT_NAMESPACE"]; got != "matrix-810-mns-mgmt" {
-		t.Fatalf("MGMT_NAMESPACE = %q, want matrix-810-mns-mgmt", got)
+	flags := &config.RuntimeFlags{ExtraEnv: map[string]string{"HUB_NAMESPACE": "matrix-810-mns-hub"}}
+	if got := resolveLifecycleEnv(flags)["HUB_NAMESPACE"]; got != "matrix-810-mns-hub" {
+		t.Fatalf("HUB_NAMESPACE = %q, want matrix-810-mns-hub", got)
 	}
 }

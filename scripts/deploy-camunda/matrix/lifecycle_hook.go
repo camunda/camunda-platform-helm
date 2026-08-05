@@ -25,7 +25,7 @@ var lifecycleVarPassthrough = []string{
 	"GITHUB_WORKFLOW_JOB_ID",
 	"POSTGRESQL_JDBC_URL",
 	"CAMUNDA_HOSTNAME",
-	"MGMT_NAMESPACE",
+	"HUB_NAMESPACE",
 }
 
 // resolveLifecycleEnv builds the env map used to resolve lifecycle hook

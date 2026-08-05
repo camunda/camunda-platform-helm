@@ -1,4 +1,4 @@
-{{- if and .Values.optimize.enabled (not .Values.global.noSecondaryStorage) -}}
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -218,9 +218,10 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.profiles | default "ccsm") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "spring" "profiles" "active")) | quote }}
             {{- if .Values.global.identity.auth.enabled }}
+            {{- $optimizeAuthSecret := include "optimize.authSecretConfig" . | fromYaml }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
-                "config" .Values.global.identity.auth.optimize
+                "config" $optimizeAuthSecret
             ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled .Values.optimize.multitenancy.enabled }}

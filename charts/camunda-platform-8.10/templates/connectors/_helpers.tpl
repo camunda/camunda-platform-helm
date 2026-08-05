@@ -70,7 +70,7 @@ Authentication.
 */}}
 
 {{- define "connectors.authMethod" -}}
-    {{- if not .Values.connectors.enabled -}}
+    {{- if ne (include "camundaPlatform.connectorsEnabled" .) "true" -}}
         none
     {{- else -}}
         {{- .Values.connectors.security.authentication.method | default (
@@ -85,6 +85,10 @@ Authentication.
 {{- define "connectors.authClientId" -}}
     {{- .Values.connectors.security.authentication.oidc.clientId -}}
 {{- end }}
+
+{{- define "connectors.authSecretConfig" -}}
+    {{- toYaml .Values.connectors.security.authentication.oidc -}}
+{{- end -}}
 
 {{- define "connectors.authAudience" -}}
     {{- .Values.connectors.security.authentication.oidc.audience |

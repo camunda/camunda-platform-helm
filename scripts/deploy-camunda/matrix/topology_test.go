@@ -17,6 +17,7 @@ package matrix
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -51,7 +52,7 @@ func TestTopologyValidate_NilIsNoop(t *testing.T) {
 func TestTopologyValidate_Valid(t *testing.T) {
 	dir := t.TempDir()
 	depsDir := filepath.Join(t.TempDir(), "dependencies")
-	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
 	writeValuesFile(t, dir, "identity/keycloak.yaml")
 	writeValuesFile(t, dir, "identity/keycloak-external.yaml")
@@ -61,45 +62,106 @@ func TestTopologyValidate_Valid(t *testing.T) {
 	writeDepFile(t, depsDir, "elasticsearch")
 
 	top := &Topology{
-		Name:          "mgmt-2orch",
+		Name:          "hub-2orch",
 		SharedStorage: "elasticsearch",
 		Releases: []TopologyRelease{
 			{
-				Role:            "management",
-				NamespaceSuffix: "mgmt",
-				Values:          "management.yaml",
+				Role:            "hub",
+				NamespaceSuffix: "hub",
+				Values:          "hub.yaml",
 				Identity:        "keycloak",
 				Dependencies:    []string{"keycloak", "postgresql", "elasticsearch"},
 			},
 			{
-				Role:            "orchestration",
-				NamespaceSuffix: "orcha",
-				Values:          "orchestration.yaml",
-				Identity:        "keycloak-external",
-				Persistence:     "elasticsearch-external",
-				DependsOn:       "management",
+				Role:               "orchestration",
+				NamespaceSuffix:    "orcha",
+				ModelerClusterID:   "orcha",
+				ModelerClusterName: "Orchestration A",
+				Values:             "orchestration.yaml",
+				Identity:           "keycloak-external",
+				Persistence:        "elasticsearch-external",
+				DependsOn:          "hub",
+				Env:                map[string]string{"ORCH_ORCHESTRATION_CLIENT_ID": "orchestration-orcha"},
 			},
 			{
-				Role:            "orchestration",
-				NamespaceSuffix: "orchb",
-				Values:          "orchestration.yaml",
-				Identity:        "keycloak-external",
-				Persistence:     "elasticsearch-external",
-				DependsOn:       "management",
+				Role:               "orchestration",
+				NamespaceSuffix:    "orchb",
+				ModelerClusterID:   "orchb",
+				ModelerClusterName: "Orchestration B",
+				Values:             "orchestration.yaml",
+				Identity:           "keycloak-external",
+				Persistence:        "elasticsearch-external",
+				DependsOn:          "hub",
 			},
 		},
 	}
 	if err := top.Validate("ctx", dir, depsDir); err != nil {
 		t.Fatalf("expected valid topology, got: %v", err)
 	}
+	if got := top.Releases[1].Env["ORCH_ORCHESTRATION_CLIENT_ID"]; got != "orchestration-orcha" {
+		t.Fatalf("release env = %q", got)
+	}
+}
+
+func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	top := &Topology{
+		Name: "duplicate-modeler-cluster",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "shared", ModelerClusterName: "Shared"},
+			{Role: "orchestration", NamespaceSuffix: "orchb", Values: "orchestration.yaml", ModelerClusterID: "shared", ModelerClusterName: "Shared"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "duplicate modeler-cluster-id") || !strings.Contains(err.Error(), "duplicate modeler-cluster-name") {
+		t.Fatalf("expected duplicate Modeler cluster validation errors, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	top := &Topology{
+		Name: "hub-only",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "at least one release with role \"orchestration\"") {
+		t.Fatalf("expected missing orchestration release error, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RequiresDNS1123NamespaceSuffix(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	top := &Topology{
+		Name: "invalid-suffix",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "Hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orch_a", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "must be a lowercase DNS-1123 label") {
+		t.Fatalf("expected DNS-1123 namespace suffix errors, got %v", err)
+	}
 }
 
 func TestTopologyValidate_MissingValuesFile(t *testing.T) {
 	dir := t.TempDir()
 	top := &Topology{
-		Name: "mgmt-1orch",
+		Name: "hub-1orch",
 		Releases: []TopologyRelease{
-			{Role: "management", NamespaceSuffix: "mgmt", Values: "management.yaml"},
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml"},
 		},
 	}
@@ -110,11 +172,11 @@ func TestTopologyValidate_MissingValuesFile(t *testing.T) {
 
 func TestTopologyValidate_MissingIdentityLayer(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "hub.yaml")
 	top := &Topology{
 		Name: "bad-identity",
 		Releases: []TopologyRelease{
-			{Role: "management", NamespaceSuffix: "mgmt", Values: "management.yaml", Identity: "does-not-exist"},
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml", Identity: "does-not-exist"},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -128,7 +190,7 @@ func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
 	top := &Topology{
 		Name: "bad-persistence",
 		Releases: []TopologyRelease{
-			{Role: "management", NamespaceSuffix: "mgmt", Values: "orchestration.yaml", Persistence: "does-not-exist"},
+			{Role: "hub", NamespaceSuffix: "hub", Values: "orchestration.yaml", Persistence: "does-not-exist"},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -138,11 +200,11 @@ func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
 
 func TestTopologyValidate_MissingDependency(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "hub.yaml")
 	top := &Topology{
 		Name: "bad-dep",
 		Releases: []TopologyRelease{
-			{Role: "management", NamespaceSuffix: "mgmt", Values: "management.yaml", Dependencies: []string{"does-not-exist"}},
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml", Dependencies: []string{"does-not-exist"}},
 		},
 	}
 	if err := top.Validate("ctx", dir, filepath.Join(t.TempDir(), "dependencies")); err == nil {
@@ -150,44 +212,44 @@ func TestTopologyValidate_MissingDependency(t *testing.T) {
 	}
 }
 
-func TestTopologyValidate_NoManagementRole(t *testing.T) {
+func TestTopologyValidate_NoHubRole(t *testing.T) {
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
-		Name: "no-mgmt",
+		Name: "no-hub",
 		Releases: []TopologyRelease{
 			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml"},
 			{Role: "orchestration", NamespaceSuffix: "orchb", Values: "orchestration.yaml"},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
-		t.Fatal("expected error for missing management role")
+		t.Fatal("expected error for missing Hub role")
 	}
 }
 
-func TestTopologyValidate_TwoManagementRoles(t *testing.T) {
+func TestTopologyValidate_TwoHubRoles(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "hub.yaml")
 	top := &Topology{
-		Name: "two-mgmt",
+		Name: "two-hub",
 		Releases: []TopologyRelease{
-			{Role: "management", NamespaceSuffix: "mgmta", Values: "management.yaml"},
-			{Role: "management", NamespaceSuffix: "mgmtb", Values: "management.yaml"},
+			{Role: "hub", NamespaceSuffix: "huba", Values: "hub.yaml"},
+			{Role: "hub", NamespaceSuffix: "hubb", Values: "hub.yaml"},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
-		t.Fatal("expected error for two management roles")
+		t.Fatal("expected error for two Hub roles")
 	}
 }
 
 func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
 		Name: "dup-suffix",
 		Releases: []TopologyRelease{
-			{Role: "management", NamespaceSuffix: "a", Values: "management.yaml"},
+			{Role: "hub", NamespaceSuffix: "a", Values: "hub.yaml"},
 			{Role: "orchestration", NamespaceSuffix: "a", Values: "orchestration.yaml"},
 		},
 	}
@@ -198,12 +260,12 @@ func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
 
 func TestTopologyValidate_DependsOnUnknownRole(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "management.yaml")
+	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
 		Name: "bad-depends-on",
 		Releases: []TopologyRelease{
-			{Role: "management", NamespaceSuffix: "mgmt", Values: "management.yaml"},
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", DependsOn: "storage"},
 		},
 	}
