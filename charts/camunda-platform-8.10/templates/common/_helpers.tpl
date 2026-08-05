@@ -1282,7 +1282,7 @@ the last one, which becomes confusing to debug.
 {{- $compVals := (get $vals $comp) | default dict -}}
 {{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
 {{- $truststoreDir := required "camundaPlatform._java_tool_options_tls_env: parameter 'truststoreDir' is required" .truststoreDir -}}
-{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "Values" $vals) -}}
+{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "Values" $vals "config" (.tlsConfig | default dict)) -}}
 {{- $truststorePath := printf "%s/%s" $truststoreDir $secretKey -}}
 {{- $jks := ((include "camundaPlatform._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
 {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
@@ -1313,6 +1313,7 @@ the last one, which becomes confusing to debug.
   "Values" .Values
   "component" .component
   "javaOpts" .javaOpts
+  "tlsConfig" .tlsConfig
   "truststoreDir" "/usr/local/camunda/certificates"
 ) }}
 {{- end }}
@@ -1326,6 +1327,7 @@ See common.java_tool_options_tls_env for full documentation.
   "Values" .Values
   "component" .component
   "javaOpts" .javaOpts
+  "tlsConfig" .tlsConfig
   "truststoreDir" "/optimize/certificates"
 ) }}
 {{- end }}

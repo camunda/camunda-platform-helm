@@ -78,14 +78,25 @@ is still "non-empty" in Helm and `default` will never fall through.
 {{- end -}}
 {{- end -}}
 
+{{- define "optimize.effectiveTlsConfig" -}}
+{{- $esTls := include "optimize.effectiveEsTlsConfig" . | fromYaml -}}
+{{- $osTls := include "optimize.effectiveOsTlsConfig" . | fromYaml -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esTls)) "true" -}}
+  {{- toYaml $esTls -}}
+{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osTls)) "true" -}}
+  {{- toYaml $osTls -}}
+{{- else -}}
+  {{- toYaml (dict) -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 [optimize] Check if TLS is configured at either the optimize-database or global level
 for either Elasticsearch or OpenSearch. Returns "true" or "false".
 */}}
 {{- define "optimize.hasTlsConfig" -}}
-{{- $esTls := include "optimize.effectiveEsTlsConfig" . | fromYaml -}}
-{{- $osTls := include "optimize.effectiveOsTlsConfig" . | fromYaml -}}
-{{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esTls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osTls)) "true") -}}
+{{- $tlsConfig := include "optimize.effectiveTlsConfig" . | fromYaml -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $tlsConfig)) "true" -}}
 true
 {{- else -}}
 false
