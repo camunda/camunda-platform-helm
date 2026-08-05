@@ -1,5 +1,41 @@
 # Changelog
 
+## [12.13.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.1...camunda-platform-8.7-12.13.2) (2026-08-05)
+
+
+### Bug Fixes
+
+* decouple requestBodySize from Zeebe maxMessageSize ([#6628](https://github.com/camunda/camunda-platform-helm/issues/6628)) ([7193ef6](https://github.com/camunda/camunda-platform-helm/commit/7193ef6c415587f1c97586d2274db385d042be31))
+* omit AWS document-store credentials when secret is unset ([#6800](https://github.com/camunda/camunda-platform-helm/issues/6800)) ([619f62b](https://github.com/camunda/camunda-platform-helm/commit/619f62b2dad46299c6207bdf43cb0657efd056df))
+* omit web-modeler restapi datasource password when none is configured ([#6578](https://github.com/camunda/camunda-platform-helm/issues/6578)) ([22cd3c3](https://github.com/camunda/camunda-platform-helm/commit/22cd3c392a7da56acb984b76dffdfbf2d53c8673))
+* only use document store configuration where required ([#6724](https://github.com/camunda/camunda-platform-helm/issues/6724)) ([7f3bc57](https://github.com/camunda/camunda-platform-helm/commit/7f3bc5765dd4daa0329be92283075bb33ca1267f))
+* respect explicit empty global.identity.keycloak.contextPath ([#6577](https://github.com/camunda/camunda-platform-helm/issues/6577)) ([d75be11](https://github.com/camunda/camunda-platform-helm/commit/d75be1136c945b0598abfe8d588242e1fb8b5238))
+* revert vendor-ee/postgresql tag back to -r14 ([#6632](https://github.com/camunda/camunda-platform-helm/issues/6632)) ([2ac9425](https://github.com/camunda/camunda-platform-helm/commit/2ac942546be562d0712761a70fd3ab3f14375440))
+* revert vendor-ee/postgresql to -r2 to restore amd64 image pulls ([#6622](https://github.com/camunda/camunda-platform-helm/issues/6622)) ([53fecde](https://github.com/camunda/camunda-platform-helm/commit/53fecded663c0473771bfba6ee5cfb28a93ada0b))
+
+
+### Documentation
+
+* clarify configMap describes the mounted ConfigMap volume settings, not config content ([#6604](https://github.com/camunda/camunda-platform-helm/issues/6604)) ([5713ac4](https://github.com/camunda/camunda-platform-helm/commit/5713ac44724416a3703d3114e728b871c5ce6bf9))
+* signpost deploy-camunda config surface for external users ([#6564](https://github.com/camunda/camunda-platform-helm/issues/6564)) ([9d850bc](https://github.com/camunda/camunda-platform-helm/commit/9d850bc0ee25d5aebfcebf4685f5ec190a0e50f8))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6666](https://github.com/camunda/camunda-platform-helm/issues/6666)) ([aa1ea36](https://github.com/camunda/camunda-platform-helm/commit/aa1ea36df957686ecb2b9cfffa5a85b93fbe1325))
+* update camunda-platform-images (patch) ([#6744](https://github.com/camunda/camunda-platform-helm/issues/6744)) ([23a3e0a](https://github.com/camunda/camunda-platform-helm/commit/23a3e0a18db3f6a8ed22006fb260c69da5585479))
+* update camunda-platform-images (patch) ([#6765](https://github.com/camunda/camunda-platform-helm/issues/6765)) ([1626564](https://github.com/camunda/camunda-platform-helm/commit/1626564b81dd7a89d37e16ae6818a5c9c4ed1ea8))
+* update camunda-platform-images (patch) ([#6777](https://github.com/camunda/camunda-platform-helm/issues/6777)) ([1f75621](https://github.com/camunda/camunda-platform-helm/commit/1f75621da4db53899d34b112f8841300a246e1e4))
+* update camunda-platform-images (patch) ([#6786](https://github.com/camunda/camunda-platform-helm/issues/6786)) ([d81c52b](https://github.com/camunda/camunda-platform-helm/commit/d81c52b2ac91f85f8d99816af220c12cff521baa))
+* update camunda-platform-images (patch) ([#6799](https://github.com/camunda/camunda-platform-helm/issues/6799)) ([b0b006b](https://github.com/camunda/camunda-platform-helm/commit/b0b006be9f9eb9d6680244bee4ab8cdffed56a05))
+* update camunda/zeebe docker tag to v8.7.36 ([#6764](https://github.com/camunda/camunda-platform-helm/issues/6764)) ([1c54f22](https://github.com/camunda/camunda-platform-helm/commit/1c54f22ee2f8ee374333d574e9f88552674eff20))
+* update minor-updates (minor) ([#6574](https://github.com/camunda/camunda-platform-helm/issues/6574)) ([3c346fd](https://github.com/camunda/camunda-platform-helm/commit/3c346fd1e6ffa130edae21b3e814c4202beed63d))
+* update module golang.org/x/crypto to v0.52.0 [security] ([#6538](https://github.com/camunda/camunda-platform-helm/issues/6538)) ([619ea17](https://github.com/camunda/camunda-platform-helm/commit/619ea17cf0b69ba9bc5eedcf15d9cc9c7b771266))
+* update patch-updates (patch) ([#6575](https://github.com/camunda/camunda-platform-helm/issues/6575)) ([ba9b3e6](https://github.com/camunda/camunda-platform-helm/commit/ba9b3e6b07eb7a754bc47636d8033cbcfb8b0ab0))
+* update patch-updates (patch) ([#6625](https://github.com/camunda/camunda-platform-helm/issues/6625)) ([e673379](https://github.com/camunda/camunda-platform-helm/commit/e673379119693e926e0f8e35ec9816690f5a2c40))
+* update patch-updates (patch) ([#6682](https://github.com/camunda/camunda-platform-helm/issues/6682)) ([759f232](https://github.com/camunda/camunda-platform-helm/commit/759f23228c3547d221c70d3da8981660165e7041))
+* update patch-updates (patch) ([#6753](https://github.com/camunda/camunda-platform-helm/issues/6753)) ([077511c](https://github.com/camunda/camunda-platform-helm/commit/077511c5ab6d3c1b5ec34266cafbfca604332d94))
+
 ## [12.13.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.0...camunda-platform-8.7-12.13.1) (2026-07-08)
 
 
