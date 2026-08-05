@@ -143,9 +143,6 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
 - NGINX upstream verify (REST): on (CA: {{ .Values.global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret }})
 {{- end }}
-{{- if .Values.global.tls.orchestration.grpc.proxyVerify.enabled }}
-- NGINX upstream verify (gRPC): on (CA: {{ .Values.global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret }})
-{{- end }}
 {{- if .Values.global.tls.orchestration.autoRollout }}
 - autoRollout: on (cert content changes will roll Orchestration on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
 {{- else }}
