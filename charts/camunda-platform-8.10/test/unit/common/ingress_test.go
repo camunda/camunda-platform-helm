@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -123,6 +125,8 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.ingress.enabled":                                   "true",
 				"orchestration.contextPath":                                "/orchestration",
+				"optimize.enabled":                                         "true",
+				"optimize.contextPath":                                     "/optimize",
 				"global.tls.orchestration.rest.enabled":                    "true",
 				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
 			},
@@ -130,6 +134,29 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NoError(err)
 				s.Require().NotContains(output, "path: /orchestration",
 					"combined ingress-http.yaml must not emit the Orchestration HTTP backend rule when REST TLS is enabled via global.tls.orchestration.rest.enabled — the split ingress-orchestration-http.yaml handles HTTPS")
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				requireIngressPathsNotEmpty(t, ingress)
+			},
+		},
+		{
+			Name:                 "TestIngressNotRenderedWhenOrchestrationIsTheOnlyRouteAndRESTTLSEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":                "true",
+				"orchestration.contextPath":             "/orchestration",
+				"identity.enabled":                      "false",
+				"optimize.enabled":                      "false",
+				"connectors.enabled":                    "false",
+				"webModeler.enabled":                    "false",
+				"global.tls.orchestration.rest.enabled": "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err,
+					"the shared HTTP Ingress must not be rendered when no route remains — an Ingress with an empty spec.rules[].http.paths is rejected by the Kubernetes API server")
+				s.Require().NotContains(output, "kind: Ingress")
 			},
 		},
 		{
@@ -167,6 +194,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":                        "true",
+				"orchestration.contextPath":                     "/orchestration",
 				"global.ingress.labels.test-label":              "test-value",
 				"global.ingress.labels.external-dns":            "enabled",
 				"global.ingress.labels.nginx\\.ingress\\.class": "public",
@@ -185,7 +213,8 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestIngressWithoutLabels",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.ingress.enabled": "true",
+				"global.ingress.enabled":    "true",
+				"orchestration.contextPath": "/orchestration",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
@@ -204,6 +233,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":          "true",
+				"orchestration.contextPath":       "/orchestration",
 				"global.commonLabels.app":         "common-override",
 				"global.commonLabels.environment": "common-env",
 				"global.ingress.labels.app":       "ingress-override",
@@ -227,6 +257,9 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestIngressHostWithTemplatingAndTLS",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-templated-ingress-host-tls.yaml")},
+			Values: map[string]string{
+				"orchestration.contextPath": "/orchestration",
+			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
 				helm.UnmarshalK8SYaml(t, output, &ingress)
@@ -243,6 +276,8 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"global.ingress.enabled":     "true",
 				"orchestration.enabled":      "true",
 				"orchestration.contextPath":  "/orchestration",
+				"optimize.enabled":           "true",
+				"optimize.contextPath":       "/optimize",
 				"orchestration.env[0].name":  "SERVER_SSL_ENABLED",
 				"orchestration.env[1].name":  "SERVER_SSL_KEY_STORE",
 				"orchestration.env[1].value": "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12",
@@ -254,6 +289,10 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				require.NoError(t, err)
 
 				require.NotContains(t, output, "path: /orchestration")
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				requireIngressPathsNotEmpty(t, ingress)
 			},
 		},
 	}
@@ -686,4 +725,65 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func requireIngressPathsNotEmpty(t *testing.T, ingress netv1.Ingress) {
+	require.NotEmpty(t, ingress.Spec.Rules, "Ingress %q has no rules", ingress.Name)
+	for i, rule := range ingress.Spec.Rules {
+		require.NotNil(t, rule.HTTP, "Ingress %q rule %d has no http block", ingress.Name, i)
+		require.NotEmpty(t, rule.HTTP.Paths,
+			"Ingress %q rule %d has an empty spec.rules[%d].http.paths, which the Kubernetes API server rejects with \"Required value\"", ingress.Name, i, i)
+	}
+}
+
+// TestOrchestrationOnlyRESTTLSIngressesAreInstallable renders both HTTP Ingress
+// templates for the narrowest REST-TLS topology — Orchestration is the only
+// routed component — and asserts that every Ingress the chart emits carries at
+// least one HTTP path, so the release is installable.
+func TestOrchestrationOnlyRESTTLSIngressesAreInstallable(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.enabled":          "true",
+			"global.ingress.enabled":                "true",
+			"global.host":                           "camunda.example.test",
+			"orchestration.enabled":                 "true",
+			"orchestration.contextPath":             "/orchestration",
+			"identity.enabled":                      "false",
+			"optimize.enabled":                      "false",
+			"connectors.enabled":                    "false",
+			"webModeler.enabled":                    "false",
+			"global.tls.orchestration.rest.enabled": "true",
+			"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-keystore",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", "camunda-platform-"+strings.ToLower(random.UniqueId())),
+		Logger:         logger.Discard,
+	}
+
+	rendered := 0
+	for _, template := range []string{
+		"templates/common/ingress-http.yaml",
+		"templates/common/ingress-orchestration-http.yaml",
+	} {
+		output, err := helm.RenderTemplateE(t, options, chartPath, "camunda-platform-test", []string{template})
+		if err != nil {
+			// Helm reports a template that renders nothing as "could not find
+			// template", which is the expected outcome for the shared Ingress here.
+			require.Contains(t, err.Error(), "could not find template",
+				"unexpected render failure for %s", template)
+			continue
+		}
+
+		var ingress netv1.Ingress
+		helm.UnmarshalK8SYaml(t, output, &ingress)
+		requireIngressPathsNotEmpty(t, ingress)
+		rendered++
+	}
+
+	require.Equal(t, 1, rendered,
+		"only the dedicated HTTPS-backend Ingress should be rendered; the shared HTTP Ingress must be skipped rather than emitted without paths")
 }

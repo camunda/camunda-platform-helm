@@ -846,6 +846,90 @@ Usage:
   {{- $result -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Renders the HTTP path entries of the shared Ingress, at zero
+indentation for the caller to nindent. Kept separate from ingress-http.yaml so
+that template can skip the whole Ingress when no route remains: a
+networking.k8s.io/v1 Ingress with an empty spec.rules[].http.paths is rejected
+by the API server ("spec.rules[0].http.paths: Required value"). The Orchestration
+entry is omitted when REST TLS is enabled because
+ingress-orchestration-http.yaml serves that route with an HTTPS backend.
+*/}}
+{{- define "camundaPlatform.ingressHTTPPaths" -}}
+{{- /* Management Group */ -}}
+  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+  {{- if .Values.global.identity.keycloak.internal }}
+- backend:
+    service:
+      name: {{ include "identity.keycloak.service" . }}
+      port:
+        number: {{ include "identity.keycloak.port" . }}
+  path: {{ include "identity.keycloak.contextPath" . | trimSuffix "/" }}/
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
+  {{- if .Values.identity.contextPath }}
+- backend:
+    service:
+      name: {{ template "identity.fullname" . }}
+      port:
+        number: {{ .Values.identity.service.port }}
+  path: {{ .Values.identity.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- end }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- $hub := include "camundaHub.values" . | fromYaml -}}
+  {{- if $hub.contextPath }}
+- backend:
+    service:
+      name: {{ template "webModeler.restapi.fullname" . }}
+      port:
+        number: {{ $hub.restapi.service.port }}
+  path: {{ $hub.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+- backend:
+    service:
+      name: {{ template "webModeler.websockets.fullname" . }}
+      port:
+        number:  {{ $hub.websockets.service.port }}
+  path: {{ template "webModeler.websocketContextPath" . }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- end }}
+{{- /* Orchestration Cluster */ -}}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (ne (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") }}
+# Orchestration.
+- backend:
+    service:
+      name: {{ include "orchestration.serviceName" . }}
+      port:
+        number: {{ .Values.orchestration.service.httpPort }}
+  path: {{ .Values.orchestration.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Values.optimize.contextPath }}
+# Optimize.
+- backend:
+    service:
+      name: {{ template "optimize.fullname" . }}
+      port:
+        number: {{ .Values.optimize.service.port }}
+  path: {{ .Values.optimize.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath }}
+# Connectors.
+- backend:
+    service:
+      name: {{ template "connectors.fullname" . }}
+      port:
+        number: {{ .Values.connectors.service.serverPort }}
+  path: {{ .Values.connectors.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
