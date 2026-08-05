@@ -255,7 +255,10 @@ jobs:
       ${{
         needs.init.outputs.camunda-versions != '[]' &&
         !contains(github.head_ref, 'release-please--branches--') &&
-        (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        (github.event_name != 'pull_request' || (
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        ))
       }}
     name: Local cluster - KIND ${{ matrix.version }}
     needs: [init, validation]
@@ -282,7 +285,10 @@ jobs:
       ${{
         needs.init.outputs.camunda-versions != '[]' &&
         !contains(github.head_ref, 'release-please--branches--') &&
-        (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+        (github.event_name != 'pull_request' || (
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        )) &&
         !(startsWith(github.head_ref, 'renovate/') && (
           contains(github.head_ref, 'camunda-platform-images') ||
           contains(github.head_ref, 'camunda-platform-digests')
