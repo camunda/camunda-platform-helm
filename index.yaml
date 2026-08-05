@@ -4,6 +4,123 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Make Gateway API listener port and route sectionName configurable"
+        - kind: added
+          description: "Support S3-compatible endpoints in AWS document store"
+        - kind: added
+          description: "Add multi-namespace topology CI scenario"
+        - kind: added
+          description: "Support shared and cross-namespace Gateway via global.gateway.name and namespace"
+        - kind: added
+          description: "Support topologySpreadConstraints for zeebe brokers and gateway"
+        - kind: added
+          description: "Add opt-in orchestration.hub.ping values for authenticated Hub ping"
+        - kind: added
+          description: "[TOPOLOGY 3/6] add topology-aware deployment contract"
+        - kind: added
+          description: "Add pod-level service account token automount control"
+        - kind: changed
+          description: "Hoist camundaHub.webModeler.* and console overrides to the camundaHub.* parent"
+        - kind: fixed
+          description: "Omit empty zeebe.broker.exporters map for no-exporter scenarios"
+        - kind: fixed
+          description: "Allow Web Modeler and Console with external management Identity"
+        - kind: fixed
+          description: "Decouple requestBodySize from Zeebe maxMessageSize"
+        - kind: fixed
+          description: "Correct console deprecation signals after hub consolidation"
+        - kind: fixed
+          description: "Normalize orchestration internal REST URL when contextPath is root"
+        - kind: fixed
+          description: "Remove publishNotReadyAddresses from orchestration client-facing service"
+        - kind: fixed
+          description: "Only use document store configuration where required"
+        - kind: fixed
+          description: "Bind azure document store connection string to the unified config path"
+        - kind: fixed
+          description: "Gate OpenSearch password env vars on effective backend"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/camunda/camunda:8.10.0-alpha4
+        - image: docker.io/camunda/connectors-bundle:8.10.0-alpha4
+        - image: docker.io/camunda/hub-websockets:8.10.0-alpha4
+        - image: docker.io/camunda/hub:8.10.0-alpha4
+        - image: docker.io/camunda/identity:8.10.0-alpha4.2
+        - image: docker.io/camunda/optimize:8.10.0-alpha4
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/chart-images: |
+        docker.io/camunda/camunda:8.10.0-alpha4
+        docker.io/camunda/connectors-bundle:8.10.0-alpha4
+        docker.io/camunda/hub-websockets:8.10.0-alpha4
+        docker.io/camunda/hub:8.10.0-alpha4
+        docker.io/camunda/identity:8.10.0-alpha4.2
+        docker.io/camunda/optimize:8.10.0-alpha4
+      camunda.io/component-image-versions: |
+        camunda: 8.10.0-alpha4
+        managementIdentity: 8.10.0-alpha4.2
+        optimize: 8.10.0-alpha4
+        webModeler: 8.10.0-alpha4
+        connectors: 8.10.0-alpha4
+        console: N/A
+      camunda.io/helmCLIVersion: 4.2.3
+      camunda.io/imageOverrides: |
+        orchestration: 8.10.0-alpha4
+        console: 8.10.0-alpha4
+        modeler: 8.10.0-alpha4
+        connectors: 8.10.0-alpha4
+        optimize: 8.10.0-alpha4
+        identity: 8.10.0-alpha4.2
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-08-05T16:46:16.578789169Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: a6d0bc3aa5d79c8341626193dc005fd688bcbd0adfea7565bfb88eea84dea7ae
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: eamonn.moloney@camunda.com
+      name: eamonnmoloney
+    - email: immanuel.monma@camunda.com
+      name: hisImminence
+    - email: balazs.kenez@camunda.com
+      name: bkenez
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.0.0-alpha4/camunda-platform-15.0.0-alpha4.tgz
+    version: 15.0.0-alpha4
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Deprecate app-config proxy keys in favor of extraConfiguration"
         - kind: added
           description: "Adjust modeler cluster defaults for console migration"
@@ -30642,4 +30759,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-07-31T10:03:51.783667019Z"
+generated: "2026-08-05T16:46:16.579958043Z"
