@@ -999,14 +999,9 @@
                                         "secret": {
                                             "type": "object",
                                             "properties": {
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.",
-                                                    "default": ""
-                                                },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
+                                                    "description": "defines the key within the existing secret object. In PEM mode, the cert and private key must live in the SAME Secret referenced by global.tls.optimize.cert.secret.existingSecret.",
                                                     "default": "tls.key"
                                                 }
                                             }
@@ -1028,46 +1023,6 @@
                                                     "type": "string",
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": "keystore-password"
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "proxyVerify": {
-                                    "type": "object",
-                                    "properties": {
-                                        "enabled": {
-                                            "type": "boolean",
-                                            "description": "if true, NGINX verifies the upstream server cert against the CA bundle. Currently inert under the Gateway API HTTPRoute used in 8.10.",
-                                            "default": false
-                                        },
-                                        "sniHost": {
-                                            "type": "string",
-                                            "description": "can be used to set the SNI hostname NGINX presents when verifying the upstream cert.",
-                                            "default": ""
-                                        },
-                                        "caSecret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "secret": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "existingSecret": {
-                                                            "type": "string",
-                                                            "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle.",
-                                                            "default": ""
-                                                        },
-                                                        "existingSecretKey": {
-                                                            "type": "string",
-                                                            "description": "defines the key within the existing secret object.",
-                                                            "default": "ca.crt"
-                                                        }
-                                                    }
-                                                },
-                                                "namespace": {
-                                                    "type": "string",
-                                                    "description": "can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.",
-                                                    "default": ""
                                                 }
                                             }
                                         }
@@ -6785,8 +6740,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -6830,8 +6785,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -6875,8 +6830,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",

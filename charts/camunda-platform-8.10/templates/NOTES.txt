@@ -176,9 +176,9 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- else }}
 - autoRollout: off (rotate manually with: kubectl rollout restart deployment/{{ include "optimize.fullname" . }})
 {{- end }}
-- Independent of the client-side `global.elasticsearch.tls.secret.existingSecret` /
-  `global.opensearch.tls.secret.existingSecret` truststore wiring used for the
-  Optimize → ES/OS connection direction; both can be configured together.
+- Independent of the client-side `optimize.database.elasticsearch.tls.secret.existingSecret` /
+  `optimize.database.opensearch.tls.secret.existingSecret` truststore wiring used for
+  the Optimize → ES/OS connection direction; both can be configured together.
 
   NOTE: Optimize in 8.10 is exposed through the Gateway API `HTTPRoute`, not
   via an NGINX ingress. Intra-cluster TLS terminates at the Optimize pod;

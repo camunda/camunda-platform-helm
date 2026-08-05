@@ -524,7 +524,7 @@ global:
           ## @param global.tls.connectors.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: "keystore-password"
 
-    ## @extra global.tls.optimize configuration of TLS for the Optimize HTTP server. This server-side TLS is independent of the client-side `global.elasticsearch.tls.secret.existingSecret` / `global.opensearch.tls.secret.existingSecret` truststore wiring, which secures Optimize's outbound connection to its secondary storage; both can be used together. Client-side trust material for in-cluster callers still flows through `global.tls.caBundle`.
+    ## @extra global.tls.optimize configuration of TLS for the Optimize HTTP server. This server-side TLS is independent of the client-side `optimize.database.elasticsearch.tls.secret.existingSecret` / `optimize.database.opensearch.tls.secret.existingSecret` truststore wiring, which secures Optimize's outbound connection to its secondary storage; both can be used together. Client-side trust material for in-cluster callers still flows through `global.tls.caBundle`.
     optimize:
       ## @param global.tls.optimize.autoRollout if true, enables automatic pod rollout on Optimize cert rotation. The chart stamps a `checksum/optimize-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Optimize when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
       autoRollout: false
@@ -546,9 +546,7 @@ global:
       privateKey:
         ## @extra global.tls.optimize.privateKey.secret configuration to provide the private key secret.
         secret:
-          ## @param global.tls.optimize.privateKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.
-          existingSecret: ""
-          ## @param global.tls.optimize.privateKey.secret.existingSecretKey defines the key within the existing secret object.
+          ## @param global.tls.optimize.privateKey.secret.existingSecretKey defines the key within the existing secret object. In PEM mode, the cert and private key must live in the SAME Secret referenced by global.tls.optimize.cert.secret.existingSecret.
           existingSecretKey: "tls.key"
       ## @extra global.tls.optimize.keystorePassword configuration to provide the PKCS12 keystore password (PKCS12 mode only).
       keystorePassword:
@@ -558,22 +556,6 @@ global:
           existingSecret: ""
           ## @param global.tls.optimize.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: "keystore-password"
-      ## @extra global.tls.optimize.proxyVerify configuration of NGINX upstream cert verification. NOTE: Optimize in 8.10 is exposed via Gateway API HTTPRoute, not via an NGINX ingress; this block is reserved for parity / future NGINX users and is currently inert.
-      proxyVerify:
-        ## @param global.tls.optimize.proxyVerify.enabled if true, NGINX verifies the upstream server cert against the CA bundle. Currently inert under the Gateway API HTTPRoute used in 8.10.
-        enabled: false
-        ## @param global.tls.optimize.proxyVerify.sniHost can be used to set the SNI hostname NGINX presents when verifying the upstream cert.
-        sniHost: ""
-        ## @extra global.tls.optimize.proxyVerify.caSecret configuration to provide the CA bundle Secret for upstream verification.
-        caSecret:
-          ## @extra global.tls.optimize.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
-          secret:
-            ## @param global.tls.optimize.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle.
-            existingSecret: ""
-            ## @param global.tls.optimize.proxyVerify.caSecret.secret.existingSecretKey defines the key within the existing secret object.
-            existingSecretKey: "ca.crt"
-          ## @param global.tls.optimize.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
-          namespace: ""
 
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
@@ -3117,8 +3099,8 @@ optimize:
   startupProbe:
     ## @param optimize.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param optimize.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.startupProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.startupProbe.probePath defines the startup probe route used on the app
     probePath: /api/readyz
     ## @param optimize.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -3137,8 +3119,8 @@ optimize:
   readinessProbe:
     ## @param optimize.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param optimize.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.readinessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /api/readyz
     ## @param optimize.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -3157,8 +3139,8 @@ optimize:
   livenessProbe:
     ## @param optimize.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param optimize.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.livenessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /api/readyz
     ## @param optimize.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
