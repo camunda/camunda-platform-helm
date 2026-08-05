@@ -886,7 +886,7 @@ Release templates.
   {{- end }}
 
   {{- if .Values.optimize.enabled }}
-  {{-  $proto := (lower .Values.optimize.readinessProbe.scheme) -}}
+  {{-  $proto := (lower (.Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")))) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
     id: optimize
@@ -999,7 +999,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
           url: 'https://docs.camunda.io'
   components:
   {{- if .Values.optimize.enabled }}
-  {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
+  {{- $proto := (lower (.Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")))) }}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
     type: optimize
@@ -1680,11 +1680,10 @@ checksum/connectors-tls: {{ get $data (include "camundaPlatform.connectorsSecret
 
 {{/*
 optimizeServerSecretCertKey
-Returns the Secret data key that holds the Optimize SERVER certificate. When
-`type` is `pem` and `cert.secret.existingSecretKey` is empty or still the
-chart PKCS12 default (`keystore.p12`), substitutes `tls.crt` so cert-manager
-`kubernetes.io/tls` Secrets work out of the box. Any explicit key other than
-the PKCS12 default wins verbatim. Distinct from the legacy
+Returns the Secret data key that holds the Optimize SERVER certificate. An
+explicit `cert.secret.existingSecretKey` wins verbatim; when empty it defaults
+to `tls.crt` in PEM mode (so cert-manager `kubernetes.io/tls` Secrets work out
+of the box) and `keystore.p12` in PKCS12 mode. Distinct from the legacy
 `camundaPlatform.getTlsSecretKey`, which resolves the Optimize-as-CLIENT
 truststore key for ES/OS.
 */}}
@@ -1692,10 +1691,10 @@ truststore key for ES/OS.
 {{- $o := .Values.global.tls.optimize -}}
 {{- $type := $o.type | default "pkcs12" -}}
 {{- $key := $o.cert.secret.existingSecretKey -}}
-{{- if and (eq $type "pem") (or (eq $key "") (eq $key "keystore.p12")) -}}
-tls.crt
-{{- else if $key -}}
+{{- if $key -}}
 {{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
 {{- else -}}
 keystore.p12
 {{- end -}}
@@ -1721,30 +1720,6 @@ Usage (inside the Optimize pod template's metadata.annotations):
     "secretName" $o.cert.secret.existingSecret
     "certKey" (include "camundaPlatform.optimizeServerSecretCertKey" .)) }}
 {{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-optimizeServerProxyVerifyAnnotations
-Renders the NGINX upstream-TLS-verification annotations for the Optimize
-ingress based on global.tls.optimize.proxyVerify. Returns nothing when
-proxyVerify.enabled is false or caSecret.secret.existingSecret is empty.
-
-Optimize in 8.10 is exposed via Gateway API `HTTPRoute`, not via an NGINX
-ingress, so this helper is reserved for parity / future NGINX users; today
-it has no caller. See the TLS modes guide for the Gateway API caveat.
-*/}}
-{{- define "camundaPlatform.optimizeServerProxyVerifyAnnotations" -}}
-{{- $ctx := .context | default . -}}
-{{- $pv := $ctx.Values.global.tls.optimize.proxyVerify -}}
-{{- if and $pv.enabled $pv.caSecret.secret.existingSecret -}}
-{{- $ns := $pv.caSecret.namespace | default $ctx.Release.Namespace -}}
-nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
-nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $ns $pv.caSecret.secret.existingSecret | quote }}
-{{- with $pv.sniHost }}
-nginx.ingress.kubernetes.io/proxy-ssl-name: {{ . | quote }}
-nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
-{{- end }}
 {{- end -}}
 {{- end -}}
 
