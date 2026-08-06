@@ -343,6 +343,19 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
+			Name: "Constraint rejects valueFrom SERVER_SSL_ENABLED because TLS state is unknown",
+			Values: map[string]string{
+				"optimize.enabled":                            "true",
+				"optimize.env[0].name":                        "SERVER_SSL_ENABLED",
+				"optimize.env[0].valueFrom.secretKeyRef.name": "optimize-tls-toggle",
+				"optimize.env[0].valueFrom.secretKeyRef.key":  "enabled",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "SERVER_SSL_ENABLED cannot use valueFrom")
+			},
+		},
+		{
 			Name: "Regression: server-side optimize-server-tls coexists with client-side keystore volume for ES TLS",
 			Values: map[string]string{
 				"optimize.enabled":                                             "true",
