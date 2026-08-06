@@ -76,6 +76,24 @@ func hasAwsSecretAccessKeyEnvVar(containers []corev1.Container) bool {
 	return false
 }
 
+func requireNoGcpCredentialWiring(t *testing.T, podSpec corev1.PodSpec) {
+	t.Helper()
+	for _, container := range podSpec.Containers {
+		for _, env := range container.Env {
+			require.NotEqual(t, "GOOGLE_APPLICATION_CREDENTIALS", env.Name,
+				"GOOGLE_APPLICATION_CREDENTIALS should never be present")
+		}
+		for _, volumeMount := range container.VolumeMounts {
+			require.NotEqual(t, "gcp-credentials-volume", volumeMount.Name,
+				"gcp-credentials-volume should never be mounted")
+		}
+	}
+	for _, volume := range podSpec.Volumes {
+		require.NotEqual(t, "gcp-credentials-volume", volume.Name,
+			"gcp-credentials-volume should never be present")
+	}
+}
+
 func requireNoAwsCredentialEnvVars(t *testing.T, containers []corev1.Container) {
 	t.Helper()
 	require.False(t, hasAwsAccessKeyIdEnvVar(containers),
@@ -149,6 +167,16 @@ func awsDocumentStoreValuesWithoutSecret() map[string]string {
 	values["global.documentStore.type.aws.region"] = "us-east-1"
 	values["global.documentStore.type.aws.irsa.enabled"] = "false"
 	values["global.documentStore.type.aws.existingSecret"] = ""
+	return values
+}
+
+func gcpDocumentStoreValues() map[string]string {
+	values := baseValues()
+	values["global.documentStore.activeStoreId"] = "gcp"
+	values["global.documentStore.type.gcp.enabled"] = "true"
+	values["global.documentStore.type.gcp.bucket"] = "test-bucket"
+	values["global.documentStore.type.gcp.existingSecret"] = "gcp-credentials"
+	values["global.documentStore.type.gcp.credentialsKey"] = "credentials.json"
 	return values
 }
 
@@ -319,6 +347,17 @@ func (s *documentStoreIRSATest) TestConnectorsNeverGetsDocumentStoreCreds() {
 					"AWS_SECRET_ACCESS_KEY should never be present on connectors")
 				require.False(t, hasDocumentStoreEnvFromRef(containers),
 					"connectors should never reference the documentstore-env-vars ConfigMap")
+			},
+		},
+		{
+			Name:   "Connectors: GCP document-store credentials should never be injected",
+			Values: gcpDocumentStoreValues(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				requireNoGcpCredentialWiring(t, deployment.Spec.Template.Spec)
 			},
 		},
 	}
