@@ -198,6 +198,13 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- range $e := (.Values.optimize.env | default list) -}}
     {{- $envNames = append $envNames ($e.name | default "") -}}
   {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "unknown" }}
+    {{- $errorMessage := printf "%s %s"
+        "[camunda][error] optimize.env SERVER_SSL_ENABLED cannot use valueFrom."
+        "Set a literal true/false value so the chart can derive the matching probe schemes, internal URLs, and ingress backend protocol."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
   {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
     {{- $chartMountsCert := and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret -}}
     {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}

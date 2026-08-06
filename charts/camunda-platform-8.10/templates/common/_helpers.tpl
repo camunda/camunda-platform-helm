@@ -795,14 +795,18 @@ entry in connectors.env.
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true" when Optimize server-side TLS is enabled via
-global.tls.optimize.enabled or via an explicit SERVER_SSL_ENABLED=true entry in
-optimize.env. Disambiguated from the legacy optimize.hasTlsConfig helper, which
-governs the OPTIMIZE-AS-CLIENT path (truststore for ES/OS connections).
+[camunda-platform] Returns "true" when Optimize server-side TLS is enabled. An
+explicit literal optimize.env entry for SERVER_SSL_ENABLED wins over
+global.tls.optimize.enabled. A valueFrom-sourced entry is rejected by the
+constraints template because the chart cannot derive probes, URLs, or ingress
+routing from a value that is unknown at render time.
 */}}
 {{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
-  {{- if eq (include "camundaPlatform.optimizeServerEnvHasKey" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
-    {{- include "camundaPlatform.optimizeServerEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- $envValue := include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- if eq $envValue "true" -}}
+    true
+  {{- else if eq $envValue "false" -}}
+    false
   {{- else if .Values.global.tls.optimize.enabled -}}
     true
   {{- else -}}
@@ -811,33 +815,29 @@ governs the OPTIMIZE-AS-CLIENT path (truststore for ES/OS connections).
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true" when optimize.env contains at least one entry for name.
+[camunda-platform] Returns "true", "false", "unknown", or "unset" for the last
+matching optimize.env entry. "unknown" means the entry uses valueFrom.
 */}}
-{{- define "camundaPlatform.optimizeServerEnvHasKey" -}}
+{{- define "camundaPlatform.optimizeServerEnvLastValue" -}}
   {{- $ctx := .context -}}
   {{- $name := .name -}}
-  {{- $found := false -}}
+  {{- $result := "unset" -}}
   {{- range $env := $ctx.Values.optimize.env -}}
     {{- if eq ($env.name | default "") $name -}}
-      {{- $found = true -}}
+      {{- if $env.value -}}
+        {{- if eq (lower (tpl (toString $env.value) $ctx)) "true" -}}
+          {{- $result = "true" -}}
+        {{- else -}}
+          {{- $result = "false" -}}
+        {{- end -}}
+      {{- else if $env.valueFrom -}}
+        {{- $result = "unknown" -}}
+      {{- else -}}
+        {{- $result = "false" -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
-  {{- $found -}}
-{{- end -}}
-
-{{/*
-[camunda-platform] Returns true when the last optimize.env entry for name has value true.
-*/}}
-{{- define "camundaPlatform.optimizeServerEnvIsTrue" -}}
-  {{- $ctx := .context -}}
-  {{- $name := .name -}}
-  {{- $enabled := false -}}
-  {{- range $env := $ctx.Values.optimize.env -}}
-    {{- if eq ($env.name | default "") $name -}}
-      {{- $enabled = (eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true") -}}
-    {{- end -}}
-  {{- end -}}
-  {{- $enabled -}}
+  {{- $result -}}
 {{- end -}}
 
 
