@@ -26,7 +26,12 @@ spec:
     spec:
       imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.connectors.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+        {{- include "connectors.awsCredentialsFileInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.connectors))) | nindent 8 }}
+        {{- end }}
+        {{- with .Values.connectors.initContainers }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: connectors
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
@@ -103,17 +108,8 @@ spec:
               value: {{ include "zeebe.authTokenScope" . | quote }}
             {{- end }}
           {{- end }}
-            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) .Values.global.documentStore.type.aws.existingSecret }}
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+            {{- include "connectors.awsCredentialsFileEnv" . | nindent 12 }}
             {{- end }}
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
@@ -189,6 +185,9 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
               readOnly: true
             {{- end }}
+            {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+            {{- include "connectors.awsCredentialsFileVolumeMount" . | nindent 12 }}
+            {{- end }}
           {{- if .Values.connectors.extraVolumeMounts }}
             {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
@@ -208,6 +207,9 @@ spec:
             items:
               - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
                 path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
+        {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+        {{- include "connectors.awsCredentialsFileVolume" . | nindent 8 }}
         {{- end }}
       {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}

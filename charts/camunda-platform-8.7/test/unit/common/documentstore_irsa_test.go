@@ -109,6 +109,37 @@ func hasEmptySecretKeyRefName(containers []corev1.Container) bool {
 	return false
 }
 
+// Helper function to check if AWS_SHARED_CREDENTIALS_FILE and AWS_CREDENTIAL_PROFILES_FILE both
+// point at the same credentials file path
+func hasAwsCredentialsFileEnvVars(containers []corev1.Container) bool {
+	const path = "/var/camunda/aws-credentials/credentials"
+	for _, container := range containers {
+		hasShared, hasProfiles := false, false
+		for _, env := range container.Env {
+			if env.Name == "AWS_SHARED_CREDENTIALS_FILE" && env.Value == path {
+				hasShared = true
+			}
+			if env.Name == "AWS_CREDENTIAL_PROFILES_FILE" && env.Value == path {
+				hasProfiles = true
+			}
+		}
+		if hasShared && hasProfiles {
+			return true
+		}
+	}
+	return false
+}
+
+// Helper function to check if a container with the given name exists
+func hasContainerNamed(containers []corev1.Container, name string) bool {
+	for _, container := range containers {
+		if container.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 // baseValues returns common values needed for chart rendering
 func baseValues() map[string]string {
 	return map[string]string{
@@ -316,16 +347,21 @@ func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				containers := deployment.Spec.Template.Spec.Containers
+				initContainers := deployment.Spec.Template.Spec.InitContainers
 				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
 					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
 				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
 					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
+				require.False(t, hasAwsCredentialsFileEnvVars(containers),
+					"AWS credentials file env vars should NOT be present when irsa.enabled is true")
+				require.False(t, hasContainerNamed(initContainers, "aws-credentials-file-init"),
+					"aws-credentials-file-init should NOT run when irsa.enabled is true")
 				require.False(t, hasDocumentStoreEnvFromRef(containers),
 					"connectors should not reference the documentstore-env-vars ConfigMap")
 			},
 		},
 		{
-			Name:   "Connectors: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Name:   "Connectors: AWS credentials file SHOULD be used when irsa.enabled is false",
 			Values: awsDocumentStoreValuesWithIRSA(false),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -333,10 +369,19 @@ func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				containers := deployment.Spec.Template.Spec.Containers
-				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
-				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+				initContainers := deployment.Spec.Template.Spec.InitContainers
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should NOT be present on the main container - it is FEEL-readable as a connector secret on this chart version")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should NOT be present on the main container - it is FEEL-readable as a connector secret on this chart version")
+				require.True(t, hasAwsCredentialsFileEnvVars(containers),
+					"AWS_SHARED_CREDENTIALS_FILE and AWS_CREDENTIAL_PROFILES_FILE should be present on the main container so the AWS SDK default chain still resolves")
+				require.True(t, hasContainerNamed(initContainers, "aws-credentials-file-init"),
+					"aws-credentials-file-init should run to write the credentials file")
+				require.True(t, hasAwsAccessKeyIdEnvVar(initContainers),
+					"AWS_ACCESS_KEY_ID should be present on the init container, which writes it to the credentials file")
+				require.True(t, hasAwsSecretAccessKeyEnvVar(initContainers),
+					"AWS_SECRET_ACCESS_KEY should be present on the init container, which writes it to the credentials file")
 				require.False(t, hasDocumentStoreEnvFromRef(containers),
 					"connectors should not reference the documentstore-env-vars ConfigMap")
 			},
@@ -350,7 +395,12 @@ func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				containers := deployment.Spec.Template.Spec.Containers
+				initContainers := deployment.Spec.Template.Spec.InitContainers
 				requireNoAwsCredentialEnvVars(t, containers)
+				require.False(t, hasAwsCredentialsFileEnvVars(containers),
+					"AWS credentials file env vars should NOT be present when the secret is unset")
+				require.False(t, hasContainerNamed(initContainers, "aws-credentials-file-init"),
+					"aws-credentials-file-init should NOT run when the secret is unset")
 			},
 		},
 	}

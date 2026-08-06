@@ -94,3 +94,111 @@ app.kubernetes.io/component: connectors
 {{- define "connectors.serviceHeadlessName" -}}
   {{ include "connectors.fullname" . }}-headless
 {{- end }}
+
+{{/*
+********************************************************************************
+AWS document-store credentials file.
+********************************************************************************
+*/}}
+
+{{/*
+[connectors] Whether the AWS document-store credentials are injected into
+this deployment. Mirrors the gate used by the main container's env block.
+*/}}
+{{- define "connectors.hasAwsDocumentStoreCredentials" -}}
+{{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) .Values.global.documentStore.type.aws.existingSecret -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+[connectors] Init container that writes the AWS document-store credentials
+to an AWS shared-credentials file, consumed via awsCredentialsFileEnv.
+
+Usage (inside .spec.initContainers):
+  {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+  {{- include "connectors.awsCredentialsFileInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.connectors))) | nindent 8 }}
+  {{- end }}
+*/}}
+{{- define "connectors.awsCredentialsFileInitContainer" -}}
+{{- $ctx := .context -}}
+- name: aws-credentials-file-init
+  image: {{ .image | quote }}
+  imagePullPolicy: {{ $ctx.Values.global.image.pullPolicy | quote }}
+  {{- if $ctx.Values.connectors.containerSecurityContext }}
+  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $ctx.Values.connectors.containerSecurityContext "context" $ctx) | nindent 4 }}
+  {{- end }}
+  env:
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: {{ $ctx.Values.global.documentStore.type.aws.existingSecret | quote }}
+          key: {{ $ctx.Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: {{ $ctx.Values.global.documentStore.type.aws.existingSecret | quote }}
+          key: {{ $ctx.Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+  command: ["sh", "-c"]
+  args:
+    - |
+      set -eu
+      umask 077
+      if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
+        echo "[aws-credentials-file-init] ERROR: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY resolved empty; check global.documentStore.type.aws.existingSecret / accessKeyIdKey / secretAccessKeyKey configuration." >&2
+        exit 1
+      fi
+      printf '[default]\naws_access_key_id=%s\naws_secret_access_key=%s\n' "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" > /var/camunda/aws-credentials/credentials
+      chmod 0600 /var/camunda/aws-credentials/credentials
+  volumeMounts:
+    - name: aws-credentials-file
+      mountPath: /var/camunda/aws-credentials
+{{- end -}}
+
+{{/*
+[connectors] emptyDir backing the AWS credentials file written by
+awsCredentialsFileInitContainer.
+
+Usage (inside .spec.volumes):
+  {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+  {{- include "connectors.awsCredentialsFileVolume" . | nindent 8 }}
+  {{- end }}
+*/}}
+{{- define "connectors.awsCredentialsFileVolume" -}}
+- name: aws-credentials-file
+  emptyDir:
+    medium: Memory
+{{- end -}}
+
+{{/*
+[connectors] Main-container volumeMount for the AWS credentials file,
+read-only since the init container is the sole writer.
+
+Usage (inside container.volumeMounts):
+  {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+  {{- include "connectors.awsCredentialsFileVolumeMount" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "connectors.awsCredentialsFileVolumeMount" -}}
+- name: aws-credentials-file
+  mountPath: /var/camunda/aws-credentials
+  readOnly: true
+{{- end -}}
+
+{{/*
+[connectors] Sets AWS_SHARED_CREDENTIALS_FILE and AWS_CREDENTIAL_PROFILES_FILE
+to the credentials file written by awsCredentialsFileInitContainer.
+
+Usage (inside an env: list):
+  {{- if eq (include "connectors.hasAwsDocumentStoreCredentials" .) "true" }}
+  {{- include "connectors.awsCredentialsFileEnv" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "connectors.awsCredentialsFileEnv" -}}
+- name: AWS_SHARED_CREDENTIALS_FILE
+  value: /var/camunda/aws-credentials/credentials
+- name: AWS_CREDENTIAL_PROFILES_FILE
+  value: /var/camunda/aws-credentials/credentials
+{{- end -}}
