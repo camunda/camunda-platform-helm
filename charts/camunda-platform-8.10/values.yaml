@@ -117,7 +117,7 @@ global:
   ## @extra global.multitenancy
   multitenancy:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
-    enabled: false
+    enabled: "no" # DELIBERATE BREAKAGE - AlwaysGreen helm-install dispatch test
 
   ## Security configuration
   ## @extra global.security
