@@ -1,4 +1,83 @@
 {
+    "definitions": {
+        "secretStoreFileEntries": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "pattern": "^/",
+                        "minLength": 1
+                    },
+                    "existingSecret": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreAwsEntries": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string"},
+                    "pathPrefix": {"type": "string"},
+                    "roleArn": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreGcpEntries": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "projectId": {"type": "string", "minLength": 1},
+                    "pathPrefix": {"type": "string"},
+                    "endpoint": {"type": "string", "minLength": 1},
+                    "gcpServiceAccount": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreProviderSet": {
+            "type": "object",
+            "properties": {
+                "file": {"$ref": "#/definitions/secretStoreFileEntries"},
+                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
+                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"}
+            },
+            "additionalProperties": false
+        },
+        "secretStore": {
+            "type": "object",
+            "properties": {
+                "file": {"$ref": "#/definitions/secretStoreFileEntries"},
+                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
+                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"},
+                "physicalTenants": {
+                    "type": "object",
+                    "propertyNames": {
+                        "pattern": "^[a-z0-9]{1,64}$"
+                    },
+                    "additionalProperties": {"$ref": "#/definitions/secretStoreProviderSet"}
+                }
+            },
+            "additionalProperties": false
+        }
+    },
     "properties": {
         "global": {
             "properties": {
@@ -757,6 +836,9 @@
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
+                },
+                "secretStore": {
+                    "$ref": "#/definitions/secretStore"
                 },
                 "exporters": {
                     "properties": {
