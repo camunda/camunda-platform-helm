@@ -343,16 +343,22 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
-			Name: "Constraint rejects valueFrom SERVER_SSL_ENABLED because TLS state is unknown",
+			Name: "valueFrom SERVER_SSL_ENABLED defers probe scheme to the global TLS flag",
 			Values: map[string]string{
-				"optimize.enabled":                            "true",
-				"optimize.env[0].name":                        "SERVER_SSL_ENABLED",
-				"optimize.env[0].valueFrom.secretKeyRef.name": "optimize-tls-toggle",
-				"optimize.env[0].valueFrom.secretKeyRef.key":  "enabled",
+				"optimize.enabled":                               "true",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+				"optimize.env[0].name":                           "SERVER_SSL_ENABLED",
+				"optimize.env[0].valueFrom.secretKeyRef.name":    "optimize-tls-toggle",
+				"optimize.env[0].valueFrom.secretKeyRef.key":     "enabled",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), "SERVER_SSL_ENABLED cannot use valueFrom")
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				container := s.mainContainer(&deployment)
+				s.Require().Equal(corev1.URIScheme("HTTPS"), container.ReadinessProbe.HTTPGet.Scheme)
 			},
 		},
 		{
