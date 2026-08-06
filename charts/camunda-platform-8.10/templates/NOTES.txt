@@ -181,9 +181,9 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
   `optimize.database.opensearch.tls.secret.existingSecret` truststore wiring used for
   the Optimize → ES/OS connection direction; both can be configured together.
 
-  NOTE: Optimize in 8.10 is exposed through the Gateway API `HTTPRoute`, not
-  via an NGINX ingress. Intra-cluster TLS terminates at the Optimize pod;
-  backend-protocol selection for the Gateway listener is a separate concern.
+  NOTE: With the chart-managed NGINX ingress, Optimize TLS is routed through a
+  dedicated HTTPS-backend Ingress. Gateway API users must separately configure
+  backend TLS with a BackendTLSPolicy or their implementation's equivalent.
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}
