@@ -1,4 +1,10 @@
-{{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) -}}
+{{- $identityPath := and .Values.identity.enabled (or .Values.global.identity.keycloak.internal .Values.identity.contextPath) -}}
+{{- $webModelerPath := and (eq (include "camundaHub.webModelerEnabled" .) "true") (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) -}}
+{{- $orchestrationPath := and .Values.orchestration.enabled .Values.orchestration.contextPath (ne (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") -}}
+{{- $optimizePath := and .Values.optimize.enabled .Values.optimize.contextPath (ne (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") -}}
+{{- $connectorsPath := and .Values.connectors.enabled .Values.connectors.contextPath -}}
+{{- $hasPath := or $identityPath $webModelerPath $orchestrationPath $optimizePath $connectorsPath -}}
+{{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) $hasPath -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -73,7 +79,7 @@ spec:
             path: {{ .Values.orchestration.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
-          {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
+          {{- if and .Values.optimize.enabled .Values.optimize.contextPath (ne (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
           # Optimize.
           - backend:
               service:

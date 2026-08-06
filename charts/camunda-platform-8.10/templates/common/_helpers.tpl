@@ -794,6 +794,51 @@ entry in connectors.env.
   {{- $enabled -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Returns "true" when Optimize server-side TLS is enabled. An
+explicit literal optimize.env entry for SERVER_SSL_ENABLED wins over
+global.tls.optimize.enabled. A valueFrom-sourced entry is unknown at render
+time, so the chart defers to the global flag rather than assuming a value.
+*/}}
+{{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
+  {{- $envValue := include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- if eq $envValue "true" -}}
+    true
+  {{- else if eq $envValue "false" -}}
+    false
+  {{- else if .Values.global.tls.optimize.enabled -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false", "unknown", or "unset" for the last
+matching optimize.env entry. "unknown" means the entry uses valueFrom.
+*/}}
+{{- define "camundaPlatform.optimizeServerEnvLastValue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $result := "unset" -}}
+  {{- range $env := $ctx.Values.optimize.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- if $env.value -}}
+        {{- if eq (lower (tpl (toString $env.value) $ctx)) "true" -}}
+          {{- $result = "true" -}}
+        {{- else -}}
+          {{- $result = "false" -}}
+        {{- end -}}
+      {{- else if $env.valueFrom -}}
+        {{- $result = "unknown" -}}
+      {{- else -}}
+        {{- $result = "false" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $result -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -840,7 +885,7 @@ Release templates.
   {{- end }}
 
   {{- if .Values.optimize.enabled }}
-  {{-  $proto := (lower .Values.optimize.readinessProbe.scheme) -}}
+  {{-  $proto := (lower (.Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")))) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
     id: optimize
@@ -953,7 +998,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
           url: 'https://docs.camunda.io'
   components:
   {{- if .Values.optimize.enabled }}
-  {{- $proto := (lower .Values.optimize.readinessProbe.scheme) }}
+  {{- $proto := (lower (.Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")))) }}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
     type: optimize
@@ -1628,6 +1673,51 @@ keystore.p12
 {{- $secret := lookup "v1" "Secret" .Release.Namespace $c.cert.secret.existingSecret -}}
 {{- $data := ($secret | default dict).data | default dict -}}
 checksum/connectors-tls: {{ get $data (include "camundaPlatform.connectorsSecretCertKey" .) | sha256sum }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+optimizeServerSecretCertKey
+Returns the Secret data key that holds the Optimize SERVER certificate. An
+explicit `cert.secret.existingSecretKey` wins verbatim; when empty it defaults
+to `tls.crt` in PEM mode (so cert-manager `kubernetes.io/tls` Secrets work out
+of the box) and `keystore.p12` in PKCS12 mode. Distinct from the legacy
+`camundaPlatform.getTlsSecretKey`, which resolves the Optimize-as-CLIENT
+truststore key for ES/OS.
+*/}}
+{{- define "camundaPlatform.optimizeServerSecretCertKey" -}}
+{{- $o := .Values.global.tls.optimize -}}
+{{- $type := $o.type | default "pkcs12" -}}
+{{- $key := $o.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+optimizeServerTLSChecksumAnnotation
+Emits a checksum/optimize-tls pod annotation from the cert content of the
+Optimize server TLS Secret when global.tls.optimize.autoRollout is true.
+Opt-in shape and lookup-during-template caveats match
+camundaPlatform.caBundleChecksumAnnotation.
+
+Usage (inside the Optimize pod template's metadata.annotations):
+  {{- include "camundaPlatform.optimizeServerTLSChecksumAnnotation" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.optimizeServerTLSChecksumAnnotation" -}}
+{{- if .Values.global.tls.optimize.autoRollout -}}
+{{- $o := .Values.global.tls.optimize -}}
+{{- if and $o.enabled $o.cert.secret.existingSecret -}}
+{{- include "camundaPlatform.tlsChecksumAnnotation" (dict
+    "context" .
+    "annotation" "checksum/optimize-tls"
+    "secretName" $o.cert.secret.existingSecret
+    "certKey" (include "camundaPlatform.optimizeServerSecretCertKey" .)) }}
 {{- end -}}
 {{- end -}}
 {{- end -}}

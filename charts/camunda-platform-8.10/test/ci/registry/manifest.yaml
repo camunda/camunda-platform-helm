@@ -29,6 +29,10 @@ integration:
       shortname: cotls
       tier: 2
       enabled: true
+    - id: optimize-tls
+      shortname: optls
+      tier: 2
+      enabled: true
     - id: opensearch
       shortname: oske
       tier: 2
