@@ -99,6 +99,9 @@ spec:
               value: "info"
             - name: ES_LOG_LEVEL
               value: "warn"
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m
