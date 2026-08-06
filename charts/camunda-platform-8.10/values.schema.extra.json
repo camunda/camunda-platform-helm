@@ -758,6 +758,29 @@
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
+                "security": {
+                    "properties": {
+                        "initialization": {
+                            "properties": {
+                                "defaultRoles": {
+                                    "properties": {
+                                        "admin": {
+                                            "properties": {
+                                                "clients": {
+                                                    "type": "array",
+                                                    "description": "defines the initial clients that will get the admin permission.",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "exporters": {
                     "properties": {
                         "zeebe": {
