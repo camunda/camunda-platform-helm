@@ -181,6 +181,10 @@ func (s *documentStoreIRSATest) TestOrchestrationStatefulSetWithIRSA() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+// connectors, console, identity and optimize are not document-store consumers
+// (camunda-platform-helm#3741) - these guard against the config ever being
+// re-introduced.
+
 func (s *documentStoreIRSATest) TestConsoleNeverGetsDocumentStoreCreds() {
 	values := awsDocumentStoreValuesWithIRSA(false)
 	values["console.enabled"] = "true"
@@ -209,6 +213,31 @@ func (s *documentStoreIRSATest) TestConsoleNeverGetsDocumentStoreCreds() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *documentStoreIRSATest) TestConnectorsNeverGetsDocumentStoreCreds() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "Connectors: document-store AWS credentials and envFrom should never be injected",
+			Template: "templates/connectors/deployment.yaml",
+			Values:   awsDocumentStoreValuesWithIRSA(false),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should never be present on connectors")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should never be present on connectors")
+				require.False(t, hasDocumentStoreEnvFromRef(containers),
+					"connectors should never reference the documentstore-env-vars ConfigMap")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *documentStoreIRSATest) TestIdentityNeverGetsDocumentStoreCreds() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -227,6 +256,57 @@ func (s *documentStoreIRSATest) TestIdentityNeverGetsDocumentStoreCreds() {
 					"AWS_SECRET_ACCESS_KEY should never be present on identity")
 				require.False(t, hasDocumentStoreEnvFromRef(containers),
 					"identity should never reference the documentstore-env-vars ConfigMap")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// Optimize reads the credentials and AWS_REGION as ambient AWS SDK config to sign AWS OpenSearch
+// requests, so both the credentials and the ConfigMap reference (its only AWS_REGION source) stay.
+func (s *documentStoreIRSATest) TestOptimizeWithIRSA() {
+	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
+	valuesIRSA["optimize.enabled"] = "true"
+
+	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
+	valuesWithCredentials["optimize.enabled"] = "true"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "Optimize: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Template: "templates/optimize/deployment.yaml",
+			Values:   valuesIRSA,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
+				require.True(t, hasDocumentStoreEnvFromRef(containers),
+					"optimize must keep the documentstore-env-vars ConfigMap, its only AWS_REGION source")
+			},
+		},
+		{
+			Name:     "Optimize: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Template: "templates/optimize/deployment.yaml",
+			Values:   valuesWithCredentials,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
+				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+				require.True(t, hasDocumentStoreEnvFromRef(containers),
+					"optimize must keep the documentstore-env-vars ConfigMap, its only AWS_REGION source")
 			},
 		},
 	}

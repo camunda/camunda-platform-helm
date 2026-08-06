@@ -252,6 +252,10 @@ func (s *documentStoreIRSATest) TestZeebeGatewayWithIRSA() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
+// connectors, console, identity and web-modeler-webapp are not document-store
+// consumers (camunda-platform-helm#3741) - these guard against the config ever
+// being re-introduced.
+
 func (s *documentStoreIRSATest) TestConsoleNeverGetsDocumentStoreCreds() {
 	templates := []string{"templates/console/deployment.yaml"}
 
@@ -290,6 +294,31 @@ func (s *documentStoreIRSATest) TestConsoleNeverGetsDocumentStoreCreds() {
 				containers := deployment.Spec.Template.Spec.Containers
 				require.False(t, hasEmptySecretKeyRefName(containers),
 					"Console should not render a secretKeyRef with an empty name")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+}
+
+func (s *documentStoreIRSATest) TestConnectorsNeverGetsDocumentStoreCreds() {
+	templates := []string{"templates/connectors/deployment.yaml"}
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "Connectors: document-store AWS credentials and envFrom should never be injected",
+			Values: awsDocumentStoreValuesWithIRSA(false),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should never be present on connectors")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should never be present on connectors")
+				require.False(t, hasDocumentStoreEnvFromRef(containers),
+					"connectors should never reference the documentstore-env-vars ConfigMap")
 			},
 		},
 	}
