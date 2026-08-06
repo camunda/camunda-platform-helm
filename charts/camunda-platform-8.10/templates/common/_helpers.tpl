@@ -797,9 +797,8 @@ entry in connectors.env.
 {{/*
 [camunda-platform] Returns "true" when Optimize server-side TLS is enabled. An
 explicit literal optimize.env entry for SERVER_SSL_ENABLED wins over
-global.tls.optimize.enabled. A valueFrom-sourced entry is rejected by the
-constraints template because the chart cannot derive probes, URLs, or ingress
-routing from a value that is unknown at render time.
+global.tls.optimize.enabled. A valueFrom-sourced entry is unknown at render
+time, so the chart defers to the global flag rather than assuming a value.
 */}}
 {{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
