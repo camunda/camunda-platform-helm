@@ -102,22 +102,6 @@ spec:
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
-            - name: AWS_ACCESS_KEY_ID
-              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
-                  "secretType" "accessKeyId"
-                  "context" .
-              ) | nindent 14 }}
-            - name: AWS_SECRET_ACCESS_KEY
-              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
-                  "secretType" "secretAccessKey"
-                  "context" .
-              ) | nindent 14 }}
-            {{- end }}
-            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
-            {{- end }}
             {{/*
             Variable substitution for passwords.
             */}}
@@ -134,8 +118,6 @@ spec:
             ) | nindent 12 }}
             {{- end }}
           envFrom:
-            - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
             - configMapRef:
                 name: {{ include "orchestration.fullname" . }}-migration-importer-env-vars
           {{- if .Values.orchestration.importer.envFrom }}
@@ -207,11 +189,6 @@ spec:
               mountPath: /usr/local/camunda/config/{{ $key }}
               subPath: {{ $key }}
             {{- end }}
-            {{- if .Values.global.documentStore.type.gcp.enabled }}
-            - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
-              readOnly: true
-            {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
@@ -242,14 +219,6 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
-        {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
-        {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
