@@ -212,8 +212,13 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// In CI, test-type-vars sets CHART_PATH to charts/camunda-platform-<previous> for
 	// the install step of upgrade-minor, so values files come from the older chart.
 	// For upgrade-patch, Step 1 uses the current chart's values (same app version).
+	// Retained for Step 2 when ValuesCarryover is selected; empty for any flow
+	// that does not switch to the previous version's values.
+	var sourceScenarioDir string
+	var sourceFeatures []string
+
 	step1AppVersion := entry.Version
-	if entry.Flow == "upgrade-minor" {
+	if versionmatrix.IsMinorUpgradeFlow(entry.Flow) {
 		prevVersion, err := versionmatrix.PreviousAppVersion(entry.Version)
 		if err != nil {
 			return fmt.Errorf("step 1: resolve previous app version for %s: %w", entry.Version, err)
@@ -222,6 +227,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
 		prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
 		step1Flags.Deployment.ScenarioPath = prevScenarioDir
+		sourceScenarioDir = prevScenarioDir
 
 		logging.Logger.Info().
 			Str("flow", entry.Flow).
@@ -240,6 +246,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 			}
 			kept, dropped := filterKnownFeatures(step1Flags.Selection.Features, prevFeatures)
 			step1Flags.Selection.Features = kept
+			sourceFeatures = kept
 			if len(dropped) > 0 {
 				logging.Logger.Info().
 					Str("previousVersion", prevVersion).
@@ -274,7 +281,13 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// Runs the declarative pre-upgrade hook (integration.flows.<flow>.pre-upgrade)
 	// resolved at matrix-generation time onto entry.PreUpgrade. Scoped to the
 	// target version (entry.Version is the version being upgraded to).
-	if err := runDeclarativePreUpgradeHook(ctx, flags, entry.PreUpgrade, opts.RepoRoot, entry.Version, entry.Flow); err != nil {
+	if opts.SuppressUpgradeHooks {
+		if entry.PreUpgrade != nil {
+			logging.Logger.Warn().
+				Str("hook", entry.PreUpgrade.Script).
+				Msg("Suppressed pre-upgrade hook: the upgrade must succeed without it")
+		}
+	} else if err := runDeclarativePreUpgradeHook(ctx, flags, entry.PreUpgrade, opts.RepoRoot, entry.Version, entry.Flow); err != nil {
 		return err
 	}
 
@@ -322,10 +335,30 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		}
 	}
 
+	if opts.ValuesSource == ValuesCarryover {
+		if sourceScenarioDir == "" {
+			return fmt.Errorf("step 2: values carryover requires the upgrade-minor flow, got %q", entry.Flow)
+		}
+		step2Flags.Deployment.ScenarioPath = sourceScenarioDir
+		step2Flags.Selection.Features = sourceFeatures
+		step2Flags.Deployment.UpgradeDelta = opts.UpgradeDelta
+		logging.Logger.Info().
+			Str("step", "2/2").
+			Str("scenarioDir", sourceScenarioDir).
+			Str("delta", opts.UpgradeDelta).
+			Msg("Step 2: carrying over the source chart's values files")
+	}
+
 	// --- Post-infra lifecycle hook (Step 2 of two-step upgrade) ---
 	// Registered against step2Flags so it fires after Step 2's companion charts
 	// are deployed but before the target chart upgrade.
-	if err := registerDeclarativePostInfraHook(&step2Flags, entry.PostInfra, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+	if opts.SuppressUpgradeHooks {
+		if entry.PostInfra != nil {
+			logging.Logger.Warn().
+				Str("hook", entry.PostInfra.Script).
+				Msg("Suppressed post-infra hook: the upgrade must succeed without it")
+		}
+	} else if err := registerDeclarativePostInfraHook(&step2Flags, entry.PostInfra, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
 		return err
 	}
 

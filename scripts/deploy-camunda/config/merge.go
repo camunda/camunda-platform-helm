@@ -45,6 +45,9 @@ type DeploymentFlags struct {
 	RenderTemplates      bool
 	RenderOutputDir      string
 	ExtraValues          []string
+	// UpgradeDelta is a values file applied to the merged scenario values after
+	// layering. It may carry a $remove directive; see pkg/chartvalues.
+	UpgradeDelta string
 	// Extra helm arguments for advanced use cases (e.g., upgrade flows).
 	// These are appended to the helm command after all other arguments.
 	ExtraHelmArgs []string

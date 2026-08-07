@@ -146,7 +146,7 @@ var buildAllTriggers = []buildAllTrigger{
 	},
 }
 
-var manualFlowPattern = regexp.MustCompile(`^(install|upgrade-patch|upgrade-minor)(,(install|upgrade-patch|upgrade-minor))*$`)
+var manualFlowPattern = regexp.MustCompile(`^(install|upgrade-patch|upgrade-minor|upgrade-path)(,(install|upgrade-patch|upgrade-minor|upgrade-path))*$`)
 
 // Plan computes the chart build matrix for a change set, replacing
 // scripts/generate-chart-matrix.sh + generate-chart-matrix.jq.
@@ -275,7 +275,7 @@ func applyManualFlow(entries []Entry, manualFlow string) ([]Entry, error) {
 		return entries, nil
 	}
 	if !manualFlowPattern.MatchString(manualFlow) {
-		return nil, fmt.Errorf("invalid flow %q; valid flows: install, upgrade-patch, upgrade-minor (modular-upgrade-minor only via integration-test-template.yaml)", manualFlow)
+		return nil, fmt.Errorf("invalid flow %q; valid flows: install, upgrade-patch, upgrade-minor, upgrade-path (modular-upgrade-minor only via integration-test-template.yaml)", manualFlow)
 	}
 	flows := strings.Split(manualFlow, ",")
 	var out []Entry

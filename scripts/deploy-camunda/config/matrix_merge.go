@@ -139,7 +139,10 @@ type MatrixRunFlags struct {
 	KeycloakProtocol *string
 
 	// Upgrade
-	UpgradeFromVersion *string
+	UpgradeFromVersion   *string
+	ValuesSource         *string
+	UpgradeDelta         *string
+	SuppressUpgradeHooks *bool
 }
 
 // ApplyMatrixRunConfig merges config-file values into the matrix run command flags.
@@ -252,6 +255,9 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 
 	// --- Upgrade ---
 	MergeStringField(f.UpgradeFromVersion, m.UpgradeFromVersion, "", changedFlags, "upgrade-from-version")
+	MergeStringField(f.ValuesSource, m.ValuesSource, "", changedFlags, "values-source")
+	MergeStringField(f.UpgradeDelta, m.UpgradeDelta, "", changedFlags, "upgrade-delta")
+	MergeBoolField(f.SuppressUpgradeHooks, m.SuppressUpgradeHooks, nil, changedFlags, "suppress-upgrade-hooks")
 }
 
 // LoadMatrixConfig loads the config file and returns the parsed RootConfig

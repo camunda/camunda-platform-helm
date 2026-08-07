@@ -788,6 +788,11 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		logging.Logger.Debug().
 			Strs("mergedFiles", scenarioValueFiles).
 			Msg("📋 [prepareScenarioValues] layered values merged")
+
+		if err := applyUpgradeDelta(scenarioValueFiles, flags.Deployment.UpgradeDelta); err != nil {
+			os.RemoveAll(tempDir)
+			return nil, err
+		}
 	} else {
 		// Legacy path: process auth and main scenario, then let BuildValuesList resolve
 		effectiveAuth := flags.Auth.Auth

@@ -101,6 +101,10 @@ integration:
       shortname: hublu
       tier: 2
       enabled: true
+    - id: upgrade-path-classic
+      shortname: upclas
+      tier: 2
+      enabled: false
     - id: hub-mixed
       shortname: hubmu
       tier: 2

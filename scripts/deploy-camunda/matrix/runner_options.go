@@ -1,5 +1,10 @@
 package matrix
 
+import (
+	"fmt"
+	"os"
+)
+
 // RunOptions controls matrix execution.
 type RunOptions struct {
 	// DryRun logs what would be done without executing.
@@ -81,6 +86,19 @@ type RunOptions struct {
 	// When set, this version is used instead of resolving from version-matrix JSON files.
 	// Only applies to entries with upgrade flows (upgrade-patch, upgrade-minor, modular-upgrade-minor).
 	UpgradeFromVersion string
+	// ValuesSource selects which chart's values files Step 2 of a two-step
+	// upgrade renders with. ValuesNative (default) preserves existing behaviour:
+	// Step 2 uses the target chart's own values. ValuesCarryover makes Step 2
+	// reuse the source chart's values, optionally overlaid with UpgradeDelta.
+	// Only meaningful for the upgrade-minor flow.
+	ValuesSource ValuesSource
+	// UpgradeDelta is an additional values file applied on top of the carried-over
+	// values in Step 2. Ignored unless ValuesSource is ValuesCarryover.
+	UpgradeDelta string
+	// SuppressUpgradeHooks skips the pre-upgrade and post-infra lifecycle hooks.
+	// These hooks perform work outside the chart that a customer running
+	// `helm upgrade` does not get.
+	SuppressUpgradeHooks bool
 	// HelmTimeout is the timeout in minutes for each Helm deployment.
 	// Applies uniformly to all matrix entries (install, upgrade Step 1, upgrade Step 2).
 	// When <= 0, deploy.Execute defaults to 5 minutes.
@@ -165,4 +183,42 @@ type RunOptions struct {
 	// IngressReadyTimeoutMinutes bounds how long WaitIngressReady polls before
 	// failing. When <= 0, config.DefaultIngressReadyTimeoutMinutes is used.
 	IngressReadyTimeoutMinutes int
+}
+
+// ValuesSource selects which chart's values files Step 2 of a two-step upgrade
+// renders with.
+type ValuesSource string
+
+const (
+	// ValuesNative renders Step 2 with the target chart's own values files.
+	ValuesNative ValuesSource = ""
+	// ValuesCarryover renders Step 2 with the source chart's values files.
+	ValuesCarryover ValuesSource = "carryover"
+)
+
+// Validate checks carryover option coherence.
+func (v ValuesSource) Validate() error {
+	switch v {
+	case ValuesNative, ValuesCarryover:
+		return nil
+	default:
+		return fmt.Errorf("invalid values source %q: expected \"\" (native) or %q", string(v), string(ValuesCarryover))
+	}
+}
+
+// ValidateUpgradeOptions rejects carryover flag combinations that cannot work,
+// so the failure surfaces before a cluster is provisioned.
+func (o RunOptions) ValidateUpgradeOptions() error {
+	if err := o.ValuesSource.Validate(); err != nil {
+		return err
+	}
+	if o.UpgradeDelta != "" && o.ValuesSource != ValuesCarryover {
+		return fmt.Errorf("--upgrade-delta requires --values-source=%s", string(ValuesCarryover))
+	}
+	if o.UpgradeDelta != "" {
+		if _, err := os.Stat(o.UpgradeDelta); err != nil {
+			return fmt.Errorf("--upgrade-delta %q: %w", o.UpgradeDelta, err)
+		}
+	}
+	return nil
 }
