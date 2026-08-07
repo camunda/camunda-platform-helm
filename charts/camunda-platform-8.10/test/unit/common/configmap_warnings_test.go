@@ -141,9 +141,6 @@ func mergeMaps(base map[string]string, overrides map[string]string) map[string]s
 	return merged
 }
 
-// TestConsoleConfigKeysWarningRendersInConfigMap asserts that setting a
-// non-"enabled" console.* key renders the consolidated console consolidation
-// warning into the "-warnings" ConfigMap.
 func (s *ConfigMapWarningsTemplateTest) TestConsoleConfigKeysWarningRendersInConfigMap() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -168,10 +165,6 @@ func (s *ConfigMapWarningsTemplateTest) TestConsoleConfigKeysWarningRendersInCon
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap asserts that
-// setting any child under global.identity.auth.console renders the
-// "no replacement" removal warning into the "-warnings" ConfigMap, and that no
-// migration target is suggested for that subtree.
 func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap() {
 	testCases := []testhelpers.TestCase{
 		{
