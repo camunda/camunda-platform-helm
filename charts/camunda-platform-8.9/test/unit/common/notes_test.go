@@ -28,18 +28,65 @@ func TestNotesTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	output, err := exec.Command("helm", "install", "credential-output-test", chartPath,
-		"--dry-run=client",
-		"--set", "identity.firstUser.secret.inlineSecret=credential-output-canary-do-not-print",
-		"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
-		"--set", "global.elasticsearch.enabled=true",
-		"--set", "global.elasticsearch.external=true",
-		"--set", "global.elasticsearch.url.host=elasticsearch",
-	).CombinedOutput()
-	require.NoError(t, err, string(output))
 
-	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
-	require.True(t, found)
-	require.Contains(t, notes, "intentionally omitted")
-	require.NotContains(t, notes, "credential-output-canary-do-not-print")
+	testCases := []struct {
+		name        string
+		values      []string
+		expected    string
+		notExpected string
+	}{
+		{
+			name:        "inline secret",
+			values:      []string{"identity.firstUser.secret.inlineSecret=credential-output-canary-do-not-print"},
+			expected:    "configured via `identity.firstUser.secret.inlineSecret`",
+			notExpected: "credential-output-canary-do-not-print",
+		},
+		{
+			name:     "complete secret reference",
+			values:   []string{"identity.firstUser.secret.existingSecret=first-user", "identity.firstUser.secret.existingSecretKey=password"},
+			expected: "stored in Kubernetes Secret \"first-user\" under key \"password\"",
+		},
+		{
+			name:        "deprecated plaintext value",
+			values:      []string{"identity.firstUser.existingSecret=credential-output-canary-do-not-print"},
+			expected:    "configured via the deprecated `identity.firstUser.existingSecret` value",
+			notExpected: "credential-output-canary-do-not-print",
+		},
+		{
+			name:     "empty configuration",
+			expected: "No password is configured",
+		},
+		{
+			name:        "incomplete secret reference",
+			values:      []string{"identity.firstUser.secret.existingSecret=first-user"},
+			expected:    "No password is configured",
+			notExpected: "stored in Kubernetes Secret",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			args := []string{
+				"install", "credential-output-test", chartPath,
+				"--dry-run=client",
+				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+				"--set", "global.elasticsearch.enabled=true",
+				"--set", "global.elasticsearch.external=true",
+				"--set", "global.elasticsearch.url.host=elasticsearch",
+			}
+			for _, value := range testCase.values {
+				args = append(args, "--set", value)
+			}
+
+			output, err := exec.Command("helm", args...).CombinedOutput()
+			require.NoError(t, err, string(output))
+
+			_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+			require.True(t, found)
+			require.Contains(t, notes, testCase.expected)
+			if testCase.notExpected != "" {
+				require.NotContains(t, notes, testCase.notExpected)
+			}
+		})
+	}
 }
