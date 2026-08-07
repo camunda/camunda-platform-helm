@@ -23,6 +23,19 @@ on:
         description: "Space-separated from:to pairs, e.g. '8.9:8.10 8.8:8.9'. Empty runs all."
         type: string
         default: ""
+      cluster-stage:
+        description: "Also run the cluster stage (deploys to GKE; ~8 min per run)"
+        type: boolean
+        default: false
+      cluster-run:
+        description: "Which cluster run to perform"
+        type: choice
+        options: [both, naive, remediated]
+        default: both
+      cluster-shortname:
+        description: "Scenario shortname for the cluster stage"
+        type: string
+        default: upclas
 
 permissions:
   contents: read
@@ -176,3 +189,123 @@ jobs:
             fi
           done
           exit $status
+
+  # The cluster stage deploys a full previous-version release and upgrades it,
+  # so it is nightly and on-demand only, never on a pull request.
+  cluster:
+    name: Cluster stage
+    needs: render
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.cluster-stage)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        run: ${{ (github.event_name == 'workflow_dispatch' && inputs.cluster-run != 'both')
+          && fromJson(format('["{0}"]', inputs.cluster-run))
+          || fromJson('["naive","remediated"]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            golang
+            kubectl
+
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+            secret/data/products/distribution/ci RDBMS_POSTGRESQL_USERNAME;
+            secret/data/products/distribution/ci RDBMS_POSTGRESQL_PASSWORD;
+          exportEnv: false
+
+      - name: Authenticate to cluster
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: gke
+        env:
+          GH_APP_ID: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+
+      # Built from source every run. A stale binary silently exercises code that
+      # is no longer on disk, which is not detectable from the run's output.
+      - name: Build deploy-camunda
+        run: cd scripts/deploy-camunda && go build -o "${RUNNER_TEMP}/deploy-camunda" .
+
+      - name: Resolve delta for this run
+        id: delta
+        env:
+          SHORTNAME: ${{ inputs.cluster-shortname || 'upclas' }}
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.run }}" = "naive" ]; then
+            echo "args=--suppress-upgrade-hooks" >>"$GITHUB_OUTPUT"
+          else
+            delta=test/upgrade-paths/transitions/8.9-to-8.10/classic-bundled/delta.values.yaml
+            test -f "$delta" || { echo "::error::delta not found: $delta"; exit 1; }
+            echo "args=--upgrade-delta $delta" >>"$GITHUB_OUTPUT"
+          fi
+
+      # Run A is expected to fail: that is the finding, not a broken job. Run B
+      # must pass. Both outcomes are reported either way.
+      - name: Run upgrade path on cluster
+        id: run
+        env:
+          RDBMS_POSTGRESQL_USERNAME: ${{ steps.test-credentials-secret.outputs.RDBMS_POSTGRESQL_USERNAME }}
+          RDBMS_POSTGRESQL_PASSWORD: ${{ steps.test-credentials-secret.outputs.RDBMS_POSTGRESQL_PASSWORD }}
+          SHORTNAME: ${{ inputs.cluster-shortname || 'upclas' }}
+        run: |
+          set -uo pipefail
+          "${RUNNER_TEMP}/deploy-camunda" matrix run \
+            --repo-root . --versions 8.10 \
+            --shortname-filter "${SHORTNAME}" --include-disabled \
+            --platform gke --ingress-base-domain-gke ci.distro.ultrawombat.com \
+            --values-source carryover \
+            ${{ steps.delta.outputs.args }} \
+            --ensure-docker-registry \
+            --delete-namespace --timeout 15 --yes 2>&1 | tee "${RUNNER_TEMP}/run.log"
+          echo "exit=${PIPESTATUS[0]}" >>"$GITHUB_OUTPUT"
+
+      - name: Report outcome
+        if: always()
+        run: |
+          {
+            echo "### Cluster stage — ${{ matrix.run }}"
+            echo
+            grep -E "Step 1 complete|Applied upgrade delta|Suppressed .*hook|Step 2 complete|camunda\]\[error\]|Matrix entry failed|\[PASS\]|\[FAIL\]" \
+              "${RUNNER_TEMP}/run.log" | tail -20 | sed 's/^/    /'
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce expected outcome
+        if: always()
+        run: |
+          actual="${{ steps.run.outputs.exit }}"
+          if [ "${{ matrix.run }}" = "naive" ]; then
+            [ "$actual" != "0" ] && echo "Run A failed as expected" && exit 0
+            echo "::error::Run A succeeded. Either the carried-over values no longer break, or carryover is not in effect."
+            exit 1
+          fi
+          [ "$actual" = "0" ] && echo "Run B passed" && exit 0
+          echo "::error::Run B failed: the documented delta no longer remediates this path."
+          exit 1
