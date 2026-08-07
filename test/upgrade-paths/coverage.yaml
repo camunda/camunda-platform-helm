@@ -37,11 +37,13 @@ categories:
 
   - id: orphaned-resources
     title: Resources stranded by removed subcharts
-    status: partial
+    status: covered
     stage: cluster
     detail: >-
-      Orphaned PVCs are produced by the upgrade and observable, but nothing
-      asserts on them. A run leaving stranded volumes still reports green.
+      Claim inventory is read before and after the upgrade; claims that no pod
+      mounts and no StatefulSet would generate are reported, diffed so only what
+      this upgrade stranded is attributed to it. Reported, not failed: stranded
+      storage is sometimes the intended outcome of removing a subchart.
 
   - id: data-survival
     title: Data present before the upgrade is still present after

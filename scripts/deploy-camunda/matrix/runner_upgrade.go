@@ -8,6 +8,7 @@ import (
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/orphans"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/config"
@@ -291,6 +292,8 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		return err
 	}
 
+	orphansBefore := claimOrphans(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext)
+
 	// --- Step 2: Upgrade to current on-disk chart (or external chart-ref when set) ---
 	if flags.OnPhase != nil {
 		flags.OnPhase("step-2")
@@ -384,7 +387,41 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		Str("step", "2/2").
 		Msg("Step 2 complete: upgrade to current version succeeded")
 
+	reportStrandedClaims(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext, orphansBefore)
+
 	return nil
+}
+
+// claimOrphans reads the namespace's unreferenced claims. Failures are logged
+// and treated as an empty set: orphan reporting is diagnostic and must not
+// decide the outcome of an upgrade.
+func claimOrphans(ctx context.Context, namespace, kubeContext string) []orphans.Orphan {
+	client, err := kube.NewClient("", kubeContext)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Msg("Orphan detection skipped: could not create kube client")
+		return nil
+	}
+	inv, err := client.ClaimInventory(ctx, namespace)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Msg("Orphan detection skipped: could not read claim inventory")
+		return nil
+	}
+	return orphans.Detect(inv)
+}
+
+// reportStrandedClaims names claims this upgrade left unreferenced. Kubernetes
+// never deletes a claim created from a StatefulSet's volumeClaimTemplates, so
+// removing a subchart leaves its storage behind with nothing pointing at it.
+func reportStrandedClaims(ctx context.Context, namespace, kubeContext string, before []orphans.Orphan) {
+	appeared := orphans.Appeared(before, claimOrphans(ctx, namespace, kubeContext))
+	if len(appeared) == 0 {
+		return
+	}
+	logging.Logger.Warn().
+		Strs("claims", orphans.Names(appeared)).
+		Int("count", len(appeared)).
+		Str("namespace", namespace).
+		Msg("Upgrade stranded persistent volume claims: storage remains but nothing references it")
 }
 
 // executeUpgradeOnly performs a single-step upgrade against an already-running deployment.
