@@ -158,14 +158,14 @@ func ResolveUpgradeFromVersion(repoRoot, appVersion, flow string) (string, error
 	switch flow {
 	case "upgrade-patch":
 		lookupVersion = appVersion
-	case "upgrade-minor", "modular-upgrade-minor":
+	case "upgrade-minor", "modular-upgrade-minor", "upgrade-path":
 		prev, err := PreviousAppVersion(appVersion)
 		if err != nil {
 			return "", fmt.Errorf("resolve upgrade-minor from version: %w", err)
 		}
 		lookupVersion = prev
 	default:
-		return "", fmt.Errorf("unsupported upgrade flow %q: expected upgrade-patch, upgrade-minor, or modular-upgrade-minor", flow)
+		return "", fmt.Errorf("unsupported upgrade flow %q: expected upgrade-patch, upgrade-minor, modular-upgrade-minor, or upgrade-path", flow)
 	}
 
 	entries, err := LoadVersionMatrix(repoRoot, lookupVersion)
@@ -316,7 +316,8 @@ func preReleaseSuffix(v string) string {
 // (two-step or upgrade-only). Use IsTwoStepUpgradeFlow or IsUpgradeOnlyFlow for
 // more specific checks.
 func IsUpgradeFlow(flow string) bool {
-	return flow == "upgrade-patch" || flow == "upgrade-minor" || flow == "modular-upgrade-minor"
+	return flow == "upgrade-patch" || flow == "upgrade-minor" ||
+		flow == "modular-upgrade-minor" || flow == "upgrade-path"
 }
 
 // IsTwoStepUpgradeFlow returns true if the flow is a self-contained two-step upgrade:
@@ -326,7 +327,14 @@ func IsUpgradeFlow(flow string) bool {
 // "modular-upgrade-minor" is NOT a two-step flow — it assumes an existing deployment
 // from a prior "install" run and only performs the upgrade step.
 func IsTwoStepUpgradeFlow(flow string) bool {
-	return flow == "upgrade-patch" || flow == "upgrade-minor"
+	return flow == "upgrade-patch" || flow == "upgrade-minor" || flow == "upgrade-path"
+}
+
+// IsMinorUpgradeFlow returns true if Step 1 installs the PREVIOUS app version,
+// so Step 1 must use that version's values files. This covers "upgrade-minor",
+// "modular-upgrade-minor", and "upgrade-path".
+func IsMinorUpgradeFlow(flow string) bool {
+	return flow == "upgrade-minor" || flow == "modular-upgrade-minor" || flow == "upgrade-path"
 }
 
 // IsUpgradeOnlyFlow returns true if the flow performs only the upgrade step against

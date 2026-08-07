@@ -146,7 +146,10 @@ type MatrixConfig struct {
 	KeycloakProtocol string `mapstructure:"keycloakProtocol" yaml:"keycloakProtocol,omitempty"`
 
 	// Upgrade
-	UpgradeFromVersion string `mapstructure:"upgradeFromVersion" yaml:"upgradeFromVersion,omitempty"`
+	UpgradeFromVersion   string `mapstructure:"upgradeFromVersion" yaml:"upgradeFromVersion,omitempty"`
+	ValuesSource         string `mapstructure:"valuesSource" yaml:"valuesSource,omitempty"`
+	UpgradeDelta         string `mapstructure:"upgradeDelta" yaml:"upgradeDelta,omitempty"`
+	SuppressUpgradeHooks *bool  `mapstructure:"suppressUpgradeHooks" yaml:"suppressUpgradeHooks,omitempty"`
 }
 
 // DeploymentConfig represents a single deployment profile.

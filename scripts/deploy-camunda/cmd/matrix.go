@@ -124,7 +124,7 @@ version, and chart-only changes build just the affected versions.`,
 	f.StringVar(&allModifiedFiles, "all-modified-files", "", "changed files/dirs (whitespace-separated, as emitted by tj-actions/changed-files)")
 	f.StringVar(&manualTrigger, "manual-trigger", "none", "\"none\", \"all\", or a single chart version to build")
 	f.StringVar(&manualScenario, "manual-scenario", "none", "keep only this exact scenario (\"none\"/\"all\" keep everything)")
-	f.StringVar(&manualFlow, "manual-flow", "none", "override flows (comma-separated: install, upgrade-patch, upgrade-minor)")
+	f.StringVar(&manualFlow, "manual-flow", "none", "override flows (comma-separated: install, upgrade-patch, upgrade-minor, upgrade-path)")
 	f.StringVar(&tier, "tier", "", "filter scenarios by tier (1=PR CI, 2=merge-queue only; empty or 0=all)")
 	f.StringVar(&repoRoot, "repo-root", "", "repository root path (default: auto-detect)")
 	_ = cmd.MarkFlagRequired("active-versions")
@@ -270,6 +270,9 @@ func newMatrixRunCommand() *cobra.Command {
 		keycloakHost             string
 		keycloakProtocol         string
 		upgradeFromVersion       string
+		valuesSource             string
+		upgradeDelta             string
+		suppressUpgradeHooks     bool
 		helmTimeout              int
 		dockerUsername           string
 		dockerPassword           string
@@ -464,7 +467,10 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 					KeycloakHost:     &keycloakHost,
 					KeycloakProtocol: &keycloakProtocol,
 					// Upgrade
-					UpgradeFromVersion: &upgradeFromVersion,
+					UpgradeFromVersion:   &upgradeFromVersion,
+					ValuesSource:         &valuesSource,
+					UpgradeDelta:         &upgradeDelta,
+					SuppressUpgradeHooks: &suppressUpgradeHooks,
 				})
 			}
 
@@ -601,6 +607,9 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 						KeycloakHost:          keycloakHost,
 						KeycloakProtocol:      keycloakProtocol,
 						UpgradeFromVersion:    upgradeFromVersion,
+						ValuesSource:          matrix.ValuesSource(valuesSource),
+						UpgradeDelta:          upgradeDelta,
+						SuppressUpgradeHooks:  suppressUpgradeHooks,
 						HelmTimeout:           helmTimeout,
 						DockerUsername:        dockerUsername,
 						DockerPassword:        dockerPassword,
@@ -718,6 +727,13 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				statusDisplay = matrix.NewStatusDisplay(os.Stdout, entries, stdoutIsTerminal, logDir)
 			}
 
+			if err := (matrix.RunOptions{
+				ValuesSource: matrix.ValuesSource(valuesSource),
+				UpgradeDelta: upgradeDelta,
+			}).ValidateUpgradeOptions(); err != nil {
+				return err
+			}
+
 			runStart := time.Now()
 			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
 				DryRun:                     dryRun,
@@ -744,6 +760,9 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				KeycloakHost:               keycloakHost,
 				KeycloakProtocol:           keycloakProtocol,
 				UpgradeFromVersion:         upgradeFromVersion,
+				ValuesSource:               matrix.ValuesSource(valuesSource),
+				UpgradeDelta:               upgradeDelta,
+				SuppressUpgradeHooks:       suppressUpgradeHooks,
 				HelmTimeout:                helmTimeout,
 				DockerUsername:             dockerUsername,
 				DockerPassword:             dockerPassword,
@@ -848,6 +867,9 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host")
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
+	f.StringVar(&valuesSource, "values-source", "", "Values files Step 2 of a two-step upgrade renders with: '' (target chart, default) or 'carryover' (source chart)")
+	f.StringVar(&upgradeDelta, "upgrade-delta", "", "Extra values file applied on top of carried-over values in Step 2 (requires --values-source=carryover)")
+	f.BoolVar(&suppressUpgradeHooks, "suppress-upgrade-hooks", false, "Skip pre-upgrade and post-infra lifecycle hooks so the upgrade runs without harness-only privileges")
 	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
 	f.StringVar(&dockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env var)")
 	f.StringVar(&dockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env var)")

@@ -494,7 +494,7 @@ func resolvePreUpgradeScriptQuiet(repoRoot string, entry Entry) string {
 // (including upgrade-patch, which uses the current version's values), returns empty string.
 // Errors are silently logged — dry-run is best-effort.
 func resolveStep1ValuesFromQuiet(entry Entry) string {
-	if entry.Flow != "upgrade-minor" {
+	if !versionmatrix.IsMinorUpgradeFlow(entry.Flow) {
 		return ""
 	}
 	prev, err := versionmatrix.PreviousAppVersion(entry.Version)
@@ -1073,6 +1073,7 @@ var flowAbbrevMap = map[string]string{
 	"upgrade-patch":         "upgp",
 	"upgrade-minor":         "upgm",
 	"modular-upgrade-minor": "mugm",
+	"upgrade-path":          "upth",
 }
 
 func flowAbbrev(flow string) string {

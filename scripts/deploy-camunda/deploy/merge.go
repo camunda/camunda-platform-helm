@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"scripts/camunda-core/pkg/chartvalues"
 	"scripts/camunda-core/pkg/logging"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -217,4 +219,57 @@ func MergeLayeredValues(scenarioValueFiles []string, tempDir string) ([]string, 
 		return nil, fmt.Errorf("failed to merge layered values: %w", err)
 	}
 	return []string{merged}, nil
+}
+
+// applyUpgradeDelta rewrites the merged scenario values file in place with the
+// delta applied. The delta may set keys and, via a $remove directive, delete
+// dotted key paths — chart constraints test key presence, so a removed key
+// cannot be cleared by layering a null over it.
+//
+// No-op when no delta is configured or when layering produced no single merged
+// file to rewrite.
+func applyUpgradeDelta(mergedFiles []string, deltaPath string) error {
+	if deltaPath == "" || len(mergedFiles) != 1 {
+		return nil
+	}
+
+	raw, err := os.ReadFile(deltaPath)
+	if err != nil {
+		return fmt.Errorf("read upgrade delta: %w", err)
+	}
+	// Scenario layers are substituted by values.Process before merging; the
+	// delta is applied afterwards, so it needs the same treatment.
+	delta, err := chartvalues.ParseDelta([]byte(substituteManifestVars(string(raw), envMap())), deltaPath)
+	if err != nil {
+		return fmt.Errorf("parse upgrade delta: %w", err)
+	}
+	if delta.IsEmpty() {
+		return nil
+	}
+
+	merged, err := chartvalues.LoadFile(mergedFiles[0])
+	if err != nil {
+		return fmt.Errorf("load merged scenario values: %w", err)
+	}
+	if err := chartvalues.WriteFile(mergedFiles[0], delta.Apply(merged)); err != nil {
+		return fmt.Errorf("write merged scenario values: %w", err)
+	}
+
+	logging.Logger.Info().
+		Str("delta", deltaPath).
+		Strs("removed", delta.Remove).
+		Int("setKeys", len(delta.Set)).
+		Msg("Applied upgrade delta to merged scenario values")
+	return nil
+}
+
+// envMap snapshots the process environment for delta substitution.
+func envMap() map[string]string {
+	out := make(map[string]string, len(os.Environ()))
+	for _, kv := range os.Environ() {
+		if i := strings.IndexByte(kv, '='); i > 0 {
+			out[kv[:i]] = kv[i+1:]
+		}
+	}
+	return out
 }
