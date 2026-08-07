@@ -13,7 +13,9 @@ infra-type:
   eks: preemptible
   gke: distroci
 post-infra: post-infra-bitnami-migration
+# The distroci pool is tainted, so companions need the toleration too or they
+# land on the untainted remainder and contend with unrelated workloads.
 dependencies:
-  - keycloak
-  - elasticsearch
-  - postgresql
+  - keycloak-distroci
+  - elasticsearch-distroci
+  - postgresql-distroci
