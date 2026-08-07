@@ -1703,11 +1703,8 @@ to verify the Orchestration REST upstream cert:
   1. caSecret.secret.inlineSecret (chart generates a Secret, always keyed
      "ca.crt", always in the release namespace — see tls-secret.yaml), or
   2. caSecret.secret.existingSecret (used verbatim, honoring caSecret.namespace).
-nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the FIXED key
-"ca.crt" from the referenced Secret, so an existingSecret with a non-default
-existingSecretKey is NOT repacked (see docs on
-global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecretKey);
-use inlineSecret instead when the source key differs.
+nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed "ca.crt"
+key from the referenced Secret.
 
 REST only — there is no gRPC counterpart. See
 camundaPlatform.orchestrationProxyVerifyAnnotations.

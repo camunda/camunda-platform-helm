@@ -704,22 +704,6 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
-  {{/* Warn when an Orchestration proxyVerify caSecret existingSecret uses a
-       non-default existingSecretKey: nginx.ingress.kubernetes.io/proxy-ssl-secret
-       always reads the fixed "ca.crt" key from the referenced Secret, so a
-       custom key is silently ignored for the existingSecret path. */}}
-  {{- range $proto := (list "rest" "grpc") }}
-    {{- $pv := (index $.Values.global.tls.orchestration $proto).proxyVerify }}
-    {{- if and $pv.caSecret.secret.existingSecret (ne ($pv.caSecret.secret.existingSecretKey | default "ca.crt") "ca.crt") }}
-      {{- $warningMessage := printf "%s %s %s"
-          "[camunda][warning]"
-          (printf "global.tls.orchestration.%s.proxyVerify.caSecret.secret.existingSecretKey is set to a non-default value." $proto)
-          "nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed key 'ca.crt' from the referenced Secret; a custom existingSecretKey has no effect for an existingSecret-based CA reference. Either store the CA bundle under the 'ca.crt' key in that Secret, or use caSecret.secret.inlineSecret so the chart generates a Secret with the correct key."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
-
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
     {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}

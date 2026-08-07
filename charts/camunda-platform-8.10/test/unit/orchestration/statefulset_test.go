@@ -1121,7 +1121,7 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 				Templates: []string{"templates/orchestration/configmap.yaml"},
 			},
 			Values: map[string]string{
-				"orchestration.enabled":                                    "true",
+				"orchestration.enabled": "true",
 				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
 				"orchestration.env[0].name":                                "SERVER_SSL_ENABLED",
 			},
