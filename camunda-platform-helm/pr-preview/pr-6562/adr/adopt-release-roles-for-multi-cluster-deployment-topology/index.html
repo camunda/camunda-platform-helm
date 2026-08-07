@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6562/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6562/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6562/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/runtime~main.50a1883c.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/main.51c3c577.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/runtime~main.95aa4194.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6562/assets/js/main.8633808a.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -18,23 +18,23 @@
 <li class="">Decision-makers: Distribution team, Management Identity owners, Camunda Hub owners</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context-and-problem-statement">Context and Problem Statement<a href="#context-and-problem-statement" class="hash-link" aria-label="Direct link to Context and Problem Statement" title="Direct link to Context and Problem Statement" translate="no">​</a></h2>
-<p>The Camunda Platform Helm chart is an umbrella chart that can deploy management-plane components
+<p>The Camunda Platform Helm chart is an umbrella chart that can deploy Hub plane components
 (Management Identity and Camunda Hub) and workload-plane components (Orchestration Cluster,
-Connectors, and Optimize) in one release. Operators also need to run one shared management plane with
+Connectors, and Optimize) in one release. Operators also need to run one shared Hub plane with
 multiple independently deployed Orchestration Clusters. Namespace placement alone does not describe
-that relationship: the management release must register clients and permissions, publish Camunda Hub
+that relationship: the Hub release must register clients and permissions, publish Camunda Hub
 inventory, and provide a reachable Management Identity service, while each orchestration release must
 retain its own authentication, storage, scaling, and lifecycle configuration.</p>
 <p>Existing values support one remote workload through component-specific <code>alwaysRegister</code> switches and
 manual Camunda Hub cluster inventory. Extending those singular switches for every additional cluster
-would duplicate configuration across unrelated value trees and make the management and workload
+would duplicate configuration across unrelated value trees and make the Hub and workload
 releases disagree about cluster identity, endpoints, clients, audiences, roles, and secrets.</p>
 <p>The chart therefore needs a durable contract that expresses how each Helm release participates in the
 overall deployment, without coupling the contract to a particular namespace layout or requiring
 imperative cluster discovery.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
 <p>This decision applies to the Camunda 8.10 Helm chart and later chart versions that retain the
-management/workload topology. Earlier chart versions keep their existing behavior and values.</p>
+Hub/workload topology. Earlier chart versions keep their existing behavior and values.</p>
 <p>The initial implementation lands in <a href="https://github.com/camunda/camunda-platform-helm/pull/6688" target="_blank" rel="noopener noreferrer" class="">PR #6688</a>.
 Upgrade validation from 8.9 to an 8.10 CI topology is tracked separately in
 <a href="https://github.com/camunda/camunda-platform-helm/issues/6696" target="_blank" rel="noopener noreferrer" class="">issue #6696</a>; it does not change this
@@ -46,46 +46,46 @@ derived from the same cluster records so client, audience, role, and endpoint co
 drift independently.</li>
 <li class=""><strong>Independent workload releases.</strong> Each Orchestration Cluster must remain deployable, scalable,
 upgradable, and removable without declaring sibling clusters or duplicating its component settings
-under a management-only abstraction.</li>
+under a Hub-only abstraction.</li>
 <li class=""><strong>Backward compatibility.</strong> Existing combined releases and existing <code>alwaysRegister</code> and manual Hub
 inventory values must continue to render as before unless topology mode is explicitly selected.</li>
 <li class=""><strong>Declarative GitOps operation.</strong> Helm, Argo CD, and Flux must render the same desired resources from
 values alone. The contract must not depend on <code>.Release.IsUpgrade</code>, live-cluster <code>lookup</code>, or
 imperative discovery.</li>
-<li class=""><strong>Security isolation.</strong> Multiple clusters that share a management plane or secondary storage must be
+<li class=""><strong>Security isolation.</strong> Multiple clusters that share a Hub plane or secondary storage must be
 able to use distinct clients, audiences, roles, secrets, and storage prefixes.</li>
-<li class=""><strong>Future packaging independence.</strong> The relationship between management and workload releases must
+<li class=""><strong>Future packaging independence.</strong> The relationship between Hub and workload releases must
 survive a future split of the umbrella chart into separately published charts.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="considered-options">Considered Options<a href="#considered-options" class="hash-link" aria-label="Direct link to Considered Options" title="Direct link to Considered Options" translate="no">​</a></h2>
 <ul>
 <li class=""><strong>Keep manual component configuration only.</strong> Continue using <code>alwaysRegister</code> switches, disabled
-component values in the management release, and manual <code>camundaHub.restapi.clusters</code>. Rejected
+component values in the Hub release, and manual <code>camundaHub.restapi.clusters</code>. Rejected
 because each additional cluster duplicates related state across multiple value trees and leaves no
 authoritative cluster record.</li>
-<li class=""><strong>Discover releases from the Kubernetes API.</strong> Have the management release or chart enumerate
+<li class=""><strong>Discover releases from the Kubernetes API.</strong> Have the Hub release or chart enumerate
 namespaces, labels, Services, or Helm releases. Rejected because rendering would depend on cluster
 access and timing, would differ between Helm and GitOps tools, and would require broad discovery
 permissions.</li>
-<li class=""><strong>Place full component configuration in management topology records.</strong> Make the management release
+<li class=""><strong>Place full component configuration in Hub topology records.</strong> Make the Hub release
 own every workload&#x27;s complete auth, storage, and runtime configuration. Rejected because workload
 releases would no longer be self-contained and every workload change would require coordinated
-management updates.</li>
-<li class=""><strong>Adopt explicit release roles with management-owned cluster inventory (chosen).</strong> Each release
-declares its role. The management release owns remote cluster records used for central registration
-and Hub inventory; orchestration releases retain their existing component values and point to the
-management service.</li>
+Hub updates.</li>
+<li class=""><strong>Adopt explicit release roles with Hub-owned cluster inventory (chosen).</strong> Each release declares
+its role. The Hub release owns remote cluster records used for central registration and Hub
+inventory; orchestration releases retain their existing component values and point to the Hub
+service.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
-<p>Adopt an explicit release-role contract under <code>global.topology</code>, with one management release owning
+<p>Adopt an explicit release-role contract under <code>global.topology</code>, with one Hub release owning
 cluster inventory and any number of independently configured orchestration releases.</p>
 <p>The following constraints are normative:</p>
 <ol>
-<li class=""><strong>Release roles.</strong> A release MUST use one of <code>combined</code>, <code>management</code>, or <code>orchestration</code>.
+<li class=""><strong>Release roles.</strong> A release MUST use one of <code>combined</code>, <code>hub</code>, or <code>orchestration</code>.
 <code>combined</code> MUST remain the default and MUST preserve existing single-release behavior.</li>
-<li class=""><strong>Management ownership.</strong> A management release MUST run Management Identity and MAY run Camunda
+<li class=""><strong>Hub ownership.</strong> A Hub release MUST run Management Identity and MAY run Camunda
 Hub. It MUST be the only release that declares <code>global.topology.clusters</code> for the deployment.</li>
-<li class=""><strong>Cluster records.</strong> Each management cluster record MUST have a stable unique ID and MUST declare
+<li class=""><strong>Cluster records.</strong> Each Hub cluster record MUST have a stable unique ID and MUST declare
 the enabled workload components, external identity, client and audience identifiers, role policy,
 endpoint inventory, and namespace/release information needed to derive defaults.</li>
 <li class=""><strong>Shared derivation.</strong> Management Identity presets, permissions, roles, Keycloak client
@@ -96,8 +96,8 @@ Explicit manual Hub inventory MAY override generated inventory for backward comp
 values remain authoritative. The release MUST NOT declare sibling orchestration clusters.</li>
 <li class=""><strong>Management Identity connection.</strong> An orchestration release MUST disable its local Management
 Identity workload and MUST provide a reachable <code>global.identity.service.url</code>. Authentication
-values in the workload release MUST match the corresponding management cluster record.</li>
-<li class=""><strong>OIDC topology.</strong> Management topology connections represented in Camunda Hub MUST use OIDC bearer
+values in the workload release MUST match the corresponding Hub cluster record.</li>
+<li class=""><strong>OIDC topology.</strong> Hub topology connections represented in Camunda Hub MUST use OIDC bearer
 tokens. Client IDs, audiences, role names, and generated Hub cluster IDs MUST be unique across
 built-in, legacy, custom, and topology-managed resources.</li>
 <li class=""><strong>Namespace independence.</strong> Generated service endpoints MAY use same-Kubernetes-cluster DNS
@@ -119,7 +119,7 @@ designed and approved separately.</li>
 inventory values remain supported. Any future removal MUST follow the chart deprecation policy and
 occur no earlier than the next major chart version after a documented migration period.</li>
 <li class=""><strong>Packaging.</strong> The public contract MUST describe deployment roles and connectivity rather than
-umbrella-chart internals so a future management/workload chart split can implement the same
+umbrella-chart internals so a future Hub/workload chart split can implement the same
 semantics without replacing the operator-facing model.</li>
 </ol>
 <p>The initial chart implementation is scoped to fresh 8.10 topology deployments. Converting an existing
@@ -136,9 +136,9 @@ and is not defined by this ADR.</p>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative-consequences">Negative Consequences<a href="#negative-consequences" class="hash-link" aria-label="Direct link to Negative Consequences" title="Direct link to Negative Consequences" translate="no">​</a></h3>
 <ul>
-<li class="">The management inventory introduces a durable public values API that must evolve compatibly.</li>
+<li class="">The Hub inventory introduces a durable public values API that must evolve compatibly.</li>
 <li class="">Additive Identity reconciliation leaves explicit cleanup work when clusters are removed or renamed.</li>
-<li class="">Cluster records duplicate a subset of workload authentication identifiers so management can register
+<li class="">Cluster records duplicate a subset of workload authentication identifiers so Hub can register
 them; validation is required to prevent drift and collisions.</li>
 <li class="">Same-cluster service discovery is only a default. Cross-cluster routing, trust, and failure handling
 remain operator responsibilities unless separately standardized.</li>
