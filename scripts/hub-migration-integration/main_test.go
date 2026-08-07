@@ -15,9 +15,18 @@
 package main
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestKubectlArgsUseSelectedContext(t *testing.T) {
+	args := kubectlArgs("integration-cluster", "get", "pods")
+	want := []string{"--context", "integration-cluster", "get", "pods"}
+	if !reflect.DeepEqual(args, want) {
+		t.Fatalf("kubectl args = %v, want %v", args, want)
+	}
+}
 
 func TestSeedAndVerificationShareStableFixtureIDs(t *testing.T) {
 	for _, id := range []string{fixtureWorkspace, containerFolder, nestedProject, nestedIDP, rootProject, looseFolder, looseFile} {
@@ -32,7 +41,7 @@ func TestSeedAndVerificationShareStableFixtureIDs(t *testing.T) {
 
 func TestVerificationChecksMigrationProvenance(t *testing.T) {
 	sql := transitionalVerificationSQL() + finalVerificationSQL()
-	for _, expected := range []string{"ws_migration_original_parent_id", "ws_migration_original_folder_id", migrationUser, "ROOT"} {
+	for _, expected := range []string{"ws_migration_original_parent_id", "ws_migration_original_folder_id", migrationUser, "ROOT", "Nested Project", "Nested IDP", "Loose File", "content = 'content'"} {
 		if !strings.Contains(sql, expected) {
 			t.Fatalf("verification SQL does not check %q", expected)
 		}

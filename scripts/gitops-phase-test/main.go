@@ -233,7 +233,11 @@ func waitForPhase(namespace, phase string) error {
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			return assertEndpoints(namespace, release+"-web-modeler-websockets", expectEndpoints)
+			if err := assertEndpoints(namespace, release+"-web-modeler-websockets", expectEndpoints); err != nil {
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			return nil
 		}
 		time.Sleep(5 * time.Second)
 	}
