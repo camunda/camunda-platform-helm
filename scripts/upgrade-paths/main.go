@@ -110,11 +110,17 @@ func main() {
 		fmt.Fprintf(os.Stderr, "warning: %v (continuing; dependencies may be vendored)\n", err)
 	}
 
+	coverage, err := LoadCoverage(root)
+	if err != nil {
+		fatal(err)
+	}
+
 	report := Report{
 		Transition: fmt.Sprintf("%s-to-%s", *from, *to),
 		From:       *from,
 		To:         *to,
 		Stage:      "render",
+		Coverage:   coverage,
 	}
 
 	for _, name := range archetypes {
