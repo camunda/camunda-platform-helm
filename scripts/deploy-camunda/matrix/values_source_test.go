@@ -17,8 +17,11 @@ package matrix
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
+	"time"
 
+	"scripts/camunda-core/pkg/survival"
 	"scripts/camunda-core/pkg/versionmatrix"
 
 	"github.com/stretchr/testify/assert"
@@ -151,4 +154,77 @@ func TestValidateUpgradeOptions(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
+}
+
+func TestUpgradeBudgetDefaultsToUnbudgeted(t *testing.T) {
+	var e Entry
+	assert.Zero(t, e.UpgradeBudgetMinutes,
+		"a scenario without a declared budget must not be treated as having one")
+}
+
+func TestUpgradeBudgetCarriesOntoEntry(t *testing.T) {
+	e := Entry{Scenario: "s", UpgradeBudgetMinutes: 12, DataProbes: []survival.Probe{{Name: "n"}}}
+	assert.Equal(t, 12, e.UpgradeBudgetMinutes)
+	assert.Len(t, e.DataProbes, 1)
+}
+
+func TestReportUpgradeDurationHandlesBothSides(t *testing.T) {
+	// Exercises the branches; the assertion is that neither panics and that an
+	// unbudgeted scenario is a distinct path from a budgeted one.
+	reportUpgradeDuration(Entry{Scenario: "unbudgeted"}, 3*time.Minute)
+	reportUpgradeDuration(Entry{Scenario: "within", UpgradeBudgetMinutes: 10}, 3*time.Minute)
+	reportUpgradeDuration(Entry{Scenario: "over", UpgradeBudgetMinutes: 1}, 30*time.Minute)
+}
+
+// registryScenario mirrors CIScenario field-for-field. A field added to
+// CIScenario but not to registryScenario is silently dropped: the YAML key
+// parses into nothing and the feature is inert with no error anywhere. That
+// happened to data-probes and cost a cluster run to find, so the mirror is
+// asserted rather than trusted to a comment.
+func TestRegistryScenarioMirrorsCIScenario(t *testing.T) {
+	// Fields on CIScenario that legitimately have no registryScenario
+	// counterpart: they come from the manifest entry or are derived.
+	fromManifestOrDerived := map[string]bool{
+		"Enabled": true, "Shortname": true, "Tier": true, "Flow": true,
+		"Dependencies": true, "PreInstall": true, "PostInfra": true, "PostDeploy": true,
+	}
+	// registryScenario fields that carry IDs resolved into richer CIScenario types.
+	idCarriers := map[string]bool{
+		"Flows": true, "PreInstallID": true, "PostInfraID": true,
+		"PostDeployID": true, "DependencyIDs": true,
+	}
+
+	ci := reflect.TypeOf(CIScenario{})
+	rs := reflect.TypeOf(registryScenario{})
+
+	rsFields := map[string]bool{}
+	for i := 0; i < rs.NumField(); i++ {
+		rsFields[rs.Field(i).Name] = true
+	}
+
+	var missing []string
+	for i := 0; i < ci.NumField(); i++ {
+		name := ci.Field(i).Name
+		if fromManifestOrDerived[name] || rsFields[name] {
+			continue
+		}
+		missing = append(missing, name)
+	}
+	assert.Empty(t, missing,
+		"these CIScenario fields have no registryScenario counterpart, so their YAML keys "+
+			"parse into nothing: %v", missing)
+
+	var orphaned []string
+	ciFields := map[string]bool{}
+	for i := 0; i < ci.NumField(); i++ {
+		ciFields[ci.Field(i).Name] = true
+	}
+	for i := 0; i < rs.NumField(); i++ {
+		name := rs.Field(i).Name
+		if idCarriers[name] || ciFields[name] {
+			continue
+		}
+		orphaned = append(orphaned, name)
+	}
+	assert.Empty(t, orphaned, "registryScenario fields with no CIScenario destination: %v", orphaned)
 }

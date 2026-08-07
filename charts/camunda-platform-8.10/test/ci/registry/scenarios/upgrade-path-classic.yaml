@@ -19,3 +19,27 @@ dependencies:
   - keycloak-distroci
   - elasticsearch-distroci
   - postgresql-distroci
+
+# The bundled Keycloak's realm is migrated to the companion during the upgrade,
+# so the entity is counted in a different database on each side. Counting the
+# old location afterwards would report a wipe that did not happen; counting only
+# the new one would miss a wipe that did.
+#
+# Source database and user come from the migration script's own defaults
+# (KEYCLOAK_SOURCE_DB_NAME=bitnami_keycloak, KEYCLOAK_SOURCE_DB_USER=bn_keycloak).
+data-probes:
+  - name: keycloak-users
+    # Bundled Bitnami PostgreSQL. Its component label is "primary", not
+    # "postgresql", and its superuser password is file-based rather than an
+    # env var; both differ from the companion chart on the other side.
+    selector: app.kubernetes.io/instance=integration,app.kubernetes.io/name=postgresql
+    container: postgresql
+    command: >-
+      PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")" psql -U postgres -d bitnami_keycloak
+      -tAc 'select count(*) from user_entity'
+    after:
+      selector: app.kubernetes.io/instance=keycloak,app.kubernetes.io/component=postgresql
+      container: postgresql
+      command: >-
+        PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+        -tAc 'select count(*) from user_entity'

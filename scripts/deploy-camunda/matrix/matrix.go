@@ -9,6 +9,8 @@ import (
 	"github.com/jwalton/gchalk"
 
 	"scripts/camunda-core/pkg/logging"
+
+	"scripts/camunda-core/pkg/survival"
 )
 
 // Entry represents a single matrix entry — one scenario + one flow + one platform combination.
@@ -55,6 +57,12 @@ type Entry struct {
 
 	// PostInfra declares a fixture or script to run after companion charts
 	// (external infrastructure) are deployed but before the main Camunda chart.
+	// DataProbes are carried from CIScenario.DataProbes.
+	DataProbes []survival.Probe `json:"dataProbes,omitempty"`
+
+	// UpgradeBudgetMinutes is carried from CIScenario.UpgradeBudgetMinutes.
+	UpgradeBudgetMinutes int `json:"upgradeBudgetMinutes,omitempty"`
+
 	// Carried from CIScenario.PostInfra.
 	PostInfra *LifecycleHook `json:"postInfra,omitempty"`
 
@@ -208,34 +216,36 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 				}
 				for _, platform := range platforms {
 					entries = append(entries, Entry{
-						Version:      version,
-						ChartPath:    chartDir,
-						Scenario:     scenario.Name,
-						Shortname:    scenario.Shortname,
-						Auth:         scenario.Auth,
-						Flow:         flow,
-						Platform:     platform,
-						InfraType:    resolveInfraType(scenario.InfraType, platform),
-						Exclude:      scenario.Exclude,
-						Enabled:      scenario.Enabled,
-						Tier:         scenario.Tier,
-						Identity:     scenario.Identity,
-						Persistence:  scenario.Persistence,
-						Features:     scenario.Features,
-						ExtraValues:  scenario.ExtraValues,
-						QA:           scenario.QA,
-						ImageTags:    scenario.ImageTags,
-						Upgrade:      scenario.Upgrade,
-						Enterprise:   scenario.Enterprise,
-						SkipE2E:      scenario.SkipE2E,
-						Dependencies: append([]ChartDependency(nil), scenario.Dependencies...),
-						PreInstall:   scenario.PreInstall,
-						PostInfra:    scenario.PostInfra,
-						PostDeploy:   scenario.PostDeploy,
-						PreUpgrade:   preUpgrade,
-						HelmVersion:  scenario.HelmVersion,
-						PrefixKey:    scenario.PrefixKey,
-						Topology:     scenario.Topology,
+						Version:              version,
+						ChartPath:            chartDir,
+						Scenario:             scenario.Name,
+						Shortname:            scenario.Shortname,
+						Auth:                 scenario.Auth,
+						Flow:                 flow,
+						Platform:             platform,
+						InfraType:            resolveInfraType(scenario.InfraType, platform),
+						Exclude:              scenario.Exclude,
+						Enabled:              scenario.Enabled,
+						Tier:                 scenario.Tier,
+						Identity:             scenario.Identity,
+						Persistence:          scenario.Persistence,
+						Features:             scenario.Features,
+						ExtraValues:          scenario.ExtraValues,
+						QA:                   scenario.QA,
+						ImageTags:            scenario.ImageTags,
+						Upgrade:              scenario.Upgrade,
+						Enterprise:           scenario.Enterprise,
+						SkipE2E:              scenario.SkipE2E,
+						Dependencies:         append([]ChartDependency(nil), scenario.Dependencies...),
+						PreInstall:           scenario.PreInstall,
+						PostInfra:            scenario.PostInfra,
+						DataProbes:           scenario.DataProbes,
+						UpgradeBudgetMinutes: scenario.UpgradeBudgetMinutes,
+						PostDeploy:           scenario.PostDeploy,
+						PreUpgrade:           preUpgrade,
+						HelmVersion:          scenario.HelmVersion,
+						PrefixKey:            scenario.PrefixKey,
+						Topology:             scenario.Topology,
 					})
 				}
 			}
