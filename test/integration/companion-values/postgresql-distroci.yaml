@@ -1,0 +1,35 @@
+# postgresql companion for GKE distroci scenarios.
+#
+# Identical to postgresql.yaml plus node placement. The distroci pool is tainted
+# workload=distroci:NoSchedule, so a companion without the toleration cannot
+# schedule there and is squeezed onto the small untainted remainder, where it
+# contends with unrelated workloads.
+# Companion values for internal-postgresql chart.
+# Provides Identity and Web Modeler databases without Bitnami or CNPG.
+
+fullnameOverride: postgresql
+
+auth:
+  username: "$RDBMS_POSTGRESQL_USERNAME"
+  password: "$RDBMS_POSTGRESQL_PASSWORD"
+  database: identity
+
+databases:
+  - identity
+  - webmodeler
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector:
+  workload: distroci
+tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
