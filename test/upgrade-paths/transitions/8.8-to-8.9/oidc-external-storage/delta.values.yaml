@@ -1,0 +1,5 @@
+# Delta for oidc-external-storage, 8.8-to-8.9
+#
+# Empty means: a customer on this path upgrades with no values changes.
+# Every key added here is a change the customer MUST make, and is emitted
+# verbatim into the upgrade guide. Keep it minimal and justified.
