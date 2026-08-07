@@ -21,6 +21,8 @@ import (
 	"sort"
 
 	"gopkg.in/yaml.v3"
+
+	"scripts/camunda-core/pkg/chartvalues"
 )
 
 // Archetype describes a shape of customer deployment, independent of any
@@ -48,6 +50,8 @@ type Transition struct {
 	DeltaPath string
 	// RemedyPath is the absolute path to remedy.sh, or "" when none.
 	RemedyPath string
+	// Delta is the parsed delta, empty when DeltaPath is unset.
+	Delta chartvalues.Delta
 }
 
 // TransitionDir is the on-disk home of a (from,to,archetype) fixture.
@@ -139,6 +143,11 @@ func LoadTransition(repoRoot, from, to, archetypeName string) (Transition, error
 	td := TransitionDir(repoRoot, from, to, archetypeName)
 	if p := filepath.Join(td, "delta.values.yaml"); fileHasContent(p) {
 		t.DeltaPath = p
+		d, err := chartvalues.LoadDelta(p)
+		if err != nil {
+			return t, err
+		}
+		t.Delta = d
 	}
 	if p := filepath.Join(td, "remedy.sh"); fileExists(p) {
 		t.RemedyPath = p

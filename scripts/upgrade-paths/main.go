@@ -49,6 +49,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"scripts/camunda-core/pkg/chartvalues"
 )
 
 func main() {
@@ -140,6 +142,7 @@ func main() {
 			HasRemedy:  t.RemedyPath != "",
 			Findings:   BuildFindings(t, a, b, outcome),
 		}
+		pr.ScaffoldingKeys = chartvalues.LeafPaths(t.Delta.Scaffolding)
 
 		if *discover && !a.Succeeded {
 			workDir, err := os.MkdirTemp("", "upgrade-paths-"+name+"-")

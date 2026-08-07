@@ -85,6 +85,8 @@ type PathResult struct {
 	Findings     []Finding        `json:"findings"`
 	Discovery    *DiscoveryResult `json:"discovery,omitempty"`
 	DocsCoverage DocsCoverage     `json:"docsCoverage"`
+	// ScaffoldingKeys are top-level delta keys that are harness-only.
+	ScaffoldingKeys []string `json:"scaffoldingKeys,omitempty"`
 }
 
 // Classify applies the A/B state machine.

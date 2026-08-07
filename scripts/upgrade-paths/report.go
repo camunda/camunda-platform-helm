@@ -127,6 +127,11 @@ func (r Report) Markdown() string {
 		} else {
 			b.WriteString("_Doc coverage not checked: no upgrade guide found for this transition._\n\n")
 		}
+		if len(res.ScaffoldingKeys) > 0 {
+			fmt.Fprintf(&b, "> Harness-only, **not** customer steps: %s. These exist in the CI "+
+				"scenario's values, not in the chart, and must be excluded from the upgrade guide.\n\n",
+				"`"+strings.Join(res.ScaffoldingKeys, "`, `")+"`")
+		}
 		if d.Final.Succeeded {
 			b.WriteString("After these changes the chart renders. Note that a clean render proves only " +
 				"that values are accepted — not that data survives the upgrade.\n\n")

@@ -357,3 +357,82 @@ func TestDeltaApplyDoesNotMutateNestedInput(t *testing.T) {
 	assert.True(t, HasKey(base, "global.ingress.host"),
 		"a nested removal must not reach back into the caller's document")
 }
+
+func TestLoadDeltaScaffolding(t *testing.T) {
+	dir := t.TempDir()
+
+	t.Run("splits scaffolding from customer-facing keys", func(t *testing.T) {
+		p := write(t, dir, "s.yaml", `
+$remove:
+  - identityKeycloak
+global:
+  host: example.com
+$scaffolding:
+  identity:
+    initContainers:
+      - name: wait-for-keycloak
+`)
+		d, err := LoadDelta(p)
+		require.NoError(t, err)
+		assert.True(t, HasKey(d.Set, "global.host"), "product config stays customer-facing")
+		assert.False(t, HasKey(d.Set, "identity.initContainers"), "scaffolding is not in Set")
+		assert.True(t, HasKey(d.Scaffolding, "identity.initContainers"))
+		assert.True(t, d.HasScaffolding())
+	})
+
+	t.Run("scaffolding alone is not an empty delta", func(t *testing.T) {
+		d, err := LoadDelta(write(t, dir, "s2.yaml", "$scaffolding:\n  a: 1\n"))
+		require.NoError(t, err)
+		assert.False(t, d.IsEmpty())
+	})
+
+	t.Run("non-map scaffolding errors", func(t *testing.T) {
+		_, err := LoadDelta(write(t, dir, "s3.yaml", "$scaffolding:\n  - a\n"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must be a map")
+	})
+
+	t.Run("no scaffolding leaves it absent", func(t *testing.T) {
+		d, err := LoadDelta(write(t, dir, "s4.yaml", "$remove:\n  - a\n"))
+		require.NoError(t, err)
+		assert.False(t, d.HasScaffolding())
+	})
+}
+
+func TestDeltaApplyAppliesScaffolding(t *testing.T) {
+	base := Values{"identity": Values{"initContainers": []any{Values{"name": "old"}}}}
+	d := Delta{
+		Set:         Values{"global": Values{"host": "h"}},
+		Scaffolding: Values{"identity": Values{"initContainers": []any{Values{"name": "new"}}}},
+	}
+
+	got := d.Apply(base)
+
+	assert.True(t, HasKey(got, "global.host"))
+	ics := got["identity"].(Values)["initContainers"].([]any)
+	assert.Equal(t, "new", mustMap(t, ics[0])["name"],
+		"scaffolding is applied so the run can succeed, even though it is not customer-facing")
+}
+
+func TestLeafPaths(t *testing.T) {
+	v := Values{
+		"identity": Values{
+			"initContainers":   []any{Values{"name": "x"}},
+			"externalDatabase": Values{"host": "pg", "port": 5432},
+		},
+		"top":   "scalar",
+		"empty": Values{},
+	}
+
+	assert.Equal(t, []string{
+		"empty",
+		"identity.externalDatabase.host",
+		"identity.externalDatabase.port",
+		"identity.initContainers",
+		"top",
+	}, LeafPaths(v), "descent stops at the first non-map, so a list is named by its key")
+}
+
+func TestLeafPathsEmpty(t *testing.T) {
+	assert.Empty(t, LeafPaths(Values{}))
+}
