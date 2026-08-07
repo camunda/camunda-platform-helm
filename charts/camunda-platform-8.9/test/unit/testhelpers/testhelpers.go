@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package testhelpers provides utilities for testing Helm charts.
 // To enable verbose logging, set the VERBOSE_TEST_LOGGING environment variable to "true".
 // Example: VERBOSE_TEST_LOGGING=true go test ./...
@@ -5,6 +19,7 @@ package testhelpers
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 	"testing"
@@ -81,16 +96,112 @@ func quietLogger() *logger.Logger {
 	return logger.Discard
 }
 
-func setupHelmOptions(namespace string, values map[string]string, valuesFiles []string, helmOptionsExtraArgs map[string][]string) *helm.Options {
-	// Initialize values map if nil
+type storageFixtureState struct {
+	typeSet                bool
+	globalElasticsearchSet bool
+	elasticsearchSet       bool
+}
+
+func mergeStorageFixtureValues(base, overlay map[string]any) {
+	for key, overlayValue := range overlay {
+		if overlayValue == nil {
+			delete(base, key)
+			continue
+		}
+
+		overlayMap, overlayIsMap := overlayValue.(map[string]any)
+		baseMap, baseIsMap := base[key].(map[string]any)
+		if overlayIsMap && baseIsMap {
+			mergeStorageFixtureValues(baseMap, overlayMap)
+			continue
+		}
+		base[key] = overlayValue
+	}
+}
+
+func storageFixtureValue(values map[string]any, path ...string) (any, bool) {
+	var current any = values
+	for _, key := range path {
+		mapping, ok := current.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		current, ok = mapping[key]
+		if !ok {
+			return nil, false
+		}
+	}
+	return current, true
+}
+
+func storageFixtureBoolSet(values map[string]any, path ...string) (bool, error) {
+	rawValue, ok := storageFixtureValue(values, path...)
+	if !ok {
+		return false, nil
+	}
+	if _, ok := rawValue.(bool); !ok {
+		return false, fmt.Errorf("storage fixture value %s must be a boolean", strings.Join(path, "."))
+	}
+	return true, nil
+}
+
+func loadStorageFixtureState(valuesFiles []string, values map[string]string) (storageFixtureState, error) {
+	state := storageFixtureState{}
+	mergedValues := make(map[string]any)
+	for _, valuesFile := range valuesFiles {
+		data, err := os.ReadFile(valuesFile)
+		if err != nil {
+			return state, fmt.Errorf("read values file %s: %w", valuesFile, err)
+		}
+
+		var fileValues map[string]any
+		if err := yaml.Unmarshal(data, &fileValues); err != nil {
+			return state, fmt.Errorf("parse values file %s: %w", valuesFile, err)
+		}
+		mergeStorageFixtureValues(mergedValues, fileValues)
+	}
+
+	if storageType, ok := storageFixtureValue(mergedValues, "orchestration", "data", "secondaryStorage", "type"); ok {
+		if _, ok := storageType.(string); !ok {
+			return state, fmt.Errorf("storage fixture value orchestration.data.secondaryStorage.type must be a string")
+		}
+		state.typeSet = true
+	}
+	var err error
+	if state.globalElasticsearchSet, err = storageFixtureBoolSet(mergedValues, "global", "elasticsearch", "enabled"); err != nil {
+		return state, err
+	}
+	if state.elasticsearchSet, err = storageFixtureBoolSet(mergedValues, "elasticsearch", "enabled"); err != nil {
+		return state, err
+	}
+
+	if _, ok := values["orchestration.data.secondaryStorage.type"]; ok {
+		state.typeSet = true
+	}
+	if _, ok := values["global.elasticsearch.enabled"]; ok {
+		state.globalElasticsearchSet = true
+	}
+	if _, ok := values["elasticsearch.enabled"]; ok {
+		state.elasticsearchSet = true
+	}
+
+	return state, nil
+}
+
+func setupHelmOptions(namespace string, values map[string]string, valuesFiles []string, helmOptionsExtraArgs map[string][]string) (*helm.Options, error) {
+	values = maps.Clone(values)
 	if values == nil {
 		values = make(map[string]string)
 	}
-	// Add default Elasticsearch flags if not already present
-	if _, hasGlobalES := values["global.elasticsearch.enabled"]; !hasGlobalES {
+	storageState, err := loadStorageFixtureState(valuesFiles, values)
+	if err != nil {
+		return nil, err
+	}
+	// Add default Elasticsearch flags if no current storage selector is provided.
+	if !storageState.typeSet && !storageState.globalElasticsearchSet {
 		values["global.elasticsearch.enabled"] = "true"
 	}
-	if _, hasES := values["elasticsearch.enabled"]; !hasES {
+	if !storageState.typeSet && !storageState.elasticsearchSet {
 		values["elasticsearch.enabled"] = "true"
 	}
 
@@ -101,11 +212,14 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 		Logger:         quietLogger(), // Use quiet logger to reduce verbosity
 		ExtraArgs:      helmOptionsExtraArgs,
 	}
-	return options
+	return options, nil
 }
 
 func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, valuesFiles []string, extraArgs map[string][]string, renderTemplateExtraArgs []string) (string, error) {
-	options := setupHelmOptions(namespace, values, valuesFiles, extraArgs)
+	options, err := setupHelmOptions(namespace, values, valuesFiles, extraArgs)
+	if err != nil {
+		return "", err
+	}
 
 	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...)
 	return output, err
@@ -161,7 +275,8 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 
 // renderTemplate renders the specified Helm templates into a Kubernetes ConfigMap
 func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, valuesFiles []string) corev1.ConfigMap {
-	options := setupHelmOptions(namespace, values, valuesFiles, nil)
+	options, err := setupHelmOptions(namespace, values, valuesFiles, nil)
+	require.NoError(t, err)
 
 	output := helm.RenderTemplate(t, options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
