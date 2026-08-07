@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+
+	"scripts/camunda-core/pkg/survival"
 )
 
 // RegistryDirName is the directory under <chartDir>/test/ that holds the
@@ -64,6 +66,14 @@ type registryScenario struct {
 	HelmVersion string            `yaml:"helmVersion,omitempty"`
 	SkipE2E     bool              `yaml:"skip-e2e,omitempty"`
 	PrefixKey   string            `yaml:"prefix-key,omitempty"`
+
+	// Profiles was reachable from CIScenario but had no counterpart here, so a
+	// registry scenario could never set it. No scenario declares it yet, which
+	// is why the omission went unnoticed.
+	Profiles []string `yaml:"profiles,omitempty"`
+
+	DataProbes           []survival.Probe `yaml:"data-probes,omitempty"`
+	UpgradeBudgetMinutes int              `yaml:"upgrade-budget-minutes,omitempty"`
 
 	PreInstallID  string   `yaml:"pre-install,omitempty"`
 	PostInfraID   string   `yaml:"post-infra,omitempty"`
@@ -222,31 +232,34 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 
 		for _, flow := range flows {
 			cfg.Integration.Case.PR.Scenarios = append(cfg.Integration.Case.PR.Scenarios, CIScenario{
-				Name:         rscn.Name,
-				Enabled:      entry.Enabled,
-				Shortname:    entry.Shortname,
-				Auth:         rscn.Auth,
-				Flow:         flow,
-				Platforms:    rscn.Platforms,
-				Exclude:      rscn.Exclude,
-				Tier:         entry.Tier,
-				InfraType:    rscn.InfraType,
-				Identity:     rscn.Identity,
-				Persistence:  rscn.Persistence,
-				Features:     rscn.Features,
-				ExtraValues:  rscn.ExtraValues,
-				QA:           rscn.QA,
-				ImageTags:    rscn.ImageTags,
-				Upgrade:      rscn.Upgrade,
-				Enterprise:   rscn.Enterprise,
-				HelmVersion:  rscn.HelmVersion,
-				SkipE2E:      rscn.SkipE2E,
-				Dependencies: append([]ChartDependency(nil), deps...),
-				PrefixKey:    rscn.PrefixKey,
-				PreInstall:   preInstall,
-				PostInfra:    postInfra,
-				PostDeploy:   postDeploy,
-				Topology:     rscn.Topology,
+				Name:                 rscn.Name,
+				Enabled:              entry.Enabled,
+				Shortname:            entry.Shortname,
+				Auth:                 rscn.Auth,
+				Flow:                 flow,
+				Platforms:            rscn.Platforms,
+				Exclude:              rscn.Exclude,
+				Tier:                 entry.Tier,
+				InfraType:            rscn.InfraType,
+				Identity:             rscn.Identity,
+				Persistence:          rscn.Persistence,
+				Features:             rscn.Features,
+				ExtraValues:          rscn.ExtraValues,
+				QA:                   rscn.QA,
+				ImageTags:            rscn.ImageTags,
+				Upgrade:              rscn.Upgrade,
+				Enterprise:           rscn.Enterprise,
+				HelmVersion:          rscn.HelmVersion,
+				SkipE2E:              rscn.SkipE2E,
+				Dependencies:         append([]ChartDependency(nil), deps...),
+				PrefixKey:            rscn.PrefixKey,
+				PreInstall:           preInstall,
+				PostInfra:            postInfra,
+				PostDeploy:           postDeploy,
+				Topology:             rscn.Topology,
+				Profiles:             rscn.Profiles,
+				DataProbes:           rscn.DataProbes,
+				UpgradeBudgetMinutes: rscn.UpgradeBudgetMinutes,
 			})
 		}
 	}

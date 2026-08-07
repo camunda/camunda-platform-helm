@@ -795,6 +795,15 @@ integration:
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
               chart upgrade). This keeps users/realm alive across the upgrade that removes the
               bundled Bitnami subcharts.
+          data-probes:
+            - name: keycloak-users
+              selector: app.kubernetes.io/instance=integration,app.kubernetes.io/name=postgresql
+              container: postgresql
+              command: PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")" psql -U postgres -d bitnami_keycloak -tAc 'select count(*) from user_entity'
+              after:
+                selector: app.kubernetes.io/instance=keycloak,app.kubernetes.io/component=postgresql
+                container: postgresql
+                command: PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc 'select count(*) from user_entity'
         - name: hub-mixed
           enabled: true
           shortname: hubmu

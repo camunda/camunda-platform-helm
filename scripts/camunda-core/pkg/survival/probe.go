@@ -32,6 +32,35 @@ type Probe struct {
 	Container string `yaml:"container,omitempty" json:"container,omitempty"`
 	// Command is passed to sh -c inside the pod.
 	Command string `yaml:"command" json:"command"`
+
+	// After overrides the probe for the post-upgrade snapshot. An upgrade can
+	// move an entity between stores — the bundled Keycloak's realm ends up in
+	// the companion's database — and counting the old location afterwards would
+	// report a wipe that did not happen.
+	After *ProbeTarget `yaml:"after,omitempty" json:"after,omitempty"`
+}
+
+// ProbeTarget is where and how to count, for one side of an upgrade.
+type ProbeTarget struct {
+	Selector  string `yaml:"selector" json:"selector"`
+	Container string `yaml:"container,omitempty" json:"container,omitempty"`
+	Command   string `yaml:"command" json:"command"`
+}
+
+// Phase selects which side of the upgrade a snapshot is for.
+type Phase string
+
+const (
+	Before Phase = "before"
+	After  Phase = "after"
+)
+
+// target resolves the probe for a phase, falling back to the base definition.
+func (p Probe) target(phase Phase) ProbeTarget {
+	if phase == After && p.After != nil {
+		return *p.After
+	}
+	return ProbeTarget{Selector: p.Selector, Container: p.Container, Command: p.Command}
 }
 
 // Runner executes a command in a pod chosen by label selector.
@@ -44,12 +73,13 @@ type Runner interface {
 // A probe that fails is omitted rather than recorded as zero. A missing entry
 // compares as NotProbed, so a broken probe reads as "unknown" instead of
 // manufacturing a wipe — the report must not invent data loss.
-func Run(ctx context.Context, r Runner, namespace string, probes []Probe) (Snapshot, []error) {
+func Run(ctx context.Context, r Runner, namespace string, probes []Probe, phase Phase) (Snapshot, []error) {
 	snap := Snapshot{}
 	var errs []error
 
 	for _, p := range probes {
-		out, err := r.ExecInPod(ctx, namespace, p.Selector, p.Container, p.Command)
+		t := p.target(phase)
+		out, err := r.ExecInPod(ctx, namespace, t.Selector, t.Container, t.Command)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("probe %s: %w", p.Name, err))
 			continue

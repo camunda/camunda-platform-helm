@@ -163,7 +163,7 @@ func TestRunOmitsFailedProbes(t *testing.T) {
 	snap, errs := Run(context.Background(), r, "ns", []Probe{
 		{Name: "good", Selector: "ok", Command: "x"},
 		{Name: "bad", Selector: "broken", Command: "x"},
-	})
+	}, Before)
 
 	assert.Equal(t, Snapshot{"good": 12}, snap)
 	assert.Len(t, errs, 1)
@@ -175,8 +175,38 @@ func TestRunOmitsFailedProbes(t *testing.T) {
 
 func TestRunRejectsNonNumericOutput(t *testing.T) {
 	r := fakeRunner{out: map[string]string{"s": "ERROR: relation does not exist"}}
-	snap, errs := Run(context.Background(), r, "ns", []Probe{{Name: "n", Selector: "s", Command: "x"}})
+	snap, errs := Run(context.Background(), r, "ns", []Probe{{Name: "n", Selector: "s", Command: "x"}}, Before)
 	assert.Empty(t, snap)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Error(), "expected a count")
+}
+
+func TestProbeAfterOverride(t *testing.T) {
+	// The realm moves from the bundled store to the companion during the
+	// upgrade, so counting the old location afterwards would report a wipe.
+	r := fakeRunner{out: map[string]string{"bundled": "25", "companion": "25"}}
+	probes := []Probe{{
+		Name:     "keycloak-users",
+		Selector: "bundled",
+		Command:  "count",
+		After:    &ProbeTarget{Selector: "companion", Command: "count"},
+	}}
+
+	before, errs := Run(context.Background(), r, "ns", probes, Before)
+	assert.Empty(t, errs)
+	after, errs := Run(context.Background(), r, "ns", probes, After)
+	assert.Empty(t, errs)
+
+	assert.Equal(t, Snapshot{"keycloak-users": 25}, before)
+	assert.Equal(t, Snapshot{"keycloak-users": 25}, after)
+	assert.Empty(t, Losses(Compare(before, after)),
+		"a moved entity must not be reported as lost")
+}
+
+func TestProbeWithoutAfterOverrideUsesBaseTarget(t *testing.T) {
+	r := fakeRunner{out: map[string]string{"s": "7"}}
+	p := []Probe{{Name: "n", Selector: "s", Command: "c"}}
+	b, _ := Run(context.Background(), r, "ns", p, Before)
+	a, _ := Run(context.Background(), r, "ns", p, After)
+	assert.Equal(t, b, a)
 }

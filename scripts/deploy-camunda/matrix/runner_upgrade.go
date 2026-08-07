@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/orphans"
 	"scripts/camunda-core/pkg/scenarios"
+	"scripts/camunda-core/pkg/survival"
 	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
@@ -293,6 +295,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	}
 
 	orphansBefore := claimOrphans(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext)
+	survivalBefore := runDataProbes(ctx, entry, flags.EffectiveNamespace(), flags.Test.KubeContext, survival.Before)
 
 	// --- Step 2: Upgrade to current on-disk chart (or external chart-ref when set) ---
 	if flags.OnPhase != nil {
@@ -372,6 +375,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	}
 	step2Flags.Deployment.ExtraHelmArgs = flags.Deployment.ExtraHelmArgs
 
+	upgradeStart := time.Now()
 	if err := deploy.Execute(ctx, &step2Flags); err != nil {
 		if opts.ChartRef != "" {
 			target := opts.ChartRef
@@ -383,13 +387,92 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		return fmt.Errorf("step 2: upgrade to local chart failed: %w", err)
 	}
 
+	reportUpgradeDuration(entry, time.Since(upgradeStart))
+
 	logging.Logger.Info().
 		Str("step", "2/2").
 		Msg("Step 2 complete: upgrade to current version succeeded")
 
 	reportStrandedClaims(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext, orphansBefore)
+	reportDataSurvival(ctx, entry, flags.EffectiveNamespace(), flags.Test.KubeContext, survivalBefore)
 
 	return nil
+}
+
+// runDataProbes counts entities declared by the scenario. Probe failures are
+// logged and omitted from the snapshot; a missing entry compares as not-probed,
+// so a broken query reads as unknown rather than as data loss.
+func runDataProbes(ctx context.Context, entry Entry, namespace, kubeContext string, phase survival.Phase) survival.Snapshot {
+	if len(entry.DataProbes) == 0 {
+		return nil
+	}
+	snap, errs := survival.Run(ctx, kube.ExecRunner{KubeContext: kubeContext}, namespace, entry.DataProbes, phase)
+	for _, err := range errs {
+		logging.Logger.Warn().Err(err).Str("phase", string(phase)).Msg("Data probe failed; entity will report as not-probed")
+	}
+	logging.Logger.Info().
+		Str("phase", string(phase)).
+		Interface("counts", map[string]int(snap)).
+		Msg("Data probe snapshot")
+	return snap
+}
+
+// reportDataSurvival compares the pre-upgrade snapshot with a fresh one.
+//
+// An upgrade that completes is not an upgrade that preserved anything: removing
+// a subchart can strand the storage its replacement never reads, leaving a
+// healthy cluster with an empty realm.
+func reportDataSurvival(ctx context.Context, entry Entry, namespace, kubeContext string, before survival.Snapshot) {
+	if len(before) == 0 {
+		return
+	}
+	after := runDataProbes(ctx, entry, namespace, kubeContext, survival.After)
+	results := survival.Compare(before, after)
+
+	losses := survival.Losses(results)
+	if len(losses) == 0 {
+		logging.Logger.Info().
+			Strs("entities", survival.Summary(results)).
+			Msg("Data survived the upgrade")
+		return
+	}
+	logging.Logger.Error().
+		Strs("losses", survival.Summary(losses)).
+		Int("count", len(losses)).
+		Str("namespace", namespace).
+		Msg("Upgrade lost data: entities counted fewer after the upgrade than before")
+}
+
+// reportUpgradeDuration compares the upgrade step against its declared budget.
+//
+// Reported, not failed. Elapsed time on shared CI hardware varies with
+// contention — the same upgrade measured 7m33s and 14m09s on consecutive runs
+// purely from node scheduling — so a hard gate would be flaky enough to be
+// muted, which is worse than a number someone reads.
+//
+// An unbudgeted scenario is called out rather than passing silently: a
+// migration that is correct but ruinously slow satisfies every other check.
+func reportUpgradeDuration(entry Entry, elapsed time.Duration) {
+	ev := logging.Logger.Info().
+		Str("scenario", entry.Scenario).
+		Str("elapsed", elapsed.Round(time.Second).String())
+
+	if entry.UpgradeBudgetMinutes <= 0 {
+		ev.Msg("Upgrade duration recorded; no budget declared for this scenario")
+		return
+	}
+
+	budget := time.Duration(entry.UpgradeBudgetMinutes) * time.Minute
+	ev = ev.Str("budget", budget.String())
+	if elapsed > budget {
+		logging.Logger.Warn().
+			Str("scenario", entry.Scenario).
+			Str("elapsed", elapsed.Round(time.Second).String()).
+			Str("budget", budget.String()).
+			Msg("Upgrade exceeded its duration budget: a migration may be scaling with data volume")
+		return
+	}
+	ev.Msg("Upgrade completed within its duration budget")
 }
 
 // claimOrphans reads the namespace's unreferenced claims. Failures are logged
