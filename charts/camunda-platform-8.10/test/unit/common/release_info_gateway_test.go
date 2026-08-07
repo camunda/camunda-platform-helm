@@ -86,6 +86,34 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 			},
 		},
 		{
+			Name: "ExternalGatewayWithoutHostUsesLocalEndpoints",
+			Values: map[string]string{
+				"global.gateway.enabled":                   "true",
+				"global.gateway.external":                  "true",
+				"global.gateway.tls.enabled":               "true",
+				"global.identity.keycloak.internal":        "true",
+				"identity.enabled":                         "true",
+				"optimize.enabled":                         "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.gateway.grpc.enabled":       "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "test@example.com",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "url: http://localhost:18080/auth")
+				require.Contains(t, output, "url: http://localhost:8080")
+				require.Contains(t, output, "url: http://localhost:8070")
+				require.Contains(t, output, "url: http://localhost:8083")
+				require.Contains(t, output, "url: http://localhost:8080/operate")
+				require.Contains(t, output, "url: http://localhost:8080/tasklist")
+				require.Contains(t, output, "url: http://localhost:8080/admin")
+				require.Contains(t, output, "grpc: http://localhost:26500")
+				require.Contains(t, output, "http: http://localhost:8080")
+			},
+		},
+		{
 			Name: "GatewayWithoutGRPCRouteUsesLocalEndpoint",
 			Values: map[string]string{
 				"global.ingress.enabled":        "false",
