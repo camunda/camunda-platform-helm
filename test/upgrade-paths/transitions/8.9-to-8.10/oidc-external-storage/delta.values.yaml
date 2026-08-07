@@ -1,0 +1,103 @@
+# Delta for oidc-external-storage, 8.9-to-8.10
+#
+# Every entry is a change the customer MUST make. Directives:
+#   $rename  moves a value to a new path, preserving it. Used where the value is
+#            environment-specific and cannot be restated statically.
+#   $remove  deletes dotted paths. Chart constraints test key presence, so these
+#            cannot be cleared by setting them to null.
+# Remaining keys are merged in as normal values.
+#
+# Removing the bundled-subchart keys makes the chart render. It does NOT migrate
+# the data those subcharts held — see remedy.sh.
+
+$rename:
+  global.ingress.host: global.host
+
+$remove:
+  - identityKeycloak
+  - identityPostgresql
+  - webModelerPostgresql
+  - elasticsearch
+
+# Values that named the old ingress path must be updated too: removing the key
+# alone renders the gRPC ingress host as "grpc-", which the API server rejects
+# as an invalid RFC 1123 subdomain.
+orchestration:
+  ingress:
+    grpc:
+      host: "grpc-{{ .Values.global.host }}"
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: http://elasticsearch-master:9200
+
+# The bundled Keycloak supplied its own URL implicitly. With the subchart gone,
+# the connection to the externally managed instance must be stated explicitly,
+# or OIDC discovery builds a relative URL and every component fails to start.
+global:
+  identity:
+    keycloak:
+      internal: true
+      url:
+        protocol: http
+        host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
+        port: "80"
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-keycloak-admin-password
+
+# The bundled Elasticsearch subchart is gone, so components must be pointed at
+# the external cluster. In 8.9 the subchart supplied the connection implicitly
+# via global.elasticsearch.enabled; 8.10 moves the orchestration cluster onto
+# orchestration.data.secondaryStorage and needs an explicit host, or Optimize's
+# migration init container resolves the old bundled service name and crashloops.
+  elasticsearch:
+    url:
+      host: elasticsearch-master
+
+# Likewise the bundled PostgreSQL subcharts: Identity and Web Modeler must now
+# point at externally managed databases.
+identity:
+  # SCENARIO SCAFFOLDING, not a customer-facing step: the CI values carry an
+  # init container that polls the bundled Keycloak service by name. Real
+  # deployments do not ship this container. Retargeted so the archetype can
+  # reach a healthy state; see FINDINGS on separating CI-only scaffolding.
+  initContainers:
+    - name: wait-for-keycloak
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak at keycloak:80/auth/ ..."
+          until wget -q --spider --timeout=2 "http://keycloak:80/auth/"; do
+            sleep 2
+          done
+          echo "Keycloak is ready"
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000
+  externalDatabase:
+    enabled: true
+    host: postgresql
+    port: 5432
+    database: identity
+    username: $RDBMS_POSTGRESQL_USERNAME
+    secret:
+      inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
+
+webModeler:
+  restapi:
+    externalDatabase:
+      enabled: true
+      host: postgresql
+      port: 5432
+      database: webmodeler
+      username: $RDBMS_POSTGRESQL_USERNAME
+      secret:
+        inlineSecret: $RDBMS_POSTGRESQL_PASSWORD

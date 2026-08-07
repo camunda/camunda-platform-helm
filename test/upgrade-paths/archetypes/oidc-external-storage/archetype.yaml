@@ -1,0 +1,11 @@
+name: oidc-external-storage
+description: >-
+  External OIDC provider with externally managed secondary storage (no bundled
+  Elasticsearch subchart). The recommended production shape, and the control
+  case: breaks that appear here are not attributable to bundled infrastructure.
+tier: 1
+platforms: [gke]
+layers:
+  - base.yaml
+  - identity/oidc.yaml
+  - persistence/no-elasticsearch.yaml
