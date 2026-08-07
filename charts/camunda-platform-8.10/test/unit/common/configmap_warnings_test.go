@@ -73,11 +73,7 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 		},
 		{
 			Name: "TestWarningsConfigMapAbsentWhenNoWarnings",
-			// global.elasticsearch.enabled=false avoids the legacy-option deprecation warning
-			// (the test helper otherwise defaults it to true); the new secondaryStorage key
-			// satisfies the storage-type constraint.
 			Values: map[string]string{
-				"global.elasticsearch.enabled":             "false",
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

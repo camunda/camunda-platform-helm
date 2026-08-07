@@ -1,3 +1,17 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package web_modeler
 
 import (
@@ -29,6 +43,7 @@ var requiredValues = map[string]string{
 	"webModeler.restapi.mail.fromAddress":                              "example@example.com",
 	"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
 	"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
+	"orchestration.data.secondaryStorage.type":                         "elasticsearch",
 	"global.identity.keycloak.auth.adminUser":                          "admin",
 	"global.identity.keycloak.auth.secret.existingSecret":              "kc-secret",
 	"global.identity.keycloak.auth.secret.existingSecretKey":           "password",
@@ -54,7 +69,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 		"identity.enabled":                                  "true",
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
-		"global.elasticsearch.enabled":                      "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -88,7 +102,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectCamundaHubAu
 		"global.identity.auth.webModeler.clientApiAudience": "legacy-audience",
 		"global.identity.auth.webModeler.clientId":          "legacy-clientId",
 		"global.identity.auth.webModeler.redirectUrl":       "https://legacy.example.com",
-		"global.elasticsearch.enabled":                      "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -119,7 +132,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 		"identity.enabled":                                  "true",
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
-		"global.elasticsearch.enabled":                      "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -148,7 +160,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId
 		"identity.enabled":                         "true",
 		"global.identity.auth.enabled":             "true",
 		"global.identity.auth.webModeler.clientId": "custom-clientId",
-		"global.elasticsearch.enabled":             "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -176,7 +187,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUse
 	values := map[string]string{
 		"identity.enabled":                                         "true",
 		"global.identity.auth.enabled":                             "true",
-		"global.elasticsearch.enabled":                             "true",
 		"orchestration.security.authentication.oidc.usernameClaim": "example-claim",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -206,7 +216,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 		"global.identity.auth.enabled": "true",
 		"identity.enabled":             "true",
 		"identity.fullnameOverride":    "custom-identity-fullname",
-		"global.elasticsearch.enabled": "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -235,7 +244,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 		"global.identity.auth.enabled": "true",
 		"identity.enabled":             "true",
 		"identity.nameOverride":        "custom-identity",
-		"global.elasticsearch.enabled": "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -270,7 +278,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 		"global.identity.auth.authUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
 		"global.identity.auth.tokenUrl":                       "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
 		"global.identity.auth.jwksUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
-		"global.elasticsearch.enabled":                        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -301,7 +308,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "80",
-		"global.elasticsearch.enabled":          "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -332,7 +338,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "8888",
-		"global.elasticsearch.enabled":          "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -360,7 +365,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	values := map[string]string{
 		"identity.enabled":                 "true",
 		"webModeler.restapi.mail.smtpUser": "modeler-user",
-		"global.elasticsearch.enabled":     "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -389,7 +393,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 		"identity.enabled":                             "true",
 		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 		"webModeler.restapi.externalDatabase.username": "modeler-user",
-		"global.elasticsearch.enabled":                 "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -420,7 +423,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 		"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 		"webModeler.restapi.externalDatabase.username":            "modeler-user-new",
 		"webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
-		"global.elasticsearch.enabled":                            "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -487,7 +489,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				"orchestration.service.grpcPort":                "26600",
 				"orchestration.service.httpPort":                "8090",
 				"orchestration.security.authorizations.enabled": "false",
-				"global.elasticsearch.enabled":                  "true",
 			}
 			maps.Insert(values, maps.All(requiredValues))
 			options := &helm.Options{
@@ -554,7 +555,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUr
 		"orchestration.service.grpcPort":                "26600",
 		"orchestration.service.httpPort":                "8090",
 		"orchestration.security.authorizations.enabled": "false",
-		"global.elasticsearch.enabled":                  "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -591,7 +591,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUr
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOrchestrationGrpcTlsIsEnabled() {
 	values := map[string]string{
 		"identity.enabled":                              "true",
-		"global.elasticsearch.enabled":                  "true",
 		"global.zeebeClusterName":                       "test-zeebe",
 		"global.ingress.enabled":                        "true",
 		"global.ingress.tls.enabled":                    "true",
@@ -659,7 +658,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 		"webModeler.restapi.clusters[2].url.grpc":       "grpc://orchestration.test-3:26500",
 		"webModeler.restapi.clusters[2].url.rest":       "http://orchestration.test-3:8080",
 		"webModeler.restapi.clusters[2].url.web-app":    "http://localhost:8088",
-		"global.elasticsearch.enabled":                  "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -706,10 +704,9 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 	// management-cluster must include both identity and hub so that WebModeler
 	// can reach Identity and register itself as a known component.
 	values := map[string]string{
-		"identity.enabled":                              "true",
-		"global.elasticsearch.enabled":                  "true",
-		"global.ingress.enabled":                        "true",
-		"global.host":                                   "example.com",
+		"identity.enabled":       "true",
+		"global.ingress.enabled": "true",
+		"global.host":            "example.com",
 		"orchestration.security.authorizations.enabled": "false",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -750,9 +747,8 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
 	// given
 	values := map[string]string{
-		"identity.enabled":             "true",
-		"orchestration.enabled":        "false",
-		"global.elasticsearch.enabled": "true",
+		"identity.enabled":      "true",
+		"orchestration.enabled": "false",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -781,7 +777,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
-		"global.elasticsearch.enabled": "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -810,7 +805,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
-		"global.elasticsearch.enabled":          "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -843,7 +837,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 		"global.identity.keycloak.url.port":     "443",
 		"global.identity.keycloak.contextPath":  "/",
 		"global.identity.keycloak.realm":        "test",
-		"global.elasticsearch.enabled":          "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -873,7 +866,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPort
 		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
 		"webModeler.restapi.externalDatabase.port":     "65432",
 		"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
-		"global.elasticsearch.enabled":                 "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -901,7 +893,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAnd
 	values := map[string]string{
 		"identity.enabled":                            "true",
 		"global.identity.auth.enabled":                "true",
-		"global.elasticsearch.enabled":                "true",
 		"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -931,7 +922,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath(
 	values := map[string]string{
 		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
-		"global.elasticsearch.enabled": "true",
 		"webModeler.contextPath":       "/modeler",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -961,7 +951,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	values := map[string]string{
 		"identity.enabled":                 "true",
 		"global.identity.auth.enabled":     "true",
-		"global.elasticsearch.enabled":     "true",
 		"webModeler.websockets.publicPort": "8082",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -990,7 +979,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	values := map[string]string{
 		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
-		"global.elasticsearch.enabled": "true",
 		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
 		"global.host":                  "c8.example.com",
@@ -1025,7 +1013,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	values := map[string]string{
 		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
-		"global.elasticsearch.enabled": "true",
 		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
 		"global.host":                  "c8.example.com",
@@ -1115,7 +1102,6 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 				"webModeler.restapi.mail.fromAddress":              "example@example.com",
 				"webModeler.restapi.extraConfiguration[0].file":    "custom-spring.yaml",
 				"webModeler.restapi.extraConfiguration[0].content": "some: config",
-				"global.elasticsearch.enabled":                     "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -1139,7 +1125,6 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 				"webModeler.restapi.extraConfiguration[0].file":         "log4j2-spring.xml",
 				"webModeler.restapi.extraConfiguration[0].springImport": "false",
 				"webModeler.restapi.extraConfiguration[0].content":      "<Configuration/>",
-				"global.elasticsearch.enabled":                          "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -1168,7 +1153,6 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 				"webModeler.restapi.extraConfiguration[1].file":         "log4j2-spring.xml",
 				"webModeler.restapi.extraConfiguration[1].springImport": "false",
 				"webModeler.restapi.extraConfiguration[1].content":      "<Configuration/>",
-				"global.elasticsearch.enabled":                          "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -1197,9 +1181,8 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 		{
 			Name: "TestFromAddressRequiredWhenUnsetAndNotMigrated",
 			Values: map[string]string{
-				"identity.enabled":             "true",
-				"webModeler.enabled":           "true",
-				"global.elasticsearch.enabled": "true",
+				"identity.enabled":   "true",
+				"webModeler.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().ErrorContains(err, "webModeler.restapi.mail.fromAddress' is required",
@@ -1227,7 +1210,6 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
-				"global.elasticsearch.enabled":        "true",
 				"webModeler.restapi.mail.fromAddress": "deprecated@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

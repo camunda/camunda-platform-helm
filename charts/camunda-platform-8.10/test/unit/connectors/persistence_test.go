@@ -239,7 +239,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 
 			// Merge test values with required elasticsearch flags
 			mergedValues := make(map[string]string)
-			mergedValues["global.elasticsearch.enabled"] = "true"
+			mergedValues["orchestration.data.secondaryStorage.type"] = "elasticsearch"
 			for k, v := range testCase.Values {
 				mergedValues[k] = v
 			}

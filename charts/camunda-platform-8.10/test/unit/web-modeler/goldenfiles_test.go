@@ -52,7 +52,6 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 				"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
 				"global.identity.auth.enabled":                                     "true",
 				"identity.enabled":                                                 "true",
-				"global.elasticsearch.enabled":                                     "true",
 				"global.identity.keycloak.url.protocol":                            "https",
 				"global.identity.keycloak.url.host":                                "keycloak.example.com",
 				"global.identity.keycloak.url.port":                                "8443",

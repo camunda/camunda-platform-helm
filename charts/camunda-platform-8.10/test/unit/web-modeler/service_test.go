@@ -64,7 +64,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"camundaHub.restapi.mail.fromAddress": "example@example.com",
 				"global.annotations.foo":              "bar",
-				"global.elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -80,7 +79,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                                     "true",
 				"camundaHub.restapi.mail.fromAddress":                    "example@example.com",
 				"camundaHub." + s.component + ".service.annotations.foo": "bar",
-				"global.elasticsearch.enabled":                           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -99,12 +97,12 @@ func (s *ServiceTest) TestLegacyServiceAccountEnabledOverrideDoesNotBreakDeploym
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.enabled":                    "true",
-			"webModeler.enabled":                  "true",
-			"webModeler.serviceAccount.enabled":   "false",
-			"camundaHub.serviceAccount.enabled":   "true",
-			"camundaHub.restapi.mail.fromAddress": "example@example.com",
-			"global.elasticsearch.enabled":        "true",
+			"identity.enabled":                         "true",
+			"webModeler.enabled":                       "true",
+			"webModeler.serviceAccount.enabled":        "false",
+			"camundaHub.serviceAccount.enabled":        "true",
+			"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
 		},
 	}
 	templates := []string{

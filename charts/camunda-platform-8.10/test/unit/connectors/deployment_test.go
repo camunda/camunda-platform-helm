@@ -517,8 +517,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deploymentBefore appsv1.Deployment
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"connectors.enabled":           "true",
-						"global.elasticsearch.enabled": "true",
+						"connectors.enabled":                       "true",
+						"orchestration.data.secondaryStorage.type": "elasticsearch",
 					},
 				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
@@ -551,8 +551,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deploymentBefore appsv1.Deployment
 				before := helm.RenderTemplate(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"connectors.enabled":           "true",
-						"global.elasticsearch.enabled": "true",
+						"connectors.enabled":                       "true",
+						"orchestration.data.secondaryStorage.type": "elasticsearch",
 					},
 				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)

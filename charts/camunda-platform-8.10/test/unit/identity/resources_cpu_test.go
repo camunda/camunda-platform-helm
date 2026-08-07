@@ -55,12 +55,12 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.enabled":                   "true",
-			"global.elasticsearch.enabled":       "true",
-			"identity.resources.requests.cpu":    "200m",
-			"identity.resources.limits.cpu":      "1.5",
-			"identity.resources.requests.memory": "512Mi",
-			"identity.resources.limits.memory":   "1Gi",
+			"identity.enabled":                         "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"identity.resources.requests.cpu":          "200m",
+			"identity.resources.limits.cpu":            "1.5",
+			"identity.resources.requests.memory":       "512Mi",
+			"identity.resources.limits.memory":         "1Gi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -94,12 +94,12 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"identity.enabled":                   "true",
-			"global.elasticsearch.enabled":       "true",
-			"identity.resources.requests.cpu":    "600m",
-			"identity.resources.limits.cpu":      "2000m",
-			"identity.resources.requests.memory": "400Mi",
-			"identity.resources.limits.memory":   "2Gi",
+			"identity.enabled":                         "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"identity.resources.requests.cpu":          "600m",
+			"identity.resources.limits.cpu":            "2000m",
+			"identity.resources.requests.memory":       "400Mi",
+			"identity.resources.limits.memory":         "2Gi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

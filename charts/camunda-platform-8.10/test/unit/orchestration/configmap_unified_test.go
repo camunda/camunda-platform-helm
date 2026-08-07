@@ -20,9 +20,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ConfigmapTemplateTest struct {
@@ -31,6 +34,21 @@ type ConfigmapTemplateTest struct {
 	release   string
 	namespace string
 	templates []string
+}
+
+type orchestrationApplication struct {
+	Camunda struct {
+		Security struct {
+			Authentication struct {
+				OIDC struct {
+					GroupsClaim string `yaml:"groups-claim"`
+				} `yaml:"oidc"`
+				Basic struct {
+					AllowUnauthenticatedAPIAccess bool `yaml:"allow-unauthenticated-api-access"`
+				} `yaml:"basic"`
+			} `yaml:"authentication"`
+		} `yaml:"security"`
+	} `yaml:"camunda"`
 }
 
 func TestConfigmapUnifiedTemplate(t *testing.T) {
@@ -89,8 +107,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 		{
 			Name: "TestApplicationYamlShouldContainSecondaryStorageOpenSearchEnabled",
 			Values: map[string]string{
-				"global.opensearch.enabled":  "true",
-				"global.opensearch.url.host": "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://opensearch.example.com:443",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.opensearch.url": "https://opensearch.example.com:443",
@@ -129,7 +147,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			Name: "TestApplicationYamlNoWebAppProfilesWhenNoSecondaryStorageEnabled",
 			Values: map[string]string{
 				"global.noSecondaryStorage":                    "true",
-				"global.elasticsearch.enabled":                 "false",
 				"orchestration.security.authentication.method": "oidc",
 			},
 			Expected: map[string]string{
@@ -247,8 +264,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() 
 		{
 			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledFalseByDefault",
 			Values: map[string]string{
-				"global.opensearch.enabled":  "true",
-				"global.opensearch.url.host": "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://opensearch.example.com:443",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "false",
@@ -257,20 +274,9 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() 
 		{
 			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaSecondaryStorage",
 			Values: map[string]string{
-				"global.opensearch.enabled":                                  "true",
-				"global.opensearch.url.host":                                 "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":                   "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":         "https://opensearch.example.com:443",
 				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
-			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
-			},
-		},
-		{
-			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaDeprecatedGlobal",
-			Values: map[string]string{
-				"global.opensearch.enabled":     "true",
-				"global.opensearch.url.host":    "opensearch.example.com",
-				"global.opensearch.aws.enabled": "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
@@ -286,7 +292,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearchAWS
 		{
 			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledFalseByDefault",
 			Values: map[string]string{
-				"global.elasticsearch.enabled": "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.elasticsearch.aws-enabled": "false",
@@ -295,7 +301,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearchAWS
 		{
 			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledViaSecondaryStorage",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                  "true",
+				"orchestration.data.secondaryStorage.type":                      "elasticsearch",
 				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled": "true",
 			},
 			Expected: map[string]string{
@@ -480,8 +486,14 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
 				"orchestration.data.secondaryStorage.type":               "elasticsearch",
 			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.security.authentication.oidc.groups-claim": "custom-groups",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application orchestrationApplication
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.Equal(t, "custom-groups", application.Camunda.Security.Authentication.OIDC.GroupsClaim)
 			},
 		},
 	}
@@ -528,8 +540,14 @@ func (s *ConfigmapTemplateTest) TestUnprotectedApiConditionalRendering() {
 				"orchestration.security.authentication.method":         "basic",
 				"orchestration.security.authentication.unprotectedApi": "true",
 			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.security.authentication.basic.allow-unauthenticated-api-access": "true",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application orchestrationApplication
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.True(t, application.Camunda.Security.Authentication.Basic.AllowUnauthenticatedAPIAccess)
 			},
 		},
 		{
@@ -600,15 +618,14 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 		{
 			Name: "TestLegacyESExporterAbsentWhenRdbmsAndOptimizeButNoElasticsearch",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                  "false",
-				"global.opensearch.enabled":                                     "true",
-				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":                      "rdbms",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled":                                              "true",
-				"optimize.database.opensearch.enabled":                          "true",
+				"optimize.enabled":                      "true",
+				"optimize.database.opensearch.enabled":  "true",
+				"optimize.database.opensearch.url.host": "opensearch.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -617,33 +634,16 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			},
 		},
 		{
-			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeAndGlobalElasticsearch",
-			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                         "true",
-				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
-				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
-					"rdbms+optimize with global.elasticsearch.enabled must render legacy ES exporter")
-			},
-		},
-		{
 			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeDatabaseElasticsearchOnly",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                  "false",
-				"global.opensearch.enabled":                                     "true",
-				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":                      "rdbms",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled":                                              "true",
-				"optimize.database.elasticsearch.enabled":                       "true",
-				"optimize.database.elasticsearch.external":                      "true",
+				"optimize.enabled":                         "true",
+				"optimize.database.elasticsearch.enabled":  "true",
+				"optimize.database.elasticsearch.external": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -654,16 +654,15 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 		{
 			Name: "TestLegacyESExporterAbsentForSupport32901CustomerConfig",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                  "false",
-				"global.opensearch.enabled":                                     "true",
-				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":                      "rdbms",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.exporters.zeebe.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled":                                              "true",
-				"optimize.database.opensearch.enabled":                          "true",
+				"optimize.enabled":                      "true",
+				"optimize.database.opensearch.enabled":  "true",
+				"optimize.database.opensearch.url.host": "opensearch.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -676,9 +675,7 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 		{
 			Name: "TestLegacyESExporterAbsentWhenOnlyRdbmsNoOptimize",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                  "false",
-				"global.opensearch.enabled":                                     "true",
-				"global.opensearch.url.host":                                    "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":                      "rdbms",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
@@ -700,8 +697,9 @@ func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
 		{
 			Name: "ESExporterReplicasInheritIndexReplicasByDefault",
 			Values: map[string]string{
-				"orchestration.exporters.zeebe.enabled": "true",
-				"global.elasticsearch.enabled":          "true",
+				"orchestration.exporters.zeebe.enabled":   "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -713,9 +711,10 @@ func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
 		{
 			Name: "ESExporterReplicasInheritCustomIndexReplicas",
 			Values: map[string]string{
-				"orchestration.exporters.zeebe.enabled": "true",
-				"global.elasticsearch.enabled":          "true",
-				"orchestration.index.replicas":          "3",
+				"orchestration.exporters.zeebe.enabled":   "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+				"orchestration.index.replicas":            "3",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -726,10 +725,11 @@ func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
 		{
 			Name: "ESExporterReplicasIndependentOverride",
 			Values: map[string]string{
-				"orchestration.exporters.zeebe.enabled":  "true",
-				"global.elasticsearch.enabled":           "true",
-				"orchestration.index.replicas":           "3",
-				"orchestration.exporters.zeebe.replicas": "2",
+				"orchestration.exporters.zeebe.enabled":   "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+				"orchestration.index.replicas":            "3",
+				"orchestration.exporters.zeebe.replicas":  "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -740,9 +740,10 @@ func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
 		{
 			Name: "ESExporterReplicasExplicitZero",
 			Values: map[string]string{
-				"orchestration.exporters.zeebe.enabled":  "true",
-				"global.elasticsearch.enabled":           "true",
-				"orchestration.exporters.zeebe.replicas": "0",
+				"orchestration.exporters.zeebe.enabled":   "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+				"orchestration.exporters.zeebe.replicas":  "0",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -754,10 +755,10 @@ func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
 			Name: "OSExporterReplicas",
 			Values: map[string]string{
 				"orchestration.exporters.zeebe.enabled":  "true",
-				"global.elasticsearch.enabled":           "false",
-				"global.opensearch.enabled":              "true",
-				"global.opensearch.url.host":             "opensearch.example.com",
 				"orchestration.exporters.zeebe.replicas": "5",
+				"optimize.enabled":                       "true",
+				"optimize.database.opensearch.enabled":   "true",
+				"optimize.database.opensearch.url.host":  "opensearch.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

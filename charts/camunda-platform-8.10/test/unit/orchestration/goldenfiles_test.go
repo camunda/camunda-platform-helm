@@ -45,33 +45,6 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
 			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
-			SetValues: map[string]string{
-				"global.elasticsearch.enabled": "true",
-			},
-			IgnoredLines: []string{
-				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
-			},
-		})
-	}
-}
-
-func TestGoldenDefaultsTemplateOrchestrationMigrationIdentity(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-	templateNames := []string{}
-
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-			GoldenFileName: name,
-			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
-			SetValues: map[string]string{
-				"global.elasticsearch.enabled": "true",
-			},
 			IgnoredLines: []string{
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},
