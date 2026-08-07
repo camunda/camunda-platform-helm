@@ -46,6 +46,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
           token: "${{ steps.generate-github-token.outputs.token }}"
+          # Credentials are re-introduced only in the final push step.
+          persist-credentials: false
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
       #
@@ -96,7 +98,23 @@ jobs:
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@cc9c08ba6c8df3b93a8f2db63e89b98368ae2ae8 # v11.1.1
+        id: commit
         with:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
           message: "chore: chart chores"
+          # Pushing is done by the next step; checkout does not persist credentials.
+          push: false
+      - name: Push changes
+        if: steps.commit.outputs.committed == 'true'
+        env:
+          GH_APP_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          TARGET_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          TARGET_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          # Credential is supplied per-command via a helper reading the step env, so the token is
+          # neither written to .git/config nor visible in the process arguments.
+          git -c credential.helper= \
+              -c credential.helper='!f() { echo username=x-access-token; echo "password=${GH_APP_TOKEN}"; }; f' \
+              push origin "HEAD:refs/heads/${TARGET_REF}"
