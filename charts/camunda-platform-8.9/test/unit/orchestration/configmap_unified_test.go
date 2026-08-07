@@ -20,10 +20,28 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
+
+type orchestrationApplication struct {
+	Camunda struct {
+		Security struct {
+			Authentication struct {
+				OIDC struct {
+					GroupsClaim string `yaml:"groups-claim"`
+				} `yaml:"oidc"`
+				Basic struct {
+					AllowUnauthenticatedAPIAccess bool `yaml:"allow-unauthenticated-api-access"`
+				} `yaml:"basic"`
+			} `yaml:"authentication"`
+		} `yaml:"security"`
+	} `yaml:"camunda"`
+}
 
 type ConfigmapTemplateTest struct {
 	suite.Suite
@@ -398,8 +416,14 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
 				"orchestration.data.secondaryStorage.type":               "elasticsearch",
 			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.security.authentication.oidc.groups-claim": "custom-groups",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application orchestrationApplication
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.Equal(t, "custom-groups", application.Camunda.Security.Authentication.OIDC.GroupsClaim)
 			},
 		},
 	}
@@ -446,8 +470,14 @@ func (s *ConfigmapTemplateTest) TestUnprotectedApiConditionalRendering() {
 				"orchestration.security.authentication.method":         "basic",
 				"orchestration.security.authentication.unprotectedApi": "true",
 			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.security.authentication.basic.allow-unauthenticated-api-access": "true",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application orchestrationApplication
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.True(t, application.Camunda.Security.Authentication.Basic.AllowUnauthenticatedAPIAccess)
 			},
 		},
 		{
@@ -536,13 +566,18 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			},
 		},
 		{
-			Name: "TestLegacyESExporterPresentWhenRdbmsAndOptimizeAndGlobalElasticsearch",
+			Name: "TestDeprecatedGlobalElasticsearchCompatibilityRendersLegacyExporterWithRdbmsAndOptimize",
 			Values: map[string]string{
+				"global.elasticsearch.enabled":                                  "true",
+				"elasticsearch.enabled":                                         "false",
+				"global.opensearch.enabled":                                     "false",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled": "true",
+				"optimize.enabled":                                              "true",
+				"optimize.database.elasticsearch.enabled":                       "false",
+				"optimize.database.opensearch.enabled":                          "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

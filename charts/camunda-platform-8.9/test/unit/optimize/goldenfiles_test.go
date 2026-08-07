@@ -44,8 +44,9 @@ func TestGoldenDefaultsTemplateOptimize(t *testing.T) {
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},
 			SetValues: map[string]string{
-				"optimize.enabled": "true",
-				"identity.enabled": "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+				"identity.enabled":                        "true",
 			},
 		})
 	}

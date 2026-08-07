@@ -47,78 +47,88 @@ func TestNormalizeSecretConfigTemplate(t *testing.T) {
 	})
 }
 
-func (s *normalizeSecretConfigTest) TestSecretHelperFunctionsWithOpenSearch() {
+func (s *normalizeSecretConfigTest) TestDeprecatedGlobalOpenSearchSecretCompatibility() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "opensearch new style secret creates env vars",
+			Name: "Deprecated global OpenSearch existing-secret compatibility",
 			Values: map[string]string{
 				"orchestration.enabled":                           "true",
+				"global.elasticsearch.enabled":                    "false",
+				"elasticsearch.enabled":                           "false",
 				"global.opensearch.enabled":                       "true",
 				"global.opensearch.auth.secret.existingSecret":    "my-opensearch-secret",
 				"global.opensearch.auth.secret.existingSecretKey": "my-key",
 			},
 			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "my-opensearch-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "my-key",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "my-opensearch-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "my-key",
 			},
 		},
 		{
-			Name: "opensearch inline secret creates env vars with direct values",
+			Name: "Deprecated global OpenSearch inline-secret compatibility",
 			Values: map[string]string{
 				"orchestration.enabled":                      "true",
+				"global.elasticsearch.enabled":               "false",
+				"elasticsearch.enabled":                      "false",
 				"global.opensearch.enabled":                  "true",
 				"global.opensearch.auth.secret.inlineSecret": "my-password",
 			},
 			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].value": "my-password",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].value": "my-password",
 			},
 		},
 		{
-			Name: "opensearch legacy secret format creates env vars",
+			Name: "Deprecated global OpenSearch legacy existing-secret compatibility",
 			Values: map[string]string{
 				"orchestration.enabled":                    "true",
+				"global.elasticsearch.enabled":             "false",
+				"elasticsearch.enabled":                    "false",
 				"global.opensearch.enabled":                "true",
 				"global.opensearch.auth.existingSecret":    "legacy-secret",
 				"global.opensearch.auth.existingSecretKey": "legacy-key",
 			},
 			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "legacy-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "legacy-key",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "legacy-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "legacy-key",
 			},
 		},
 		{
-			Name: "opensearch plaintext password creates env vars",
+			Name: "Deprecated global OpenSearch plaintext-password compatibility",
 			Values: map[string]string{
 				"orchestration.enabled":           "true",
+				"global.elasticsearch.enabled":    "false",
+				"elasticsearch.enabled":           "false",
 				"global.opensearch.enabled":       "true",
 				"global.opensearch.auth.password": "plain-password",
 			},
 			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].value": "plain-password",
+				"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')].value": "plain-password",
 			},
 		},
 		{
-			Name: "no opensearch config means no env vars",
+			Name: "Deprecated global OpenSearch without secret omits password env",
 			Values: map[string]string{
-				"orchestration.enabled":     "true",
-				"global.opensearch.enabled": "true",
+				"orchestration.enabled":        "true",
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any opensearch password env vars
-				require.NotContains(t, output, "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
 			},
+			Unexpected: []string{"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')]"},
 		},
 		{
-			Name: "opensearch disabled means no env vars",
+			Name: "Deprecated disabled global OpenSearch omits password env",
 			Values: map[string]string{
 				"orchestration.enabled":                      "true",
 				"global.opensearch.enabled":                  "false",
 				"global.opensearch.auth.secret.inlineSecret": "password",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any opensearch password env vars when opensearch is disabled
-				require.NotContains(t, output, "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
 			},
+			Unexpected: []string{"spec.template.spec.containers[0].env[?(@.name=='VALUES_OPENSEARCH_PASSWORD')]"},
 		},
 	}
 
@@ -158,7 +168,7 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 			},
 		},
 		{
-			Name: "aws document store legacy secret format creates env vars",
+			Name: "Deprecated AWS document store secret compatibility",
 			Values: map[string]string{
 				"orchestration.enabled":                            "true",
 				"global.documentStore.type.aws.enabled":            "true",
@@ -174,15 +184,13 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 			},
 		},
 		{
-			Name: "aws document store mixed configuration - new takes precedence",
+			Name: "Current AWS document store secrets override deprecated compatibility values",
 			Values: map[string]string{
-				"orchestration.enabled":                 "true",
-				"global.documentStore.type.aws.enabled": "true",
-				// Legacy configuration (should be ignored)
-				"global.documentStore.type.aws.existingSecret":     "legacy-aws-secret",
-				"global.documentStore.type.aws.accessKeyIdKey":     "legacy-access-key",
-				"global.documentStore.type.aws.secretAccessKeyKey": "legacy-secret-key",
-				// New configuration (should take precedence)
+				"orchestration.enabled":                                                  "true",
+				"global.documentStore.type.aws.enabled":                                  "true",
+				"global.documentStore.type.aws.existingSecret":                           "legacy-aws-secret",
+				"global.documentStore.type.aws.accessKeyIdKey":                           "legacy-access-key",
+				"global.documentStore.type.aws.secretAccessKeyKey":                       "legacy-secret-key",
 				"global.documentStore.type.aws.accessKeyId.secret.existingSecret":        "new-aws-secret",
 				"global.documentStore.type.aws.accessKeyId.secret.existingSecretKey":     "new-access-key",
 				"global.documentStore.type.aws.secretAccessKey.secret.existingSecret":    "new-aws-secret",
@@ -201,10 +209,12 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 				"orchestration.enabled":                 "true",
 				"global.documentStore.type.aws.enabled": "false",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any AWS env vars
-				require.NotContains(t, output, "AWS_ACCESS_KEY_ID")
-				require.NotContains(t, output, "AWS_SECRET_ACCESS_KEY")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
+			},
+			Unexpected: []string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')]",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')]",
 			},
 		},
 		{
@@ -215,10 +225,12 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 				"global.documentStore.type.aws.accessKeyId.secret.inlineSecret":     "access-key",
 				"global.documentStore.type.aws.secretAccessKey.secret.inlineSecret": "secret-key",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any AWS env vars when AWS document store is disabled
-				require.NotContains(t, output, "AWS_ACCESS_KEY_ID")
-				require.NotContains(t, output, "AWS_SECRET_ACCESS_KEY")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
+			},
+			Unexpected: []string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')]",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')]",
 			},
 		},
 	}
@@ -322,10 +334,10 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 				"global.documentStore.type.gcp.secret.existingSecret":    "should-not-be-used",
 				"global.documentStore.type.gcp.secret.existingSecretKey": "should-not-be-used.json",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// Should not create any GCP volumes when GCP document store is disabled
-				require.NotContains(t, output, "gcp-credentials-volume")
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].name": "orchestration",
 			},
+			Unexpected: []string{"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')]"},
 		},
 	}
 

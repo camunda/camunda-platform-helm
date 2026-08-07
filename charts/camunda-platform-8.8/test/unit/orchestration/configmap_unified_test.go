@@ -20,10 +20,25 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
+
+type orchestrationApplication struct {
+	Camunda struct {
+		Security struct {
+			Authentication struct {
+				OIDC struct {
+					GroupsClaim string `yaml:"groups-claim"`
+				} `yaml:"oidc"`
+			} `yaml:"authentication"`
+		} `yaml:"security"`
+	} `yaml:"camunda"`
+}
 
 type ConfigmapTemplateTest struct {
 	suite.Suite
@@ -341,8 +356,14 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
 			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.security.authentication.oidc.groups-claim": "custom-groups",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application orchestrationApplication
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.Equal(t, "custom-groups", application.Camunda.Security.Authentication.OIDC.GroupsClaim)
 			},
 		},
 	}
