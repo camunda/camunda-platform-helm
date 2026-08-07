@@ -277,6 +277,28 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 				s.Require().Equal(1, count)
 			},
 		},
+		{
+			Name:     "Physical tenant named default has a distinct volume name",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.file.shared.path":                                   "/root/secrets",
+				"orchestration.secretStore.file.shared.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.default.file.shared.path":           "/tenant/secrets",
+				"orchestration.secretStore.physicalTenants.default.file.shared.existingSecret": "shared-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var sts appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &sts)
+				volumeNames := map[string]bool{}
+				for _, volume := range sts.Spec.Template.Spec.Volumes {
+					if volume.Secret != nil && volume.Secret.SecretName == "shared-secret" {
+						volumeNames[volume.Name] = true
+					}
+				}
+				s.Require().Len(volumeNames, 2)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

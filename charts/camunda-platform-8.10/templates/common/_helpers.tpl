@@ -1891,6 +1891,9 @@ Returns a stable DNS-label volume name for one file secret store.
 {{- define "camundaPlatform.secretStore.fileVolumeName" -}}
 {{- $tenantID := .tenantId | default "default" -}}
 {{- $identity := printf "%s/%s" $tenantID .storeId -}}
+{{- if and (hasKey . "tenantId") .tenantId -}}
+  {{- $identity = printf "tenant:%s/%s" $tenantID .storeId -}}
+{{- end -}}
 {{- $slug := printf "%s-%s" $tenantID .storeId | kebabcase | trunc 41 | trimSuffix "-" -}}
 {{- printf "secretstore-%s-%s" $slug (sha256sum $identity | trunc 8) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
