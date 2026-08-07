@@ -52,12 +52,13 @@ categories:
 
   - id: helm-cli-version
     title: Helm CLI version constraint
-    status: uncovered
-    stage: none
+    status: partial
+    stage: render
     detail: >-
-      A unit test asserts the failure message against a mocked Capabilities
-      object. No job runs a real Helm v3 binary, and no ArgoCD render path
-      exists, so the GitOps failure mode is untested.
+      A dedicated job renders every chart with a real, pinned Helm v3 and
+      asserts that v4-only charts report the constraint and older charts do
+      not. No ArgoCD render path exists, so the GitOps failure mode — the most
+      likely way a customer meets this — is still untested.
 
   - id: strict-config
     title: Configuration that is newly rejected at startup
