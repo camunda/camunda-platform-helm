@@ -45,6 +45,8 @@ bundling, no workarounds for application-level issues, 1:1 mapping to applicatio
 - **ALWAYS** flag changes that only apply to one chart version when the same change may be
   needed across multiple versions (8.8, 8.9, 8.10, etc.).
 - **ALWAYS** check that `extraConfiguration` support follows the `kindIs "slice"` dual-form pattern.
+- **ALWAYS** require a source-owned positive contract and the relevant negative or alternate
+  contract when a user-visible template or helper predicate changes.
 
 ---
 
@@ -117,6 +119,11 @@ metadata:
 
 - [ ] Is there a unit test for each new rendering path (e.g., enabled/disabled, with/without
   optional field)?
+- [ ] Are competing flags and backends explicit in branch tests, using current values for that
+  chart version rather than deprecated fixture scaffolding?
+- [ ] Does every absent leaf assertion use structural absence semantics (`Unexpected` with
+  `RunTestCasesE`, or a typed verifier when a legacy runner is retained) and a positive parent or
+  sibling anchor where deleting the whole structure would otherwise pass?
 - [ ] Does each new template file have a corresponding golden file test in
   `test/unit/<component>/goldenfiles_test.go`?
 - [ ] Are golden files in `test/unit/<component>/golden/` updated to match the new output?
