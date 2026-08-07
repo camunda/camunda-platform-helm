@@ -1,0 +1,11 @@
+name: external-oidc-rdbms
+description: >-
+  External OIDC provider with RDBMS secondary storage, full component suite.
+  Covers the relational path, where schema migrations rather than index
+  mappings carry the upgrade risk.
+tier: 1
+platforms: [gke]
+layers:
+  - base.yaml
+  - identity/oidc.yaml
+  - persistence/rdbms-external.yaml

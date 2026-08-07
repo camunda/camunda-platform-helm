@@ -1,0 +1,30 @@
+# Delta for an externally-provisioned deployment, 8.9-to-8.10
+#
+# This path already runs external auth and external storage, so it needs none
+# of the "point at your external service" wiring the bundled path does. What it
+# still needs is deletion of the bundled-subchart keys themselves.
+#
+# The guards test key PRESENCE, not value:
+#
+#   {{ include "camundaPlatform.keyRemoved" (dict
+#        "condition" (hasKey .Values "identityKeycloak") ...
+#
+# so `identityKeycloak: {enabled: false}` — the correct way to run external on
+# 8.9 — still fails the 8.10 upgrade. Being already-external does not exempt a
+# customer from this change; it only makes the remedy a pure deletion.
+
+$rename:
+  global.ingress.host: global.host
+
+$remove:
+  - identityKeycloak
+  - identityPostgresql
+  - webModelerPostgresql
+  - elasticsearch
+
+# The gRPC ingress host names the old path by value, so removing the key alone
+# renders it as "grpc-", which the API server rejects.
+orchestration:
+  ingress:
+    grpc:
+      host: "grpc-{{ .Values.global.host }}"

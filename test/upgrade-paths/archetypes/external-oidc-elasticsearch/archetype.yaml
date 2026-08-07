@@ -1,0 +1,11 @@
+name: external-oidc-elasticsearch
+description: >-
+  External OIDC provider and externally provisioned Elasticsearch, full
+  component suite. The shape most customers run in production, and therefore
+  the path whose findings carry the most weight.
+tier: 1
+platforms: [gke]
+layers:
+  - base.yaml
+  - identity/oidc.yaml
+  - persistence/elasticsearch-external.yaml
