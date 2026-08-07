@@ -40,7 +40,7 @@ jobs:
         run: |
           kubectl create namespace argocd
           kubectl apply --server-side -n argocd -f \
-            https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.0/manifests/install.yaml
+            https://raw.githubusercontent.com/argoproj/argo-cd/e95e1be88a2da6c06bff5c2fe1791e4d233ed810/manifests/install.yaml
           kubectl wait -n argocd --for=jsonpath='{.status.readyReplicas}'=1 \
             statefulset/argocd-application-controller --timeout=5m
           kubectl wait -n argocd --for=condition=Available \
@@ -49,8 +49,11 @@ jobs:
       - name: Install Flux
         if: matrix.controller == 'flux'
         run: |
-          kubectl apply --server-side -f \
+          curl --fail --location --output /tmp/flux-install.yaml \
             https://github.com/fluxcd/flux2/releases/download/v2.9.3/install.yaml
+          printf '%s  %s\n' 'aa0bd71dbc4bed916b9cafa850c4618f341c74c580832c613dca04a067ee7281' \
+            /tmp/flux-install.yaml | sha256sum --check
+          kubectl apply --server-side -f /tmp/flux-install.yaml
           kubectl wait -n flux-system --for=condition=Available deployment/source-controller --timeout=5m
           kubectl wait -n flux-system --for=condition=Available deployment/helm-controller --timeout=5m
 

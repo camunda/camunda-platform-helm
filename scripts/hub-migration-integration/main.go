@@ -38,9 +38,10 @@ const (
 )
 
 type options struct {
-	namespace string
-	release   string
-	chartPath string
+	namespace   string
+	release     string
+	chartPath   string
+	kubeContext string
 }
 
 func main() {
@@ -48,6 +49,7 @@ func main() {
 	flag.StringVar(&opts.namespace, "namespace", "", "Kubernetes namespace")
 	flag.StringVar(&opts.release, "release", "integration", "Helm release name")
 	flag.StringVar(&opts.chartPath, "chart-path", "", "8.10 chart path")
+	flag.StringVar(&opts.kubeContext, "kube-context", os.Getenv("KUBE_CONTEXT"), "Kubernetes context")
 	flag.Parse()
 
 	if opts.namespace == "" || flag.NArg() != 1 {
@@ -67,12 +69,12 @@ func main() {
 }
 
 func (o options) seed() error {
-	password, err := secretValue(o.namespace, "integration-test-credentials", "webmodeler-postgresql-admin-password")
+	password, err := secretValue(o.kubeContext, o.namespace, "integration-test-credentials", "webmodeler-postgresql-admin-password")
 	if err != nil {
 		return err
 	}
 	target := "statefulset/" + o.release + "-postgresql-web-modeler"
-	if err := psql(o.namespace, target, "postgres", "web-modeler", password, seedSQL()); err != nil {
+	if err := psql(o.kubeContext, o.namespace, target, "postgres", "web-modeler", password, seedSQL()); err != nil {
 		return fmt.Errorf("seed 8.9 Web Modeler fixture: %w", err)
 	}
 	fmt.Println("seeded representative 8.9 Hub migration fixture")
@@ -86,7 +88,7 @@ func (o options) verifyAndActivate() error {
 		return fmt.Errorf("RDBMS_POSTGRESQL_USERNAME and RDBMS_POSTGRESQL_PASSWORD are required")
 	}
 	target := "deployment/postgresql"
-	result, err := psqlOutput(o.namespace, target, username, "webmodeler", password,
+	result, err := psqlOutput(o.kubeContext, o.namespace, target, username, "webmodeler", password,
 		"SELECT to_regclass('public.hub_projects') IS NOT NULL;")
 	if err != nil {
 		return fmt.Errorf("detect migrated Hub schema: %w", err)
@@ -95,15 +97,19 @@ func (o options) verifyAndActivate() error {
 	if strings.TrimSpace(string(result)) == "t" {
 		verification = finalVerificationSQL()
 	}
-	if err := psql(o.namespace, target, username, "webmodeler", password, verification); err != nil {
+	if err := psql(o.kubeContext, o.namespace, target, username, "webmodeler", password, verification); err != nil {
 		return fmt.Errorf("verify 8.10 Hub migration fixture: %w", err)
 	}
 	if o.chartPath == "" {
 		return fmt.Errorf("--chart-path is required for activation")
 	}
-	if err := run(nil, "helm", "upgrade", o.release, o.chartPath,
+	helmArgs := []string{"upgrade", o.release, o.chartPath,
 		"--namespace", o.namespace, "--reuse-values",
-		"--set", "camundaHub.upgrade.phase=normal", "--wait", "--timeout", "15m"); err != nil {
+		"--set", "camundaHub.upgrade.phase=normal", "--wait", "--timeout", "15m"}
+	if o.kubeContext != "" {
+		helmArgs = append(helmArgs, "--kube-context", o.kubeContext)
+	}
+	if err := run(nil, "helm", helmArgs...); err != nil {
 		return fmt.Errorf("activate normal Hub phase: %w", err)
 	}
 	fmt.Println("verified migrated data and activated normal Hub phase")
@@ -145,13 +151,13 @@ BEGIN
   JOIN process_applications pa ON pa.id = f.id
   WHERE f.project_id = '%[1]s' AND f.created_by = '%[9]s';
 
-  IF NOT EXISTS (SELECT 1 FROM folders WHERE id = '%[2]s' AND parent_id IS NULL AND ws_migration_original_parent_id = '%[3]s') THEN
+  IF NOT EXISTS (SELECT 1 FROM folders WHERE id = '%[2]s' AND name = 'Nested Project' AND parent_id IS NULL AND ws_migration_original_parent_id = '%[3]s') THEN
     RAISE EXCEPTION 'nested project was not lifted with provenance';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM idp_applications WHERE id = '%[4]s' AND folder_id IS NULL AND ws_migration_original_folder_id = '%[3]s') THEN
+  IF NOT EXISTS (SELECT 1 FROM idp_applications WHERE id = '%[4]s' AND name = 'Nested IDP' AND folder_id IS NULL AND ws_migration_original_folder_id = '%[3]s') THEN
     RAISE EXCEPTION 'nested IDP application was not lifted with provenance';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM files WHERE id = '%[5]s' AND folder_id = catch_all_id AND ws_migration_original_folder_id = 'ROOT') THEN
+  IF NOT EXISTS (SELECT 1 FROM files WHERE id = '%[5]s' AND name = 'Loose File' AND content = 'content' AND folder_id = catch_all_id AND ws_migration_original_folder_id = 'ROOT') THEN
     RAISE EXCEPTION 'loose file was not moved into catch-all with provenance';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM folders WHERE id = '%[6]s' AND parent_id = catch_all_id AND ws_migration_original_parent_id = 'ROOT') THEN
@@ -177,13 +183,13 @@ BEGIN
   FROM hub_projects
   WHERE project_id = '%[1]s' AND created_by = '%[9]s';
 
-  IF NOT EXISTS (SELECT 1 FROM hub_projects WHERE id = '%[2]s' AND ws_migration_original_parent_id = '%[3]s') THEN
+  IF NOT EXISTS (SELECT 1 FROM hub_projects WHERE id = '%[2]s' AND name = 'Nested Project' AND ws_migration_original_parent_id = '%[3]s') THEN
     RAISE EXCEPTION 'nested project was not extracted with provenance';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM idp_applications WHERE id = '%[4]s' AND folder_id IS NULL AND ws_migration_original_folder_id = '%[3]s') THEN
+  IF NOT EXISTS (SELECT 1 FROM idp_applications WHERE id = '%[4]s' AND name = 'Nested IDP' AND folder_id IS NULL AND ws_migration_original_folder_id = '%[3]s') THEN
     RAISE EXCEPTION 'nested IDP application was not lifted with provenance';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM files WHERE id = '%[5]s' AND hub_project_id = catch_all_id AND folder_id IS NULL AND ws_migration_original_folder_id = 'ROOT') THEN
+  IF NOT EXISTS (SELECT 1 FROM files WHERE id = '%[5]s' AND name = 'Loose File' AND content = 'content' AND hub_project_id = catch_all_id AND folder_id IS NULL AND ws_migration_original_folder_id = 'ROOT') THEN
     RAISE EXCEPTION 'loose file was not moved into catch-all project root';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM folders WHERE id = '%[6]s' AND hub_project_id = catch_all_id AND parent_id IS NULL AND ws_migration_original_parent_id = 'ROOT') THEN
@@ -199,8 +205,8 @@ END $$;
 `, fixtureWorkspace, nestedProject, containerFolder, nestedIDP, looseFile, looseFolder, containerFolder, rootProject, migrationUser)
 }
 
-func secretValue(namespace, name, key string) (string, error) {
-	data, err := output("kubectl", "-n", namespace, "get", "secret", name, "-o", "json")
+func secretValue(kubeContext, namespace, name, key string) (string, error) {
+	data, err := output("kubectl", kubectlArgs(kubeContext, "-n", namespace, "get", "secret", name, "-o", "json")...)
 	if err != nil {
 		return "", err
 	}
@@ -214,17 +220,24 @@ func secretValue(namespace, name, key string) (string, error) {
 	return string(decoded), err
 }
 
-func psql(namespace, target, username, database, password, sql string) error {
-	return run([]byte(sql), "kubectl", "-n", namespace, "exec", "-i", target, "--",
+func psql(kubeContext, namespace, target, username, database, password, sql string) error {
+	return run([]byte(sql), "kubectl", kubectlArgs(kubeContext, "-n", namespace, "exec", "-i", target, "--",
 		"env", "PGPASSWORD="+password, "psql", "--set", "ON_ERROR_STOP=1",
-		"--username", username, "--dbname", database)
+		"--username", username, "--dbname", database)...)
 }
 
-func psqlOutput(namespace, target, username, database, password, sql string) ([]byte, error) {
-	return output("kubectl", "-n", namespace, "exec", target, "--",
+func psqlOutput(kubeContext, namespace, target, username, database, password, sql string) ([]byte, error) {
+	return output("kubectl", kubectlArgs(kubeContext, "-n", namespace, "exec", target, "--",
 		"env", "PGPASSWORD="+password, "psql", "--set", "ON_ERROR_STOP=1",
 		"--tuples-only", "--no-align", "--username", username, "--dbname", database,
-		"--command", sql)
+		"--command", sql)...)
+}
+
+func kubectlArgs(kubeContext string, args ...string) []string {
+	if kubeContext == "" {
+		return args
+	}
+	return append([]string{"--context", kubeContext}, args...)
 }
 
 func output(name string, args ...string) ([]byte, error) {
