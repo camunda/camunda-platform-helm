@@ -209,7 +209,7 @@ func applyResult(s *entryState, result RunResult) {
 			s.Status = StatusSkipped
 		} else {
 			s.Status = StatusFailed
-			errMsg := result.Error.Error()
+			errMsg := redaction.Text(result.Error.Error())
 			if len(errMsg) > 72 {
 				errMsg = errMsg[:69] + "..."
 			}

@@ -728,6 +728,30 @@ func TestPrintRunSummary(t *testing.T) {
 	}
 }
 
+func TestPrintRunSummaryRedactsErrors(t *testing.T) {
+	t.Parallel()
+
+	results := []RunResult{{
+		Entry: Entry{Version: "8.10", Scenario: "es", Shortname: "eske", Flow: "install"},
+		Error: fmt.Errorf("request failed API_TOKEN=summary-secret"),
+	}}
+
+	summary := PrintRunSummary(results, time.Second, "")
+	if strings.Contains(summary, "summary-secret") || !strings.Contains(summary, "API_TOKEN=[REDACTED]") {
+		t.Errorf("PrintRunSummary should redact errors: %s", summary)
+	}
+}
+
+func TestApplyResultRedactsErrors(t *testing.T) {
+	t.Parallel()
+
+	state := &entryState{}
+	applyResult(state, RunResult{Error: fmt.Errorf("API_TOKEN=status-secret")})
+	if strings.Contains(state.Error, "status-secret") || !strings.Contains(state.Error, "[REDACTED]") {
+		t.Errorf("applyResult should redact errors, got %q", state.Error)
+	}
+}
+
 func TestPrintRunSummaryParallelShowsSum(t *testing.T) {
 	// Simulate parallel execution: two entries each took 30s, but wall-clock was 30s.
 	results := []RunResult{

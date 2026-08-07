@@ -26,6 +26,7 @@ var (
 	assignmentPattern    = regexp.MustCompile(`(?im)^(\s*(?:[-*]\s*)?)([A-Za-z0-9_.-]+)(\s*(?::|=)\s*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\r\n]+)`)
 	jsonPattern          = regexp.MustCompile(`(?i)"((?:\\.|[^"\\])*)"\s*:\s*("(?:\\.|[^"\\])*"|[^,}\r\n]+)`)
 	authHeaderPattern    = regexp.MustCompile(`(?im)(^\s*(?:[<>*]\s*)?(?:(?:proxy-)?authorization|cookie|set-cookie|x-api-key)\s*:\s*)[^\r\n]+`)
+	inlineAuthPattern    = regexp.MustCompile(`(?i)(((?:proxy-)?authorization)\s*:\s*)(?:basic|bearer)\s+[^\s'";]+`)
 	bearerPattern        = regexp.MustCompile(`(?i)\bbearer\s+[A-Za-z0-9._~+/-]+=*`)
 	jwtPattern           = regexp.MustCompile(`\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+`)
 	urlUserInfoPattern   = regexp.MustCompile(`(://[^\s/:@]+:)[^\s/@]+(@)`)
@@ -47,6 +48,7 @@ func IsSensitiveName(name string) bool {
 func Text(value string) string {
 	value = privateKeyPattern.ReplaceAllString(value, Placeholder)
 	value = authHeaderPattern.ReplaceAllString(value, `${1}`+Placeholder)
+	value = inlineAuthPattern.ReplaceAllString(value, `${1}`+Placeholder)
 	value = bearerPattern.ReplaceAllString(value, "Bearer "+Placeholder)
 	value = jwtPattern.ReplaceAllString(value, Placeholder)
 	value = urlUserInfoPattern.ReplaceAllString(value, `${1}`+Placeholder+`${2}`)

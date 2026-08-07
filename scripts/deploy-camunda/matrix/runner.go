@@ -900,7 +900,7 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 
 			if result.Error != nil {
 				logEvent := logging.Logger.Error().
-					Err(result.Error).
+					Err(errors.New(redaction.Text(result.Error.Error()))).
 					Str("version", entry.Version).
 					Str("scenario", entry.Scenario).
 					Str("flow", entry.Flow)
@@ -980,7 +980,7 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 
 			if result.Error != nil {
 				logEvent := logging.Logger.Error().
-					Err(result.Error).
+					Err(errors.New(redaction.Text(result.Error.Error()))).
 					Str("version", e.Version).
 					Str("scenario", e.Scenario).
 					Str("flow", e.Flow)
@@ -1622,12 +1622,12 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration, logDir string
 					helmMsg := helmErr.Error()
 					if prefix := strings.TrimSuffix(fullMsg, helmMsg); prefix != "" {
 						prefix = strings.TrimRight(prefix, ": ")
-						fmt.Fprintf(&b, "    %s    %s\n", dryKey("Step:"), dryWarn(prefix))
+						fmt.Fprintf(&b, "    %s    %s\n", dryKey("Step:"), dryWarn(redaction.Text(prefix)))
 					}
-					fmt.Fprintf(&b, "    %s  %s\n", dryKey("Reason:"), dryFail(fmt.Sprintf("%s: %v", helmErr.Reason, helmErr.Cause)))
+					fmt.Fprintf(&b, "    %s  %s\n", dryKey("Reason:"), dryFail(redaction.Text(fmt.Sprintf("%s: %v", helmErr.Reason, helmErr.Cause))))
 					fmt.Fprintf(&b, "    %s %s\n", dryKey("Command:"), helmErr.ShortCommand())
 				} else {
-					fmt.Fprintf(&b, "    %s %s\n", dryKey("Error:"), dryFail(fmt.Sprintf("%v", r.Error)))
+					fmt.Fprintf(&b, "    %s %s\n", dryKey("Error:"), dryFail(redaction.Text(r.Error.Error())))
 				}
 
 				if r.Diagnostics != "" {
@@ -1638,7 +1638,6 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration, logDir string
 					baseName := entryLogFileName(r.Entry)
 					fmt.Fprintf(&b, "    %s\n", dryKey("Logs:"))
 					fmt.Fprintf(&b, "      deploy:  %s\n", filepath.Join(logDir, baseName+".deploy.log"))
-					fmt.Fprintf(&b, "      e2e:     %s\n", filepath.Join(logDir, baseName+".e2e.log"))
 				}
 			}
 		}

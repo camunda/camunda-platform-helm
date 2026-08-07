@@ -31,6 +31,7 @@ func TestText(t *testing.T) {
 		{name: "authorization header", in: "Authorization: Bearer abc.def-123", want: "Authorization: " + Placeholder},
 		{name: "basic authorization header", in: "Authorization: Basic dXNlcjpwYXNz", want: "Authorization: " + Placeholder},
 		{name: "curl authorization header", in: "> Authorization: Basic dXNlcjpwYXNz", want: "> Authorization: " + Placeholder},
+		{name: "inline curl authorization header", in: `curl -H 'Authorization: Basic dXNlcjpwYXNz' https://example.test`, want: `curl -H 'Authorization: ` + Placeholder + `' https://example.test`},
 		{name: "cookie header", in: "Set-Cookie: session=secret; Secure", want: "Set-Cookie: " + Placeholder},
 		{name: "standalone bearer", in: "request failed with Bearer abc.def-123", want: "request failed with Bearer " + Placeholder},
 		{name: "URL user info", in: "postgres://user:secret@database:5432/app", want: "postgres://user:" + Placeholder + "@database:5432/app"},

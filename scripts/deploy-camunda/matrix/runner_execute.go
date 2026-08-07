@@ -3,6 +3,7 @@ package matrix
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -314,13 +315,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// This keeps output out of the terminal so the status table stays clean.
 	if opts.LogDir != "" {
 		baseName := entryLogFileName(entry)
-		if e2eFile, err := os.OpenFile(filepath.Join(opts.LogDir, baseName+".e2e.log"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600); err != nil {
-			logging.Logger.Warn().Err(err).Msg("Failed to create e2e log file, output will go to terminal")
-		} else {
-			defer e2eFile.Close()
-			_ = e2eFile.Chmod(0o600)
-			flags.E2EOutputWriter = e2eFile
-		}
+		flags.E2EOutputWriter = io.Discard
 
 		// Per-entry deploy log: captures all subprocess output (helm, kubectl, etc.)
 		// plus lifecycle events, giving a complete timeline for this entry.
