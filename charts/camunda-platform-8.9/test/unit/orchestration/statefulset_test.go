@@ -15,6 +15,7 @@
 package orchestration
 
 import (
+	camunda "camunda-platform/test/unit/common"
 	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
@@ -934,6 +935,51 @@ func (s *StatefulSetTest) TestOpenSearchPasswordEnv() {
 				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "component-password",
 			},
 			Verifier: verifyOpenSearchPasswordEnv(corev1.EnvVar{Name: "VALUES_OPENSEARCH_PASSWORD", Value: "component-password"}),
+		},
+		{
+			Name: "Legacy Elasticsearch exporter takes precedence over OpenSearch credentials",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{
+					"templates/orchestration/configmap.yaml",
+					"templates/orchestration/statefulset.yaml",
+				},
+			},
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                            "true",
+				"elasticsearch.enabled":                                                   "true",
+				"optimize.enabled":                                                        "true",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "true",
+				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "component-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+
+				var configMaps []corev1.ConfigMap
+				helm.UnmarshalK8SYamls(t, output, &configMaps, func(configMap corev1.ConfigMap) bool {
+					return configMap.Data["application.yaml"] != ""
+				})
+				s.Require().Len(configMaps, 1)
+
+				var application camunda.OrchestrationApplicationYAML
+				helm.UnmarshalK8SYaml(t, configMaps[0].Data["application.yaml"], &application)
+				s.Require().Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", application.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
+
+				var statefulSets []appsv1.StatefulSet
+				helm.UnmarshalK8SYamls(t, output, &statefulSets, func(statefulSet appsv1.StatefulSet) bool {
+					return statefulSet.Kind == "StatefulSet"
+				})
+				s.Require().Len(statefulSets, 1)
+
+				var openSearchPasswordEnv []corev1.EnvVar
+				for _, envVar := range statefulSets[0].Spec.Template.Spec.Containers[0].Env {
+					if envVar.Name == "VALUES_OPENSEARCH_PASSWORD" {
+						openSearchPasswordEnv = append(openSearchPasswordEnv, envVar)
+					}
+				}
+				s.Require().Empty(openSearchPasswordEnv)
+			},
 		},
 		{
 			Name: "Deprecated global OpenSearch compatibility emits active password",

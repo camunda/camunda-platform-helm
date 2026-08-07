@@ -135,7 +135,14 @@ spec:
             ) | nindent 12 }}
             {{- end }}
             {{- $hasTasklistGlobalOpenSearchReader := and .Values.orchestration.profiles.tasklist .Values.global.opensearch.enabled }}
-            {{- $hasOpenSearchConsumer := or (eq (include "orchestration.secondaryStorage" .) "opensearch") (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true") $hasTasklistGlobalOpenSearchReader }}
+            {{- $hasOpenSearchConsumer := or
+              (eq (include "orchestration.secondaryStorage" .) "opensearch")
+              (and
+                (ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+                (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+              )
+              $hasTasklistGlobalOpenSearchReader
+            -}}
             {{- if and $hasOpenSearchConsumer (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_OPENSEARCH_PASSWORD"
