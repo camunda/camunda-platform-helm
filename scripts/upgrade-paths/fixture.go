@@ -141,13 +141,18 @@ func LoadTransition(repoRoot, from, to, archetypeName string) (Transition, error
 	}
 
 	td := TransitionDir(repoRoot, from, to, archetypeName)
+	// A bootstrapped delta is comment-only and parses to nothing. Deciding on
+	// the parsed delta rather than the file's bytes keeps Run B from repeating
+	// Run A and keeps the report from claiming a delta that changes nothing.
 	if p := filepath.Join(td, "delta.values.yaml"); fileHasContent(p) {
-		t.DeltaPath = p
 		d, err := chartvalues.LoadDelta(p)
 		if err != nil {
 			return t, err
 		}
-		t.Delta = d
+		if !d.IsEmpty() {
+			t.DeltaPath = p
+			t.Delta = d
+		}
 	}
 	if p := filepath.Join(td, "remedy.sh"); fileExists(p) {
 		t.RemedyPath = p

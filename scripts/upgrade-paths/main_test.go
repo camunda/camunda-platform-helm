@@ -419,3 +419,84 @@ func TestReportWithoutCoverageOmitsSection(t *testing.T) {
 	r := Report{From: "8.9", To: "8.10", Results: []PathResult{{Path: "p", Outcome: OutcomeClean}}}
 	assert.NotContains(t, r.Markdown(), "## Coverage")
 }
+
+// bootstrapRepo builds a minimal repo: two charts, and archetypes whose layers
+// exist only in the versions named.
+func bootstrapRepo(t *testing.T, layersByVersion map[string][]string, archetypes map[string][]string) string {
+	t.Helper()
+	root := t.TempDir()
+	for v, layers := range layersByVersion {
+		vd := filepath.Join(root, "charts", "camunda-platform-"+v,
+			"test", "integration", "scenarios", "chart-full-setup", "values")
+		for _, l := range layers {
+			p := filepath.Join(vd, l)
+			require.NoError(t, os.MkdirAll(filepath.Dir(p), 0o755))
+			require.NoError(t, os.WriteFile(p, []byte("{}\n"), 0o644))
+		}
+	}
+	for name, layers := range archetypes {
+		dir := filepath.Join(root, "test", "upgrade-paths", "archetypes", name)
+		require.NoError(t, os.MkdirAll(dir, 0o755))
+		body := "name: " + name + "\nlayers:\n"
+		for _, l := range layers {
+			body += "  - " + l + "\n"
+		}
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "archetype.yaml"), []byte(body), 0o644))
+	}
+	return root
+}
+
+func TestBootstrapCreatesEmptyDeltas(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.9": {"base.yaml"}, "8.10": {"base.yaml"}},
+		map[string][]string{"a": {"base.yaml"}, "b": {"base.yaml"}})
+
+	res, err := Bootstrap(root, "8.9", "8.10", []string{"a", "b"})
+	require.NoError(t, err)
+	assert.Len(t, res.Created, 2)
+	assert.Empty(t, res.Existing)
+
+	require.FileExists(t, filepath.Join(TransitionDir(root, "8.9", "8.10", "a"), "delta.values.yaml"))
+
+	tr, err := LoadTransition(root, "8.9", "8.10", "a")
+	require.NoError(t, err)
+	assert.Empty(t, tr.DeltaPath,
+		"a bootstrapped delta is comment-only, so it must count as no delta")
+}
+
+func TestBootstrapIsIdempotent(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.9": {"base.yaml"}, "8.10": {"base.yaml"}},
+		map[string][]string{"a": {"base.yaml"}})
+
+	_, err := Bootstrap(root, "8.9", "8.10", []string{"a"})
+	require.NoError(t, err)
+	res, err := Bootstrap(root, "8.9", "8.10", []string{"a"})
+	require.NoError(t, err)
+	assert.Empty(t, res.Created)
+	assert.Len(t, res.Existing, 1, "an existing delta is never overwritten")
+}
+
+func TestBootstrapRejectsMissingChart(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.10": {"base.yaml"}},
+		map[string][]string{"a": {"base.yaml"}})
+
+	_, err := Bootstrap(root, "8.10", "8.11", []string{"a"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not exist yet",
+		"CI discovers transitions from disk, so a job it cannot run must not be created")
+}
+
+func TestBootstrapWritesNothingWhenAnArchetypeFails(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.9": {"base.yaml"}, "8.10": {"base.yaml"}},
+		map[string][]string{"ok": {"base.yaml"}, "broken": {"base.yaml", "gone.yaml"}})
+
+	_, err := Bootstrap(root, "8.9", "8.10", []string{"ok", "broken"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "gone.yaml")
+
+	assert.NoFileExists(t, filepath.Join(TransitionDir(root, "8.9", "8.10", "ok"), "delta.values.yaml"),
+		"validation precedes writing, so a later failure leaves no partial state")
+}
