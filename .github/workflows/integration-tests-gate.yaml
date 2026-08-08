@@ -20,7 +20,6 @@ on:
           - merge_group
 
 permissions:
-  actions: write
   contents: read
 
 concurrency:
@@ -30,11 +29,86 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mcp-changes:
+    name: Detect MCP changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ steps.filter.outputs.mcp }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          filters: |
+            mcp:
+              - 'helm-values-mcp/**'
+              - '.github/workflows/integration-tests-gate.yaml'
+              - '.github/actions/install-tool-versions/**'
+              - '.tool-versions'
+              - 'charts/camunda-platform-*/Chart.yaml'
+              - 'charts/camunda-platform-*/values*.yaml'
+              - 'charts/camunda-platform-*/values.schema.json'
+
+  mcp-test:
+    name: Test helm-values-mcp
+    needs: mcp-changes
+    if: >-
+      needs.mcp-changes.outputs.relevant == 'true' ||
+      github.event_name == 'merge_group' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: helm-values-mcp
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
+      - name: Install Node (from .tool-versions)
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            nodejs
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+
   gate:
     name: gate
+    needs: [mcp-changes, mcp-test]
+    if: always()
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     timeout-minutes: 420
     steps:
+      - name: Verify MCP tests passed or were correctly skipped
+        env:
+          MCP_CHANGES_RESULT: ${{ needs.mcp-changes.result }}
+          MCP_TEST_RESULT: ${{ needs.mcp-test.result }}
+        run: |
+          if [[ "$MCP_CHANGES_RESULT" != "success" ]]; then
+            echo "::error::MCP change detection did not succeed ($MCP_CHANGES_RESULT)"
+            exit 1
+          fi
+          if [[ "$MCP_TEST_RESULT" != "success" && "$MCP_TEST_RESULT" != "skipped" ]]; then
+            echo "::error::MCP tests did not pass or skip correctly ($MCP_TEST_RESULT)"
+            exit 1
+          fi
+          echo "MCP gate OK (changes: $MCP_CHANGES_RESULT, test: $MCP_TEST_RESULT)"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           sparse-checkout: |
