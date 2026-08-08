@@ -1224,6 +1224,44 @@
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
+                "image": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub image; merged additively over the legacy webModeler.image map, so partial overrides keep the legacy values for the keys left unset.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "security": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub security section; set values take precedence over the legacy webModeler.security values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value \u2014 set those on webModeler.security directly.",
+                    "default": {},
+                    "additionalProperties": true,
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "description": "override values for the Camunda Hub authentication section; set values take precedence over the legacy webModeler.security.authentication values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value \u2014 set those on webModeler.security.authentication directly.",
+                            "default": {},
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "restapi": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub restapi component; set values take precedence over the legacy webModeler.restapi values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value \u2014 set those on webModeler.restapi directly. The image and pusher maps are the exception: they are merged over their legacy counterparts, so falsy values do apply there.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "websockets": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub websockets component; set values take precedence over the legacy webModeler.websockets values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value \u2014 set those on webModeler.websockets directly. The image map is the exception: it is merged over its legacy counterpart, so falsy values do apply there.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "serviceAccount": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub service account; set values take precedence over the legacy webModeler.serviceAccount values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value \u2014 set those on webModeler.serviceAccount directly.",
+                    "default": {},
+                    "additionalProperties": true
+                },
                 "persistence": {
                     "properties": {
                         "deploymentStrategy": {
