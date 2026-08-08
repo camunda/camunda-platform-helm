@@ -30,7 +30,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  untrusted:
+    if: >-
+      ${{
+        github.event_name == 'pull_request' && (
+          github.event.pull_request.head.repo.full_name != github.repository ||
+          github.event.pull_request.user.login == 'dependabot[bot]'
+        )
+      }}
+    name: gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: echo "Integration retries are disabled for untrusted pull requests."
+
   gate:
+    if: >-
+      ${{
+        github.event_name != 'pull_request' || (
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        )
+      }}
     name: gate
     runs-on: ubuntu-latest
     timeout-minutes: 420
@@ -57,8 +79,5 @@ jobs:
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           OVERRIDE_SHA: ${{ inputs.sha }}
           OVERRIDE_EVENT: ${{ inputs.event }}
-          IS_FORK: >-
-            ${{ github.event_name == 'pull_request' &&
-                github.event.pull_request.head.repo.full_name
-                != github.repository }}
+          IS_FORK: false
         run: go run .

@@ -14,7 +14,13 @@ permissions:
 
 jobs:
   chores:
-    if: ${{ !startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'release-please--') }}
+    if: >-
+      ${{
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login != 'dependabot[bot]' &&
+        !startsWith(github.head_ref, 'renovate/') &&
+        !startsWith(github.head_ref, 'release-please--')
+      }}
     name: Chart chores
     runs-on: ubuntu-latest
     steps:
