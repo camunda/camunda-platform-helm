@@ -587,6 +587,14 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+  {{- if gt (len (keys (omit $console "enabled"))) 0 }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: console.* configuration keys have no effect in 8.10 — Console has been consolidated into Camunda Hub."
+        "Remove them; \"console.enabled\" still toggles the in-Modeler Console feature."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
   {{- if hasKey .Values.global.identity.auth "console" }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
