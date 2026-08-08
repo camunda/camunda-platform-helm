@@ -1,5 +1,5 @@
 # Paths that ALWAYS require a human review — distro-ci never auto-approves a PR
-# whose net diff touches any of these. One grep -E (extended regex) pattern per line;
+# whose net diff touches any of these. One Go regexp (RE2) pattern per line;
 # blank lines and # comments are ignored. Matched against every file in the PR net
 # diff (new paths and rename sources), AFTER chart test fixtures (charts/<chart>/test/**) are excluded.
 
@@ -9,6 +9,7 @@
 ^\.github/CODEOWNERS$
 ^\.github/auto-approve-allowlist\.txt$
 ^\.github/auto-approve-protected-paths\.txt$
+^\.github/auto-approve-protected-paths-renovate\.txt$
 
 # --- Chart public API (the user-facing contract) ---
 ^charts/.+/values\.yaml$
@@ -23,3 +24,6 @@
 ^\.github/copilot-instructions\.md$
 ^\.github/instructions/
 ^\.github/escalation-policy\.md$
+
+# --- Auto-approve gate implementation ---
+^scripts/auto-approve-gate/
