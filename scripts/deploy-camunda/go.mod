@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	github.com/zalando/go-keyring v0.2.6
+	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/sync v0.22.0
 	golang.org/x/term v0.45.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -30,7 +30,7 @@ require (
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
-	github.com/danieljoos/wincred v1.2.2 // indirect
+	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -38,7 +38,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/godbus/dbus/v5 v5.1.0 // indirect
+	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
