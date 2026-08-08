@@ -19,11 +19,10 @@ unit:
   enabled: true
   matrix:
     - name: Core
-      packages: identity camunda console
+      packages: identity camunda common console
     - name: Apps
       packages: connectors operate optimize tasklist
     - name: Zeebe
       packages: zeebe zeebe-gateway
     - name: WebModeler
       packages: web-modeler
-
