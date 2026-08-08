@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-camunda-cloud-tls
+  annotations:
+    replicator.v1.mittwald.de/replicate-from: "distribution-certs/aws-camunda-cloud-tls"
+type: kubernetes.io/tls
+stringData:
+  tls.crt: ""
+  tls.key: ""
