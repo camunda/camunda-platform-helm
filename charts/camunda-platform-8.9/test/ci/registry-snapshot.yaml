@@ -301,6 +301,21 @@ integration:
               postgresql-cluster-rw.<namespace>.svc.cluster.local — required
               before helm install or the Camunda OrchestrationCluster pods
               crash-loop trying to reach RDBMS.
+        - name: component-persistence
+          enabled: true
+          shortname: cprst
+          auth: keycloak
+          flow: install,upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - persistence
         - name: keycloak-original
           enabled: true
           shortname: keyco
