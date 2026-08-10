@@ -1097,7 +1097,6 @@ func (s *StatefulSetTest) TestOpenSearchPasswordEnv() {
 				"templates/orchestration/statefulset.yaml",
 			}},
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                            "false",
 				"optimize.enabled":                                                        "true",
 				"optimize.database.elasticsearch.enabled":                                 "false",
 				"optimize.database.opensearch.enabled":                                    "true",
@@ -1113,7 +1112,6 @@ func (s *StatefulSetTest) TestOpenSearchPasswordEnv() {
 				"templates/orchestration/statefulset.yaml",
 			}},
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                                 "false",
 				"optimize.enabled":                                                             "true",
 				"optimize.database.elasticsearch.enabled":                                      "false",
 				"optimize.database.opensearch.enabled":                                         "true",
@@ -1136,9 +1134,8 @@ func (s *StatefulSetTest) TestOpenSearchPasswordEnv() {
 				"templates/orchestration/statefulset.yaml",
 			}},
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                                            "true",
 				"optimize.enabled":                                                        "true",
-				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.elasticsearch.enabled":                                 "true",
 				"optimize.database.opensearch.enabled":                                    "true",
 				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
 				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "component-password",
@@ -1231,9 +1228,8 @@ func (s *StatefulSetTest) TestLegacyExporterComponentPasswordEnv() {
 		{
 			Name: "Elasticsearch exporter precedence omits the Optimize OpenSearch password",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                          "true",
 				"optimize.enabled":                                      "true",
-				"optimize.database.elasticsearch.enabled":               "false",
+				"optimize.database.elasticsearch.enabled":               "true",
 				"optimize.database.opensearch.enabled":                  "true",
 				"optimize.database.opensearch.url.host":                 "optimize-host",
 				"optimize.database.opensearch.auth.secret.inlineSecret": "optimize-password",
