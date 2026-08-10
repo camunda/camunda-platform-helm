@@ -8,7 +8,8 @@
 # Remaining keys are merged in as normal values.
 #
 # Removing the bundled-subchart keys makes the chart render. It does NOT migrate
-# the data those subcharts held — see remedy.sh.
+# the data those subcharts held. Run the adjacent executable remedy.sh before
+# applying this delta; Run B validates that combined customer procedure.
 
 $rename:
   global.ingress.host: global.host

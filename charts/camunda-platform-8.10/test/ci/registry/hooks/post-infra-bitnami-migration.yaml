@@ -5,5 +5,6 @@ description: |
   Elasticsearch authorization indices off the bundled backends onto the companion
   services. Uses the camunda-deployment-references migration scripts in external
   mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-  chart upgrade). This keeps users/realm alive across the upgrade that removes the
-  bundled Bitnami subcharts.
+  chart upgrade). This is the implementation behind the transition's checked-in
+  remedy.sh customer procedure, not an implicit values-only remediation. This
+  keeps users/realm alive across the upgrade that removes the bundled subcharts.

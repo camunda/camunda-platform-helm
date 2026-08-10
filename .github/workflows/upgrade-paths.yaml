@@ -311,12 +311,16 @@ jobs:
             echo "args=--suppress-upgrade-hooks" >>"$GITHUB_OUTPUT"
           else
             delta=test/upgrade-paths/transitions/8.9-to-8.10/classic-bundled/delta.values.yaml
+            remedy=test/upgrade-paths/transitions/8.9-to-8.10/classic-bundled/remedy.sh
             test -f "$delta" || { echo "::error::delta not found: $delta"; exit 1; }
+            test -x "$remedy" || { echo "::error::executable migration remedy not found: $remedy"; exit 1; }
             echo "args=--upgrade-delta $delta" >>"$GITHUB_OUTPUT"
+            echo "remedy=$remedy" >>"$GITHUB_OUTPUT"
           fi
 
       # Run A is expected to fail: that is the finding, not a broken job. Run B
-      # must pass. Both outcomes are reported either way.
+      # validates the values delta plus the checked-in customer migration remedy;
+      # the scenario's post-infra hook invokes that same remedy implementation.
       - name: Run upgrade path on cluster
         id: run
         env:
@@ -347,6 +351,10 @@ jobs:
           {
             echo "### Cluster stage — ${{ matrix.run }}"
             echo
+            if [ "${{ matrix.run }}" = "remediated" ]; then
+              echo "Run B validates the values delta plus customer migration remedy: \`${{ steps.delta.outputs.remedy }}\`"
+              echo
+            fi
             grep -E "Step 1 complete|Applied upgrade delta|Suppressed .*hook|Step 2 complete|camunda\]\[error\]|Matrix entry failed|\[PASS\]|\[FAIL\]" \
               "${RUNNER_TEMP}/run.log" | tail -20 | sed 's/^/    /'
           } >>"$GITHUB_STEP_SUMMARY"
@@ -368,5 +376,5 @@ jobs:
             exit 1
           fi
           [ "$actual" = "0" ] && echo "Run B passed" && exit 0
-          echo "::error::Run B failed: the documented delta no longer remediates this path."
+          echo "::error::Run B failed: the documented delta plus migration remedy no longer remediates this path."
           exit 1

@@ -750,8 +750,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: upgrade-path-classic
           enabled: false
           shortname: upclas
@@ -793,8 +794,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: hub-mixed
           enabled: true
           shortname: hubmu
@@ -836,8 +838,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: hub-webmodeler-only
           enabled: true
           shortname: hubwo
@@ -945,8 +948,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: hub-pinned-images
           enabled: true
           shortname: hubpi
@@ -988,8 +992,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: hub-external-db
           enabled: true
           shortname: hubdb
@@ -1165,8 +1170,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: qa-elasticsearch
           enabled: false
           shortname: qael
@@ -1404,8 +1410,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: qa-elasticsearch-rba
           enabled: false
           shortname: qaelrba
@@ -1612,8 +1619,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: qa-document-store-upg
           enabled: false
           shortname: qadocupg
@@ -1655,8 +1663,9 @@ integration:
               Elasticsearch authorization indices off the bundled backends onto the companion
               services. Uses the camunda-deployment-references migration scripts in external
               mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
-              chart upgrade). This keeps users/realm alive across the upgrade that removes the
-              bundled Bitnami subcharts.
+              chart upgrade). This is the implementation behind the transition's checked-in
+              remedy.sh customer procedure, not an implicit values-only remediation. This
+              keeps users/realm alive across the upgrade that removes the bundled subcharts.
         - name: qa-license
           enabled: false
           shortname: lic
