@@ -20,7 +20,7 @@
 # (it was removed from main). Pin to a tag/SHA once a release is cut.
 set -euo pipefail
 
-REF="${CAMUNDA_DEPLOYMENT_REFERENCES_REF:-stable/8.9}"
+REF="${CAMUNDA_DEPLOYMENT_REFERENCES_REF:-96322091bcc3909366c7c33ec464966d369902b9}"
 REPO="${CAMUNDA_DEPLOYMENT_REFERENCES_REPO:-https://github.com/camunda/camunda-deployment-references.git}"
 NS="${NAMESPACE:-${TEST_NAMESPACE}}"
 RELEASE="${RELEASE_NAME:-integration}"
@@ -32,7 +32,8 @@ ln -s "$(asdf which helm)" "${workdir}/bin/helm"
 export PATH="${workdir}/bin:${PATH}"
 
 echo "Cloning ${REPO}@${REF} ..."
-git clone --depth 1 --branch "${REF}" "${REPO}" "${workdir}/refs"
+git clone --filter=blob:none "${REPO}" "${workdir}/refs"
+git -C "${workdir}/refs" checkout --detach "${REF}"
 migration_dir="${workdir}/refs/generic/kubernetes/migration"
 
 # --- Secrets the external-mode migration validates -------------------------
@@ -46,20 +47,6 @@ for secret in external-pg-identity external-pg-webmodeler; do
         --from-literal=password="${RDBMS_POSTGRESQL_PASSWORD}" \
         --dry-run=client -o yaml | kubectl apply -f -
 done
-# Keycloak DB password = the companion Keycloak's bundled-PG password
-# (keycloak-qa.yaml: postgresql.auth.password). Read it from the companion's
-# own secret so the value is never hardcoded.
-kc_pg_pass="$(kubectl get secret keycloak-postgresql -n "${NS}" \
-    -o jsonpath='{.data.postgresql-password}' 2>/dev/null | base64 -d || true)"
-kubectl create secret generic external-pg-keycloak -n "${NS}" \
-    --from-literal=password="${kc_pg_pass}" \
-    --dry-run=client -o yaml | kubectl apply -f -
-for _ in {1..10}; do
-    kubectl get secret external-pg-keycloak -n "${NS}" >/dev/null 2>&1 && break
-    sleep 1
-done
-kubectl get secret external-pg-keycloak -n "${NS}" >/dev/null
-
 # --- Migration configuration (external mode, data-only) --------------------
 export NAMESPACE="${NS}"
 export CAMUNDA_RELEASE_NAME="${RELEASE}"
@@ -121,6 +108,13 @@ cd "${migration_dir}"
 # assigns every variable with a ${VAR:-default} guard.
 # shellcheck disable=SC1091
 source ./env.sh
+# Create this after sourcing the pinned migration environment so validation and
+# restore use the same namespace and Kubernetes context.
+kc_pg_pass="$(kubectl get secret keycloak-postgresql -n "${NS}" \
+    -o jsonpath='{.data.postgresql-password}' | base64 -d)"
+kubectl create secret generic external-pg-keycloak -n "${NS}" \
+    --from-literal=password="${kc_pg_pass}" \
+    --dry-run=client -o yaml | kubectl apply -f -
 bash 1-deploy-targets.sh --yes
 bash 2-backup.sh --yes
 

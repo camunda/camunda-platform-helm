@@ -238,7 +238,7 @@ jobs:
     needs: render
     if: >-
       github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && inputs.cluster-stage)
+      (github.event_name == 'workflow_dispatch' && inputs.cluster-stage && github.ref_protected)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -299,11 +299,11 @@ jobs:
       - name: Resolve delta for this run
         id: delta
         env:
+          REQUESTED_TRANSITIONS: ${{ inputs.transitions }}
           SHORTNAME: ${{ inputs.cluster-shortname || 'upclas' }}
         run: |
           set -euo pipefail
-          requested="${{ inputs.transitions }}"
-          if [ -n "${requested}" ] && [ "${requested}" != "8.9:8.10" ]; then
+          if [ -n "${REQUESTED_TRANSITIONS}" ] && [ "${REQUESTED_TRANSITIONS}" != "8.9:8.10" ]; then
             echo "::error::The cluster stage currently supports only transitions=8.9:8.10"
             exit 1
           fi
@@ -356,7 +356,7 @@ jobs:
         run: |
           actual="${{ steps.run.outputs.exit }}"
           if [ "${{ matrix.run }}" = "naive" ]; then
-            if [ "$actual" != "0" ] && grep -q "Step 1 complete" "${RUNNER_TEMP}/run.log" && grep -q "Step 2:" "${RUNNER_TEMP}/run.log"; then
+            if [ "$actual" != "0" ] && grep -q "Step 1 complete" "${RUNNER_TEMP}/run.log" && grep -qF '[camunda][error] The Helm values file key "global.ingress.host" has been removed.' "${RUNNER_TEMP}/run.log"; then
               echo "Run A reached the upgrade and failed as expected"
               exit 0
             fi
