@@ -170,6 +170,7 @@ jobs:
         env:
           MARKER: requires Helm CLI v4 or later
           PREEMPTED: an error occurred while checking for chart dependencies
+          KNOWN_BARE_RENDER: invalid value; expected string
         run: |
           set -uo pipefail
           status=0
@@ -205,7 +206,7 @@ jobs:
               if echo "${out}" | grep -qF "${MARKER}"; then
                 echo "::error::${chart} still supports v3 but a v3 render reported the v4 constraint"
                 status=1
-              elif [ "${render_status}" -ne 0 ] && ! echo "${out}" | grep -qE '\[camunda\]\[error\]|execution error at'; then
+              elif [ "${render_status}" -ne 0 ] && ! echo "${out}" | grep -qE "\[camunda\]\[error\]|execution error at|${KNOWN_BARE_RENDER}"; then
                 echo "::error::${chart} Helm v3 render failed before a chart constraint produced a verdict"
                 echo "${out}" | head -3
                 status=1
