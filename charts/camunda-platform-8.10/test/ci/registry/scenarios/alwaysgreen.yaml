@@ -8,6 +8,7 @@ platforms:
   - gke
 infra-type:
   gke: alwaysgreen
+qa: true
 e2e-full-suite: true
 dependencies:
   - keycloak

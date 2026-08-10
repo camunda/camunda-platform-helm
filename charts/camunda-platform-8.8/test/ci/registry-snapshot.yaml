@@ -361,6 +361,7 @@ integration:
             gke: alwaysgreen
           identity: keycloak
           persistence: elasticsearch
+          qa: true
           e2e-full-suite: true
         - name: keycloak-original
           enabled: false
