@@ -6,6 +6,10 @@
 #
 # status: covered | partial | uncovered
 # stage:  render | cluster | none
+#
+# The render stage runs on every pull request. The cluster stage deploys a full
+# previous-version release and upgrades it, so it runs nightly and on demand
+# only — a merge-queue run would add roughly eight minutes per path.
 
 # Archetypes model deployment shapes, and the shape decides which breaks are
 # reachable. Customers run external auth and external storage in production, so

@@ -1,0 +1,21 @@
+name: upgrade-path-classic
+auth: keycloak
+flows:
+  - upgrade-path
+identity: keycloak
+persistence: elasticsearch
+features:
+  - hub-legacy
+  - postgresql-companion
+platforms:
+  - gke
+infra-type:
+  eks: preemptible
+  gke: distroci
+post-infra: post-infra-bitnami-migration
+# The distroci pool is tainted, so companions need the toleration too or they
+# land on the untainted remainder and contend with unrelated workloads.
+dependencies:
+  - keycloak-distroci
+  - elasticsearch-distroci
+  - postgresql-distroci
