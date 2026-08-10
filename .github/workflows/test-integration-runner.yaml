@@ -1300,11 +1300,6 @@ jobs:
           test-stage: after-install
           shard-index: ${{ matrix.shardIndex }}
           scenario: ${{ inputs.scenario }}
-          # alwaysgreen is the SM/Helm-chart AlwaysGreen gate (team-test-automation#78):
-          # it gets the full-suite Playwright project instead of the smoke-tests
-          # project every other scenario here still gets by default (see this
-          # input's own description above). Scoped to this one scenario name so
-          # opensearch/keycloak-rba/keycloak-mt/oidc/etc. are all unaffected.
           run-smoke-tests: ${{ inputs.scenario != 'alwaysgreen' }}
 
   # Shadow job: runs the full E2E suite for the dedicated 'shadow-e2e' scenario.
