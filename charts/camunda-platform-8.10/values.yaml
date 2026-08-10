@@ -388,7 +388,7 @@ global:
 
     ## @extra global.tls.connectors configuration of TLS for the Connectors HTTP server.
     connectors:
-      ## @param global.tls.connectors.autoRollout opt-in automatic pod rollout on Connectors cert rotation. When true, the chart stamps a `checksum/connectors-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Connectors when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      ## @param global.tls.connectors.autoRollout if true, automatically rolls Connectors pods on certificate rotation. The chart stamps a `checksum/connectors-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Connectors when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
       autoRollout: false
       ## @param global.tls.connectors.enabled if true, TLS is terminated at the Connectors HTTP server.
       enabled: false
