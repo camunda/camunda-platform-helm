@@ -1,0 +1,82 @@
+# What the harness checks, and what it does not.
+#
+# A green report means "nothing we test for breaks", not "nothing breaks". This
+# manifest makes that difference explicit: every category is rendered into the
+# report, and uncovered ones are listed as gaps rather than left unmentioned.
+#
+# status: covered | partial | uncovered
+# stage:  render | cluster | none
+
+# Archetypes model deployment shapes, and the shape decides which breaks are
+# reachable. Customers run external auth and external storage in production, so
+# the external archetypes are primary; classic-bundled is retained at tier 2 as
+# a legacy shape rather than a representative one.
+
+categories:
+  - id: removed-values-keys
+    title: Removed or renamed values keys
+    status: covered
+    stage: render
+    detail: Run A renders the target chart with carried-over values; --discover enumerates every guard.
+
+  - id: manifest-validity
+    title: Rendered manifests rejected by the API server
+    status: covered
+    stage: cluster
+    detail: A valid render can still produce an invalid object; only apply catches it.
+
+  - id: runtime-config
+    title: Components fail to start on carried-over configuration
+    status: covered
+    stage: cluster
+    detail: Upgrade waits for readiness, so a component that cannot boot fails the run.
+
+  - id: orphaned-resources
+    title: Resources stranded by removed subcharts
+    status: partial
+    stage: cluster
+    detail: >-
+      Orphaned PVCs are produced by the upgrade and observable, but nothing
+      asserts on them. A run leaving stranded volumes still reports green.
+
+  - id: data-survival
+    title: Data present before the upgrade is still present after
+    status: uncovered
+    stage: none
+    detail: >-
+      No seeding and no pre/post comparison. This is the gap that hides a
+      wiped Keycloak realm behind a passing upgrade.
+
+  - id: migration-cost
+    title: Migrations that are correct but ruinously slow
+    status: uncovered
+    stage: none
+    detail: >-
+      Destructive migrations are correct on an empty database and only harmful
+      on a large one. Fixtures run at trivial volume with no duration budget.
+
+  - id: helm-cli-version
+    title: Helm CLI version constraint
+    status: partial
+    stage: render
+    detail: >-
+      A dedicated job renders every chart with a real, pinned Helm v3 and
+      asserts that v4-only charts report the constraint and older charts do
+      not. No ArgoCD render path exists, so the GitOps failure mode — the most
+      likely way a customer meets this — is still untested.
+
+  - id: strict-config
+    title: Configuration that is newly rejected at startup
+    status: uncovered
+    stage: none
+    detail: >-
+      Scenarios only ever set valid keys. Nothing asserts that a stale or
+      misspelled key now fails, so strict-validation changes go unnoticed.
+
+  - id: behavioural
+    title: Behaviour changes in a successfully upgraded cluster
+    status: uncovered
+    stage: none
+    detail: >-
+      The cluster stage proves the upgrade succeeds, not that the result behaves
+      as before. Removed APIs and changed defaults are out of reach.

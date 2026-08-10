@@ -36,6 +36,7 @@ type Report struct {
 	Stage         string          `json:"stage"`
 	Results       []PathResult    `json:"results"`
 	NotApplicable []NotApplicable `json:"notApplicable,omitempty"`
+	Coverage      Coverage        `json:"coverage"`
 }
 
 // ExitCode returns 1 for UNREMEDIATED or STALE_DELTA outcomes, 0 otherwise.
@@ -74,7 +75,7 @@ func (r Report) Markdown() string {
 		if len(r.NotApplicable) > 0 {
 			fmt.Fprintf(&b, " — of the %d archetype(s) this transition can express", len(r.Results))
 		}
-		b.WriteString(".\n\n")
+		b.WriteString(", for the categories this harness checks. See coverage below.\n\n")
 	}
 
 	b.WriteString("## Summary\n\n")
@@ -172,7 +173,7 @@ func (r Report) Markdown() string {
 		findings = append(findings, res.Findings...)
 	}
 	if len(findings) == 0 {
-		return b.String()
+		return b.String() + r.coverageSection()
 	}
 
 	sort.SliceStable(findings, func(i, j int) bool {
@@ -205,7 +206,7 @@ func (r Report) Markdown() string {
 		b.WriteString("\n")
 	}
 
-	return b.String()
+	return b.String() + r.coverageSection()
 }
 
 // docMark renders a coverage cell, distinguishing unchecked from undocumented.
@@ -237,4 +238,36 @@ func severityRank(s string) int {
 	default:
 		return 3
 	}
+}
+
+// coverageSection states what the run did not check, so a green result is not
+// read as "nothing breaks".
+func (r Report) coverageSection() string {
+	if len(r.Coverage.Categories) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	counts := r.Coverage.Counts()
+
+	b.WriteString("## Coverage\n\n")
+	fmt.Fprintf(&b, "%d covered · %d partial · %d not checked\n\n",
+		counts[StatusCovered], counts[StatusPartial], counts[StatusUncovered])
+
+	gaps := r.Coverage.Gaps()
+	if len(gaps) == 0 {
+		b.WriteString("Every category is checked by this run.\n\n")
+		return b.String()
+	}
+
+	b.WriteString("**A pass above means these categories were not exercised:**\n\n")
+	b.WriteString("| Category | Status | Why it is not covered |\n|---|---|---|\n")
+	for _, cat := range gaps {
+		fmt.Fprintf(&b, "| %s | %s | %s |\n", cat.Title, cat.Status, oneLine(cat.Detail))
+	}
+	b.WriteString("\n")
+	return b.String()
+}
+
+func oneLine(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }

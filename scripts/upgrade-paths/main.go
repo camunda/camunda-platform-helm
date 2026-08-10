@@ -64,10 +64,12 @@ func main() {
 			"after a Run A failure, iterate to find every removed/renamed key rather than only the first")
 		docsRoot = flag.String("docs-root", "",
 			"camunda-docs checkout; default is a sibling directory. Empty disables doc-coverage checking")
-		jsonOut = flag.String("json", "", "write findings JSON to this file")
-		mdOut   = flag.String("markdown", "", "write markdown report to this file")
-		timeout = flag.Duration("timeout", 5*time.Minute, "overall timeout")
-		quiet   = flag.Bool("quiet", false, "suppress the markdown report on stdout")
+		jsonOut   = flag.String("json", "", "write findings JSON to this file")
+		mdOut     = flag.String("markdown", "", "write markdown report to this file")
+		timeout   = flag.Duration("timeout", 5*time.Minute, "overall timeout")
+		quiet     = flag.Bool("quiet", false, "suppress the markdown report on stdout")
+		bootstrap = flag.Bool("bootstrap", false,
+			"create an empty delta for every archetype for this transition, then exit")
 	)
 	flag.Parse()
 
@@ -98,6 +100,22 @@ func main() {
 		docs = defaultDocsRoot(root)
 	}
 
+	if *bootstrap {
+		res, err := Bootstrap(root, *from, *to, archetypes)
+		if err != nil {
+			fatal(err)
+		}
+		for _, p := range res.Created {
+			fmt.Printf("created  %s\n", p)
+		}
+		for _, p := range res.Existing {
+			fmt.Printf("exists   %s\n", p)
+		}
+		fmt.Printf("\n%d created, %d already present. All archetype layers resolve against chart %s.\n",
+			len(res.Created), len(res.Existing), *from)
+		return
+	}
+
 	runDir, err := os.MkdirTemp("", "upgrade-paths-run-")
 	if err != nil {
 		fatal(fmt.Errorf("create work dir: %w", err))
@@ -111,11 +129,17 @@ func main() {
 		fmt.Fprintf(os.Stderr, "warning: %v (continuing; dependencies may be vendored)\n", err)
 	}
 
+	coverage, err := LoadCoverage(root)
+	if err != nil {
+		fatal(err)
+	}
+
 	report := Report{
 		Transition: fmt.Sprintf("%s-to-%s", *from, *to),
 		From:       *from,
 		To:         *to,
 		Stage:      "render",
+		Coverage:   coverage,
 	}
 
 	for _, name := range archetypes {

@@ -134,3 +134,76 @@ jobs:
         run: |
           echo "::error::Upgrade path check failed - see the job summary for the outcome matrix."
           exit 1
+
+  helm-v3-gate:
+    name: Helm v3 rejection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Install pinned Helm v3
+        env:
+          HELM_V3_VERSION: v3.20.2
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://get.helm.sh/helm-${HELM_V3_VERSION}-linux-amd64.tar.gz" \
+            | tar -xz -C "${RUNNER_TEMP}" --strip-components=1 linux-amd64/helm
+          "${RUNNER_TEMP}/helm" version --short
+
+      # The guard is asserted on the message, not the exit code: a chart can
+      # fail a bare render for unrelated reasons, such as required values that
+      # a scenario would normally supply.
+      #
+      # That tolerance is not enough on its own. An error raised BEFORE any
+      # template is evaluated suppresses the message entirely, and the absence
+      # of the marker then reads as "this chart does not reject v3" — a pass,
+      # for every chart that is not v4-only. Vendored subcharts are gitignored
+      # (*.tgz), so on a fresh checkout `helm template` fails dependency
+      # resolution and the whole gate silently asserts nothing.
+      #
+      # Dependencies are therefore built first, and any chart that never
+      # reaches template evaluation is a hard failure rather than a pass.
+      - name: Charts requiring v4 must reject a v3 client
+        env:
+          MARKER: requires Helm CLI v4 or later
+          PREEMPTED: an error occurred while checking for chart dependencies
+        run: |
+          set -uo pipefail
+          status=0
+          for chart in charts/camunda-platform-*/; do
+            if ! build=$("${RUNNER_TEMP}/helm" dependency build "${chart}" 2>&1); then
+              echo "::error::${chart} dependency build failed; the v3 check cannot run"
+              echo "${build}"
+              status=1
+              continue
+            fi
+
+            requires=$(grep -oE 'camunda\.io/helmCLIVersion: *"[^"]*"' "${chart}Chart.yaml" | head -1) || true
+            out=$("${RUNNER_TEMP}/helm" template t "${chart}" 2>&1) || true
+
+            # Belt and braces: if rendering still died before the constraints
+            # ran, say so instead of drawing a conclusion from a missing marker.
+            if echo "${out}" | grep -qF "${PREEMPTED}"; then
+              echo "::error::${chart} render was preempted before constraints were evaluated; result is not a verdict"
+              echo "${out}" | head -3
+              status=1
+              continue
+            fi
+
+            if echo "${requires}" | grep -q '"4'  && ! echo "${requires}" | grep -q '3\.'; then
+              if echo "${out}" | grep -qF "${MARKER}"; then
+                echo "✓ ${chart} rejects Helm v3"
+              else
+                echo "::error::${chart} declares v4-only but a v3 render did not report it"
+                status=1
+              fi
+            else
+              if echo "${out}" | grep -qF "${MARKER}"; then
+                echo "::error::${chart} still supports v3 but a v3 render reported the v4 constraint"
+                status=1
+              else
+                echo "✓ ${chart} does not reject Helm v3"
+              fi
+            fi
+          done
+          exit $status

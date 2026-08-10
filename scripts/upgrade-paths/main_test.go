@@ -402,3 +402,164 @@ func TestDocMark(t *testing.T) {
 	assert.Equal(t, "yes", docMark(checked, "a"))
 	assert.Equal(t, "**NO**", docMark(checked, "b"))
 }
+
+func writeCoverage(t *testing.T, body string) string {
+	t.Helper()
+	root := t.TempDir()
+	dir := filepath.Join(root, "test", "upgrade-paths")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "coverage.yaml"), []byte(body), 0o644))
+	return root
+}
+
+func TestLoadCoverage(t *testing.T) {
+	root := writeCoverage(t, `
+categories:
+  - id: a
+    title: Covered thing
+    status: covered
+    stage: render
+    detail: does the thing
+  - id: b
+    title: Missing thing
+    status: uncovered
+    stage: none
+    detail: does not do the thing
+`)
+	c, err := LoadCoverage(root)
+	require.NoError(t, err)
+	require.Len(t, c.Categories, 2)
+	assert.Equal(t, map[string]int{"covered": 1, "uncovered": 1}, c.Counts())
+
+	gaps := c.Gaps()
+	require.Len(t, gaps, 1)
+	assert.Equal(t, "b", gaps[0].ID, "only non-covered categories are gaps")
+}
+
+func TestLoadCoverageMissingFileIsNotAnError(t *testing.T) {
+	c, err := LoadCoverage(t.TempDir())
+	require.NoError(t, err)
+	assert.Empty(t, c.Categories)
+}
+
+func TestLoadCoverageRejectsBadManifests(t *testing.T) {
+	tests := []struct {
+		name, body, wantErr string
+	}{
+		{"unknown status", "categories:\n  - id: a\n    title: T\n    status: maybe\n", "unknown status"},
+		{"duplicate id", "categories:\n  - id: a\n    title: T\n    status: covered\n  - id: a\n    title: U\n    status: covered\n", "duplicate id"},
+		{"missing title", "categories:\n  - id: a\n    status: covered\n", "id and title are required"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := LoadCoverage(writeCoverage(t, tt.body))
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestReportCoverageSectionNamesGaps(t *testing.T) {
+	r := Report{
+		From: "8.9", To: "8.10", Stage: "render",
+		Results: []PathResult{{Path: "p", Outcome: OutcomeClean}},
+		Coverage: Coverage{Categories: []CoverageCategory{
+			{ID: "a", Title: "Checked", Status: StatusCovered},
+			{ID: "b", Title: "Data survival", Status: StatusUncovered, Detail: "no seeding\n  at all"},
+		}},
+	}
+	md := r.Markdown()
+
+	assert.Contains(t, md, "## Coverage")
+	assert.Contains(t, md, "Data survival", "gaps are named")
+	assert.NotContains(t, md, "| Checked |", "covered categories are not listed as gaps")
+	assert.Contains(t, md, "no seeding at all", "multi-line detail is flattened for the table")
+	assert.Contains(t, md, "for the categories this harness checks",
+		"an all-clean run is qualified rather than absolute")
+}
+
+func TestReportWithoutCoverageOmitsSection(t *testing.T) {
+	r := Report{From: "8.9", To: "8.10", Results: []PathResult{{Path: "p", Outcome: OutcomeClean}}}
+	assert.NotContains(t, r.Markdown(), "## Coverage")
+}
+
+// bootstrapRepo builds a minimal repo: two charts, and archetypes whose layers
+// exist only in the versions named.
+func bootstrapRepo(t *testing.T, layersByVersion map[string][]string, archetypes map[string][]string) string {
+	t.Helper()
+	root := t.TempDir()
+	for v, layers := range layersByVersion {
+		vd := filepath.Join(root, "charts", "camunda-platform-"+v,
+			"test", "integration", "scenarios", "chart-full-setup", "values")
+		for _, l := range layers {
+			p := filepath.Join(vd, l)
+			require.NoError(t, os.MkdirAll(filepath.Dir(p), 0o755))
+			require.NoError(t, os.WriteFile(p, []byte("{}\n"), 0o644))
+		}
+	}
+	for name, layers := range archetypes {
+		dir := filepath.Join(root, "test", "upgrade-paths", "archetypes", name)
+		require.NoError(t, os.MkdirAll(dir, 0o755))
+		body := "name: " + name + "\nlayers:\n"
+		for _, l := range layers {
+			body += "  - " + l + "\n"
+		}
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "archetype.yaml"), []byte(body), 0o644))
+	}
+	return root
+}
+
+func TestBootstrapCreatesEmptyDeltas(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.9": {"base.yaml"}, "8.10": {"base.yaml"}},
+		map[string][]string{"a": {"base.yaml"}, "b": {"base.yaml"}})
+
+	res, err := Bootstrap(root, "8.9", "8.10", []string{"a", "b"})
+	require.NoError(t, err)
+	assert.Len(t, res.Created, 2)
+	assert.Empty(t, res.Existing)
+
+	require.FileExists(t, filepath.Join(TransitionDir(root, "8.9", "8.10", "a"), "delta.values.yaml"))
+
+	tr, err := LoadTransition(root, "8.9", "8.10", "a")
+	require.NoError(t, err)
+	assert.Empty(t, tr.DeltaPath,
+		"a bootstrapped delta is comment-only, so it must count as no delta")
+}
+
+func TestBootstrapIsIdempotent(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.9": {"base.yaml"}, "8.10": {"base.yaml"}},
+		map[string][]string{"a": {"base.yaml"}})
+
+	_, err := Bootstrap(root, "8.9", "8.10", []string{"a"})
+	require.NoError(t, err)
+	res, err := Bootstrap(root, "8.9", "8.10", []string{"a"})
+	require.NoError(t, err)
+	assert.Empty(t, res.Created)
+	assert.Len(t, res.Existing, 1, "an existing delta is never overwritten")
+}
+
+func TestBootstrapRejectsMissingChart(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.10": {"base.yaml"}},
+		map[string][]string{"a": {"base.yaml"}})
+
+	_, err := Bootstrap(root, "8.10", "8.11", []string{"a"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not exist yet",
+		"CI discovers transitions from disk, so a job it cannot run must not be created")
+}
+
+func TestBootstrapWritesNothingWhenAnArchetypeFails(t *testing.T) {
+	root := bootstrapRepo(t,
+		map[string][]string{"8.9": {"base.yaml"}, "8.10": {"base.yaml"}},
+		map[string][]string{"ok": {"base.yaml"}, "broken": {"base.yaml", "gone.yaml"}})
+
+	_, err := Bootstrap(root, "8.9", "8.10", []string{"ok", "broken"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "gone.yaml")
+
+	assert.NoFileExists(t, filepath.Join(TransitionDir(root, "8.9", "8.10", "ok"), "delta.values.yaml"),
+		"validation precedes writing, so a later failure leaves no partial state")
+}
