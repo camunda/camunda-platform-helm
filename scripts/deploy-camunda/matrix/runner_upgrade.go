@@ -489,9 +489,8 @@ func reportUpgradeDuration(entry Entry, elapsed time.Duration) {
 	ev.Msg("Upgrade completed within its duration budget")
 }
 
-// claimOrphans reads the namespace's unreferenced claims. Failures are logged
-// and treated as an empty set: orphan reporting is diagnostic and must not
-// decide the outcome of an upgrade.
+// claimOrphans reads the namespace's unreferenced claims. Inventory failures
+// are returned because an empty fallback would suppress stranded storage.
 func claimOrphans(ctx context.Context, namespace, kubeContext string) ([]orphans.Orphan, error) {
 	client, err := kube.NewClient("", kubeContext)
 	if err != nil {
