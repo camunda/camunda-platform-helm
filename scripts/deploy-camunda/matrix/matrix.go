@@ -165,9 +165,14 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 				Msg("Skipping version — failed to load CI test config")
 			continue
 		}
+		runtimeMetadata, err := loadRegistryRuntimeMetadata(chartDir)
+		if err != nil {
+			return nil, fmt.Errorf("loading registry runtime metadata for %s: %w", version, err)
+		}
 
 		// Only PR scenarios
 		for _, scenario := range cfg.Integration.Case.PR.Scenarios {
+			metadata := runtimeMetadata[scenario.Name]
 			// Skip disabled unless requested
 			if !scenario.Enabled && !opts.IncludeDisabled {
 				continue
@@ -239,8 +244,8 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						Dependencies:         append([]ChartDependency(nil), scenario.Dependencies...),
 						PreInstall:           scenario.PreInstall,
 						PostInfra:            scenario.PostInfra,
-						DataProbes:           scenario.DataProbes,
-						UpgradeBudgetMinutes: scenario.UpgradeBudgetMinutes,
+						DataProbes:           metadata.DataProbes,
+						UpgradeBudgetMinutes: metadata.UpgradeBudgetMinutes,
 						PostDeploy:           scenario.PostDeploy,
 						PreUpgrade:           preUpgrade,
 						HelmVersion:          scenario.HelmVersion,

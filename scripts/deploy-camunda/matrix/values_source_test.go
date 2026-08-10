@@ -192,6 +192,7 @@ func TestRegistryScenarioMirrorsCIScenario(t *testing.T) {
 	idCarriers := map[string]bool{
 		"Flows": true, "PreInstallID": true, "PostInfraID": true,
 		"PostDeployID": true, "DependencyIDs": true,
+		"DataProbes": true, "UpgradeBudgetMinutes": true,
 	}
 
 	ci := reflect.TypeOf(CIScenario{})

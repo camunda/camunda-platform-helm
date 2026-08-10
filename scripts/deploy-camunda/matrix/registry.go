@@ -85,6 +85,39 @@ type registryScenario struct {
 	Topology *Topology `yaml:"topology,omitempty"`
 }
 
+type registryRuntimeMetadata struct {
+	DataProbes           []survival.Probe
+	UpgradeBudgetMinutes int
+}
+
+func loadRegistryRuntimeMetadata(chartDir string) (map[string]registryRuntimeMetadata, error) {
+	registryDir := filepath.Join(chartDir, "test", RegistryDirName)
+	b, err := os.ReadFile(filepath.Join(registryDir, "manifest.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	var manifest registryManifest
+	if err := yaml.Unmarshal(b, &manifest); err != nil {
+		return nil, err
+	}
+	out := map[string]registryRuntimeMetadata{}
+	for _, entry := range manifest.Integration.Scenarios {
+		b, err := os.ReadFile(filepath.Join(registryDir, "scenarios", entry.ID+".yaml"))
+		if err != nil {
+			return nil, err
+		}
+		var scenario registryScenario
+		if err := yaml.Unmarshal(b, &scenario); err != nil {
+			return nil, err
+		}
+		out[scenario.Name] = registryRuntimeMetadata{
+			DataProbes:           scenario.DataProbes,
+			UpgradeBudgetMinutes: scenario.UpgradeBudgetMinutes,
+		}
+	}
+	return out, nil
+}
+
 // HasRegistry reports whether <chartDir>/test/<RegistryDirName>/manifest.yaml
 // exists.
 func HasRegistry(chartDir string) bool {
@@ -232,34 +265,32 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 
 		for _, flow := range flows {
 			cfg.Integration.Case.PR.Scenarios = append(cfg.Integration.Case.PR.Scenarios, CIScenario{
-				Name:                 rscn.Name,
-				Enabled:              entry.Enabled,
-				Shortname:            entry.Shortname,
-				Auth:                 rscn.Auth,
-				Flow:                 flow,
-				Platforms:            rscn.Platforms,
-				Exclude:              rscn.Exclude,
-				Tier:                 entry.Tier,
-				InfraType:            rscn.InfraType,
-				Identity:             rscn.Identity,
-				Persistence:          rscn.Persistence,
-				Features:             rscn.Features,
-				ExtraValues:          rscn.ExtraValues,
-				QA:                   rscn.QA,
-				ImageTags:            rscn.ImageTags,
-				Upgrade:              rscn.Upgrade,
-				Enterprise:           rscn.Enterprise,
-				HelmVersion:          rscn.HelmVersion,
-				SkipE2E:              rscn.SkipE2E,
-				Dependencies:         append([]ChartDependency(nil), deps...),
-				PrefixKey:            rscn.PrefixKey,
-				PreInstall:           preInstall,
-				PostInfra:            postInfra,
-				PostDeploy:           postDeploy,
-				Topology:             rscn.Topology,
-				Profiles:             rscn.Profiles,
-				DataProbes:           rscn.DataProbes,
-				UpgradeBudgetMinutes: rscn.UpgradeBudgetMinutes,
+				Name:         rscn.Name,
+				Enabled:      entry.Enabled,
+				Shortname:    entry.Shortname,
+				Auth:         rscn.Auth,
+				Flow:         flow,
+				Platforms:    rscn.Platforms,
+				Exclude:      rscn.Exclude,
+				Tier:         entry.Tier,
+				InfraType:    rscn.InfraType,
+				Identity:     rscn.Identity,
+				Persistence:  rscn.Persistence,
+				Features:     rscn.Features,
+				ExtraValues:  rscn.ExtraValues,
+				QA:           rscn.QA,
+				ImageTags:    rscn.ImageTags,
+				Upgrade:      rscn.Upgrade,
+				Enterprise:   rscn.Enterprise,
+				HelmVersion:  rscn.HelmVersion,
+				SkipE2E:      rscn.SkipE2E,
+				Dependencies: append([]ChartDependency(nil), deps...),
+				PrefixKey:    rscn.PrefixKey,
+				PreInstall:   preInstall,
+				PostInfra:    postInfra,
+				PostDeploy:   postDeploy,
+				Topology:     rscn.Topology,
+				Profiles:     rscn.Profiles,
 			})
 		}
 	}

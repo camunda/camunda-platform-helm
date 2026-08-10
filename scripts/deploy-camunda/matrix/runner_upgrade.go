@@ -406,16 +406,15 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	return errors.Join(strandedErr, survivalErr)
 }
 
-// runDataProbes counts entities declared by the scenario. Probe failures are
-// logged and omitted from the snapshot; a missing entry compares as not-probed,
-// so a broken query reads as unknown rather than as data loss.
+// runDataProbes counts entities declared by the scenario. Probe failures abort
+// the run because an upgrade cannot claim preservation without both snapshots.
 func runDataProbes(ctx context.Context, entry Entry, namespace, kubeContext string, phase survival.Phase) (survival.Snapshot, error) {
 	if len(entry.DataProbes) == 0 {
 		return nil, nil
 	}
 	snap, errs := survival.Run(ctx, kube.ExecRunner{KubeContext: kubeContext}, namespace, entry.DataProbes, phase)
 	for _, err := range errs {
-		logging.Logger.Warn().Err(err).Str("phase", string(phase)).Msg("Data probe failed; entity will report as not-probed")
+		logging.Logger.Error().Err(err).Str("phase", string(phase)).Msg("Data probe failed; survival cannot be determined")
 	}
 	logging.Logger.Info().
 		Str("phase", string(phase)).

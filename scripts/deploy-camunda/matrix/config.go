@@ -8,8 +8,6 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
-
-	"scripts/camunda-core/pkg/survival"
 )
 
 // ChartVersions holds the parsed content of charts/chart-versions.yaml.
@@ -234,16 +232,6 @@ type CIScenario struct {
 	// installed by the chart itself (e.g., the Gateway API
 	// ProxySettingsPolicy applied for gateway-keycloak).
 	PostDeploy *LifecycleHook `yaml:"post-deploy,omitempty"`
-
-	// DataProbes count entities either side of an upgrade so a run that
-	// completes but loses data is distinguishable from one that preserves it.
-	DataProbes []survival.Probe `yaml:"data-probes,omitempty"`
-
-	// UpgradeBudgetMinutes bounds how long the upgrade step may take. A
-	// migration that is correct but ruinously slow passes every other check:
-	// it completes, pods are healthy, data survives. Only elapsed time shows it.
-	// Zero means unbudgeted, which is reported rather than treated as a pass.
-	UpgradeBudgetMinutes int `yaml:"upgrade-budget-minutes,omitempty"`
 
 	// Topology, when set, describes a multi-namespace deployment shape for
 	// this scenario (Hub + orchestration releases sharing a central
