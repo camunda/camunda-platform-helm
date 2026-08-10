@@ -95,3 +95,57 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestLegacyExporterTruststoreConflict() {
+	conflictingTruststores := map[string]string{
+		"optimize.enabled":                                                            "true",
+		"optimize.database.elasticsearch.enabled":                                     "false",
+		"optimize.database.opensearch.enabled":                                        "true",
+		"optimize.database.opensearch.url.host":                                       "optimize-host",
+		"optimize.database.opensearch.tls.secret.existingSecret":                      "optimize-tls-secret",
+		"optimize.database.opensearch.tls.secret.existingSecretKey":                   "optimize-ca.jks",
+		"orchestration.data.secondaryStorage.type":                                    "opensearch",
+		"orchestration.data.secondaryStorage.opensearch.url":                          "https://secondary-host:9443",
+		"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret":    "secondary-tls-secret",
+		"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey": "secondary-ca.jks",
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "Legacy exporter and secondary storage truststores conflict",
+			Values: conflictingTruststores,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "TRUSTSTORE CONFLICT")
+			},
+		},
+		{
+			Name: "Shared truststore secret does not warn",
+			Values: mergeMaps(conflictingTruststores, map[string]string{
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret":    "optimize-tls-secret",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey": "optimize-ca.jks",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().NotContains(configmap.Data["warnings"], "TRUSTSTORE CONFLICT")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func mergeMaps(base map[string]string, overrides map[string]string) map[string]string {
+	merged := make(map[string]string, len(base)+len(overrides))
+	for key, value := range base {
+		merged[key] = value
+	}
+	for key, value := range overrides {
+		merged[key] = value
+	}
+	return merged
+}
