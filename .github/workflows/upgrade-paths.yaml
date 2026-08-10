@@ -146,8 +146,11 @@ jobs:
           HELM_V3_VERSION: v3.20.2
         run: |
           set -euo pipefail
-          curl -fsSL "https://get.helm.sh/helm-${HELM_V3_VERSION}-linux-amd64.tar.gz" \
-            | tar -xz -C "${RUNNER_TEMP}" --strip-components=1 linux-amd64/helm
+          archive="helm-${HELM_V3_VERSION}-linux-amd64.tar.gz"
+          curl --retry 3 -fsSLO "https://get.helm.sh/${archive}"
+          curl --retry 3 -fsSLO "https://get.helm.sh/${archive}.sha256sum"
+          sha256sum --check "${archive}.sha256sum"
+          tar -xzf "${archive}" -C "${RUNNER_TEMP}" --strip-components=1 linux-amd64/helm
           "${RUNNER_TEMP}/helm" version --short
 
       # The guard is asserted on the message, not the exit code: a chart can
@@ -179,7 +182,8 @@ jobs:
             fi
 
             requires=$(grep -oE 'camunda\.io/helmCLIVersion: *"[^"]*"' "${chart}Chart.yaml" | head -1) || true
-            out=$("${RUNNER_TEMP}/helm" template t "${chart}" 2>&1) || true
+            render_status=0
+            out=$("${RUNNER_TEMP}/helm" template t "${chart}" 2>&1) || render_status=$?
 
             # Belt and braces: if rendering still died before the constraints
             # ran, say so instead of drawing a conclusion from a missing marker.
@@ -200,6 +204,10 @@ jobs:
             else
               if echo "${out}" | grep -qF "${MARKER}"; then
                 echo "::error::${chart} still supports v3 but a v3 render reported the v4 constraint"
+                status=1
+              elif [ "${render_status}" -ne 0 ] && ! echo "${out}" | grep -qE '\[camunda\]\[error\]|execution error at'; then
+                echo "::error::${chart} Helm v3 render failed before a chart constraint produced a verdict"
+                echo "${out}" | head -3
                 status=1
               else
                 echo "✓ ${chart} does not reject Helm v3"

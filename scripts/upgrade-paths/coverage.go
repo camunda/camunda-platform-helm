@@ -43,6 +43,22 @@ type Coverage struct {
 	Categories []CoverageCategory `yaml:"categories" json:"categories"`
 }
 
+// ForStage marks checks owned by another stage as not exercised by this run.
+func (c Coverage) ForStage(stage string) Coverage {
+	out := Coverage{Categories: make([]CoverageCategory, len(c.Categories))}
+	copy(out.Categories, c.Categories)
+	for i := range out.Categories {
+		cat := &out.Categories[i]
+		if cat.Stage != "" && cat.Stage != stage {
+			cat.Status = StatusUncovered
+			if cat.Stage != "none" {
+				cat.Detail = fmt.Sprintf("Checked by the %s stage, not this %s run. %s", cat.Stage, stage, cat.Detail)
+			}
+		}
+	}
+	return out
+}
+
 // CoveragePath is the manifest location.
 func CoveragePath(repoRoot string) string {
 	return filepath.Join(repoRoot, "test", "upgrade-paths", "coverage.yaml")

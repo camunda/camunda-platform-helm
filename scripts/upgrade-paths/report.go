@@ -247,13 +247,14 @@ func (r Report) coverageSection() string {
 		return ""
 	}
 	var b strings.Builder
-	counts := r.Coverage.Counts()
+	coverage := r.Coverage.ForStage(r.Stage)
+	counts := coverage.Counts()
 
 	b.WriteString("## Coverage\n\n")
 	fmt.Fprintf(&b, "%d covered · %d partial · %d not checked\n\n",
 		counts[StatusCovered], counts[StatusPartial], counts[StatusUncovered])
 
-	gaps := r.Coverage.Gaps()
+	gaps := coverage.Gaps()
 	if len(gaps) == 0 {
 		b.WriteString("Every category is checked by this run.\n\n")
 		return b.String()

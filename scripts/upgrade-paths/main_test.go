@@ -483,6 +483,19 @@ func TestReportWithoutCoverageOmitsSection(t *testing.T) {
 	assert.NotContains(t, r.Markdown(), "## Coverage")
 }
 
+func TestCoverageForStageDoesNotClaimFutureChecks(t *testing.T) {
+	c := Coverage{Categories: []CoverageCategory{
+		{ID: "render", Title: "Render", Status: StatusCovered, Stage: "render"},
+		{ID: "cluster", Title: "Cluster", Status: StatusCovered, Stage: "cluster", Detail: "Applied to Kubernetes."},
+	}}
+
+	got := c.ForStage("render")
+	assert.Equal(t, StatusCovered, got.Categories[0].Status)
+	assert.Equal(t, StatusUncovered, got.Categories[1].Status)
+	assert.Contains(t, got.Categories[1].Detail, "not this render run")
+	assert.Equal(t, StatusCovered, c.Categories[1].Status, "the manifest remains unchanged")
+}
+
 // bootstrapRepo builds a minimal repo: two charts, and archetypes whose layers
 // exist only in the versions named.
 func bootstrapRepo(t *testing.T, layersByVersion map[string][]string, archetypes map[string][]string) string {
