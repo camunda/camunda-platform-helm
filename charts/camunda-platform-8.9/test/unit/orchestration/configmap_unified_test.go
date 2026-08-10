@@ -312,6 +312,27 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterDatastoreSourceAlignment() {
 			},
 		},
 		{
+			Name: "TestLegacyOpenSearchExporterGlobalFallbackRemainsIsolatedFromSecondaryPassword",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "true",
+				"global.opensearch.enabled":                                               "true",
+				"global.opensearch.url.host":                                              "global-opensearch-host",
+				"global.opensearch.auth.username":                                         "global-user",
+				"global.opensearch.auth.secret.inlineSecret":                              "global-password",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.url":                     "https://global-opensearch-host:443",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "global-user",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.password": "${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.username":             "secondary-user",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.password":             "${VALUES_OPENSEARCH_PASSWORD:}",
+			},
+		},
+		{
 			Name: "TestLegacyOpenSearchExporterRetainsSecondaryStorageCompatibilitySource",
 			Values: map[string]string{
 				"optimize.enabled":                                                        "false",

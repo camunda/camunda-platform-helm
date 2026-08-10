@@ -350,9 +350,9 @@ zeebe:
       elasticsearch:
         className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         args:
-          {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
+          {{- if eq (include "orchestration.legacyElasticsearchExporterAuthenticationEnabled" .) "true" }}
           authentication:
-            username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
+            username: {{ include "orchestration.legacyElasticsearchExporterUsername" . | quote }}
             password: "{{ include "orchestration.legacyElasticsearchExporterPasswordRef" . }}"
           {{- end }}
           url: {{ include "camundaPlatform.legacyExporterElasticsearchURL" . | quote }}
@@ -369,9 +369,9 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
-          {{- if ne (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true" }}
+          {{- if eq (include "orchestration.legacyOpenSearchExporterAuthenticationEnabled" .) "true" }}
           authentication:
-            username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
+            username: {{ include "orchestration.legacyOpenSearchExporterUsername" . | quote }}
             password: "{{ include "orchestration.legacyOpenSearchExporterPasswordRef" . }}"
           {{- end }}
           url: {{ include "camundaPlatform.legacyExporterOpensearchURL" . | quote }}

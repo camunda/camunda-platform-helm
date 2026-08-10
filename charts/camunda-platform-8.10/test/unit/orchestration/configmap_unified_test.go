@@ -353,6 +353,27 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterDatastoreSourceAlignment() {
 			},
 		},
 		{
+			Name: "TestLegacyOpenSearchExporterWithoutSecretKeepsOptimizePasswordRef",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "true",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "true",
+				"optimize.database.opensearch.url.protocol":                               "https",
+				"optimize.database.opensearch.url.host":                                   "optimize-host",
+				"optimize.database.opensearch.url.port":                                   "9555",
+				"optimize.database.opensearch.auth.username":                              "optimize-user",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.url":                     "https://optimize-host:9555",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "optimize-user",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.password": "${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}",
+			},
+		},
+		{
 			Name: "TestLegacyOpenSearchExporterUsesOptimizeAwsMode",
 			Values: mergeValues(distinctOpenSearchSources, map[string]string{
 				"optimize.database.opensearch.aws.enabled":                   "true",

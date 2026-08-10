@@ -354,12 +354,12 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 {{- end -}}
 
 {{/*
-NOTE: the legacy exporters resolve their password from the Optimize component secret when one is
-configured, and fall back to the generic engine-wide variable otherwise. Both the emission in
-statefulset.yaml and the substitution here key off the same hasSecretConfig predicate.
+NOTE: Optimize-owned exporters substitute the Optimize-scoped password variable and resolve their
+username from the Optimize component chain; otherwise both keep the generic engine-wide sources.
+The emission in statefulset.yaml keys off the same predicates as the substitution here.
 */}}
 {{- define "orchestration.legacyElasticsearchExporterPasswordRef" -}}
-{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.elasticsearch.auth)) "true" -}}
+{{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
 ${VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD:}
 {{- else -}}
 ${VALUES_ELASTICSEARCH_PASSWORD:}
@@ -367,11 +367,35 @@ ${VALUES_ELASTICSEARCH_PASSWORD:}
 {{- end -}}
 
 {{- define "orchestration.legacyOpenSearchExporterPasswordRef" -}}
-{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.auth)) "true" -}}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
 ${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}
 {{- else -}}
 ${VALUES_OPENSEARCH_PASSWORD:}
 {{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyElasticsearchExporterUsername" -}}
+{{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
+{{- include "optimize.effectiveEsUsername" . -}}
+{{- else -}}
+{{- .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterUsername" -}}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
+{{- include "optimize.effectiveOsUsername" . -}}
+{{- else -}}
+{{- .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyElasticsearchExporterAuthenticationEnabled" -}}
+{{- or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external -}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterAuthenticationEnabled" -}}
+{{- ne (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true" -}}
 {{- end -}}
 
 {{/*

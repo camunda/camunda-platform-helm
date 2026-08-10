@@ -997,6 +997,47 @@ func (s *StatefulSetTest) TestLegacyExporterComponentPasswordEnv() {
 			Verifier: collectDatastorePasswordEnv(map[string]string{}),
 		},
 		{
+			Name: "Optimize OpenSearch global fallback resolves the global secret not the secondary one",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "true",
+				"global.opensearch.enabled":                                               "true",
+				"global.opensearch.url.host":                                              "global-opensearch-host",
+				"global.opensearch.auth.secret.inlineSecret":                              "global-password",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{
+				"VALUES_OPENSEARCH_PASSWORD":                   "secondary-password",
+				"VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD": "global-password",
+			}),
+		},
+		{
+			Name: "Optimize source without any secret emits no password env",
+			Values: map[string]string{
+				"optimize.enabled":                                   "true",
+				"optimize.database.elasticsearch.enabled":            "false",
+				"optimize.database.opensearch.enabled":               "true",
+				"optimize.database.opensearch.url.host":              "optimize-host",
+				"optimize.database.opensearch.auth.username":         "optimize-user",
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://secondary-host:9443",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
+			Name: "Elasticsearch authentication disabled omits the Optimize password",
+			Values: map[string]string{
+				"optimize.enabled":                                         "true",
+				"optimize.database.opensearch.enabled":                     "false",
+				"optimize.database.elasticsearch.enabled":                  "true",
+				"optimize.database.elasticsearch.url.host":                 "optimize-host",
+				"optimize.database.elasticsearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
 			Name: "Disabled Optimize omits the component OpenSearch password",
 			Values: map[string]string{
 				"optimize.enabled":                                      "false",

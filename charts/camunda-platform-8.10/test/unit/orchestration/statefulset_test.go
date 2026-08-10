@@ -1242,6 +1242,31 @@ func (s *StatefulSetTest) TestLegacyExporterComponentPasswordEnv() {
 			Verifier: collectDatastorePasswordEnv(map[string]string{}),
 		},
 		{
+			Name: "Optimize source without any secret emits no password env",
+			Values: map[string]string{
+				"optimize.enabled":                                   "true",
+				"optimize.database.elasticsearch.enabled":            "false",
+				"optimize.database.opensearch.enabled":               "true",
+				"optimize.database.opensearch.url.host":              "optimize-host",
+				"optimize.database.opensearch.auth.username":         "optimize-user",
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://secondary-host:9443",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
+			Name: "Elasticsearch authentication disabled omits the Optimize password",
+			Values: map[string]string{
+				"optimize.enabled":                                         "true",
+				"optimize.database.opensearch.enabled":                     "false",
+				"optimize.database.elasticsearch.enabled":                  "true",
+				"optimize.database.elasticsearch.url.host":                 "optimize-host",
+				"optimize.database.elasticsearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
 			Name: "AWS mode omits the Optimize OpenSearch password",
 			Values: map[string]string{
 				"optimize.enabled":                                      "true",

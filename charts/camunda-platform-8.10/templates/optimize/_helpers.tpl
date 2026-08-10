@@ -149,6 +149,20 @@ When neither backend is explicitly enabled, falls back to "zeebe-record".
 {{- end -}}
 
 {{/*
+[optimize] Resolve the effective Elasticsearch username from the component-first chain.
+*/}}
+{{- define "optimize.effectiveEsUsername" -}}
+{{- .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve the effective OpenSearch username from the component-first chain.
+*/}}
+{{- define "optimize.effectiveOsUsername" -}}
+{{- .Values.optimize.database.opensearch.auth.username | default .Values.global.opensearch.auth.username -}}
+{{- end -}}
+
+{{/*
 [optimize] Resolve the effective Elasticsearch URL from the component-first host/port/protocol chain.
 */}}
 {{- define "optimize.effectiveEsURL" -}}
