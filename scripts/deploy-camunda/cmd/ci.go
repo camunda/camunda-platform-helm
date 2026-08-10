@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"strconv"
 
 	"scripts/camunda-core/pkg/ciworkflow"
 	"scripts/camunda-core/pkg/ghactions"
@@ -26,26 +25,27 @@ func newCICommand() *cobra.Command {
 	ciCmd.AddCommand(newCITestTypeVarsCommand())
 	ciCmd.AddCommand(newCIWorkflowVarsCommand())
 	ciCmd.AddCommand(newCIIntegrationMatrixCommand())
-	ciCmd.AddCommand(newCIE2ESuiteVarsCommand())
+	ciCmd.AddCommand(newCIE2EMatrixCommand())
 
 	return ciCmd
 }
 
-// newCIE2ESuiteVarsCommand creates the "ci e2e-suite-vars" subcommand. It
-// resolves a scenario's e2e-full-suite / e2e-non-blocking declarations from the
-// chart version's CI scenario registry and writes them to $GITHUB_OUTPUT, so
-// test-integration-template.yaml derives the Playwright project and the
-// blocking behavior from the registry instead of comparing scenario names.
-func newCIE2ESuiteVarsCommand() *cobra.Command {
+// newCIE2EMatrixCommand creates the "ci e2e-matrix" subcommand. It resolves the
+// scenario's e2e legs from the chart version's CI scenario registry and writes
+// them to $GITHUB_OUTPUT as the JSON matrix test-integration-runner.yaml feeds
+// to `matrix.include`, so the Playwright project and the blocking behavior of
+// each leg come from the registry instead of a scenario-name comparison.
+func newCIE2EMatrixCommand() *cobra.Command {
 	var (
-		repoRoot string
-		chartDir string
-		scenario string
+		repoRoot  string
+		chartDir  string
+		shortname string
+		scenario  string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "e2e-suite-vars",
-		Short: "Resolve a scenario's e2e suite selection from the CI scenario registry",
+		Use:   "e2e-matrix",
+		Short: "Resolve a scenario's e2e matrix legs from the CI scenario registry",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root := repoRoot
 			if root == "" {
@@ -56,26 +56,29 @@ func newCIE2ESuiteVarsCommand() *cobra.Command {
 				root = detected
 			}
 
-			suite, err := matrix.ResolveE2ESuite(root, chartDir, scenario)
+			legs, err := matrix.ResolveE2ELegs(root, chartDir, shortname, scenario)
+			if err != nil {
+				return err
+			}
+			legsJSON, err := matrix.E2ELegsJSON(legs)
 			if err != nil {
 				return err
 			}
 
 			out := ghactions.NewGitHubOutput()
 			if out.Path == "" {
-				fmt.Fprintf(os.Stdout, "e2e-full-suite=%t\ne2e-non-blocking=%t\n", suite.FullSuite, suite.NonBlocking)
+				fmt.Fprintf(os.Stdout, "e2e-matrix=%s\n", legsJSON)
 				return nil
 			}
-			if err := out.Set("e2e-full-suite", strconv.FormatBool(suite.FullSuite)); err != nil {
-				return err
-			}
-			return out.Set("e2e-non-blocking", strconv.FormatBool(suite.NonBlocking))
+			fmt.Fprintf(os.Stdout, "e2e-matrix=%s\n", legsJSON)
+			return out.Set("e2e-matrix", legsJSON)
 		},
 	}
 
 	cmd.Flags().StringVar(&repoRoot, "repo-root", "", "repository root; auto-detected when empty")
 	cmd.Flags().StringVar(&chartDir, "chart-dir", "", "chart directory name, e.g. camunda-platform-8.10")
-	cmd.Flags().StringVar(&scenario, "scenario", "", "scenario name as declared in the registry")
+	cmd.Flags().StringVar(&shortname, "shortname", "", "scenario shortname; preferred over --scenario because scenario names are not unique")
+	cmd.Flags().StringVar(&scenario, "scenario", "", "scenario name as declared in the registry; used when --shortname matches nothing")
 	_ = cmd.MarkFlagRequired("chart-dir")
 	_ = cmd.MarkFlagRequired("scenario")
 

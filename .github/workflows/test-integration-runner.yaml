@@ -154,16 +154,11 @@ on:
         required: false
         default: false
         type: boolean
-      e2e-full-suite:
-        description: "Run the full-suite Playwright project instead of smoke-tests for this scenario (declared in the CI scenario registry)"
+      e2e-matrix:
+        description: "JSON matrix of e2e legs (suite + blocking) resolved from the CI scenario registry"
         required: false
-        default: false
-        type: boolean
-      e2e-non-blocking:
-        description: "Do not fail the workflow run when this scenario's E2E job fails (declared in the CI scenario registry)"
-        required: false
-        default: false
-        type: boolean
+        default: "[]"
+        type: string
       is-topology:
         description: "Whether this scenario declares a multi-release topology"
         required: false
@@ -1234,9 +1229,9 @@ jobs:
           if-no-files-found: ignore
 
   playwright-e2e-tests-after-install:
-    name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
+    name: Playwright e2e ${{ matrix.suite }} after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shard_index }} of ${{ matrix.shard_total }})
     needs: [install]
-    runs-on: ${{ inputs.e2e-full-suite && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
+    runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1247,13 +1242,15 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
-    continue-on-error: ${{ inputs.e2e-non-blocking }}
-    timeout-minutes: ${{ inputs.e2e-full-suite && 60 || 30 }}
+    continue-on-error: ${{ !matrix.blocking }}
+    timeout-minutes: ${{ matrix.suite == 'full' && 60 || 30 }}
     strategy:
       fail-fast: false
+      # Legs share one deployment and smoke-tests.spec.js runs in both projects,
+      # so they must not overlap on the cluster.
+      max-parallel: 1
       matrix:
-        shardIndex: [1]
-        shardTotal: [1]
+        include: ${{ fromJson(inputs.e2e-matrix) }}
     permissions:
       contents: read
       id-token: write
@@ -1309,9 +1306,9 @@ jobs:
           auth-data: ${{ inputs.auth-data }}
           exclude: ${{ inputs.exclude }}
           test-stage: after-install
-          shard-index: ${{ matrix.shardIndex }}
+          shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
-          run-smoke-tests: ${{ !inputs.e2e-full-suite }}
+          run-smoke-tests: ${{ matrix.suite == 'smoke' }}
 
   # Shadow job: runs the full E2E suite for the dedicated 'shadow-e2e' scenario.
   # Tier 2 (merge queue only). Non-blocking during observation period.

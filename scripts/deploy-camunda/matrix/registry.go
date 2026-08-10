@@ -65,8 +65,9 @@ type registryScenario struct {
 	SkipE2E     bool              `yaml:"skip-e2e,omitempty"`
 	PrefixKey   string            `yaml:"prefix-key,omitempty"`
 
-	E2EFullSuite   bool `yaml:"e2e-full-suite,omitempty"`
-	E2ENonBlocking bool `yaml:"e2e-non-blocking,omitempty"`
+	E2EFullSuite         bool  `yaml:"e2e-full-suite,omitempty"`
+	E2ESmokeBlocking     *bool `yaml:"e2e-smoke-blocking,omitempty"`
+	E2EFullSuiteBlocking *bool `yaml:"e2e-full-suite-blocking,omitempty"`
 
 	PreInstallID  string   `yaml:"pre-install,omitempty"`
 	PostInfraID   string   `yaml:"post-infra,omitempty"`
@@ -225,33 +226,34 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 
 		for _, flow := range flows {
 			cfg.Integration.Case.PR.Scenarios = append(cfg.Integration.Case.PR.Scenarios, CIScenario{
-				Name:           rscn.Name,
-				Enabled:        entry.Enabled,
-				Shortname:      entry.Shortname,
-				Auth:           rscn.Auth,
-				Flow:           flow,
-				Platforms:      rscn.Platforms,
-				Exclude:        rscn.Exclude,
-				Tier:           entry.Tier,
-				InfraType:      rscn.InfraType,
-				Identity:       rscn.Identity,
-				Persistence:    rscn.Persistence,
-				Features:       rscn.Features,
-				ExtraValues:    rscn.ExtraValues,
-				QA:             rscn.QA,
-				ImageTags:      rscn.ImageTags,
-				Upgrade:        rscn.Upgrade,
-				Enterprise:     rscn.Enterprise,
-				HelmVersion:    rscn.HelmVersion,
-				SkipE2E:        rscn.SkipE2E,
-				E2EFullSuite:   rscn.E2EFullSuite,
-				E2ENonBlocking: rscn.E2ENonBlocking,
-				Dependencies:   append([]ChartDependency(nil), deps...),
-				PrefixKey:      rscn.PrefixKey,
-				PreInstall:     preInstall,
-				PostInfra:      postInfra,
-				PostDeploy:     postDeploy,
-				Topology:       rscn.Topology,
+				Name:                 rscn.Name,
+				Enabled:              entry.Enabled,
+				Shortname:            entry.Shortname,
+				Auth:                 rscn.Auth,
+				Flow:                 flow,
+				Platforms:            rscn.Platforms,
+				Exclude:              rscn.Exclude,
+				Tier:                 entry.Tier,
+				InfraType:            rscn.InfraType,
+				Identity:             rscn.Identity,
+				Persistence:          rscn.Persistence,
+				Features:             rscn.Features,
+				ExtraValues:          rscn.ExtraValues,
+				QA:                   rscn.QA,
+				ImageTags:            rscn.ImageTags,
+				Upgrade:              rscn.Upgrade,
+				Enterprise:           rscn.Enterprise,
+				HelmVersion:          rscn.HelmVersion,
+				SkipE2E:              rscn.SkipE2E,
+				E2EFullSuite:         rscn.E2EFullSuite,
+				E2ESmokeBlocking:     rscn.E2ESmokeBlocking,
+				E2EFullSuiteBlocking: rscn.E2EFullSuiteBlocking,
+				Dependencies:         append([]ChartDependency(nil), deps...),
+				PrefixKey:            rscn.PrefixKey,
+				PreInstall:           preInstall,
+				PostInfra:            postInfra,
+				PostDeploy:           postDeploy,
+				Topology:             rscn.Topology,
 			})
 		}
 	}

@@ -23,8 +23,8 @@ import (
 //     defaulting (empty flow treated as "install") — the natural CI namespace key;
 //   - every scenario's (Platform, Flow) is not denied by
 //     .github/config/permitted-flows.yaml for this chart version;
-//   - no scenario combines skip-e2e with e2e-full-suite or e2e-non-blocking,
-//     which would be dead config;
+//   - no scenario combines skip-e2e with any e2e leg declaration, and none sets
+//     e2e-full-suite-blocking without e2e-full-suite — both are dead config;
 //   - no orphan files exist in pre-setup-scripts/ or common/resources/ —
 //     every .sh / .yaml must be referenced by at least one LifecycleHook
 //     across PR/Nightly scenarios, dependency-profile pre-install hooks, and
@@ -176,12 +176,21 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		}
 
 		if scn.SkipE2E {
-			if scn.E2EFullSuite {
-				problems = append(problems, fmt.Sprintf("%s: e2e-full-suite is set but skip-e2e disables e2e entirely", label))
+			for _, field := range []struct {
+				name string
+				set  bool
+			}{
+				{"e2e-full-suite", scn.E2EFullSuite},
+				{"e2e-smoke-blocking", scn.E2ESmokeBlocking != nil},
+				{"e2e-full-suite-blocking", scn.E2EFullSuiteBlocking != nil},
+			} {
+				if field.set {
+					problems = append(problems, fmt.Sprintf("%s: %s is set but skip-e2e disables e2e entirely", label, field.name))
+				}
 			}
-			if scn.E2ENonBlocking {
-				problems = append(problems, fmt.Sprintf("%s: e2e-non-blocking is set but skip-e2e disables e2e entirely", label))
-			}
+		}
+		if !scn.E2EFullSuite && scn.E2EFullSuiteBlocking != nil {
+			problems = append(problems, fmt.Sprintf("%s: e2e-full-suite-blocking is set but e2e-full-suite is not enabled", label))
 		}
 
 		platforms := scn.Platforms

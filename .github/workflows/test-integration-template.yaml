@@ -296,8 +296,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
-      e2e-full-suite: ${{ steps.e2e-suite-vars.outputs.e2e-full-suite }}
-      e2e-non-blocking: ${{ steps.e2e-suite-vars.outputs.e2e-non-blocking }}
+      e2e-matrix: ${{ steps.e2e-matrix.outputs.e2e-matrix }}
     steps:
       - name: CI Setup - Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -323,15 +322,17 @@ jobs:
             --platforms "$CI_PLATFORMS" \
             --flows "$CI_FLOWS" \
             --matrix-data "$CI_MATRIX_INPUT"
-      - name: CI Setup - Resolve e2e suite selection
-        id: e2e-suite-vars
+      - name: CI Setup - Resolve e2e matrix legs
+        id: e2e-matrix
         env:
           CI_CHART_DIR: "${{ inputs.camunda-helm-dir }}"
+          CI_SHORTNAME: "${{ inputs.shortname }}"
           CI_SCENARIO: "${{ inputs.scenario }}"
         run: |
-          "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ci e2e-suite-vars \
+          "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ci e2e-matrix \
             --repo-root "$GITHUB_WORKSPACE" \
             --chart-dir "$CI_CHART_DIR" \
+            --shortname "$CI_SHORTNAME" \
             --scenario "$CI_SCENARIO"
       - name: Upload deploy-camunda binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -400,8 +401,7 @@ jobs:
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
       skip-e2e: ${{ inputs.skip-e2e }}
-      e2e-full-suite: ${{ needs.init.outputs.e2e-full-suite == 'true' }}
-      e2e-non-blocking: ${{ needs.init.outputs.e2e-non-blocking == 'true' }}
+      e2e-matrix: ${{ needs.init.outputs.e2e-matrix }}
       is-topology: ${{ inputs.is-topology }}
       topology-namespace-suffixes: ${{ inputs.topology-namespace-suffixes }}
       topology-hub-suffix: ${{ inputs.topology-hub-suffix }}

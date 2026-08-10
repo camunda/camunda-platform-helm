@@ -103,13 +103,22 @@ func TestLoadRegistryAssembly(t *testing.T) {
 	if !reflect.DeepEqual(b.Features, []string{"synthetic-feature"}) {
 		t.Errorf("beta.Features = %v", b.Features)
 	}
-	if !b.E2EFullSuite || !b.E2ENonBlocking {
-		t.Errorf("beta e2e flags = full-suite:%v non-blocking:%v, want both true", b.E2EFullSuite, b.E2ENonBlocking)
+	// beta opts into the full suite and inverts both blocking defaults.
+	if !b.E2EFullSuite {
+		t.Errorf("beta.E2EFullSuite = %v, want true", b.E2EFullSuite)
+	}
+	if b.E2ESmokeBlocking == nil || *b.E2ESmokeBlocking {
+		t.Errorf("beta.E2ESmokeBlocking = %v, want an explicit false", b.E2ESmokeBlocking)
+	}
+	if b.E2EFullSuiteBlocking == nil || !*b.E2EFullSuiteBlocking {
+		t.Errorf("beta.E2EFullSuiteBlocking = %v, want an explicit true", b.E2EFullSuiteBlocking)
 	}
 
-	// alpha declares neither flag, so both default to the smoke/blocking behavior.
-	if a.E2EFullSuite || a.E2ENonBlocking {
-		t.Errorf("alpha e2e flags = full-suite:%v non-blocking:%v, want both false", a.E2EFullSuite, a.E2ENonBlocking)
+	// alpha declares nothing, so the blocking pointers stay nil and the
+	// defaults apply — an absent key must not read as an explicit false.
+	if a.E2EFullSuite || a.E2ESmokeBlocking != nil || a.E2EFullSuiteBlocking != nil {
+		t.Errorf("alpha e2e = full-suite:%v smoke-blocking:%v full-blocking:%v, want unset",
+			a.E2EFullSuite, a.E2ESmokeBlocking, a.E2EFullSuiteBlocking)
 	}
 
 	// gamma fans out across two flows; enabled propagates from manifest (false)
@@ -151,7 +160,26 @@ func TestRegistryValidatorRejectsDuplicatePlatformFlow(t *testing.T) {
 	}
 }
 
-// TestRegistryValidatorRejectsE2EFlagsWithSkipE2E: the e2e suite/blocking flags
+func boolPtr(v bool) *bool { return &v }
+
+// TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite: the blocking
+// override is dead config when the full-suite leg is not enabled.
+func TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	scn := &cfg.Integration.Case.PR.Scenarios[0]
+	scn.E2EFullSuite = false
+	scn.E2EFullSuiteBlocking = boolPtr(true)
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "e2e-full-suite-blocking is set but e2e-full-suite is not enabled") {
+		t.Fatalf("want full-suite-blocking-without-full-suite error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsE2EFlagsWithSkipE2E: the e2e leg declarations
 // are dead config when skip-e2e disables e2e altogether.
 func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 	for _, tc := range []struct {
@@ -160,7 +188,11 @@ func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 		want string
 	}{
 		{"full-suite", func(s *CIScenario) { s.E2EFullSuite = true }, "e2e-full-suite is set but skip-e2e"},
-		{"non-blocking", func(s *CIScenario) { s.E2ENonBlocking = true }, "e2e-non-blocking is set but skip-e2e"},
+		{"smoke-blocking", func(s *CIScenario) { s.E2ESmokeBlocking = boolPtr(false) }, "e2e-smoke-blocking is set but skip-e2e"},
+		{"full-suite-blocking", func(s *CIScenario) {
+			s.E2EFullSuite = true
+			s.E2EFullSuiteBlocking = boolPtr(true)
+		}, "e2e-full-suite is set but skip-e2e"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			abs := absChartDir(t)
@@ -171,7 +203,8 @@ func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 			scn := &cfg.Integration.Case.PR.Scenarios[0]
 			scn.SkipE2E = true
 			scn.E2EFullSuite = false
-			scn.E2ENonBlocking = false
+			scn.E2ESmokeBlocking = nil
+			scn.E2EFullSuiteBlocking = nil
 			tc.set(scn)
 			err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
