@@ -36,6 +36,8 @@ const (
 	RemoveDirective = "$remove"
 	// RenameDirective maps an old dotted path to a new one, moving the value.
 	RenameDirective = "$rename"
+	// ScaffoldingDirective holds harness-only values that are applied separately.
+	ScaffoldingDirective = "$scaffolding"
 )
 
 // Values is a parsed Helm values document.
@@ -220,6 +222,8 @@ type Delta struct {
 	Rename map[string]string
 	// Set holds the delta's remaining keys.
 	Set Values
+	// Scaffolding holds harness-only values, applied but not customer-facing.
+	Scaffolding Values
 }
 
 // LoadDelta reads a delta file and splits its directives from the keys it sets.
@@ -227,6 +231,9 @@ type Delta struct {
 func LoadDelta(path string) (Delta, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return Delta{Set: Values{}}, nil
+		}
 		return Delta{Set: Values{}}, fmt.Errorf("read delta %s: %w", path, err)
 	}
 	return ParseDelta(b, path)
@@ -266,13 +273,30 @@ func ParseDelta(data []byte, name string) (Delta, error) {
 			}
 			d.Rename = map[string]string{}
 			for old, newVal := range m {
+				old = strings.TrimSpace(old)
+				if old == "" {
+					return d, fmt.Errorf("%s: %q source path must not be empty", name, RenameDirective)
+				}
 				s, ok := newVal.(string)
 				if !ok {
 					return d, fmt.Errorf("%s: %q target for %q must be a string, got %T",
 						name, RenameDirective, old, newVal)
 				}
-				d.Rename[old] = strings.TrimSpace(s)
+				target := strings.TrimSpace(s)
+				if target == "" {
+					return d, fmt.Errorf("%s: %q target for %q must not be empty", name, RenameDirective, old)
+				}
+				if target == old {
+					return d, fmt.Errorf("%s: %q source and target must differ: %q", name, RenameDirective, old)
+				}
+				d.Rename[old] = target
 			}
+		case ScaffoldingDirective:
+			m, ok := toMap(v)
+			if !ok {
+				return d, fmt.Errorf("%s: %q must be a map of values", name, ScaffoldingDirective)
+			}
+			d.Scaffolding = m
 		default:
 			d.Set[k] = v
 		}
@@ -301,7 +325,8 @@ func (d Delta) Apply(base Values) Values {
 	for _, path := range d.Remove {
 		DeleteKey(out, path)
 	}
-	return Merge(out, d.Set)
+	out = Merge(out, d.Set)
+	return Merge(out, d.Scaffolding)
 }
 
 func sortedKeys(m map[string]string) []string {
@@ -315,7 +340,35 @@ func sortedKeys(m map[string]string) []string {
 
 // IsEmpty reports whether the delta would change nothing.
 func (d Delta) IsEmpty() bool {
-	return len(d.Remove) == 0 && len(d.Rename) == 0 && len(d.Set) == 0
+	return len(d.Remove) == 0 && len(d.Rename) == 0 &&
+		len(d.Set) == 0 && len(d.Scaffolding) == 0
+}
+
+// LeafPaths returns the sorted dotted paths of every non-map value.
+func LeafPaths(v Values) []string {
+	var out []string
+	var walk func(Values, string)
+	walk = func(n Values, prefix string) {
+		for k, val := range n {
+			path := k
+			if prefix != "" {
+				path = prefix + "." + k
+			}
+			if m, ok := toMap(val); ok && len(m) > 0 {
+				walk(m, path)
+				continue
+			}
+			out = append(out, path)
+		}
+	}
+	walk(v, "")
+	sort.Strings(out)
+	return out
+}
+
+// HasScaffolding reports whether the delta carries harness-only values.
+func (d Delta) HasScaffolding() bool {
+	return len(d.Scaffolding) > 0
 }
 
 // Consolidate merges layers, applies an optional delta, and writes the result

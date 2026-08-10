@@ -273,6 +273,23 @@ func TestLoadDeltaRename(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, d.IsEmpty())
 	})
+
+	for name, body := range map[string]string{
+		"empty source": "$rename:\n  ' ': b\n",
+		"empty target": "$rename:\n  a: ' '\n",
+		"same path":    "$rename:\n  a: a\n",
+	} {
+		t.Run(name+" errors", func(t *testing.T) {
+			_, err := LoadDelta(write(t, dir, name+".yaml", body))
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestLoadDeltaMissingFileIsEmpty(t *testing.T) {
+	d, err := LoadDelta(filepath.Join(t.TempDir(), "missing.yaml"))
+	require.NoError(t, err)
+	assert.True(t, d.IsEmpty())
 }
 
 func TestDeltaApplyRename(t *testing.T) {
@@ -356,4 +373,28 @@ func TestDeltaApplyDoesNotMutateNestedInput(t *testing.T) {
 
 	assert.True(t, HasKey(base, "global.ingress.host"),
 		"a nested removal must not reach back into the caller's document")
+}
+
+func TestLoadDeltaScaffolding(t *testing.T) {
+	d, err := ParseDelta([]byte("$scaffolding:\n  identity:\n    enabled: true\n"), "delta.yaml")
+	require.NoError(t, err)
+	assert.True(t, HasKey(d.Scaffolding, "identity.enabled"))
+	assert.False(t, HasKey(d.Set, "identity.enabled"))
+	assert.True(t, d.HasScaffolding())
+	assert.False(t, d.IsEmpty())
+
+	_, err = ParseDelta([]byte("$scaffolding:\n  - invalid\n"), "delta.yaml")
+	require.Error(t, err)
+}
+
+func TestDeltaApplyAppliesScaffolding(t *testing.T) {
+	d := Delta{Set: Values{"global": Values{"host": "h"}}, Scaffolding: Values{"identity": Values{"enabled": true}}}
+	got := d.Apply(Values{})
+	assert.True(t, HasKey(got, "global.host"))
+	assert.True(t, HasKey(got, "identity.enabled"))
+}
+
+func TestLeafPaths(t *testing.T) {
+	v := Values{"nested": Values{"leaf": 1, "list": []any{"a"}}, "empty": Values{}, "top": true}
+	assert.Equal(t, []string{"empty", "nested.leaf", "nested.list", "top"}, LeafPaths(v))
 }
