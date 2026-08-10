@@ -1315,6 +1315,79 @@ func (s *StatefulSetTest) TestLegacyExporterComponentPasswordEnv() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *StatefulSetTest) TestLegacyExporterComponentTls() {
+	optimizeOpenSearchSource := map[string]string{
+		"optimize.enabled":                                   "true",
+		"optimize.database.elasticsearch.enabled":            "false",
+		"optimize.database.opensearch.enabled":               "true",
+		"optimize.database.opensearch.url.host":              "optimize-host",
+		"orchestration.data.secondaryStorage.type":           "opensearch",
+		"orchestration.data.secondaryStorage.opensearch.url": "https://secondary-host:9443",
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Optimize OpenSearch TLS reaches the Orchestration truststore",
+			Values: mergeValues(optimizeOpenSearchSource, map[string]string{
+				"optimize.database.opensearch.tls.secret.existingSecret":    "optimize-tls-secret",
+				"optimize.database.opensearch.tls.secret.existingSecretKey": "optimize-ca.jks",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/optimize-ca.jks")
+				require.Contains(t, output, "secretName: \"optimize-tls-secret\"")
+			},
+		},
+		{
+			Name: "Optimize OpenSearch source ignores secondary storage TLS config",
+			Values: mergeValues(optimizeOpenSearchSource, map[string]string{
+				"optimize.database.opensearch.tls.secret.existingSecret":                      "optimize-tls-secret",
+				"optimize.database.opensearch.tls.secret.existingSecretKey":                   "optimize-ca.jks",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret":    "secondary-tls-secret",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey": "secondary-ca.jks",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/optimize-ca.jks")
+				require.NotContains(t, output, "secondary-ca.jks")
+				require.NotContains(t, output, "secretName: \"secondary-tls-secret\"")
+			},
+		},
+		{
+			Name: "Optimize source without TLS keeps the secondary storage truststore",
+			Values: mergeValues(optimizeOpenSearchSource, map[string]string{
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret":    "secondary-tls-secret",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey": "secondary-ca.jks",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/secondary-ca.jks")
+				require.Contains(t, output, "secretName: \"secondary-tls-secret\"")
+			},
+		},
+		{
+			Name: "Optimize Elasticsearch TLS reaches the Orchestration truststore",
+			Values: map[string]string{
+				"optimize.enabled":                                             "true",
+				"optimize.database.opensearch.enabled":                         "false",
+				"optimize.database.elasticsearch.enabled":                      "true",
+				"optimize.database.elasticsearch.url.host":                     "optimize-host",
+				"optimize.database.elasticsearch.tls.secret.existingSecret":    "optimize-tls-secret",
+				"optimize.database.elasticsearch.tls.secret.existingSecretKey": "optimize-ca.jks",
+				"orchestration.data.secondaryStorage.type":                     "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.url":        "https://secondary-host:9443",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/optimize-ca.jks")
+				require.Contains(t, output, "secretName: \"optimize-tls-secret\"")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *StatefulSetTest) TestDocumentStoreEnvFromGatedByExtraConfiguration() {
 	testCases := []testhelpers.TestCase{
 		{

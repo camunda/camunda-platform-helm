@@ -269,7 +269,7 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
-{{- define "orchestration.effectiveTlsConfig" -}}
+{{- define "orchestration.sharedTlsConfig" -}}
 {{- $config := dict -}}
 {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true" -}}
     {{- $config = .Values.global.elasticsearch.tls -}}
@@ -281,6 +281,36 @@ Authentication.
     {{- $config = .Values.orchestration.data.secondaryStorage.opensearch.tls -}}
 {{- end -}}
 {{- toYaml $config -}}
+{{- end -}}
+
+{{- define "orchestration.legacyExporterTlsConfig" -}}
+{{- $config := dict -}}
+{{- if and
+      (eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true")
+      (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.elasticsearch.tls)) "true")
+-}}
+    {{- $config = .Values.optimize.database.elasticsearch.tls -}}
+{{- else if and
+      (eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true")
+      (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.tls)) "true")
+-}}
+    {{- $config = .Values.optimize.database.opensearch.tls -}}
+{{- end -}}
+{{- toYaml $config -}}
+{{- end -}}
+
+{{- /*
+NOTE: the Orchestration JVM mounts a single truststore, so the first matching source wins for the
+whole pod. An Optimize-owned legacy exporter contributes its component TLS secret first; the chain
+falls through to the shared global/secondary-storage sources otherwise.
+*/ -}}
+{{- define "orchestration.effectiveTlsConfig" -}}
+{{- $exporterTls := include "orchestration.legacyExporterTlsConfig" . | fromYaml -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $exporterTls)) "true" -}}
+{{- toYaml $exporterTls -}}
+{{- else -}}
+{{- include "orchestration.sharedTlsConfig" . -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "orchestration.persistentSessionsEnabled" -}}
