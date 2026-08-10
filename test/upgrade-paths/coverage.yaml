@@ -37,27 +37,40 @@ categories:
 
   - id: orphaned-resources
     title: Resources stranded by removed subcharts
-    status: partial
+    status: covered
     stage: cluster
     detail: >-
-      Orphaned PVCs are produced by the upgrade and observable, but nothing
-      asserts on them. A run leaving stranded volumes still reports green.
+      Claim inventory is read before and after the upgrade; claims that no pod
+      mounts and no StatefulSet would generate are reported, diffed so only what
+      this upgrade stranded is attributed to it. Reported, not failed: stranded
+      storage is sometimes the intended outcome of removing a subchart.
 
   - id: data-survival
     title: Data present before the upgrade is still present after
-    status: uncovered
-    stage: none
+    status: partial
+    stage: cluster
     detail: >-
-      No seeding and no pre/post comparison. This is the gap that hides a
-      wiped Keycloak realm behind a passing upgrade.
+      Scenarios declare probes that count entities either side of the upgrade;
+      a count that falls is reported as lost or wiped. Probes are phase-aware,
+      because an upgrade can move an entity between stores and counting the old
+      location afterwards would report a wipe that did not happen. Partial
+      because only the Keycloak realm is probed so far, and because counts come
+      from data the scenario happens to create rather than from deliberate
+      seeding.
 
   - id: migration-cost
     title: Migrations that are correct but ruinously slow
-    status: uncovered
-    stage: none
+    status: partial
+    stage: cluster
     detail: >-
-      Destructive migrations are correct on an empty database and only harmful
-      on a large one. Fixtures run at trivial volume with no duration budget.
+      The upgrade step is timed and compared against a per-scenario budget,
+      reported rather than failed: elapsed time on shared CI hardware varies
+      enough with node contention that a hard gate would be muted. Partial
+      because fixtures still run at trivial data volume, so a migration whose
+      cost scales with row count is not yet exercised. Camunda Hub is
+      deliberately unbudgeted while its DB migration is still being finished
+      upstream; expected to settle around 2026-08-14, at which point a budget
+      should be set rather than left absent.
 
   - id: helm-cli-version
     title: Helm CLI version constraint
