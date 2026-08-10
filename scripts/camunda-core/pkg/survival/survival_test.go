@@ -115,6 +115,14 @@ func TestSummary(t *testing.T) {
 	}, got)
 }
 
+func TestUnknown(t *testing.T) {
+	results := []Result{
+		{Entity: "ok", Verdict: Preserved},
+		{Entity: "missing", Verdict: NotProbed},
+	}
+	assert.Equal(t, []Result{{Entity: "missing", Verdict: NotProbed}}, Unknown(results))
+}
+
 func TestCompareEmpty(t *testing.T) {
 	assert.Empty(t, Compare(Snapshot{}, Snapshot{}))
 }

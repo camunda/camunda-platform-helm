@@ -22,8 +22,9 @@
 package orphans
 
 import (
-	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 // StatefulSetRef describes a StatefulSet's claim-generating templates.
@@ -59,22 +60,28 @@ func Detect(inv Inventory) []Orphan {
 	for _, c := range inv.PodClaims {
 		referenced[c] = true
 	}
-	for _, sts := range inv.StatefulSets {
-		for _, tpl := range sts.ClaimTemplates {
-			for i := int32(0); i < sts.Replicas; i++ {
-				referenced[fmt.Sprintf("%s-%s-%d", tpl, sts.Name, i)] = true
-			}
-		}
-	}
-
 	var out []Orphan
 	for _, c := range inv.Claims {
-		if !referenced[c] {
+		if !referenced[c] && !generatedByStatefulSet(c, inv.StatefulSets) {
 			out = append(out, Orphan{Claim: c})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Claim < out[j].Claim })
 	return out
+}
+
+func generatedByStatefulSet(claim string, sets []StatefulSetRef) bool {
+	for _, sts := range sets {
+		for _, tpl := range sts.ClaimTemplates {
+			ordinal := strings.TrimPrefix(claim, tpl+"-"+sts.Name+"-")
+			if ordinal != claim {
+				if _, err := strconv.ParseUint(ordinal, 10, 32); err == nil {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // Names returns just the claim names.

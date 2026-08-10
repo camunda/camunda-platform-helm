@@ -106,6 +106,17 @@ func Losses(rs []Result) []Result {
 	return out
 }
 
+// Unknown filters to entities that were not successfully probed on both sides.
+func Unknown(rs []Result) []Result {
+	var out []Result
+	for _, r := range rs {
+		if r.Verdict == NotProbed {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // Summary renders a one-line description of each result.
 func Summary(rs []Result) []string {
 	out := make([]string, 0, len(rs))

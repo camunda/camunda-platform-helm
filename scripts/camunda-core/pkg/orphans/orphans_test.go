@@ -77,12 +77,12 @@ func TestDetect(t *testing.T) {
 			want: []string{},
 		},
 		{
-			name: "claims beyond the replica count are orphaned",
+			name: "claims beyond the replica count remain associated",
 			inv: Inventory{
 				Claims:       []string{"data-db-0", "data-db-1", "data-db-2"},
 				StatefulSets: []StatefulSetRef{{Name: "db", ClaimTemplates: []string{"data"}, Replicas: 2}},
 			},
-			want: []string{"data-db-2"},
+			want: []string{},
 		},
 		{
 			name: "multiple templates on one StatefulSet",
@@ -95,12 +95,12 @@ func TestDetect(t *testing.T) {
 			want: []string{"stale-db-0"},
 		},
 		{
-			name: "a StatefulSet scaled to zero references nothing",
+			name: "a StatefulSet scaled to zero retains its claims",
 			inv: Inventory{
 				Claims:       []string{"data-db-0"},
 				StatefulSets: []StatefulSetRef{{Name: "db", ClaimTemplates: []string{"data"}, Replicas: 0}},
 			},
-			want: []string{"data-db-0"},
+			want: []string{},
 		},
 		{
 			name: "results are sorted",

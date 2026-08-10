@@ -2,8 +2,10 @@ package matrix
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"scripts/camunda-core/pkg/helm"
@@ -294,8 +296,14 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		return err
 	}
 
-	orphansBefore := claimOrphans(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext)
-	survivalBefore := runDataProbes(ctx, entry, flags.EffectiveNamespace(), flags.Test.KubeContext, survival.Before)
+	orphansBefore, err := claimOrphans(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext)
+	if err != nil {
+		return err
+	}
+	survivalBefore, err := runDataProbes(ctx, entry, flags.EffectiveNamespace(), flags.Test.KubeContext, survival.Before)
+	if err != nil {
+		return err
+	}
 
 	// --- Step 2: Upgrade to current on-disk chart (or external chart-ref when set) ---
 	if flags.OnPhase != nil {
@@ -393,18 +401,17 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		Str("step", "2/2").
 		Msg("Step 2 complete: upgrade to current version succeeded")
 
-	reportStrandedClaims(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext, orphansBefore)
-	reportDataSurvival(ctx, entry, flags.EffectiveNamespace(), flags.Test.KubeContext, survivalBefore)
-
-	return nil
+	strandedErr := reportStrandedClaims(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext, orphansBefore)
+	survivalErr := reportDataSurvival(ctx, entry, flags.EffectiveNamespace(), flags.Test.KubeContext, survivalBefore)
+	return errors.Join(strandedErr, survivalErr)
 }
 
 // runDataProbes counts entities declared by the scenario. Probe failures are
 // logged and omitted from the snapshot; a missing entry compares as not-probed,
 // so a broken query reads as unknown rather than as data loss.
-func runDataProbes(ctx context.Context, entry Entry, namespace, kubeContext string, phase survival.Phase) survival.Snapshot {
+func runDataProbes(ctx context.Context, entry Entry, namespace, kubeContext string, phase survival.Phase) (survival.Snapshot, error) {
 	if len(entry.DataProbes) == 0 {
-		return nil
+		return nil, nil
 	}
 	snap, errs := survival.Run(ctx, kube.ExecRunner{KubeContext: kubeContext}, namespace, entry.DataProbes, phase)
 	for _, err := range errs {
@@ -414,7 +421,7 @@ func runDataProbes(ctx context.Context, entry Entry, namespace, kubeContext stri
 		Str("phase", string(phase)).
 		Interface("counts", map[string]int(snap)).
 		Msg("Data probe snapshot")
-	return snap
+	return snap, errors.Join(errs...)
 }
 
 // reportDataSurvival compares the pre-upgrade snapshot with a fresh one.
@@ -422,25 +429,32 @@ func runDataProbes(ctx context.Context, entry Entry, namespace, kubeContext stri
 // An upgrade that completes is not an upgrade that preserved anything: removing
 // a subchart can strand the storage its replacement never reads, leaving a
 // healthy cluster with an empty realm.
-func reportDataSurvival(ctx context.Context, entry Entry, namespace, kubeContext string, before survival.Snapshot) {
+func reportDataSurvival(ctx context.Context, entry Entry, namespace, kubeContext string, before survival.Snapshot) error {
 	if len(before) == 0 {
-		return
+		return nil
 	}
-	after := runDataProbes(ctx, entry, namespace, kubeContext, survival.After)
+	after, err := runDataProbes(ctx, entry, namespace, kubeContext, survival.After)
+	if err != nil {
+		return fmt.Errorf("post-upgrade data probes failed: %w", err)
+	}
 	results := survival.Compare(before, after)
+	if unknown := survival.Unknown(results); len(unknown) > 0 {
+		return fmt.Errorf("data survival could not be determined: %s", strings.Join(survival.Summary(unknown), "; "))
+	}
 
 	losses := survival.Losses(results)
 	if len(losses) == 0 {
 		logging.Logger.Info().
 			Strs("entities", survival.Summary(results)).
 			Msg("Data survived the upgrade")
-		return
+		return nil
 	}
 	logging.Logger.Error().
 		Strs("losses", survival.Summary(losses)).
 		Int("count", len(losses)).
 		Str("namespace", namespace).
 		Msg("Upgrade lost data: entities counted fewer after the upgrade than before")
+	return fmt.Errorf("upgrade lost data: %s", strings.Join(survival.Summary(losses), "; "))
 }
 
 // reportUpgradeDuration compares the upgrade step against its declared budget.
@@ -478,33 +492,36 @@ func reportUpgradeDuration(entry Entry, elapsed time.Duration) {
 // claimOrphans reads the namespace's unreferenced claims. Failures are logged
 // and treated as an empty set: orphan reporting is diagnostic and must not
 // decide the outcome of an upgrade.
-func claimOrphans(ctx context.Context, namespace, kubeContext string) []orphans.Orphan {
+func claimOrphans(ctx context.Context, namespace, kubeContext string) ([]orphans.Orphan, error) {
 	client, err := kube.NewClient("", kubeContext)
 	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("Orphan detection skipped: could not create kube client")
-		return nil
+		return nil, fmt.Errorf("create kube client for orphan detection: %w", err)
 	}
 	inv, err := client.ClaimInventory(ctx, namespace)
 	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("Orphan detection skipped: could not read claim inventory")
-		return nil
+		return nil, fmt.Errorf("read claim inventory for orphan detection: %w", err)
 	}
-	return orphans.Detect(inv)
+	return orphans.Detect(inv), nil
 }
 
 // reportStrandedClaims names claims this upgrade left unreferenced. Kubernetes
 // never deletes a claim created from a StatefulSet's volumeClaimTemplates, so
 // removing a subchart leaves its storage behind with nothing pointing at it.
-func reportStrandedClaims(ctx context.Context, namespace, kubeContext string, before []orphans.Orphan) {
-	appeared := orphans.Appeared(before, claimOrphans(ctx, namespace, kubeContext))
+func reportStrandedClaims(ctx context.Context, namespace, kubeContext string, before []orphans.Orphan) error {
+	after, err := claimOrphans(ctx, namespace, kubeContext)
+	if err != nil {
+		return err
+	}
+	appeared := orphans.Appeared(before, after)
 	if len(appeared) == 0 {
-		return
+		return nil
 	}
 	logging.Logger.Warn().
 		Strs("claims", orphans.Names(appeared)).
 		Int("count", len(appeared)).
 		Str("namespace", namespace).
 		Msg("Upgrade stranded persistent volume claims: storage remains but nothing references it")
+	return nil
 }
 
 // executeUpgradeOnly performs a single-step upgrade against an already-running deployment.
