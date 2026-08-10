@@ -1266,8 +1266,8 @@ Orchestration - Secret Store
 {{- if and $secretStoreConfigured .Values.orchestration.configuration -}}
   {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.configuration because the custom application.yaml replaces the generated secret-store configuration. Configure camunda.secrets.* directly in orchestration.configuration instead." -}}
 {{- end -}}
-{{- if and $secretStoreConfigured .Values.orchestration.extraConfiguration -}}
-  {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.extraConfiguration because imported files can override the validated secret-store configuration. Configure the complete secret store through orchestration.extraConfiguration instead." -}}
+{{- if and $secretStoreConfigured (eq (include "camundaPlatform.extraConfigHasSecretStore" (dict "extraConfiguration" .Values.orchestration.extraConfiguration)) "true") -}}
+  {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.extraConfiguration content that defines camunda.secrets. Remove the overlapping imported configuration or configure the complete secret store through orchestration.extraConfiguration instead." -}}
 {{- end -}}
 {{- if and $secretStoreAnnotations .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) (hasKey $secretStoreAnnotations "eks.amazonaws.com/role-arn") -}}
   {{- fail "[camunda][error] orchestration.secretStore AWS workload identity cannot be combined with static AWS document-store credentials because the AWS SDK credential chain selects environment credentials before IRSA." -}}

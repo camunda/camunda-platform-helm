@@ -374,6 +374,44 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 				s.Require().NoError(err)
 			},
 		},
+		{
+			Name:     "Unrelated extra configuration works with secret store",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "logging.yaml",
+				"orchestration.extraConfiguration[0].content":  "logging:\n  level:\n    root: INFO",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Nested secret store extra configuration is rejected",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "secrets.yaml",
+				"orchestration.extraConfiguration[0].content":  "camunda:\n  secrets:\n    stores: {}",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "content that defines camunda.secrets")
+			},
+		},
+		{
+			Name:     "Dotted secret store extra configuration is rejected",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "secrets.yaml",
+				"orchestration.extraConfiguration[0].content":  "camunda.secrets.stores.aws.default.region: us-west-2",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "content that defines camunda.secrets")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

@@ -1776,6 +1776,40 @@ Usage:
 {{- end -}}
 
 {{/*
+Reports "true" when imported extraConfiguration defines camunda.secrets using nested or dotted YAML keys.
+*/}}
+{{- define "camundaPlatform.extraConfigHasSecretStore" -}}
+{{- $contents := list -}}
+{{- if kindIs "slice" .extraConfiguration -}}
+  {{- range .extraConfiguration -}}
+    {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+      {{- $contents = append $contents (.content | default "") -}}
+    {{- end -}}
+  {{- end -}}
+{{- else -}}
+  {{- range $file, $content := (.extraConfiguration | default dict) -}}
+    {{- $contents = append $contents $content -}}
+  {{- end -}}
+{{- end -}}
+{{- $found := "" -}}
+{{- range $content := $contents -}}
+  {{- $parsed := $content | fromYaml -}}
+  {{- if kindIs "map" $parsed -}}
+    {{- $camunda := index $parsed "camunda" | default dict -}}
+    {{- if and (kindIs "map" $camunda) (hasKey $camunda "secrets") -}}
+      {{- $found = "true" -}}
+    {{- end -}}
+    {{- range $key, $_ := $parsed -}}
+      {{- if or (eq $key "camunda.secrets") (hasPrefix "camunda.secrets." $key) -}}
+        {{- $found = "true" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{/*
 secretStore._storesDict
 Builds the "stores" map (file/aws/gcp -> id -> fields) for a single "{file,aws,gcp}"
 provider map (either the default-tenant "orchestration.secretStore" or one physical-tenant
