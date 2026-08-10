@@ -308,14 +308,34 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 {{- end -}}
 
 {{/*
+[camunda-platform] Gateway external URL prefix.
+*/}}
+{{- define "camundaPlatform.gatewayExternalURL" -}}
+  {{- $tlsEnabled := .context.Values.global.gateway.tls.enabled -}}
+  {{- $proto := ternary "https" "http" $tlsEnabled -}}
+  {{- $port := ternary .context.Values.global.gateway.tls.port .context.Values.global.gateway.port $tlsEnabled -}}
+  {{- $defaultPort := ternary 443 80 $tlsEnabled -}}
+  {{- $host := tpl .host .context -}}
+  {{- if eq (int $port) $defaultPort -}}
+    {{- printf "%s://%s" $proto $host -}}
+  {{- else -}}
+    {{- printf "%s://%s:%v" $proto $host $port -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 Get the externally-reachable Keycloak URL for display in Camunda Hub and NOTES.txt.
 When the chart proxies Keycloak through its combined Ingress (internal: true), use
 the chart host + contextPath. Otherwise return the configured external Keycloak URL.
 */}}
 {{- define "camundaPlatform.keycloakExternalURL" -}}
   {{- if .Values.global.identity.keycloak.internal -}}
-    {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+    {{- if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
+      {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) .Values.global.identity.keycloak.contextPath -}}
+    {{- else -}}
+      {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+      {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+    {{- end -}}
   {{- else if (.Values.global.identity.keycloak.url).host -}}
     {{- include "identity.keycloak.url" . -}}
   {{- end -}}
@@ -397,6 +417,8 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" 
     {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (index .context.Values .component "contextPath") -}}
+    {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
+      {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host)) (index .context.Values .component "contextPath") -}}
     {{- else -}}
       {{- $portMapping := (dict
       "identity" "8080"
@@ -487,6 +509,13 @@ Web Modeler templates.
         {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
         {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (or .context.Values.camundaHub.contextPath .context.Values.webModeler.contextPath) -}}
+      {{- end -}}
+    {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
+      {{- $baseURL := include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host) -}}
+      {{- if eq .component "websockets" }}
+        {{- printf "%s%s" $baseURL (include "webModeler.websocketContextPath" .context) -}}
+      {{- else -}}
+        {{- printf "%s%s" $baseURL (or .context.Values.camundaHub.contextPath .context.Values.webModeler.contextPath) -}}
       {{- end -}}
     {{- else -}}
       {{- if eq .component "websockets" -}}
@@ -689,6 +718,8 @@ Zeebe templates.
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto (tpl .Values.global.host $) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+  {{- else if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
+    {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
     {{- printf "http://localhost:8080" -}}
   {{- end -}}
@@ -698,8 +729,12 @@ Zeebe templates.
 [camunda-platform] Zeebe Gateway GRPC external URL.
 */}}
 {{- define "camundaPlatform.orchestrationGRPCExternalURL" -}}
-  {{ $proto := ternary "https" "http" .Values.orchestration.ingress.grpc.tls.enabled -}}
-  {{- printf "%s://%s" $proto (tpl .Values.orchestration.ingress.grpc.host . | default "localhost:26500") -}}
+  {{- if and .Values.global.gateway.enabled .Values.orchestration.gateway.grpc.enabled (tpl .Values.global.host $) -}}
+    {{- include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.orchestration.gateway.grpc.host) -}}
+  {{- else -}}
+    {{ $proto := ternary "https" "http" .Values.orchestration.ingress.grpc.tls.enabled -}}
+    {{- printf "%s://%s" $proto (tpl .Values.orchestration.ingress.grpc.host . | default "localhost:26500") -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*
