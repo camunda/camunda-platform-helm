@@ -3,7 +3,7 @@
         "secretStoreFileEntries": {
             "type": "object",
             "propertyNames": {
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+                "enum": ["default"]
             },
             "additionalProperties": {
                 "type": "object",
@@ -24,7 +24,7 @@
         "secretStoreAwsEntries": {
             "type": "object",
             "propertyNames": {
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+                "enum": ["default"]
             },
             "additionalProperties": {
                 "type": "object",
@@ -39,7 +39,7 @@
         "secretStoreGcpEntries": {
             "type": "object",
             "propertyNames": {
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+                "enum": ["default"]
             },
             "additionalProperties": {
                 "type": "object",

@@ -62,6 +62,12 @@ func mergeValues(base, overrides map[string]string) map[string]string {
 	return merged
 }
 
+func secretStoreBaseValues() map[string]string {
+	return mergeValues(baseValues(), map[string]string{
+		"orchestration.image.tag": "SNAPSHOT",
+	})
+}
+
 // applicationConfig extracts the rendered application.yaml from the orchestration
 // configuration ConfigMap.
 func (s *secretStoreConfigTest) applicationConfig(output string) string {
@@ -75,9 +81,9 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 		{
 			Name:     "File secret store renders camunda.secrets.stores.file",
 			Template: "templates/orchestration/configmap.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.primary.path":           "/etc/camunda/secrets",
-				"orchestration.secretStore.file.primary.existingSecret": "my-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":           "/etc/camunda/secrets",
+				"orchestration.secretStore.file.default.existingSecret": "my-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -92,10 +98,10 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 		{
 			Name:     "AWS secret store renders kebab-case keys and strips roleArn",
 			Template: "templates/orchestration/configmap.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.primary.region":     "us-east-1",
-				"orchestration.secretStore.aws.primary.pathPrefix": "camunda/",
-				"orchestration.secretStore.aws.primary.roleArn":    "arn:aws:iam::123456789012:role/camunda-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region":     "us-east-1",
+				"orchestration.secretStore.aws.default.pathPrefix": "camunda/",
+				"orchestration.secretStore.aws.default.roleArn":    "arn:aws:iam::123456789012:role/camunda-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -111,24 +117,24 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 		{
 			Name:     "AWS role-only store retains its runtime id",
 			Template: "templates/orchestration/configmap.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.primary.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				config := s.applicationConfig(output)
 				s.Require().Contains(config, "aws:")
-				s.Require().Contains(config, "primary: {}")
+				s.Require().Contains(config, "default: {}")
 			},
 		},
 		{
 			Name:     "GCP secret store renders kebab-case keys and strips gcpServiceAccount",
 			Template: "templates/orchestration/configmap.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
-				"orchestration.secretStore.gcp.primary.pathPrefix":        "camunda",
-				"orchestration.secretStore.gcp.primary.endpoint":          "secretmanager.example.com:443",
-				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.gcp.default.projectId":         "my-project",
+				"orchestration.secretStore.gcp.default.pathPrefix":        "camunda",
+				"orchestration.secretStore.gcp.default.endpoint":          "secretmanager.example.com:443",
+				"orchestration.secretStore.gcp.default.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -145,20 +151,20 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 		{
 			Name:     "GCP identity-only store retains its runtime id",
 			Template: "templates/orchestration/configmap.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.gcp.default.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				config := s.applicationConfig(output)
 				s.Require().Contains(config, "gcp:")
-				s.Require().Contains(config, "primary: {}")
+				s.Require().Contains(config, "default: {}")
 			},
 		},
 		{
 			Name:     "No secret store renders no camunda.secrets block",
 			Template: "templates/orchestration/configmap.yaml",
-			Values:   baseValues(),
+			Values:   secretStoreBaseValues(),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				config := s.applicationConfig(output)
@@ -168,9 +174,9 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 		{
 			Name:     "Physical tenant override renders camunda.physical-tenants.<id>.secrets",
 			Template: "templates/orchestration/configmap.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.primary.region":                         "us-east-1",
-				"orchestration.secretStore.physicalTenants.tenanta.aws.primary.region": "us-west-2",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region":                         "us-east-1",
+				"orchestration.secretStore.physicalTenants.tenanta.aws.default.region": "us-west-2",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -185,10 +191,10 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 		{
 			Name:     "Physical tenant file store inherits root path",
 			Template: "templates/orchestration/configmap.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.shared.path":                                   "/root/secrets",
-				"orchestration.secretStore.file.shared.existingSecret":                         "shared-secret",
-				"orchestration.secretStore.physicalTenants.tenanta.file.shared.existingSecret": "shared-secret",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":                                   "/root/secrets",
+				"orchestration.secretStore.file.default.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)

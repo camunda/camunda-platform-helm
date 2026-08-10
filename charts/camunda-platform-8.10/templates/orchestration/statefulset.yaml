@@ -27,12 +27,12 @@ spec:
         {{- tpl (toYaml .Values.orchestration.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
-        checksum/secret-store-identity: {{ include "camundaPlatform.secretStore.serviceAccountAnnotations" . | sha256sum }}
-        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- if .Values.orchestration.podAnnotations }}
         {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}
         {{- end }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        checksum/secret-store-identity: {{ include "camundaPlatform.secretStore.serviceAccountAnnotations" . | sha256sum }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
     spec:
       {{- if .Values.orchestration.priorityClassName }}
       priorityClassName: {{ .Values.orchestration.priorityClassName | quote }}

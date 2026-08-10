@@ -66,9 +66,9 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 		{
 			Name:     "AWS store sets the IRSA role-arn annotation",
 			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.primary.region":  "us-east-1",
-				"orchestration.secretStore.aws.primary.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region":  "us-east-1",
+				"orchestration.secretStore.aws.default.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -81,9 +81,9 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 		{
 			Name:     "GCP store sets the Workload Identity annotation",
 			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
-				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.gcp.default.projectId":         "my-project",
+				"orchestration.secretStore.gcp.default.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -96,8 +96,8 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 		{
 			Name:     "Secret store annotations coexist with user-provided annotations",
 			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.primary.roleArn":      "arn:aws:iam::123456789012:role/camunda-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.roleArn":      "arn:aws:iam::123456789012:role/camunda-secrets",
 				"orchestration.serviceAccount.annotations.customKey": "customValue",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
@@ -112,7 +112,7 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 		{
 			Name:     "No secret store leaves identity annotations unset",
 			Template: "templates/orchestration/serviceaccount.yaml",
-			Values:   baseValues(),
+			Values:   secretStoreBaseValues(),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				var sa corev1.ServiceAccount
@@ -126,9 +126,9 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 		{
 			Name:     "Physical-tenant AWS store sets the IRSA role-arn annotation",
 			Template: "templates/orchestration/serviceaccount.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.physicalTenants.tenanta.aws.store.region":  "us-east-1",
-				"orchestration.secretStore.physicalTenants.tenanta.aws.store.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.physicalTenants.tenanta.aws.default.region":  "us-east-1",
+				"orchestration.secretStore.physicalTenants.tenanta.aws.default.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -148,9 +148,9 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 		{
 			Name:     "File store mounts the existing secret as a volume",
 			Template: "templates/orchestration/statefulset.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.primary.path":           "/etc/camunda/secrets",
-				"orchestration.secretStore.file.primary.existingSecret": "my-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":           "/etc/camunda/secrets",
+				"orchestration.secretStore.file.default.existingSecret": "my-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -182,8 +182,8 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 		{
 			Name:     "Path-only file store creates no chart-managed volume",
 			Template: "templates/orchestration/statefulset.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.primary.path": "/external/secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path": "/external/secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -197,9 +197,9 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 		{
 			Name:     "AWS store injects no static credentials",
 			Template: "templates/orchestration/statefulset.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.aws.primary.region":  "us-east-1",
-				"orchestration.secretStore.aws.primary.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region":  "us-east-1",
+				"orchestration.secretStore.aws.default.roleArn": "arn:aws:iam::123456789012:role/camunda-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -213,9 +213,9 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 		{
 			Name:     "GCP store injects no static credentials",
 			Template: "templates/orchestration/statefulset.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.gcp.primary.projectId":         "my-project",
-				"orchestration.secretStore.gcp.primary.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.gcp.default.projectId":         "my-project",
+				"orchestration.secretStore.gcp.default.gcpServiceAccount": "camunda@my-project.iam.gserviceaccount.com",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -231,10 +231,10 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 		{
 			Name:     "Physical tenant file store inherits existingSecret",
 			Template: "templates/orchestration/statefulset.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.shared.path":                         "/root/secrets",
-				"orchestration.secretStore.file.shared.existingSecret":               "shared-secret",
-				"orchestration.secretStore.physicalTenants.tenanta.file.shared.path": "/tenant/secrets",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":                         "/root/secrets",
+				"orchestration.secretStore.file.default.existingSecret":               "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.path": "/tenant/secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -259,10 +259,10 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 		{
 			Name:     "Inherited identical file mount is deduplicated",
 			Template: "templates/orchestration/statefulset.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.shared.path":                                   "/etc/camunda/secrets",
-				"orchestration.secretStore.file.shared.existingSecret":                         "shared-secret",
-				"orchestration.secretStore.physicalTenants.tenanta.file.shared.existingSecret": "shared-secret",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":                                   "/etc/camunda/secrets",
+				"orchestration.secretStore.file.default.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -280,11 +280,11 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 		{
 			Name:     "Physical tenant named default has a distinct volume name",
 			Template: "templates/orchestration/statefulset.yaml",
-			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.shared.path":                                   "/root/secrets",
-				"orchestration.secretStore.file.shared.existingSecret":                         "shared-secret",
-				"orchestration.secretStore.physicalTenants.default.file.shared.path":           "/tenant/secrets",
-				"orchestration.secretStore.physicalTenants.default.file.shared.existingSecret": "shared-secret",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":                                   "/root/secrets",
+				"orchestration.secretStore.file.default.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.default.file.default.path":           "/tenant/secrets",
+				"orchestration.secretStore.physicalTenants.default.file.default.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -307,10 +307,10 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 func (s *secretStoreWiringTest) TestIdentityChangeUpdatesPodTemplateChecksum() {
 	render := func(roleArn string) appsv1.StatefulSet {
 		output := helm.RenderTemplate(s.T(), &helm.Options{
-			SetValues: mergeValues(baseValues(), map[string]string{
+			SetValues: mergeValues(secretStoreBaseValues(), map[string]string{
 				"global.noSecondaryStorage":                     "true",
-				"orchestration.secretStore.aws.primary.region":  "us-east-1",
-				"orchestration.secretStore.aws.primary.roleArn": roleArn,
+				"orchestration.secretStore.aws.default.region":  "us-east-1",
+				"orchestration.secretStore.aws.default.roleArn": roleArn,
 			}),
 		}, s.chartPath, s.release, []string{"templates/orchestration/statefulset.yaml"})
 		var sts appsv1.StatefulSet
@@ -324,4 +324,16 @@ func (s *secretStoreWiringTest) TestIdentityChangeUpdatesPodTemplateChecksum() {
 		before.Spec.Template.Annotations["checksum/secret-store-identity"],
 		after.Spec.Template.Annotations["checksum/secret-store-identity"],
 	)
+}
+
+func (s *secretStoreWiringTest) TestIdentityChecksumOverridesUserAnnotation() {
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{
+		SetValues: mergeValues(secretStoreBaseValues(), map[string]string{
+			"global.noSecondaryStorage":                                   "true",
+			"orchestration.secretStore.aws.default.roleArn":               "arn:aws:iam::123456789012:role/camunda-secrets",
+			"orchestration.podAnnotations.checksum/secret-store-identity": "user-value",
+		}),
+	}, s.chartPath, s.release, []string{"templates/orchestration/statefulset.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "must not set the reserved 'checksum/secret-store-identity' annotation")
 }

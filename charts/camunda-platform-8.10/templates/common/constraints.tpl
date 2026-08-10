@@ -1077,6 +1077,9 @@ Orchestration - Secret Store
 */}}
 
 {{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- if hasKey (.Values.orchestration.podAnnotations | default dict) "checksum/secret-store-identity" -}}
+  {{- fail "[camunda][error] orchestration.podAnnotations must not set the reserved 'checksum/secret-store-identity' annotation." -}}
+{{- end -}}
 {{- $secretStoreTenants := list (dict "label" "orchestration.secretStore" "providers" $secretStore) -}}
 {{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
   {{- $secretStoreTenants = append $secretStoreTenants (dict "label" (printf "orchestration.secretStore.physicalTenants.%s" $tid) "providers" $providers) -}}
@@ -1165,7 +1168,8 @@ Orchestration - Secret Store
     {{- end -}}
     {{- range $externalPath := $secretStoreExternalPaths -}}
       {{- $externalWithSlash := printf "%s/" (trimSuffix "/" $externalPath) -}}
-      {{- if and (or $effectiveCfg.existingSecret (ne $effectivePath $externalPath)) (or (eq $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash) (hasPrefix $externalWithSlash $pathWithSlash)) -}}
+      {{- $pathsOverlap := or (eq $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash) (hasPrefix $externalWithSlash $pathWithSlash) -}}
+      {{- if or (and $effectiveCfg.existingSecret $pathsOverlap) (and (not $effectiveCfg.existingSecret) (ne $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash)) -}}
         {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with orchestration.extraVolumeMounts." $label $id $effectivePath) -}}
       {{- end -}}
     {{- end -}}
@@ -1208,6 +1212,20 @@ Orchestration - Secret Store
     {{- end -}}
     {{- if $cfg.gcpServiceAccount -}}
       {{- $secretStoreGcpAccounts = append $secretStoreGcpAccounts (toString $cfg.gcpServiceAccount) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $secretStoreGcpConfigured := gt (len ($secretStore.gcp | default dict)) 0 -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- if gt (len ($providers.gcp | default dict)) 0 -}}
+    {{- $secretStoreGcpConfigured = true -}}
+  {{- end -}}
+{{- end -}}
+{{- if $secretStoreGcpConfigured -}}
+  {{- $orchestrationImageTag := include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) -}}
+  {{- if ne $orchestrationImageTag "SNAPSHOT" -}}
+    {{- if not (semverCompare ">=8.10.0-alpha5-0" $orchestrationImageTag) -}}
+      {{- fail (printf "[camunda][error] orchestration.secretStore.gcp requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT, but the effective image tag is '%s'." $orchestrationImageTag) -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
