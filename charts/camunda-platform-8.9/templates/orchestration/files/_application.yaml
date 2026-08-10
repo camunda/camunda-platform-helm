@@ -331,9 +331,9 @@ zeebe:
           {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
           authentication:
             username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
-            password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
+            password: "{{ include "orchestration.legacyElasticsearchExporterPasswordRef" . }}"
           {{- end }}
-          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          url: {{ include "camundaPlatform.legacyExporterElasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
@@ -347,16 +347,16 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
-          {{- if and (not (or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled)) (not .Values.optimize.database.opensearch.aws.enabled) }}
+          {{- if ne (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true" }}
           authentication:
             username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
-            password: "${VALUES_OPENSEARCH_PASSWORD:}"
+            password: "{{ include "orchestration.legacyOpenSearchExporterPasswordRef" . }}"
           {{- end }}
-          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          url: {{ include "camundaPlatform.legacyExporterOpensearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
-          {{- if or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
+          {{- if eq (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true" }}
           aws:
             enabled: true
           {{- end }}

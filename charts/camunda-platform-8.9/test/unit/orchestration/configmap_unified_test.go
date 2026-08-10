@@ -218,6 +218,134 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestLegacyExporterDatastoreSourceAlignment() {
+	distinctOpenSearchSources := map[string]string{
+		"optimize.enabled":                                                        "true",
+		"optimize.database.elasticsearch.enabled":                                 "false",
+		"optimize.database.opensearch.enabled":                                    "true",
+		"optimize.database.opensearch.url.protocol":                               "https",
+		"optimize.database.opensearch.url.host":                                   "optimize-host",
+		"optimize.database.opensearch.url.port":                                   "9555",
+		"optimize.database.opensearch.auth.username":                              "optimize-user",
+		"optimize.database.opensearch.auth.secret.inlineSecret":                   "optimize-password",
+		"orchestration.data.secondaryStorage.type":                                "opensearch",
+		"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+		"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
+		"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestLegacyOpenSearchExporterUsesOptimizeSource",
+			Values: distinctOpenSearchSources,
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.url":                     "https://optimize-host:9555",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "optimize-user",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.password": "${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.url":                  "https://secondary-host:9443",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.username":             "secondary-user",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.password":             "${VALUES_OPENSEARCH_PASSWORD:}",
+			},
+		},
+		{
+			Name: "TestLegacyOpenSearchExporterUsesOptimizePasswordOnSharedEndpoint",
+			Values: map[string]string{
+				"optimize.enabled":                                      "true",
+				"optimize.database.elasticsearch.enabled":               "false",
+				"optimize.database.opensearch.enabled":                  "true",
+				"optimize.database.opensearch.url.protocol":             "https",
+				"optimize.database.opensearch.url.host":                 "opensearch.example.com",
+				"optimize.database.opensearch.url.port":                 "443",
+				"optimize.database.opensearch.auth.username":            "optimize-user",
+				"optimize.database.opensearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":              "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":    "https://opensearch.example.com:443",
+			},
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.url":                     "https://opensearch.example.com:443",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.password": "${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}",
+			},
+		},
+		{
+			Name: "TestLegacyOpenSearchExporterFallsBackToSecondaryStorageSource",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "true",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "true",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.url":                     "https://secondary-host:9443",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "secondary-user",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.password": "${VALUES_OPENSEARCH_PASSWORD:}",
+			},
+		},
+		{
+			Name: "TestLegacyOpenSearchExporterUsesOptimizeAwsMode",
+			Values: mergeValues(distinctOpenSearchSources, map[string]string{
+				"optimize.database.opensearch.aws.enabled":                   "true",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "false",
+			}),
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.aws.enabled":             "true",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled":          "false",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.password": "",
+			},
+		},
+		{
+			Name: "TestLegacyOpenSearchExporterIgnoresSecondaryStorageAwsMode",
+			Values: mergeValues(distinctOpenSearchSources, map[string]string{
+				"optimize.database.opensearch.aws.enabled":                   "false",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
+			}),
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "optimize-user",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled":          "true",
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.aws.enabled":             "",
+			},
+		},
+		{
+			Name: "TestLegacyElasticsearchExporterUsesOptimizeSource",
+			Values: map[string]string{
+				"optimize.enabled":                                         "true",
+				"optimize.database.opensearch.enabled":                     "false",
+				"optimize.database.elasticsearch.enabled":                  "true",
+				"optimize.database.elasticsearch.external":                 "true",
+				"optimize.database.elasticsearch.url.protocol":             "https",
+				"optimize.database.elasticsearch.url.host":                 "optimize-host",
+				"optimize.database.elasticsearch.url.port":                 "9555",
+				"optimize.database.elasticsearch.auth.username":            "optimize-user",
+				"optimize.database.elasticsearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.url":    "https://secondary-host:9443",
+			},
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.elasticsearch.args.url":                     "https://optimize-host:9555",
+				"configmapApplication.zeebe.broker.exporters.elasticsearch.args.authentication.username": "optimize-user",
+				"configmapApplication.zeebe.broker.exporters.elasticsearch.args.authentication.password": "${VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD:}",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.url":                  "https://secondary-host:9443",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func mergeValues(base map[string]string, overrides map[string]string) map[string]string {
+	merged := make(map[string]string, len(base)+len(overrides))
+	for key, value := range base {
+		merged[key] = value
+	}
+	for key, value := range overrides {
+		merged[key] = value
+	}
+	return merged
+}
+
 func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearchAWS() {
 	testCases := []testhelpers.TestCase{
 		{
