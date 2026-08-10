@@ -28,7 +28,9 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        {{- if (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) }}
         checksum/secret-store-identity: {{ include "camundaPlatform.secretStore.serviceAccountAnnotations" . | sha256sum }}
+        {{- end }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- if .Values.orchestration.podAnnotations }}
         {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}

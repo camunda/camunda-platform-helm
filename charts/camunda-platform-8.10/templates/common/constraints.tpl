@@ -1077,7 +1077,8 @@ Orchestration - Secret Store
 */}}
 
 {{- $secretStore := .Values.orchestration.secretStore | default dict -}}
-{{- if hasKey (.Values.orchestration.podAnnotations | default dict) "checksum/secret-store-identity" -}}
+{{- $secretStoreIdentityAnnotations := include "camundaPlatform.secretStore.serviceAccountAnnotations" . -}}
+{{- if and $secretStoreIdentityAnnotations (hasKey (.Values.orchestration.podAnnotations | default dict) "checksum/secret-store-identity") -}}
   {{- fail "[camunda][error] orchestration.podAnnotations must not set the reserved 'checksum/secret-store-identity' annotation." -}}
 {{- end -}}
 {{- $secretStoreTenants := list (dict "label" "orchestration.secretStore" "providers" $secretStore) -}}
@@ -1196,12 +1197,15 @@ Orchestration - Secret Store
     {{- end -}}
   {{- end -}}
   {{- range $id, $cfg := ($providers.aws | default dict) -}}
+    {{- if and (hasKey $cfg "roleArn") (eq (trim (toString $cfg.roleArn)) "") -}}
+      {{- fail (printf "[camunda][error] %s.aws.%s.roleArn must not be blank when set." $label $id) -}}
+    {{- end -}}
     {{- if $cfg.roleArn -}}
       {{- $secretStoreRoleArns = append $secretStoreRoleArns (toString $cfg.roleArn) -}}
     {{- end -}}
   {{- end -}}
   {{- range $id, $cfg := ($providers.gcp | default dict) -}}
-    {{- range $field := (list "projectId" "endpoint") -}}
+    {{- range $field := (list "projectId" "endpoint" "gcpServiceAccount") -}}
       {{- if and (hasKey $cfg $field) (eq (trim (toString (index $cfg $field))) "") -}}
         {{- $errorMessage := printf "[camunda][error] %s.gcp.%s.%s must not be blank when set." $label $id $field -}}
         {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
@@ -1261,6 +1265,9 @@ Orchestration - Secret Store
 {{- end -}}
 {{- if and $secretStoreConfigured .Values.orchestration.configuration -}}
   {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.configuration because the custom application.yaml replaces the generated secret-store configuration. Configure camunda.secrets.* directly in orchestration.configuration instead." -}}
+{{- end -}}
+{{- if and $secretStoreConfigured .Values.orchestration.extraConfiguration -}}
+  {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.extraConfiguration because imported files can override the validated secret-store configuration. Configure the complete secret store through orchestration.extraConfiguration instead." -}}
 {{- end -}}
 {{- if and $secretStoreAnnotations .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) (hasKey $secretStoreAnnotations "eks.amazonaws.com/role-arn") -}}
   {{- fail "[camunda][error] orchestration.secretStore AWS workload identity cannot be combined with static AWS document-store credentials because the AWS SDK credential chain selects environment credentials before IRSA." -}}
