@@ -11,6 +11,8 @@ on:
       - "charts/camunda-platform-*/**"
       - "test/upgrade-paths/**"
       - "scripts/upgrade-paths/**"
+      - "scripts/camunda-core/pkg/chartvalues/**"
+      - "scripts/deploy-camunda/**"
       - ".github/workflows/upgrade-paths.yaml"
   merge_group: {}
   schedule:
