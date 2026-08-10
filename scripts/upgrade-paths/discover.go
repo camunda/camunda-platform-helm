@@ -56,16 +56,20 @@ func Discover(ctx context.Context, r Renderer, t Transition, repoRoot, workDir s
 	var out DiscoveryResult
 	seen := map[string]bool{}
 
-	base := append([]string{}, t.BaselineLayers...)
-	if t.DeltaPath != "" {
-		base = append(base, t.DeltaPath)
-	}
-
 	// Guards test key presence, so keys must be deleted from a consolidated
 	// document rather than nulled in an overlay.
-	merged, err := chartvalues.MergeFiles(base)
+	merged, err := chartvalues.MergeFiles(t.BaselineLayers)
 	if err != nil {
 		return out, err
+	}
+	delta := chartvalues.Delta{Set: chartvalues.Values{}}
+	if t.DeltaPath != "" {
+		delta, err = chartvalues.LoadDelta(t.DeltaPath)
+		if err != nil {
+			return out, err
+		}
+		merged = chartvalues.Merge(merged, delta.Set)
+		merged = chartvalues.Merge(merged, delta.Scaffolding)
 	}
 
 	for round := 0; round < maxDiscoveryRounds; round++ {
@@ -88,6 +92,10 @@ func Discover(ctx context.Context, r Renderer, t Transition, repoRoot, workDir s
 			out.Final = res
 			out.Residual = Signature(res.Stderr).Title
 			return out, nil
+		}
+		if target, renamed := delta.Rename[change.Old]; renamed {
+			change.Kind = "renamed"
+			change.New = target
 		}
 		if seen[change.Old] {
 			out.Final = res

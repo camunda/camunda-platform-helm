@@ -8,9 +8,7 @@ name: "Upgrade Paths - Render"
 on:
   pull_request:
     paths:
-      - "charts/camunda-platform-*/values.yaml"
-      - "charts/camunda-platform-*/templates/common/constraints.tpl"
-      - "charts/camunda-platform-*/test/integration/scenarios/chart-full-setup/values/**"
+      - "charts/camunda-platform-*/**"
       - "test/upgrade-paths/**"
       - "scripts/upgrade-paths/**"
       - ".github/workflows/upgrade-paths.yaml"
@@ -88,8 +86,12 @@ jobs:
             helm
             golang
 
-      - name: Build upgrade-paths
-        run: cd scripts/upgrade-paths && go build -o "${RUNNER_TEMP}/upgrade-paths" .
+      - name: Test and build upgrade-paths
+        run: |
+          cd scripts/upgrade-paths
+          go test ./...
+          go vet ./...
+          go build -o "${RUNNER_TEMP}/upgrade-paths" .
 
       - name: Render upgrade paths
         id: render

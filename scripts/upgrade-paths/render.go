@@ -39,10 +39,10 @@ const (
 
 // RenderResult captures one `helm template` invocation.
 type RenderResult struct {
-	Kind      RunKind       `json:"kind"`
-	Succeeded bool          `json:"succeeded"`
-	Stderr    string        `json:"stderr,omitempty"`
-	Duration  time.Duration `json:"durationMs"`
+	Kind      RunKind `json:"kind"`
+	Succeeded bool    `json:"succeeded"`
+	Stderr    string  `json:"stderr,omitempty"`
+	Duration  int64   `json:"durationMs"`
 	// Manifest is retained only on success.
 	Manifest string `json:"-"`
 	// ValuesFiles is the ordered -f list.
@@ -107,7 +107,7 @@ func Render(ctx context.Context, r Renderer, t Transition, kind RunKind, repoRoo
 	res := RenderResult{Kind: kind, ValuesFiles: files}
 	start := time.Now()
 	stdout, stderr, err := r.Template(ctx, ChartDir(repoRoot, t.To), files)
-	res.Duration = time.Since(start)
+	res.Duration = time.Since(start).Milliseconds()
 	res.Stderr = strings.TrimSpace(stderr)
 	if err == nil {
 		res.Succeeded = true
