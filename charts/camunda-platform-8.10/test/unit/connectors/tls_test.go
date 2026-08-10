@@ -204,6 +204,31 @@ func (s *ConnectorsTLSTest) TestTLSEnvAndVolumeWiring() {
 				s.Require().Len(positions, 2, "both entries should be rendered so the user-supplied one wins last")
 				s.Require().Equal("true", env[positions[0]].Value)
 				s.Require().Equal("false", env[positions[1]].Value)
+
+				container := deployment.Spec.Template.Spec.Containers[0]
+				s.Require().NotNil(container.ReadinessProbe)
+				s.Require().Equal(corev1.URIScheme("HTTP"), container.ReadinessProbe.HTTPGet.Scheme,
+					"probe must follow the env override that actually reaches the container")
+			},
+		},
+		{
+			Name: "Probe scheme falls back to the global flag when the env override is valueFrom-sourced",
+			Values: map[string]string{
+				"connectors.enabled":                               "true",
+				"global.tls.connectors.enabled":                    "true",
+				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
+				"connectors.env[0].name":                           "SERVER_SSL_ENABLED",
+				"connectors.env[0].valueFrom.secretKeyRef.name":    "ssl-toggle",
+				"connectors.env[0].valueFrom.secretKeyRef.key":     "enabled",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				container := deployment.Spec.Template.Spec.Containers[0]
+				s.Require().NotNil(container.ReadinessProbe)
+				s.Require().Equal(corev1.URIScheme("HTTPS"), container.ReadinessProbe.HTTPGet.Scheme)
 			},
 		},
 		{
@@ -428,8 +453,8 @@ func (s *ConnectorsTLSTest) TestTLSChecksumAnnotation() {
 				"global.tls.connectors.enabled":                    "true",
 				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
 			},
-			Expected: map[string]string{
-				"spec.template.metadata.annotations.checksum/connectors-tls": "",
+			Unexpected: []string{
+				"spec.template.metadata.annotations.checksum/connectors-tls",
 			},
 		},
 		{
@@ -439,8 +464,8 @@ func (s *ConnectorsTLSTest) TestTLSChecksumAnnotation() {
 				"connectors.enabled":                       "true",
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 			},
-			Expected: map[string]string{
-				"spec.template.metadata.annotations.checksum/connectors-tls": "",
+			Unexpected: []string{
+				"spec.template.metadata.annotations.checksum/connectors-tls",
 			},
 		},
 	}

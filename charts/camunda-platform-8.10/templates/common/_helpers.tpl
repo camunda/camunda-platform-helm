@@ -953,14 +953,22 @@ ingress-orchestration-http.yaml serves that route with an HTTPS backend.
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true" when Connectors TLS is enabled via
-global.tls.connectors.enabled or via an explicit SERVER_SSL_ENABLED=true
-entry in connectors.env.
+[camunda-platform] Returns "true" when Connectors TLS is enabled. An explicit
+connectors.env entry for SERVER_SSL_ENABLED wins over
+global.tls.connectors.enabled, because Kubernetes keeps the LAST duplicate env
+var and the chart must report the same TLS state the running container actually
+ends up with — probe schemes and the in-cluster Connectors URL are derived from
+this helper. A "valueFrom"-sourced entry (no literal value) resolves to
+"unknown" from connectorsEnvLastValue and is treated the same as "unset" here,
+mirroring camundaPlatform.orchestrationRESTTLSEnabled.
 */}}
 {{- define "camundaPlatform.connectorsTLSEnabled" -}}
-  {{- if .Values.global.tls.connectors.enabled -}}
+  {{- $envValue := include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- if eq $envValue "true" -}}
     true
-  {{- else if eq (include "camundaPlatform.connectorsEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true" -}}
+  {{- else if eq $envValue "false" -}}
+    false
+  {{- else if .Values.global.tls.connectors.enabled -}}
     true
   {{- else -}}
     false
@@ -968,18 +976,36 @@ entry in connectors.env.
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns true when the last connectors.env entry for name has value true.
+[camunda-platform] Resolves the LAST connectors.env entry for name to one of
+"true" / "false" / "unset" / "unknown", mirroring
+camundaPlatform.orchestrationEnvLastValue. "unset" means no matching entry
+exists at all. "unknown" means the last matching entry carries no literal value
+but does carry a valueFrom (e.g. a Secret/ConfigMap key) — the chart cannot read
+that value at render time, so callers must fall back to the global TLS flag
+rather than treat it as "false".
+Usage:
+  {{ include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") }}
 */}}
-{{- define "camundaPlatform.connectorsEnvIsTrue" -}}
+{{- define "camundaPlatform.connectorsEnvLastValue" -}}
   {{- $ctx := .context -}}
   {{- $name := .name -}}
-  {{- $enabled := false -}}
+  {{- $result := "unset" -}}
   {{- range $env := $ctx.Values.connectors.env -}}
     {{- if eq ($env.name | default "") $name -}}
-      {{- $enabled = (eq (lower (tpl (toString ($env.value | default "")) $ctx)) "true") -}}
+      {{- if $env.value -}}
+        {{- if eq (lower (tpl (toString $env.value) $ctx)) "true" -}}
+          {{- $result = "true" -}}
+        {{- else -}}
+          {{- $result = "false" -}}
+        {{- end -}}
+      {{- else if $env.valueFrom -}}
+        {{- $result = "unknown" -}}
+      {{- else -}}
+        {{- $result = "false" -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
-  {{- $enabled -}}
+  {{- $result -}}
 {{- end -}}
 
 
