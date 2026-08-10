@@ -4729,7 +4729,7 @@
                     "properties": {
                         "file": {
                             "type": "object",
-                            "description": "can be used to configure a file-based secret store under the required `default` store id. The entry supports `path` (directory the store reads secrets from, one file per secret; defaults to \"/etc/camunda/secrets\") and the chart-only `existingSecret` (an optional Kubernetes Secret mounted read-only at `path`). Example: `default: {existingSecret: my-secrets, path: /etc/camunda/secrets}`.",
+                            "description": "can be used to configure a file-based secret store under the required `default` store id. The entry supports `path` (directory the store reads secrets from, one file per secret; defaults to \"/etc/camunda/secrets\") and the chart-only `secret.existingSecret` (an optional Kubernetes Secret mounted read-only at `path`). Example: `default: {secret: {existingSecret: my-secrets}, path: /etc/camunda/secrets}`.",
                             "default": {}
                         },
                         "aws": {
@@ -4744,7 +4744,7 @@
                         },
                         "physicalTenants": {
                             "type": "object",
-                            "description": "can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and `default` store id when overriding a root store. File-store `existingSecret` is inherited together with the runtime fields. Physical tenant ids must contain only lowercase letters and digits. Example: `tenanta: {aws: {default: {region: us-east-1}}}`.",
+                            "description": "can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and `default` store id when overriding a root store. File-store `secret.existingSecret` is inherited together with the runtime fields. Physical tenant ids must contain only lowercase letters and digits. Example: `tenanta: {aws: {default: {region: us-east-1}}}`.",
                             "default": {}
                         }
                     },
@@ -6844,9 +6844,15 @@
                         "pattern": "^/",
                         "minLength": 1
                     },
-                    "existingSecret": {
-                        "type": "string",
-                        "minLength": 1
+                    "secret": {
+                        "type": "object",
+                        "properties": {
+                            "existingSecret": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        },
+                        "additionalProperties": false
                     }
                 },
                 "additionalProperties": false

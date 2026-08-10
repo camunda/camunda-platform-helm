@@ -54,8 +54,8 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "More than one store is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(baseValues(), map[string]string{
-				"orchestration.secretStore.file.default.existingSecret": "s",
-				"orchestration.secretStore.aws.default.region":          "us-east-1",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
+				"orchestration.secretStore.aws.default.region":                 "us-east-1",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -66,8 +66,8 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "More than one store within a physical tenant is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.physicalTenants.tenanta.file.default.existingSecret": "s",
-				"orchestration.secretStore.physicalTenants.tenanta.aws.default.region":          "us-east-1",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.secret.existingSecret": "s",
+				"orchestration.secretStore.physicalTenants.tenanta.aws.default.region":                 "us-east-1",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -197,8 +197,8 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Reserved file mount path is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/usr/local/camunda/config",
-				"orchestration.secretStore.file.default.existingSecret": "s",
+				"orchestration.secretStore.file.default.path":                  "/usr/local/camunda/config",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -209,8 +209,8 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Root file mount path is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/",
-				"orchestration.secretStore.file.default.existingSecret": "s",
+				"orchestration.secretStore.file.default.path":                  "/",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -221,8 +221,8 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Non-canonical file mount path is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/etc//camunda/secrets",
-				"orchestration.secretStore.file.default.existingSecret": "s",
+				"orchestration.secretStore.file.default.path":                  "/etc//camunda/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -233,8 +233,8 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Trailing slash file mount path is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/etc/camunda/secrets/",
-				"orchestration.secretStore.file.default.existingSecret": "s",
+				"orchestration.secretStore.file.default.path":                  "/etc/camunda/secrets/",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -245,9 +245,9 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Different Secrets at one inherited path are rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":                                   "/etc/camunda/secrets",
-				"orchestration.secretStore.file.default.existingSecret":                         "root-secret",
-				"orchestration.secretStore.physicalTenants.tenanta.file.default.existingSecret": "tenant-secret",
+				"orchestration.secretStore.file.default.path":                                          "/etc/camunda/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret":                         "root-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.secret.existingSecret": "tenant-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -258,10 +258,10 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Extra volume mount collision is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/custom/secrets",
-				"orchestration.secretStore.file.default.existingSecret": "s",
-				"orchestration.extraVolumeMounts[0].name":               "custom",
-				"orchestration.extraVolumeMounts[0].mountPath":          "/custom/secrets",
+				"orchestration.secretStore.file.default.path":                  "/custom/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
+				"orchestration.extraVolumeMounts[0].name":                      "custom",
+				"orchestration.extraVolumeMounts[0].mountPath":                 "/custom/secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -272,10 +272,10 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Non-canonical extra volume mount is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/custom/secrets",
-				"orchestration.secretStore.file.default.existingSecret": "s",
-				"orchestration.extraVolumeMounts[0].name":               "custom",
-				"orchestration.extraVolumeMounts[0].mountPath":          "/custom/./secrets",
+				"orchestration.secretStore.file.default.path":                  "/custom/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
+				"orchestration.extraVolumeMounts[0].name":                      "custom",
+				"orchestration.extraVolumeMounts[0].mountPath":                 "/custom/./secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -325,9 +325,9 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Generated volume name collision is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.existingSecret": "s",
-				"orchestration.extraVolumes[0].name":                    "secretstore-default-default-2fbbe682",
-				"orchestration.extraVolumes[0].emptyDir.medium":         "Memory",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
+				"orchestration.extraVolumes[0].name":                           "secretstore-default-default-2fbbe682",
+				"orchestration.extraVolumes[0].emptyDir.medium":                "Memory",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -338,12 +338,12 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "GCP document store mount collision is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":            "/custom/gcp",
-				"orchestration.secretStore.file.default.existingSecret":  "s",
-				"global.documentStore.type.gcp.enabled":                  "true",
-				"global.documentStore.type.gcp.mountPath":                "/custom/gcp",
-				"global.documentStore.type.gcp.secret.existingSecret":    "gcp-secret",
-				"global.documentStore.type.gcp.secret.existingSecretKey": "service-account.json",
+				"orchestration.secretStore.file.default.path":                  "/custom/gcp",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
+				"global.documentStore.type.gcp.enabled":                        "true",
+				"global.documentStore.type.gcp.mountPath":                      "/custom/gcp",
+				"global.documentStore.type.gcp.secret.existingSecret":          "gcp-secret",
+				"global.documentStore.type.gcp.secret.existingSecretKey":       "service-account.json",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
@@ -354,10 +354,10 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			Name:     "Extra configuration mount collision is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/usr/local/camunda/config/custom.yaml",
-				"orchestration.secretStore.file.default.existingSecret": "s",
-				"orchestration.extraConfiguration[0].file":              "custom.yaml",
-				"orchestration.extraConfiguration[0].content":           "camunda: {}",
+				"orchestration.secretStore.file.default.path":                  "/usr/local/camunda/config/custom.yaml",
+				"orchestration.secretStore.file.default.secret.existingSecret": "s",
+				"orchestration.extraConfiguration[0].file":                     "custom.yaml",
+				"orchestration.extraConfiguration[0].content":                  "camunda: {}",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)

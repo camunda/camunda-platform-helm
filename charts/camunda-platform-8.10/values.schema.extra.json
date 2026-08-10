@@ -13,9 +13,15 @@
                         "pattern": "^/",
                         "minLength": 1
                     },
-                    "existingSecret": {
-                        "type": "string",
-                        "minLength": 1
+                    "secret": {
+                        "type": "object",
+                        "properties": {
+                            "existingSecret": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        },
+                        "additionalProperties": false
                     }
                 },
                 "additionalProperties": false

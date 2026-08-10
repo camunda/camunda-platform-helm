@@ -1787,7 +1787,7 @@ Usage:
 */}}
 {{- define "camundaPlatform.secretStore._storesDict" -}}
 {{- $providers := . | default dict -}}
-{{- $reserved := list "existingSecret" "roleArn" "gcpServiceAccount" -}}
+{{- $reserved := list "secret" "roleArn" "gcpServiceAccount" -}}
 {{- $stores := dict -}}
 {{- range $type := (list "file" "aws" "gcp") -}}
   {{- $entries := index $providers $type -}}

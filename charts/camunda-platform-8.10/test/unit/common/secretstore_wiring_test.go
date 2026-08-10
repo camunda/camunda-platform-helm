@@ -149,8 +149,8 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 			Name:     "File store mounts the existing secret as a volume",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/etc/camunda/secrets",
-				"orchestration.secretStore.file.default.existingSecret": "my-secrets",
+				"orchestration.secretStore.file.default.path":                  "/etc/camunda/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret": "my-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -233,7 +233,7 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
 				"orchestration.secretStore.file.default.path":                         "/root/secrets",
-				"orchestration.secretStore.file.default.existingSecret":               "shared-secret",
+				"orchestration.secretStore.file.default.secret.existingSecret":        "shared-secret",
 				"orchestration.secretStore.physicalTenants.tenanta.file.default.path": "/tenant/secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
@@ -260,9 +260,9 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 			Name:     "Inherited identical file mount is deduplicated",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":                                   "/etc/camunda/secrets",
-				"orchestration.secretStore.file.default.existingSecret":                         "shared-secret",
-				"orchestration.secretStore.physicalTenants.tenanta.file.default.existingSecret": "shared-secret",
+				"orchestration.secretStore.file.default.path":                                          "/etc/camunda/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.secret.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -281,10 +281,10 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 			Name:     "Physical tenant named default has a distinct volume name",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":                                   "/root/secrets",
-				"orchestration.secretStore.file.default.existingSecret":                         "shared-secret",
-				"orchestration.secretStore.physicalTenants.default.file.default.path":           "/tenant/secrets",
-				"orchestration.secretStore.physicalTenants.default.file.default.existingSecret": "shared-secret",
+				"orchestration.secretStore.file.default.path":                                          "/root/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.default.file.default.path":                  "/tenant/secrets",
+				"orchestration.secretStore.physicalTenants.default.file.default.secret.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)

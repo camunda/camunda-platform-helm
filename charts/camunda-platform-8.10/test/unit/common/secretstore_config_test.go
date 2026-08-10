@@ -82,8 +82,8 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Name:     "File secret store renders camunda.secrets.stores.file",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":           "/etc/camunda/secrets",
-				"orchestration.secretStore.file.default.existingSecret": "my-secrets",
+				"orchestration.secretStore.file.default.path":                  "/etc/camunda/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret": "my-secrets",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -192,9 +192,9 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 			Name:     "Physical tenant file store inherits root path",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.path":                                   "/root/secrets",
-				"orchestration.secretStore.file.default.existingSecret":                         "shared-secret",
-				"orchestration.secretStore.physicalTenants.tenanta.file.default.existingSecret": "shared-secret",
+				"orchestration.secretStore.file.default.path":                                          "/root/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret":                         "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.secret.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
