@@ -8,6 +8,9 @@ platforms: [gke]
 infra-type:
   gke: distroci
 features: [synthetic-feature]
+e2e-full-suite: true
+e2e-smoke-blocking: false
+e2e-full-suite-blocking: true
 pre-install: cnpg-default
 post-deploy: post-deploy-beta
 dependencies:

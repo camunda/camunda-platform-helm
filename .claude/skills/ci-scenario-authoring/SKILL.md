@@ -47,6 +47,31 @@ dependencies: [keycloak, elasticsearch]
 pre-install: elasticsearch-self-signed   # optional — hook name, see below
 ```
 
+### E2E legs
+
+The after-install Playwright job is a matrix of *legs* — one per Playwright project — each with its
+own blocking behaviour. Every scenario gets a blocking `smoke` leg; three optional fields change that:
+
+```yaml
+e2e-full-suite: true            # add a second leg running the full-suite project
+e2e-smoke-blocking: false       # default true  — smoke failures fail the run
+e2e-full-suite-blocking: true   # default false — full-suite failures are informational
+```
+
+The two blocking fields are tri-state: omit them to keep the default, since `e2e-smoke-blocking`
+defaults to *true* and an absent key must not read as false.
+
+`test-integration-template.yaml` resolves the legs from the registry via
+`deploy-camunda ci e2e-matrix` and passes them to `test-integration-runner.yaml` as the JSON
+`e2e-matrix` input, so they apply to scenarios invoked directly by an external caller (the AlwaysGreen
+gate) as well as to the generated PR matrix. Resolution keys on **shortname**, not scenario name —
+several registry files share a `name:` (8.8 has three `name: elasticsearch`) and only shortname is
+unique. The full leg gets the long-running runner and a 60-minute timeout; legs are serialized
+(`max-parallel: 1`) because `smoke-tests.spec.js` matches the full-suite glob too and both legs share
+one deployment. `skip-e2e: true` yields no legs at all (a skipped job) and combining it with any of
+these fields is rejected by the registry validator, as is `e2e-full-suite-blocking` without
+`e2e-full-suite`.
+
 The `features` array maps to `values/features/<name>.yaml`. The `migrator` feature enables identity and data migration jobs during upgrades — use it for any `upgrade-minor` scenario. Note: the automatic `needsMigrator()` function in `scenarios.go` only activates when `ChartVersion` starts with "13", but the matrix runner does not set `ChartVersion`, so always use `features: [migrator]` explicitly.
 
 ## Pre-Install Hooks (Scenario-Specific)

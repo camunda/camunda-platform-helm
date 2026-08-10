@@ -8,5 +8,6 @@ persistence: elasticsearch
 platforms: [gke]
 infra-type:
   gke: distroci
+e2e-full-suite: true
 dependencies:
   - keycloak-26

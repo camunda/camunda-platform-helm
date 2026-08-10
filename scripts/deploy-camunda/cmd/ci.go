@@ -8,6 +8,8 @@ import (
 
 	"scripts/camunda-core/pkg/ciworkflow"
 	"scripts/camunda-core/pkg/ghactions"
+	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/matrix"
 
 	"github.com/spf13/cobra"
 )
@@ -23,8 +25,64 @@ func newCICommand() *cobra.Command {
 	ciCmd.AddCommand(newCITestTypeVarsCommand())
 	ciCmd.AddCommand(newCIWorkflowVarsCommand())
 	ciCmd.AddCommand(newCIIntegrationMatrixCommand())
+	ciCmd.AddCommand(newCIE2EMatrixCommand())
 
 	return ciCmd
+}
+
+// newCIE2EMatrixCommand creates the "ci e2e-matrix" subcommand. It resolves the
+// scenario's e2e legs from the chart version's CI scenario registry and writes
+// them to $GITHUB_OUTPUT as the JSON matrix test-integration-runner.yaml feeds
+// to `matrix.include`, so the Playwright project and the blocking behavior of
+// each leg come from the registry instead of a scenario-name comparison.
+func newCIE2EMatrixCommand() *cobra.Command {
+	var (
+		repoRoot  string
+		chartDir  string
+		shortname string
+		scenario  string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "e2e-matrix",
+		Short: "Resolve a scenario's e2e matrix legs from the CI scenario registry",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root := repoRoot
+			if root == "" {
+				detected, err := config.DetectRepoRoot()
+				if err != nil {
+					return err
+				}
+				root = detected
+			}
+
+			legs, err := matrix.ResolveE2ELegs(root, chartDir, shortname, scenario)
+			if err != nil {
+				return err
+			}
+			legsJSON, err := matrix.E2ELegsJSON(legs)
+			if err != nil {
+				return err
+			}
+
+			out := ghactions.NewGitHubOutput()
+			if out.Path == "" {
+				fmt.Fprintf(os.Stdout, "e2e-matrix=%s\n", legsJSON)
+				return nil
+			}
+			fmt.Fprintf(os.Stdout, "e2e-matrix=%s\n", legsJSON)
+			return out.Set("e2e-matrix", legsJSON)
+		},
+	}
+
+	cmd.Flags().StringVar(&repoRoot, "repo-root", "", "repository root; auto-detected when empty")
+	cmd.Flags().StringVar(&chartDir, "chart-dir", "", "chart directory name, e.g. camunda-platform-8.10")
+	cmd.Flags().StringVar(&shortname, "shortname", "", "scenario shortname; preferred over --scenario because scenario names are not unique")
+	cmd.Flags().StringVar(&scenario, "scenario", "", "scenario name as declared in the registry; used when --shortname matches nothing")
+	_ = cmd.MarkFlagRequired("chart-dir")
+	_ = cmd.MarkFlagRequired("scenario")
+
+	return cmd
 }
 
 // newCIWorkflowVarsCommand creates the "ci workflow-vars" subcommand. It
