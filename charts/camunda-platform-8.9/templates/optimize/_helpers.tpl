@@ -145,6 +145,13 @@ When neither backend is explicitly enabled, falls back to "zeebe-record".
 {{- end -}}
 
 {{/*
+[optimize] Resolve the effective OpenSearch AWS mode from the component-first chain.
+*/}}
+{{- define "optimize.effectiveOsAwsEnabled" -}}
+{{- or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
+{{- end -}}
+
+{{/*
 [optimize] Resolve the effective Elasticsearch username from the component-first chain.
 */}}
 {{- define "optimize.effectiveEsUsername" -}}

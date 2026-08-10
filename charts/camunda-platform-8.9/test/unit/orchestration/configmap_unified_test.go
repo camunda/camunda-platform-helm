@@ -351,31 +351,6 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterDatastoreSourceAlignment() {
 			},
 		},
 		{
-			Name: "TestLegacyOpenSearchExporterUsesOptimizeAwsMode",
-			Values: mergeValues(distinctOpenSearchSources, map[string]string{
-				"optimize.database.opensearch.aws.enabled":                   "true",
-				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "false",
-			}),
-			Expected: map[string]string{
-				"configmapApplication.zeebe.broker.exporters.opensearch.args.aws.enabled":             "true",
-				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled":          "false",
-				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "",
-				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.password": "",
-			},
-		},
-		{
-			Name: "TestLegacyOpenSearchExporterIgnoresSecondaryStorageAwsMode",
-			Values: mergeValues(distinctOpenSearchSources, map[string]string{
-				"optimize.database.opensearch.aws.enabled":                   "false",
-				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
-			}),
-			Expected: map[string]string{
-				"configmapApplication.zeebe.broker.exporters.opensearch.args.authentication.username": "optimize-user",
-				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled":          "true",
-				"configmapApplication.zeebe.broker.exporters.opensearch.args.aws.enabled":             "",
-			},
-		},
-		{
 			Name: "TestLegacyElasticsearchExporterUsesOptimizeSource",
 			Values: map[string]string{
 				"optimize.enabled":                                         "true",
@@ -402,8 +377,113 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterDatastoreSourceAlignment() {
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConfigmapTemplateTest) TestLegacyOpenSearchExporterIgnoresOptimizeAwsModeForSecondaryStorageSource() {
+type legacyOpenSearchExporterArgs struct {
+	Authentication *struct {
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"authentication"`
+	URL string `yaml:"url"`
+	AWS *struct {
+		Enabled bool `yaml:"enabled"`
+	} `yaml:"aws"`
+}
+
+type legacyExporterApplicationConfig struct {
+	Zeebe struct {
+		Broker struct {
+			Exporters struct {
+				OpenSearch struct {
+					Args legacyOpenSearchExporterArgs `yaml:"args"`
+				} `yaml:"opensearch"`
+			} `yaml:"exporters"`
+		} `yaml:"broker"`
+	} `yaml:"zeebe"`
+	Camunda struct {
+		Data struct {
+			SecondaryStorage struct {
+				OpenSearch struct {
+					AwsEnabled bool `yaml:"aws-enabled"`
+				} `yaml:"opensearch"`
+			} `yaml:"secondary-storage"`
+		} `yaml:"data"`
+	} `yaml:"camunda"`
+}
+
+func verifyLegacyExporterApplication(verify func(t *testing.T, application legacyExporterApplicationConfig)) func(t *testing.T, output string, err error) {
+	return func(t *testing.T, output string, err error) {
+		require.NoError(t, err)
+
+		var configMap corev1.ConfigMap
+		helm.UnmarshalK8SYaml(t, output, &configMap)
+
+		var application legacyExporterApplicationConfig
+		require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+		verify(t, application)
+	}
+}
+
+func (s *ConfigmapTemplateTest) TestLegacyOpenSearchExporterAwsSourceAlignment() {
+	distinctOpenSearchSources := map[string]string{
+		"optimize.enabled":                                                        "true",
+		"optimize.database.elasticsearch.enabled":                                 "false",
+		"optimize.database.opensearch.enabled":                                    "true",
+		"optimize.database.opensearch.url.protocol":                               "https",
+		"optimize.database.opensearch.url.host":                                   "optimize-host",
+		"optimize.database.opensearch.url.port":                                   "9555",
+		"optimize.database.opensearch.auth.username":                              "optimize-user",
+		"optimize.database.opensearch.auth.secret.inlineSecret":                   "optimize-password",
+		"orchestration.data.secondaryStorage.type":                                "opensearch",
+		"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+		"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
+		"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+	}
+
 	testCases := []testhelpers.TestCase{
+		{
+			Name: "Optimize AWS mode drops exporter authentication",
+			Values: mergeValues(distinctOpenSearchSources, map[string]string{
+				"optimize.database.opensearch.aws.enabled":                   "true",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "false",
+			}),
+			Verifier: verifyLegacyExporterApplication(func(t *testing.T, application legacyExporterApplicationConfig) {
+				args := application.Zeebe.Broker.Exporters.OpenSearch.Args
+				require.Equal(t, "https://optimize-host:9555", args.URL)
+				require.Nil(t, args.Authentication)
+				require.NotNil(t, args.AWS)
+				require.True(t, args.AWS.Enabled)
+				require.False(t, application.Camunda.Data.SecondaryStorage.OpenSearch.AwsEnabled)
+			}),
+		},
+		{
+			Name: "Secondary AWS mode does not cross to the Optimize source",
+			Values: mergeValues(distinctOpenSearchSources, map[string]string{
+				"optimize.database.opensearch.aws.enabled":                   "false",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
+			}),
+			Verifier: verifyLegacyExporterApplication(func(t *testing.T, application legacyExporterApplicationConfig) {
+				args := application.Zeebe.Broker.Exporters.OpenSearch.Args
+				require.Equal(t, "https://optimize-host:9555", args.URL)
+				require.Nil(t, args.AWS)
+				require.NotNil(t, args.Authentication)
+				require.Equal(t, "optimize-user", args.Authentication.Username)
+				require.Equal(t, "${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}", args.Authentication.Password)
+				require.True(t, application.Camunda.Data.SecondaryStorage.OpenSearch.AwsEnabled)
+			}),
+		},
+		{
+			Name: "Global AWS fallback applies to the Optimize source",
+			Values: mergeValues(distinctOpenSearchSources, map[string]string{
+				"global.opensearch.aws.enabled":                              "true",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "false",
+			}),
+			Verifier: verifyLegacyExporterApplication(func(t *testing.T, application legacyExporterApplicationConfig) {
+				args := application.Zeebe.Broker.Exporters.OpenSearch.Args
+				require.Equal(t, "https://optimize-host:9555", args.URL)
+				require.Nil(t, args.Authentication)
+				require.NotNil(t, args.AWS)
+				require.True(t, args.AWS.Enabled)
+			}),
+		},
 		{
 			Name: "Optimize AWS does not cross explicit secondary source",
 			Values: map[string]string{
@@ -417,41 +497,14 @@ func (s *ConfigmapTemplateTest) TestLegacyOpenSearchExporterIgnoresOptimizeAwsMo
 				"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
 				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-
-				var configMap corev1.ConfigMap
-				helm.UnmarshalK8SYaml(t, output, &configMap)
-
-				var application struct {
-					Zeebe struct {
-						Broker struct {
-							Exporters struct {
-								OpenSearch struct {
-									Args struct {
-										Authentication *struct {
-											Username string `yaml:"username"`
-											Password string `yaml:"password"`
-										} `yaml:"authentication"`
-										URL string `yaml:"url"`
-										AWS *struct {
-											Enabled bool `yaml:"enabled"`
-										} `yaml:"aws"`
-									} `yaml:"args"`
-								} `yaml:"opensearch"`
-							} `yaml:"exporters"`
-						} `yaml:"broker"`
-					} `yaml:"zeebe"`
-				}
-				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
-
+			Verifier: verifyLegacyExporterApplication(func(t *testing.T, application legacyExporterApplicationConfig) {
 				args := application.Zeebe.Broker.Exporters.OpenSearch.Args
 				require.Equal(t, "https://secondary-host:9443", args.URL)
 				require.NotNil(t, args.Authentication)
 				require.Equal(t, "secondary-user", args.Authentication.Username)
 				require.Equal(t, "${VALUES_OPENSEARCH_PASSWORD:}", args.Authentication.Password)
 				require.Nil(t, args.AWS)
-			},
+			}),
 		},
 	}
 

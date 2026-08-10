@@ -103,7 +103,7 @@ spec:
               value: {{ include "optimize.effectiveEsUsername" . | quote }}
             {{- end }}
             {{- end }}
-            {{- if or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
+            {{- if eq (include "optimize.effectiveOsAwsEnabled" .) "true" }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
@@ -232,7 +232,7 @@ spec:
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
               value: {{ .Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | default "600000" | quote }}
             {{- end }}
-            {{- if or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
+            {{- if eq (include "optimize.effectiveOsAwsEnabled" .) "true" }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
