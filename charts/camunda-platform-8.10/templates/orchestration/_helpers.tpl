@@ -395,12 +395,14 @@ ${VALUES_OPENSEARCH_PASSWORD:}
 {{- end -}}
 
 {{/*
-NOTE: when the legacy OpenSearch exporter targets the Optimize component endpoint, its AWS mode is
-owned by that component; otherwise it keeps the shared-endpoint resolution across all three sources.
+NOTE: the legacy OpenSearch exporter resolves AWS mode from the same endpoint source, retaining the
+shared fallback only when neither component defines an endpoint.
 */}}
 {{- define "orchestration.legacyOpenSearchExporterAwsEnabled" -}}
 {{- if (tpl .Values.optimize.database.opensearch.url.host $) -}}
 {{- .Values.optimize.database.opensearch.aws.enabled -}}
+{{- else if .Values.orchestration.data.secondaryStorage.opensearch.url -}}
+{{- or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
 {{- else -}}
 {{- or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled -}}
 {{- end -}}

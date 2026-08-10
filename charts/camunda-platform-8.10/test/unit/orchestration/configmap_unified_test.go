@@ -404,6 +404,62 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterDatastoreSourceAlignment() {
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestLegacyOpenSearchExporterIgnoresOptimizeAwsModeForSecondaryStorageSource() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Optimize AWS does not cross explicit secondary source",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "true",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "true",
+				"optimize.database.opensearch.aws.enabled":                                "true",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled":              "false",
+				"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+
+				var application struct {
+					Zeebe struct {
+						Broker struct {
+							Exporters struct {
+								OpenSearch struct {
+									Args struct {
+										Authentication *struct {
+											Username string `yaml:"username"`
+											Password string `yaml:"password"`
+										} `yaml:"authentication"`
+										URL string `yaml:"url"`
+										AWS *struct {
+											Enabled bool `yaml:"enabled"`
+										} `yaml:"aws"`
+									} `yaml:"args"`
+								} `yaml:"opensearch"`
+							} `yaml:"exporters"`
+						} `yaml:"broker"`
+					} `yaml:"zeebe"`
+				}
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+
+				args := application.Zeebe.Broker.Exporters.OpenSearch.Args
+				require.Equal(t, "https://secondary-host:9443", args.URL)
+				require.NotNil(t, args.Authentication)
+				require.Equal(t, "secondary-user", args.Authentication.Username)
+				require.Equal(t, "${VALUES_OPENSEARCH_PASSWORD:}", args.Authentication.Password)
+				require.Nil(t, args.AWS)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func mergeValues(base map[string]string, overrides map[string]string) map[string]string {
 	merged := make(map[string]string, len(base)+len(overrides))
 	for key, value := range base {
