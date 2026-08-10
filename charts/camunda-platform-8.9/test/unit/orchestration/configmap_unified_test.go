@@ -506,6 +506,28 @@ func (s *ConfigmapTemplateTest) TestLegacyOpenSearchExporterAwsSourceAlignment()
 				require.Nil(t, args.AWS)
 			}),
 		},
+		{
+			Name: "Optimize AWS does not apply to the compatibility source when Optimize is disabled",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "false",
+				"global.opensearch.enabled":                                               "true",
+				"global.opensearch.url.host":                                              "global-opensearch-host",
+				"orchestration.exporters.zeebe.enabled":                                   "true",
+				"optimize.database.opensearch.aws.enabled":                                "true",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.auth.username":            "secondary-user",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Verifier: verifyLegacyExporterApplication(func(t *testing.T, application legacyExporterApplicationConfig) {
+				args := application.Zeebe.Broker.Exporters.OpenSearch.Args
+				require.Equal(t, "https://secondary-host:9443", args.URL)
+				require.Nil(t, args.AWS)
+				require.NotNil(t, args.Authentication)
+				require.Equal(t, "secondary-user", args.Authentication.Username)
+				require.Equal(t, "${VALUES_OPENSEARCH_PASSWORD:}", args.Authentication.Password)
+			}),
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
