@@ -27,6 +27,9 @@ RELEASE="${RELEASE_NAME:-integration}"
 
 workdir="$(mktemp -d)"
 trap 'rm -rf "${workdir}"' EXIT
+mkdir -p "${workdir}/bin"
+ln -s "$(asdf which helm)" "${workdir}/bin/helm"
+export PATH="${workdir}/bin:${PATH}"
 
 echo "Cloning ${REPO}@${REF} ..."
 git clone --depth 1 --branch "${REF}" "${REPO}" "${workdir}/refs"
@@ -51,6 +54,11 @@ kc_pg_pass="$(kubectl get secret keycloak-postgresql -n "${NS}" \
 kubectl create secret generic external-pg-keycloak -n "${NS}" \
     --from-literal=password="${kc_pg_pass}" \
     --dry-run=client -o yaml | kubectl apply -f -
+for _ in {1..10}; do
+    kubectl get secret external-pg-keycloak -n "${NS}" >/dev/null 2>&1 && break
+    sleep 1
+done
+kubectl get secret external-pg-keycloak -n "${NS}" >/dev/null
 
 # --- Migration configuration (external mode, data-only) --------------------
 export NAMESPACE="${NS}"
