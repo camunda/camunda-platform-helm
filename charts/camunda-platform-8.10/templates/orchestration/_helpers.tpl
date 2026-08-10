@@ -374,6 +374,29 @@ and
 {{- end -}}
 
 {{/*
+NOTE: the legacy exporters connect to the datastore Optimize reads, so their endpoint, credentials,
+AWS mode, and TLS all resolve from the Optimize component chain whenever these predicates hold.
+The host term mirrors the gate the Optimize deployment uses to render its own connection env vars;
+when no host resolves, the exporter keeps the secondary-storage/global compatibility source.
+*/}}
+{{- define "orchestration.legacyElasticsearchExporterUsesOptimizeSource" -}}
+{{- and
+      (eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (ne (include "camundaPlatform.elasticsearchHost" .) "")
+-}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterUsesOptimizeSource" -}}
+{{- and
+      (ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (ne (include "camundaPlatform.opensearchHost" .) "")
+-}}
+{{- end -}}
+
+{{/*
 NOTE: the legacy exporters resolve their password from the Optimize component secret when one is
 configured, and fall back to the generic engine-wide variable otherwise. Both the emission in
 statefulset.yaml and the substitution here key off the same hasSecretConfig predicate.

@@ -149,6 +149,20 @@ When neither backend is explicitly enabled, falls back to "zeebe-record".
 {{- end -}}
 
 {{/*
+[optimize] Resolve the effective Elasticsearch URL from the component-first host/port/protocol chain.
+*/}}
+{{- define "optimize.effectiveEsURL" -}}
+{{- .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve the effective OpenSearch URL from the component-first host/port/protocol chain.
+*/}}
+{{- define "optimize.effectiveOsURL" -}}
+{{- .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . -}}
+{{- end -}}
+
+{{/*
 [optimize] Build a comma-separated spring.config.import line from extraConfiguration files.
 Entries with springImport: false are excluded.
 */}}

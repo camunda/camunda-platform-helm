@@ -400,11 +400,12 @@ Elasticsearch and Opensearch templates.
 
 {{/*
 [camunda-platform] Elasticsearch URL for the legacy Zeebe exporter that feeds Optimize.
-Prefers the Optimize component endpoint, falling back to the secondary-storage URL.
+Resolves the Optimize component chain when the exporter is Optimize-owned, and the
+secondary-storage/compatibility URL otherwise.
 */}}
 {{- define "camundaPlatform.legacyExporterElasticsearchURL" -}}
-{{- if (tpl .Values.optimize.database.elasticsearch.url.host $) -}}
-  {{ .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . }}
+{{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
+  {{ include "optimize.effectiveEsURL" . }}
 {{- else -}}
   {{ include "camundaPlatform.elasticsearchURL" . }}
 {{- end -}}
@@ -412,11 +413,12 @@ Prefers the Optimize component endpoint, falling back to the secondary-storage U
 
 {{/*
 [camunda-platform] OpenSearch URL for the legacy Zeebe exporter that feeds Optimize.
-Prefers the Optimize component endpoint, falling back to the secondary-storage URL.
+Resolves the Optimize component chain when the exporter is Optimize-owned, and the
+secondary-storage/compatibility URL otherwise.
 */}}
 {{- define "camundaPlatform.legacyExporterOpensearchURL" -}}
-{{- if (tpl .Values.optimize.database.opensearch.url.host $) -}}
-  {{ .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . }}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
+  {{ include "optimize.effectiveOsURL" . }}
 {{- else -}}
   {{ include "camundaPlatform.opensearchURL" . }}
 {{- end -}}
