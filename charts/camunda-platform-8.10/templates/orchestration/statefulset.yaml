@@ -163,6 +163,26 @@ spec:
                 "config" .Values.orchestration.data.secondaryStorage.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
+            {{- if and
+                (eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+                (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.elasticsearch.auth)) "true")
+            }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD"
+                "config" .Values.optimize.database.elasticsearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if and
+                (ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+                (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+                (ne (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true")
+                (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.auth)) "true")
+            }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD"
+                "config" .Values.optimize.database.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
             {{- if and .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"

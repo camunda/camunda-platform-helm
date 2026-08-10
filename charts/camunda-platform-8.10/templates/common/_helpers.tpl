@@ -398,6 +398,30 @@ Elasticsearch and Opensearch templates.
 {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Elasticsearch URL for the legacy Zeebe exporter that feeds Optimize.
+Prefers the Optimize component endpoint, falling back to the secondary-storage URL.
+*/}}
+{{- define "camundaPlatform.legacyExporterElasticsearchURL" -}}
+{{- if (tpl .Values.optimize.database.elasticsearch.url.host $) -}}
+  {{ .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . }}
+{{- else -}}
+  {{ include "camundaPlatform.elasticsearchURL" . }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] OpenSearch URL for the legacy Zeebe exporter that feeds Optimize.
+Prefers the Optimize component endpoint, falling back to the secondary-storage URL.
+*/}}
+{{- define "camundaPlatform.legacyExporterOpensearchURL" -}}
+{{- if (tpl .Values.optimize.database.opensearch.url.host $) -}}
+  {{ .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . }}
+{{- else -}}
+  {{ include "camundaPlatform.opensearchURL" . }}
+{{- end -}}
+{{- end -}}
+
 
 
 

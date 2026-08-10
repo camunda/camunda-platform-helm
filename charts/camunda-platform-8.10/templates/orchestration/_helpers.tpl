@@ -373,6 +373,39 @@ and
 -}}
 {{- end -}}
 
+{{/*
+NOTE: the legacy exporters resolve their password from the Optimize component secret when one is
+configured, and fall back to the generic engine-wide variable otherwise. Both the emission in
+statefulset.yaml and the substitution here key off the same hasSecretConfig predicate.
+*/}}
+{{- define "orchestration.legacyElasticsearchExporterPasswordRef" -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.elasticsearch.auth)) "true" -}}
+${VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD:}
+{{- else -}}
+${VALUES_ELASTICSEARCH_PASSWORD:}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterPasswordRef" -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.auth)) "true" -}}
+${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}
+{{- else -}}
+${VALUES_OPENSEARCH_PASSWORD:}
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: when the legacy OpenSearch exporter targets the Optimize component endpoint, its AWS mode is
+owned by that component; otherwise it keeps the shared-endpoint resolution across all three sources.
+*/}}
+{{- define "orchestration.legacyOpenSearchExporterAwsEnabled" -}}
+{{- if (tpl .Values.optimize.database.opensearch.url.host $) -}}
+{{- .Values.optimize.database.opensearch.aws.enabled -}}
+{{- else -}}
+{{- or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
