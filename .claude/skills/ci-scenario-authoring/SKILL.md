@@ -47,6 +47,21 @@ dependencies: [keycloak, elasticsearch]
 pre-install: elasticsearch-self-signed   # optional — hook name, see below
 ```
 
+### E2E suite selection
+
+Two optional scenario booleans control the after-install Playwright job; both default to false:
+
+```yaml
+e2e-full-suite: true      # run the full-suite project instead of smoke-tests
+e2e-non-blocking: true    # an e2e failure must not fail the workflow run
+```
+
+`test-integration-template.yaml` resolves them from the registry via
+`deploy-camunda ci e2e-suite-vars` and hands them to `test-integration-runner.yaml`, so they apply
+to scenarios invoked directly by an external caller (the AlwaysGreen gate) as well as to the
+generated PR matrix. `e2e-full-suite` also moves the job onto the long-running runner. Setting
+either alongside `skip-e2e: true` is rejected by the registry validator.
+
 The `features` array maps to `values/features/<name>.yaml`. The `migrator` feature enables identity and data migration jobs during upgrades — use it for any `upgrade-minor` scenario. Note: the automatic `needsMigrator()` function in `scenarios.go` only activates when `ChartVersion` starts with "13", but the matrix runner does not set `ChartVersion`, so always use `features: [migrator]` explicitly.
 
 ## Pre-Install Hooks (Scenario-Specific)

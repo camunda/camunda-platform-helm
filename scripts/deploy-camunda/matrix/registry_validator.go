@@ -23,6 +23,8 @@ import (
 //     defaulting (empty flow treated as "install") — the natural CI namespace key;
 //   - every scenario's (Platform, Flow) is not denied by
 //     .github/config/permitted-flows.yaml for this chart version;
+//   - no scenario combines skip-e2e with e2e-full-suite or e2e-non-blocking,
+//     which would be dead config;
 //   - no orphan files exist in pre-setup-scripts/ or common/resources/ —
 //     every .sh / .yaml must be referenced by at least one LifecycleHook
 //     across PR/Nightly scenarios, dependency-profile pre-install hooks, and
@@ -170,6 +172,15 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		if scn.Topology != nil {
 			if err := scn.Topology.Validate(label, chartFullSetupDir, registryDepsDir); err != nil {
 				problems = append(problems, err.Error())
+			}
+		}
+
+		if scn.SkipE2E {
+			if scn.E2EFullSuite {
+				problems = append(problems, fmt.Sprintf("%s: e2e-full-suite is set but skip-e2e disables e2e entirely", label))
+			}
+			if scn.E2ENonBlocking {
+				problems = append(problems, fmt.Sprintf("%s: e2e-non-blocking is set but skip-e2e disables e2e entirely", label))
 			}
 		}
 

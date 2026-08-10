@@ -181,6 +181,7 @@ integration:
             gke: alwaysgreen
           identity: keycloak
           persistence: elasticsearch
+          e2e-full-suite: true
         - name: qa-elasticsearch
           enabled: false
           shortname: qael

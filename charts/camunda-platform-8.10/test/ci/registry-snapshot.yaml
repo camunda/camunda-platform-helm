@@ -1034,6 +1034,7 @@ integration:
             gke: alwaysgreen
           identity: keycloak
           persistence: elasticsearch
+          e2e-full-suite: true
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak

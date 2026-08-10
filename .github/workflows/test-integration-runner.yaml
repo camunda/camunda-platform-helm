@@ -154,6 +154,16 @@ on:
         required: false
         default: false
         type: boolean
+      e2e-full-suite:
+        description: "Run the full-suite Playwright project instead of smoke-tests for this scenario (declared in the CI scenario registry)"
+        required: false
+        default: false
+        type: boolean
+      e2e-non-blocking:
+        description: "Do not fail the workflow run when this scenario's E2E job fails (declared in the CI scenario registry)"
+        required: false
+        default: false
+        type: boolean
       is-topology:
         description: "Whether this scenario declares a multi-release topology"
         required: false
@@ -1226,7 +1236,7 @@ jobs:
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
-    runs-on: gcp-core-8-release
+    runs-on: ${{ inputs.e2e-full-suite && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1237,7 +1247,8 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
-    timeout-minutes: 30
+    continue-on-error: ${{ inputs.e2e-non-blocking }}
+    timeout-minutes: ${{ inputs.e2e-full-suite && 60 || 30 }}
     strategy:
       fail-fast: false
       matrix:
@@ -1300,7 +1311,7 @@ jobs:
           test-stage: after-install
           shard-index: ${{ matrix.shardIndex }}
           scenario: ${{ inputs.scenario }}
-          run-smoke-tests: ${{ inputs.scenario != 'alwaysgreen' }}
+          run-smoke-tests: ${{ !inputs.e2e-full-suite }}
 
   # Shadow job: runs the full E2E suite for the dedicated 'shadow-e2e' scenario.
   # Tier 2 (merge queue only). Non-blocking during observation period.

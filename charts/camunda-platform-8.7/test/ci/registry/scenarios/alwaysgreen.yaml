@@ -8,3 +8,4 @@ platforms:
   - gke
 infra-type:
   gke: alwaysgreen
+e2e-full-suite: true

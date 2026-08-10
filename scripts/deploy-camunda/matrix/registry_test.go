@@ -103,6 +103,14 @@ func TestLoadRegistryAssembly(t *testing.T) {
 	if !reflect.DeepEqual(b.Features, []string{"synthetic-feature"}) {
 		t.Errorf("beta.Features = %v", b.Features)
 	}
+	if !b.E2EFullSuite || !b.E2ENonBlocking {
+		t.Errorf("beta e2e flags = full-suite:%v non-blocking:%v, want both true", b.E2EFullSuite, b.E2ENonBlocking)
+	}
+
+	// alpha declares neither flag, so both default to the smoke/blocking behavior.
+	if a.E2EFullSuite || a.E2ENonBlocking {
+		t.Errorf("alpha e2e flags = full-suite:%v non-blocking:%v, want both false", a.E2EFullSuite, a.E2ENonBlocking)
+	}
 
 	// gamma fans out across two flows; enabled propagates from manifest (false)
 	if scns[2].Name != "gamma" || scns[2].Flow != "install" || scns[2].Enabled {
@@ -110,6 +118,9 @@ func TestLoadRegistryAssembly(t *testing.T) {
 	}
 	if scns[3].Name != "gamma" || scns[3].Flow != "upgrade-minor" || scns[3].Enabled {
 		t.Errorf("gamma[1] = %+v", scns[3])
+	}
+	if !scns[2].E2EFullSuite || !scns[3].E2EFullSuite {
+		t.Errorf("gamma e2e-full-suite must survive flow fan-out, got %v / %v", scns[2].E2EFullSuite, scns[3].E2EFullSuite)
 	}
 }
 
@@ -137,6 +148,36 @@ func TestRegistryValidatorRejectsDuplicatePlatformFlow(t *testing.T) {
 	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 	if err == nil || !strings.Contains(err.Error(), "duplicate") {
 		t.Fatalf("want duplicate-tuple error, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsE2EFlagsWithSkipE2E: the e2e suite/blocking flags
+// are dead config when skip-e2e disables e2e altogether.
+func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		set  func(*CIScenario)
+		want string
+	}{
+		{"full-suite", func(s *CIScenario) { s.E2EFullSuite = true }, "e2e-full-suite is set but skip-e2e"},
+		{"non-blocking", func(s *CIScenario) { s.E2ENonBlocking = true }, "e2e-non-blocking is set but skip-e2e"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			abs := absChartDir(t)
+			cfg, err := LoadRegistry(abs)
+			if err != nil {
+				t.Fatalf("LoadRegistry: %v", err)
+			}
+			scn := &cfg.Integration.Case.PR.Scenarios[0]
+			scn.SkipE2E = true
+			scn.E2EFullSuite = false
+			scn.E2ENonBlocking = false
+			tc.set(scn)
+			err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("want %q error, got: %v", tc.want, err)
+			}
+		})
 	}
 }
 

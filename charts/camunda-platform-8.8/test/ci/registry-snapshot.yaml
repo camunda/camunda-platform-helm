@@ -361,6 +361,7 @@ integration:
             gke: alwaysgreen
           identity: keycloak
           persistence: elasticsearch
+          e2e-full-suite: true
         - name: keycloak-original
           enabled: false
           shortname: kcor

@@ -194,6 +194,13 @@ type CIScenario struct {
 	// replacing hardcoded shortname-based skip logic in both the Go CLI and GHA workflows.
 	SkipE2E bool `yaml:"skip-e2e,omitempty"`
 
+	// E2E suite selection flags — declarative controls read from the scenario registry.
+	// E2EFullSuite selects the Playwright "full-suite" project instead of the default
+	// "smoke-tests" project; E2ENonBlocking sets continue-on-error on the e2e job so a
+	// failure does not fail the workflow run the integration-tests gate polls.
+	E2EFullSuite   bool `yaml:"e2e-full-suite,omitempty"`
+	E2ENonBlocking bool `yaml:"e2e-non-blocking,omitempty"`
+
 	// Profiles names reusable dependency profiles (see
 	// integration.dependency-profiles) to expand into this scenario's
 	// Dependencies and PreInstall. Profiles are applied in list order, before
