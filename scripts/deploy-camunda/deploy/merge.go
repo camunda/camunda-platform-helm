@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/chartvalues"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/prepare-helm-values/pkg/env"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -228,7 +229,7 @@ func MergeLayeredValues(scenarioValueFiles []string, tempDir string) ([]string, 
 //
 // No-op when no delta is configured or when layering produced no single merged
 // file to rewrite.
-func applyUpgradeDelta(mergedFiles []string, deltaPath string) error {
+func applyUpgradeDelta(mergedFiles []string, deltaPath, envFile string) error {
 	if deltaPath == "" || len(mergedFiles) != 1 {
 		return nil
 	}
@@ -239,7 +240,18 @@ func applyUpgradeDelta(mergedFiles []string, deltaPath string) error {
 	}
 	// Scenario layers are substituted by values.Process before merging; the
 	// delta is applied afterwards, so it needs the same treatment.
-	delta, err := chartvalues.ParseDelta([]byte(substituteManifestVars(string(raw), envMap())), deltaPath)
+	vars := envMap()
+	if envFile == "" {
+		envFile = ".env"
+	}
+	dotenv, err := env.ReadFile(envFile)
+	if err != nil {
+		return fmt.Errorf("read env file for upgrade delta: %w", err)
+	}
+	for k, v := range dotenv {
+		vars[k] = v
+	}
+	delta, err := chartvalues.ParseDelta([]byte(substituteManifestVars(string(raw), vars)), deltaPath)
 	if err != nil {
 		return fmt.Errorf("parse upgrade delta: %w", err)
 	}

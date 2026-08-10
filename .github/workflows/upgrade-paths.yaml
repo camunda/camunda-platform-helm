@@ -33,8 +33,9 @@ on:
         options: [both, naive, remediated]
         default: both
       cluster-shortname:
-        description: "Scenario shortname for the cluster stage"
-        type: string
+        description: "Scenario archetype for the cluster stage"
+        type: choice
+        options: [upclas]
         default: upclas
 
 permissions:
@@ -299,6 +300,11 @@ jobs:
           SHORTNAME: ${{ inputs.cluster-shortname || 'upclas' }}
         run: |
           set -euo pipefail
+          requested="${{ inputs.transitions }}"
+          if [ -n "${requested}" ] && [ "${requested}" != "8.9:8.10" ]; then
+            echo "::error::The cluster stage currently supports only transitions=8.9:8.10"
+            exit 1
+          fi
           if [ "${{ matrix.run }}" = "naive" ]; then
             echo "args=--suppress-upgrade-hooks" >>"$GITHUB_OUTPUT"
           else
@@ -322,9 +328,10 @@ jobs:
             --shortname-filter "${SHORTNAME}" --include-disabled \
             --platform gke --ingress-base-domain-gke ci.distro.ultrawombat.com \
             --values-source carryover \
+            --namespace-prefix "upg-${{ matrix.run }}" \
             ${{ steps.delta.outputs.args }} \
             --ensure-docker-registry \
-            --delete-namespace --timeout 15 --yes 2>&1 | tee "${RUNNER_TEMP}/run.log"
+            --delete-namespace --cleanup --timeout 15 --yes 2>&1 | tee "${RUNNER_TEMP}/run.log"
           echo "exit=${PIPESTATUS[0]}" >>"$GITHUB_OUTPUT"
 
       - name: Report outcome
@@ -342,7 +349,14 @@ jobs:
         run: |
           actual="${{ steps.run.outputs.exit }}"
           if [ "${{ matrix.run }}" = "naive" ]; then
-            [ "$actual" != "0" ] && echo "Run A failed as expected" && exit 0
+            if [ "$actual" != "0" ] && grep -q "Step 1 complete" "${RUNNER_TEMP}/run.log" && grep -q "Step 2:" "${RUNNER_TEMP}/run.log"; then
+              echo "Run A reached the upgrade and failed as expected"
+              exit 0
+            fi
+            if [ "$actual" != "0" ]; then
+              echo "::error::Run A failed before the upgrade path was exercised."
+              exit 1
+            fi
             echo "::error::Run A succeeded. Either the carried-over values no longer break, or carryover is not in effect."
             exit 1
           fi

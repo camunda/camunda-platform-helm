@@ -789,7 +789,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 			Strs("mergedFiles", scenarioValueFiles).
 			Msg("📋 [prepareScenarioValues] layered values merged")
 
-		if err := applyUpgradeDelta(scenarioValueFiles, flags.Deployment.UpgradeDelta); err != nil {
+		if err := applyUpgradeDelta(scenarioValueFiles, flags.Deployment.UpgradeDelta, flags.EnvFile); err != nil {
 			os.RemoveAll(tempDir)
 			return nil, err
 		}

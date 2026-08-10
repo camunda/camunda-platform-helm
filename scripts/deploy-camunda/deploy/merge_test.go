@@ -255,6 +255,20 @@ identity:
 	}
 }
 
+func TestApplyUpgradeDeltaUsesEnvFile(t *testing.T) {
+	dir := t.TempDir()
+	merged := writeTempYAML(t, dir, "merged.yaml", "database:\n  username: old\n")
+	delta := writeTempYAML(t, dir, "delta.yaml", "database:\n  username: $DB_USER\n")
+	envFile := writeTempYAML(t, dir, ".env", "DB_USER=from-file\n")
+
+	if err := applyUpgradeDelta([]string{merged}, delta, envFile); err != nil {
+		t.Fatal(err)
+	}
+	if got := getPath(readYAMLMap(t, merged), "database", "username"); got != "from-file" {
+		t.Fatalf("database.username = %v, want from-file", got)
+	}
+}
+
 // TestMergeYAMLFiles_EnvOverrideSameName verifies that when two layers define
 // the same env var name, the later layer's value wins.
 func TestMergeYAMLFiles_EnvOverrideSameName(t *testing.T) {
