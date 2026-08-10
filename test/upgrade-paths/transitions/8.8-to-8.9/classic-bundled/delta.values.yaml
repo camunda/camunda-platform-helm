@@ -1,0 +1,21 @@
+# Delta for classic-bundled, 8.8-to-8.9
+#
+# Empty means: a customer on this path upgrades with no values changes.
+# Every key added here is a change the customer MUST make, and is emitted
+# verbatim into the upgrade guide. Keep it minimal and justified.
+#
+#   $remove  deletes dotted paths. Chart constraints test key presence, so these
+#            cannot be cleared by setting them to null.
+
+# 8.9 removed the ability to seed the first user from a pre-existing secret.
+# The chart rejects both keys outright rather than ignoring them, so a customer
+# carrying an 8.8 values file forward cannot render 8.9 until they are deleted.
+#
+# Deleting them is the whole remedy for rendering, but it is not the whole
+# story for the customer: whatever credential that secret supplied is no longer
+# consumed, so first-user setup has to be handled the 8.9 way. That is a
+# behavioural change this stage cannot see — see the `behavioural` category in
+# coverage.yaml.
+$remove:
+  - identity.firstUser.existingSecret
+  - identity.firstUser.existingSecretKey

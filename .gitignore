@@ -41,6 +41,7 @@ scripts/deploy-camunda/deploy-camunda
 scripts/deploy-camunda/.env
 scripts/release-tools/release-tools
 scripts/integration-tests-gate/integration-tests-gate
+scripts/upgrade-paths/upgrade-paths
 
 charts/camunda-platform*/test/e2e/package-lock.json
 

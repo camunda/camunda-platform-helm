@@ -1,0 +1,31 @@
+# External Elasticsearch backend configuration for 8.9
+# Layer 3: Backend - Elasticsearch (external)
+#
+# Points Camunda at an Elasticsearch cluster provisioned outside the chart,
+# while keeping the full component suite enabled. This is the shape most
+# customers run in production: managed or operator-provisioned storage, with
+# Identity, Web Modeler and Optimize all deployed.
+#
+# It differs from 8.10's elasticsearch-external.yaml, which disables Identity,
+# Web Modeler and Console to describe an engine-only deploy. Both shapes are
+# real; this layer covers the full-suite one.
+#
+# Required env vars:
+#   EXTERNAL_ELASTICSEARCH_HOST     e.g. elasticsearch-master
+#   EXTERNAL_ELASTICSEARCH_SCHEME   http or https
+#
+# Identity and Web Modeler keep their own PostgreSQL. A deploy pairing this
+# layer with external databases should also set identity.externalDatabase and
+# webModeler.restapi.externalDatabase.
+
+global:
+  elasticsearch:
+    enabled: true
+    external: true
+    url:
+      host: "${EXTERNAL_ELASTICSEARCH_HOST}"
+      protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
+
+# The bundled subchart is not deployed; the cluster above is reached as-is.
+elasticsearch:
+  enabled: false

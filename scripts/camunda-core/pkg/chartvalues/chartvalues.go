@@ -36,7 +36,10 @@ const (
 	RemoveDirective = "$remove"
 	// RenameDirective maps an old dotted path to a new one, moving the value.
 	RenameDirective = "$rename"
-	// ScaffoldingDirective holds harness-only values that are applied separately.
+	// ScaffoldingDirective holds values applied like any other, but excluded
+	// from the customer-facing change list. Baselines composed from CI scenario
+	// values carry test fixtures alongside product configuration; both must be
+	// applied for a run to succeed, only one belongs in an upgrade guide.
 	ScaffoldingDirective = "$scaffolding"
 )
 
@@ -344,21 +347,23 @@ func (d Delta) IsEmpty() bool {
 		len(d.Set) == 0 && len(d.Scaffolding) == 0
 }
 
-// LeafPaths returns the sorted dotted paths of every non-map value.
+// LeafPaths returns the dotted paths of every non-map value, sorted. A path
+// stops descending at the first value that is not a map, so a list or scalar is
+// reported at the key that holds it.
 func LeafPaths(v Values) []string {
 	var out []string
 	var walk func(Values, string)
-	walk = func(n Values, prefix string) {
+	walk = func(n Values, pre string) {
 		for k, val := range n {
-			path := k
-			if prefix != "" {
-				path = prefix + "." + k
+			p := k
+			if pre != "" {
+				p = pre + "." + k
 			}
 			if m, ok := toMap(val); ok && len(m) > 0 {
-				walk(m, path)
+				walk(m, p)
 				continue
 			}
-			out = append(out, path)
+			out = append(out, p)
 		}
 	}
 	walk(v, "")

@@ -55,6 +55,20 @@ build.release-tools:
 install.release-tools:
 	cd scripts/release-tools && go mod tidy && go install .
 
+.PHONY: build.upgrade-paths
+build.upgrade-paths:
+	cd scripts/upgrade-paths && go mod tidy && go build .
+
+.PHONY: install.upgrade-paths
+install.upgrade-paths:
+	cd scripts/upgrade-paths && go mod tidy && go install .
+
+.PHONY: upgrade-paths.report
+upgrade-paths.report: install.upgrade-paths
+	@test -n "$(from)" || (echo "usage: make upgrade-paths.report from=8.9 to=8.10" && exit 2)
+	@test -n "$(to)" || (echo "usage: make upgrade-paths.report from=8.9 to=8.10" && exit 2)
+	upgrade-paths --from $(from) --to $(to) --discover
+
 .PHONY: build.dx-tooling
 build.dx-tooling:
 	make build.prepare-helm-values

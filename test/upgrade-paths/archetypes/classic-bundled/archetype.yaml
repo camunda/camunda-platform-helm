@@ -1,0 +1,13 @@
+name: classic-bundled
+description: >-
+  LEGACY. Bundled Keycloak plus the bundled Elasticsearch subchart. Customers
+  run external services in production, so this is not a representative shape.
+  It is retained because it is the deployment most likely to survive at a site
+  that has upgraded in place since an early 8.x, and it is the path 8.10
+  stresses hardest — both bundled backends were removed.
+tier: 2
+platforms: [gke]
+layers:
+  - base.yaml
+  - identity/keycloak.yaml
+  - persistence/elasticsearch.yaml

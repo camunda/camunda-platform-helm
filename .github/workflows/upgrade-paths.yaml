@@ -1,0 +1,132 @@
+name: "Upgrade Paths - Render"
+
+# Renders each upgrade-path archetype against the target chart twice: once with
+# the source chart's values unchanged (Run A) and once with the transition's
+# delta applied (Run B). Cluster-stage checks (data survival, orphaned
+# resources, migration duration) are out of scope here.
+
+on:
+  pull_request:
+    paths:
+      - "charts/camunda-platform-*/values.yaml"
+      - "charts/camunda-platform-*/templates/common/constraints.tpl"
+      - "charts/camunda-platform-*/test/integration/scenarios/chart-full-setup/values/**"
+      - "test/upgrade-paths/**"
+      - "scripts/upgrade-paths/**"
+      - ".github/workflows/upgrade-paths.yaml"
+  merge_group: {}
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      transitions:
+        description: "Space-separated from:to pairs, e.g. '8.9:8.10 8.8:8.9'. Empty runs all."
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upgrade-paths-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    name: Resolve transitions
+    runs-on: ubuntu-latest
+    outputs:
+      transitions: ${{ steps.resolve.outputs.transitions }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Resolve transitions
+        id: resolve
+        env:
+          REQUESTED: ${{ inputs.transitions }}
+        run: |
+          set -euo pipefail
+          if [ -n "${REQUESTED}" ]; then
+            items=$(for p in ${REQUESTED}; do
+              printf '{"from":"%s","to":"%s"}\n' "${p%%:*}" "${p##*:}"
+            done | jq -sc .)
+          else
+            # Each transitions/<from>-to-<to> directory is one runnable pair.
+            items=$(find test/upgrade-paths/transitions -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
+              | sed -E 's/^(.+)-to-(.+)$/{"from":"\1","to":"\2"}/' \
+              | jq -sc .)
+          fi
+          echo "transitions=${items}" >>"$GITHUB_OUTPUT"
+          echo "Resolved: ${items}"
+
+  render:
+    name: ${{ matrix.transition.from }} to ${{ matrix.transition.to }}
+    needs: matrix
+    if: needs.matrix.outputs.transitions != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        transition: ${{ fromJson(needs.matrix.outputs.transitions) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      # Doc coverage compares each discovered key against the published upgrade
+      # guide. Without this checkout the column renders as "not checked".
+      - name: Checkout camunda-docs
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        continue-on-error: true
+        with:
+          repository: camunda/camunda-docs
+          path: .camunda-docs
+          fetch-depth: 1
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            golang
+
+      - name: Build upgrade-paths
+        run: cd scripts/upgrade-paths && go build -o "${RUNNER_TEMP}/upgrade-paths" .
+
+      - name: Render upgrade paths
+        id: render
+        env:
+          FROM: ${{ matrix.transition.from }}
+          TO: ${{ matrix.transition.to }}
+        run: |
+          set -uo pipefail
+          "${RUNNER_TEMP}/upgrade-paths" \
+            --from "${FROM}" --to "${TO}" \
+            --discover \
+            --docs-root "${GITHUB_WORKSPACE}/.camunda-docs" \
+            --quiet \
+            --markdown "${RUNNER_TEMP}/report-${FROM}-to-${TO}.md" \
+            --json "${RUNNER_TEMP}/report-${FROM}-to-${TO}.json"
+          echo "exit_code=$?" >>"$GITHUB_OUTPUT"
+
+      - name: Publish report
+        if: always()
+        env:
+          FROM: ${{ matrix.transition.from }}
+          TO: ${{ matrix.transition.to }}
+        run: cat "${RUNNER_TEMP}/report-${FROM}-to-${TO}.md" >>"$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: upgrade-path-report-${{ matrix.transition.from }}-to-${{ matrix.transition.to }}
+          path: ${{ runner.temp }}/report-*
+          if-no-files-found: warn
+
+      # UNREMEDIATED (no known remedy) and STALE_DELTA (fixture lies) fail.
+      # REMEDIATED does not: a break with a tested delta is the expected
+      # mid-cycle state, and the report is the deliverable.
+      - name: Enforce outcome
+        if: steps.render.outputs.exit_code != '0'
+        run: |
+          echo "::error::Upgrade path check failed - see the job summary for the outcome matrix."
+          exit 1
