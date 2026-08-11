@@ -412,6 +412,31 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 				s.Require().Contains(err.Error(), "content that defines camunda.secrets")
 			},
 		},
+		{
+			Name:     "Unrelated dotted extra configuration works with secret store",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "document.yaml",
+				"orchestration.extraConfiguration[0].content":  "camunda.document.stores.aws.region: us-west-2",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Non spring imported secret store extra configuration is allowed",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region":     "us-east-1",
+				"orchestration.extraConfiguration[0].file":         "secrets.yaml",
+				"orchestration.extraConfiguration[0].content":      "camunda.secrets.stores.aws.default.region: us-west-2",
+				"orchestration.extraConfiguration[0].springImport": "false",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

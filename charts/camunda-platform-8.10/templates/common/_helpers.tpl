@@ -1775,33 +1775,27 @@ Usage:
 {{- $found -}}
 {{- end -}}
 
-{{/*
-Reports "true" when imported extraConfiguration defines camunda.secrets using nested or dotted YAML keys.
-*/}}
-{{- define "camundaPlatform.extraConfigHasSecretStore" -}}
-{{- $contents := list -}}
-{{- if kindIs "slice" .extraConfiguration -}}
-  {{- range .extraConfiguration -}}
-    {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
-      {{- $contents = append $contents (.content | default "") -}}
-    {{- end -}}
-  {{- end -}}
-{{- else -}}
-  {{- range $file, $content := (.extraConfiguration | default dict) -}}
-    {{- $contents = append $contents $content -}}
-  {{- end -}}
-{{- end -}}
+{{- /*
+NOTE: dotted-key companion to extraConfigHasPath. Spring accepts the relaxed form
+"camunda.secrets.stores.aws.default.region: x", which fromYaml parses as one top-level
+key, so the nested walk in extraConfigHasPath cannot see it. Matches the joined path
+exactly or as a prefix, so any subkey counts. Combine both helpers to cover either form.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasDottedPath" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "secrets"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasDottedPath" -}}
 {{- $found := "" -}}
-{{- range $content := $contents -}}
-  {{- $parsed := $content | fromYaml -}}
-  {{- if kindIs "map" $parsed -}}
-    {{- $camunda := index $parsed "camunda" | default dict -}}
-    {{- if and (kindIs "map" $camunda) (hasKey $camunda "secrets") -}}
-      {{- $found = "true" -}}
-    {{- end -}}
-    {{- range $key, $_ := $parsed -}}
-      {{- if or (eq $key "camunda.secrets") (hasPrefix "camunda.secrets." $key) -}}
-        {{- $found = "true" -}}
+{{- $dotted := join "." .path -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- range $key, $_ := $parsed -}}
+        {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) -}}
+          {{- $found = "true" -}}
+        {{- end -}}
       {{- end -}}
     {{- end -}}
   {{- end -}}

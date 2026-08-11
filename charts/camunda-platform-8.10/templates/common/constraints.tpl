@@ -1266,7 +1266,8 @@ Orchestration - Secret Store
 {{- if and $secretStoreConfigured .Values.orchestration.configuration -}}
   {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.configuration because the custom application.yaml replaces the generated secret-store configuration. Configure camunda.secrets.* directly in orchestration.configuration instead." -}}
 {{- end -}}
-{{- if and $secretStoreConfigured (eq (include "camundaPlatform.extraConfigHasSecretStore" (dict "extraConfiguration" .Values.orchestration.extraConfiguration)) "true") -}}
+{{- $secretStoreExtraConfigArgs := dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "secrets") -}}
+{{- if and $secretStoreConfigured (or (eq (include "camundaPlatform.extraConfigHasPath" $secretStoreExtraConfigArgs) "true") (eq (include "camundaPlatform.extraConfigHasDottedPath" $secretStoreExtraConfigArgs) "true")) -}}
   {{- fail "[camunda][error] orchestration.secretStore cannot be combined with orchestration.extraConfiguration content that defines camunda.secrets. Remove the overlapping imported configuration or configure the complete secret store through orchestration.extraConfiguration instead." -}}
 {{- end -}}
 {{- if and $secretStoreAnnotations .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) (hasKey $secretStoreAnnotations "eks.amazonaws.com/role-arn") -}}
