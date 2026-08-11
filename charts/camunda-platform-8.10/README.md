@@ -651,7 +651,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `camundaHub`                              | configuration for Camunda Hub (WebModeler + Console).                                                                                               |         |
 | `camundaHub.enabled`                      | if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.                                                             | `false` |
-| `camundaHub.contextPath`                  | can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.                | `""`    |
+| `camundaHub.contextPath`                  | can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.                | `nil`   |
 | `camundaHub.automountServiceAccountToken` | can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used. | `nil`   |
 
 ### WebModeler Parameters

@@ -1184,19 +1184,14 @@ camundaHub:
   ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
   enabled: false
 
-  ## @param camundaHub.contextPath can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.
-  contextPath: ""
+  ## @param camundaHub.contextPath [nullable] can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.
+  contextPath:
 
   ## Any values set here take precedence over the legacy top-level webModeler.* values.
-  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
-  ## To override a value, set it explicitly under camundaHub (e.g. camundaHub.contextPath: /modeler).
-  ##
-  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
-  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
-  ## camundaHub.restapi.readinessProbe.enabled=false will NOT disable the probe
-  ## if the legacy webModeler.restapi.readinessProbe.enabled is true. Use the legacy keys
-  ## directly for falsy overrides.
-  ## Exception: camundaHub.image.* (and the per-component restapi/websockets image maps) are merged additively over the legacy image maps, so partial overrides (e.g. only registry) keep the legacy tag.
+  ## Values are deep-merged over webModeler.*, so a partial override keeps the sibling defaults:
+  ## setting only camundaHub.restapi.containerSecurityContext.runAsUser preserves the remaining
+  ## securityContext fields. Explicit false, 0 and "" override the legacy value; an unset (null)
+  ## key falls through to it.
   ## @skip camundaHub.image
   image: {}
   ## @skip camundaHub.security

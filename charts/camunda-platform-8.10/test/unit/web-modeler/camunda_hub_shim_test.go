@@ -241,7 +241,7 @@ func (s *CamundaHubShimTemplateTest) TestLegacyOnlyValuesStillApply() {
 	s.Require().Equal(int32(2), *deployment.Spec.Replicas)
 }
 
-func (s *CamundaHubShimTemplateTest) TestFalsyCamundaHubOverrideDoesNotOverrideTruthyLegacyValue() {
+func (s *CamundaHubShimTemplateTest) TestFalsyCamundaHubOverrideWinsOverTruthyLegacyValue() {
 	values := map[string]string{
 		"camundaHub.enabled":                        "true",
 		"camundaHub.restapi.readinessProbe.enabled": "false",
@@ -253,7 +253,97 @@ func (s *CamundaHubShimTemplateTest) TestFalsyCamundaHubOverrideDoesNotOverrideT
 	s.Require().NoError(err)
 
 	deployment := s.unmarshalDeployment(output)
-	s.Require().NotNil(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
+	s.Require().Nil(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
+}
+
+func (s *CamundaHubShimTemplateTest) TestUnsetCamundaHubKeyFallsThroughToLegacyValue() {
+	values := map[string]string{
+		"camundaHub.enabled":                  "true",
+		"webModeler.enabled":                  "true",
+		"webModeler.contextPath":              "/modeler",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	probe := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].ReadinessProbe
+	s.Require().NotNil(probe)
+	s.Require().Equal("/modeler/health/readiness", probe.HTTPGet.Path)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialContainerSecurityContextOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"camundaHub.restapi.containerSecurityContext.runAsUser": "2000",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	securityContext := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().NotNil(securityContext)
+	s.Require().Equal(int64(2000), *securityContext.RunAsUser)
+	s.Require().True(*securityContext.ReadOnlyRootFilesystem)
+	s.Require().True(*securityContext.RunAsNonRoot)
+	s.Require().False(*securityContext.AllowPrivilegeEscalation)
+	s.Require().NotNil(securityContext.SeccompProfile)
+	s.Require().Equal(corev1.SeccompProfileTypeRuntimeDefault, securityContext.SeccompProfile.Type)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialPodSecurityContextOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled":                            "true",
+		"camundaHub.restapi.podSecurityContext.fsGroup": "3000",
+		"webModeler.enabled":                            "true",
+		"webModeler.restapi.mail.fromAddress":           "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	securityContext := s.unmarshalDeployment(output).Spec.Template.Spec.SecurityContext
+	s.Require().NotNil(securityContext)
+	s.Require().Equal(int64(3000), *securityContext.FSGroup)
+	s.Require().True(*securityContext.RunAsNonRoot)
+	s.Require().NotNil(securityContext.SeccompProfile)
+	s.Require().Equal(corev1.SeccompProfileTypeRuntimeDefault, securityContext.SeccompProfile.Type)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialResourcesOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled":                      "true",
+		"camundaHub.restapi.resources.limits.cpu": "2",
+		"webModeler.enabled":                      "true",
+		"webModeler.restapi.mail.fromAddress":     "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	resources := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].Resources
+	s.Require().Equal("2", resources.Limits.Cpu().String())
+	s.Require().False(resources.Limits.Memory().IsZero())
+	s.Require().False(resources.Requests.Cpu().IsZero())
+	s.Require().False(resources.Requests.Memory().IsZero())
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialWebsocketsSecurityContextOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"camundaHub.websockets.containerSecurityContext.runAsUser": "2000",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/deployment-websockets.yaml"})
+	s.Require().NoError(err)
+
+	securityContext := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().NotNil(securityContext)
+	s.Require().Equal(int64(2000), *securityContext.RunAsUser)
+	s.Require().True(*securityContext.ReadOnlyRootFilesystem)
+	s.Require().True(*securityContext.RunAsNonRoot)
+	s.Require().False(*securityContext.AllowPrivilegeEscalation)
+	s.Require().NotNil(securityContext.SeccompProfile)
+	s.Require().Equal(corev1.SeccompProfileTypeRuntimeDefault, securityContext.SeccompProfile.Type)
 }
 
 func (s *CamundaHubShimTemplateTest) TestResourceNamesStableBetweenLegacyAndCamundaHubValues() {
