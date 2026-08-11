@@ -99,12 +99,17 @@ unzip test-artifacts/<name>.zip -d test-artifacts/<name>/
 
 Artifacts to prioritize for Playwright e2e failures:
 
-| Artifact suffix | Why you want it |
+| Artifact prefix | Why you want it |
 |-----------------|-----------------|
-| `*-playwright-results-json` | Machine-readable test outcomes + error messages |
-| `*-e2e-html-report` | Interactive report with screenshots, videos, traces |
-| `*-playwright-report-runner` | Runner-level summary |
-| `*-blob-report` | Raw Playwright blobs (large; only if merging reports) |
+| `diagnostics-e2e-*` | Sanitized `namespace-diagnostics.txt` captured when the e2e step failed (pod state, events, pod descriptions) |
+| `diagnostics-*` | Sanitized deploy-stage diagnostics bundle (`summary.json` + `logs/<pod>.log`) |
+
+CI does not retain Playwright HTML reports, blob reports, JSON results, traces,
+screenshots, or videos: they can embed authentication data (tokens, cookies,
+authorization headers) that cannot be reliably redacted, especially in binary
+browser artifacts. Job logs plus the diagnostics bundles above are the CI-side
+evidence; reproduce locally (Steps 4–6) to get a full report with traces and
+screenshots, which the local Playwright config still produces.
 
 ## Step 4 — Decode the Scenario Shortname
 
