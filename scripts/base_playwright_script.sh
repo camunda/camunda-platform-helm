@@ -1077,7 +1077,8 @@ run_playwright_tests() {
   )
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
-  [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
+  # playwright test has no --video option; PLAYWRIGHT_E2E_VIDEO is consumed by
+  # playwright.config.ts instead.
   [[ -n "${PLAYWRIGHT_E2E_TRACE:-}" ]] && playwright_args+=(--trace="$PLAYWRIGHT_E2E_TRACE")
   [[ -n "${PLAYWRIGHT_E2E_RETRIES:-}" ]] && playwright_args+=(--retries="$PLAYWRIGHT_E2E_RETRIES")
   # smoke-tests uses a low worker count by default; other projects keep the
