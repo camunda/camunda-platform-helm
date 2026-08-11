@@ -233,6 +233,7 @@ runs:
         TEST_AUTH_TYPE: ${{ inputs.auth }}
         HUB_NAMESPACE: ${{ inputs.hub-namespace }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
+        PLAYWRIGHT_E2E_SCREENSHOT: "off"
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -257,7 +258,7 @@ runs:
 
         E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
         [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
-        E2E_ARGS+=(--trace off --verbose)
+        E2E_ARGS+=(--trace off --video off --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
 
