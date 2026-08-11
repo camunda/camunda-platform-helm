@@ -48,6 +48,12 @@ render_auth0_env() {
     true false false false true "" true
 }
 
+# GNU stat -f reports filesystem status and succeeds, so it must not be the
+# probe; try the GNU mode format first and fall back to the BSD one.
+file_mode() {
+  stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"
+}
+
 @test "rendered env file is owner-readable only" {
   env_file="$BATS_TEST_TMPDIR/.env"
 
@@ -55,7 +61,7 @@ render_auth0_env() {
 
   [ "$status" -eq 0 ]
   [ -f "$env_file" ]
-  [ "$(stat -f '%Lp' "$env_file" 2>/dev/null || stat -c '%a' "$env_file")" = "600" ]
+  [ "$(file_mode "$env_file")" = "600" ]
   grep -q "PLAYWRIGHT_BASE_URL=https://camunda.example.com" "$env_file"
   grep -q "AUTH0_IDENTITY_CLIENT_ID=identity-client" "$env_file"
 }
@@ -68,7 +74,7 @@ render_auth0_env() {
   run render_auth0_env "$env_file"
 
   [ "$status" -eq 0 ]
-  [ "$(stat -f '%Lp' "$env_file" 2>/dev/null || stat -c '%a' "$env_file")" = "600" ]
+  [ "$(file_mode "$env_file")" = "600" ]
   ! grep -q "STALE=1" "$env_file"
 }
 
