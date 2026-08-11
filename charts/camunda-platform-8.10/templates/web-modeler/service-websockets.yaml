@@ -1,4 +1,5 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,17 +10,17 @@ metadata:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if (or .Values.camundaHub.websockets.service.annotations .Values.webModeler.websockets.service.annotations)}}
-      {{- toYaml (or .Values.camundaHub.websockets.service.annotations .Values.webModeler.websockets.service.annotations) | nindent 4 }}
+    {{- if $hub.websockets.service.annotations}}
+      {{- toYaml $hub.websockets.service.annotations | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ (or .Values.camundaHub.websockets.service.type .Values.webModeler.websockets.service.type) }}
+  type: {{ $hub.websockets.service.type }}
   ports:
-    - port: {{ (or .Values.camundaHub.websockets.service.port .Values.webModeler.websockets.service.port) }}
+    - port: {{ $hub.websockets.service.port }}
       name: http
       targetPort: 8060
       protocol: TCP
-      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http") "appProtocols" (or .Values.camundaHub.websockets.service.appProtocols .Values.webModeler.websockets.service.appProtocols)) }}
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http") "appProtocols" $hub.websockets.service.appProtocols) }}
       appProtocol: {{ . | quote }}
       {{- end }}
   selector:

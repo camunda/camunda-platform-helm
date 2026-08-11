@@ -1,5 +1,6 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 {{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,9 +8,9 @@ metadata:
   labels: {{- include "webModeler.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
-  {{- if (or .Values.camundaHub.restapi.configuration .Values.webModeler.restapi.configuration) }}
+  {{- if $hub.restapi.configuration }}
   application.yaml: |
-    {{ (or .Values.camundaHub.restapi.configuration .Values.webModeler.restapi.configuration) | indent 4 | trim }}
+    {{ $hub.restapi.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     camunda:
@@ -29,11 +30,11 @@ data:
 
         pusher:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
-          port: {{ (or .Values.camundaHub.websockets.service.port .Values.webModeler.websockets.service.port) }}
+          port: {{ $hub.websockets.service.port }}
           client:
             host: {{ include "webModeler.publicWebsocketHost" . | quote }}
             port: {{ include "webModeler.publicWebsocketPort" . | quote }}
-            {{- if and .Values.global.ingress.enabled (include "camundaHub.contextPath" .) }}
+            {{- if and .Values.global.ingress.enabled $hub.contextPath }}
             path: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
             force-tls: {{ include "webModeler.websocketTlsEnabled" . }}
@@ -50,7 +51,7 @@ data:
 
         mail:
           {{- $fromAddress := $hub.restapi.mail.fromAddress }}
-          {{- $restapiExtraConfig := or .Values.camundaHub.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration }}
+          {{- $restapiExtraConfig := $hub.restapi.extraConfiguration }}
           {{- if $fromAddress }}
           from-address: {{ $fromAddress | quote }}
           {{- else if ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" "modeler" "mail" "from-address"))) "true" }}
@@ -67,10 +68,10 @@ data:
           url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
           https-only: {{ hasPrefix "https://" (tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $) | quote }}
 
-        {{- if or .Values.orchestration.enabled (eq (include "camundaPlatform.topologyMode" .) "hub") (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
+        {{- if or .Values.orchestration.enabled (eq (include "camundaPlatform.topologyMode" .) "hub") $hub.restapi.clusters }}
         clusters:
-          {{- if (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) }}
-            {{- (or .Values.camundaHub.restapi.clusters .Values.webModeler.restapi.clusters) | toYaml | nindent 10 }}
+          {{- if $hub.restapi.clusters }}
+            {{- $hub.restapi.clusters | toYaml | nindent 10 }}
           {{- else}}
             {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
               {{- include "camundaPlatform.topologyWebModelerClusters" . | nindent 10 }}
@@ -82,7 +83,7 @@ data:
 
     spring:
       {{- $springImports := list }}
-      {{- range (or .Values.camundaHub.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration) }}
+      {{- range $hub.restapi.extraConfiguration }}
         {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
           {{- $springImports = append $springImports . }}
         {{- end }}
@@ -125,19 +126,19 @@ data:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
 
-    {{- if (include "camundaHub.contextPath" .) }}
+    {{- if $hub.contextPath }}
     server:
       servlet:
-        context-path: {{ include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .)) | quote }}
+        context-path: {{ include "camundaPlatform.joinpath" (list $hub.contextPath) | quote }}
     management:
       server:
-        base-path: {{ include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .)) | quote }}
+        base-path: {{ include "camundaPlatform.joinpath" (list $hub.contextPath) | quote }}
     {{- end }}
 
     logging:
-{{- with (or .Values.camundaHub.restapi.logging .Values.webModeler.restapi.logging) }}
+{{- with $hub.restapi.logging }}
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
-  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" (or .Values.camundaHub.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration)) }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" $hub.restapi.extraConfiguration) }}
 {{- end }}

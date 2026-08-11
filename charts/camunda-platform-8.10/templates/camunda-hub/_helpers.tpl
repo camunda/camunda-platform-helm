@@ -33,7 +33,3 @@ Enablement gates live in templates/common/_helpers.tpl ("camundaHub.webModelerEn
         {{- end -}}
     {{- end -}}
 {{- end -}}
-
-{{- define "camundaHub.contextPath" -}}
-    {{- (include "camundaHub.values" . | fromYaml).contextPath -}}
-{{- end -}}
