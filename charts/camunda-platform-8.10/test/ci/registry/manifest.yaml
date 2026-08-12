@@ -109,11 +109,6 @@ integration:
       shortname: hublu
       tier: 2
       enabled: true
-    - id: hub-database-migration
-      shortname: hubmig
-      tier: 1
-      # Enable when the Hub image contains the workspace/project Flyway migrations.
-      enabled: false
     - id: hub-mixed
       shortname: hubmu
       tier: 2

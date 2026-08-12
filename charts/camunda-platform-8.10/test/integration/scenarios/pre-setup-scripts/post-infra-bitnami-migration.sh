@@ -63,11 +63,11 @@ export KEYCLOAK_TARGET_MODE=external
 
 # The bundled Camunda 8.9 chart ships ONLY a Keycloak PostgreSQL (Bitnami
 # defaults: db "bitnami_keycloak", user "bn_keycloak"). Identity has no
-# dedicated PG (its data lives in Elasticsearch). Web Modeler defaults to a
-# fresh schema, while the dedicated Hub migration scenario opts into copying it.
+# dedicated PG (its data lives in Elasticsearch), and Web Modeler reinitialises
+# its schema on first boot — so only the Keycloak realm needs PG migration.
 export MIGRATE_KEYCLOAK=true
 export MIGRATE_IDENTITY=false
-export MIGRATE_WEBMODELER="${MIGRATE_WEBMODELER:-false}"
+export MIGRATE_WEBMODELER=false
 # Elasticsearch holds the orchestration data AND the 8.10 authorization records
 # (camunda-authorization/user/role/mapping-rule indices). They must move from
 # the bundled Bitnami ES to the companion ES, or post-upgrade users get
