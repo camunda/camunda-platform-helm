@@ -101,15 +101,23 @@ Artifacts to prioritize for Playwright e2e failures:
 
 | Artifact prefix | Why you want it |
 |-----------------|-----------------|
+| `diagnostics-e2e-*-results-json` | Sanitized Playwright JSON results: per-test outcome, failing assertion, locator, timeout, and call log |
 | `diagnostics-e2e-*` | Sanitized `namespace-diagnostics.txt` captured when the e2e step failed (pod state, events, pod descriptions) |
 | `diagnostics-*` | Sanitized deploy-stage diagnostics bundle (`summary.json` + `logs/<pod>.log`) |
 
-CI does not retain Playwright HTML reports, blob reports, JSON results, traces,
-screenshots, or videos: they can embed authentication data (tokens, cookies,
-authorization headers) that cannot be reliably redacted, especially in binary
-browser artifacts. Job logs plus the diagnostics bundles above are the CI-side
-evidence; reproduce locally (Steps 4–6) to get a full report with traces and
-screenshots, which the local Playwright config still produces.
+The job log is also first-class here: the `blob` reporter prints the failing
+assertion, the expected/received values, and the source frame directly into the
+log, so `deploy-camunda triage` often needs nothing else.
+
+CI does not retain Playwright HTML reports, blob reports, traces, screenshots, or
+videos: they embed authentication data (tokens, cookies, authorization headers)
+that cannot be reliably redacted, and binary browser artifacts cannot be
+sanitized at all. `test-results/**/error-context.md` is also withheld — its ARIA
+page snapshot renders form-control values verbatim, so a password field shows up
+as `textbox: <value>`.
+
+For page state, reproduce locally (Steps 4–6): the local Playwright config still
+captures traces, screenshots, and video at full fidelity.
 
 ## Step 4 — Decode the Scenario Shortname
 

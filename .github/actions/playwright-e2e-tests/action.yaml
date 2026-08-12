@@ -301,3 +301,38 @@ runs:
         path: e2e-diagnostics/
         retention-days: 1
         if-no-files-found: warn
+
+    # Playwright's JSON results are the only test-level evidence retained: they
+    # carry the failing assertion, locator, timeout, and call log, which is what
+    # triage needs. Redacted first because error messages can quote response
+    # bodies and headers.
+    #
+    # Deliberately NOT published: test-results/**/error-context.md. It adds only
+    # an ARIA page snapshot on top of what the JSON already has, and that snapshot
+    # renders form-control values verbatim (a password field appears as
+    # `textbox: <value>`), which no text-level redactor can classify.
+    - name: Redact Playwright JSON results
+      id: e2e_text_results
+      if: ${{ failure() && !cancelled() }}
+      shell: bash
+      env:
+        ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+      run: |
+        # Fail closed: without the sanitizer nothing is published.
+        if ! command -v deploy-camunda >/dev/null 2>&1; then
+          echo "deploy-camunda not on PATH; Playwright JSON results are not published"
+          exit 0
+        fi
+        results="${ABSOLUTE_TEST_CHART_DIR}/test/e2e/test-results/playwright-results.json"
+        [[ -f "$results" ]] || exit 0
+        deploy-camunda redact --in "$results" --out "$results"
+        echo "publish=true" >> "$GITHUB_OUTPUT"
+
+    - name: Upload Playwright JSON results
+      if: ${{ failure() && !cancelled() && steps.e2e_text_results.outputs.publish == 'true' }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: ${{ steps.e2e_diag_artifact.outputs.name }}-results-json
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
+        retention-days: 5
+        if-no-files-found: ignore
