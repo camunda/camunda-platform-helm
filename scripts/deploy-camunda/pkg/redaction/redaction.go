@@ -31,8 +31,11 @@ var (
 	jwtPattern           = regexp.MustCompile(`\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+`)
 	urlUserInfoPattern   = regexp.MustCompile(`(://[^\s/:@]+:)[^\s/@]+(@)`)
 	queryPattern         = regexp.MustCompile(`(?i)([?&][A-Za-z0-9_.-]*(?:password|passwd|pwd|secret|token|credential|api[-_.]?key|private[-_.]?key)[A-Za-z0-9_.-]*=)[^&#\s]+`)
-	inlineAssignment     = regexp.MustCompile(`(^|[ \t])([A-Za-z0-9_.-]+)=([^\s,]+)`)
-	privateKeyPattern    = regexp.MustCompile(`(?s)-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----`)
+	// The leading boundary accepts quotes and brackets so an assignment embedded
+	// in a serialized JSON string is still matched; the value stops at a quote so
+	// the replacement cannot swallow a closing delimiter and corrupt the document.
+	inlineAssignment  = regexp.MustCompile(`(^|[\s"'\[(,])([A-Za-z0-9_.-]+)=([^\s,"']+)`)
+	privateKeyPattern = regexp.MustCompile(`(?s)-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----`)
 )
 
 func IsSensitiveName(name string) bool {

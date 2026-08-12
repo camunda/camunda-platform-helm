@@ -38,6 +38,13 @@ func TestText(t *testing.T) {
 		{name: "query token", in: "https://example.test/callback?code=ok&access_token=secret", want: "https://example.test/callback?code=ok&access_token=" + Placeholder},
 		{name: "private key", in: "before\n-----BEGIN PRIVATE KEY-----\nsecret\n-----END PRIVATE KEY-----\nafter", want: "before\n" + Placeholder + "\nafter"},
 		{name: "ordinary diagnostics", in: "pod-a 0/1 Running\nFailedMount: secret volume unavailable", want: "pod-a 0/1 Running\nFailedMount: secret volume unavailable"},
+		{name: "assignment inside a json string", in: `"stdout": "ZEEBE_CLIENT_SECRET=super-secret"`, want: `"stdout": "ZEEBE_CLIENT_SECRET=` + Placeholder + `"`},
+		{name: "assignment inside a json array element", in: `["API_TOKEN=abc123", "ok"]`, want: `["API_TOKEN=` + Placeholder + `", "ok"]`},
+		// Only quotes are excluded from the value, so a trailing non-quote
+		// delimiter is consumed with it. That is deliberate: narrowing the value
+		// class further would leak the remainder of any secret containing one of
+		// those characters, and over-redacting is the safer failure.
+		{name: "bracketed assignment consumes the closing delimiter", in: "helm(DB_PASSWORD=hunter2)", want: "helm(DB_PASSWORD=" + Placeholder},
 	}
 
 	for _, tt := range tests {
