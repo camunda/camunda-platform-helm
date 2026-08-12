@@ -75,7 +75,6 @@ on:
           - elasticsearch-arm
           - elasticsearch-basic
           - gateway-keycloak
-          - hub-database-migration
           - keycloak-mt
           - keycloak-original
           - keycloak-rba

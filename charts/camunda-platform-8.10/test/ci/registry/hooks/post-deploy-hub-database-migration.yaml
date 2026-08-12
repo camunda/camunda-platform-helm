@@ -1,5 +1,0 @@
-script: post-deploy-hub-database-migration.sh
-description: |
-  Verify lifted projects and IDP applications, catch-all relocation, migration
-  provenance, and stable IDs after 8.10 startup Flyway, then activate the normal
-  Hub serving phase.
