@@ -102,6 +102,11 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "redact" {
 					return nil
 				}
+				// artifacts subcommands upload CI evidence to object storage; no
+				// chart/namespace config needed.
+				if cmd.Name() == "artifacts" || (cmd.Parent() != nil && cmd.Parent().Name() == "artifacts") {
+					return nil
+				}
 				// ci subcommands compute GitHub Actions step variables; no
 				// chart/namespace config needed.
 				if cmd.Name() == "ci" || (cmd.Parent() != nil && cmd.Parent().Name() == "ci") {
@@ -579,6 +584,7 @@ func Execute() error {
 	rootCmd.AddCommand(newTriageCommand())
 	rootCmd.AddCommand(newDiagnosticsCommand())
 	rootCmd.AddCommand(newRedactCommand())
+	rootCmd.AddCommand(newArtifactsCommand())
 	rootCmd.AddCommand(newCICommand())
 	rootCmd.AddCommand(newE2EEnvCommand())
 	rootCmd.AddCommand(newTopologyCommand())
