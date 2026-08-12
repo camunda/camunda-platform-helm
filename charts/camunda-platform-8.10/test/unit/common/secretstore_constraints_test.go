@@ -437,6 +437,69 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 				s.Require().NoError(err)
 			},
 		},
+		{
+			Name:     "Properties secret store extra configuration is rejected",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "secrets.properties",
+				"orchestration.extraConfiguration[0].content":  "camunda.secrets.stores.aws.default.region=us-west-2",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "content that defines camunda.secrets")
+			},
+		},
+		{
+			Name:     "Unparsable secret store extra configuration is rejected",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "secrets.yaml",
+				"orchestration.extraConfiguration[0].content":  "camunda.secrets.stores: {unbalanced",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "content that defines camunda.secrets")
+			},
+		},
+		{
+			Name:     "Unrelated properties extra configuration works with secret store",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "logging.properties",
+				"orchestration.extraConfiguration[0].content":  "logging.level.root=INFO",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Secret store key prefix is not matched by a longer key",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "other.properties",
+				"orchestration.extraConfiguration[0].content":  "camunda.secretstore.enabled=true",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Non spring imported properties secret store extra configuration is allowed",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region":     "us-east-1",
+				"orchestration.extraConfiguration[0].file":         "secrets.properties",
+				"orchestration.extraConfiguration[0].content":      "camunda.secrets.stores.aws.default.region=us-west-2",
+				"orchestration.extraConfiguration[0].springImport": "false",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

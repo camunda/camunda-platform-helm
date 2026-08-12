@@ -1803,6 +1803,30 @@ Usage:
 {{- $found -}}
 {{- end -}}
 
+{{- /*
+NOTE: raw-text companion to extraConfigHasPath and extraConfigHasDottedPath, for content
+those two cannot parse: spring.config.import resolves an imported file by extension, so a
+".properties" entry binds "camunda.secrets.x=v" without ever being valid YAML, and content
+that fails fromYaml yields only an "Error" key. Matches the joined path at line start
+followed by ".", ":" or "=", so "camunda.secretstore" is not a false positive.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "secrets"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasRawKeyPrefix" -}}
+{{- $found := "" -}}
+{{- $pattern := printf "(?m)^[ \t]*%s[.:=]" (join "\\." .path) -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- if regexMatch $pattern (.content | default "") -}}
+      {{- $found = "true" -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
 {{/*
 secretStore._storesDict
 Builds the "stores" map (file/aws/gcp -> id -> fields) for a single "{file,aws,gcp}"
