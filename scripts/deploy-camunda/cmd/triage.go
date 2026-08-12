@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -56,6 +57,7 @@ type failureRecord struct {
 	HelmCommand    string
 	Reason         string
 	DiagnosticsDir string
+	TraceURIs      []string
 	Signals        []string
 }
 
@@ -91,6 +93,11 @@ var (
 	repoURLRe = regexp.MustCompile(`github\.com/([^/]+)/([^/]+)`)
 	// diagnosticsRe matches the "Diagnostics: diagnostics/<ns>/<ts>" hint.
 	diagnosticsRe = regexp.MustCompile(`Diagnostics:\s*(\S+)`)
+
+	// traceURIRe matches the gs:// URIs the playwright action logs after pushing
+	// Playwright traces to private storage. Traces are never GitHub artifacts, so
+	// the log line is the only pointer to them.
+	traceURIRe = regexp.MustCompile(`gs://[A-Za-z0-9._-]+/\S*trace\.zip`)
 	// quotedHelmCmdRe matches a quoted command="helm ..." field, which the matrix
 	// runner emits with the exact failing invocation.
 	quotedHelmCmdRe = regexp.MustCompile(`command="(helm [^"]*)"`)
@@ -124,6 +131,7 @@ for merge-queue runs), strips the env-var noise, and prints:
   - the failing step and the helm command that failed,
   - the error/reason and notable log signals,
   - the Diagnostics bundle path (download with: gh run download <run-id> --name 'diagnostics-*'),
+  - any Playwright trace URIs in private storage, with the commands to fetch and view them,
   - a ready-to-run local reproduction command.
 
 Requires the GitHub CLI (gh) to be installed and authenticated.`,
@@ -373,6 +381,7 @@ func extractFailureRecord(rawLog string) failureRecord {
 		rec.DiagnosticsDir = m[1]
 	}
 	rec.Reason = extractReason(log)
+	rec.TraceURIs = uniqueStrings(traceURIRe.FindAllString(log, -1))
 	rec.Signals = collectSignals(log)
 	return rec
 }
@@ -453,6 +462,24 @@ func extractReason(log string) string {
 		}
 	}
 	return ""
+}
+
+// uniqueStrings drops duplicates while preserving first-seen order. Sharded legs
+// can log the same URI more than once when a step is retried.
+func uniqueStrings(in []string) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(in))
+	out := make([]string, 0, len(in))
+	for _, s := range in {
+		if _, dup := seen[s]; dup {
+			continue
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+	return out
 }
 
 // signalPatterns are notable failure fingerprints worth surfacing verbatim.
@@ -550,6 +577,15 @@ func renderTriageReport(ref runRef, rec failureRecord) string {
 	if rec.DiagnosticsDir != "" {
 		fmt.Fprintf(&b, "Diagnostics:  %s\n", rec.DiagnosticsDir)
 		fmt.Fprintf(&b, "  download:   gh run download %s --repo %s/%s --name 'diagnostics-*'\n", ref.RunID, ref.Owner, ref.Repo)
+	}
+
+	if len(rec.TraceURIs) > 0 {
+		fmt.Fprintf(&b, "Traces:       %d in private storage (not a GitHub artifact)\n", len(rec.TraceURIs))
+		for _, uri := range rec.TraceURIs {
+			fmt.Fprintf(&b, "  %s\n", uri)
+		}
+		fmt.Fprintf(&b, "  download:   gcloud storage cp %s .\n", rec.TraceURIs[0])
+		fmt.Fprintf(&b, "  view:       npx playwright show-trace %s\n", filepath.Base(rec.TraceURIs[0]))
 	}
 
 	if repro := reproCommand(rec.Cell); repro != "" {

@@ -404,3 +404,54 @@ func TestExtractFailureRecordEmptyLog(t *testing.T) {
 		t.Errorf("expected empty record for a boring log, got %+v", rec)
 	}
 }
+
+func TestExtractFailureRecordCollectsTraceURIs(t *testing.T) {
+	t.Parallel()
+
+	log := strings.Join([]string{
+		"2026-08-12T09:00:00.000Z ##[group]Playwright trace upload",
+		"2026-08-12T09:00:01.000Z gs://camunda-ci-e2e-traces/123/1/eske-install/login-flow/trace.zip",
+		"2026-08-12T09:00:02.000Z gs://camunda-ci-e2e-traces/123/1/eske-install/login-flow/trace.zip",
+		"2026-08-12T09:00:03.000Z gs://camunda-ci-e2e-traces/123/1/eske-install/upload-flow/trace.zip",
+		"2026-08-12T09:00:04.000Z ##[endgroup]",
+	}, "\n")
+
+	rec := extractFailureRecord(log)
+
+	if len(rec.TraceURIs) != 2 {
+		t.Fatalf("TraceURIs = %v, want 2 unique entries", rec.TraceURIs)
+	}
+	if rec.TraceURIs[0] != "gs://camunda-ci-e2e-traces/123/1/eske-install/login-flow/trace.zip" {
+		t.Errorf("unexpected first URI: %q", rec.TraceURIs[0])
+	}
+	if rec.TraceURIs[1] != "gs://camunda-ci-e2e-traces/123/1/eske-install/upload-flow/trace.zip" {
+		t.Errorf("unexpected second URI: %q", rec.TraceURIs[1])
+	}
+}
+
+func TestExtractFailureRecordWithoutTracesLeavesURIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	rec := extractFailureRecord("nothing interesting here\nDiagnostics: diagnostics/ns/ts\n")
+	if len(rec.TraceURIs) != 0 {
+		t.Errorf("TraceURIs = %v, want empty", rec.TraceURIs)
+	}
+}
+
+func TestUniqueStrings(t *testing.T) {
+	t.Parallel()
+
+	if got := uniqueStrings(nil); got != nil {
+		t.Errorf("uniqueStrings(nil) = %v, want nil", got)
+	}
+	got := uniqueStrings([]string{"b", "a", "b", "a", "c"})
+	want := []string{"b", "a", "c"}
+	if len(got) != len(want) {
+		t.Fatalf("uniqueStrings = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("uniqueStrings[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
