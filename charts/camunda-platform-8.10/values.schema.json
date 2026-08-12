@@ -4744,7 +4744,7 @@
                         },
                         "physicalTenants": {
                             "type": "object",
-                            "description": "can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and `default` store id when overriding a root store. File-store `secret.existingSecret` is inherited together with the runtime fields. Physical tenant ids must match the runtime tenant id exactly and may contain letters, digits, `.`, `_` and `-`. Example: `tenanta: {aws: {default: {region: us-east-1}}}`.",
+                            "description": "can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and `default` store id when overriding a root store. File-store `secret.existingSecret` is inherited together with the runtime fields. Physical tenant ids must match the runtime tenant id exactly and may contain letters, digits, `_` and `-`. Example: `tenanta: {aws: {default: {region: us-east-1}}}`.",
                             "default": {}
                         }
                     },
@@ -6941,7 +6941,7 @@
                 "physicalTenants": {
                     "type": "object",
                     "propertyNames": {
-                        "pattern": "^[a-zA-Z0-9._-]{1,64}$"
+                        "pattern": "^[a-zA-Z0-9_-]{1,64}$"
                     },
                     "additionalProperties": {
                         "$ref": "#/definitions/secretStoreProviderSet"
