@@ -4729,17 +4729,17 @@
                     "properties": {
                         "file": {
                             "type": "object",
-                            "description": "can be used to configure a file-based secret store under the required `default` store id. The entry supports `path` (directory the store reads secrets from, one file per secret; defaults to \"/etc/camunda/secrets\") and the chart-only `secret.existingSecret` (an optional Kubernetes Secret mounted read-only at `path`). Example: `default: {secret: {existingSecret: my-secrets}, path: /etc/camunda/secrets}`.",
+                            "description": "can be used to configure a file-based secret store under the required `default` store id. Example: `default: {secret: {existingSecret: my-secrets}, path: /etc/camunda/secrets}`.",
                             "default": {}
                         },
                         "aws": {
                             "type": "object",
-                            "description": "can be used to configure AWS Secrets Manager connectivity under the required `default` store id. The application uses the AWS SDK default credential chain. The entry supports `region`, `pathPrefix`, and the chart-only `roleArn` (sets the `eks.amazonaws.com/role-arn` annotation on the Orchestration ServiceAccount). Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {region: us-east-1, roleArn: arn:aws:iam::123456789012:role/camunda-secrets}`.",
+                            "description": "can be used to configure AWS Secrets Manager connectivity under the required `default` store id. The application uses the AWS SDK default credential chain. Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {region: us-east-1, roleArn: arn:aws:iam::123456789012:role/camunda-secrets}`.",
                             "default": {}
                         },
                         "gcp": {
                             "type": "object",
-                            "description": "can be used to configure GCP Secret Manager connectivity under the required `default` store id. The application uses the GCP Application Default Credentials chain. The entry supports `projectId`, `pathPrefix`, `endpoint`, and the chart-only `gcpServiceAccount` (sets the `iam.gke.io/gcp-service-account` annotation on the Orchestration ServiceAccount). GCP requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT. Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.",
+                            "description": "can be used to configure GCP Secret Manager connectivity under the required `default` store id. The application uses the GCP Application Default Credentials chain. GCP requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT. Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.",
                             "default": {}
                         },
                         "physicalTenants": {
