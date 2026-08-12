@@ -1,5 +1,25 @@
 # Changelog
 
+## [14.8.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.8.1...camunda-platform-8.9-14.8.2) (2026-08-12)
+
+
+### Bug Fixes
+
+* document defaultRoles.admin.clients in orchestration values schema [ready] ([#6560](https://github.com/camunda/camunda-platform-helm/issues/6560)) ([2e51819](https://github.com/camunda/camunda-platform-helm/commit/2e51819fe3ace0f9a2ea8ae3fb6ecfaa0eb997b0))
+* gate 8.9 OpenSearch password env vars on active consumers ([#6774](https://github.com/camunda/camunda-platform-helm/issues/6774)) ([2adfea7](https://github.com/camunda/camunda-platform-helm/commit/2adfea77510f5ddc1e040c6efd8f21dcec08260e))
+* read external URLs from global.host when using the gateway api ([#6816](https://github.com/camunda/camunda-platform-helm/issues/6816)) ([92cb0a1](https://github.com/camunda/camunda-platform-helm/commit/92cb0a1e5f1cd151bae59a3656e41f907deb642e))
+
+
+### Dependencies
+
+* update camunda/camunda docker tag to v8.9.15 ([#6847](https://github.com/camunda/camunda-platform-helm/issues/6847)) ([40a09c5](https://github.com/camunda/camunda-platform-helm/commit/40a09c5d0b905108c398bc4211a1ed789dd34f06))
+* update camunda/console docker tag to v8.9.82 ([#6842](https://github.com/camunda/camunda-platform-helm/issues/6842)) ([b366d70](https://github.com/camunda/camunda-platform-helm/commit/b366d705e2709c5bb1717c671d3e120fb260e1b8))
+* update camunda/optimize docker tag to v8.9.15 ([#6846](https://github.com/camunda/camunda-platform-helm/issues/6846)) ([156f967](https://github.com/camunda/camunda-platform-helm/commit/156f9679ea8606c797dc3a63ad08f5ccefe9fea1))
+* update patch-updates (patch) ([#6814](https://github.com/camunda/camunda-platform-helm/issues/6814)) ([597c3d0](https://github.com/camunda/camunda-platform-helm/commit/597c3d0c5d545c61b763ec2f73437e514b92063c))
+* update patch-updates (patch) ([#6845](https://github.com/camunda/camunda-platform-helm/issues/6845)) ([88a33fc](https://github.com/camunda/camunda-platform-helm/commit/88a33fcb2f22e7dd1a9d96f9b5bfa143db4463c2))
+* update patch-updates (patch) ([#6851](https://github.com/camunda/camunda-platform-helm/issues/6851)) ([2c03357](https://github.com/camunda/camunda-platform-helm/commit/2c03357c0ebb27ed474b18409e137aba31cbb75a))
+* update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.20 ([#6852](https://github.com/camunda/camunda-platform-helm/issues/6852)) ([46e0807](https://github.com/camunda/camunda-platform-helm/commit/46e080702e140cecf581113906f8e58d69b36686))
+
 ## [14.8.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.8.0...camunda-platform-8.9-14.8.1) (2026-08-05)
 
 
