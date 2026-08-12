@@ -623,8 +623,86 @@ func (s *CamundaHubShimTemplateTest) TestRemovedConsoleEnvVarsAreNotRendered() {
 	s.Require().NotContains(output, "CAMUNDA_CONSOLE_")
 }
 
+func (s *CamundaHubShimTemplateTest) TestServiceAccountLabelsMergeAcrossCamundaHubAndLegacy() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "true",
+		"webModeler.enabled":                          "true",
+		"webModeler.serviceAccount.labels.legacyonly": "legacyvalue",
+		"camundaHub.serviceAccount.labels.hubonly":    "hubvalue",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/serviceaccount.yaml"})
+	s.Require().NoError(err)
+
+	serviceAccount := s.unmarshalServiceAccount(output)
+	s.Require().Equal("hubvalue", serviceAccount.Labels["hubonly"])
+	s.Require().Equal("legacyvalue", serviceAccount.Labels["legacyonly"])
+}
+
+func (s *CamundaHubShimTemplateTest) TestFalsyServiceAccountEnabledOverrideSuppressesServiceAccount() {
+	values := map[string]string{
+		"camundaHub.enabled":                "true",
+		"webModeler.enabled":                "true",
+		"webModeler.serviceAccount.enabled": "true",
+		"camundaHub.serviceAccount.enabled": "false",
+	}
+	_, err := s.renderWebModeler(values, []string{"templates/web-modeler/serviceaccount.yaml"})
+	s.Require().Error(err)
+}
+
+func (s *CamundaHubShimTemplateTest) TestCamundaHubFullnameOverrideAppliesToServiceNames() {
+	values := map[string]string{
+		"camundaHub.enabled":          "true",
+		"webModeler.enabled":          "true",
+		"camundaHub.fullnameOverride": "hubname",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/service-restapi.yaml"})
+	s.Require().NoError(err)
+
+	s.Require().Equal("hubname-restapi", s.unmarshalService(output).Name)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialServiceOverrideKeepsLegacySiblings() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"webModeler.enabled": "true",
+		"webModeler.restapi.service.annotations.legacyann": "keepme",
+		"camundaHub.restapi.service.port":                  "8888",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/service-restapi.yaml"})
+	s.Require().NoError(err)
+
+	service := s.unmarshalService(output)
+	s.Require().Equal("keepme", service.Annotations["legacyann"])
+	s.Require().Equal(int32(8888), service.Spec.Ports[0].Port)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialExternalDatabaseOverrideKeepsLegacySiblings() {
+	values := map[string]string{
+		"camundaHub.enabled":                           "true",
+		"webModeler.enabled":                           "true",
+		"webModeler.restapi.externalDatabase.host":     "legacyhost",
+		"webModeler.restapi.externalDatabase.port":     "5433",
+		"webModeler.restapi.externalDatabase.database": "legacydb",
+		"camundaHub.restapi.externalDatabase.host":     "hubhost",
+	}
+	application := s.renderRestAPIConfigMap(values)
+	s.Require().Equal("jdbc:postgresql://hubhost:5433/legacydb", application.Spring.Datasource.Url)
+}
+
 func (s *CamundaHubShimTemplateTest) renderWebModelerRestAPI(values map[string]string) (string, error) {
 	return s.renderWebModeler(values, []string{"templates/web-modeler/deployment-restapi.yaml"})
+}
+
+func (s *CamundaHubShimTemplateTest) unmarshalServiceAccount(output string) corev1.ServiceAccount {
+	var serviceAccount corev1.ServiceAccount
+	helm.UnmarshalK8SYaml(s.T(), output, &serviceAccount)
+	return serviceAccount
+}
+
+func (s *CamundaHubShimTemplateTest) unmarshalService(output string) corev1.Service {
+	var service corev1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+	return service
 }
 
 func (s *CamundaHubShimTemplateTest) renderWebModeler(values map[string]string, templates []string) (string, error) {
