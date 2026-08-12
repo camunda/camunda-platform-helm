@@ -8,6 +8,12 @@ outputs:
   token:
     description: GitHub token
     value: ${{ steps.generate-github-token.outputs.token }}
+  gcp-access-token:
+    description: |
+      Short-lived GCP OAuth2 access token, set only on the GKE Workload Identity
+      path. Empty for every other platform, so consumers must treat it as
+      optional and skip the work it would authorise.
+    value: ${{ steps.gke-auth.outputs.access-token }}
 
 env:
   GH_APP_ID:        {}
@@ -33,6 +39,7 @@ runs:
         private_key: ${{ env.GH_APP_KEY }}
 
     - name: Authenticate to GKE
+      id: gke-auth
       if: inputs.platform == 'gke' && inputs.auth-data == ''
       uses: ./.github/actions/gke-login
       with:
