@@ -728,6 +728,30 @@ func TestPrintRunSummary(t *testing.T) {
 	}
 }
 
+func TestPrintRunSummaryRedactsErrors(t *testing.T) {
+	t.Parallel()
+
+	results := []RunResult{{
+		Entry: Entry{Version: "8.10", Scenario: "es", Shortname: "eske", Flow: "install"},
+		Error: fmt.Errorf("request failed API_TOKEN=summary-secret"),
+	}}
+
+	summary := PrintRunSummary(results, time.Second, "")
+	if strings.Contains(summary, "summary-secret") || !strings.Contains(summary, "API_TOKEN=[REDACTED]") {
+		t.Errorf("PrintRunSummary should redact errors: %s", summary)
+	}
+}
+
+func TestApplyResultRedactsErrors(t *testing.T) {
+	t.Parallel()
+
+	state := &entryState{}
+	applyResult(state, RunResult{Error: fmt.Errorf("API_TOKEN=status-secret")})
+	if strings.Contains(state.Error, "status-secret") || !strings.Contains(state.Error, "[REDACTED]") {
+		t.Errorf("applyResult should redact errors, got %q", state.Error)
+	}
+}
+
 func TestPrintRunSummaryParallelShowsSum(t *testing.T) {
 	// Simulate parallel execution: two entries each took 30s, but wall-clock was 30s.
 	results := []RunResult{
@@ -1733,7 +1757,7 @@ func TestAppendTestOutputToDiagnostics_AppendToExistingRunDirectory(t *testing.T
 
 	te := &deploy.TestError{
 		Err:    fmt.Errorf("integration tests failed"),
-		Output: "FAIL: TestSomething\nexpected 200, got 500\n",
+		Output: "FAIL: TestSomething\nexpected 200, got 500\nAPI_TOKEN=test-secret\n",
 	}
 
 	result := appendTestOutputToDiagnostics(te, "test-ns", runDir)
@@ -1747,6 +1771,9 @@ func TestAppendTestOutputToDiagnostics_AppendToExistingRunDirectory(t *testing.T
 	}
 	if !strings.Contains(string(content), "FAIL: TestSomething") {
 		t.Errorf("test-output.txt should contain test output, got:\n%s", string(content))
+	}
+	if strings.Contains(string(content), "test-secret") {
+		t.Errorf("test-output.txt contains an unredacted secret:\n%s", string(content))
 	}
 
 	summaryBytes, err := os.ReadFile(filepath.Join(runDir, "summary.json"))
@@ -1762,6 +1789,9 @@ func TestAppendTestOutputToDiagnostics_AppendToExistingRunDirectory(t *testing.T
 	}
 	if !strings.Contains(summary.TestOutputLast200, "FAIL: TestSomething") {
 		t.Errorf("summary should contain test output, got:\n%s", summary.TestOutputLast200)
+	}
+	if strings.Contains(summary.TestOutputLast200, "test-secret") {
+		t.Errorf("summary contains an unredacted secret:\n%s", summary.TestOutputLast200)
 	}
 }
 

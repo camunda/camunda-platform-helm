@@ -30,9 +30,19 @@ export default defineConfig({
   use: {
     baseURL: getBaseURL(),
     actionTimeout: 10000,
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
-    trace: "on-first-retry",
+    screenshot: (process.env.PLAYWRIGHT_E2E_SCREENSHOT || "only-on-failure") as
+      | "off"
+      | "on"
+      | "only-on-failure",
+    video: (process.env.PLAYWRIGHT_E2E_VIDEO || "retain-on-failure") as
+      | "off"
+      | "on"
+      | "retain-on-failure",
+    trace: (process.env.PLAYWRIGHT_E2E_TRACE || "on-first-retry") as
+      | "off"
+      | "on"
+      | "retain-on-failure"
+      | "on-first-retry",
   },
 });
 

@@ -77,6 +77,16 @@ inputs:
       way to derive on its own.
     required: false
     default: ""
+  trace-bucket:
+    description: >-
+      Private Cloud Storage bucket that receives Playwright traces for a failed
+      run. Traces are never uploaded as a GitHub artifact: this repository is
+      public, so artifacts are world-readable, and a trace embeds the per-run
+      cluster's request headers and cookies. Empty (the default) disables trace
+      capture entirely, so the whole path is inert until the bucket exists.
+      Requires the GKE Workload Identity auth path, which mints the token.
+    required: false
+    default: ""
   binary-artifact-name:
     description: >
       Name of the uploaded deploy-camunda binary artifact to download. When set, the
@@ -233,6 +243,10 @@ runs:
         TEST_AUTH_TYPE: ${{ inputs.auth }}
         HUB_NAMESPACE: ${{ inputs.hub-namespace }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
+        PLAYWRIGHT_E2E_SCREENSHOT: "off"
+        PLAYWRIGHT_E2E_VIDEO: "off"
+        # Traces are only captured when there is a private bucket to put them in.
+        TRACE_MODE: ${{ inputs.trace-bucket != '' && 'retain-on-failure' || 'off' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -257,7 +271,7 @@ runs:
 
         E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
         [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
-        E2E_ARGS+=(--trace retain-on-failure --verbose)
+        E2E_ARGS+=(--trace "${TRACE_MODE}" --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
 
@@ -300,36 +314,66 @@ runs:
         retention-days: 1
         if-no-files-found: warn
 
-    - name: Upload blob report to GitHub Actions Artifacts
-      if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-      with:
-        name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
-        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
-        retention-days: 1
-
-    - name: Set report date
-      id: report_date
-      if: ${{ !cancelled() }}
+    # Playwright's JSON results are the only test-level evidence retained: they
+    # carry the failing assertion, locator, timeout, and call log, which is what
+    # triage needs. Redacted first because error messages can quote response
+    # bodies and headers.
+    #
+    # Deliberately NOT published: test-results/**/error-context.md. It adds only
+    # an ARIA page snapshot on top of what the JSON already has, and that snapshot
+    # renders form-control values verbatim (a password field appears as
+    # `textbox: <value>`), which no text-level redactor can classify.
+    - name: Redact Playwright JSON results
+      id: e2e_text_results
+      if: ${{ failure() && !cancelled() }}
       shell: bash
-      run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_OUTPUT"
+      env:
+        ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+      run: |
+        # Fail closed: without the sanitizer nothing is published.
+        if ! command -v deploy-camunda >/dev/null 2>&1; then
+          echo "deploy-camunda not on PATH; Playwright JSON results are not published"
+          exit 0
+        fi
+        results="${ABSOLUTE_TEST_CHART_DIR}/test/e2e/test-results/playwright-results.json"
+        [[ -f "$results" ]] || exit 0
+        deploy-camunda redact --in "$results" --out "$results"
+        echo "publish=true" >> "$GITHUB_OUTPUT"
 
     - name: Upload Playwright JSON results
-      if: ${{ !cancelled() }}
+      if: ${{ failure() && !cancelled() && steps.e2e_text_results.outputs.publish == 'true' }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
-        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        name: ${{ steps.e2e_diag_artifact.outputs.name }}-results-json
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
-        if-no-files-found: warn
         retention-days: 5
-
-    - name: Upload Playwright traces for failed tests
-      if: ${{ failure() && !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-      with:
-        name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
-        path: |
-          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/trace.zip
-          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/*.png
         if-no-files-found: ignore
-        retention-days: 5
+
+    # Traces go to a private bucket, never to a GitHub artifact: they cannot be
+    # redacted and this repository's artifacts are world-readable. Best-effort —
+    # a failed upload must not mask the test failure that produced it.
+    - name: Upload Playwright traces to private storage
+      if: ${{ failure() && !cancelled() && inputs.trace-bucket != '' }}
+      shell: bash
+      env:
+        ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+        TRACE_BUCKET: ${{ inputs.trace-bucket }}
+        GCS_ACCESS_TOKEN: ${{ steps.cluster-auth.outputs.gcp-access-token }}
+        TRACE_PREFIX: ${{ github.run_id }}/${{ github.run_attempt }}/${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
+      run: |
+        if ! command -v deploy-camunda >/dev/null 2>&1; then
+          echo "deploy-camunda not on PATH; traces are not retained"
+          exit 0
+        fi
+        if [[ -z "${GCS_ACCESS_TOKEN}" ]]; then
+          echo "no GCP access token on this platform; traces are not retained"
+          exit 0
+        fi
+        echo "::group::Playwright trace upload"
+        deploy-camunda artifacts upload \
+          --bucket "${TRACE_BUCKET}" \
+          --source "${ABSOLUTE_TEST_CHART_DIR}/test/e2e/test-results" \
+          --prefix "${TRACE_PREFIX}" \
+          --pattern 'trace.zip' \
+          --content-type application/zip || echo "trace upload failed; continuing"
+        echo "::endgroup::"

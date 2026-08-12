@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/pkg/redaction"
 	"scripts/deploy-camunda/pkg/types"
 	"strings"
 	"sync"
@@ -65,6 +66,8 @@ type HelmError struct {
 	Reason string
 	// Command is the full helm command that was executed
 	Command string
+	// Args preserves argument boundaries for safe diagnostic rendering.
+	Args []string
 	// Cause is the underlying error (e.g. exit status 1)
 	Cause error
 }
@@ -81,7 +84,36 @@ func (e *HelmError) Unwrap() error {
 // base filenames for readability. Full paths in -f values file args and chart
 // paths are replaced with just the filename.
 func (e *HelmError) ShortCommand() string {
+	if len(e.Args) > 0 {
+		return shortenArgs(e.Args)
+	}
 	return shortenPaths(e.Command)
+}
+
+func shortenArgs(args []string) string {
+	parts := append([]string(nil), args...)
+	for i := range parts {
+		if redactSensitiveFlag(parts, i) {
+			continue
+		}
+		if i > 0 && isHelmSetFlag(parts[i-1]) {
+			parts[i] = redactHelmSetArg(parts[i])
+			continue
+		}
+		for _, flag := range []string{"--set=", "--set-string=", "--set-json=", "--set-literal="} {
+			if strings.HasPrefix(parts[i], flag) {
+				parts[i] = flag + redactHelmSetArg(strings.TrimPrefix(parts[i], flag))
+			}
+		}
+		if i > 0 && parts[i-1] == "-f" && strings.Contains(parts[i], "/") {
+			parts[i] = filepath.Base(parts[i])
+			continue
+		}
+		if strings.HasPrefix(parts[i], "/") && !strings.HasPrefix(parts[i], "--") {
+			parts[i] = filepath.Base(parts[i])
+		}
+	}
+	return "helm " + formatArgs(parts)
 }
 
 // shortenPaths replaces long absolute/relative file paths with just basenames.
@@ -89,6 +121,18 @@ func (e *HelmError) ShortCommand() string {
 func shortenPaths(cmd string) string {
 	parts := strings.Fields(cmd)
 	for i := range parts {
+		if redactSensitiveFlag(parts, i) {
+			continue
+		}
+		if i > 0 && isHelmSetFlag(parts[i-1]) {
+			parts[i] = redactHelmSetArg(parts[i])
+			continue
+		}
+		for _, flag := range []string{"--set=", "--set-string=", "--set-json=", "--set-literal="} {
+			if strings.HasPrefix(parts[i], flag) {
+				parts[i] = flag + redactHelmSetArg(strings.TrimPrefix(parts[i], flag))
+			}
+		}
 		// Shorten -f value file paths
 		if i > 0 && parts[i-1] == "-f" && len(parts[i]) > 0 && (parts[i][0] == '/' || strings.Contains(parts[i], "/")) {
 			parts[i] = filepath.Base(parts[i])
@@ -100,6 +144,34 @@ func shortenPaths(cmd string) string {
 		}
 	}
 	return strings.Join(parts, " ")
+}
+
+func isHelmSetFlag(arg string) bool {
+	return arg == "--set" || arg == "--set-string" || arg == "--set-json" || arg == "--set-literal"
+}
+
+func redactHelmSetArg(arg string) string {
+	for _, assignment := range strings.Split(arg, ",") {
+		key, _, found := strings.Cut(assignment, "=")
+		if found && redaction.IsSensitiveName(key) {
+			return redaction.Placeholder
+		}
+	}
+	return redaction.Text(arg)
+}
+
+func redactSensitiveFlag(parts []string, i int) bool {
+	for _, flag := range []string{"--password", "--kube-token", "--username"} {
+		if parts[i] == flag && i+1 < len(parts) {
+			parts[i+1] = redaction.Placeholder
+			return true
+		}
+		if strings.HasPrefix(parts[i], flag+"=") {
+			parts[i] = flag + "=" + redaction.Placeholder
+			return true
+		}
+	}
+	return false
 }
 
 // upgradeInstall builds and executes helm upgrade --install with deployer's opinionated policies
@@ -181,6 +253,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 		return &HelmError{
 			Reason:  "helm upgrade --install failed",
 			Command: "helm " + formatArgs(args),
+			Args:    args,
 			Cause:   runErr,
 		}
 	}
@@ -321,6 +394,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	return &HelmError{
 		Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
 		Command: "helm " + formatArgs(args),
+		Args:    args,
 		Cause:   runErr,
 	}
 }

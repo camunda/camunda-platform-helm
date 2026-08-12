@@ -244,6 +244,11 @@ render_env_file() {
   local is_auth0="${11:-false}"
   local kubectl_cmd="kubectl"
 
+  if [[ -L "$env_file" ]]; then
+    echo "Error: refusing to write env file through a symbolic link: $env_file" >&2
+    return 1
+  fi
+
   if [[ -n "$kube_context" ]]; then
     kubectl_cmd="kubectl --context=$kube_context"
   fi
@@ -260,7 +265,11 @@ render_env_file() {
     log "DEBUG: No Optimize pods found in namespace — setting IS_OPTIMIZE=false"
   fi
 
-  # Generate base .env from template
+  # Generate base .env from template. Pre-create the file owner-only in a
+  # subshell so the umask change stays scoped and no world-readable window
+  # exists between creation and chmod.
+  rm -f "$env_file"
+  (umask 077 && : > "$env_file") || return 1
   export TEST_INGRESS_HOST="$hostname"
   envsubst < "$test_suite_path"/.env.template > "$env_file"
 
@@ -312,8 +321,7 @@ render_env_file() {
     } >> "$env_file"
     log "DEBUG: Auth0 env file setup complete (Keycloak resolution skipped)"
     if [[ "$VERBOSE" == "true" ]]; then
-      log "DEBUG: Contents of .env file:"
-      cat "$env_file"
+      log "DEBUG: Env file written to $env_file"
     fi
     return 0
   fi
@@ -381,8 +389,7 @@ render_env_file() {
 
   log "DEBUG: Env file setup complete"
   if [[ "$VERBOSE" == "true" ]]; then
-    log "DEBUG: Contents of .env file:"
-    cat "$env_file"
+    log "DEBUG: Env file written to $env_file"
   fi
 }
 

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"scripts/deploy-camunda/pkg/redaction"
 	"strings"
 	"sync"
 	"time"
@@ -208,7 +209,7 @@ func applyResult(s *entryState, result RunResult) {
 			s.Status = StatusSkipped
 		} else {
 			s.Status = StatusFailed
-			errMsg := result.Error.Error()
+			errMsg := redaction.Text(result.Error.Error())
 			if len(errMsg) > 72 {
 				errMsg = errMsg[:69] + "..."
 			}
@@ -235,7 +236,7 @@ func (d *StatusDisplay) writeEntrySummary(entry Entry, result RunResult) {
 
 	if result.Error != nil {
 		fmt.Fprintf(&b, "Status:    FAIL\n")
-		fmt.Fprintf(&b, "Error:     %s\n", result.Error)
+		fmt.Fprintf(&b, "Error:     %s\n", redaction.Text(result.Error.Error()))
 		if result.Diagnostics != "" {
 			fmt.Fprintf(&b, "Diagnostics: %s\n", result.Diagnostics)
 		}
@@ -243,7 +244,8 @@ func (d *StatusDisplay) writeEntrySummary(entry Entry, result RunResult) {
 		fmt.Fprintf(&b, "Status:    PASS\n")
 	}
 
-	_ = os.WriteFile(path, []byte(b.String()), 0o644)
+	_ = os.WriteFile(path, []byte(b.String()), 0o600)
+	_ = os.Chmod(path, 0o600)
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
