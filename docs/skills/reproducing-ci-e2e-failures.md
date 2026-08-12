@@ -109,15 +109,34 @@ The job log is also first-class here: the `blob` reporter prints the failing
 assertion, the expected/received values, and the source frame directly into the
 log, so `deploy-camunda triage` often needs nothing else.
 
-CI does not retain Playwright HTML reports, blob reports, traces, screenshots, or
-videos: they embed authentication data (tokens, cookies, authorization headers)
-that cannot be reliably redacted, and binary browser artifacts cannot be
+CI does not retain Playwright HTML reports, blob reports, screenshots, or videos
+as artifacts: they embed authentication data (tokens, cookies, authorization
+headers) that cannot be reliably redacted, and binary browser artifacts cannot be
 sanitized at all. `test-results/**/error-context.md` is also withheld — its ARIA
 page snapshot renders form-control values verbatim, so a password field shows up
 as `textbox: <value>`.
 
-For page state, reproduce locally (Steps 4–6): the local Playwright config still
-captures traces, screenshots, and video at full fidelity.
+### Traces
+
+Traces are not artifacts either, but they are retained — in a **private Cloud
+Storage bucket**, because this repository is public and its artifacts are
+downloadable by any GitHub user. When the `E2E_TRACE_BUCKET` repository variable
+is set, a failed e2e job uploads `trace.zip` and logs the `gs://` URI. Objects are
+deleted after 5 days and CI holds write-only access.
+
+`deploy-camunda triage` prints any URIs it finds along with the fetch and view
+commands. Manually:
+
+```bash
+gcloud storage cp gs://<bucket>/<run-id>/<run-attempt>/<leg>/<test>/trace.zip .
+npx playwright show-trace trace.zip
+```
+
+Read access is granted to the distribution team group. If `E2E_TRACE_BUCKET` is
+unset, trace capture is disabled entirely and nothing is uploaded.
+
+For screenshots and video, reproduce locally (Steps 4–6): the local Playwright
+config still captures all three at full fidelity.
 
 ## Step 4 — Decode the Scenario Shortname
 

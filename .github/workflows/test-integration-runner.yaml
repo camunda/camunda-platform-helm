@@ -1263,6 +1263,7 @@ jobs:
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
         with:
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
+          trace-bucket: ${{ vars.E2E_TRACE_BUCKET }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
@@ -1342,6 +1343,7 @@ jobs:
           PLAYWRIGHT_E2E_RETRIES: "0"
         with:
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
+          trace-bucket: ${{ vars.E2E_TRACE_BUCKET }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
@@ -1458,6 +1460,7 @@ jobs:
           namespace-override: "${{ steps.base-vars.outputs.namespace }}-${{ matrix.orchestration_suffix }}"
           hub-namespace: "${{ steps.base-vars.outputs.namespace }}-${{ inputs.topology-hub-suffix }}"
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
+          trace-bucket: ${{ vars.E2E_TRACE_BUCKET }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
           auth-data: ${{ inputs.auth-data }}
@@ -1529,6 +1532,7 @@ jobs:
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
         with:
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
+          trace-bucket: ${{ vars.E2E_TRACE_BUCKET }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
