@@ -1231,7 +1231,7 @@ Orchestration - Secret Store
   {{- $orchestrationImageTag := include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) -}}
   {{- $orchestrationImageDigest := .Values.orchestration.image.digest | default .Values.global.image.digest | default "" -}}
   {{- if and (not $orchestrationImageDigest) (ne $orchestrationImageTag "SNAPSHOT") -}}
-    {{- if not (semverCompare ">=8.10.0-alpha5-0" $orchestrationImageTag) -}}
+    {{- if not (semverCompare ">=8.10.0-alpha5" $orchestrationImageTag) -}}
       {{- fail (printf "[camunda][error] orchestration.secretStore.gcp requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT, but the effective image tag is '%s'." $orchestrationImageTag) -}}
     {{- end -}}
   {{- end -}}

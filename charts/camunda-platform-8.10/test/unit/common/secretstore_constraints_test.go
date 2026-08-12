@@ -322,6 +322,40 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "GCP store accepts the exact minimum image version",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.default.projectId": "my-project",
+				"orchestration.image.tag":                         "8.10.0-alpha5",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "GCP store accepts a release after the minimum image version",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.default.projectId": "my-project",
+				"orchestration.image.tag":                         "8.10.0",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "GCP store rejects the release before the minimum image version",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore.gcp.default.projectId": "my-project",
+				"orchestration.image.tag":                         "8.10.0-alpha4",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "8.10.0-alpha4")
+			},
+		},
+		{
 			Name:     "Generated volume name collision is rejected",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
