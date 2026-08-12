@@ -63,9 +63,7 @@ func mergeValues(base, overrides map[string]string) map[string]string {
 }
 
 func secretStoreBaseValues() map[string]string {
-	return mergeValues(baseValues(), map[string]string{
-		"orchestration.image.tag": "SNAPSHOT",
-	})
+	return baseValues()
 }
 
 // applicationConfig extracts the rendered application.yaml from the orchestration

@@ -1808,7 +1808,9 @@ NOTE: raw-text companion to extraConfigHasPath and extraConfigHasDottedPath, for
 those two cannot parse: spring.config.import resolves an imported file by extension, so a
 ".properties" entry binds "camunda.secrets.x=v" without ever being valid YAML, and content
 that fails fromYaml yields only an "Error" key. Matches the joined path at line start
-followed by ".", ":" or "=", so "camunda.secretstore" is not a false positive.
+followed by ".", ":" or "=", so "camunda.secretstore" is not a false positive. Applied only
+to those two cases, because raw matching cannot tell a real key from the same text inside a
+block scalar, and parsable YAML is already covered exactly by the other two helpers.
 Usage:
 {{ if eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" (dict
   "extraConfiguration" .Values.orchestration.extraConfiguration
@@ -1819,8 +1821,13 @@ Usage:
 {{- $pattern := printf "(?m)^[ \t]*%s[.:=]" (join "\\." .path) -}}
 {{- range .extraConfiguration -}}
   {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
-    {{- if regexMatch $pattern (.content | default "") -}}
-      {{- $found = "true" -}}
+    {{- $content := .content | default "" -}}
+    {{- $parsed := $content | fromYaml -}}
+    {{- $unparsable := or (not (kindIs "map" $parsed)) (hasKey $parsed "Error") -}}
+    {{- if or $unparsable (hasSuffix ".properties" (.file | default "")) -}}
+      {{- if regexMatch $pattern $content -}}
+        {{- $found = "true" -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
@@ -1946,6 +1953,68 @@ Returns a stable DNS-label volume name for one file secret store.
 {{- if and (hasKey . "tenantId") .tenantId -}}
   {{- $identity = printf "tenant:%s/%s" $tenantID .storeId -}}
 {{- end -}}
-{{- $slug := printf "%s-%s" $tenantID .storeId | kebabcase | trunc 41 | trimSuffix "-" -}}
+{{- $slug := regexReplaceAll "[^a-z0-9]+" (printf "%s-%s" $tenantID .storeId | lower) "-" | trunc 41 | trimAll "-" -}}
 {{- printf "secretstore-%s-%s" $slug (sha256sum $identity | trunc 8) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- /*
+NOTE: single source of truth for resolving orchestration.secretStore file stores. Every
+entry is returned, including path-only ones with an empty "secret", because constraints
+validates those too; callers that emit volumes use secretStore.fileVolumes instead.
+"path" carries the /etc/camunda/secrets default and tenant entries are the root entry
+deep-overlaid, so the resolution rule lives here rather than at each call site.
+Usage:
+{{- $entries := (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries }}
+*/ -}}
+{{- define "camundaPlatform.secretStore._fileEntries" -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $rootFile := $secretStore.file | default dict -}}
+{{- $entries := list -}}
+{{- range $id, $cfg := $rootFile -}}
+  {{- $entries = append $entries (dict
+      "id" $id
+      "tenantId" ""
+      "label" "orchestration.secretStore"
+      "name" (include "camundaPlatform.secretStore.fileVolumeName" (dict "storeId" $id))
+      "path" (toString ($cfg.path | default "/etc/camunda/secrets"))
+      "secret" (toString (($cfg.secret | default dict).existingSecret | default ""))
+  ) -}}
+{{- end -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- range $id, $cfg := ($providers.file | default dict) -}}
+    {{- $effective := mergeOverwrite (deepCopy (index $rootFile $id | default dict)) $cfg -}}
+    {{- $entries = append $entries (dict
+        "id" $id
+        "tenantId" $tid
+        "label" (printf "orchestration.secretStore.physicalTenants.%s" $tid)
+        "name" (include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id))
+        "path" (toString ($effective.path | default "/etc/camunda/secrets"))
+        "secret" (toString (($effective.secret | default dict).existingSecret | default ""))
+    ) -}}
+  {{- end -}}
+{{- end -}}
+{{- toYaml (dict "entries" $entries) -}}
+{{- end -}}
+
+{{- /*
+NOTE: the chart-managed volumes for orchestration.secretStore file stores -- the
+secret-bearing subset of _fileEntries, deduplicated so a tenant entry that inherits both
+the path and the Secret of another entry does not emit a duplicate mountPath, which
+Kubernetes rejects. A path reached by two different Secrets is a configuration error that
+constraints fails on, so it is left to surface there rather than silently dropped here.
+Usage:
+{{- $volumes := (fromYaml (include "camundaPlatform.secretStore.fileVolumes" .)).volumes }}
+*/ -}}
+{{- define "camundaPlatform.secretStore.fileVolumes" -}}
+{{- $volumes := list -}}
+{{- $seen := dict -}}
+{{- range $entry := (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries -}}
+  {{- if $entry.secret -}}
+    {{- if not (and (hasKey $seen $entry.path) (eq (index $seen $entry.path) $entry.secret)) -}}
+      {{- $volumes = append $volumes $entry -}}
+      {{- $_ := set $seen $entry.path $entry.secret -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- toYaml (dict "volumes" $volumes) -}}
 {{- end -}}

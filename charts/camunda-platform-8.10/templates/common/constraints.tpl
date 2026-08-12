@@ -1076,8 +1076,14 @@ Orchestration - Secret Store
 *******************************************************************************
 */}}
 
-{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
-{{- $secretStoreIdentityAnnotations := include "camundaPlatform.secretStore.serviceAccountAnnotations" . -}}
+{{- /* NOTE: an empty store when orchestration is disabled makes every check below
+     unreachable, since they all derive from these two and $secretStoreAnnotations. */ -}}
+{{- $secretStore := dict -}}
+{{- $secretStoreIdentityAnnotations := "" -}}
+{{- if .Values.orchestration.enabled -}}
+  {{- $secretStore = .Values.orchestration.secretStore | default dict -}}
+  {{- $secretStoreIdentityAnnotations = include "camundaPlatform.secretStore.serviceAccountAnnotations" . -}}
+{{- end -}}
 {{- if and $secretStoreIdentityAnnotations (hasKey (.Values.orchestration.podAnnotations | default dict) "checksum/secret-store-identity") -}}
   {{- fail "[camunda][error] orchestration.podAnnotations must not set the reserved 'checksum/secret-store-identity' annotation." -}}
 {{- end -}}
@@ -1099,7 +1105,7 @@ Orchestration - Secret Store
   {{- end -}}
 {{- end -}}
 {{- range $claim := (.Values.orchestration.extraVolumeClaimTemplates | default list) -}}
-  {{- if $claim.metadata.name -}}
+  {{- if (($claim.metadata) | default dict).name -}}
     {{- $_ := set $secretStoreReservedVolumeNames (toString $claim.metadata.name) true -}}
   {{- end -}}
 {{- end -}}
@@ -1124,17 +1130,51 @@ Orchestration - Secret Store
     {{- $secretStoreProtectedPaths = append $secretStoreProtectedPaths (printf "/usr/local/camunda/config/%s" $extraConfig.file) -}}
   {{- end -}}
 {{- end -}}
+{{- $secretStoreFileEntries := list -}}
+{{- if .Values.orchestration.enabled -}}
+  {{- $secretStoreFileEntries = (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries -}}
+{{- end -}}
 {{- $secretStoreManagedPaths := dict -}}
-{{- range $tenant := $secretStoreTenants -}}
-  {{- $label := $tenant.label -}}
-  {{- range $id, $cfg := ($tenant.providers.file | default dict) -}}
-    {{- $effectiveCfg := $cfg -}}
-    {{- if ne $label "orchestration.secretStore" -}}
-      {{- $effectiveCfg = mergeOverwrite (deepCopy (index ($secretStore.file | default dict) $id | default dict)) $cfg -}}
+{{- range $entry := $secretStoreFileEntries -}}
+  {{- if $entry.secret -}}
+    {{- $_ := set $secretStoreManagedPaths $entry.path $entry.secret -}}
+  {{- end -}}
+{{- end -}}
+{{- range $entry := $secretStoreFileEntries -}}
+  {{- $label := $entry.label -}}
+  {{- $id := $entry.id -}}
+  {{- $effectivePath := $entry.path -}}
+  {{- if or (and (ne $effectivePath "/") (hasSuffix "/" $effectivePath)) (contains "//" $effectivePath) (contains "/./" (printf "%s/" $effectivePath)) (contains "/../" (printf "%s/" $effectivePath)) (hasSuffix "/." $effectivePath) (hasSuffix "/.." $effectivePath) -}}
+    {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain a trailing slash, repeated separators, '.' or '..' path segments." $label $id) -}}
+  {{- end -}}
+  {{- $pathWithSlash := printf "%s/" (trimSuffix "/" $effectivePath) -}}
+  {{- range $protectedPath := $secretStoreProtectedPaths -}}
+    {{- $protectedWithSlash := printf "%s/" (trimSuffix "/" $protectedPath) -}}
+    {{- if or (eq $effectivePath $protectedPath) (hasPrefix $pathWithSlash $protectedWithSlash) (hasPrefix $protectedWithSlash $pathWithSlash) -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with a required Orchestration volume mount." $label $id $effectivePath) -}}
     {{- end -}}
-    {{- $secret := $effectiveCfg.secret | default dict -}}
-    {{- if $secret.existingSecret -}}
-      {{- $_ := set $secretStoreManagedPaths (toString ($effectiveCfg.path | default "/etc/camunda/secrets")) (toString $secret.existingSecret) -}}
+  {{- end -}}
+  {{- if and (not $entry.secret) (hasKey $secretStoreManagedPaths $effectivePath) -}}
+    {{- fail (printf "[camunda][error] %s.file.%s.path '%s' overlaps a chart-managed Secret mount." $label $id $effectivePath) -}}
+  {{- end -}}
+  {{- range $externalPath := $secretStoreExternalPaths -}}
+    {{- $externalWithSlash := printf "%s/" (trimSuffix "/" $externalPath) -}}
+    {{- $pathsOverlap := or (eq $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash) (hasPrefix $externalWithSlash $pathWithSlash) -}}
+    {{- if or (and $entry.secret $pathsOverlap) (and (not $entry.secret) (ne $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash)) -}}
+      {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with orchestration.extraVolumeMounts." $label $id $effectivePath) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if $entry.secret -}}
+    {{- if hasKey $secretStoreReservedVolumeNames $entry.name -}}
+      {{- fail (printf "[camunda][error] orchestration.secretStore generated volume name '%s' conflicts with orchestration.extraVolumes or orchestration.extraVolumeClaimTemplates." $entry.name) -}}
+    {{- end -}}
+    {{- if hasKey $secretStoreFileMountPaths $effectivePath -}}
+      {{- if ne (index $secretStoreFileMountPaths $effectivePath) $entry.secret -}}
+        {{- $errorMessage := printf "[camunda][error] orchestration.secretStore configures different Kubernetes Secrets at the same effective path '%s'. Each path must resolve to one Secret." $effectivePath -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end -}}
+    {{- else -}}
+      {{- $_ := set $secretStoreFileMountPaths $effectivePath $entry.secret -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
@@ -1148,53 +1188,6 @@ Orchestration - Secret Store
   {{- if gt $secretStoreCount 1 -}}
     {{- $errorMessage := printf "[camunda][error] %s supports only one secret store at a time (across file, aws, and gcp), but multiple were configured. The Orchestration Cluster registers at most one secret store per physical tenant." $label -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-  {{- end -}}
-  {{- range $id, $cfg := ($providers.file | default dict) -}}
-    {{- $effectiveCfg := $cfg -}}
-    {{- if ne $label "orchestration.secretStore" -}}
-      {{- $effectiveCfg = mergeOverwrite (deepCopy (index ($secretStore.file | default dict) $id | default dict)) $cfg -}}
-    {{- end -}}
-    {{- $secret := $effectiveCfg.secret | default dict -}}
-    {{- $effectivePath := toString ($effectiveCfg.path | default "/etc/camunda/secrets") -}}
-    {{- if or (and (ne $effectivePath "/") (hasSuffix "/" $effectivePath)) (contains "//" $effectivePath) (contains "/./" (printf "%s/" $effectivePath)) (contains "/../" (printf "%s/" $effectivePath)) (hasSuffix "/." $effectivePath) (hasSuffix "/.." $effectivePath) -}}
-      {{- fail (printf "[camunda][error] %s.file.%s.path must be canonical and must not contain a trailing slash, repeated separators, '.' or '..' path segments." $label $id) -}}
-    {{- end -}}
-    {{- $pathWithSlash := printf "%s/" (trimSuffix "/" $effectivePath) -}}
-    {{- range $protectedPath := $secretStoreProtectedPaths -}}
-      {{- $protectedWithSlash := printf "%s/" (trimSuffix "/" $protectedPath) -}}
-      {{- if or (eq $effectivePath $protectedPath) (hasPrefix $pathWithSlash $protectedWithSlash) (hasPrefix $protectedWithSlash $pathWithSlash) -}}
-        {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with a required Orchestration volume mount." $label $id $effectivePath) -}}
-      {{- end -}}
-    {{- end -}}
-    {{- if and (not $secret.existingSecret) (hasKey $secretStoreManagedPaths $effectivePath) -}}
-      {{- fail (printf "[camunda][error] %s.file.%s.path '%s' overlaps a chart-managed Secret mount." $label $id $effectivePath) -}}
-    {{- end -}}
-    {{- range $externalPath := $secretStoreExternalPaths -}}
-      {{- $externalWithSlash := printf "%s/" (trimSuffix "/" $externalPath) -}}
-      {{- $pathsOverlap := or (eq $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash) (hasPrefix $externalWithSlash $pathWithSlash) -}}
-      {{- if or (and $secret.existingSecret $pathsOverlap) (and (not $secret.existingSecret) (ne $effectivePath $externalPath) (hasPrefix $pathWithSlash $externalWithSlash)) -}}
-        {{- fail (printf "[camunda][error] %s.file.%s.path '%s' conflicts with orchestration.extraVolumeMounts." $label $id $effectivePath) -}}
-      {{- end -}}
-    {{- end -}}
-    {{- if $secret.existingSecret -}}
-      {{- $tenantID := "" -}}
-      {{- if ne $label "orchestration.secretStore" -}}
-        {{- $tenantID = trimPrefix "orchestration.secretStore.physicalTenants." $label -}}
-      {{- end -}}
-      {{- $generatedVolumeName := include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tenantID "storeId" $id) -}}
-      {{- if hasKey $secretStoreReservedVolumeNames $generatedVolumeName -}}
-        {{- fail (printf "[camunda][error] orchestration.secretStore generated volume name '%s' conflicts with orchestration.extraVolumes or orchestration.extraVolumeClaimTemplates." $generatedVolumeName) -}}
-      {{- end -}}
-      {{- $effectiveSecret := toString $secret.existingSecret -}}
-      {{- if hasKey $secretStoreFileMountPaths $effectivePath -}}
-        {{- if ne (index $secretStoreFileMountPaths $effectivePath) $effectiveSecret -}}
-          {{- $errorMessage := printf "[camunda][error] orchestration.secretStore configures different Kubernetes Secrets at the same effective path '%s'. Each path must resolve to one Secret." $effectivePath -}}
-          {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-        {{- end -}}
-      {{- else -}}
-        {{- $_ := set $secretStoreFileMountPaths $effectivePath $effectiveSecret -}}
-      {{- end -}}
-    {{- end -}}
   {{- end -}}
   {{- range $id, $cfg := ($providers.aws | default dict) -}}
     {{- if and (hasKey $cfg "roleArn") (eq (trim (toString $cfg.roleArn)) "") -}}
@@ -1237,7 +1230,10 @@ Orchestration - Secret Store
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
 {{- end -}}
-{{- $secretStoreAnnotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
+{{- $secretStoreAnnotations := dict -}}
+{{- if .Values.orchestration.enabled -}}
+  {{- $secretStoreAnnotations = fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
+{{- end -}}
 {{- $secretStoreUserAnnotations := .Values.orchestration.serviceAccount.annotations | default dict -}}
 {{- if and $secretStoreAnnotations (not .Values.orchestration.serviceAccount.enabled) -}}
   {{- fail "[camunda][error] orchestration.secretStore workload identity requires orchestration.serviceAccount.enabled=true so the chart can apply the required annotations." -}}

@@ -266,33 +266,10 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
-            {{- $secretStoreMountedPaths := dict }}
-            {{- range $id, $cfg := (.Values.orchestration.secretStore.file | default dict) }}
-            {{- $secret := $cfg.secret | default dict }}
-            {{- if $secret.existingSecret }}
-            {{- $volName := include "camundaPlatform.secretStore.fileVolumeName" (dict "storeId" $id) }}
-            {{- $mountPath := $cfg.path | default "/etc/camunda/secrets" }}
-            - name: {{ $volName }}
-              mountPath: {{ $mountPath | quote }}
+            {{- range $volume := (fromYaml (include "camundaPlatform.secretStore.fileVolumes" .)).volumes }}
+            - name: {{ $volume.name }}
+              mountPath: {{ $volume.path | quote }}
               readOnly: true
-            {{- $_ := set $secretStoreMountedPaths $mountPath $secret.existingSecret }}
-            {{- end }}
-            {{- end }}
-            {{- range $tid, $providers := (.Values.orchestration.secretStore.physicalTenants | default dict) }}
-            {{- range $id, $cfg := ($providers.file | default dict) }}
-            {{- $effectiveCfg := mergeOverwrite (deepCopy (index ($.Values.orchestration.secretStore.file | default dict) $id | default dict)) $cfg }}
-            {{- $secret := $effectiveCfg.secret | default dict }}
-            {{- if $secret.existingSecret }}
-            {{- $mountPath := $effectiveCfg.path | default "/etc/camunda/secrets" }}
-            {{- if not (and (hasKey $secretStoreMountedPaths $mountPath) (eq (toString (index $secretStoreMountedPaths $mountPath)) (toString $secret.existingSecret))) }}
-            {{- $volName := include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id) }}
-            - name: {{ $volName }}
-              mountPath: {{ $mountPath | quote }}
-              readOnly: true
-            {{- $_ := set $secretStoreMountedPaths $mountPath $secret.existingSecret }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
@@ -331,31 +308,11 @@ spec:
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}
-        {{- $secretStoreVolumePaths := dict }}
-        {{- range $id, $cfg := (.Values.orchestration.secretStore.file | default dict) }}
-        {{- $secret := $cfg.secret | default dict }}
-        {{- if $secret.existingSecret }}
-        {{- $mountPath := $cfg.path | default "/etc/camunda/secrets" }}
-        - name: {{ include "camundaPlatform.secretStore.fileVolumeName" (dict "storeId" $id) }}
+        {{- range $volume := (fromYaml (include "camundaPlatform.secretStore.fileVolumes" .)).volumes }}
+        - name: {{ $volume.name }}
           secret:
-            secretName: {{ $secret.existingSecret | quote }}
-        {{- $_ := set $secretStoreVolumePaths $mountPath $secret.existingSecret }}
-        {{- end }}
-        {{- end }}
-        {{- range $tid, $providers := (.Values.orchestration.secretStore.physicalTenants | default dict) }}
-        {{- range $id, $cfg := ($providers.file | default dict) }}
-        {{- $effectiveCfg := mergeOverwrite (deepCopy (index ($.Values.orchestration.secretStore.file | default dict) $id | default dict)) $cfg }}
-        {{- $secret := $effectiveCfg.secret | default dict }}
-        {{- if $secret.existingSecret }}
-        {{- $mountPath := $effectiveCfg.path | default "/etc/camunda/secrets" }}
-        {{- if not (and (hasKey $secretStoreVolumePaths $mountPath) (eq (toString (index $secretStoreVolumePaths $mountPath)) (toString $secret.existingSecret))) }}
-        - name: {{ include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id) }}
-          secret:
-            secretName: {{ $secret.existingSecret | quote }}
-        {{- $_ := set $secretStoreVolumePaths $mountPath $secret.existingSecret }}
-        {{- end }}
-        {{- end }}
-        {{- end }}
+            secretName: {{ $volume.secret | quote }}
+            defaultMode: 0400
         {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}

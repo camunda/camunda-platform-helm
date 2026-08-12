@@ -477,6 +477,50 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Extra volume claim template without metadata is allowed",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.extraVolumeClaimTemplates[0].spec.accessModes[0]": "ReadWriteOnce",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Empty secret store block is allowed",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.secretStore": "null",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Disabled orchestration ignores a leftover secret store",
+			Template: "templates/common/configmap-release.yaml",
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.enabled":                         "false",
+				"orchestration.serviceAccount.enabled":          "false",
+				"orchestration.secretStore.aws.default.roleArn": "arn:aws:iam::111111111111:role/leftover",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Block scalar mentioning camunda.secrets is allowed",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "logging.yaml",
+				"orchestration.extraConfiguration[0].content":  "logging:\n  pattern:\n    console: |\n      camunda.secrets.example=1",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
 			Name:     "Non spring imported properties secret store extra configuration is allowed",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{

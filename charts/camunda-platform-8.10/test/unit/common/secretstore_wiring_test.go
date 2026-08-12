@@ -18,6 +18,7 @@ package camunda
 import (
 	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -297,6 +298,55 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 					}
 				}
 				s.Require().Len(volumeNames, 2)
+			},
+		},
+		{
+			Name:     "Generated volume name is a DNS label for an awkward tenant id",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.secret.existingSecret":                          "shared-secret",
+				"orchestration.secretStore.physicalTenants.Tenant_1.file.default.path":                  "/tenant/secrets",
+				"orchestration.secretStore.physicalTenants.Tenant_1.file.default.secret.existingSecret": "shared-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var sts appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &sts)
+				dnsLabel := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+				found := false
+				for _, volume := range sts.Spec.Template.Spec.Volumes {
+					if !strings.HasPrefix(volume.Name, "secretstore-") {
+						continue
+					}
+					s.Require().LessOrEqual(len(volume.Name), 63, "volume name %q exceeds the DNS label limit", volume.Name)
+					s.Require().Regexp(dnsLabel, volume.Name)
+					if strings.Contains(volume.Name, "tenant-1") {
+						found = true
+					}
+				}
+				s.Require().True(found, "expected the sanitised tenant id in a volume name")
+			},
+		},
+		{
+			Name:     "Generated secret volumes restrict the file mode",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.secret.existingSecret": "shared-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var sts appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &sts)
+				checked := 0
+				for _, volume := range sts.Spec.Template.Spec.Volumes {
+					if !strings.HasPrefix(volume.Name, "secretstore-") {
+						continue
+					}
+					s.Require().NotNil(volume.Secret.DefaultMode)
+					s.Require().Equal(int32(0400), *volume.Secret.DefaultMode)
+					checked++
+				}
+				s.Require().Equal(1, checked)
 			},
 		},
 	}
