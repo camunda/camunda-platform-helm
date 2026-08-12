@@ -521,6 +521,55 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Nested then dotted secret store extra configuration is rejected",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "extra.yaml",
+				"orchestration.extraConfiguration[0].content":  "camunda:\n  secrets.stores.aws.default.region: eu-west-1",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "content that defines camunda.secrets")
+			},
+		},
+		{
+			Name:     "Nested then dotted unrelated extra configuration is allowed",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "extra.yaml",
+				"orchestration.extraConfiguration[0].content":  "camunda:\n  document.stores.aws.region: eu-west-1",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Top level Error key is not treated as unparsable content",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.aws.default.region": "us-east-1",
+				"orchestration.extraConfiguration[0].file":     "logging.yaml",
+				"orchestration.extraConfiguration[0].content":  "Error: keep-going\nlogging:\n  pattern:\n    console: |\n      camunda.secrets.example=1",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:        "Hub topology ignores a leftover secret store",
+			Template:    "templates/common/configmap-release.yaml",
+			ValuesFiles: []string{"../topology/testdata/hub-generic.yaml"},
+			Values: mergeValues(baseValues(), map[string]string{
+				"orchestration.serviceAccount.enabled":          "false",
+				"orchestration.secretStore.aws.default.roleArn": "arn:aws:iam::111111111111:role/leftover",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
 			Name:     "Non spring imported properties secret store extra configuration is allowed",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{

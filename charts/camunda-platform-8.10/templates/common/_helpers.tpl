@@ -1778,8 +1778,10 @@ Usage:
 {{- /*
 NOTE: dotted-key companion to extraConfigHasPath. Spring accepts the relaxed form
 "camunda.secrets.stores.aws.default.region: x", which fromYaml parses as one top-level
-key, so the nested walk in extraConfigHasPath cannot see it. Matches the joined path
-exactly or as a prefix, so any subkey counts. Combine both helpers to cover either form.
+key, so the nested walk in extraConfigHasPath cannot see it. Spring also accepts every
+split between the two, such as "camunda:" nesting a dotted "secrets.stores..." child, so
+each split point is tried: walk the first N steps nested, then match the rest joined by
+dots against that node's keys, exactly or as a prefix so any subkey counts.
 Usage:
 {{ if eq (include "camundaPlatform.extraConfigHasDottedPath" (dict
   "extraConfiguration" .Values.orchestration.extraConfiguration
@@ -1787,14 +1789,29 @@ Usage:
 */ -}}
 {{- define "camundaPlatform.extraConfigHasDottedPath" -}}
 {{- $found := "" -}}
-{{- $dotted := join "." .path -}}
+{{- $path := .path -}}
 {{- range .extraConfiguration -}}
   {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
     {{- $parsed := (.content | default "" | fromYaml) -}}
     {{- if kindIs "map" $parsed -}}
-      {{- range $key, $_ := $parsed -}}
-        {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) -}}
-          {{- $found = "true" -}}
+      {{- range $split := until (len $path) -}}
+        {{- $node := $parsed -}}
+        {{- $ok := true -}}
+        {{- range $i := until $split -}}
+          {{- $step := index $path $i -}}
+          {{- if and $ok (kindIs "map" $node) (hasKey $node $step) -}}
+            {{- $node = index $node $step -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $dotted := join "." (slice $path $split) -}}
+          {{- range $key, $_ := $node -}}
+            {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) -}}
+              {{- $found = "true" -}}
+            {{- end -}}
+          {{- end -}}
         {{- end -}}
       {{- end -}}
     {{- end -}}
@@ -1823,7 +1840,7 @@ Usage:
   {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
     {{- $content := .content | default "" -}}
     {{- $parsed := $content | fromYaml -}}
-    {{- $unparsable := or (not (kindIs "map" $parsed)) (hasKey $parsed "Error") -}}
+    {{- $unparsable := or (not (kindIs "map" $parsed)) (and (eq (len (keys $parsed)) 1) (hasKey $parsed "Error")) -}}
     {{- if or $unparsable (hasSuffix ".properties" (.file | default "")) -}}
       {{- if regexMatch $pattern $content -}}
         {{- $found = "true" -}}

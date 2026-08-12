@@ -1080,7 +1080,7 @@ Orchestration - Secret Store
      unreachable, since they all derive from these two and $secretStoreAnnotations. */ -}}
 {{- $secretStore := dict -}}
 {{- $secretStoreIdentityAnnotations := "" -}}
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
   {{- $secretStore = .Values.orchestration.secretStore | default dict -}}
   {{- $secretStoreIdentityAnnotations = include "camundaPlatform.secretStore.serviceAccountAnnotations" . -}}
 {{- end -}}
@@ -1131,7 +1131,7 @@ Orchestration - Secret Store
   {{- end -}}
 {{- end -}}
 {{- $secretStoreFileEntries := list -}}
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
   {{- $secretStoreFileEntries = (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries -}}
 {{- end -}}
 {{- $secretStoreManagedPaths := dict -}}
@@ -1231,7 +1231,7 @@ Orchestration - Secret Store
   {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
 {{- end -}}
 {{- $secretStoreAnnotations := dict -}}
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
   {{- $secretStoreAnnotations = fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
 {{- end -}}
 {{- $secretStoreUserAnnotations := .Values.orchestration.serviceAccount.annotations | default dict -}}
