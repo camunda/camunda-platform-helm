@@ -4739,7 +4739,7 @@
                         },
                         "gcp": {
                             "type": "object",
-                            "description": "can be used to configure GCP Secret Manager connectivity under the required `default` store id. The application uses the GCP Application Default Credentials chain. GCP requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT. Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.",
+                            "description": "can be used to configure GCP Secret Manager connectivity under the required `default` store id. The application uses the GCP Application Default Credentials chain. GCP requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT; the chart does not validate the image tag, so an older image ignores this configuration and secret references fail at resolution time. Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.",
                             "default": {}
                         },
                         "physicalTenants": {

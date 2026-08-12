@@ -1221,21 +1221,6 @@ Orchestration - Secret Store
     {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- $secretStoreGcpConfigured := gt (len ($secretStore.gcp | default dict)) 0 -}}
-{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
-  {{- if gt (len ($providers.gcp | default dict)) 0 -}}
-    {{- $secretStoreGcpConfigured = true -}}
-  {{- end -}}
-{{- end -}}
-{{- if $secretStoreGcpConfigured -}}
-  {{- $orchestrationImageTag := include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) -}}
-  {{- $orchestrationImageDigest := .Values.orchestration.image.digest | default .Values.global.image.digest | default "" -}}
-  {{- if and (not $orchestrationImageDigest) (ne $orchestrationImageTag "SNAPSHOT") -}}
-    {{- if not (semverCompare ">=8.10.0-alpha5" $orchestrationImageTag) -}}
-      {{- fail (printf "[camunda][error] orchestration.secretStore.gcp requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT, but the effective image tag is '%s'." $orchestrationImageTag) -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
 {{- $secretStoreChartManagedMounts := gt (len $secretStoreFileMountPaths) 0 -}}
 {{- if and $secretStoreChartManagedMounts $secretStoreDynamicPathError -}}
   {{- fail (printf "[camunda][error] %s must be canonical when orchestration.secretStore file mounts are configured." $secretStoreDynamicPathError) -}}
