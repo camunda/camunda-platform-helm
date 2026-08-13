@@ -15,6 +15,7 @@
 package matrix
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -112,32 +113,55 @@ func TestUpgradeMinorPrevVersionDimensions(t *testing.T) {
 // — the exact function whose validation aborted the nightly upgrade-minor run —
 // against the 8.9 (previous) scenario dir. It asserts the original failure
 // reproduces with the unfiltered feature and disappears after filterKnownFeatures.
+//
+// The target-only feature is resolved at run time from the 8.10-minus-8.9 feature
+// set rather than hardcoded, so backporting any single feature to 8.9 (as the
+// persistence layer was) does not invalidate the regression.
 func TestUpgradeMinorFeatureFilter_ReproAndFix(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	prevDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.9", "test/integration/scenarios/chart-full-setup")
-	if _, err := os.Stat(prevDir); err != nil {
-		t.Skipf("previous version scenario dir absent: %v", err)
+	targetDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10", "test/integration/scenarios/chart-full-setup")
+	for _, dir := range []string{prevDir, targetDir} {
+		if _, err := os.Stat(dir); err != nil {
+			t.Skipf("scenario dir absent: %v", err)
+		}
 	}
 
-	// Reproduce: component-persistence's target-only feature fails against 8.9.
-	_, err := scenarios.BuildDeploymentConfig(prevDir, "component-persistence", scenarios.BuilderOverrides{
-		Features: []string{"persistence"},
+	prevFeatures, err := scenarios.ListFeatures(prevDir)
+	if err != nil {
+		t.Fatalf("list previous features: %v", err)
+	}
+	targetFeatures, err := scenarios.ListFeatures(targetDir)
+	if err != nil {
+		t.Fatalf("list target features: %v", err)
+	}
+
+	targetOnly := ""
+	for _, f := range targetFeatures {
+		if !slices.Contains(prevFeatures, f) {
+			targetOnly = f
+			break
+		}
+	}
+	if targetOnly == "" {
+		t.Skip("no target-only feature in 8.10: every 8.10 feature is backported to 8.9")
+	}
+
+	// Reproduce: an unfiltered target-only feature fails validation against 8.9.
+	_, err = scenarios.BuildDeploymentConfig(prevDir, "component-persistence", scenarios.BuilderOverrides{
+		Features: []string{targetOnly},
 	})
 	if err == nil {
-		t.Fatal("expected validation error for unfiltered [persistence] against 8.9, got nil")
+		t.Fatalf("expected validation error for unfiltered [%s] against 8.9, got nil", targetOnly)
 	}
-	if !strings.Contains(err.Error(), `invalid --features value "persistence"`) {
-		t.Fatalf("expected invalid-features error, got: %v", err)
+	if !strings.Contains(err.Error(), fmt.Sprintf("invalid --features value %q", targetOnly)) {
+		t.Fatalf("expected invalid-features error for %q, got: %v", targetOnly, err)
 	}
 
 	// Fix: after the runner's filter, the feature is gone and the build succeeds.
-	prevFeatures, ferr := scenarios.ListFeatures(prevDir)
-	if ferr != nil {
-		t.Fatalf("list features: %v", ferr)
-	}
-	kept, dropped := filterKnownFeatures([]string{"persistence"}, prevFeatures)
-	if !slices.Equal(dropped, []string{"persistence"}) {
-		t.Fatalf("expected persistence dropped, got kept=%v dropped=%v", kept, dropped)
+	kept, dropped := filterKnownFeatures([]string{targetOnly}, prevFeatures)
+	if !slices.Equal(dropped, []string{targetOnly}) {
+		t.Fatalf("expected %q dropped, got kept=%v dropped=%v", targetOnly, kept, dropped)
 	}
 	if _, err := scenarios.BuildDeploymentConfig(prevDir, "component-persistence", scenarios.BuilderOverrides{
 		Features: kept,
