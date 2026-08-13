@@ -77,7 +77,7 @@ func TestHubTopologyOptimizeRedirectUrisIncludesRoot(t *testing.T) {
 
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
 
-	require.Contains(t, output, "redirect-uris:\n                - \"/api/authentication/callback\"\n                - \"/\"\n")
+	require.Regexp(t, `redirect-uris:\s*\n\s*-\s*"/api/authentication/callback"\s*\n\s*-\s*"/"\s*\n`, output)
 }
 
 func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
