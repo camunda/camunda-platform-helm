@@ -62,50 +62,44 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				// persistence.enabled defaults to false
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				// Find the tmp volume
-				var tmpVolume *corev1.Volume
-				for i := range deployment.Spec.Template.Spec.Volumes {
-					if deployment.Spec.Template.Spec.Volumes[i].Name == "tmp" {
-						tmpVolume = &deployment.Spec.Template.Spec.Volumes[i]
-						break
-					}
-				}
-
-				// then
-				s.Require().NotNil(tmpVolume, "tmp volume should exist")
-				s.Require().NotNil(tmpVolume.EmptyDir, "should use emptyDir when persistence is disabled")
-				s.Require().Nil(tmpVolume.PersistentVolumeClaim, "should not use PVC when persistence is disabled")
+				tmpVolume := tmpVolume(t, deployment)
+				require.NotNil(t, tmpVolume.EmptyDir, "should use emptyDir when persistence is disabled")
+				require.Nil(t, tmpVolume.PersistentVolumeClaim, "should not use PVC when persistence is disabled")
+				require.Nil(t, tmpVolume.Ephemeral, "should not use ephemeral volume when persistence is disabled")
 			},
 		},
 		{
 			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"identity.persistence.enabled":        "true",
-				"identity.persistence.size":           "5Gi",
-				"identity.persistence.accessModes[0]": "ReadWriteOnce",
+				"identity.enabled":                                  "true",
+				"identity.persistence.enabled":                      "true",
+				"identity.persistence.size":                         "5Gi",
+				"identity.persistence.accessModes[0]":               "ReadWriteOnce",
+				"identity.persistence.storageClassName":             "fast-ssd",
+				"identity.persistence.annotations.foo":              "bar",
+				"identity.persistence.selector.matchLabels.storage": "fast",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				// Find the tmp volume
-				var tmpVolume *corev1.Volume
-				for i := range deployment.Spec.Template.Spec.Volumes {
-					if deployment.Spec.Template.Spec.Volumes[i].Name == "tmp" {
-						tmpVolume = &deployment.Spec.Template.Spec.Volumes[i]
-						break
-					}
-				}
+				tmpVolume := tmpVolume(t, deployment)
+				require.NotNil(t, tmpVolume.Ephemeral, "should use a per-pod ephemeral volume when persistence is enabled")
+				require.Nil(t, tmpVolume.EmptyDir, "should not use emptyDir when persistence is enabled")
+				require.Nil(t, tmpVolume.PersistentVolumeClaim, "should not reference a shared PVC when persistence is enabled")
 
-				// then
-				s.Require().NotNil(tmpVolume, "tmp volume should exist")
-				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "should use PVC when persistence is enabled")
-				s.Require().Nil(tmpVolume.EmptyDir, "should not use emptyDir when persistence is enabled")
-				s.Require().Equal("camunda-platform-test-identity-data", tmpVolume.PersistentVolumeClaim.ClaimName)
+				claimTemplate := tmpVolume.Ephemeral.VolumeClaimTemplate
+				require.Equal(t, "bar", claimTemplate.Annotations["foo"])
+				spec := claimTemplate.Spec
+				require.Equal(t, "5Gi", spec.Resources.Requests.Storage().String())
+				require.Equal(t, corev1.ReadWriteOnce, spec.AccessModes[0])
+				require.Equal(t, "fast-ssd", *spec.StorageClassName)
+				require.Equal(t, "fast", spec.Selector.MatchLabels["storage"])
 			},
 		},
 		{
@@ -116,22 +110,15 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				"identity.persistence.existingClaim": "my-existing-pvc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				// Find the tmp volume
-				var tmpVolume *corev1.Volume
-				for i := range deployment.Spec.Template.Spec.Volumes {
-					if deployment.Spec.Template.Spec.Volumes[i].Name == "tmp" {
-						tmpVolume = &deployment.Spec.Template.Spec.Volumes[i]
-						break
-					}
-				}
-
-				// then
-				s.Require().NotNil(tmpVolume, "tmp volume should exist")
-				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "should use PVC when persistence is enabled")
-				s.Require().Equal("my-existing-pvc", tmpVolume.PersistentVolumeClaim.ClaimName)
+				tmpVolume := tmpVolume(t, deployment)
+				require.NotNil(t, tmpVolume.PersistentVolumeClaim, "should use PVC when existingClaim is set")
+				require.Equal(t, "my-existing-pvc", tmpVolume.PersistentVolumeClaim.ClaimName)
+				require.Nil(t, tmpVolume.Ephemeral, "should not use ephemeral volume when existingClaim is set")
+				require.Nil(t, tmpVolume.EmptyDir, "should not use emptyDir when existingClaim is set")
 			},
 		},
 		{
@@ -142,8 +129,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				"identity.persistence.size":    "5Gi",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				// When component is disabled, no deployment should be created
-				s.Require().Empty(output, "no deployment should be created when component is disabled")
+				require.Empty(t, output, "no deployment should be created when component is disabled")
 			},
 		},
 	}
@@ -155,7 +141,6 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			helmChartPath, err := filepath.Abs(s.chartPath)
 			s.Require().NoError(err)
 
-			// Merge test values with required elasticsearch flags
 			mergedValues := make(map[string]string)
 			mergedValues["orchestration.data.secondaryStorage.type"] = "elasticsearch"
 			for k, v := range testCase.Values {
@@ -177,29 +162,97 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 	}
 }
 
-func TestPVCManifestCreated(t *testing.T) {
+func TestDeploymentStrategyDefaultsToRollingUpdate(t *testing.T) {
 	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	testCase := testhelpers.TestCase{
-		Skip: true,
-		Name: "TestPVCManifestCreated",
+		Name: "TestDeploymentStrategyDefaultsToRollingUpdate",
 		Values: map[string]string{
-			"identity.enabled":                    "true",
-			"identity.persistence.enabled":        "true",
-			"identity.persistence.size":           "5Gi",
-			"identity.persistence.accessModes[0]": "ReadWriteOnce",
+			"identity.enabled":                         "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
 		},
 		Verifier: func(t *testing.T, output string, err error) {
-			var pvc corev1.PersistentVolumeClaim
-			helm.UnmarshalK8SYaml(t, output, &pvc)
-			require.Equal(t, "camunda-platform-test-identity-data", pvc.Name)
-			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
-			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
+			var deployment appsv1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+			require.Equal(t, appsv1.RollingUpdateDeploymentStrategyType, deployment.Spec.Strategy.Type)
 		},
 	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/deployment.yaml"}, []testhelpers.TestCase{testCase})
+}
 
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
+func TestDeploymentStrategyRecreateOptIn(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyRecreateOptIn",
+		Values: map[string]string{
+			"identity.enabled":                         "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"identity.persistence.enabled":             "true",
+			"identity.persistence.deploymentStrategy":  "Recreate",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var deployment appsv1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+			require.Equal(t, appsv1.RecreateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/deployment.yaml"}, []testhelpers.TestCase{testCase})
+}
+
+func TestDeploymentStrategyInvalidValueFails(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyInvalidValueFails",
+		Values: map[string]string{
+			"identity.enabled":                         "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"identity.persistence.deploymentStrategy":  "Bogus",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "value must be one of 'RollingUpdate', 'Recreate'")
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/deployment.yaml"}, []testhelpers.TestCase{testCase})
+}
+
+func TestDeploymentStrategyRecreateRequiresPersistence(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyRecreateRequiresPersistence",
+		Values: map[string]string{
+			"identity.enabled":                         "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"identity.persistence.deploymentStrategy":  "Recreate",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "Recreate requires identity.persistence.enabled: true")
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-identity", []string{"templates/identity/deployment.yaml"}, []testhelpers.TestCase{testCase})
+}
+
+func tmpVolume(t *testing.T, deployment appsv1.Deployment) *corev1.Volume {
+	t.Helper()
+
+	for i := range deployment.Spec.Template.Spec.Volumes {
+		if deployment.Spec.Template.Spec.Volumes[i].Name == "tmp" {
+			return &deployment.Spec.Template.Spec.Volumes[i]
+		}
+	}
+
+	require.FailNow(t, "tmp volume should exist")
+	return nil
 }

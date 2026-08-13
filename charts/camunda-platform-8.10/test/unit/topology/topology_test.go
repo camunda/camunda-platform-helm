@@ -362,31 +362,14 @@ func TestTopologyPreservesSuppressedPersistentVolumeClaims(t *testing.T) {
 	hubOptions := &helm.Options{
 		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
 		SetValues: map[string]string{
-			"connectors.persistence.enabled": "true",
-			"optimize.persistence.enabled":   "true",
-		},
-	}
-	hubTemplates := []string{
-		"templates/connectors/persistentvolumeclaim.yaml",
-		"templates/optimize/persistentvolumeclaim.yaml",
-	}
-	for _, args := range [][]string{nil, {"--is-upgrade"}} {
-		hubOutput := helm.RenderTemplate(t, hubOptions, chartPath(t), "camunda", hubTemplates, args...)
-		require.Contains(t, hubOutput, "name: camunda-camunda-platform-connectors-data")
-		require.Contains(t, hubOutput, "name: camunda-camunda-platform-optimize-data")
-	}
-
-	orchestrationOptions := &helm.Options{
-		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
-		SetValues: map[string]string{
-			"identity.persistence.enabled": "true",
+			"optimize.persistence.enabled": "true",
 		},
 	}
 	for _, args := range [][]string{nil, {"--is-upgrade"}} {
-		orchestrationOutput := helm.RenderTemplate(t, orchestrationOptions, chartPath(t), "camunda", []string{
-			"templates/identity/persistentvolumeclaim.yaml",
+		hubOutput := helm.RenderTemplate(t, hubOptions, chartPath(t), "camunda", []string{
+			"templates/optimize/persistentvolumeclaim.yaml",
 		}, args...)
-		require.Contains(t, orchestrationOutput, "name: camunda-camunda-platform-identity-data")
+		require.Contains(t, hubOutput, "name: camunda-camunda-platform-optimize-data")
 	}
 }
 

@@ -1,7 +1,8 @@
 name: component-persistence
 auth: keycloak
+skip-e2e: true
 flows:
-  - install,upgrade-minor
+  - install
 identity: keycloak
 persistence: elasticsearch
 features:

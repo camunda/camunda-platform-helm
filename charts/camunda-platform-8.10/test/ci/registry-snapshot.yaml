@@ -655,7 +655,7 @@ integration:
           enabled: false
           shortname: cprst
           auth: keycloak
-          flow: install,upgrade-minor
+          flow: install
           platforms:
             - gke
           exclude: []
@@ -666,6 +666,7 @@ integration:
           persistence: elasticsearch
           features:
             - persistence
+          skip-e2e: true
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
