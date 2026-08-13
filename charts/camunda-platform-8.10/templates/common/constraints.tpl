@@ -1218,22 +1218,6 @@ Orchestration - Secret Store
 {{- if and $secretStoreChartManagedMounts $secretStoreDynamicPathError -}}
   {{- fail (printf "[camunda][error] %s must be canonical when orchestration.secretStore file mounts are configured." $secretStoreDynamicPathError) -}}
 {{- end -}}
-{{- /* NOTE: the generated Secret volume sets defaultMode 0400 and kubelet writes it owned by
-     root, so a non-root container reaches it only through the group ownership kubelet applies
-     from fsGroup. Skipped when OpenShift adapts the security context, because the platform
-     assigns fsGroup itself, and when the container is explicitly root. */ -}}
-{{- if $secretStoreChartManagedMounts -}}
-  {{- $secretStoreFsGroup := (.Values.orchestration.podSecurityContext | default dict).fsGroup -}}
-  {{- $secretStoreAdaptsSecContext := eq (toString (dig "compatibility" "openshift" "adaptSecurityContext" "disabled" (.Values.global | default dict))) "force" -}}
-  {{- $secretStoreContainerSecContext := .Values.orchestration.containerSecurityContext | default dict -}}
-  {{- $secretStoreRunsAsRoot := and (hasKey $secretStoreContainerSecContext "runAsUser") (eq (toString $secretStoreContainerSecContext.runAsUser) "0") -}}
-  {{- if and (not $secretStoreFsGroup) (not $secretStoreAdaptsSecContext) (not $secretStoreRunsAsRoot) -}}
-    {{- $errorMessage := printf "[camunda][error] %s"
-        "orchestration.secretStore file stores that set secret.existingSecret require orchestration.podSecurityContext.fsGroup, because the chart mounts the Secret read-only for its owner and a non-root container can only read it through the group Kubernetes derives from fsGroup. Set orchestration.podSecurityContext.fsGroup, or mount the Secret yourself through orchestration.extraVolumes and orchestration.extraVolumeMounts and configure only the store path."
-    -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
-  {{- end -}}
-{{- end -}}
 {{- if gt (len ($secretStoreRoleArns | uniq)) 1 -}}
   {{- $errorMessage := printf "[camunda][error] %s"
       "orchestration.secretStore configures multiple distinct aws.*.roleArn values, but the Orchestration ServiceAccount can carry only one eks.amazonaws.com/role-arn annotation. Use a single IAM role with access to all AWS secret stores."
