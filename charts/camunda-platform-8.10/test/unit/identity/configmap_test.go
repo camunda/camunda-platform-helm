@@ -425,6 +425,28 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 					"Orchestration OIDC config should not be present when orchestration is disabled")
 			},
 		}, {
+			// Test: the Optimize client must accept both its dedicated callback path
+			// and the bare root path as valid OIDC redirect targets, so browser
+			// sessions redirected to "/" (e.g. after a Keycloak logout) don't fail
+			// with an invalid_redirect_uri error. See camunda/camunda#59963.
+			Name:                 "TestOptimizeRedirectUrisIncludesRoot",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"optimize.enabled":                      "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().Contains(applicationYaml, "- \"/api/authentication/callback\"\n            - \"/\"\n",
+					"Optimize redirect-uris should include both the callback path and the root path")
+			},
+		}, {
 			// Test: Optimize disabled should NOT include optimize config in identity configmap
 			Name:                 "TestOptimizeDisabledExcludesOptimizeConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
