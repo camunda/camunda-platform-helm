@@ -18,6 +18,7 @@ import (
 	camunda "camunda-platform/test/unit/common"
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -160,17 +161,21 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:   "TestCamundaExporterAutoconfigurationEnabledByDefault",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assertCamundaExporterAutoconfiguration(t, output, true)
+			},
+		},
+		{
 			Name: "TestCamundaExporterAutoconfigurationCanBeDisabled",
 			Values: map[string]string{
 				"orchestration.exporters.camunda.enabled": "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var application camunda.OrchestrationApplicationYAML
-				helm.UnmarshalK8SYaml(t, output, &configmap)
-				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
-
-				require.False(t, application.Camunda.Data.SecondaryStorage.AutoconfigureCamundaExporter)
+				require.NoError(t, err)
+				assertCamundaExporterAutoconfiguration(t, output, false)
 			},
 		},
 	}
@@ -188,6 +193,17 @@ func customHistoryValues(secondaryStorageType string) map[string]string {
 		"orchestration.history.delayBetweenRuns":          "4000",
 		"orchestration.history.maxDelayBetweenRuns":       "12000",
 	}
+}
+
+func assertCamundaExporterAutoconfiguration(t *testing.T, output string, expected bool) {
+	var configmap corev1.ConfigMap
+	var application camunda.OrchestrationApplicationYAML
+	helm.UnmarshalK8SYaml(t, output, &configmap)
+	applicationYaml := configmap.Data["application.yaml"]
+	require.NoError(t, yaml.Unmarshal([]byte(applicationYaml), &application))
+
+	require.Contains(t, applicationYaml, fmt.Sprintf("autoconfigure-camunda-exporter: %t", expected))
+	require.Equal(t, expected, application.Camunda.Data.SecondaryStorage.AutoconfigureCamundaExporter)
 }
 
 func assertCustomHistorySettings(t *testing.T, output string, openSearch bool) {
