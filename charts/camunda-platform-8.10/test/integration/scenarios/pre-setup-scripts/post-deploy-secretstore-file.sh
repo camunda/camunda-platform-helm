@@ -34,7 +34,16 @@ if [[ -z "${LOCAL_PORT}" ]]; then
 fi
 
 for attempt in {1..60}; do
-  response="$(curl --silent --show-error \
+  # kubectl port-forward exits with its target pod; without this the remaining attempts
+  # curl a dead local port and the diagnostics blame the secret store.
+  kill -0 "${PORT_FORWARD_PID}" 2>/dev/null || {
+    echo "Port-forward to ${RELEASE}-zeebe-gateway died before the secret resolved." >&2
+    break
+  }
+
+  # --max-time bounds a gateway that accepts the connection and never answers; without it
+  # the retry budget does not hold because curl never returns.
+  response="$(curl --silent --show-error --max-time 10 \
     --user "${RESOLVE_USER}:${RESOLVE_PASSWORD}" \
     --header 'Content-Type: application/json' \
     --data '{"references":["camunda.secrets.token"]}' \
