@@ -521,6 +521,53 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "File store mount without fsGroup is rejected",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.secret.existingSecret": "shared-secret",
+				"orchestration.podSecurityContext.fsGroup":                     "null",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "require orchestration.podSecurityContext.fsGroup")
+			},
+		},
+		{
+			Name:     "File store mount without fsGroup is allowed when OpenShift adapts the security context",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.secret.existingSecret": "shared-secret",
+				"orchestration.podSecurityContext.fsGroup":                     "null",
+				"global.compatibility.openshift.adaptSecurityContext":          "force",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "File store mount without fsGroup is allowed for a root container",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.secret.existingSecret": "shared-secret",
+				"orchestration.podSecurityContext.fsGroup":                     "null",
+				"orchestration.containerSecurityContext.runAsUser":             "0",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:     "Path only file store without fsGroup is allowed",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path": "/etc/camunda/secrets",
+				"orchestration.podSecurityContext.fsGroup":    "null",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
 			Name:     "Nested then dotted secret store extra configuration is rejected",
 			Template: "templates/orchestration/configmap.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{

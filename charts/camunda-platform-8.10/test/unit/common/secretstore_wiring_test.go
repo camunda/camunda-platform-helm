@@ -347,6 +347,15 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 					checked++
 				}
 				s.Require().Equal(1, checked)
+				// 0400 leaves the file readable only by its root owner, so the non-root
+				// container reaches it solely through the group kubelet derives from fsGroup.
+				s.Require().NotNil(sts.Spec.Template.Spec.SecurityContext)
+				s.Require().NotNil(sts.Spec.Template.Spec.SecurityContext.FSGroup)
+				s.Require().NotNil(sts.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser)
+				s.Require().Equal(
+					*sts.Spec.Template.Spec.SecurityContext.FSGroup,
+					*sts.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser,
+				)
 			},
 		},
 	}
