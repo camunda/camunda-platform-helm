@@ -164,6 +164,13 @@ go.addlicense-check:
 	@files=$$($(MAKE) --no-print-directory go.addlicense-files chartPath='$(chartPath)') || exit 1; \
 	echo "$$files" | tr '\n' '\0' | xargs -0 addlicense -check -l apache
 
+# go.license-verify: verifies every tracked .go and .sh file carries an Apache 2.0
+# header. addlicense -check only detects an absent header and accepts any license
+# text that is present, so this covers the license type it cannot.
+.PHONY: go.license-verify
+go.license-verify:
+	@cd scripts/license-check && go run . --repo-root ../..
+
 #########################################################
 ######### Tools
 #########################################################

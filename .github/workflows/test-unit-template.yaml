@@ -65,6 +65,7 @@ jobs:
         with:
           tools: |
             bats
+            golang
       - name: Install bats-assert
         run: |
           git clone https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
@@ -72,6 +73,12 @@ jobs:
       - name: Run bats
         run: |
           bats test/scripts/*.bats
+      - name: Verify license headers
+        run: |
+          make go.license-verify
+      - name: Test license-check tool
+        run: |
+          cd scripts/license-check && go test ./...
       - name: Observe build status
         if: always()
         continue-on-error: true

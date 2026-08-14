@@ -156,3 +156,21 @@ STUBEOF
   run diff <(sort "$TMPDIR_TEST/run.log") <(sort "$ARGV_LOG")
   [ "$status" -eq 0 ]
 }
+
+@test "CI still invokes the license type verifier" {
+  # go.license-verify covers what addlicense -check cannot: the license type.
+  run grep -rl 'go.license-verify' "$ROOT/.github/workflows"
+  [ "$status" -eq 0 ]
+  [ -n "$output" ]
+}
+
+@test "the repo passes the license type verifier" {
+  # Guards against a non-Apache header landing anywhere in the repo, which
+  # addlicense -check accepts silently.
+  if ! command -v go >/dev/null 2>&1; then
+    skip "go not installed"
+  fi
+  run make -C "$ROOT" go.license-verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"all Apache 2.0"* ]]
+}
