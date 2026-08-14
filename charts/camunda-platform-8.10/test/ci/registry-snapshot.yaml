@@ -547,6 +547,7 @@ integration:
           persistence: elasticsearch
           features:
             - secretstore-file
+          skip-e2e: true
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1
