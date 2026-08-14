@@ -28,6 +28,9 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        {{- if (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) }}
+        checksum/secret-store-identity: {{ include "camundaPlatform.secretStore.serviceAccountAnnotations" . | sha256sum }}
+        {{- end }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- if .Values.orchestration.podAnnotations }}
         {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}
@@ -263,6 +266,11 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
+            {{- range $volume := (fromYaml (include "camundaPlatform.secretStore.fileVolumes" .)).volumes }}
+            - name: {{ $volume.name }}
+              mountPath: {{ $volume.path | quote }}
+              readOnly: true
+            {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
@@ -299,6 +307,12 @@ spec:
             "config" .Values.global.documentStore.type.gcp
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
+        {{- end }}
+        {{- range $volume := (fromYaml (include "camundaPlatform.secretStore.fileVolumes" .)).volumes }}
+        - name: {{ $volume.name }}
+          secret:
+            secretName: {{ $volume.secret | quote }}
+            defaultMode: 0400
         {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}

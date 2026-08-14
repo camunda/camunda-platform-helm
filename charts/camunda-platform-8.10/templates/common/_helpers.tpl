@@ -1774,3 +1774,264 @@ Usage:
 {{- end -}}
 {{- $found -}}
 {{- end -}}
+
+{{- /*
+NOTE: dotted-key companion to extraConfigHasPath. Spring accepts the relaxed form
+"camunda.secrets.stores.aws.default.region: x", which fromYaml parses as one top-level
+key, so the nested walk in extraConfigHasPath cannot see it. Spring also accepts every
+split between the two, such as "camunda:" nesting a dotted "secrets.stores..." child, so
+each split point is tried: walk the first N steps nested, then match the rest joined by
+dots against that node's keys, exactly or as a prefix so any subkey counts.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasDottedPath" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "secrets"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasDottedPath" -}}
+{{- $found := "" -}}
+{{- $path := .path -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- range $split := until (len $path) -}}
+        {{- $node := $parsed -}}
+        {{- $ok := true -}}
+        {{- range $i := until $split -}}
+          {{- $step := index $path $i -}}
+          {{- if and $ok (kindIs "map" $node) (hasKey $node $step) -}}
+            {{- $node = index $node $step -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $dotted := join "." (slice $path $split) -}}
+          {{- range $key, $_ := $node -}}
+            {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) -}}
+              {{- $found = "true" -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
+NOTE: raw-text companion to extraConfigHasPath and extraConfigHasDottedPath, for content
+those two cannot parse: spring.config.import resolves an imported file by extension, so a
+".properties" entry binds "camunda.secrets.x=v" without ever being valid YAML, and content
+that fails fromYaml yields only an "Error" key. Matches the joined path at line start
+followed by ".", ":" or "=", so "camunda.secretstore" is not a false positive. Applied only
+to those two cases, because raw matching cannot tell a real key from the same text inside a
+block scalar, and parsable YAML is already covered exactly by the other two helpers.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "secrets"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasRawKeyPrefix" -}}
+{{- $found := "" -}}
+{{- $pattern := printf "(?m)^[ \t]*%s[.:=]" (join "\\." .path) -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $content := .content | default "" -}}
+    {{- $parsed := $content | fromYaml -}}
+    {{- $unparsable := or (not (kindIs "map" $parsed)) (and (eq (len (keys $parsed)) 1) (hasKey $parsed "Error")) -}}
+    {{- if or $unparsable (hasSuffix ".properties" (.file | default "")) -}}
+      {{- if regexMatch $pattern $content -}}
+        {{- $found = "true" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{/*
+secretStore._storesDict
+Builds the "stores" map (file/aws/gcp -> id -> fields) for a single "{file,aws,gcp}"
+provider map (either the default-tenant "orchestration.secretStore" or one physical-tenant
+override), skipping chart-only plumbing keys and empty/nil fields, and converting
+camelCase value keys to the kebab-case property names the runtime expects. Returns the
+YAML of the stores map, or an empty string when no store is configured.
+Usage:
+  {{- $stores := include "camundaPlatform.secretStore._storesDict" $providers | fromYaml -}}
+*/}}
+{{- define "camundaPlatform.secretStore._storesDict" -}}
+{{- $providers := . | default dict -}}
+{{- $reserved := list "secret" "roleArn" "gcpServiceAccount" -}}
+{{- $stores := dict -}}
+{{- range $type := (list "file" "aws" "gcp") -}}
+  {{- $entries := index $providers $type -}}
+  {{- if $entries -}}
+    {{- $renderedEntries := dict -}}
+    {{- range $id, $cfg := $entries -}}
+      {{- $rendered := dict -}}
+      {{- range $key, $value := $cfg -}}
+        {{- if not (has $key $reserved) -}}
+          {{- if not (or (kindIs "invalid" $value) (and (kindIs "string" $value) (eq $value ""))) -}}
+            {{- $_ := set $rendered (kebabcase $key) $value -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if eq $type "file" -}}
+        {{- if not (hasKey $rendered "path") -}}
+          {{- $_ := set $rendered "path" "/etc/camunda/secrets" -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if or $rendered (has $type (list "aws" "gcp")) -}}
+        {{- $_ := set $renderedEntries $id $rendered -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $_ := set $stores $type $renderedEntries -}}
+  {{- end -}}
+{{- end -}}
+{{- if $stores -}}
+{{ toYaml $stores }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+secretStore.renderConfig
+Renders the "camunda.secrets.stores.*" application configuration (default tenant) plus any
+"camunda.physical-tenants.<id>.secrets.stores.*" per-physical-tenant overrides from the
+map-keyed "orchestration.secretStore" values. Emits nothing when no store is configured.
+Usage:
+  {{- include "camundaPlatform.secretStore.renderConfig" . | trim | nindent 2 }}
+*/}}
+{{- define "camundaPlatform.secretStore.renderConfig" -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $result := dict -}}
+{{- $defaultStores := include "camundaPlatform.secretStore._storesDict" $secretStore | fromYaml -}}
+{{- if $defaultStores -}}
+  {{- $_ := set $result "secrets" (dict "stores" $defaultStores) -}}
+{{- end -}}
+{{- $tenants := dict -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- $effectiveProviders := mergeOverwrite (deepCopy $secretStore) $providers -}}
+  {{- $_ := unset $effectiveProviders "physicalTenants" -}}
+  {{- $tenantStores := include "camundaPlatform.secretStore._storesDict" $effectiveProviders | fromYaml -}}
+  {{- if $tenantStores -}}
+    {{- $_ := set $tenants $tid (dict "secrets" (dict "stores" $tenantStores)) -}}
+  {{- end -}}
+{{- end -}}
+{{- if $tenants -}}
+  {{- $_ := set $result "physical-tenants" $tenants -}}
+{{- end -}}
+{{- if $result -}}
+{{ toYaml $result }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+secretStore.serviceAccountAnnotations
+Returns the identity-based-auth annotations (as YAML) that must be applied to the
+Orchestration ServiceAccount for the configured AWS/GCP secret stores, aggregated across
+the default tenant and every physical-tenant override, or an empty string when none apply.
+A single ServiceAccount can carry only one IRSA role and one Workload-Identity GCP service
+account; "constraints.tpl" fails the render when conflicting identities are configured.
+Usage:
+  {{- $annotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
+*/}}
+{{- define "camundaPlatform.secretStore.serviceAccountAnnotations" -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $providerSets := list $secretStore -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- $providerSets = append $providerSets $providers -}}
+{{- end -}}
+{{- $annotations := dict -}}
+{{- range $providers := $providerSets -}}
+  {{- range $id, $cfg := ($providers.aws | default dict) -}}
+    {{- if $cfg.roleArn -}}
+      {{- $_ := set $annotations "eks.amazonaws.com/role-arn" $cfg.roleArn -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $id, $cfg := ($providers.gcp | default dict) -}}
+    {{- if $cfg.gcpServiceAccount -}}
+      {{- $_ := set $annotations "iam.gke.io/gcp-service-account" $cfg.gcpServiceAccount -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if $annotations -}}
+{{ toYaml $annotations }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns a stable DNS-label volume name for one file secret store.
+*/}}
+{{- define "camundaPlatform.secretStore.fileVolumeName" -}}
+{{- $tenantID := .tenantId | default "default" -}}
+{{- $identity := printf "%s/%s" $tenantID .storeId -}}
+{{- if and (hasKey . "tenantId") .tenantId -}}
+  {{- $identity = printf "tenant:%s/%s" $tenantID .storeId -}}
+{{- end -}}
+{{- $slug := regexReplaceAll "[^a-z0-9]+" (printf "%s-%s" $tenantID .storeId | lower) "-" | trunc 41 | trimAll "-" -}}
+{{- printf "secretstore-%s-%s" $slug (sha256sum $identity | trunc 8) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- /*
+NOTE: single source of truth for resolving orchestration.secretStore file stores. Every
+entry is returned, including path-only ones with an empty "secret", because constraints
+validates those too; callers that emit volumes use secretStore.fileVolumes instead.
+"path" carries the /etc/camunda/secrets default and tenant entries are the root entry
+deep-overlaid, so the resolution rule lives here rather than at each call site.
+Usage:
+{{- $entries := (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries }}
+*/ -}}
+{{- define "camundaPlatform.secretStore._fileEntries" -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $rootFile := $secretStore.file | default dict -}}
+{{- $entries := list -}}
+{{- range $id, $cfg := $rootFile -}}
+  {{- $entries = append $entries (dict
+      "id" $id
+      "tenantId" ""
+      "label" "orchestration.secretStore"
+      "name" (include "camundaPlatform.secretStore.fileVolumeName" (dict "storeId" $id))
+      "path" (toString ($cfg.path | default "/etc/camunda/secrets"))
+      "secret" (toString (($cfg.secret | default dict).existingSecret | default ""))
+  ) -}}
+{{- end -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- range $id, $cfg := ($providers.file | default dict) -}}
+    {{- $effective := mergeOverwrite (deepCopy (index $rootFile $id | default dict)) $cfg -}}
+    {{- $entries = append $entries (dict
+        "id" $id
+        "tenantId" $tid
+        "label" (printf "orchestration.secretStore.physicalTenants.%s" $tid)
+        "name" (include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id))
+        "path" (toString ($effective.path | default "/etc/camunda/secrets"))
+        "secret" (toString (($effective.secret | default dict).existingSecret | default ""))
+    ) -}}
+  {{- end -}}
+{{- end -}}
+{{- toYaml (dict "entries" $entries) -}}
+{{- end -}}
+
+{{- /*
+NOTE: the chart-managed volumes for orchestration.secretStore file stores -- the
+secret-bearing subset of _fileEntries, deduplicated so a tenant entry that inherits both
+the path and the Secret of another entry does not emit a duplicate mountPath, which
+Kubernetes rejects. A path reached by two different Secrets is a configuration error that
+constraints fails on, so it is left to surface there rather than silently dropped here.
+Usage:
+{{- $volumes := (fromYaml (include "camundaPlatform.secretStore.fileVolumes" .)).volumes }}
+*/ -}}
+{{- define "camundaPlatform.secretStore.fileVolumes" -}}
+{{- $volumes := list -}}
+{{- $seen := dict -}}
+{{- range $entry := (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries -}}
+  {{- if $entry.secret -}}
+    {{- if not (and (hasKey $seen $entry.path) (eq (index $seen $entry.path) $entry.secret)) -}}
+      {{- $volumes = append $volumes $entry -}}
+      {{- $_ := set $seen $entry.path $entry.secret -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- toYaml (dict "volumes" $volumes) -}}
+{{- end -}}

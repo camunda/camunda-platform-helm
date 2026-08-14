@@ -2284,6 +2284,27 @@ orchestration:
   ## @param orchestration.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
+  ## Secret Store Configuration
+  ## @extra orchestration.secretStore These parameters configure centralized secret resolution via the Orchestration Cluster, backed by file, AWS Secrets Manager, or GCP Secret Manager. Only one effective store may be configured per physical tenant. AWS uses the AWS SDK default credential chain and GCP uses Application Default Credentials; the chart can configure workload identity but does not prevent other credential sources already present in the pod from taking precedence. Each provider takes exactly one store under the id `default`: a `camunda.secrets.<name>` reference carries no store dimension and so addresses that id, and the Orchestration Cluster rejects a store under any other id at startup. These parameters expose store connectivity only: runtime behavior such as AWS batching, container-secret mode, or `camunda.secrets.cache` is not configurable here, and requires leaving `orchestration.secretStore` unset and declaring the complete store through `orchestration.extraConfiguration` instead.
+  secretStore:
+    ## @param orchestration.secretStore.file can be used to configure a file-based secret store under the required `default` store id. Example: `default: {secret: {existingSecret: my-secrets}, path: /etc/camunda/secrets}`.
+    ## @extra orchestration.secretStore.file.default.path can be used to set the directory the store reads secrets from, one file per secret. Defaults to "/etc/camunda/secrets".
+    ## @extra orchestration.secretStore.file.default.secret.existingSecret can be used to name an existing Kubernetes Secret that the chart mounts read-only at `path`. Chart-only; it is not written to the application configuration.
+    file: {}
+    ## @param orchestration.secretStore.aws can be used to configure AWS Secrets Manager connectivity under the required `default` store id. The application uses the AWS SDK default credential chain. Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {region: us-east-1, roleArn: arn:aws:iam::123456789012:role/camunda-secrets}`.
+    ## @extra orchestration.secretStore.aws.default.region can be used to set the AWS region the Secrets Manager client targets. Falls back to the AWS SDK region chain when unset.
+    ## @extra orchestration.secretStore.aws.default.pathPrefix can be used to prefix every secret id the store resolves.
+    ## @extra orchestration.secretStore.aws.default.roleArn can be used to set the `eks.amazonaws.com/role-arn` annotation on the Orchestration ServiceAccount for IRSA. Chart-only; it is not written to the application configuration.
+    aws: {}
+    ## @param orchestration.secretStore.gcp can be used to configure GCP Secret Manager connectivity under the required `default` store id. The application uses the GCP Application Default Credentials chain. GCP requires an Orchestration image version >= 8.10.0-alpha5 or SNAPSHOT; the chart does not validate the image tag, so an older image ignores this configuration and secret references fail at resolution time. Imported `orchestration.extraConfiguration` may configure unrelated application settings but cannot also define `camunda.secrets`. Example: `default: {projectId: my-project, gcpServiceAccount: camunda-secrets@my-project.iam.gserviceaccount.com}`.
+    ## @extra orchestration.secretStore.gcp.default.projectId can be used to set the Google Cloud project that owns the secrets.
+    ## @extra orchestration.secretStore.gcp.default.pathPrefix can be used to prefix every secret id the store resolves.
+    ## @extra orchestration.secretStore.gcp.default.endpoint can be used to override the Secret Manager API endpoint.
+    ## @extra orchestration.secretStore.gcp.default.gcpServiceAccount can be used to set the `iam.gke.io/gcp-service-account` annotation on the Orchestration ServiceAccount for Workload Identity. Chart-only; it is not written to the application configuration.
+    gcp: {}
+    ## @param orchestration.secretStore.physicalTenants can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and `default` store id when overriding a root store. File-store `secret.existingSecret` is inherited together with the runtime fields. Physical tenant ids must match the runtime tenant id exactly and may contain letters, digits, `_` and `-`. Example: `tenanta: {aws: {default: {region: us-east-1}}}`.
+    physicalTenants: {}
+
   gateway:
     grpc:
       ## @param orchestration.gateway.grpc.enabled if true, the GRPCRoute will be created to expose the orchestration grpc service.
