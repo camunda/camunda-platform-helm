@@ -55,6 +55,26 @@ var copyrightMarkers = []string{
 	"SPDX-License-Identifier",
 }
 
+// negationMarkers disqualify a comment that names Apache only to deny it.
+// The standard Apache block says "you may not use this file except in
+// compliance with the License", so it does not collide with these.
+var negationMarkers = []string{
+	"not licensed under",
+	"is not licensed",
+}
+
+// commentPrefixes maps an extension to the line prefixes that start a comment,
+// so markers are only ever read out of comments and never out of code.
+var commentPrefixes = map[string][]string{
+	".go":   {"//", "/*", "*"},
+	".sh":   {"#"},
+	".yaml": {"#"},
+	".yml":  {"#"},
+	".tpl":  {"{{/*", "#", "*"},
+}
+
+var defaultCommentPrefixes = []string{"#", "//"}
+
 type violation struct {
 	path   string
 	reason string
@@ -97,10 +117,11 @@ func run(repoRoot, extList string, out io.Writer) error {
 		if err != nil {
 			return err
 		}
+		comments := commentText(head, filepath.Ext(rel))
 		switch {
-		case containsAny(head, apacheMarkers):
+		case containsAny(comments, apacheMarkers) && !containsAny(comments, negationMarkers):
 			// Correctly licensed.
-		case containsAny(head, copyrightMarkers):
+		case containsAny(comments, copyrightMarkers):
 			violations = append(violations, violation{rel, reasonNonApache})
 		default:
 			violations = append(violations, violation{rel, reasonMissing})
@@ -205,6 +226,28 @@ func readHead(path string) (string, error) {
 
 // containsAny matches case-insensitively: SPDX identifiers are case-insensitive
 // by spec, and vendored Bitnami charts spell theirs "APACHE-2.0".
+// commentText keeps only the comment lines of head, dropping code. A shebang
+// counts as a comment line and is harmless.
+func commentText(head, ext string) string {
+	prefixes, ok := commentPrefixes[ext]
+	if !ok {
+		prefixes = defaultCommentPrefixes
+	}
+
+	var b strings.Builder
+	for _, line := range strings.Split(head, "\n") {
+		trimmed := strings.TrimSpace(line)
+		for _, p := range prefixes {
+			if strings.HasPrefix(trimmed, p) {
+				b.WriteString(trimmed)
+				b.WriteByte('\n')
+				break
+			}
+		}
+	}
+	return b.String()
+}
+
 func containsAny(haystack string, needles []string) bool {
 	lower := strings.ToLower(haystack)
 	for _, n := range needles {
