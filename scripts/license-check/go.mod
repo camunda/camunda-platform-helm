@@ -1,4 +1,4 @@
-module camunda.com/licensecheck
+module scripts/license-check
 
 go 1.26
 
