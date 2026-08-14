@@ -983,6 +983,14 @@ exists at all. "unknown" means the last matching entry carries no literal value
 but does carry a valueFrom (e.g. a Secret/ConfigMap key) — the chart cannot read
 that value at render time, so callers must fall back to the global TLS flag
 rather than treat it as "false".
+
+Unlike camundaPlatform.orchestrationEnvLastValue this deliberately does NOT
+run the value through `tpl`: templates/connectors/deployment.yaml renders
+connectors.env with `toYaml` alone, whereas the Orchestration StatefulSet
+renders orchestration.env with `tpl (toYaml .)`. Evaluating a template here
+that the container never sees would make this helper disagree with the
+running container — a "{{ eq 1 1 }}" value would flip probes to HTTPS while
+the container receives the literal string and keeps serving plaintext.
 Usage:
   {{ include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") }}
 */}}
@@ -993,7 +1001,7 @@ Usage:
   {{- range $env := $ctx.Values.connectors.env -}}
     {{- if eq ($env.name | default "") $name -}}
       {{- if $env.value -}}
-        {{- if eq (lower (tpl (toString $env.value) $ctx)) "true" -}}
+        {{- if eq (lower (toString $env.value)) "true" -}}
           {{- $result = "true" -}}
         {{- else -}}
           {{- $result = "false" -}}
@@ -1907,14 +1915,31 @@ keystore.p12
 {{- end -}}
 {{- end -}}
 
-{{/* Emits a checksum annotation for the configured Connectors TLS certificate. */}}
+{{/*
+Emits a checksum annotation for the configured Connectors TLS material.
+
+In PEM mode the cert and private key live in the SAME Secret but under
+separate keys, and the key can rotate without the cert changing. Hashing the
+cert key alone would leave such a rotation invisible to autoRollout, so the
+private key is folded into the same hash — mirroring
+camundaPlatform.orchestrationTLSChecksumAnnotations. PKCS12 mode keeps a
+single keystore key, so nothing extra is hashed there. The keystore password
+is deliberately excluded for the same reason as the Orchestration helper:
+hashing a password-only value would turn the pod annotation into a
+sha256(password) oracle readable with Pod-get access alone.
+*/}}
 {{- define "camundaPlatform.connectorsTLSChecksumAnnotation" -}}
 {{- if .Values.global.tls.connectors.autoRollout -}}
 {{- $c := .Values.global.tls.connectors -}}
 {{- if and $c.enabled $c.cert.secret.existingSecret -}}
 {{- $secret := lookup "v1" "Secret" .Release.Namespace $c.cert.secret.existingSecret -}}
 {{- $data := ($secret | default dict).data | default dict -}}
-checksum/connectors-tls: {{ get $data (include "camundaPlatform.connectorsSecretCertKey" .) | sha256sum }}
+{{- $hashes := list (get $data (include "camundaPlatform.connectorsSecretCertKey" .)) -}}
+{{- if eq ($c.type | default "pkcs12") "pem" -}}
+{{- $keyKey := $c.privateKey.secret.existingSecretKey | default "tls.key" -}}
+{{- $hashes = append $hashes (get $data $keyKey) -}}
+{{- end -}}
+checksum/connectors-tls: {{ join "" $hashes | sha256sum }}
 {{- end -}}
 {{- end -}}
 {{- end -}}

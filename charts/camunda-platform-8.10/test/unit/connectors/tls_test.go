@@ -212,6 +212,29 @@ func (s *ConnectorsTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
+			Name:        "Probe scheme reads the literal env value because connectors.env is rendered without tpl",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/connectors/testdata/values-connectors-tls-templated-env.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				container := deployment.Spec.Template.Spec.Containers[0]
+				env := container.Env
+				var last string
+				for _, e := range env {
+					if e.Name == "SERVER_SSL_ENABLED" {
+						last = e.Value
+					}
+				}
+				s.Require().Equal("{{ eq 1 1 }}", last,
+					"deployment.yaml renders connectors.env with toYaml only, so the container receives the literal")
+				s.Require().NotNil(container.ReadinessProbe)
+				s.Require().Equal(corev1.URIScheme("HTTP"), container.ReadinessProbe.HTTPGet.Scheme,
+					"the helper must not tpl-evaluate a value the container never sees, or probes would use HTTPS against a plaintext server")
+			},
+		},
+		{
 			Name: "Probe scheme falls back to the global flag when the env override is valueFrom-sourced",
 			Values: map[string]string{
 				"connectors.enabled":                               "true",
@@ -441,6 +464,26 @@ func (s *ConnectorsTLSTest) TestTLSChecksumAnnotation() {
 			Expected: map[string]string{
 				// lookup is empty under `helm template`, so the value is the stable
 				// sha256 of an empty object — presence is what we assert here.
+				"spec.template.metadata.annotations.checksum/connectors-tls": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			},
+		},
+		{
+			Name:     "PEM mode folds the private key into the same checksum/connectors-tls annotation",
+			Template: "templates/connectors/deployment.yaml",
+			Values: map[string]string{
+				"connectors.enabled":                                        "true",
+				"orchestration.data.secondaryStorage.type":                  "elasticsearch",
+				"global.tls.connectors.enabled":                             "true",
+				"global.tls.connectors.autoRollout":                         "true",
+				"global.tls.connectors.type":                                "pem",
+				"global.tls.connectors.cert.secret.existingSecret":          "connectors-pem",
+				"global.tls.connectors.privateKey.secret.existingSecretKey": "tls.key",
+			},
+			Expected: map[string]string{
+				// Both the cert and the key resolve to "" because lookup is inert under
+				// `helm template`, so the joined hash is still sha256(""). This case pins
+				// that the PEM branch renders at all; a key-only rotation actually moving
+				// the checksum needs a live cluster and is covered by the integration run.
 				"spec.template.metadata.annotations.checksum/connectors-tls": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 			},
 		},
