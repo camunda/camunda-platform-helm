@@ -194,3 +194,40 @@ func TestParseExtsNormalisesLeadingDot(t *testing.T) {
 	assert.Equal(t, []string{".go", ".sh"}, parseExts("go, .sh"))
 	assert.Nil(t, parseExts(" , "))
 }
+
+// A marker inside executable code must not satisfy the check — only comments count.
+func TestIgnoresMarkersOutsideComments(t *testing.T) {
+	for name, content := range map[string]string{
+		"shell string": "#!/bin/bash\necho \"Licensed under the Apache License, Version 2.0\"\n",
+		"go string":    "package main\n\nconst s = \"SPDX-License-Identifier: Apache-2.0\"\n",
+		"yaml value":   "#!/bin/bash\nDESC='Apache License, Version 2.0'\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			ext := ".sh"
+			if strings.HasPrefix(name, "go") {
+				ext = ".go"
+			}
+			root := newRepo(t, map[string]string{"scripts/thing" + ext: content})
+
+			var out bytes.Buffer
+			err := run(root, ext, &out)
+
+			require.Error(t, err)
+			assert.Contains(t, out.String(), reasonMissing)
+		})
+	}
+}
+
+// A comment that names Apache only to deny it must not pass.
+func TestRejectsNegatedApacheClaim(t *testing.T) {
+	root := newRepo(t, map[string]string{
+		"scripts/thing.sh": "#!/bin/bash\n# Copyright 2026 Someone\n" +
+			"# This file is not licensed under the Apache License, Version 2.0.\n",
+	})
+
+	var out bytes.Buffer
+	err := run(root, ".sh", &out)
+
+	require.Error(t, err)
+	assert.Contains(t, out.String(), reasonNonApache)
+}
