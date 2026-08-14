@@ -662,7 +662,7 @@ func TestRun_ContinueOnErrorJobsSoftFailDoesNotTriggerRetry(t *testing.T) {
 
 func TestRun_RunWithMixedFailures_RetriesOnce(t *testing.T) {
 	// A run with both a real failure and continue-on-error soft failures
-	// has run-level conclusion="failure". The gate triggers a full rerun
+	// has run-level conclusion="failure". The gate reruns the failed jobs
 	// and exits 0 when the second attempt succeeds.
 	c := &fakeClient{
 		t:             t,
