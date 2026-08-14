@@ -203,9 +203,12 @@ func readHead(path string) (string, error) {
 	return b.String(), nil
 }
 
+// containsAny matches case-insensitively: SPDX identifiers are case-insensitive
+// by spec, and vendored Bitnami charts spell theirs "APACHE-2.0".
 func containsAny(haystack string, needles []string) bool {
+	lower := strings.ToLower(haystack)
 	for _, n := range needles {
-		if strings.Contains(haystack, n) {
+		if strings.Contains(lower, strings.ToLower(n)) {
 			return true
 		}
 	}
