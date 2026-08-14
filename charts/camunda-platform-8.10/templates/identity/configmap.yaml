@@ -84,6 +84,7 @@ data:
               root-url: {{ tpl $optimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
+                - "/"
           {{- end }}
           {{- if $connectors.enabled }}
             - name: {{ printf "Connectors %s" $displayName | quote }}
@@ -210,6 +211,7 @@ data:
               root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
+                - "/"
           apis:
             - name: Optimize API
               audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}

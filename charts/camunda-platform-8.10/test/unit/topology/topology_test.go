@@ -61,6 +61,25 @@ func TestHubTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testing.T) {
 	require.NotContains(t, output, `keycloak:\n`)
 }
 
+func TestHubTopologyOptimizeRedirectUrisIncludesRoot(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.optimize.enabled":                  "true",
+			"global.topology.clusters[0].components.optimize.clientId":                 "optimize-east",
+			"global.topology.clusters[0].components.optimize.audience":                 "optimize-east-api",
+			"global.topology.clusters[0].components.optimize.redirectUrl":              "https://east.example.com/optimize",
+			"global.topology.clusters[0].components.optimize.secret.existingSecret":    "east-oidc",
+			"global.topology.clusters[0].components.optimize.secret.existingSecretKey": "optimize-secret",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+	require.Regexp(t, `redirect-uris:\s*\n\s*-\s*"/api/authentication/callback"\s*\n\s*-\s*"/"\s*\n`, output)
+}
+
 func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
 	output := render(t, "hub-generic.yaml")
 
