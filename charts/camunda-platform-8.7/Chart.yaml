@@ -69,16 +69,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "Omit web-modeler restapi datasource password when none is configured"
-    - kind: fixed
-      description: "Revert vendor-ee/postgresql to -r2 to restore amd64 image pulls"
-    - kind: fixed
-      description: "Respect explicit empty global.identity.keycloak.contextPath"
-    - kind: fixed
-      description: "Decouple requestBodySize from Zeebe maxMessageSize"
-    - kind: fixed
-      description: "Only use document store configuration where required"
-    - kind: fixed
-      description: "Omit AWS document-store credentials when secret is unset"
+  artifacthub.io/changes: ""
