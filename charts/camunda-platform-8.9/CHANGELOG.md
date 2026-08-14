@@ -1,5 +1,19 @@
 # Changelog
 
+## [14.8.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.8.2...camunda-platform-8.9-14.8.3) (2026-08-14)
+
+
+### Bug Fixes
+
+* **8.9:** back Web Modeler restapi /tmp with a per-pod ephemeral volume ([#6027](https://github.com/camunda/camunda-platform-helm/issues/6027)) ([015b4e8](https://github.com/camunda/camunda-platform-helm/commit/015b4e841b7b266c6a3928b829593955fab076bb))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6865](https://github.com/camunda/camunda-platform-helm/issues/6865)) ([0a2c6d3](https://github.com/camunda/camunda-platform-helm/commit/0a2c6d3d3538c3008d3c57925e1b2f1100373adc))
+* update camunda/console docker tag to v8.9.83 ([#6857](https://github.com/camunda/camunda-platform-helm/issues/6857)) ([da16707](https://github.com/camunda/camunda-platform-helm/commit/da167074bb9ec911cda0cef980ef989207891c01))
+* update patch-updates (patch) ([#6858](https://github.com/camunda/camunda-platform-helm/issues/6858)) ([de50850](https://github.com/camunda/camunda-platform-helm/commit/de508506f18d9b51e71326957e82209c879d2031))
+
 ## [14.8.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.8.1...camunda-platform-8.9-14.8.2) (2026-08-12)
 
 

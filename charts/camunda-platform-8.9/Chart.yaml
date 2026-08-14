@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.8.2
+version: 14.8.3
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -73,8 +73,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Document defaultRoles.admin.clients in orchestration values schema [ready]"
-    - kind: fixed
-      description: "Gate 8.9 OpenSearch password env vars on active consumers"
-    - kind: fixed
-      description: "Read external URLs from global.host when using the gateway api"
+      description: "Back Web Modeler restapi /tmp with a per-pod ephemeral volume"
