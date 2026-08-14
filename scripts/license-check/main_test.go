@@ -107,12 +107,20 @@ func TestFailsOnNonApacheHeader(t *testing.T) {
 }
 
 func TestAcceptsSpdxIdentifier(t *testing.T) {
-	root := newRepo(t, map[string]string{
-		"scripts/tool.go": "// SPDX-License-Identifier: Apache-2.0\n\npackage main\n",
-	})
+	// SPDX identifiers are case-insensitive by spec; vendored Bitnami charts
+	// spell theirs "APACHE-2.0".
+	for name, header := range map[string]string{
+		"canonical": "// SPDX-License-Identifier: Apache-2.0\n",
+		"uppercase": "// SPDX-License-Identifier: APACHE-2.0\n",
+		"lowercase": "// spdx-license-identifier: apache-2.0\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := newRepo(t, map[string]string{"scripts/tool.go": header + "\npackage main\n"})
 
-	var out bytes.Buffer
-	assert.NoError(t, run(root, ".go", &out))
+			var out bytes.Buffer
+			assert.NoError(t, run(root, ".go", &out))
+		})
+	}
 }
 
 // A header below a shebang and a set -euo pipefail block must still be found.
