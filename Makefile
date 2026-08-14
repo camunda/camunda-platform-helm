@@ -143,12 +143,12 @@ go.addlicense-install:
 # go.addlicense-run: adds license headers to go files
 .PHONY: go.addlicense-run
 go.addlicense-run:
-	addlicense -c 'Camunda Services GmbH' -l apache charts/$(chartPath)/test/**/*.go
+	find $(chartPath)/test -name '*.go' -print0 | xargs -0 addlicense -c 'Camunda Services GmbH' -l apache
 
 # go.addlicense-check: checks that the go files contain license header
 .PHONY: go.addlicense-check
 go.addlicense-check:
-	addlicense -check -l apache charts/$(chartPath)/test/**/*.go
+	find $(chartPath)/test -name '*.go' -print0 | xargs -0 addlicense -check -l apache
 
 #########################################################
 ######### Tools
