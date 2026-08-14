@@ -1265,7 +1265,7 @@ jobs:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
     continue-on-error: ${{ !matrix.blocking }}
-    timeout-minutes: ${{ matrix.suite == 'full' && 60 || 30 }}
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       # Legs share one deployment and smoke-tests.spec.js runs in both projects,
@@ -1361,7 +1361,7 @@ jobs:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.scenario == 'shadow-e2e' }}
     continue-on-error: true
-    timeout-minutes: 30
+    timeout-minutes: 25
     permissions:
       contents: read
       id-token: write
@@ -1454,7 +1454,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && !inputs.skip-e2e && inputs.is-topology && inputs.flow == 'install' }}
-    timeout-minutes: 30
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -1566,7 +1566,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && !inputs.skip-e2e }}
-    timeout-minutes: 30
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:

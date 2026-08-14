@@ -52,7 +52,8 @@ export default defineConfig(makeShadowConfig({
   includeSetupProject: true,
   tasklistV2Header: true,
   fullyParallel: true,
-  retries: 2,
+  retries: 1,
+  timeout: 6 * 60 * 1000,
   workers: "100%",
   extraProjects: [
     {
