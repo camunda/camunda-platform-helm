@@ -71,6 +71,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Remove publishNotReadyAddresses from orchestration client-facing service"
-    - kind: fixed
-      description: "Only use document store configuration where required"
+      description: "Document defaultRoles.admin.clients in orchestration values schema [ready]"
