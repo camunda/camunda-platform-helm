@@ -55,7 +55,7 @@ jobs:
       - name: Add issue to Quality Board
         # https://github.com/orgs/camunda/projects/187/views/15
         id: add-bug-to-quality-board
-        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@fe88f7533c0b17cc728ddc067a88c7de311ce40b # main
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@ab273d2c32d820bdaae8662c5e9f8c1f5be07230 # main
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           project-number: "187"
