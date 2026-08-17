@@ -1,5 +1,16 @@
 # Changelog
 
+## [12.13.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.2...camunda-platform-8.7-12.13.3) (2026-08-14)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6865](https://github.com/camunda/camunda-platform-helm/issues/6865)) ([0a2c6d3](https://github.com/camunda/camunda-platform-helm/commit/0a2c6d3d3538c3008d3c57925e1b2f1100373adc))
+* update camunda-platform-images (patch) ([#6866](https://github.com/camunda/camunda-platform-helm/issues/6866)) ([2fe7b43](https://github.com/camunda/camunda-platform-helm/commit/2fe7b439178a9273777400aaa1c91688778b6045))
+* update camunda/console docker tag to v8.7.107 ([#6844](https://github.com/camunda/camunda-platform-helm/issues/6844)) ([844fa1d](https://github.com/camunda/camunda-platform-helm/commit/844fa1dbdf887de07c862b5c801b54eb69f74971))
+* update camunda/console docker tag to v8.7.108 ([#6864](https://github.com/camunda/camunda-platform-helm/issues/6864)) ([ccfced0](https://github.com/camunda/camunda-platform-helm/commit/ccfced034d0e78ce1add8f663fea9ce312f7b302))
+* update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.20 ([#6852](https://github.com/camunda/camunda-platform-helm/issues/6852)) ([46e0807](https://github.com/camunda/camunda-platform-helm/commit/46e080702e140cecf581113906f8e58d69b36686))
+
 ## [12.13.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.1...camunda-platform-8.7-12.13.2) (2026-08-05)
 
 
