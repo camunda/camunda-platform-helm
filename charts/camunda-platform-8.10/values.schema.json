@@ -2051,7 +2051,7 @@
                         },
                         "existingClaim": {
                             "type": "string",
-                            "description": "can be used to mount an existing PVC instead of provisioning a per-pod volume. Requires identity.persistence.enabled: true, and is ignored without it",
+                            "description": "can be used to mount an existing PVC instead of provisioning a per-pod volume. Requires identity.persistence.enabled: true, and is ignored without it. The surge pod created during a rollout mounts the same claim as the outgoing pod, so a ReadWriteOnce volume can deadlock the rollout and should be provisioned ReadWriteMany",
                             "default": ""
                         },
                         "annotations": {

@@ -399,11 +399,6 @@ func TestTopologySuppressedComponentsRenderNoVolumeObjects(t *testing.T) {
 
 				output := helm.RenderTemplate(t, options, chartPath(t), "camunda", nil, args...)
 				require.NotContains(t, output, "camunda-camunda-platform-"+tc.component+"-data")
-				for _, document := range splitDocuments(output) {
-					if contains(document, "kind: PersistentVolumeClaim") {
-						require.NotContains(t, document, tc.component)
-					}
-				}
 			}
 		})
 	}

@@ -1156,7 +1156,7 @@ identity:
     ## @param identity.persistence.storageClassName can be used to define the storage class to use for the claim
     # Set to "-" to disable use of default storage class
     storageClassName: ""
-    ## @param identity.persistence.existingClaim can be used to mount an existing PVC instead of provisioning a per-pod volume. Requires identity.persistence.enabled: true, and is ignored without it
+    ## @param identity.persistence.existingClaim can be used to mount an existing PVC instead of provisioning a per-pod volume. Requires identity.persistence.enabled: true, and is ignored without it. The surge pod created during a rollout mounts the same claim as the outgoing pod, so a ReadWriteOnce volume can deadlock the rollout and should be provisioned ReadWriteMany
     existingClaim: ""
     ## @param identity.persistence.annotations can be used to define annotations to add to the claim
     annotations: {}

@@ -244,7 +244,7 @@ spec:
           ephemeral:
             volumeClaimTemplate:
               metadata:
-                labels: {{- include "camundaPlatform.labels" . | nindent 18 }}
+                labels: {{- include "identity.labels" . | nindent 18 }}
                 {{- with .Values.identity.persistence.annotations }}
                 annotations: {{- toYaml . | nindent 18 }}
                 {{- end }}
