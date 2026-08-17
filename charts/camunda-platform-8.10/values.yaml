@@ -1162,8 +1162,6 @@ identity:
     annotations: {}
     ## @param identity.persistence.selector can be used to define a label selector restricting which PersistentVolume the claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist, plus a second one to cover the extra claim held while a rollout surges
     selector: {}
-    ## @param identity.persistence.deploymentStrategy can be used to set the update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to "Recreate" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade
-    deploymentStrategy: RollingUpdate
 
 ###############################################################################
 #  #####                                              #     #
@@ -1994,14 +1992,12 @@ connectors:
     ## @param connectors.persistence.storageClassName can be used to define the storage class to use for the claim
     # Set to "-" to disable use of default storage class
     storageClassName: ""
-    ## @param connectors.persistence.existingClaim can be used to mount an existing PVC instead of provisioning per-pod volumes. Requires connectors.persistence.enabled: true, and is ignored without it. Every replica mounts the same claim, so a ReadWriteOnce volume also needs connectors.persistence.deploymentStrategy: Recreate
+    ## @param connectors.persistence.existingClaim can be used to mount an existing PVC instead of provisioning per-pod volumes. Requires connectors.persistence.enabled: true, and is ignored without it. Every replica mounts the same claim, so a ReadWriteOnce volume can deadlock a rollout and should be provisioned ReadWriteMany
     existingClaim: ""
     ## @param connectors.persistence.annotations can be used to define annotations to add to the claim
     annotations: {}
     ## @param connectors.persistence.selector can be used to define a label selector restricting which PersistentVolume each claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist for every replica, plus one spare to cover the extra claim held while a rollout surges
     selector: {}
-    ## @param connectors.persistence.deploymentStrategy can be used to set the update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to "Recreate" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade
-    deploymentStrategy: RollingUpdate
 
 ####################################################################################
 #######

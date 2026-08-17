@@ -494,16 +494,6 @@
                             }
                         }
                     }
-                },
-                "persistence": {
-                    "properties": {
-                        "deploymentStrategy": {
-                            "enum": [
-                                "RollingUpdate",
-                                "Recreate"
-                            ]
-                        }
-                    }
                 }
             }
         },
@@ -638,16 +628,6 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
-                        }
-                    }
-                },
-                "persistence": {
-                    "properties": {
-                        "deploymentStrategy": {
-                            "enum": [
-                                "RollingUpdate",
-                                "Recreate"
-                            ]
                         }
                     }
                 }

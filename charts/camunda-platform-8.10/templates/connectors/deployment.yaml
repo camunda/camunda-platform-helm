@@ -1,11 +1,4 @@
 {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
-{{- $deploymentStrategy := .Values.connectors.persistence.deploymentStrategy | default "RollingUpdate" -}}
-{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
-{{- fail "connectors.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
-{{- end -}}
-{{- if and (eq $deploymentStrategy "Recreate") (not .Values.connectors.persistence.enabled) -}}
-{{- fail "connectors.persistence.deploymentStrategy: Recreate requires connectors.persistence.enabled: true. The default chart-managed path uses a per-pod ephemeral volume with no Multi-Attach contention, so Recreate is only useful when existingClaim points to a ReadWriteOnce volume; without persistence it only adds upgrade downtime" -}}
-{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,7 +8,7 @@ metadata:
 spec:
   replicas: {{ .Values.connectors.replicas }}
   strategy:
-    type: {{ $deploymentStrategy }}
+    type: RollingUpdate
   selector:
     matchLabels: {{- include "connectors.matchLabels" . | nindent 6 }}
   template:

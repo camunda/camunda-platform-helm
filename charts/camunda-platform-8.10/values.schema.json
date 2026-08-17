@@ -2063,15 +2063,6 @@
                             "type": "object",
                             "description": "can be used to define a label selector restricting which PersistentVolume the claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist, plus a second one to cover the extra claim held while a rollout surges",
                             "default": {}
-                        },
-                        "deploymentStrategy": {
-                            "type": "string",
-                            "description": "can be used to set the update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to \"Recreate\" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade",
-                            "default": "RollingUpdate",
-                            "enum": [
-                                "RollingUpdate",
-                                "Recreate"
-                            ]
                         }
                     }
                 }
@@ -4111,7 +4102,7 @@
                         },
                         "existingClaim": {
                             "type": "string",
-                            "description": "can be used to mount an existing PVC instead of provisioning per-pod volumes. Requires connectors.persistence.enabled: true, and is ignored without it. Every replica mounts the same claim, so a ReadWriteOnce volume also needs connectors.persistence.deploymentStrategy: Recreate",
+                            "description": "can be used to mount an existing PVC instead of provisioning per-pod volumes. Requires connectors.persistence.enabled: true, and is ignored without it. Every replica mounts the same claim, so a ReadWriteOnce volume can deadlock a rollout and should be provisioned ReadWriteMany",
                             "default": ""
                         },
                         "annotations": {
@@ -4123,15 +4114,6 @@
                             "type": "object",
                             "description": "can be used to define a label selector restricting which PersistentVolume each claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist for every replica, plus one spare to cover the extra claim held while a rollout surges",
                             "default": {}
-                        },
-                        "deploymentStrategy": {
-                            "type": "string",
-                            "description": "can be used to set the update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to \"Recreate\" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade",
-                            "default": "RollingUpdate",
-                            "enum": [
-                                "RollingUpdate",
-                                "Recreate"
-                            ]
                         }
                     }
                 },
