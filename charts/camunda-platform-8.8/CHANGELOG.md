@@ -1,5 +1,21 @@
 # Changelog
 
+## [13.12.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.5...camunda-platform-8.8-13.12.6) (2026-08-14)
+
+
+### Bug Fixes
+
+* document defaultRoles.admin.clients in orchestration values schema [ready] ([#6560](https://github.com/camunda/camunda-platform-helm/issues/6560)) ([2e51819](https://github.com/camunda/camunda-platform-helm/commit/2e51819fe3ace0f9a2ea8ae3fb6ecfaa0eb997b0))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6865](https://github.com/camunda/camunda-platform-helm/issues/6865)) ([0a2c6d3](https://github.com/camunda/camunda-platform-helm/commit/0a2c6d3d3538c3008d3c57925e1b2f1100373adc))
+* update camunda/console docker tag to v8.8.138 ([#6818](https://github.com/camunda/camunda-platform-helm/issues/6818)) ([06bfcf9](https://github.com/camunda/camunda-platform-helm/commit/06bfcf96ae65fc5558a718dd6152deff69b8e637))
+* update camunda/console docker tag to v8.8.139 ([#6867](https://github.com/camunda/camunda-platform-helm/issues/6867)) ([41e27dc](https://github.com/camunda/camunda-platform-helm/commit/41e27dca3181908a4e4530049c837fdfbaacbbdb))
+* update patch-updates (patch) ([#6814](https://github.com/camunda/camunda-platform-helm/issues/6814)) ([597c3d0](https://github.com/camunda/camunda-platform-helm/commit/597c3d0c5d545c61b763ec2f73437e514b92063c))
+* update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.20 ([#6852](https://github.com/camunda/camunda-platform-helm/issues/6852)) ([46e0807](https://github.com/camunda/camunda-platform-helm/commit/46e080702e140cecf581113906f8e58d69b36686))
+
 ## [13.12.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.4...camunda-platform-8.8-13.12.5) (2026-08-05)
 
 
