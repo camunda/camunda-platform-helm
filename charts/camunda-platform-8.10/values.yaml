@@ -1145,24 +1145,24 @@ identity:
   ## @param identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
-  ## @extra identity.persistence configuration for optional PVC creation
+  ## @extra identity.persistence configuration for the volume backing the Identity /tmp directory
   persistence:
-    ## @param identity.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
+    ## @param identity.persistence.enabled can be used to back /tmp with a per-pod ephemeral volume instead of emptyDir, moving scratch space off the node filesystem. The volume is provisioned when the pod starts and deleted with the pod, so nothing is retained across a restart
     enabled: false
-    ## @param identity.persistence.size can be used to define the size of the persistent volume claim
+    ## @param identity.persistence.size can be used to define the size of the volume claimed for each pod
     size: "10Gi"
-    ## @param identity.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    ## @param identity.persistence.accessModes can be used to define the access modes for the claim
     accessModes: ["ReadWriteOnce"]
-    ## @param identity.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    ## @param identity.persistence.storageClassName can be used to define the storage class to use for the claim
     # Set to "-" to disable use of default storage class
     storageClassName: ""
-    ## @param identity.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    ## @param identity.persistence.existingClaim can be used to mount an existing PVC instead of provisioning a per-pod volume. Requires identity.persistence.enabled: true, and is ignored without it
     existingClaim: ""
-    ## @param identity.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    ## @param identity.persistence.annotations can be used to define annotations to add to the claim
     annotations: {}
-    ## @param identity.persistence.selector can be used to define a label selector for the persistent volume claim
+    ## @param identity.persistence.selector can be used to define a label selector restricting which PersistentVolume the claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist, plus a second one to cover the extra claim held while a rollout surges
     selector: {}
-    ## @param identity.persistence.deploymentStrategy update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    ## @param identity.persistence.deploymentStrategy can be used to set the update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to "Recreate" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade
     deploymentStrategy: RollingUpdate
 
 ###############################################################################
@@ -1983,24 +1983,24 @@ connectors:
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
-  ## @extra connectors.persistence configuration for optional PVC creation
+  ## @extra connectors.persistence configuration for the volume backing the Connectors /tmp directory
   persistence:
-    ## @param connectors.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
+    ## @param connectors.persistence.enabled can be used to back /tmp with a per-pod ephemeral volume instead of emptyDir, moving scratch space off the node filesystem. The volume is provisioned when the pod starts and deleted with the pod, so nothing is retained across a restart
     enabled: false
-    ## @param connectors.persistence.size can be used to define the size of the persistent volume claim
+    ## @param connectors.persistence.size can be used to define the size of the volume claimed for each pod. One volume is provisioned per replica, so the total provisioned capacity is this value multiplied by connectors.replicas, plus one extra claim held while a rollout surges
     size: "5Gi"
-    ## @param connectors.persistence.accessModes can be used to define the access modes for the persistent volume claim
+    ## @param connectors.persistence.accessModes can be used to define the access modes for the claim
     accessModes: ["ReadWriteOnce"]
-    ## @param connectors.persistence.storageClassName can be used to define the storage class to use for the persistent volume claim
+    ## @param connectors.persistence.storageClassName can be used to define the storage class to use for the claim
     # Set to "-" to disable use of default storage class
     storageClassName: ""
-    ## @param connectors.persistence.existingClaim can be used to specify an existing PVC instead of creating a new one
+    ## @param connectors.persistence.existingClaim can be used to mount an existing PVC instead of provisioning per-pod volumes. Requires connectors.persistence.enabled: true, and is ignored without it. Every replica mounts the same claim, so a ReadWriteOnce volume also needs connectors.persistence.deploymentStrategy: Recreate
     existingClaim: ""
-    ## @param connectors.persistence.annotations can be used to define annotations to add to the persistent volume claim
+    ## @param connectors.persistence.annotations can be used to define annotations to add to the claim
     annotations: {}
-    ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
+    ## @param connectors.persistence.selector can be used to define a label selector restricting which PersistentVolume each claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist for every replica, plus one spare to cover the extra claim held while a rollout surges
     selector: {}
-    ## @param connectors.persistence.deploymentStrategy update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    ## @param connectors.persistence.deploymentStrategy can be used to set the update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to "Recreate" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade
     deploymentStrategy: RollingUpdate
 
 ####################################################################################

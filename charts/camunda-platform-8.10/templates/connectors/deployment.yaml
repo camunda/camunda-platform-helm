@@ -169,10 +169,11 @@ spec:
           {{- else if .Values.connectors.persistence.enabled }}
           ephemeral:
             volumeClaimTemplate:
-              {{- with .Values.connectors.persistence.annotations }}
               metadata:
+                labels: {{- include "camundaPlatform.labels" . | nindent 18 }}
+                {{- with .Values.connectors.persistence.annotations }}
                 annotations: {{- toYaml . | nindent 18 }}
-              {{- end }}
+                {{- end }}
               spec:
                 accessModes: {{ .Values.connectors.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 18 }}
                 {{- with .Values.connectors.persistence.storageClassName }}

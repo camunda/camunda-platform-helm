@@ -2026,17 +2026,17 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
+                            "description": "can be used to back /tmp with a per-pod ephemeral volume instead of emptyDir, moving scratch space off the node filesystem. The volume is provisioned when the pod starts and deleted with the pod, so nothing is retained across a restart",
                             "default": false
                         },
                         "size": {
                             "type": "string",
-                            "description": "can be used to define the size of the persistent volume claim",
+                            "description": "can be used to define the size of the volume claimed for each pod",
                             "default": "10Gi"
                         },
                         "accessModes": {
                             "type": "array",
-                            "description": "can be used to define the access modes for the persistent volume claim",
+                            "description": "can be used to define the access modes for the claim",
                             "default": [
                                 "ReadWriteOnce"
                             ],
@@ -2046,27 +2046,27 @@
                         },
                         "storageClassName": {
                             "type": "string",
-                            "description": "can be used to define the storage class to use for the persistent volume claim",
+                            "description": "can be used to define the storage class to use for the claim",
                             "default": ""
                         },
                         "existingClaim": {
                             "type": "string",
-                            "description": "can be used to specify an existing PVC instead of creating a new one",
+                            "description": "can be used to mount an existing PVC instead of provisioning a per-pod volume. Requires identity.persistence.enabled: true, and is ignored without it",
                             "default": ""
                         },
                         "annotations": {
                             "type": "object",
-                            "description": "can be used to define annotations to add to the persistent volume claim",
+                            "description": "can be used to define annotations to add to the claim",
                             "default": {}
                         },
                         "selector": {
                             "type": "object",
-                            "description": "can be used to define a label selector for the persistent volume claim",
+                            "description": "can be used to define a label selector restricting which PersistentVolume the claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist, plus a second one to cover the extra claim held while a rollout surges",
                             "default": {}
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "description": "can be used to set the update strategy for the Identity Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to \"Recreate\" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",
@@ -4086,17 +4086,17 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "can be used to create a PVC for persistent storage instead of using emptyDir",
+                            "description": "can be used to back /tmp with a per-pod ephemeral volume instead of emptyDir, moving scratch space off the node filesystem. The volume is provisioned when the pod starts and deleted with the pod, so nothing is retained across a restart",
                             "default": false
                         },
                         "size": {
                             "type": "string",
-                            "description": "can be used to define the size of the persistent volume claim",
+                            "description": "can be used to define the size of the volume claimed for each pod. One volume is provisioned per replica, so the total provisioned capacity is this value multiplied by connectors.replicas, plus one extra claim held while a rollout surges",
                             "default": "5Gi"
                         },
                         "accessModes": {
                             "type": "array",
-                            "description": "can be used to define the access modes for the persistent volume claim",
+                            "description": "can be used to define the access modes for the claim",
                             "default": [
                                 "ReadWriteOnce"
                             ],
@@ -4106,27 +4106,27 @@
                         },
                         "storageClassName": {
                             "type": "string",
-                            "description": "can be used to define the storage class to use for the persistent volume claim",
+                            "description": "can be used to define the storage class to use for the claim",
                             "default": ""
                         },
                         "existingClaim": {
                             "type": "string",
-                            "description": "can be used to specify an existing PVC instead of creating a new one",
+                            "description": "can be used to mount an existing PVC instead of provisioning per-pod volumes. Requires connectors.persistence.enabled: true, and is ignored without it. Every replica mounts the same claim, so a ReadWriteOnce volume also needs connectors.persistence.deploymentStrategy: Recreate",
                             "default": ""
                         },
                         "annotations": {
                             "type": "object",
-                            "description": "can be used to define annotations to add to the persistent volume claim",
+                            "description": "can be used to define annotations to add to the claim",
                             "default": {}
                         },
                         "selector": {
                             "type": "object",
-                            "description": "can be used to define a label selector for the persistent volume claim",
+                            "description": "can be used to define a label selector restricting which PersistentVolume each claim may bind to. Setting it disables dynamic provisioning, so a matching pre-provisioned volume must already exist for every replica, plus one spare to cover the extra claim held while a rollout surges",
                             "default": {}
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "description": "can be used to set the update strategy for the Connectors Deployment. Defaults to RollingUpdate, which is always safe because the default per-pod ephemeral volume has no concurrent-attach contention. Set to \"Recreate\" only alongside existingClaim on a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout, at the cost of brief downtime per upgrade",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",

@@ -358,7 +358,7 @@ func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
 	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://hub.example.com/identity"`)
 }
 
-func TestTopologyPreservesSuppressedPersistentVolumeClaims(t *testing.T) {
+func TestTopologyPreservesSuppressedOptimizePersistentVolumeClaim(t *testing.T) {
 	hubOptions := &helm.Options{
 		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
 		SetValues: map[string]string{
@@ -370,6 +370,42 @@ func TestTopologyPreservesSuppressedPersistentVolumeClaims(t *testing.T) {
 			"templates/optimize/persistentvolumeclaim.yaml",
 		}, args...)
 		require.Contains(t, hubOutput, "name: camunda-camunda-platform-optimize-data")
+	}
+}
+
+func TestTopologySuppressedComponentsRenderNoVolumeObjects(t *testing.T) {
+	cases := []struct {
+		component  string
+		valuesFile string
+		template   string
+	}{
+		{"connectors", "hub-generic.yaml", "templates/connectors/deployment.yaml"},
+		{"identity", "orchestration.yaml", "templates/identity/deployment.yaml"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.component, func(t *testing.T) {
+			options := &helm.Options{
+				ValuesFiles: []string{filepath.Join("testdata", tc.valuesFile)},
+				SetValues: map[string]string{
+					tc.component + ".persistence.enabled": "true",
+				},
+			}
+
+			for _, args := range [][]string{nil, {"--is-upgrade"}} {
+				_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{tc.template}, args...)
+				require.Error(t, err, "%s should not render while topology-suppressed", tc.template)
+
+				output := helm.RenderTemplate(t, options, chartPath(t), "camunda", nil, args...)
+				require.NotContains(t, output, "camunda-camunda-platform-"+tc.component+"-data")
+				for _, document := range splitDocuments(output) {
+					if contains(document, "kind: PersistentVolumeClaim") {
+						require.NotContains(t, document, tc.component)
+					}
+				}
+			}
+		})
 	}
 }
 

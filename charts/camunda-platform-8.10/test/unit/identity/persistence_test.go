@@ -95,6 +95,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 
 				claimTemplate := tmpVolume.Ephemeral.VolumeClaimTemplate
 				require.Equal(t, "bar", claimTemplate.Annotations["foo"])
+				require.NotEmpty(t, claimTemplate.Labels["app.kubernetes.io/instance"], "per-pod claims must carry chart labels so they stay selectable by release")
+				require.NotEmpty(t, claimTemplate.Labels["app.kubernetes.io/managed-by"])
 				spec := claimTemplate.Spec
 				require.Equal(t, "5Gi", spec.Resources.Requests.Storage().String())
 				require.Equal(t, corev1.ReadWriteOnce, spec.AccessModes[0])

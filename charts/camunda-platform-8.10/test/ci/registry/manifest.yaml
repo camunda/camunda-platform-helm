@@ -92,7 +92,7 @@ integration:
     - id: component-persistence
       shortname: cprst
       tier: 2
-      enabled: false
+      enabled: true
     - id: hub-legacy-install
       shortname: huble
       tier: 2
