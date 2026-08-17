@@ -23,28 +23,34 @@ const diagnosticsEventsTail = 40
 // needs. It is a struct of funcs (defaulting to the kube package) so tests can
 // inject fakes without a cluster or a fake kubectl on PATH.
 type podDiagnosticsSource struct {
-	GetPods            func(ctx context.Context, kubeContext, namespace string) (string, error)
-	GetEvents          func(ctx context.Context, kubeContext, namespace string) (string, error)
-	GetPVCs            func(ctx context.Context, kubeContext, namespace string) (string, error)
-	DescribePVCs       func(ctx context.Context, kubeContext, namespace string) (string, error)
-	GetNonReadyPods    func(ctx context.Context, kubeContext, namespace string) ([]string, error)
-	GetPodNames        func(ctx context.Context, kubeContext, namespace string) ([]string, error)
-	DescribePod        func(ctx context.Context, kubeContext, namespace, pod string) (string, error)
-	GetPodLogs         func(ctx context.Context, kubeContext, namespace, pod string, tail int) (string, error)
-	GetPodLogsPrevious func(ctx context.Context, kubeContext, namespace, pod string, tail int) (string, error)
+	GetPods             func(ctx context.Context, kubeContext, namespace string) (string, error)
+	GetEvents           func(ctx context.Context, kubeContext, namespace string) (string, error)
+	GetPVCs             func(ctx context.Context, kubeContext, namespace string) (string, error)
+	DescribePVCs        func(ctx context.Context, kubeContext, namespace string) (string, error)
+	GetNonReadyPods     func(ctx context.Context, kubeContext, namespace string) ([]string, error)
+	GetPodNames         func(ctx context.Context, kubeContext, namespace string) ([]string, error)
+	DescribePod         func(ctx context.Context, kubeContext, namespace, pod string) (string, error)
+	GetPodLogs          func(ctx context.Context, kubeContext, namespace, pod string, tail int) (string, error)
+	GetPodLogsPrevious  func(ctx context.Context, kubeContext, namespace, pod string, tail int) (string, error)
+	GetPodContainers    func(ctx context.Context, kubeContext, namespace, pod string) ([]string, error)
+	GetPodContainerLogs func(ctx context.Context, kubeContext, namespace, pod, container string, tail int) (string, error)
+	ExecInPod           func(ctx context.Context, kubeContext, namespace, pod string, command []string) (string, error)
 }
 
 func defaultPodDiagnosticsSource() podDiagnosticsSource {
 	return podDiagnosticsSource{
-		GetPods:            kube.GetPods,
-		GetEvents:          kube.GetEvents,
-		GetPVCs:            kube.GetPVCs,
-		DescribePVCs:       kube.DescribePVCs,
-		GetNonReadyPods:    kube.GetNonReadyPods,
-		GetPodNames:        kube.GetPodNames,
-		DescribePod:        kube.DescribePod,
-		GetPodLogs:         kube.GetPodLogs,
-		GetPodLogsPrevious: kube.GetPodLogsPrevious,
+		GetPods:             kube.GetPods,
+		GetEvents:           kube.GetEvents,
+		GetPVCs:             kube.GetPVCs,
+		DescribePVCs:        kube.DescribePVCs,
+		GetNonReadyPods:     kube.GetNonReadyPods,
+		GetPodNames:         kube.GetPodNames,
+		DescribePod:         kube.DescribePod,
+		GetPodLogs:          kube.GetPodLogs,
+		GetPodLogsPrevious:  kube.GetPodLogsPrevious,
+		GetPodContainers:    kube.GetPodContainers,
+		GetPodContainerLogs: kube.GetPodContainerLogs,
+		ExecInPod:           kube.ExecInPod,
 	}
 }
 
@@ -169,13 +175,64 @@ func printNamespaceDiagnostics(ctx context.Context, w io.Writer, src podDiagnost
 		emit(podLabel+pod+" — describe", desc, descErr)
 
 		podLogs, logsErr := src.GetPodLogs(ctx, kubeContext, namespace, pod, tail)
-		emit(podLabel+pod+" — logs", podLogs, logsErr)
+		if logsErr != nil && src.GetPodContainers != nil && src.GetPodContainerLogs != nil {
+			emitPerContainerLogs(ctx, emit, src, kubeContext, namespace, pod, podLabel, tail, logsErr)
+		} else {
+			emit(podLabel+pod+" — logs", podLogs, logsErr)
+		}
 
 		// --previous surfaces the prior crash; empty/erroring when the pod never restarted.
 		if prev, err := src.GetPodLogsPrevious(ctx, kubeContext, namespace, pod, tail); err == nil && prev != "" {
 			emit(podLabel+pod+" — previous logs", prev, nil)
 		}
+
+		if isSearchPod(pod) && src.ExecInPod != nil {
+			state, stateErr := src.ExecInPod(ctx, kubeContext, namespace, pod, []string{"sh", "-c", searchClusterStateScript})
+			emit(podLabel+pod+" — cluster state", state, stateErr)
+		}
 	}
+}
+
+// emitPerContainerLogs recovers logs one container at a time after the
+// all-containers fetch failed, and reports the original error when the pod's
+// container list cannot be read either.
+func emitPerContainerLogs(
+	ctx context.Context,
+	emit func(string, string, error),
+	src podDiagnosticsSource,
+	kubeContext, namespace, pod, podLabel string,
+	tail int,
+	allContainersErr error,
+) {
+	containers, err := src.GetPodContainers(ctx, kubeContext, namespace, pod)
+	if err != nil || len(containers) == 0 {
+		emit(podLabel+pod+" — logs", "", allContainersErr)
+		return
+	}
+	for _, container := range containers {
+		logs, logsErr := src.GetPodContainerLogs(ctx, kubeContext, namespace, pod, container, tail)
+		emit(podLabel+pod+" — logs ["+container+"]", logs, logsErr)
+	}
+}
+
+// searchClusterStateScript queries the Elasticsearch/OpenSearch HTTP API from
+// inside the pod. Both expose these endpoints identically, and CI runs them with
+// security disabled, so no credentials are needed. Shard-level state is what
+// distinguishes "still recovering" from "cannot reach this status on this
+// topology" when a readiness probe gates on cluster health.
+const searchClusterStateScript = `
+for q in '_cluster/health?level=indices&pretty' '_cat/indices?v&s=health:desc,index' '_cluster/allocation/explain?pretty'; do
+  echo "--- GET /$q"
+  curl -sS --max-time 10 "http://localhost:9200/$q" || echo "(query failed)"
+  echo
+done
+`
+
+// isSearchPod reports whether the pod is an Elasticsearch or OpenSearch node,
+// matched on name because the companion charts are separate Helm releases whose
+// labels are not shared with the Camunda chart.
+func isSearchPod(pod string) bool {
+	return strings.Contains(pod, "elasticsearch") || strings.Contains(pod, "opensearch")
 }
 
 // lastLines returns the last n lines of s. Short inputs are returned unchanged.

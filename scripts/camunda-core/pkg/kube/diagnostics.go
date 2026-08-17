@@ -118,6 +118,47 @@ func DescribePod(ctx context.Context, kubeContext, namespace, pod string) (strin
 	return runKubectl(ctx, args)
 }
 
+// GetPodContainers returns the pod's init containers followed by its regular
+// containers. Init containers come first so a caller iterating the list reaches
+// the one that blocked startup before the containers that never ran.
+func GetPodContainers(ctx context.Context, kubeContext, namespace, pod string) ([]string, error) {
+	args := append(kubectlBaseArgs(kubeContext),
+		"get", "pod", pod, "-n", namespace,
+		"-o", "jsonpath={range .spec.initContainers[*]}{.name}{\"\\n\"}{end}{range .spec.containers[*]}{.name}{\"\\n\"}{end}",
+	)
+	output, err := runKubectl(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+	var containers []string
+	for _, line := range strings.Split(output, "\n") {
+		if name := strings.TrimSpace(line); name != "" {
+			containers = append(containers, name)
+		}
+	}
+	return containers, nil
+}
+
+// GetPodContainerLogs returns the last tailLines of logs from a single container.
+// `kubectl logs --all-containers` fails as a whole when any one container has yet
+// to start, so a pod stuck in Init:Error yields nothing; fetching per container
+// recovers the init container's output.
+func GetPodContainerLogs(ctx context.Context, kubeContext, namespace, pod, container string, tailLines int) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext),
+		"logs", pod, "-n", namespace,
+		"-c", container,
+		"--tail", fmt.Sprintf("%d", tailLines),
+	)
+	return runKubectl(ctx, args)
+}
+
+// ExecInPod runs command in the pod's default container and returns its output.
+func ExecInPod(ctx context.Context, kubeContext, namespace, pod string, command []string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "exec", pod, "-n", namespace, "--")
+	args = append(args, command...)
+	return runKubectl(ctx, args)
+}
+
 // GetNonReadyPods returns the names of pods that are not fully ready.
 // It uses a field-selector to find non-Running pods and also parses output to
 // catch Running-but-not-Ready pods (e.g., readiness probe failing).

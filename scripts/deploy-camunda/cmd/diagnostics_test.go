@@ -123,6 +123,128 @@ func TestPrintNamespaceDiagnosticsIncludeReady(t *testing.T) {
 	}
 }
 
+func TestPrintNamespaceDiagnosticsFallsBackToPerContainerLogs(t *testing.T) {
+	t.Parallel()
+
+	var fetched []string
+	src := podDiagnosticsSource{
+		GetPods:         func(_ context.Context, _, _ string) (string, error) { return "optimize 0/1 Init:Error", nil },
+		GetEvents:       func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetPVCs:         func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		DescribePVCs:    func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetNonReadyPods: func(_ context.Context, _, _ string) ([]string, error) { return []string{"optimize"}, nil },
+		DescribePod:     func(_ context.Context, _, _, pod string) (string, error) { return "Name: " + pod, nil },
+		// kubectl logs --all-containers fails as a whole while a container is still
+		// waiting to start, which is what hid the failing init container's output.
+		GetPodLogs: func(_ context.Context, _, _, _ string, _ int) (string, error) {
+			return "", fmt.Errorf("exit status 1")
+		},
+		GetPodLogsPrevious: func(_ context.Context, _, _, _ string, _ int) (string, error) { return "", nil },
+		GetPodContainers: func(_ context.Context, _, _, _ string) ([]string, error) {
+			return []string{"migration", "optimize"}, nil
+		},
+		GetPodContainerLogs: func(_ context.Context, _, _, _, container string, _ int) (string, error) {
+			fetched = append(fetched, container)
+			if container == "optimize" {
+				return "", fmt.Errorf("waiting to start: PodInitializing")
+			}
+			return "migration failed to reach elasticsearch", nil
+		},
+	}
+
+	var buf bytes.Buffer
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 500, false)
+	out := buf.String()
+
+	if len(fetched) != 2 || fetched[0] != "migration" {
+		t.Errorf("expected init container fetched first, got %v", fetched)
+	}
+	for _, want := range []string{"logs [migration]", "migration failed to reach elasticsearch", "logs [optimize]", "PodInitializing"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestPrintNamespaceDiagnosticsFallbackWhenContainerListUnavailable(t *testing.T) {
+	t.Parallel()
+
+	src := podDiagnosticsSource{
+		GetPods:         func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetEvents:       func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetPVCs:         func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		DescribePVCs:    func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetNonReadyPods: func(_ context.Context, _, _ string) ([]string, error) { return []string{"pod-a"}, nil },
+		DescribePod:     func(_ context.Context, _, _, _ string) (string, error) { return "", nil },
+		GetPodLogs: func(_ context.Context, _, _, _ string, _ int) (string, error) {
+			return "", fmt.Errorf("original failure")
+		},
+		GetPodLogsPrevious: func(_ context.Context, _, _, _ string, _ int) (string, error) { return "", nil },
+		GetPodContainers: func(_ context.Context, _, _, _ string) ([]string, error) {
+			return nil, fmt.Errorf("pod gone")
+		},
+		GetPodContainerLogs: func(_ context.Context, _, _, _, _ string, _ int) (string, error) {
+			t.Fatal("must not fetch per-container logs without a container list")
+			return "", nil
+		},
+	}
+
+	var buf bytes.Buffer
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "ns", 500, false)
+	if out := buf.String(); !strings.Contains(out, "(error: original failure)") {
+		t.Errorf("expected the original logs error to be reported, got:\n%s", out)
+	}
+}
+
+func TestPrintNamespaceDiagnosticsCapturesSearchClusterState(t *testing.T) {
+	t.Parallel()
+
+	var execedPods []string
+	newSrc := func(pod string) podDiagnosticsSource {
+		return podDiagnosticsSource{
+			GetPods:            func(_ context.Context, _, _ string) (string, error) { return "", nil },
+			GetEvents:          func(_ context.Context, _, _ string) (string, error) { return "", nil },
+			GetPVCs:            func(_ context.Context, _, _ string) (string, error) { return "", nil },
+			DescribePVCs:       func(_ context.Context, _, _ string) (string, error) { return "", nil },
+			GetNonReadyPods:    func(_ context.Context, _, _ string) ([]string, error) { return []string{pod}, nil },
+			DescribePod:        func(_ context.Context, _, _, _ string) (string, error) { return "", nil },
+			GetPodLogs:         func(_ context.Context, _, _, _ string, _ int) (string, error) { return "log", nil },
+			GetPodLogsPrevious: func(_ context.Context, _, _, _ string, _ int) (string, error) { return "", nil },
+			ExecInPod: func(_ context.Context, _, _, pod string, _ []string) (string, error) {
+				execedPods = append(execedPods, pod)
+				return "status yellow, 1 unassigned shard", nil
+			},
+		}
+	}
+
+	var buf bytes.Buffer
+	printNamespaceDiagnostics(context.Background(), &buf, newSrc("elasticsearch-master-0"), "", "ns", 500, false)
+	if out := buf.String(); !strings.Contains(out, "cluster state") || !strings.Contains(out, "1 unassigned shard") {
+		t.Errorf("expected search cluster state to be captured, got:\n%s", out)
+	}
+
+	execedPods = nil
+	buf.Reset()
+	printNamespaceDiagnostics(context.Background(), &buf, newSrc("integration-zeebe-0"), "", "ns", 500, false)
+	if len(execedPods) != 0 {
+		t.Errorf("non-search pods must not be exec'd into, got %v", execedPods)
+	}
+}
+
+func TestIsSearchPod(t *testing.T) {
+	t.Parallel()
+	for pod, want := range map[string]bool{
+		"elasticsearch-master-0":        true,
+		"opensearch-cluster-master-0":   true,
+		"integration-zeebe-0":           false,
+		"integration-optimize-79c-hgcw": false,
+	} {
+		if got := isSearchPod(pod); got != want {
+			t.Errorf("isSearchPod(%q) = %v, want %v", pod, got, want)
+		}
+	}
+}
+
 func TestLastLines(t *testing.T) {
 	t.Parallel()
 	if got := lastLines("a\nb\nc\nd", 2); got != "c\nd" {
