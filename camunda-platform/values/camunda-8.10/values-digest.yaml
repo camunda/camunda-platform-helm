@@ -7,14 +7,14 @@ console:
   image:
     repository: camunda/console
     tag: 8.10-SNAPSHOT
-    digest: "sha256:a202e9e8ba86796f43a7cfd92a7b2ad970fc2a172fe36b59a0c919fab02bfbb6"
+    digest: "sha256:bc30049fadef54f289961198e93b47d495f99a6e225aafb900703cebcd436953"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
     tag: 8.10-SNAPSHOT
-    digest: "sha256:2988f350122654d7e33f84692e96fe56e2a571c5e0a18e890c9cdd31e75aa262"
+    digest: "sha256:296fa0fb0cb08d499c1f027e367e7b2498072e95686000d59ac1c02e6dc24909"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
