@@ -103,18 +103,21 @@ jobs:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
           message: "chore: chart chores"
-          # Pushing is done by the next step; checkout does not persist credentials.
+          # Pushing is done by the next step; checkout does not persist credentials, so the
+          # action's own fetch and push must both be disabled.
+          fetch: false
           push: false
       - name: Push changes
         if: steps.commit.outputs.committed == 'true'
         env:
           GH_APP_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-          TARGET_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           TARGET_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
           # Credential is supplied per-command via a helper reading the step env, so the token is
-          # neither written to .git/config nor visible in the process arguments.
-          git -c credential.helper= \
+          # neither written to .git/config nor visible in the process arguments. hooksPath is
+          # neutralized so no repo-provided hook runs with the token in its environment.
+          git -c core.hooksPath=/dev/null \
+              -c credential.helper= \
               -c credential.helper='!f() { echo username=x-access-token; echo "password=${GH_APP_TOKEN}"; }; f' \
               push origin "HEAD:refs/heads/${TARGET_REF}"

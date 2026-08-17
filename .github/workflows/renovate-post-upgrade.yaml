@@ -141,19 +141,21 @@ jobs:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
           message: "chore(deps): post upgrade tasks - go mod tidy, update golden files, readme, and schema"
-          # Pushing is done by the next step; checkout does not persist credentials.
+          # Pushing is done by the next step; checkout does not persist credentials, so the
+          # action's own fetch and push must both be disabled.
+          fetch: false
           push: false
       - name: Push changes
         if: steps.commit.outputs.committed == 'true'
         env:
           GH_APP_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-          # Mirrors how actions/checkout resolved its own repository/ref inputs.
-          TARGET_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          TARGET_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          TARGET_REF: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           # Credential is supplied per-command via a helper reading the step env, so the token is
-          # neither written to .git/config nor visible in the process arguments.
-          git -c credential.helper= \
+          # neither written to .git/config nor visible in the process arguments. hooksPath is
+          # neutralized so no repo-provided hook runs with the token in its environment.
+          git -c core.hooksPath=/dev/null \
+              -c credential.helper= \
               -c credential.helper='!f() { echo username=x-access-token; echo "password=${GH_APP_TOKEN}"; }; f' \
               push origin "HEAD:refs/heads/${TARGET_REF}"
