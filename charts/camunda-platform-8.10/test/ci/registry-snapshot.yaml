@@ -1780,7 +1780,7 @@ integration:
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
         - name: multinamespace-optimize
-          enabled: false
+          enabled: true
           shortname: mnop
           auth: keycloak
           flow: install
