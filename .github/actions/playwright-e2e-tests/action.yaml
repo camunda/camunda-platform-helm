@@ -69,6 +69,20 @@ inputs:
       TEST_NAMESPACE resolves to the orchestration namespace.
     required: false
     default: ""
+  optimize-namespace:
+    description: >-
+      For a topology whose Optimize runs as its own release: the namespace
+      running the Optimize instance that serves this leg. render-e2e-env.sh
+      derives Optimize from the orchestration namespace and sets
+      IS_OPTIMIZE=false when it finds none there, which skips every Optimize
+      spec while still reporting success. Requires hub-namespace.
+    required: false
+    default: ""
+  optimize-context-path:
+    description: >-
+      Ingress path that Optimize release is served on, e.g. /optimize-orcha.
+    required: false
+    default: ""
   namespace-override:
     description: >-
       Overrides the namespace workflow-vars would otherwise compute from
@@ -232,6 +246,8 @@ runs:
         TEST_EXCLUDE: ${{ inputs.exclude }}
         TEST_AUTH_TYPE: ${{ inputs.auth }}
         HUB_NAMESPACE: ${{ inputs.hub-namespace }}
+        OPTIMIZE_NAMESPACE: ${{ inputs.optimize-namespace }}
+        OPTIMIZE_CONTEXT_PATH: ${{ inputs.optimize-context-path }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
@@ -260,6 +276,8 @@ runs:
         E2E_ARGS+=(--trace retain-on-failure --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
+        [[ -n "$OPTIMIZE_NAMESPACE" ]] && E2E_ARGS+=(--optimize-namespace "${OPTIMIZE_NAMESPACE}")
+        [[ -n "$OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${OPTIMIZE_CONTEXT_PATH}")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
