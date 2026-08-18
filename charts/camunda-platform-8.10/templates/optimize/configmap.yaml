@@ -21,16 +21,20 @@ data:
         import: {{ $springImport }}
     {{- end }}
     {{- if .Values.global.identity.auth.enabled }}
+    {{- $cslEnabled := eq (include "optimize.cslEnabled" .) "true" }}
+    {{- if $cslEnabled }}
     optimize:
       security:
         csl:
           enabled: true
+    {{- end }}
     camunda:
       identity:
         clientId: {{ include "optimize.authClientId" . | quote }}
         audience: {{ include "optimize.authAudience" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+      {{- if $cslEnabled }}
       security:
         authentication:
           method: "oidc"
@@ -50,6 +54,7 @@ data:
             {{- end }}
             {{- /* NOTE: Optimize keeps its legacy callback path so the Identity-provisioned client needs no new redirect URI. */}}
             redirect-uri: {{ printf "%s/api/authentication/callback" (tpl .Values.global.identity.auth.optimize.redirectUrl $) | quote }}
+      {{- end }}
     {{- end }}
   {{- end }}
 

@@ -52,6 +52,20 @@ Create a default fully qualified app name.
   {{- include "camundaPlatform.authAudienceOptimize" . -}}
 {{- end -}}
 
+{{- /*
+NOTE: Optimize runs the camunda-security-library chains by default. Setting
+optimize.security.csl.enabled to false in a spring-imported optimize.extraConfiguration file
+selects the legacy security stack again, and this helper makes the chart render the matching
+legacy configuration for it. The escape hatch closes when the legacy stack is removed in 8.11.
+*/ -}}
+{{- define "optimize.cslEnabled" -}}
+  {{- include "camundaPlatform.effectiveExtraConfigValue" (dict
+      "default" true
+      "extraConfiguration" .Values.optimize.extraConfiguration
+      "path" (list "optimize" "security" "csl" "enabled")
+  ) -}}
+{{- end -}}
+
 {{- define "optimize.authSecretConfig" -}}
   {{- toYaml .Values.global.identity.auth.optimize -}}
 {{- end -}}
