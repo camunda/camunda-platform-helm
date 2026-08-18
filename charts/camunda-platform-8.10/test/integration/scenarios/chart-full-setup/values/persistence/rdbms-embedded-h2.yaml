@@ -1,0 +1,34 @@
+# Embedded file-based H2 secondary storage for the zero-infra quickstart profile.
+# Layer 3: Backend - embedded H2 (no external infrastructure)
+#
+# Mirrors the orchestration block of charts/camunda-platform-8.10/values-quickstart.yaml;
+# keep the two in sync. The published profile lives at the chart root, outside the
+# extra-values chart-full-setup sandbox, so it cannot be layered in directly.
+
+# Neutralize base.yaml: it enables Elasticsearch, pins secondaryStorage.type to
+# elasticsearch, and enables Optimize (which requires a search backend H2 lacks).
+global:
+  elasticsearch:
+    enabled: false
+
+optimize:
+  enabled: false
+
+orchestration:
+  clusterSize: "1"
+  data:
+    secondaryStorage:
+      type: null
+      rdbms:
+        url: "jdbc:h2:file:/usr/local/camunda/data/camunda-rdbms;DB_CLOSE_DELAY=-1"
+        username: "sa"
+  exporters:
+    rdbms:
+      enabled: true
+  extraConfiguration:
+    - file: cluster-topology.yaml
+      content: |
+        camunda:
+          cluster:
+            partition-count: 1
+            replication-factor: 1
