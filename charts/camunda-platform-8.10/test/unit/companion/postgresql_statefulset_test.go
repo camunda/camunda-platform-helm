@@ -15,21 +15,16 @@
 package companion
 
 import (
-	"flag"
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/helm"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
-
-var _ = flag.Bool("update-golden", false, "accepted for chart-wide golden updates")
 
 type PostgresqlStatefulSetTest struct {
 	suite.Suite
@@ -53,69 +48,58 @@ func TestPostgresqlStatefulSetTemplate(t *testing.T) {
 	})
 }
 
-func (s *PostgresqlStatefulSetTest) render(values map[string]string) appsv1.StatefulSet {
-	s.T().Helper()
+func (s *PostgresqlStatefulSetTest) TestPersistenceDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestPersistenceEnabledByDefaultUsesVolumeClaimTemplate",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				statefulSet := unmarshalStatefulSet(t, output, err)
 
-	output := helm.RenderTemplate(
-		s.T(),
-		&helm.Options{
-			SetValues:      values,
-			KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+				require.Equal(t, "StatefulSet", statefulSet.Kind)
+				require.NotEmpty(t, statefulSet.Spec.ServiceName)
+				require.Len(t, statefulSet.Spec.VolumeClaimTemplates, 1)
+
+				claim := statefulSet.Spec.VolumeClaimTemplates[0]
+				require.Equal(t, "data", claim.Name)
+				require.Equal(t, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, claim.Spec.AccessModes)
+				require.Equal(t, "1Gi", claim.Spec.Resources.Requests.Storage().String())
+				require.Nil(t, claim.Spec.StorageClassName)
+
+				require.Nil(t, podVolume(statefulSet, "data"),
+					"data must come from the claim template, not a pod volume")
+			},
+		}, {
+			Name: "TestPersistenceDisabledFallsBackToEmptyDir",
+			Values: map[string]string{
+				"persistence.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				statefulSet := unmarshalStatefulSet(t, output, err)
+
+				require.Empty(t, statefulSet.Spec.VolumeClaimTemplates)
+
+				volume := podVolume(statefulSet, "data")
+				require.NotNil(t, volume)
+				require.NotNil(t, volume.EmptyDir)
+			},
+		}, {
+			Name: "TestPersistenceStorageClassIsRendered",
+			Values: map[string]string{
+				"persistence.storageClass": "hyperdisk-balanced",
+				"persistence.size":         "2Gi",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				statefulSet := unmarshalStatefulSet(t, output, err)
+
+				require.Len(t, statefulSet.Spec.VolumeClaimTemplates, 1)
+				claim := statefulSet.Spec.VolumeClaimTemplates[0]
+				require.NotNil(t, claim.Spec.StorageClassName)
+				require.Equal(t, "hyperdisk-balanced", *claim.Spec.StorageClassName)
+				require.Equal(t, "2Gi", claim.Spec.Resources.Requests.Storage().String())
+			},
 		},
-		s.chartPath,
-		s.release,
-		s.templates,
-	)
-
-	var statefulSet appsv1.StatefulSet
-	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-	return statefulSet
-}
-
-func (s *PostgresqlStatefulSetTest) dataVolume(statefulSet appsv1.StatefulSet) *corev1.Volume {
-	for i := range statefulSet.Spec.Template.Spec.Volumes {
-		if statefulSet.Spec.Template.Spec.Volumes[i].Name == "data" {
-			return &statefulSet.Spec.Template.Spec.Volumes[i]
-		}
 	}
-	return nil
-}
 
-func (s *PostgresqlStatefulSetTest) TestPersistenceEnabledByDefaultUsesVolumeClaimTemplate() {
-	statefulSet := s.render(map[string]string{})
-
-	s.Require().Equal("StatefulSet", statefulSet.Kind)
-	s.Require().NotEmpty(statefulSet.Spec.ServiceName)
-	s.Require().Len(statefulSet.Spec.VolumeClaimTemplates, 1)
-
-	claim := statefulSet.Spec.VolumeClaimTemplates[0]
-	s.Require().Equal("data", claim.Name)
-	s.Require().Equal([]corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, claim.Spec.AccessModes)
-	s.Require().Equal("1Gi", claim.Spec.Resources.Requests.Storage().String())
-	s.Require().Nil(claim.Spec.StorageClassName)
-
-	s.Require().Nil(s.dataVolume(statefulSet), "data must come from the claim template, not a pod volume")
-}
-
-func (s *PostgresqlStatefulSetTest) TestPersistenceDisabledFallsBackToEmptyDir() {
-	statefulSet := s.render(map[string]string{"persistence.enabled": "false"})
-
-	s.Require().Empty(statefulSet.Spec.VolumeClaimTemplates)
-
-	volume := s.dataVolume(statefulSet)
-	s.Require().NotNil(volume)
-	s.Require().NotNil(volume.EmptyDir)
-}
-
-func (s *PostgresqlStatefulSetTest) TestPersistenceStorageClassIsRendered() {
-	statefulSet := s.render(map[string]string{
-		"persistence.storageClass": "hyperdisk-balanced",
-		"persistence.size":         "2Gi",
-	})
-
-	s.Require().Len(statefulSet.Spec.VolumeClaimTemplates, 1)
-	claim := statefulSet.Spec.VolumeClaimTemplates[0]
-	s.Require().NotNil(claim.Spec.StorageClassName)
-	s.Require().Equal("hyperdisk-balanced", *claim.Spec.StorageClassName)
-	s.Require().Equal("2Gi", claim.Spec.Resources.Requests.Storage().String())
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
