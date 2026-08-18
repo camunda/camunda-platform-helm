@@ -1,0 +1,59 @@
+name: physicaltenants
+auth: keycloak
+flows:
+  - install
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+topology:
+  name: hub-1orch-2tenants
+  shared-storage: elasticsearch
+  shared-storage-service: elasticsearch-master
+  releases:
+    - role: hub
+      namespace-suffix: hub
+      identity: keycloak
+      dependencies:
+        - keycloak
+        - postgresql
+        - elasticsearch
+      features:
+        - multinamespace-reset-clients
+        - physicaltenants-hub
+    - role: orchestration
+      namespace-suffix: orcha
+      modeler-cluster-id: orcha
+      modeler-cluster-name: Orchestration A
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - physicaltenants-orchestration
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha-ta
+        ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+    - role: optimize
+      namespace-suffix: optta
+      serves: orcha
+      optimize-context-path: /optimize-orcha-ta
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - physicaltenants-optimize-ta
+      depends-on: hub
+    - role: optimize
+      namespace-suffix: opttb
+      serves: orcha
+      optimize-context-path: /optimize-orcha-tb
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - physicaltenants-optimize-tb
+      depends-on: hub
