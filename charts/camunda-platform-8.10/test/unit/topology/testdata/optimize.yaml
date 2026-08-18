@@ -1,0 +1,53 @@
+global:
+  security:
+    authentication:
+      method: oidc
+  identity:
+    service:
+      url: http://camunda-identity.camunda-hub.svc.cluster.local:80/identity
+    auth:
+      enabled: true
+      type: GENERIC
+      issuer: https://issuer.example.com
+      optimize:
+        clientId: optimize-east-tenanta
+        audience: optimize-east-tenanta-api
+        redirectUrl: https://east.example.com/optimize-tenanta
+        secret:
+          existingSecret: east-oidc
+          existingSecretKey: optimize-secret
+  topology:
+    mode: optimize
+
+# Left enabled on purpose: optimize mode must gate every other component off
+# without the operator disabling them, so one shared topology values file can
+# serve every release role.
+identity:
+  enabled: true
+orchestration:
+  enabled: true
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: http://elasticsearch.example.com:9200
+connectors:
+  enabled: true
+camundaHub:
+  enabled: true
+
+optimize:
+  enabled: true
+  contextPath: /optimize-tenanta
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      url:
+        protocol: http
+        host: elasticsearch.example.com
+        port: 9200
+      prefix: orch-east
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: optimize-east-tenanta

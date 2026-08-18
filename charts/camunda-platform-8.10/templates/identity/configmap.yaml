@@ -53,7 +53,13 @@ data:
         {{- $orchestration := dig "components" "orchestration" dict $cluster }}
         {{- $optimize := dig "components" "optimize" dict $cluster }}
         {{- $connectors := dig "components" "connectors" dict $cluster }}
-        {{- if or $orchestration.enabled $optimize.enabled $connectors.enabled }}
+        {{- $hasTenantOptimize := false }}
+        {{- range $tenant := dig "physicalTenants" list $cluster }}
+        {{- if dig "components" "optimize" "enabled" false $tenant }}
+          {{- $hasTenantOptimize = true }}
+        {{- end }}
+        {{- end }}
+        {{- if or $orchestration.enabled $optimize.enabled $connectors.enabled $hasTenantOptimize }}
         {{ printf "topology-%s" $slug | quote }}:
           applications:
           {{- if eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK" }}
@@ -86,6 +92,19 @@ data:
                 - "/api/authentication/callback"
                 - "/"
           {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if $tenantOptimize.enabled }}
+            - name: {{ printf "Optimize %s %s" $displayName $tenant.id | quote }}
+              id: {{ $tenantOptimize.clientId | quote }}
+              type: confidential
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET:}" $token (include "camundaPlatform.topologyEnvToken" $tenant.id) }}
+              root-url: {{ tpl $tenantOptimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+                - "/"
+          {{- end }}
+          {{- end }}
           {{- if $connectors.enabled }}
             - name: {{ printf "Connectors %s" $displayName | quote }}
               id: {{ $connectors.clientId | quote }}
@@ -113,6 +132,16 @@ data:
                 - definition: write:*
                   description: "Write permission"
           {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if $tenantOptimize.enabled }}
+            - name: {{ printf "Optimize %s %s API" $displayName $tenant.id | quote }}
+              audience: {{ $tenantOptimize.audience | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          {{- end }}
+          {{- end }}
           roles:
           {{- if and $orchestration.enabled $orchestration.roleName }}
             - name: {{ $orchestration.roleName | quote }}
@@ -135,6 +164,20 @@ data:
                   definition: read:users
           {{- else if $optimize.enabled }}
             {{- $hasSharedOptimizeRole = true }}
+          {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if and $tenantOptimize.enabled $tenantOptimize.roleName }}
+            - name: {{ $tenantOptimize.roleName | quote }}
+              description: {{ printf "Grants full access to Optimize %s %s" $displayName $tenant.id | quote }}
+              permissions:
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" $ | quote }}
+                  definition: read:users
+          {{- else if $tenantOptimize.enabled }}
+            {{- $hasSharedOptimizeRole = true }}
+          {{- end }}
           {{- end }}
         {{- end }}
         {{- end }}
@@ -164,6 +207,13 @@ data:
               {{- if and $component.enabled (empty $component.roleName) }}
                 - audience: {{ $component.audience | quote }}
                   definition: write:*
+              {{- end }}
+              {{- range $tenant := dig "physicalTenants" list $cluster }}
+              {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+              {{- if and $tenantOptimize.enabled (empty $tenantOptimize.roleName) }}
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+              {{- end }}
               {{- end }}
               {{- end }}
                 - audience: {{ include "identity.authAudience" $ | quote }}
@@ -208,7 +258,7 @@ data:
               id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
               type: confidential
               secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+              root-url: {{ tpl (include "optimize.effectiveAuthRedirectUrl" $) $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
                 - "/"
@@ -411,7 +461,16 @@ data:
         {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
         {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
         {{- $components := $cluster.components | default dict }}
-        {{- if or (dig "orchestration" "enabled" false $components) (dig "optimize" "enabled" false $components) (dig "connectors" "enabled" false $components) }}
+        {{- $hasTenantOptimize := false }}
+        {{- range $tenant := dig "physicalTenants" list $cluster }}
+        {{- if dig "components" "optimize" "enabled" false $tenant }}
+          {{- $hasTenantOptimize = true }}
+        {{- end }}
+        {{- if and (dig "components" "optimize" "enabled" false $tenant) (empty (dig "components" "optimize" "roleName" "" $tenant)) }}
+          {{- $hasSharedTopologyRole = true }}
+        {{- end }}
+        {{- end }}
+        {{- if or (dig "orchestration" "enabled" false $components) (dig "optimize" "enabled" false $components) (dig "connectors" "enabled" false $components) $hasTenantOptimize }}
         {{ printf "topology-%s" $slug | quote }}: {}
         {{- end }}
         {{- if or (and (dig "components" "orchestration" "enabled" false $cluster) (empty (dig "components" "orchestration" "roleName" "" $cluster))) (and (dig "components" "optimize" "enabled" false $cluster) (empty (dig "components" "optimize" "roleName" "" $cluster))) }}
@@ -507,6 +566,16 @@ data:
               {{- else }}
                 {{- $hasSharedOptimizeRole = true }}
               {{- end }}
+            {{- end }}
+            {{- range $tenant := dig "physicalTenants" list $cluster }}
+            {{- if (dig "components" "optimize" "enabled" false $tenant) }}
+              {{- $roleName := dig "components" "optimize" "roleName" "" $tenant }}
+              {{- if $roleName }}
+            - {{ $roleName | quote }}
+              {{- else }}
+                {{- $hasSharedOptimizeRole = true }}
+              {{- end }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- if $hasSharedOrchestrationRole }}

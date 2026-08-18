@@ -199,3 +199,7 @@ integration:
       shortname: mns2
       tier: 2
       enabled: true
+    - id: multinamespace-optimize
+      shortname: mnop
+      tier: 2
+      enabled: false

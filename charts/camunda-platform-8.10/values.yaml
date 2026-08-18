@@ -44,9 +44,9 @@
 global:
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
-    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, and orchestration.
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
     mode: combined
-    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
+    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, one per Physical Tenant that runs its own Optimize release, so that Optimize gets its own client and its own resource server rather than sharing the cluster's Optimize audience.
     clusters: []
     # - id: production-a
     #   name: Production A
@@ -86,6 +86,18 @@ global:
     #         inlineSecret: ""
     #         existingSecret: connectors-production-a-oidc
     #         existingSecretKey: client-secret
+    #   physicalTenants:
+    #     - id: tenanta
+    #       components:
+    #         optimize:
+    #           enabled: true
+    #           clientId: optimize-production-a-tenanta
+    #           audience: optimize-production-a-tenanta-api
+    #           redirectUrl: https://production-a.example.com/optimize-tenanta
+    #           secret:
+    #             inlineSecret: ""
+    #             existingSecret: optimize-production-a-tenanta-oidc
+    #             existingSecretKey: client-secret
 
   ## License configuration.
   ## @extra global.license
@@ -2541,6 +2553,10 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
+      ## @extra orchestration.exporters.zeebe.index configuration of the indices the legacy Zeebe exporter writes.
+      index:
+        ## @param orchestration.exporters.zeebe.index.prefix defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, "optimize.database.elasticsearch.prefix" (or its OpenSearch equivalent, then "global.elasticsearch.prefix") is used instead.
+        prefix: ""
     appIntegrations:
       apiKey:
         secret:
@@ -2551,10 +2567,12 @@ orchestration:
           ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret.
           existingSecretKey: ""
   index:
-    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the "optimize.database.elasticsearch.prefix" or OpenSearch equivalent.
+    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by "orchestration.exporters.zeebe.index.prefix", nor to the indices Optimize reads, which are named by "optimize.database.elasticsearch.prefix" or the OpenSearch equivalent.
     prefix: ""
     ## @param orchestration.index.replicas can be used to specify the number of replicas for Orchestration Cluster indices.
     replicas: 1
+
+  ## @extra orchestration.physicalTenants Physical Tenants are declared under camunda.physical-tenants through orchestration.extraConfiguration per ADR-0091. The chart detects that key to render the issuer-uri form of the OIDC provider, which the Orchestration Cluster requires once tenants exist, and fails the render when this release is not on OIDC or has no resolvable global.identity.auth.issuer. Give every tenant its own secondary-storage index prefix; declaring any tenant also stops the "default" tenant inheriting this release's root exporters, so default needs its own exporter entry.
 
   ## @extra orchestration.retention configuration to enable ILM Policy creation and application for Zeebe record (legacy Elasticsearch/Opensearch exporter) indices; controls their retention.
   retention:
@@ -2635,6 +2653,42 @@ optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
   enabled: false
 
+  ## @extra optimize.identity configuration of the Management Identity this Optimize release calls.
+  identity:
+    ## @extra optimize.identity.service
+    service:
+      ## @param optimize.identity.service.url can be used to override `global.identity.service.url`, the Management Identity this Optimize release reaches. Useful when an Optimize-only release targets a different Identity than the rest of a topology.
+      url: ""
+
+  ## @extra optimize.security configuration of how this Optimize release authenticates.
+  security:
+    ## @extra optimize.security.authentication
+    authentication:
+      ## @param optimize.security.authentication.method can be used to override whether this Optimize release authenticates, independently of `global.identity.auth.enabled`. Supported values are oidc and none. Empty follows `global.identity.auth.enabled`.
+      method: ""
+      ## @extra optimize.security.authentication.oidc
+      oidc:
+        ## @param optimize.security.authentication.oidc.clientId can be used to override `global.identity.auth.optimize.clientId`. Set it on the release running Optimize so an Optimize-only release owns its own client without the shared global key.
+        clientId: ""
+        ## @param optimize.security.authentication.oidc.type can be used to override `global.identity.auth.type` for this Optimize release.
+        type: ""
+        ## @param optimize.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer` (or `global.identity.auth.publicIssuerUrl`) for this Optimize release. Set it to the exact "iss" claim the provider mints.
+        issuer: ""
+        ## @param optimize.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`, the cluster-internal route this Optimize uses to validate tokens.
+        issuerBackendUrl: ""
+        ## @param optimize.security.authentication.oidc.audience can be used to override `global.identity.auth.optimize.audience`.
+        audience: ""
+        ## @param optimize.security.authentication.oidc.redirectUrl can be used to override `global.identity.auth.optimize.redirectUrl`. Supports templating (e.g., {{ .Release.Name }}).
+        redirectUrl: ""
+        ## @extra optimize.security.authentication.oidc.secret configuration to provide this release's Optimize client secret, overriding `global.identity.auth.optimize.secret`.
+        secret:
+          ## @param optimize.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param optimize.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param optimize.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
+
   ## @extra optimize.image configuration to configure the Optimize image specifics
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
@@ -2687,7 +2741,7 @@ optimize:
         protocol: http
         host: "{{ .Release.Name }}-elasticsearch"
         port: 9200
-      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
+      ## @param optimize.database.elasticsearch.prefix defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
@@ -2727,7 +2781,7 @@ optimize:
         protocol: https
         host: ""
         port: 443
-      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
+      ## @param optimize.database.opensearch.prefix defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
 
 
