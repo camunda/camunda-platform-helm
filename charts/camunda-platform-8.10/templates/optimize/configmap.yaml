@@ -52,8 +52,13 @@ data:
             jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
             token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
             {{- end }}
-            {{- /* NOTE: Optimize keeps its legacy callback path so the Identity-provisioned client needs no new redirect URI. */}}
-            redirect-uri: {{ printf "%s/api/authentication/callback" (tpl .Values.global.identity.auth.optimize.redirectUrl $) | quote }}
+            {{- /* NOTE: Optimize keeps its legacy callback path so the Identity-provisioned client needs no new redirect URI.
+                   {baseUrl} rather than optimize.redirectUrl: CSL derives the callback listener path from this value and
+                   strips the servlet context-path using server.servlet.context-path, which Optimize never sets (it applies
+                   optimize.contextPath to the Tomcat factory directly), so an absolute URL would register the listener at
+                   /<contextPath>/api/authentication/callback and never match. {baseUrl} expands per request to include the
+                   context-path, keeping the IdP redirect_uri identical while the listener path stays context-relative. */}}
+            redirect-uri: "{baseUrl}/api/authentication/callback"
       {{- end }}
     {{- end }}
   {{- end }}

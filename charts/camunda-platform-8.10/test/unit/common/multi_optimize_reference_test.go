@@ -154,7 +154,7 @@ func (s *MultiOptimizeReferenceTemplateTest) TestOptimizeOnlyRelease() {
 
 				s.Require().Contains(configuration, `contextPath: "/optimize-team-b"`)
 				s.Require().Contains(configuration, `host: "elasticsearch-master"`)
-				s.Require().Contains(authConfiguration, `redirect-uri: "https://camunda.example.com/optimize-team-b/api/authentication/callback"`)
+				s.Require().Contains(authConfiguration, `redirect-uri: "{baseUrl}/api/authentication/callback"`)
 				s.Require().Contains(authConfiguration, `clientId: "optimize_team_b"`)
 			},
 		},
