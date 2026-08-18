@@ -32,7 +32,7 @@ data:
           client:
             host: {{ include "webModeler.publicWebsocketHost" . | quote }}
             port: {{ include "webModeler.publicWebsocketPort" . | quote }}
-            {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+            {{- if and .Values.global.ingress.enabled (include "camundaHub.contextPath" .) }}
             path: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
             force-tls: {{ include "webModeler.websocketTlsEnabled" . }}
@@ -124,13 +124,13 @@ data:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
 
-    {{- if (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+    {{- if (include "camundaHub.contextPath" .) }}
     server:
       servlet:
-        context-path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath)) | quote }}
+        context-path: {{ include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .)) | quote }}
     management:
       server:
-        base-path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath)) | quote }}
+        base-path: {{ include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .)) | quote }}
     {{- end }}
 
     logging:

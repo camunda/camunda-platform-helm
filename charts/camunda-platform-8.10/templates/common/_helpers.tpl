@@ -508,14 +508,14 @@ Web Modeler templates.
       {{- if eq .component "websockets" }}
         {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
-        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (or .context.Values.camundaHub.contextPath .context.Values.webModeler.contextPath) -}}
+        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (include "camundaHub.contextPath" .context) -}}
       {{- end -}}
     {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
       {{- $baseURL := include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host) -}}
       {{- if eq .component "websockets" }}
         {{- printf "%s%s" $baseURL (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
-        {{- printf "%s%s" $baseURL (or .context.Values.camundaHub.contextPath .context.Values.webModeler.contextPath) -}}
+        {{- printf "%s%s" $baseURL (include "camundaHub.contextPath" .context) -}}
       {{- end -}}
     {{- else -}}
       {{- if eq .component "websockets" -}}
@@ -820,8 +820,8 @@ Release templates.
     id: hub
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" (mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict)))) }}
     url: {{ include "camundaPlatform.webModelerExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) }}
-    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.metrics.prometheus .Values.webModeler.restapi.metrics.prometheus))) }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .) (or .Values.camundaHub.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .) (or .Values.camundaHub.restapi.metrics.prometheus .Values.webModeler.restapi.metrics.prometheus))) }}
   {{- end }}
 
   {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
@@ -913,7 +913,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" (mustMergeOverwrite (deepCopy .Values.webModeler.image) (.Values.camundaHub.image | default dict)))) | quote }}
     urls:
       webapp: {{ include "camundaPlatform.webModelerExternalURL" . | quote }}
-      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .) (or .Values.camundaHub.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) | quote }}
   {{- end }}
 {{- end }}
 {{- if or (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "camundaPlatform.connectorsEnabled" .) "true") }}

@@ -1192,6 +1192,13 @@ camundaHub:
   ## setting only camundaHub.restapi.containerSecurityContext.runAsUser preserves the remaining
   ## securityContext fields. Explicit false, 0 and "" override the legacy value; an unset (null)
   ## key falls through to it.
+  ##
+  ## Maps merge key by key, so a map here cannot remove a legacy key: camundaHub.restapi.nodeSelector
+  ## {zone: us-east} over webModeler.restapi.nodeSelector {tier: compute} yields both keys. Arrays
+  ## replace wholesale, matching Helm's own convention, so camundaHub.restapi.tolerations fully
+  ## replaces the legacy list. To replace a scheduling map outright, set it on webModeler.* instead.
+  ## Setting a key here to a scalar where webModeler.* has a map (or vice versa) is a hard error
+  ## rather than a silent subtree replacement.
   ## @skip camundaHub.image
   image: {}
   ## @skip camundaHub.security

@@ -32,7 +32,7 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: {{ (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+        value: {{ (include "camundaHub.contextPath" .) }}
     backendRefs:
     - name: {{ template "webModeler.restapi.fullname" . }}
       namespace: {{ .Release.Namespace }}

@@ -346,6 +346,91 @@ func (s *CamundaHubShimTemplateTest) TestPartialWebsocketsSecurityContextOverrid
 	s.Require().Equal(corev1.SeccompProfileTypeRuntimeDefault, securityContext.SeccompProfile.Type)
 }
 
+func (s *CamundaHubShimTemplateTest) TestPartialWebsocketsResourcesOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled":                         "true",
+		"webModeler.enabled":                         "true",
+		"camundaHub.websockets.resources.limits.cpu": "2",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/deployment-websockets.yaml"})
+	s.Require().NoError(err)
+
+	resources := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].Resources
+	s.Require().Equal("2", resources.Limits.Cpu().String())
+	s.Require().False(resources.Limits.Memory().IsZero())
+	s.Require().False(resources.Requests.Cpu().IsZero())
+	s.Require().False(resources.Requests.Memory().IsZero())
+}
+
+func (s *CamundaHubShimTemplateTest) TestPusherAppPathResolvesViaLegacyContextPath() {
+	values := map[string]string{
+		"camundaHub.enabled":     "true",
+		"webModeler.enabled":     "true",
+		"webModeler.contextPath": "/modeler",
+		"global.ingress.enabled": "true",
+		"global.host":            "example.com",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/deployment-websockets.yaml"})
+	s.Require().NoError(err)
+
+	pusherPath := envVarByName(s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].Env, "PUSHER_APP_PATH")
+	s.Require().NotNil(pusherPath)
+	s.Require().Equal("/modeler-ws", pusherPath.Value)
+}
+
+func (s *CamundaHubShimTemplateTest) TestLegacyOnlyPersistenceStillCreatesVolumeClaim() {
+	values := map[string]string{
+		"camundaHub.enabled":             "true",
+		"webModeler.enabled":             "true",
+		"webModeler.persistence.enabled": "true",
+		"webModeler.persistence.size":    "5Gi",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	volumes := s.unmarshalDeployment(output).Spec.Template.Spec.Volumes
+	var tmpVolume *corev1.Volume
+	for i := range volumes {
+		if volumes[i].Name == "tmp" {
+			tmpVolume = &volumes[i]
+		}
+	}
+	s.Require().NotNil(tmpVolume)
+	s.Require().Nil(tmpVolume.EmptyDir, "legacy webModeler.persistence must not fall through to emptyDir")
+	s.Require().NotNil(tmpVolume.Ephemeral)
+	s.Require().Equal(
+		"5Gi",
+		tmpVolume.Ephemeral.VolumeClaimTemplate.Spec.Resources.Requests.Storage().String(),
+	)
+}
+
+func (s *CamundaHubShimTemplateTest) TestContextPathResetStaysConsistentAcrossDeploymentAndConfigMap() {
+	values := map[string]string{
+		"camundaHub.enabled":     "true",
+		"webModeler.enabled":     "true",
+		"webModeler.contextPath": "/modeler",
+		"camundaHub.contextPath": "",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	probe := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].ReadinessProbe
+	s.Require().NotNil(probe)
+	s.Require().Equal("/health/readiness", probe.HTTPGet.Path)
+	s.Require().Empty(s.renderRestAPIConfigMap(values).Server.Servlet.ContextPath)
+}
+
+func (s *CamundaHubShimTemplateTest) TestScalarOverrideOfLegacyMapFailsFast() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "true",
+		"webModeler.enabled":                          "true",
+		"camundaHub.restapi.containerSecurityContext": "false",
+	}
+	_, err := s.renderWebModelerRestAPI(values)
+	s.Require().Error(err)
+	s.Require().ErrorContains(err, "camundaHub.restapi.containerSecurityContext is a bool")
+}
+
 func (s *CamundaHubShimTemplateTest) TestResourceNamesStableBetweenLegacyAndCamundaHubValues() {
 	legacyValues := map[string]string{
 		"camundaHub.enabled":                  "false",
