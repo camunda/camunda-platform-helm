@@ -41,4 +41,11 @@ security:
     cookie:
       same-site:
         enabled: false
+{{- if and .Values.global.identity.auth.enabled (ne (include "optimize.cslEnabled" .) "true") }}
+    ccsm:
+      redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+api:
+  audience: {{ include "optimize.authAudience" . | quote }}
+  jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+{{- end }}
 {{- end -}}
