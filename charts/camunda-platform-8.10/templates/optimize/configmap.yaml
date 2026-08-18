@@ -21,12 +21,35 @@ data:
         import: {{ $springImport }}
     {{- end }}
     {{- if .Values.global.identity.auth.enabled }}
+    optimize:
+      security:
+        csl:
+          enabled: true
     camunda:
       identity:
         clientId: {{ include "optimize.authClientId" . | quote }}
         audience: {{ include "optimize.authAudience" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+      security:
+        authentication:
+          method: "oidc"
+          oidc:
+            client-id: {{ include "optimize.authClientId" . | quote }}
+            client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}
+            audiences:
+              - {{ include "optimize.authClientId" . | quote }}
+              - {{ include "optimize.authAudience" . | quote }}
+              - {{ (or .Values.global.identity.auth.camundaHub.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
+            {{- if (include "camundaPlatform.authIssuerUrlWithFallback" .) }}
+            issuer-uri: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+            {{- else }}
+            authorization-uri: {{ include "camundaPlatform.authIssuerUrlEndpointAuth" . | quote }}
+            jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+            token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
+            {{- end }}
+            {{- /* NOTE: Optimize keeps its legacy callback path so the Identity-provisioned client needs no new redirect URI. */}}
+            redirect-uri: {{ printf "%s/api/authentication/callback" (tpl .Values.global.identity.auth.optimize.redirectUrl $) | quote }}
     {{- end }}
   {{- end }}
 

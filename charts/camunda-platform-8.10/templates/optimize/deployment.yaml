@@ -224,6 +224,10 @@ spec:
                 "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
                 "config" $optimizeAuthSecret
             ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPTIMIZE_CLIENT_SECRET"
+                "config" $optimizeAuthSecret
+            ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled .Values.optimize.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
