@@ -199,3 +199,7 @@ integration:
       shortname: mnop
       tier: 2
       enabled: true
+    - id: physicaltenants
+      shortname: ptnt
+      tier: 2
+      enabled: false
