@@ -1276,6 +1276,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	for _, i := range orchestrationIndices {
 		token := topologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv[token+"_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
 			crossRefEnv[token+strings.TrimPrefix(key, "ORCH")] = value
 		}
@@ -1283,6 +1284,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	if len(orchestrationIndices) == 1 {
 		i := orchestrationIndices[0]
 		crossRefEnv["ORCH_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv["ORCH_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
 			crossRefEnv[key] = value
 		}
