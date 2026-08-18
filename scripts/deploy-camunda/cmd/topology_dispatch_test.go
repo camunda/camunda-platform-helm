@@ -864,3 +864,27 @@ func TestRunTopologyEntry_RejectsCleanup(t *testing.T) {
 		t.Fatal("expected error when --cleanup is set, got nil")
 	}
 }
+
+func TestTopologyReleaseHostKeyPinsOptimizeToHub(t *testing.T) {
+	cases := []struct {
+		name               string
+		role               string
+		namespaceSuffix    string
+		orchestrationCount int
+		want               string
+	}{
+		{"optimize with one orchestration", "optimize", "opta", 1, "HUB_HOST"},
+		{"optimize with several orchestrations", "optimize", "opta", 2, "HUB_HOST"},
+		{"hub with one orchestration keeps default", "hub", "hub", 1, ""},
+		{"orchestration with one orchestration keeps default", "orchestration", "orcha", 1, ""},
+		{"orchestration with several orchestrations", "orchestration", "orcha", 2, "ORCHA_HOST"},
+		{"hub with several orchestrations", "hub", "hub", 2, "HUB_HOST"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := topologyReleaseHostKey(tc.role, tc.namespaceSuffix, tc.orchestrationCount); got != tc.want {
+				t.Fatalf("topologyReleaseHostKey(%q, %q, %d) = %q, want %q", tc.role, tc.namespaceSuffix, tc.orchestrationCount, got, tc.want)
+			}
+		})
+	}
+}

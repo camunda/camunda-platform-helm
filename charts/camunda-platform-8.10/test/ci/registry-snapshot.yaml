@@ -1836,6 +1836,7 @@ integration:
           tier: 2
           infra-type:
             gke: distroci
+          skip-e2e: true
           topology:
             name: hub-2orch-2optimize
             releases:
@@ -1883,12 +1884,16 @@ integration:
                 depends-on: hub
                 identity: keycloak-external-optimize
                 persistence: elasticsearch-external
+                serves: orcha
+                optimize-context-path: /optimize-orcha
               - role: optimize
                 namespace-suffix: optb
                 values: features/multinamespace-optimize-b.yaml
                 depends-on: hub
                 identity: keycloak-external-optimize
                 persistence: elasticsearch-external
+                serves: orchb
+                optimize-context-path: /optimize-orchb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
     nightly:
