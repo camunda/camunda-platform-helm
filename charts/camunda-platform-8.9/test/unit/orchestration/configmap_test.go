@@ -116,6 +116,7 @@ func TestGoldenConfigmapWithRDBMSEnabled(t *testing.T) {
 			"global.elasticsearch.enabled":                                       "false",
 			"elasticsearch.enabled":                                              "false",
 			"orchestration.exporters.rdbms.enabled":                              "true",
+			"orchestration.data.secondaryStorage.type":                           "rdbms",
 			"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://rdbms:5432/camunda",
 			"orchestration.data.secondaryStorage.rdbms.username":                 "camunda",
 			"orchestration.data.secondaryStorage.rdbms.aws.enabled":              "true",
