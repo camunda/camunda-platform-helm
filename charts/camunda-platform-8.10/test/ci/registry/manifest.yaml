@@ -202,4 +202,4 @@ integration:
     - id: multinamespace-optimize
       shortname: mnop
       tier: 2
-      enabled: false
+      enabled: true
