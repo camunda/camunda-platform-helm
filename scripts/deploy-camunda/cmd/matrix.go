@@ -1289,12 +1289,11 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
-		if len(orchestrationIndices) > 1 {
-			hostKey := "HUB_HOST"
-			if rel.Role == "orchestration" {
-				hostKey = topologyEnvToken(rel.NamespaceSuffix) + "_HOST"
+		hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices))
+		if hostKey != "" {
+			if host := crossRefEnv[hostKey]; host != "" {
+				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
 			}
-			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+crossRefEnv[hostKey])
 		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
@@ -1324,6 +1323,28 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	return nil
+}
+
+// topologyReleaseHostKey names the crossRefEnv key whose value must be pushed
+// into a release's global.host, or "" to leave global.host to BuildEntryFlags'
+// namespace-derived default.
+//
+// An "optimize" release is always pinned to the Hub host: its values layer
+// registers an OIDC redirect URL under HUB_HOST, so a namespace-derived host
+// would break the callback. Other roles keep the pre-existing behavior of
+// overriding only when several orchestration releases must be split across
+// distinct hosts.
+func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int) string {
+	if role == "optimize" {
+		return "HUB_HOST"
+	}
+	if orchestrationCount <= 1 {
+		return ""
+	}
+	if role == "orchestration" {
+		return topologyEnvToken(namespaceSuffix) + "_HOST"
+	}
+	return "HUB_HOST"
 }
 
 func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
