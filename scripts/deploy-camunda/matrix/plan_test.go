@@ -151,12 +151,12 @@ func TestPlanTopologySmokeMatrixMapsOptimizeReleases(t *testing.T) {
 	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb","opta","optb"]` {
 		t.Errorf("topologyNamespaceSuffixes = %q", entry.TopologyNamespaceSuffixes)
 	}
-	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","optimize":[{"suffix":"opta","context_path":"/optimize-orcha"}]},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","optimize":[{"suffix":"optb","context_path":"/optimize-orchb"}]}]`
+	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-orcha"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","optimize_suffix":"optb","optimize_context_path":"/optimize-orchb"}]`
 	if entry.TopologySmokeMatrix != wantSmoke {
 		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
 	}
-	if entry.SkipE2E != "true" {
-		t.Errorf("skipE2E = %q, want true until the e2e runner consumes optimize_suffix", entry.SkipE2E)
+	if entry.SkipE2E != "false" {
+		t.Errorf("skipE2E = %q, want false now that the e2e runner consumes optimize_suffix", entry.SkipE2E)
 	}
 }
 

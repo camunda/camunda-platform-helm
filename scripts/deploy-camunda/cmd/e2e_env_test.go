@@ -221,3 +221,32 @@ func TestMergeEnvOverridesIgnoresLinesWithoutEquals(t *testing.T) {
 		t.Fatalf("mergeEnvOverrides() = %q, want %q", got, want)
 	}
 }
+
+func TestAssertOptimizeEnabledRejectsDisabledOptimize(t *testing.T) {
+	merged := "CAMUNDA_OPTIMIZE_BASE_URL=https://hub.example.com/optimize-orcha\nIS_OPTIMIZE=false\n"
+
+	err := assertOptimizeEnabled(merged, "ns-opta")
+	if err == nil || !strings.Contains(err.Error(), "IS_OPTIMIZE=false") {
+		t.Fatalf("expected a hard failure when Optimize specs would be skipped, got %v", err)
+	}
+}
+
+func TestAssertOptimizeEnabledAcceptsOverriddenOptimize(t *testing.T) {
+	merged := mergeEnvOverrides(
+		"CAMUNDA_OPTIMIZE_BASE_URL=https://orcha.example.com/optimize\nIS_OPTIMIZE=false\n",
+		map[string]string{
+			"CAMUNDA_OPTIMIZE_BASE_URL": "https://hub.example.com/optimize-orcha",
+			"IS_OPTIMIZE":               "true",
+		},
+	)
+
+	if !strings.Contains(merged, "IS_OPTIMIZE=true") {
+		t.Fatalf("merge did not enable Optimize: %q", merged)
+	}
+	if !strings.Contains(merged, "CAMUNDA_OPTIMIZE_BASE_URL=https://hub.example.com/optimize-orcha") {
+		t.Fatalf("merge did not repoint Optimize at the Hub host: %q", merged)
+	}
+	if err := assertOptimizeEnabled(merged, "ns-opta"); err != nil {
+		t.Fatalf("expected the overridden env to pass, got %v", err)
+	}
+}

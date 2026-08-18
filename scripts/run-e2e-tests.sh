@@ -87,6 +87,10 @@ Options:
   --hub-namespace NAMESPACE                   For a multi-namespace topology: the namespace running the central
                                                Identity/Keycloak. --namespace is then the orchestration namespace.
                                                Requires deploy-camunda on PATH (used to merge the .env).
+  --optimize-namespace NAMESPACE              For a topology whose Optimize runs as its own release: the namespace
+                                               running it. Without this, Optimize is derived from --namespace and
+                                               every Optimize spec is skipped. Requires --hub-namespace.
+  --optimize-context-path PATH                 Ingress path that Optimize release is served on, e.g. /optimize-orcha.
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -117,6 +121,8 @@ TRACE_MODE=""
 RETRIES=""
 LOCAL_TEST_SUITE=""
 HUB_NAMESPACE=""
+OPTIMIZE_NAMESPACE=""
+OPTIMIZE_CONTEXT_PATH=""
 
 check_required_cmds
 
@@ -199,6 +205,14 @@ while [[ $# -gt 0 ]]; do
       HUB_NAMESPACE="$2"
       shift 2
       ;;
+    --optimize-namespace)
+      OPTIMIZE_NAMESPACE="$2"
+      shift 2
+      ;;
+    --optimize-context-path)
+      OPTIMIZE_CONTEXT_PATH="$2"
+      shift 2
+      ;;
     -v | --verbose)
       VERBOSE=true
       shift
@@ -259,6 +273,8 @@ if [[ -n "$HUB_NAMESPACE" ]]; then
     --ci="$IS_CI" \
     --run-smoke-tests="$RUN_SMOKE_TESTS" \
     --render-script "$SCRIPT_DIR/render-e2e-env.sh" \
+    ${OPTIMIZE_NAMESPACE:+--optimize-namespace "$OPTIMIZE_NAMESPACE"} \
+    ${OPTIMIZE_CONTEXT_PATH:+--optimize-context-path "$OPTIMIZE_CONTEXT_PATH"} \
     ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"}
 else
   render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"

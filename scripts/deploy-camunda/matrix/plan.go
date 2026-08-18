@@ -79,18 +79,16 @@ type topologySmokeEntry struct {
 	ModelerClusterID    string `json:"modeler_cluster_id"`
 	ModelerClusterName  string `json:"modeler_cluster_name"`
 	ShardIndex          string `json:"shard_index"`
-	// Optimize is empty unless role "optimize" releases declare
-	// `serves: <orchestration_suffix>`. When populated, this leg's Optimize
-	// instances run in their own namespaces on the Hub host rather than in the
-	// orchestration namespace, so an e2e run must not derive an Optimize
-	// endpoint from OrchestrationSuffix. One entry per Physical Tenant served by
-	// this orchestration release, in declaration order.
-	Optimize []topologySmokeOptimize `json:"optimize,omitempty"`
-}
-
-type topologySmokeOptimize struct {
-	Suffix      string `json:"suffix"`
-	ContextPath string `json:"context_path"`
+	// OptimizeSuffix and OptimizeContextPath are empty unless a role "optimize"
+	// release declares `serves: <orchestration_suffix>`. When set, this leg's
+	// Optimize runs in its own namespace on the Hub host rather than in the
+	// orchestration namespace, so the e2e env must not derive its Optimize
+	// endpoint from OrchestrationSuffix. The e2e suite reads a single
+	// CAMUNDA_OPTIMIZE_BASE_URL, so an orchestration release serving several
+	// Physical Tenants produces one leg per tenant rather than one leg carrying
+	// a list.
+	OptimizeSuffix      string `json:"optimize_suffix,omitempty"`
+	OptimizeContextPath string `json:"optimize_context_path,omitempty"`
 }
 
 // PlanResult is the computed build matrix.
@@ -394,13 +392,10 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 	smoke := []topologySmokeEntry{}
 	hubSuffix := ""
 	if topology != nil {
-		optimizeByServed := map[string][]topologySmokeOptimize{}
+		optimizeByServed := map[string][]TopologyRelease{}
 		for _, release := range topology.Releases {
 			if release.Role == "optimize" && release.Serves != "" {
-				optimizeByServed[release.Serves] = append(optimizeByServed[release.Serves], topologySmokeOptimize{
-					Suffix:      release.NamespaceSuffix,
-					ContextPath: release.OptimizeContextPath,
-				})
+				optimizeByServed[release.Serves] = append(optimizeByServed[release.Serves], release)
 			}
 		}
 		for _, release := range topology.Releases {
@@ -408,14 +403,26 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 			if release.Role == "hub" {
 				hubSuffix = release.NamespaceSuffix
 			}
-			if release.Role == "orchestration" {
-				entry := topologySmokeEntry{
+			if release.Role != "orchestration" {
+				continue
+			}
+			newEntry := func() topologySmokeEntry {
+				return topologySmokeEntry{
 					OrchestrationSuffix: release.NamespaceSuffix,
 					ModelerClusterID:    release.ModelerClusterID,
 					ModelerClusterName:  release.ModelerClusterName,
 					ShardIndex:          strconv.Itoa(len(smoke) + 1),
 				}
-				entry.Optimize = optimizeByServed[release.NamespaceSuffix]
+			}
+			served := optimizeByServed[release.NamespaceSuffix]
+			if len(served) == 0 {
+				smoke = append(smoke, newEntry())
+				continue
+			}
+			for _, optimize := range served {
+				entry := newEntry()
+				entry.OptimizeSuffix = optimize.NamespaceSuffix
+				entry.OptimizeContextPath = optimize.OptimizeContextPath
 				smoke = append(smoke, entry)
 			}
 		}

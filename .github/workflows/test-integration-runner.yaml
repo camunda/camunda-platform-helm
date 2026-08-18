@@ -1542,6 +1542,8 @@ jobs:
           namespace-prefix: ${{ inputs.namespace-prefix }}
           namespace-override: "${{ steps.base-vars.outputs.namespace }}-${{ matrix.orchestration_suffix }}"
           hub-namespace: "${{ steps.base-vars.outputs.namespace }}-${{ inputs.topology-hub-suffix }}"
+          optimize-namespace: "${{ matrix.optimize_suffix && format('{0}-{1}', steps.base-vars.outputs.namespace, matrix.optimize_suffix) || '' }}"
+          optimize-context-path: "${{ matrix.optimize_context_path || '' }}"
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
