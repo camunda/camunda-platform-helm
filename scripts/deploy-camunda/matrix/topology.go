@@ -103,6 +103,18 @@ type TopologyRelease struct {
 	ModelerClusterID   string `yaml:"modeler-cluster-id,omitempty" json:"modelerClusterId,omitempty"`
 	ModelerClusterName string `yaml:"modeler-cluster-name,omitempty" json:"modelerClusterName,omitempty"`
 
+	// Serves names the NamespaceSuffix of the orchestration release whose
+	// exported records this release reads. Required for Role == "optimize",
+	// rejected for any other role. It is what lets the topology smoke matrix
+	// map an orchestration leg to the Optimize instance that serves it, since
+	// an optimize release runs in its own namespace on the Hub host.
+	Serves string `yaml:"serves,omitempty" json:"serves,omitempty"`
+
+	// OptimizeContextPath is the ingress path this release's Optimize is served
+	// on, matching optimize.contextPath in its values layer. Required for
+	// Role == "optimize", rejected for any other role.
+	OptimizeContextPath string `yaml:"optimize-context-path,omitempty" json:"optimizeContextPath,omitempty"`
+
 	// ResolvedDependencies holds the fully-resolved companion chart specs
 	// for Dependencies, populated by LoadRegistry (mirroring how
 	// registryScenario.DependencyIDs resolves into CIScenario.Dependencies).
@@ -120,7 +132,7 @@ type TopologyRelease struct {
 //   - every release's Dependencies IDs (when set) resolve to a file under
 //     <depsDir>/<id>.yaml;
 //   - every release's DependsOn (when set) references a declared Role, and is
-//     set for every Role == "optimize" release;
+//     exactly "hub" for every Role == "optimize" release;
 //   - exactly one release has Role == "hub";
 //   - NamespaceSuffix values are unique and non-empty.
 //
@@ -165,8 +177,16 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 				modelerClusterNames[r.ModelerClusterName] = true
 			}
 		case "optimize":
-			if strings.TrimSpace(r.DependsOn) == "" {
-				problems = append(problems, fmt.Sprintf("%s: depends-on is required so the release deploys after the Management Identity that provisions its client", label))
+			if strings.TrimSpace(r.DependsOn) != "hub" {
+				problems = append(problems, fmt.Sprintf("%s: depends-on must be \"hub\" so the release deploys after the Management Identity that provisions its client, got %q", label, r.DependsOn))
+			}
+			if strings.TrimSpace(r.Serves) == "" {
+				problems = append(problems, fmt.Sprintf("%s: serves is required and must name the namespace-suffix of the orchestration release this Optimize reads", label))
+			}
+			if strings.TrimSpace(r.OptimizeContextPath) == "" {
+				problems = append(problems, fmt.Sprintf("%s: optimize-context-path is required and must match optimize.contextPath in the release's values layer", label))
+			} else if !strings.HasPrefix(r.OptimizeContextPath, "/") {
+				problems = append(problems, fmt.Sprintf("%s: optimize-context-path %q must start with \"/\"", label, r.OptimizeContextPath))
 			}
 		default:
 			problems = append(problems, fmt.Sprintf("%s: role must be \"hub\", \"orchestration\", or \"optimize\", got %q", label, r.Role))
@@ -228,7 +248,37 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release with role \"orchestration\" is required", ctx, t.Name))
 	}
 
+	orchestrationSuffixes := map[string]bool{}
+	for _, r := range t.Releases {
+		if r.Role == "orchestration" {
+			orchestrationSuffixes[r.NamespaceSuffix] = true
+		}
+	}
+
+	optimizeContextPaths := map[string]string{}
+	for _, r := range t.Releases {
+		if r.Role != "optimize" || r.OptimizeContextPath == "" {
+			continue
+		}
+		if owner, seen := optimizeContextPaths[r.OptimizeContextPath]; seen {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: optimize releases %q and %q share optimize-context-path %q; they are served on one host so their ingress paths would collide", ctx, t.Name, owner, r.NamespaceSuffix, r.OptimizeContextPath))
+			continue
+		}
+		optimizeContextPaths[r.OptimizeContextPath] = r.NamespaceSuffix
+	}
+
 	for i, r := range t.Releases {
+		if r.Role != "optimize" {
+			if r.Serves != "" {
+				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] (role %q) must not set serves; it applies only to role \"optimize\"", ctx, t.Name, i, r.Role))
+			}
+			if r.OptimizeContextPath != "" {
+				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] (role %q) must not set optimize-context-path; it applies only to role \"optimize\"", ctx, t.Name, i, r.Role))
+			}
+		} else if r.Serves != "" && !orchestrationSuffixes[r.Serves] {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] serves %q does not reference a declared orchestration release's namespace-suffix", ctx, t.Name, i, r.Serves))
+		}
+
 		if r.DependsOn == "" {
 			continue
 		}
