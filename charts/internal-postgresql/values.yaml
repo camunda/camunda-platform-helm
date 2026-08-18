@@ -48,6 +48,17 @@ databases:
   - identity
   - webmodeler
 
+persistence:
+  ## @param persistence.enabled Back the data directory with a PersistentVolumeClaim.
+  enabled: true
+  ## @param persistence.size Size of the requested volume.
+  size: 1Gi
+  ## @param persistence.storageClass StorageClass for the volume ("" uses the cluster default).
+  storageClass: ""
+  ## @param persistence.accessModes Access modes for the requested volume.
+  accessModes:
+    - ReadWriteOnce
+
 service:
   type: ClusterIP
   port: 5432

@@ -1,13 +1,13 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "postgresql.fullname" . }}
   labels:
     {{- include "postgresql.labels" . | nindent 4 }}
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
+  serviceName: {{ include "postgresql.fullname" . }}
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       {{- include "postgresql.selectorLabels" . | nindent 6 }}
@@ -131,8 +131,10 @@ spec:
               readOnly: true
             {{- end }}
       volumes:
+        {{- if not .Values.persistence.enabled }}
         - name: data
           emptyDir: {}
+        {{- end }}
         - name: initdb
           configMap:
             name: {{ include "postgresql.fullname" . }}-initdb
@@ -144,3 +146,19 @@ spec:
         - name: tls
           emptyDir: {}
         {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "postgresql.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+  {{- end }}
