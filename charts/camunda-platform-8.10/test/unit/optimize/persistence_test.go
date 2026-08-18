@@ -220,6 +220,10 @@ func TestPVCManifestCreated(t *testing.T) {
 			require.Equal(t, "camunda-platform-test-optimize-data", pvc.Name)
 			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
 			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
+			require.Equal(t, "optimize", pvc.Labels["app.kubernetes.io/component"])
+			require.NotEmpty(t, pvc.Labels["app.kubernetes.io/version"])
+			require.Equal(t, "camunda-platform", pvc.Labels["app.kubernetes.io/part-of"])
+			require.Equal(t, "camunda-platform-test", pvc.Labels["app.kubernetes.io/instance"])
 		},
 	}
 
