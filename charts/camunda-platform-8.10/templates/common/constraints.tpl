@@ -34,8 +34,8 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
-{{- if not (has $topologyMode (list "combined" "hub" "orchestration")) }}
-  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, or orchestration; got %q." $topologyMode) }}
+{{- if not (has $topologyMode (list "combined" "hub" "orchestration" "optimize")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, orchestration, or optimize; got %q." $topologyMode) }}
 {{- end }}
 {{- if and (eq $topologyMode "hub") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=hub requires identity.enabled=true." }}
@@ -51,6 +51,33 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
+{{- end }}
+{{- if eq $topologyMode "optimize" }}
+  {{- if not .Values.optimize.enabled }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.enabled=true." }}
+  {{- end }}
+  {{- if .Values.global.noSecondaryStorage }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires global.noSecondaryStorage=false; Optimize reads exported records from secondary storage." }}
+  {{- end }}
+  {{- $esEnabled := or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled }}
+  {{- $osEnabled := or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled }}
+  {{- if not (or $esEnabled $osEnabled) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled, with url.host addressing the secondary storage the Orchestration Cluster exports to. This chart bundles no Elasticsearch, and with neither backend enabled Optimize renders an empty connection node list and reaches no storage at all." }}
+  {{- end }}
+  {{- if ne (include "optimize.authEnabled" .) "true" }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true." }}
+  {{- end }}
+  {{- if and (empty (dig "identity" "service" "url" "" .Values.optimize)) (empty .Values.global.identity.service.url) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.identity.service.url or global.identity.service.url to reach Management Identity; this release runs no Identity of its own, so the in-release default cannot apply." }}
+  {{- end }}
+  {{- $rendersIngress := and .Values.global.ingress.enabled (not .Values.global.ingress.external) }}
+  {{- $rendersGateway := and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+  {{- if and (empty .Values.optimize.contextPath) (or $rendersIngress $rendersGateway) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.contextPath when this chart renders the release's own routing: the shared Ingress emits an Optimize rule only when the context path is set, so an empty one leaves Optimize unreachable, and the HTTPRoute would match an empty path prefix. Set it to the sub-path this release is served on, or route to the Optimize Service yourself with global.ingress.enabled=false." }}
+  {{- end }}
+  {{- if empty (include "optimize.effectiveAuthIssuer" .) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise." }}
+  {{- end }}
 {{- end }}
 {{- if eq $topologyMode "hub" }}
   {{- if ne (include "webModeler.authMethod" .) "oidc" }}

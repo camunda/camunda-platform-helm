@@ -120,7 +120,7 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "enum": ["combined", "hub", "orchestration"],
+                            "enum": ["combined", "hub", "orchestration", "optimize"],
                             "default": "combined"
                         },
                         "clusters": {

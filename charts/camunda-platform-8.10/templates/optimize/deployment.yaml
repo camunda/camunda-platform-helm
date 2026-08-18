@@ -126,7 +126,7 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
-            {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
+            {{- if or (eq (include "optimize.authEnabled" .) "true") .Values.optimize.extraConfiguration }}
             - mountPath: /optimize/config/application-ccsm.yaml
               subPath: application-ccsm.yaml
               name: environment-config
@@ -218,7 +218,7 @@ spec:
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
               value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.profiles | default "ccsm") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "spring" "profiles" "active")) | quote }}
-            {{- if .Values.global.identity.auth.enabled }}
+            {{- if (eq (include "optimize.authEnabled" .) "true") }}
             {{- $optimizeAuthSecret := include "optimize.authSecretConfig" . | fromYaml }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
@@ -266,11 +266,16 @@ spec:
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           {{- $documentStoreEnvFrom := ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "camunda" "document"))) "true" }}
-          {{- if or .Values.global.identity.auth.enabled $documentStoreEnvFrom .Values.optimize.envFrom }}
+          {{- if or (eq (include "optimize.authEnabled" .) "true") $documentStoreEnvFrom .Values.optimize.envFrom }}
           envFrom:
-          {{- if .Values.global.identity.auth.enabled }}
+          {{- if and (eq (include "optimize.authEnabled" .) "true") .Values.global.identity.auth.enabled }}
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
+          {{- /* Listed after the release-shared ConfigMap: on duplicate keys the kubelet takes the last envFrom source. */}}
+          {{- if eq (include "optimize.needsIdentityConfigMap" .) "true" }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-optimize-identity-env-vars
           {{- end }}
           {{- if $documentStoreEnvFrom }}
             - configMapRef:
@@ -336,7 +341,7 @@ spec:
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
-            {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
+            {{- if or (eq (include "optimize.authEnabled" .) "true") .Values.optimize.extraConfiguration }}
             - mountPath: /optimize/config/application-ccsm.yaml
               subPath: application-ccsm.yaml
               name: environment-config

@@ -10,17 +10,18 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, and orchestration.",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.",
                             "default": "combined",
                             "enum": [
                                 "combined",
                                 "hub",
-                                "orchestration"
+                                "orchestration",
+                                "optimize"
                             ]
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.",
+                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, one per Physical Tenant that runs its own Optimize release, so that Optimize gets its own client and its own resource server rather than sharing the cluster's Optimize audience.",
                             "default": [],
                             "items": {
                                 "$ref": "#/$defs/topologyCluster"
@@ -432,7 +433,7 @@
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.prefix or orchestration.data.secondaryStorage.elasticsearch) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                            "description": "(DEPRECATED - use orchestration.exporters.zeebe.index.prefix to configure the exporter that writes these indexes, and optimize.database.elasticsearch.prefix to tell Optimize which indexes to read) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -562,7 +563,7 @@
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.prefix or orchestration.data.secondaryStorage.opensearch) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                            "description": "(DEPRECATED - use orchestration.exporters.zeebe.index.prefix to configure the exporter that writes these indexes, and optimize.database.opensearch.prefix to tell Optimize which indexes to read) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -5546,6 +5547,16 @@
                                     "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
                                     "default": false
                                 },
+                                "index": {
+                                    "type": "object",
+                                    "properties": {
+                                        "prefix": {
+                                            "type": "string",
+                                            "description": "defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, \"optimize.database.elasticsearch.prefix\" (or its OpenSearch equivalent, then \"global.elasticsearch.prefix\") is used instead.",
+                                            "default": ""
+                                        }
+                                    }
+                                },
                                 "replicas": {
                                     "type": [
                                         "number",
@@ -5593,7 +5604,7 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
+                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by \"orchestration.exporters.zeebe.index.prefix\", nor to the indices Optimize reads, which are named by \"optimize.database.elasticsearch.prefix\" or the OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {
@@ -5752,6 +5763,91 @@
                     "description": "if true, the Optimize deployment and its related resources are deployed via a helm release",
                     "default": false
                 },
+                "identity": {
+                    "type": "object",
+                    "properties": {
+                        "service": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "can be used to override `global.identity.service.url`, the Management Identity this Optimize release reaches. Useful when an Optimize-only release targets a different Identity than the rest of a topology.",
+                                    "default": ""
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "can be used to override whether this Optimize release authenticates, independently of `global.identity.auth.enabled`. Supported values are oidc and none. Empty follows `global.identity.auth.enabled`.",
+                                    "default": ""
+                                },
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.optimize.clientId`. Set it on the release running Optimize so an Optimize-only release owns its own client without the shared global key.",
+                                            "default": ""
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.type` for this Optimize release.",
+                                            "default": ""
+                                        },
+                                        "issuer": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuer` (or `global.identity.auth.publicIssuerUrl`) for this Optimize release. Set it to the exact \"iss\" claim the provider mints.",
+                                            "default": ""
+                                        },
+                                        "issuerBackendUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuerBackendUrl`, the cluster-internal route this Optimize uses to validate tokens.",
+                                            "default": ""
+                                        },
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.optimize.audience`.",
+                                            "default": ""
+                                        },
+                                        "redirectUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.optimize.redirectUrl`. Supports templating (e.g., {{ .Release.Name }}).",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "image": {
                     "type": "object",
                     "properties": {
@@ -5876,7 +5972,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                                    "description": "defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -5976,7 +6072,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                                    "description": "defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }

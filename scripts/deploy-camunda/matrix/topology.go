@@ -11,7 +11,9 @@ import (
 // "hub" release (Identity, Console, Web Modeler, bundled Keycloak)
 // plus one or more "orchestration" releases (Zeebe/Operate/Tasklist,
 // Connectors, Optimize) that share a single logical cluster via a central
-// Identity and a shared secondary storage backend.
+// Identity and a shared secondary storage backend, and optionally one or more
+// "optimize" releases that each run only Optimize against an orchestration
+// release's exported records.
 //
 // Scenarios without a Topology behave byte-for-byte as today — this field is
 // additive and opt-in (see registryScenario.Topology / CIScenario.Topology).
@@ -39,7 +41,7 @@ type Topology struct {
 // companions of their own (they consume the Hub release's shared
 // Elasticsearch and Identity/Keycloak cross-namespace by FQDN).
 type TopologyRelease struct {
-	// Role is either "hub" or "orchestration". Exactly one
+	// Role is "hub", "orchestration", or "optimize". Exactly one
 	// "hub" role must be declared per Topology.
 	Role string `yaml:"role" json:"role"`
 
@@ -103,7 +105,8 @@ type TopologyRelease struct {
 //     under <chartFullSetupDir>/values/identity/ or .../persistence/;
 //   - every release's Dependencies IDs (when set) resolve to a file under
 //     <depsDir>/<id>.yaml;
-//   - every release's DependsOn (when set) references a declared Role;
+//   - every release's DependsOn (when set) references a declared Role, and is
+//     set for every Role == "optimize" release;
 //   - exactly one release has Role == "hub";
 //   - NamespaceSuffix values are unique and non-empty.
 //
@@ -147,8 +150,12 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			} else {
 				modelerClusterNames[r.ModelerClusterName] = true
 			}
+		case "optimize":
+			if strings.TrimSpace(r.DependsOn) == "" {
+				problems = append(problems, fmt.Sprintf("%s: depends-on is required so the release deploys after the Management Identity that provisions its client", label))
+			}
 		default:
-			problems = append(problems, fmt.Sprintf("%s: role must be \"hub\" or \"orchestration\", got %q", label, r.Role))
+			problems = append(problems, fmt.Sprintf("%s: role must be \"hub\", \"orchestration\", or \"optimize\", got %q", label, r.Role))
 		}
 		roles[r.Role] = true
 

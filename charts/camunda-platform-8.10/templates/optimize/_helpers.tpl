@@ -44,8 +44,89 @@ Create a default fully qualified app name.
     ) -}}
 {{- end }}
 
+{{- define "optimize.effectiveAuthClientId" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- $oidc.clientId | default .Values.global.identity.auth.optimize.clientId -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthRedirectUrl" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- $oidc.redirectUrl | default .Values.global.identity.auth.optimize.redirectUrl -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthSecret" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- $secret := $oidc.secret | default dict -}}
+  {{- if or $secret.inlineSecret $secret.existingSecret $secret.existingSecretKey -}}
+    {{- toYaml $secret -}}
+  {{- else -}}
+    {{- toYaml (.Values.global.identity.auth.optimize.secret | default dict) -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve whether this Optimize release authenticates. A release-scoped method wins so an
+Optimize-only release can decide for itself; empty follows global.identity.auth.enabled, which keeps
+every existing values file rendering unchanged.
+*/}}
+{{- define "optimize.authMethod" -}}
+  {{- $method := dig "security" "authentication" "method" "" .Values.optimize -}}
+  {{- $method | default (ternary "oidc" "none" .Values.global.identity.auth.enabled) -}}
+{{- end -}}
+
+{{- define "optimize.authEnabled" -}}
+  {{- if eq (include "optimize.authMethod" .) "oidc" -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthType" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- $oidc.type | default (include "camundaPlatform.authIssuerType" .) -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthIssuer" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- $oidc.issuer | default (include "camundaPlatform.authIssuerUrlWithFallback" .) -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthIssuerBackendUrl" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- $oidc.issuerBackendUrl | default (include "camundaPlatform.authIssuerBackendUrl" .) -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthJwksUrl" -}}
+  {{- if .Values.global.identity.auth.jwksUrl -}}
+    {{- tpl .Values.global.identity.auth.jwksUrl . -}}
+  {{- else if eq (include "optimize.effectiveAuthType" .) "KEYCLOAK" -}}
+    {{- include "optimize.effectiveAuthIssuerBackendUrl" . -}}/protocol/openid-connect/certs
+  {{- end -}}
+{{- end -}}
+
+{{- define "optimize.effectiveIdentityUrl" -}}
+  {{- $url := dig "identity" "service" "url" "" .Values.optimize -}}
+  {{- $url | default (include "camundaPlatform.identityURL" .) -}}
+{{- end -}}
+
+{{/*
+[optimize] True when this release overrides a release-shared identity value, which is what makes the
+component-scoped identity env ConfigMap render.
+*/}}
+{{- define "optimize.hasIdentityOverrides" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- if or $oidc.type $oidc.issuer $oidc.issuerBackendUrl (dig "identity" "service" "url" "" .Values.optimize) -}}
+true
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether the component-scoped identity env ConfigMap must render: either it carries
+overrides, or it is the only source because the release-shared ConfigMap is gated off.
+*/}}
+{{- define "optimize.needsIdentityConfigMap" -}}
+  {{- if and (eq (include "optimize.authEnabled" .) "true") (or (eq (include "optimize.hasIdentityOverrides" .) "true") (not .Values.global.identity.auth.enabled)) -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
 {{- define "optimize.authClientId" -}}
-  {{- .Values.global.identity.auth.optimize.clientId -}}
+  {{- include "optimize.effectiveAuthClientId" . -}}
 {{- end -}}
 
 {{- define "optimize.authAudience" -}}
@@ -53,7 +134,11 @@ Create a default fully qualified app name.
 {{- end -}}
 
 {{- define "optimize.authSecretConfig" -}}
-  {{- toYaml .Values.global.identity.auth.optimize -}}
+  {{- $global := deepCopy .Values.global.identity.auth.optimize -}}
+  {{- $_ := set $global "secret" (include "optimize.effectiveAuthSecret" . | fromYaml) -}}
+  {{- $_ := set $global "clientId" (include "optimize.effectiveAuthClientId" .) -}}
+  {{- $_ := set $global "redirectUrl" (include "optimize.effectiveAuthRedirectUrl" .) -}}
+  {{- toYaml $global -}}
 {{- end -}}
 
 {{/*

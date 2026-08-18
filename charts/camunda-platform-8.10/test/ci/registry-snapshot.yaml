@@ -1779,6 +1779,72 @@ integration:
                 modeler-cluster-name: Orchestration B
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
+        - name: multinamespace-optimize
+          enabled: false
+          shortname: mnop
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          topology:
+            name: hub-2orch-2optimize
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                values: features/multinamespace-optimize-hub.yaml
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                dependencies:
+                  - keycloak
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                values: features/multinamespace-optimize-orchestration.yaml
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+              - role: orchestration
+                namespace-suffix: orchb
+                values: features/multinamespace-optimize-orchestration.yaml
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
+                modeler-cluster-id: orchb
+                modeler-cluster-name: Orchestration B
+              - role: optimize
+                namespace-suffix: opta
+                values: features/multinamespace-optimize-a.yaml
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+              - role: optimize
+                namespace-suffix: optb
+                values: features/multinamespace-optimize-b.yaml
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
     nightly:
       scenario: []
   flows:
