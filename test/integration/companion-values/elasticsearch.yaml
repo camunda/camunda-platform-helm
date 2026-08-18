@@ -11,6 +11,14 @@ minimumMasterNodes: 1
 
 protocol: http
 
+# The chart's readiness probe stores its "already started" marker at
+# /tmp/.es_start_file, which is lost whenever the pod is rescheduled onto
+# another node. A rescheduled pod therefore re-runs the startup branch and
+# blocks on _cluster/health?wait_for_status=<status>. Gate on yellow: all
+# primaries assigned, which is the strongest status a single-node cluster
+# reaches while any recovered index still carries a replica.
+clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
+
 # Use ES 8.18.0 — the elastic/elasticsearch Helm chart 8.5.1 defaults to its
 # own app version (8.5.1) but Camunda 8.10 requires ES 8.6+ (specifically for
 # the unassignedPrimaryShards field in HealthResponse). The Bitnami subchart
@@ -99,6 +107,14 @@ lifecycle:
           curl -fsS --connect-timeout 5 -X PUT "http://localhost:9200/_index_template/camunda-ci-auto-expand-replicas" \
             -H 'Content-Type: application/json' \
             -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*","op-*","opt-*","orch-*"],"priority":1,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
+          # The index template above only applies at index-creation time, so it
+          # cannot fix indices recovered from the PV after a reschedule. Patch
+          # the recovered indices in place; non-fatal because a fresh volume has
+          # nothing to patch and system indices may reject the write.
+          curl -fsS --connect-timeout 5 -X PUT \
+            "http://localhost:9200/_all/_settings?expand_wildcards=open&ignore_unavailable=true" \
+            -H 'Content-Type: application/json' \
+            -d '{"index.auto_expand_replicas":"0-1"}' || true
 
 resources:
   requests:
