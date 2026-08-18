@@ -394,7 +394,8 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				s.Require().Contains(authConfig, `client-id: "optimize"`)
 				s.Require().Contains(authConfig, "client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}")
 				s.Require().Contains(authConfig, `issuer-uri: "https://camunda.example.com/auth/realms/camunda-platform"`)
-				s.Require().Contains(authConfig, `redirect-uri: "https://camunda.example.com/optimize/api/authentication/callback"`)
+				s.Require().Contains(authConfig, `redirect-uri: "{baseUrl}/api/authentication/callback"`,
+					"the listener path CSL derives from this must stay context-relative")
 			},
 		},
 		{
