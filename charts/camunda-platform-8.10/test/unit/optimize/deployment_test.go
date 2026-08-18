@@ -1393,6 +1393,45 @@ func (s *DeploymentTemplateTest) TestOptimizeEnvGuardsNonScalarExtraConfiguratio
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *DeploymentTemplateTest) TestContextPathIsAlsoExposedAsSpringProperty() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestServerServletContextPathRendersAlongsideOptimizeContextPath",
+			Values: map[string]string{
+				"optimize.enabled":     "true",
+				"optimize.contextPath": "/optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CONTEXT_PATH", Value: "/optimize"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SERVLET_CONTEXT_PATH", Value: "/optimize"},
+					"CSL reads server.servlet.context-path to keep the OIDC callback listener path context-relative")
+			},
+		},
+		{
+			Name: "TestNeitherIsRenderedWithoutAContextPath",
+			Values: map[string]string{
+				"optimize.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+					s.Require().NotEqual("SERVER_SERVLET_CONTEXT_PATH", e.Name)
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *DeploymentTemplateTest) TestOptimizeMountsSpringImportWithoutAuth() {
 	testCases := []testhelpers.TestCase{
 		{

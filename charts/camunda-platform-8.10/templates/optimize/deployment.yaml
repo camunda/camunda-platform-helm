@@ -201,6 +201,11 @@ spec:
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
               value: {{ .Values.optimize.contextPath | quote }}
+            {{- /* NOTE: Optimize applies its own contextPath key to the Tomcat factory, so Spring never
+                   learns the context-path. CSL reads server.servlet.context-path to keep the OIDC callback
+                   listener path context-relative, as the orchestration chart already renders it. */}}
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.optimize.contextPath | quote }}
             {{- end }}
             {{- if (include "camundaPlatform.elasticsearchHost" . ) }}
               {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
