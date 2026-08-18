@@ -15,6 +15,7 @@
 package companion
 
 import (
+	"flag"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -27,6 +28,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
+
+var _ = flag.Bool("update-golden", false, "accepted for chart-wide golden updates")
 
 type PostgresqlStatefulSetTest struct {
 	suite.Suite
