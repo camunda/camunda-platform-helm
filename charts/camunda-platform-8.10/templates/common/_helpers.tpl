@@ -608,7 +608,8 @@ Identity Auth.
 */}}
 
 {{- define "camundaPlatform.authAudienceOptimize" -}}
-  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict (.Values.optimize | default dict) -}}
+  {{- $oidc.audience | default .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
 {{- define "camundaPlatform.topologySlug" -}}
@@ -638,11 +639,11 @@ Identity Auth.
 {{- end -}}
 
 {{- define "camundaPlatform.orchestrationEnabled" -}}
-  {{- if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.orchestration.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "hub" "optimize"))) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.connectorsEnabled" -}}
-  {{- if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.connectors.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "hub" "optimize"))) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.optimizeEnabled" -}}
@@ -650,7 +651,7 @@ Identity Auth.
 {{- end -}}
 
 {{- define "camundaPlatform.identityEnabled" -}}
-  {{- if and .Values.identity.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.identity.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 
@@ -673,7 +674,7 @@ Returns "true" if camundaHub.enabled OR webModeler.enabled.
 Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.webModelerEnabled" -}}
-  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
+  {{- if and (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
     true
   {{- else -}}
     false
@@ -687,7 +688,7 @@ Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.consoleEnabled" -}}
   {{- $console := default (dict) .Values.console -}}
-  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled $console.enabled) -}}
+  {{- if and (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) (or .Values.camundaHub.enabled $console.enabled) -}}
     true
   {{- else -}}
     false

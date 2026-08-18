@@ -359,8 +359,10 @@ spring-imported orchestration.extraConfiguration file, override it.
 
 {{- define "orchestration.hasElasticsearchExporter" -}}
 {{- and
-      .Values.optimize.database.elasticsearch.enabled
-      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (or
+        (and (eq .Values.orchestration.data.secondaryStorage.type "elasticsearch") .Values.orchestration.exporters.zeebe.enabled)
+        (and .Values.optimize.database.elasticsearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
+      )
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
@@ -370,8 +372,10 @@ spring-imported orchestration.extraConfiguration file, override it.
 
 {{- define "orchestration.hasOpenSearchExporter" -}}
 {{- and
-      .Values.optimize.database.opensearch.enabled
-      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (or
+        (and (eq .Values.orchestration.data.secondaryStorage.type "opensearch") .Values.orchestration.exporters.zeebe.enabled)
+        (and .Values.optimize.database.opensearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
+      )
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
