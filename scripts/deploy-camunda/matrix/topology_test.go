@@ -136,20 +136,14 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 				DependsOn:          "hub",
 			},
 			{
-				Role:            "optimize",
-				NamespaceSuffix: "opta",
-				Values:          "optimize.yaml",
-				Identity:        "keycloak-external",
-				Persistence:     "elasticsearch-external",
-				DependsOn:       "hub",
-			},
-			{
-				Role:            "optimize",
-				NamespaceSuffix: "optb",
-				Values:          "optimize.yaml",
-				Identity:        "keycloak-external",
-				Persistence:     "elasticsearch-external",
-				DependsOn:       "hub",
+				Role:                "optimize",
+				NamespaceSuffix:     "opta",
+				Serves:              "orcha",
+				OptimizeContextPath: "/optimize-orcha",
+				Values:              "optimize.yaml",
+				Identity:            "keycloak-external",
+				Persistence:         "elasticsearch-external",
+				DependsOn:           "hub",
 			},
 		},
 	}
@@ -168,7 +162,7 @@ func TestTopologyValidate_OptimizeRoleNeedsNoModelerCluster(t *testing.T) {
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml", DependsOn: "hub"},
 		},
 	}
 
@@ -187,13 +181,91 @@ func TestTopologyValidate_OptimizeRoleRequiresDependsOn(t *testing.T) {
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Values: "optimize.yaml"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml"},
 		},
 	}
 
 	err := top.Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "depends-on is required") {
-		t.Fatalf("expected depends-on requirement for optimize role, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), `depends-on must be "hub"`) {
+		t.Fatalf("expected depends-on=hub requirement for optimize role, got %v", err)
+	}
+}
+
+func TestTopologyValidate_OptimizeRoleRejectsNonHubDependsOn(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "optimize.yaml")
+	top := &Topology{
+		Name: "optimize-depends-on-orchestration",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml", DependsOn: "orchestration"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), `depends-on must be "hub"`) {
+		t.Fatalf("expected optimize role to reject depends-on=orchestration, got %v", err)
+	}
+}
+
+func TestTopologyValidate_OptimizeRoleRequiresServesAndContextPath(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "optimize.yaml")
+	top := &Topology{
+		Name: "optimize-missing-mapping",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Values: "optimize.yaml", DependsOn: "hub"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "serves is required") || !strings.Contains(err.Error(), "optimize-context-path is required") {
+		t.Fatalf("expected serves and optimize-context-path requirements, got %v", err)
+	}
+}
+
+func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "optimize.yaml")
+	top := &Topology{
+		Name: "optimize-unknown-serves",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "nope", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml", DependsOn: "hub"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "does not reference a declared orchestration release") {
+		t.Fatalf("expected serves cross-check, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsOptimizeOnlyFieldsOnOtherRoles(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	top := &Topology{
+		Name: "serves-on-orchestration",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub", Serves: "orcha", OptimizeContextPath: "/optimize"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "must not set serves") || !strings.Contains(err.Error(), "must not set optimize-context-path") {
+		t.Fatalf("expected serves/optimize-context-path to be rejected on non-optimize roles, got %v", err)
 	}
 }
 
@@ -386,5 +458,46 @@ func TestTopologyValidate_EmptyReleases(t *testing.T) {
 	top := &Topology{Name: "empty"}
 	if err := top.Validate("ctx", t.TempDir(), t.TempDir()); err == nil {
 		t.Fatal("expected error for empty releases")
+	}
+}
+
+func TestTopologyValidate_AllowsSeveralOptimizeReleasesPerOrchestration(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "optimize.yaml")
+	top := &Topology{
+		Name: "two-tenants-one-cluster",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize-tenanta", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize-tenantb", Values: "optimize.yaml", DependsOn: "hub"},
+		},
+	}
+
+	if err := top.Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("several optimize releases may serve one orchestration release, got: %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsDuplicateOptimizeContextPath(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "optimize.yaml")
+	top := &Topology{
+		Name: "colliding-optimize-paths",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize", Values: "optimize.yaml", DependsOn: "hub"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "share optimize-context-path") {
+		t.Fatalf("expected colliding optimize-context-path to be rejected, got %v", err)
 	}
 }
