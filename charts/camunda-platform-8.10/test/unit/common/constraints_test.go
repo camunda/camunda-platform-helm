@@ -384,6 +384,40 @@ func (s *ConstraintTemplateTest) TestGatewayConstraints() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+// TestOptimizeCslEscapeHatchWarningRendersOk exercises the branch that warns
+// when an optimize.extraConfiguration file mentions optimize.security.csl.enabled
+// in a form effectiveExtraConfigValue cannot resolve. Like the other warnings, the
+// text is emitted via NOTES.txt and is not surfaced by helm template, so this only
+// asserts both branches render.
+func (s *ConstraintTemplateTest) TestOptimizeCslEscapeHatchWarningRendersOk() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDottedKeyFormRendersOk",
+			Values: map[string]string{
+				"optimize.enabled":                       "true",
+				"optimize.extraConfiguration[0].file":    "optimize-legacy-security.yaml",
+				"optimize.extraConfiguration[0].content": "optimize.security.csl.enabled: false\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestNestedKeyFormRendersOk",
+			Values: map[string]string{
+				"optimize.enabled":                       "true",
+				"optimize.extraConfiguration[0].file":    "optimize-legacy-security.yaml",
+				"optimize.extraConfiguration[0].content": "optimize:\n  security:\n    csl:\n      enabled: false\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
 		{
