@@ -23,6 +23,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type KeycloakPostgresqlStatefulSetTest struct {
@@ -63,6 +64,7 @@ func (s *KeycloakPostgresqlStatefulSetTest) TestStorageDifferentValuesInputs() {
 				require.Equal(t, "data", claim.Name)
 				require.Equal(t, "2Gi", claim.Spec.Resources.Requests.Storage().String())
 				require.Nil(t, claim.Spec.StorageClassName)
+				require.Equal(t, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, claim.Spec.AccessModes)
 
 				require.Nil(t, podVolume(statefulSet, "data"),
 					"data must come from the claim template, not a pod volume")

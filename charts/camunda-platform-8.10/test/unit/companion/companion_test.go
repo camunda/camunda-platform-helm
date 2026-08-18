@@ -15,7 +15,6 @@
 package companion
 
 import (
-	"flag"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
@@ -23,8 +22,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
-
-var _ = flag.Bool("update-golden", false, "accepted for chart-wide golden updates")
 
 // unmarshalStatefulSet fails the test case when rendering errored, then decodes
 // the rendered manifest.
