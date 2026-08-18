@@ -27,9 +27,10 @@ runs:
         apply_external_secret_with_retry() {
           local file="$1"
           local namespace="$2"
-          local max_retries=20
+          local max_retries=8
           local retry_delay=10
-          
+          local max_retry_delay=30
+
           for ((i=1; i<=max_retries; i++)); do
             echo "🔄 Attempt $i/$max_retries: Applying $file"
             if kubectl apply -n "$namespace" -f "$file" 2>&1; then
@@ -39,7 +40,7 @@ runs:
               if [[ $i -lt $max_retries ]]; then
                 echo "⚠️ Failed to apply $file, retrying in ${retry_delay}s... (webhook may not be ready)"
                 sleep $retry_delay
-                retry_delay=$((retry_delay * 2))
+                retry_delay=$(( retry_delay * 2 > max_retry_delay ? max_retry_delay : retry_delay * 2 ))
               else
                 echo "❌ Failed to apply $file after $max_retries attempts"
                 return 1
@@ -54,7 +55,7 @@ runs:
           local expected_keys missing_keys
           expected_keys="$(kubectl get externalsecret -n "$namespace" -o json | jq -r --arg secret "$secret_name" '.items[] | select(.spec.target.name == $secret) | .spec.data[]?.secretKey')"
           test -n "$expected_keys" || { echo "❌ No ExternalSecret found for target Secret $secret_name"; return 1; }
-          for _ in {1..60}; do
+          for _ in {1..30}; do
             missing_keys="$(while IFS= read -r key; do kubectl get secret "$secret_name" -n "$namespace" -o json 2>/dev/null | jq -e --arg key "$key" '.data[$key] // empty' >/dev/null || printf '%s\n' "$key"; done <<< "$expected_keys")"
             test -n "$missing_keys" || { echo "✅ Secret $secret_name contains all expected ExternalSecret keys"; return 0; }
             echo "⏳ Waiting for Secret $secret_name keys: $(tr '\n' ' ' <<< "$missing_keys")"
@@ -93,7 +94,7 @@ runs:
           for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
           done
           wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
 
@@ -135,7 +136,7 @@ runs:
           for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
           done
           wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
         fi
