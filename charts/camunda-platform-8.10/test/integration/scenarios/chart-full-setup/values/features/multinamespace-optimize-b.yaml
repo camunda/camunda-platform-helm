@@ -1,0 +1,49 @@
+# Optimize-only release layer for Orchestration B (multinamespace-optimize, 8.10)
+#
+# This release runs global.topology.mode=optimize, so no `enabled: false` block
+# is needed to switch off the other components — compare
+# features/multi-optimize/values-optimize-only.yaml, which disables six
+# components by hand.
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
+# in this file — the env var scanner (os.Expand-based) matches it anywhere in
+# the raw file content, including comments. Reference placeholder names in plain
+# text instead; the real placeholder syntax appears only in actual values below.
+#
+# Two distinct index prefixes are required, and conflating them would make this
+# Optimize read Orchestration A's records:
+#   ORCHB_ORCHESTRATION_INDEX_PREFIX - Orchestration B's prefix, whose
+#     zeebe-record indices this Optimize reads. Injected per release by the
+#     topology driver from that release's own ScenarioContext.
+#   OPTIMIZE_INDEX_PREFIX - this release's own Optimize indices, derived from
+#     this release's namespace so the two Optimizes never share index space.
+
+global:
+  topology:
+    mode: optimize
+
+optimize:
+  enabled: true
+  livenessProbe:
+    enabled: true
+  security:
+    authentication:
+      oidc:
+        clientId: "optimize-orchb"
+        audience: "optimize-orchb-api"
+        redirectUrl: "https://${HUB_HOST}/optimize-orchb"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
+  contextPath: "/optimize-orchb"
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      url:
+        protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
+        host: "${EXTERNAL_ELASTICSEARCH_HOST}"
+      prefix: "${ORCHB_ORCHESTRATION_INDEX_PREFIX}"
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX
