@@ -22,12 +22,6 @@ data:
     {{- end }}
     {{- if .Values.global.identity.auth.enabled }}
     {{- $cslEnabled := eq (include "optimize.cslEnabled" .) "true" }}
-    {{- if $cslEnabled }}
-    optimize:
-      security:
-        csl:
-          enabled: true
-    {{- end }}
     camunda:
       identity:
         clientId: {{ include "optimize.authClientId" . | quote }}
