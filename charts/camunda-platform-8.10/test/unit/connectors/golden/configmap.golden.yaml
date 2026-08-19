@@ -59,4 +59,3 @@ data:
     logging:
       level:
         io.camunda.connector: INFO
-    
