@@ -431,6 +431,69 @@ func (s *CamundaHubShimTemplateTest) TestScalarOverrideOfLegacyMapFailsFast() {
 	s.Require().ErrorContains(err, "camundaHub.restapi.containerSecurityContext is a bool")
 }
 
+func (s *CamundaHubShimTemplateTest) TestScalarOverrideOfLegacyMapIsIgnoredWhenHubDisabled() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "false",
+		"webModeler.enabled":                          "false",
+		"console.enabled":                             "false",
+		"camundaHub.restapi.containerSecurityContext": "false",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/orchestration/statefulset.yaml"})
+	s.Require().NoError(err, "a stray camundaHub override must not fail rendering while Hub is disabled")
+	s.Require().Contains(output, "kind: StatefulSet")
+}
+
+func (s *CamundaHubShimTemplateTest) TestMailResetAppliesToTheConfigMap() {
+	legacyOnly := map[string]string{
+		"camundaHub.enabled":               "true",
+		"webModeler.enabled":               "true",
+		"webModeler.restapi.mail.smtpUser": "legacyuser",
+	}
+	s.Require().Equal("legacyuser", s.renderRestAPIConfigMap(legacyOnly).Spring.Mail.Username)
+
+	reset := map[string]string{
+		"camundaHub.enabled":               "true",
+		"webModeler.enabled":               "true",
+		"webModeler.restapi.mail.smtpUser": "legacyuser",
+		"camundaHub.restapi.mail.smtpUser": "",
+	}
+	s.Require().Empty(s.renderRestAPIConfigMap(reset).Spring.Mail.Username)
+}
+
+func (s *CamundaHubShimTemplateTest) TestContextPathResetRemovesIngressPaths() {
+	values := map[string]string{
+		"camundaHub.enabled":     "true",
+		"webModeler.enabled":     "true",
+		"global.ingress.enabled": "true",
+		"global.host":            "example.com",
+		"webModeler.contextPath": "/modeler",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/common/ingress-http.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(output, "path: /modeler")
+	s.Require().Contains(output, "path: /modeler-ws")
+
+	values["camundaHub.contextPath"] = ""
+	output, err = s.renderWebModeler(values, []string{"templates/common/ingress-http.yaml"})
+	s.Require().NoError(err)
+	s.Require().NotContains(output, "path: /modeler")
+}
+
+func (s *CamundaHubShimTemplateTest) TestListValuedOverrideReplacesLegacyList() {
+	values := map[string]string{
+		"camundaHub.enabled":                    "true",
+		"webModeler.enabled":                    "true",
+		"webModeler.restapi.tolerations[0].key": "legacy",
+		"camundaHub.restapi.tolerations[0].key": "hub",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	tolerations := s.unmarshalDeployment(output).Spec.Template.Spec.Tolerations
+	s.Require().Len(tolerations, 1, "arrays replace wholesale rather than appending")
+	s.Require().Equal("hub", tolerations[0].Key)
+}
+
 func (s *CamundaHubShimTemplateTest) TestResourceNamesStableBetweenLegacyAndCamundaHubValues() {
 	legacyValues := map[string]string{
 		"camundaHub.enabled":                  "false",

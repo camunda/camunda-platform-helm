@@ -161,9 +161,10 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Check if username and password is provided for the SMTP server
 */}}
 {{- define "webModeler.restapi.mail.authEnabled" -}}
+  {{- $hub := include "camundaHub.values" . | fromYaml -}}
   {{- $authEnabled := false -}}
-  {{- if and (typeIs "string" (or .Values.camundaHub.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser)) (ne (or .Values.camundaHub.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser) "") }}
-    {{- if or (and (typeIs "string" (or .Values.camundaHub.restapi.mail.smtpPassword .Values.webModeler.restapi.mail.smtpPassword)) (ne (or .Values.camundaHub.restapi.mail.smtpPassword .Values.webModeler.restapi.mail.smtpPassword) "")) (or .Values.camundaHub.restapi.mail.existingSecret .Values.webModeler.restapi.mail.existingSecret) }}
+  {{- if and (typeIs "string" $hub.restapi.mail.smtpUser) (ne $hub.restapi.mail.smtpUser "") }}
+    {{- if or (and (typeIs "string" $hub.restapi.mail.smtpPassword) (ne $hub.restapi.mail.smtpPassword "")) $hub.restapi.mail.existingSecret }}
       {{- $authEnabled = true }}
     {{- end }}
   {{- end }}

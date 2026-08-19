@@ -1,5 +1,5 @@
-{{- $hub := include "camundaHub.values" . | fromYaml }}
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
 {{- $deploymentStrategy := $hub.persistence.deploymentStrategy | default "RollingUpdate" -}}
 {{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
 {{- fail "webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy) value must be one of 'RollingUpdate', 'Recreate'" -}}

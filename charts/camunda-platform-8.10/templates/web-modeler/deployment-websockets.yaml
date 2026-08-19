@@ -1,5 +1,5 @@
-{{- $hub := include "camundaHub.values" . | fromYaml }}
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
