@@ -109,8 +109,9 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("optimize namespace %q: %w", optimizeNamespace, err)
 				}
-				overrides["CAMUNDA_OPTIMIZE_BASE_URL"] = "https://" + optimizeHost + optimizeContextPath
-				overrides["IS_OPTIMIZE"] = "true"
+				for k, v := range optimizeEnvOverrides(optimizeHost, optimizeContextPath) {
+					overrides[k] = v
+				}
 			}
 
 			content, err := os.ReadFile(output)
@@ -150,6 +151,24 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	_ = cmd.MarkFlagRequired("absolute-chart-path")
 
 	return cmd
+}
+
+// optimizeEnvOverrides points the e2e env at an Optimize running as its own release, in its own
+// namespace on the Hub host.
+//
+// Both URL keys are required and must agree. 32 call sites read CAMUNDA_OPTIMIZE_BASE_URL, but
+// NavigationPage.goToOptimize and goToOptimizeWithoutAccess navigate with OPTIMIZE_CONTEXT_PATH, whose
+// default "/optimize" resolves against Playwright's baseURL — the orchestration host — and lands on an
+// nginx 404. Setting only the first made the Optimize specs pass while Basic Navigation and the
+// all-apps smoke flow failed on a 404 page. Absolute URLs, like MODELER_CONTEXT_PATH, because
+// page.goto honours an absolute URL over baseURL.
+func optimizeEnvOverrides(optimizeHost, optimizeContextPath string) map[string]string {
+	url := "https://" + optimizeHost + optimizeContextPath
+	return map[string]string{
+		"CAMUNDA_OPTIMIZE_BASE_URL": url,
+		"OPTIMIZE_CONTEXT_PATH":     url,
+		"IS_OPTIMIZE":               "true",
+	}
 }
 
 // assertOptimizeDeployed fails when a leg declares an Optimize namespace that
