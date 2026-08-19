@@ -1,0 +1,26 @@
+# Elasticsearch backend configuration for 8.9 — companion chart
+# Layer 3: Backend - Elasticsearch (companion chart)
+#
+# Selected by 8.10 upgrade-minor scenarios so that the install step (which runs
+# the previous chart from this directory) and the upgrade step share one
+# Elasticsearch. 8.10 has no Bitnami Elasticsearch subchart, so pointing both
+# steps at the companion `elastic/elasticsearch` release keeps secondary storage
+# readable across the upgrade.
+#
+# Scenarios selecting this layer must declare the `elasticsearch` dependency.
+
+elasticsearch:
+  enabled: false
+
+global:
+  elasticsearch:
+    enabled: true
+    url:
+      host: "elasticsearch-master"
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://elasticsearch-master:9200"

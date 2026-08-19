@@ -315,7 +315,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-rba
-          enabled: false
+          enabled: true
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
@@ -326,7 +326,7 @@ integration:
             eks: preemptible
             gke: distroci
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-companion
           features:
             - rba
           dependencies:
