@@ -14,7 +14,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "postgresql.selectorLabels" . | nindent 8 }}
+        {{- include "postgresql.podSelectorLabels" . | nindent 8 }}
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

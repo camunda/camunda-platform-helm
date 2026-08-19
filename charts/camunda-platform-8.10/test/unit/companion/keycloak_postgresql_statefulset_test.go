@@ -68,6 +68,10 @@ func (s *KeycloakPostgresqlStatefulSetTest) TestStorageDifferentValuesInputs() {
 
 				require.Nil(t, podVolume(statefulSet, "data"),
 					"data must come from the claim template, not a pod volume")
+
+				require.Equal(t, "statefulset", statefulSet.Spec.Template.Labels["camunda.io/controller"])
+				require.NotContains(t, statefulSet.Spec.Selector.MatchLabels, "camunda.io/controller",
+					"spec.selector must stay free of the discriminator; it is immutable after creation")
 			},
 		}, {
 			Name: "TestStorageDisabledFallsBackToEmptyDir",

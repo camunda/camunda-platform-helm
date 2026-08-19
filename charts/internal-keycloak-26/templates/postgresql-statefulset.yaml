@@ -15,7 +15,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "keycloak.postgresql.selectorLabels" . | nindent 8 }}
+        {{- include "keycloak.postgresql.podSelectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
