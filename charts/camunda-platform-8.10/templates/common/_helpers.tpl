@@ -398,6 +398,32 @@ Elasticsearch and Opensearch templates.
 {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Elasticsearch URL for the legacy Zeebe exporter that feeds Optimize.
+Resolves the Optimize component chain when the exporter is Optimize-owned, and the
+secondary-storage/compatibility URL otherwise.
+*/}}
+{{- define "camundaPlatform.legacyExporterElasticsearchURL" -}}
+{{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
+  {{ include "optimize.effectiveEsURL" . }}
+{{- else -}}
+  {{ include "camundaPlatform.elasticsearchURL" . }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] OpenSearch URL for the legacy Zeebe exporter that feeds Optimize.
+Resolves the Optimize component chain when the exporter is Optimize-owned, and the
+secondary-storage/compatibility URL otherwise.
+*/}}
+{{- define "camundaPlatform.legacyExporterOpensearchURL" -}}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
+  {{ include "optimize.effectiveOsURL" . }}
+{{- else -}}
+  {{ include "camundaPlatform.opensearchURL" . }}
+{{- end -}}
+{{- end -}}
+
 
 
 

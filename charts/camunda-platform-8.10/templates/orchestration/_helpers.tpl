@@ -298,7 +298,7 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
-{{- define "orchestration.effectiveTlsConfig" -}}
+{{- define "orchestration.sharedTlsConfig" -}}
 {{- $config := dict -}}
 {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true" -}}
     {{- $config = .Values.global.elasticsearch.tls -}}
@@ -310,6 +310,36 @@ Authentication.
     {{- $config = .Values.orchestration.data.secondaryStorage.opensearch.tls -}}
 {{- end -}}
 {{- toYaml $config -}}
+{{- end -}}
+
+{{- define "orchestration.legacyExporterTlsConfig" -}}
+{{- $config := dict -}}
+{{- if and
+      (eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true")
+      (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.elasticsearch.tls)) "true")
+-}}
+    {{- $config = .Values.optimize.database.elasticsearch.tls -}}
+{{- else if and
+      (eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true")
+      (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.tls)) "true")
+-}}
+    {{- $config = .Values.optimize.database.opensearch.tls -}}
+{{- end -}}
+{{- toYaml $config -}}
+{{- end -}}
+
+{{- /*
+NOTE: the Orchestration JVM mounts a single truststore, so the first matching source wins for the
+whole pod. An Optimize-owned legacy exporter contributes its component TLS secret first; the chain
+falls through to the shared global/secondary-storage sources otherwise.
+*/ -}}
+{{- define "orchestration.effectiveTlsConfig" -}}
+{{- $exporterTls := include "orchestration.legacyExporterTlsConfig" . | fromYaml -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $exporterTls)) "true" -}}
+{{- toYaml $exporterTls -}}
+{{- else -}}
+{{- include "orchestration.sharedTlsConfig" . -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "orchestration.persistentSessionsEnabled" -}}
@@ -371,6 +401,87 @@ and
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
       )
 -}}
+{{- end -}}
+
+{{/*
+NOTE: the legacy exporters connect to the datastore Optimize reads, so their endpoint, credentials,
+AWS mode, and TLS all resolve from the Optimize component chain whenever these predicates hold.
+The host term mirrors the gate the Optimize deployment uses to render its own connection env vars;
+when no host resolves, the exporter keeps the secondary-storage/global compatibility source.
+*/}}
+{{- define "orchestration.legacyElasticsearchExporterUsesOptimizeSource" -}}
+{{- and
+      (eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (ne (include "camundaPlatform.elasticsearchHost" .) "")
+-}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterUsesOptimizeSource" -}}
+{{- and
+      (ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (ne (include "camundaPlatform.opensearchHost" .) "")
+-}}
+{{- end -}}
+
+{{/*
+NOTE: Optimize-owned exporters substitute the Optimize-scoped password variable and resolve their
+username from the Optimize component chain; otherwise both keep the generic engine-wide sources.
+The emission in statefulset.yaml keys off the same predicates as the substitution here.
+*/}}
+{{- define "orchestration.legacyElasticsearchExporterPasswordRef" -}}
+{{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
+${VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD:}
+{{- else -}}
+${VALUES_ELASTICSEARCH_PASSWORD:}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterPasswordRef" -}}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
+${VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD:}
+{{- else -}}
+${VALUES_OPENSEARCH_PASSWORD:}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyElasticsearchExporterUsername" -}}
+{{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
+{{- include "optimize.effectiveEsUsername" . -}}
+{{- else -}}
+{{- .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterUsername" -}}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
+{{- include "optimize.effectiveOsUsername" . -}}
+{{- else -}}
+{{- .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyElasticsearchExporterAuthenticationEnabled" -}}
+{{- or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external -}}
+{{- end -}}
+
+{{- define "orchestration.legacyOpenSearchExporterAuthenticationEnabled" -}}
+{{- ne (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true" -}}
+{{- end -}}
+
+{{/*
+NOTE: the legacy OpenSearch exporter resolves AWS mode from the same source as its endpoint and
+credentials: the Optimize component chain when Optimize-owned, the secondary-storage/global pair
+otherwise.
+*/}}
+{{- define "orchestration.legacyOpenSearchExporterAwsEnabled" -}}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
+{{- include "optimize.effectiveOsAwsEnabled" . -}}
+{{- else -}}
+{{- or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "orchestration.hasAppIntegrations" -}}

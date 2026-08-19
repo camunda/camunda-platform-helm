@@ -145,6 +145,41 @@ When neither backend is explicitly enabled, falls back to "zeebe-record".
 {{- end -}}
 
 {{/*
+[optimize] Resolve the effective OpenSearch AWS mode from the component-first chain.
+*/}}
+{{- define "optimize.effectiveOsAwsEnabled" -}}
+{{- or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve the effective Elasticsearch username from the component-first chain.
+*/}}
+{{- define "optimize.effectiveEsUsername" -}}
+{{- .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve the effective OpenSearch username from the component-first chain.
+*/}}
+{{- define "optimize.effectiveOsUsername" -}}
+{{- .Values.optimize.database.opensearch.auth.username | default .Values.global.opensearch.auth.username -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve the effective Elasticsearch URL from the component-first host/port/protocol chain.
+*/}}
+{{- define "optimize.effectiveEsURL" -}}
+{{- .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve the effective OpenSearch URL from the component-first host/port/protocol chain.
+*/}}
+{{- define "optimize.effectiveOsURL" -}}
+{{- .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . -}}
+{{- end -}}
+
+{{/*
 [optimize] Build a comma-separated spring.config.import line from extraConfiguration files.
 Entries with springImport: false are excluded.
 */}}

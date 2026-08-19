@@ -23,7 +23,7 @@ es:
     {{- end }}
   {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
   security:
-    username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
+    username: {{ include "optimize.effectiveEsUsername" . | quote }}
     {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
     ssl:
       enabled: "true"

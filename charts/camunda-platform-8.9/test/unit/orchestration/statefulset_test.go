@@ -913,6 +913,238 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *StatefulSetTest) TestLegacyExporterComponentPasswordEnv() {
+	collectDatastorePasswordEnv := func(expected map[string]string) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+
+			var statefulSet appsv1.StatefulSet
+			helm.UnmarshalK8SYaml(t, output, &statefulSet)
+			require.NotEmpty(t, statefulSet.Spec.Template.Spec.Containers)
+
+			actual := map[string]string{}
+			for _, envVar := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+				switch envVar.Name {
+				case "VALUES_OPENSEARCH_PASSWORD",
+					"VALUES_ELASTICSEARCH_PASSWORD",
+					"VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD",
+					"VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD":
+					actual[envVar.Name] = envVar.Value
+				}
+			}
+			require.Equal(t, expected, actual)
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Distinct OpenSearch sources emit both passwords",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "true",
+				"optimize.database.elasticsearch.enabled":                                 "false",
+				"optimize.database.opensearch.enabled":                                    "true",
+				"optimize.database.opensearch.url.host":                                   "optimize-host",
+				"optimize.database.opensearch.auth.secret.inlineSecret":                   "optimize-password",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{
+				"VALUES_OPENSEARCH_PASSWORD":                   "secondary-password",
+				"VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD": "optimize-password",
+			}),
+		},
+		{
+			Name: "Optimize OpenSearch credentials alone emit the component password",
+			Values: map[string]string{
+				"optimize.enabled":                                      "true",
+				"optimize.database.elasticsearch.enabled":               "false",
+				"optimize.database.opensearch.enabled":                  "true",
+				"optimize.database.opensearch.url.host":                 "opensearch.example.com",
+				"optimize.database.opensearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":              "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":    "https://opensearch.example.com:443",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{
+				"VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD": "optimize-password",
+			}),
+		},
+		{
+			Name: "Elasticsearch exporter precedence omits the Optimize OpenSearch password",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                          "true",
+				"optimize.enabled":                                      "true",
+				"optimize.database.elasticsearch.enabled":               "false",
+				"optimize.database.opensearch.enabled":                  "true",
+				"optimize.database.opensearch.url.host":                 "optimize-host",
+				"optimize.database.opensearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":              "elasticsearch",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
+			Name: "AWS mode omits the Optimize OpenSearch password",
+			Values: map[string]string{
+				"optimize.enabled":                                      "true",
+				"optimize.database.elasticsearch.enabled":               "false",
+				"optimize.database.opensearch.enabled":                  "true",
+				"optimize.database.opensearch.url.host":                 "optimize-host",
+				"optimize.database.opensearch.aws.enabled":              "true",
+				"optimize.database.opensearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":              "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":    "https://secondary-host:9443",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
+			Name: "Optimize OpenSearch global fallback resolves the global secret not the secondary one",
+			Values: map[string]string{
+				"optimize.enabled":                                                        "true",
+				"global.opensearch.enabled":                                               "true",
+				"global.opensearch.url.host":                                              "global-opensearch-host",
+				"global.opensearch.auth.secret.inlineSecret":                              "global-password",
+				"orchestration.data.secondaryStorage.type":                                "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{
+				"VALUES_OPENSEARCH_PASSWORD":                   "secondary-password",
+				"VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD": "global-password",
+			}),
+		},
+		{
+			Name: "Optimize source without any secret emits no password env",
+			Values: map[string]string{
+				"optimize.enabled":                                   "true",
+				"optimize.database.elasticsearch.enabled":            "false",
+				"optimize.database.opensearch.enabled":               "true",
+				"optimize.database.opensearch.url.host":              "optimize-host",
+				"optimize.database.opensearch.auth.username":         "optimize-user",
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://secondary-host:9443",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
+			Name: "Elasticsearch authentication disabled omits the Optimize password",
+			Values: map[string]string{
+				"optimize.enabled":                                         "true",
+				"optimize.database.opensearch.enabled":                     "false",
+				"optimize.database.elasticsearch.enabled":                  "true",
+				"optimize.database.elasticsearch.url.host":                 "optimize-host",
+				"optimize.database.elasticsearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
+			Name: "Disabled Optimize omits the component OpenSearch password",
+			Values: map[string]string{
+				"optimize.enabled":                                      "false",
+				"optimize.database.elasticsearch.enabled":               "false",
+				"optimize.database.opensearch.enabled":                  "true",
+				"optimize.database.opensearch.url.host":                 "optimize-host",
+				"optimize.database.opensearch.auth.secret.inlineSecret": "optimize-password",
+				"orchestration.data.secondaryStorage.type":              "elasticsearch",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{}),
+		},
+		{
+			Name: "Distinct Elasticsearch sources emit both passwords",
+			Values: map[string]string{
+				"optimize.enabled":                                                           "true",
+				"optimize.database.opensearch.enabled":                                       "false",
+				"optimize.database.elasticsearch.enabled":                                    "true",
+				"optimize.database.elasticsearch.external":                                   "true",
+				"optimize.database.elasticsearch.url.host":                                   "optimize-host",
+				"optimize.database.elasticsearch.auth.secret.inlineSecret":                   "optimize-password",
+				"orchestration.data.secondaryStorage.type":                                   "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.url":                      "https://secondary-host:9443",
+				"orchestration.data.secondaryStorage.elasticsearch.auth.secret.inlineSecret": "secondary-password",
+			},
+			Verifier: collectDatastorePasswordEnv(map[string]string{
+				"VALUES_ELASTICSEARCH_PASSWORD":                   "secondary-password",
+				"VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD": "optimize-password",
+			}),
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestLegacyExporterComponentTls() {
+	optimizeOpenSearchSource := map[string]string{
+		"optimize.enabled":                                   "true",
+		"optimize.database.elasticsearch.enabled":            "false",
+		"optimize.database.opensearch.enabled":               "true",
+		"optimize.database.opensearch.url.host":              "optimize-host",
+		"orchestration.data.secondaryStorage.type":           "opensearch",
+		"orchestration.data.secondaryStorage.opensearch.url": "https://secondary-host:9443",
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Optimize OpenSearch TLS reaches the Orchestration truststore",
+			Values: mergeValues(optimizeOpenSearchSource, map[string]string{
+				"optimize.database.opensearch.tls.secret.existingSecret":    "optimize-tls-secret",
+				"optimize.database.opensearch.tls.secret.existingSecretKey": "optimize-ca.jks",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/optimize-ca.jks")
+				require.Contains(t, output, "secretName: \"optimize-tls-secret\"")
+			},
+		},
+		{
+			Name: "Optimize OpenSearch source ignores secondary storage TLS config",
+			Values: mergeValues(optimizeOpenSearchSource, map[string]string{
+				"optimize.database.opensearch.tls.secret.existingSecret":                      "optimize-tls-secret",
+				"optimize.database.opensearch.tls.secret.existingSecretKey":                   "optimize-ca.jks",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret":    "secondary-tls-secret",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey": "secondary-ca.jks",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/optimize-ca.jks")
+				require.NotContains(t, output, "secondary-ca.jks")
+				require.NotContains(t, output, "secretName: \"secondary-tls-secret\"")
+			},
+		},
+		{
+			Name: "Optimize source without TLS keeps the secondary storage truststore",
+			Values: mergeValues(optimizeOpenSearchSource, map[string]string{
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret":    "secondary-tls-secret",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey": "secondary-ca.jks",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/secondary-ca.jks")
+				require.Contains(t, output, "secretName: \"secondary-tls-secret\"")
+			},
+		},
+		{
+			Name: "Optimize Elasticsearch TLS reaches the Orchestration truststore",
+			Values: map[string]string{
+				"optimize.enabled":                                             "true",
+				"optimize.database.opensearch.enabled":                         "false",
+				"optimize.database.elasticsearch.enabled":                      "true",
+				"optimize.database.elasticsearch.url.host":                     "optimize-host",
+				"optimize.database.elasticsearch.tls.secret.existingSecret":    "optimize-tls-secret",
+				"optimize.database.elasticsearch.tls.secret.existingSecretKey": "optimize-ca.jks",
+				"orchestration.data.secondaryStorage.type":                     "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.url":        "https://secondary-host:9443",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/optimize-ca.jks")
+				require.Contains(t, output, "secretName: \"optimize-tls-secret\"")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *StatefulSetTest) TestOpenSearchPasswordEnv() {
 	verifyOpenSearchPasswordEnv := func(expected ...corev1.EnvVar) func(t *testing.T, output string, err error) {
 		return func(t *testing.T, output string, err error) {

@@ -462,6 +462,28 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{/* Optimize-owned legacy exporter truststore conflict: the Orchestration JVM mounts a single
+       truststore, so when the exporter carries its own component TLS secret, a differing
+       global/secondary-storage truststore cannot be mounted alongside it. */}}
+  {{- $legacyExporterTls := include "orchestration.legacyExporterTlsConfig" . | fromYaml }}
+  {{- $sharedTls := include "orchestration.sharedTlsConfig" . | fromYaml }}
+  {{- if and
+        (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $legacyExporterTls)) "true")
+        (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $sharedTls)) "true")
+        (ne
+          (include "camundaPlatform.normalizeSecretConfiguration" (dict "config" $legacyExporterTls))
+          (include "camundaPlatform.normalizeSecretConfiguration" (dict "config" $sharedTls))
+        )
+  }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "TRUSTSTORE CONFLICT: the legacy exporter mounts the Optimize datastore truststore (optimize.database.*.tls.secret), which differs from the truststore configured for the global/secondary-storage connection."
+        "The Orchestration JVM supports a single truststore, so the Optimize one applies to the whole pod and the other connection cannot use its own CA."
+        "To trust multiple CAs on one pod, provide a combined PEM bundle via 'global.tls.caBundle.secret.*' and remove the per-component JKS truststore secrets."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
   {{/* global.tls.caBundle guardrails: surface the three silent failure modes
        a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}

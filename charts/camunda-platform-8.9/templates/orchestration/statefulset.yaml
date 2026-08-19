@@ -155,6 +155,28 @@ spec:
                 "config" .Values.orchestration.data.secondaryStorage.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
+            {{- $legacyElasticsearchExporterAuth := include "optimize.effectiveEsAuthConfig" . | fromYaml }}
+            {{- if and
+                (eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true")
+                (eq (include "orchestration.legacyElasticsearchExporterAuthenticationEnabled" .) "true")
+                (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $legacyElasticsearchExporterAuth)) "true")
+            }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPTIMIZE_DATABASE_ELASTICSEARCH_PASSWORD"
+                "config" $legacyElasticsearchExporterAuth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- $legacyOpenSearchExporterAuth := include "optimize.effectiveOsAuthConfig" . | fromYaml }}
+            {{- if and
+                (eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true")
+                (eq (include "orchestration.legacyOpenSearchExporterAuthenticationEnabled" .) "true")
+                (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $legacyOpenSearchExporterAuth)) "true")
+            }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPTIMIZE_DATABASE_OPENSEARCH_PASSWORD"
+                "config" $legacyOpenSearchExporterAuth
+            ) | nindent 12 }}
+            {{- end }}
             {{- if and .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"
