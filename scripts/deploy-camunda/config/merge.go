@@ -145,6 +145,11 @@ type TestFlags struct {
 	OutputTestEnv     bool   // Generate .env file for E2E tests after deployment
 	OutputTestEnvPath string // Path for the test .env file output
 	KubeContext       string
+	// HubNamespace names the namespace running the central Identity, Keycloak and Web Modeler in a
+	// multi-namespace topology. Without it run-e2e-tests.sh renders the env from the orchestration
+	// namespace alone, so Modeler, Identity and Keycloak resolve to the orchestration host where they
+	// do not exist, and the setup project times out before any test runs.
+	HubNamespace string
 	// OptimizeNamespace and OptimizeContextPath describe a topology whose Optimize runs as its own
 	// release: the e2e env must then derive CAMUNDA_OPTIMIZE_BASE_URL from that release's namespace
 	// and ingress path rather than from the orchestration namespace being tested. Empty for a
