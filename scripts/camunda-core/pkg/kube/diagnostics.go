@@ -23,7 +23,14 @@ func kubectlBaseArgs(kubeContext string) []string {
 // runKubectl executes a kubectl command with a child timeout context and returns stdout.
 // On error it returns empty string and the error — callers treat diagnostics as best-effort.
 func runKubectl(ctx context.Context, args []string) (string, error) {
-	cmdCtx, cancel := context.WithTimeout(ctx, diagnosticTimeout)
+	return runKubectlTimeout(ctx, args, diagnosticTimeout)
+}
+
+// runKubectlTimeout is runKubectl with an explicit per-command budget, for calls
+// that legitimately outlast diagnosticTimeout such as an in-pod exec that has to
+// negotiate TLS before it can query anything.
+func runKubectlTimeout(ctx context.Context, args []string, timeout time.Duration) (string, error) {
+	cmdCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	output, err := executil.RunCommandBuffered(cmdCtx, "kubectl", args, nil, "")
@@ -152,11 +159,12 @@ func GetPodContainerLogs(ctx context.Context, kubeContext, namespace, pod, conta
 	return runKubectl(ctx, args)
 }
 
-// ExecInPod runs command in the pod's default container and returns its output.
-func ExecInPod(ctx context.Context, kubeContext, namespace, pod string, command []string) (string, error) {
+// ExecInPod runs command in the pod's default container under its own timeout and
+// returns whatever stdout was captured, including on timeout or a non-zero exit.
+func ExecInPod(ctx context.Context, kubeContext, namespace, pod string, command []string, timeout time.Duration) (string, error) {
 	args := append(kubectlBaseArgs(kubeContext), "exec", pod, "-n", namespace, "--")
 	args = append(args, command...)
-	return runKubectl(ctx, args)
+	return runKubectlTimeout(ctx, args, timeout)
 }
 
 // GetNonReadyPods returns the names of pods that are not fully ready.

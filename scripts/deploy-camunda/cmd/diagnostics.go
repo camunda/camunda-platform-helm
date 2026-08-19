@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
 
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
@@ -34,7 +35,7 @@ type podDiagnosticsSource struct {
 	GetPodLogsPrevious  func(ctx context.Context, kubeContext, namespace, pod string, tail int) (string, error)
 	GetPodContainers    func(ctx context.Context, kubeContext, namespace, pod string) ([]string, error)
 	GetPodContainerLogs func(ctx context.Context, kubeContext, namespace, pod, container string, tail int) (string, error)
-	ExecInPod           func(ctx context.Context, kubeContext, namespace, pod string, command []string) (string, error)
+	ExecInPod           func(ctx context.Context, kubeContext, namespace, pod string, command []string, timeout time.Duration) (string, error)
 }
 
 func defaultPodDiagnosticsSource() podDiagnosticsSource {
@@ -140,6 +141,20 @@ func printNamespaceDiagnostics(ctx context.Context, w io.Writer, src podDiagnost
 		}
 		fmt.Fprintln(w, out)
 	}
+	// emitPartial keeps whatever was captured before an error, which emit discards.
+	// A timed-out exec still carries the endpoints it managed to query.
+	emitPartial := func(title string, out string, err error) {
+		section(title)
+		if out != "" {
+			fmt.Fprintln(w, out)
+		}
+		if err != nil {
+			fmt.Fprintf(w, "(error: %v)\n", err)
+		}
+		if out == "" && err == nil {
+			fmt.Fprintln(w, "(none)")
+		}
+	}
 
 	pods, podsErr := src.GetPods(ctx, kubeContext, namespace)
 	emit("Pods", pods, podsErr)
@@ -187,8 +202,7 @@ func printNamespaceDiagnostics(ctx context.Context, w io.Writer, src podDiagnost
 		}
 
 		if isSearchPod(pod) && src.ExecInPod != nil {
-			state, stateErr := src.ExecInPod(ctx, kubeContext, namespace, pod, []string{"sh", "-c", searchClusterStateScript})
-			emit(podLabel+pod+" — cluster state", state, stateErr)
+			emitSearchClusterState(ctx, emitPartial, src, kubeContext, namespace, pod, podLabel)
 		}
 	}
 }
@@ -215,18 +229,73 @@ func emitPerContainerLogs(
 	}
 }
 
-// searchClusterStateScript queries the Elasticsearch/OpenSearch HTTP API from
-// inside the pod. Both expose these endpoints identically, and CI runs them with
-// security disabled, so no credentials are needed. Shard-level state is what
-// distinguishes "still recovering" from "cannot reach this status on this
-// topology" when a readiness probe gates on cluster health.
-const searchClusterStateScript = `
-for q in '_cluster/health?level=indices&pretty' '_cat/indices?v&s=health:desc,index' '_cluster/allocation/explain?pretty'; do
-  echo "--- GET /$q"
-  curl -sS --max-time 10 "http://localhost:9200/$q" || echo "(query failed)"
-  echo
+// searchClusterQueries is queried one exec per entry.
+var searchClusterQueries = []string{
+	"_cluster/health?level=indices&pretty",
+	"_cat/indices?v&s=health:desc,index",
+	"_cluster/allocation/explain?pretty",
+}
+
+// searchClusterExecTimeout must exceed the worst-case curl budget in one exec —
+// two 8s scheme probes plus an 8s query — plus kubectl exec startup, so kubectl
+// does not cancel the exec before curl reports its own failure.
+const searchClusterExecTimeout = 40 * time.Second
+
+// searchClusterPrelude sets BASE, CURL, TLS and AUTH for the query appended after
+// it. It probes https before http because the companion chart's scheme varies per
+// scenario, and reads credentials from the container environment: ELASTIC_PASSWORD
+// for Elasticsearch, OPENSEARCH_INITIAL_ADMIN_PASSWORD for OpenSearch with the
+// security plugin. Both are passed via curl -u and never echoed.
+//
+// TLS verification is skipped: the self-signed node certificate is issued for the
+// masterService DNS name, not the loopback address this probe connects to.
+const searchClusterPrelude = `
+set -u
+CURL="curl -sS --max-time 8"
+TLS="-k"
+AUTH=""
+if [ -n "${ELASTIC_PASSWORD:-}" ]; then AUTH="-u elastic:${ELASTIC_PASSWORD}"; fi
+if [ -n "${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-}" ]; then AUTH="-u admin:${OPENSEARCH_INITIAL_ADMIN_PASSWORD}"; fi
+BASE=""
+for scheme in https http; do
+  if $CURL $TLS $AUTH "$scheme://localhost:9200/" >/dev/null 2>&1; then
+    BASE="$scheme://localhost:9200"
+    break
+  fi
 done
+if [ -z "$BASE" ]; then
+  echo "(no reachable endpoint on localhost:9200 over https or http)"
+  exit 0
+fi
 `
+
+// emitSearchClusterState runs one exec per query so a slow endpoint cannot consume
+// the budget of the others, and emits each result through emitPartial so a
+// timed-out exec still reports what it captured.
+func emitSearchClusterState(
+	ctx context.Context,
+	emitPartial func(string, string, error),
+	src podDiagnosticsSource,
+	kubeContext, namespace, pod, podLabel string,
+) {
+	for _, query := range searchClusterQueries {
+		script := searchClusterPrelude + "\n$CURL $TLS $AUTH \"$BASE/" + query + "\"\n"
+		out, err := src.ExecInPod(
+			ctx, kubeContext, namespace, pod,
+			[]string{"sh", "-c", script},
+			searchClusterExecTimeout,
+		)
+		emitPartial(podLabel+pod+" — cluster state ["+searchQueryLabel(query)+"]", out, err)
+	}
+}
+
+// searchQueryLabel drops the query string from an endpoint path.
+func searchQueryLabel(query string) string {
+	if i := strings.IndexByte(query, '?'); i >= 0 {
+		return query[:i]
+	}
+	return query
+}
 
 // isSearchPod reports whether the pod is an Elasticsearch or OpenSearch node,
 // matched on name because the companion charts are separate Helm releases whose
