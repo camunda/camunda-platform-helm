@@ -58,6 +58,22 @@ validate_args() {
   log "DEBUG: Arguments validated successfully"
 }
 
+resolve_deploy_camunda() {
+  # An asdf `reshim golang` leaves a ~/.asdf/shims/deploy-camunda that only resolves for the golang
+  # version the binary was installed under. When .tool-versions pins a different version the shim
+  # exits non-zero for every invocation while still shadowing a working $GOPATH/bin build, so probe
+  # candidates by running one instead of trusting `command -v`.
+  local candidate
+  for candidate in "${DEPLOY_CAMUNDA:-}" "$(command -v deploy-camunda 2> /dev/null)" \
+    "$(go env GOPATH 2> /dev/null)/bin/deploy-camunda" "$HOME/go/bin/deploy-camunda"; do
+    if [[ -n "$candidate" && -x "$candidate" ]] && "$candidate" e2e-env --help > /dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
 usage() {
   cat << EOF
 This script runs the integration tests for the Camunda Platform Helm chart.
@@ -265,7 +281,14 @@ trap 'rm -f "$ENV_FILE"' EXIT
 
 if [[ -n "$HUB_NAMESPACE" ]]; then
   log "DEBUG: Multi-namespace topology - merging orchestration ($NAMESPACE) + Hub ($HUB_NAMESPACE) into $ENV_FILE"
-  deploy-camunda e2e-env merge \
+  DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || {
+    echo "Error: no working deploy-camunda found; refusing to run tests against an unmerged env." >&2
+    echo "       Tried \$DEPLOY_CAMUNDA, PATH ($(command -v deploy-camunda || echo 'not found')), and \$GOPATH/bin." >&2
+    echo "       Build it with 'make install.deploy-camunda', or set DEPLOY_CAMUNDA to a working binary." >&2
+    exit 1
+  }
+  log "DEBUG: Using deploy-camunda at $DEPLOY_CAMUNDA_BIN"
+  "$DEPLOY_CAMUNDA_BIN" e2e-env merge \
     --orchestration-namespace "$NAMESPACE" \
     --hub-namespace "$HUB_NAMESPACE" \
     --absolute-chart-path "$ABSOLUTE_CHART_PATH" \
@@ -279,9 +302,8 @@ if [[ -n "$HUB_NAMESPACE" ]]; then
     # This script does not run under `set -e`, so without this guard a failed merge falls through and
     # Playwright runs against a stale or orchestration-only .env: Modeler and Identity point at the
     # wrong host and the setup project times out, which reads as a product failure rather than a
-    # missing merge. A common cause is `deploy-camunda` not resolving on PATH.
-    echo "Error: 'deploy-camunda e2e-env merge' failed; refusing to run tests against an unmerged env." >&2
-    echo "       Check that deploy-camunda is on PATH: $(command -v deploy-camunda || echo 'not found')" >&2
+    # missing merge.
+    echo "Error: '$DEPLOY_CAMUNDA_BIN e2e-env merge' failed; refusing to run tests against an unmerged env." >&2
     exit 1
   }
 else
