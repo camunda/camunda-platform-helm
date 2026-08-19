@@ -1177,8 +1177,14 @@ identity:
 ## When camundaHub.enabled is true, the Web Modeler component is deployed and
 ## the Console UI is enabled as a feature of the hub-restapi pod (Console is
 ## no longer a separate deployment in 8.10).
-## The legacy top-level webModeler.* and console.* keys still work for
-## backward compatibility but emit deprecation warnings when set alongside camundaHub.
+## The legacy top-level webModeler.* keys still work for backward compatibility
+## but emit deprecation warnings when set alongside camundaHub.
+## Of the legacy console.* keys only "console.enabled" is still honored, as a
+## compatibility shim that toggles the in-Modeler Console feature.
+## console.enabled: DEPRECATED since v15.0.0; remove in v16 (Camunda 8.11);
+## use instead: camundaHub.enabled.
+## Every other console.* key is inert in 8.10, has no replacement, and emits a
+## deprecation warning when set.
 camundaHub:
   ## @param camundaHub.enabled if true, deploys Camunda Hub: the Web Modeler component plus the in-modeler Console UI.
   ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
