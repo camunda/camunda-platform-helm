@@ -21,13 +21,13 @@ data:
         import: {{ $springImport }}
     {{- end }}
     {{- if .Values.global.identity.auth.enabled }}
-    {{- $cslEnabled := eq (include "optimize.cslEnabled" .) "true" }}
     camunda:
       identity:
         clientId: {{ include "optimize.authClientId" . | quote }}
         audience: {{ include "optimize.authAudience" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+      {{- $cslEnabled := eq (include "optimize.cslEnabled" .) "true" }}
       {{- if $cslEnabled }}
       security:
         authentication:
