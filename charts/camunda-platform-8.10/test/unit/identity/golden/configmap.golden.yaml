@@ -51,21 +51,21 @@ data:
                   definition: write
         webmodeler:
           applications:
-            - name: "Web Modeler"
+            - name: "Hub"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
               root-url: "http://localhost:8070"
               redirect-uris:
                 - "/login-callback"
           apis:
-            - name: Web Modeler Internal API
+            - name: Hub Internal API
               audience: "web-modeler-api"
               permissions:
                 - definition: write:*
                   description: "Write permission"
                 - definition: admin:*
                   description: "Admin permission"
-            - name: Web Modeler API
+            - name: Hub API
               audience: "web-modeler-public-api"
               permissions:
                 - definition: create:*
@@ -77,15 +77,15 @@ data:
                 - definition: delete:*
                   description: "Allows delete access for all resources"
           roles:
-            - name: "Web Modeler"
-              description: "Grants full access to Web Modeler"
+            - name: "Hub"
+              description: "Grants full access to Hub"
               permissions:
                 - audience: "web-modeler-api"
                   definition: write:*
                 - audience: "camunda-identity-resource-server"
                   definition: read:users
-            - name: "Web Modeler Admin"
-              description: "Grants elevated access to Web Modeler"
+            - name: "Hub Admin"
+              description: "Grants elevated access to Hub"
               permissions:
                 - audience: "camunda-identity-resource-server"
                   definition: read:users
