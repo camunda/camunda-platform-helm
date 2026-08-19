@@ -280,6 +280,8 @@ data:
                   description: "Write permission"
                 - definition: admin:*
                   description: "Admin permission"
+                - definition: admin:clusters
+                  description: "Cluster management permission"
             - name: Hub API
               audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
               permissions:
@@ -292,6 +294,22 @@ data:
                 - definition: delete:*
                   description: "Allows delete access for all resources"
           roles:
+            - name: "Web Modeler"
+              description: "Grants full access to Hub"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Hub"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:*
             - name: "Hub"
               description: "Grants full access to Hub"
               permissions:
@@ -308,6 +326,24 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
+            - name: "Console"
+              description: "Grants access to Hub's cluster management"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:clusters
+            - name: "Hub Cluster Admin"
+              description: "Grants access to Hub's cluster management"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:clusters
             {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
             - name: "Hub - Cluster Ping"
               description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
