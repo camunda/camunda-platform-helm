@@ -16,6 +16,7 @@ Throughout the skills, `$NS` refers to a Kubernetes namespace and `$RELEASE` to 
 | [`e2e-testing`](.claude/skills/e2e-testing/SKILL.md) | Generating per-environment `.env` files, running Playwright suites via `c8e2e` or `--test-e2e`, parallel environments, reproducing CI e2e failures locally |
 | [`ci-scenario-authoring`](.claude/skills/ci-scenario-authoring/SKILL.md) | New persistence layers and CI scenarios, features/shortnames, pre-install / post-deploy / pre-upgrade lifecycle hooks, `TestLifecycleFixtures` contract |
 | [`helm-values-debugging`](.claude/skills/helm-values-debugging/SKILL.md) | Helm array-replace merge vs `deploy-camunda` name-keyed merge, neutralizing parent-chart defaults, Bitnami env-var chains |
+| [`gh-stack`](.claude/skills/gh-stack/SKILL.md) | GitHub native stacked PRs via the `gh stack` extension: create or adopt a stack, why a chained base is not a stack, cascade-rebase and sync, atomic bottom-up merge, per-PR conventions that still apply |
 
 Related step-by-step guides under `docs/skills/`:
 
