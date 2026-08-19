@@ -23,18 +23,26 @@ the original error.
 - One retry **per gate invocation**. Re-running the gate workflow
   yields one additional retry; useful for recovering from a
   double-transient without pushing a new commit.
-- `cancelled` / `timed_out` / `action_required` are **not** retried.
-  Only `conclusion == failure` triggers `gh run rerun`.
+- `conclusion == failure` triggers `gh run rerun`.
+- Any other conclusion falls back to the attempt's **job** conclusions: if
+  at least one job is `failure` or `cancelled`, the attempt is retried;
+  otherwise it is not. A job killed by its own `timeout-minutes` is recorded
+  as `cancelled`, and one cancelled job makes the whole run conclude
+  `cancelled`, which hides any job that failed outright — so the rolled-up
+  conclusion alone is not a safe retry signal.
+- A run cancelled with no failed or cancelled job (a clean human cancel, a
+  merge-queue dequeue after everything finished) is still **not** retried.
 - The gate's required check is `Integration Tests Gate / gate`.
   Branch protection / merge-queue config must require this check and
   not the raw matrix check.
 
 ## continue-on-error jobs
 
-The gate looks at the run-level `conclusion`, never per-job. GitHub
-treats `continue-on-error: true` jobs as soft failures: their internal
-steps can fail but the job's `conclusion` stays `success` and they do
-not contribute to the run-level conclusion. Practical consequences:
+The gate decides on the run-level `conclusion` first, and only falls back
+to job conclusions when that value is neither `success` nor `failure`.
+GitHub treats `continue-on-error: true` jobs as soft failures: their
+internal steps can fail but the job's `conclusion` stays `success`, so they
+contribute nothing at either level. Practical consequences:
 
 - A run with only soft (continue-on-error) failures is `success` at the
   run level. The gate exits 0 without retrying.

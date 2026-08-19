@@ -31,8 +31,11 @@ type fakeClient struct {
 	statusByAttempt     map[int][]statusResp
 	conclusionByAttempt map[int]string
 	conclusionErr       map[int]error
-	rerunQueue          []error
-	rerunCalls          int
+
+	jobConclusionsByAttempt map[int][]string
+	jobConclusionsErr       map[int]error
+	rerunQueue              []error
+	rerunCalls              int
 }
 
 type findRunResp struct {
@@ -87,6 +90,12 @@ func (f *fakeClient) AttemptConclusion(_ string, attempt int) (string, error) {
 		f.t.Fatalf("conclusionByAttempt[%d] not set", attempt)
 	}
 	return c, nil
+}
+func (f *fakeClient) AttemptJobConclusions(_ string, attempt int) ([]string, error) {
+	if err, ok := f.jobConclusionsErr[attempt]; ok {
+		return nil, err
+	}
+	return f.jobConclusionsByAttempt[attempt], nil
 }
 func (f *fakeClient) Rerun(string) error {
 	f.rerunCalls++
@@ -760,5 +769,57 @@ func TestRun_RunAttemptReadRecoversFromTransient(t *testing.T) {
 	g := newTestGate(c)
 	if err := g.Run("pull_request", "sha", ""); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func newCompletedFake(t *testing.T, conclusion string, jobs []string) *fakeClient {
+	return &fakeClient{
+		t: t,
+		statusByAttempt: map[int][]statusResp{
+			1: {{status: "completed"}},
+		},
+		conclusionByAttempt:     map[int]string{1: conclusion},
+		jobConclusionsByAttempt: map[int][]string{1: jobs},
+	}
+}
+
+func TestWatchAndDecide_CancelledWithFailedJobIsRetryable(t *testing.T) {
+	c := newCompletedFake(t, "cancelled", []string{"success", "skipped", "failure"})
+	err := newTestGate(c).watchAndDecide("r", "url", 1)
+	if !errors.Is(err, errNeedsRetry) {
+		t.Fatalf("expected errNeedsRetry, got %v", err)
+	}
+}
+
+func TestWatchAndDecide_CancelledByJobTimeoutIsRetryable(t *testing.T) {
+	c := newCompletedFake(t, "cancelled", []string{"success", "skipped", "cancelled"})
+	err := newTestGate(c).watchAndDecide("r", "url", 1)
+	if !errors.Is(err, errNeedsRetry) {
+		t.Fatalf("expected errNeedsRetry, got %v", err)
+	}
+}
+
+func TestWatchAndDecide_CancelledWithNoAffectedJobsIsNotRetryable(t *testing.T) {
+	c := newCompletedFake(t, "cancelled", []string{"success", "skipped", "success"})
+	err := newTestGate(c).watchAndDecide("r", "url", 1)
+	if !errors.Is(err, ErrNotRetryable) {
+		t.Fatalf("expected ErrNotRetryable, got %v", err)
+	}
+}
+
+func TestWatchAndDecide_SuccessDoesNotInspectJobs(t *testing.T) {
+	c := newCompletedFake(t, "success", nil)
+	c.jobConclusionsErr = map[int]error{1: errors.New("must not be called")}
+	if err := newTestGate(c).watchAndDecide("r", "url", 1); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestWatchAndDecide_JobInspectionErrorIsNotRetryable(t *testing.T) {
+	c := newCompletedFake(t, "timed_out", nil)
+	c.jobConclusionsErr = map[int]error{1: errors.New("502")}
+	err := newTestGate(c).watchAndDecide("r", "url", 1)
+	if !errors.Is(err, ErrNotRetryable) {
+		t.Fatalf("expected ErrNotRetryable, got %v", err)
 	}
 }

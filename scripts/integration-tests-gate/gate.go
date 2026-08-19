@@ -26,6 +26,7 @@ type ghClient interface {
 	RunAttempt(runID string) (int, error)
 	AttemptStatus(runID string, attempt int) (string, error)
 	AttemptConclusion(runID string, attempt int) (string, error)
+	AttemptJobConclusions(runID string, attempt int) ([]string, error)
 	Rerun(runID string) error
 }
 
@@ -272,7 +273,20 @@ func (g *Gate) watchAndDecide(runID, runURL string, attempt int) error {
 		return nil
 	case "failure":
 		return errNeedsRetry
-	default:
-		return fmt.Errorf("%w: %s", ErrNotRetryable, conclusion)
 	}
+	// A job killed by timeout-minutes is recorded as cancelled, and one
+	// cancelled job makes the whole run conclude cancelled, hiding any job
+	// that failed outright. Inspect the jobs before declaring the attempt
+	// unretryable.
+	jobs, err := g.Client.AttemptJobConclusions(runID, attempt)
+	if err != nil {
+		return fmt.Errorf("%w: %s (inspecting jobs: %v)", ErrNotRetryable, conclusion, err)
+	}
+	for _, c := range jobs {
+		if c == "failure" || c == "cancelled" {
+			g.Logf("attempt %d concluded %s but job conclusions include %s; retrying", attempt, conclusion, c)
+			return errNeedsRetry
+		}
+	}
+	return fmt.Errorf("%w: %s", ErrNotRetryable, conclusion)
 }

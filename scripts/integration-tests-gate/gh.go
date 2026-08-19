@@ -100,6 +100,22 @@ func (c *ghCLI) AttemptConclusion(runID string, attempt int) (string, error) {
 		"--jq", ".conclusion")
 }
 
+func (c *ghCLI) AttemptJobConclusions(runID string, attempt int) ([]string, error) {
+	out, err := c.run("api", "--paginate",
+		fmt.Sprintf("repos/%s/actions/runs/%s/attempts/%d/jobs?per_page=100", c.repo, runID, attempt),
+		"--jq", ".jobs[].conclusion")
+	if err != nil {
+		return nil, err
+	}
+	var conclusions []string
+	for _, line := range strings.Split(out, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			conclusions = append(conclusions, line)
+		}
+	}
+	return conclusions, nil
+}
+
 func (c *ghCLI) Rerun(runID string) error {
 	_, err := c.run("run", "rerun", runID,
 		"--repo", c.repo)
