@@ -309,7 +309,7 @@ data:
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
             {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
-            - name: "CamundaHub - Cluster Ping"
+            - name: "Hub - Cluster Ping"
               description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
               permissions:
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
@@ -322,7 +322,7 @@ data:
       {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
       {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (or (eq (include "orchestration.authIssuerType" .) "KEYCLOAK") (and $pingClaimName $pingClaimValue)) }}
       mapping-rules:
-        - name: "CamundaHub - Cluster Ping Access"
+        - name: "Hub - Cluster Ping Access"
           claim-name: {{ $pingClaimName | default "sub" | quote }}
           {{- if $pingClaimValue }}
           claim-value: {{ tpl $pingClaimValue . | quote }}
@@ -334,7 +334,7 @@ data:
           operator: EQUALS
           rule-type: ROLE
           applied-role-names:
-            - "CamundaHub - Cluster Ping"
+            - "Hub - Cluster Ping"
       {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}
