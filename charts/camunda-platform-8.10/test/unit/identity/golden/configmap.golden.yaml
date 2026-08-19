@@ -120,7 +120,7 @@ data:
                   definition: read:users
                 - audience: "web-modeler-api"
                   definition: admin:clusters
-            - name: "Hub Cluster Admin"
+            - name: "DevOps"
               description: "Grants access to Hub's cluster management"
               permissions:
                 - audience: "web-modeler-api"

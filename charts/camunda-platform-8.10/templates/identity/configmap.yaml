@@ -335,7 +335,7 @@ data:
                   definition: read:users
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:clusters
-            - name: "Hub Cluster Admin"
+            - name: "DevOps"
               description: "Grants access to Hub's cluster management"
               permissions:
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
