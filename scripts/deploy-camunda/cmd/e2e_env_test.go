@@ -250,3 +250,37 @@ func TestAssertOptimizeEnabledAcceptsOverriddenOptimize(t *testing.T) {
 		t.Fatalf("expected the overridden env to pass, got %v", err)
 	}
 }
+
+// Both Optimize URL keys must be set and agree. CAMUNDA_OPTIMIZE_BASE_URL alone made the Optimize
+// specs pass while Basic Navigation and the all-apps smoke flow failed on an nginx 404, because
+// NavigationPage.goToOptimize navigates with OPTIMIZE_CONTEXT_PATH, whose default "/optimize" resolves
+// against the orchestration host rather than the Hub host where the Optimize release runs.
+func TestOptimizeEnvOverridesSetsBothUrlKeys(t *testing.T) {
+	got := optimizeEnvOverrides("hub.example.com", "/optimize-orcha")
+
+	want := "https://hub.example.com/optimize-orcha"
+	for _, key := range []string{"CAMUNDA_OPTIMIZE_BASE_URL", "OPTIMIZE_CONTEXT_PATH"} {
+		if got[key] != want {
+			t.Errorf("%s = %q, want %q", key, got[key], want)
+		}
+	}
+	if got["CAMUNDA_OPTIMIZE_BASE_URL"] != got["OPTIMIZE_CONTEXT_PATH"] {
+		t.Errorf("the two Optimize URL keys disagree: %q vs %q", got["CAMUNDA_OPTIMIZE_BASE_URL"], got["OPTIMIZE_CONTEXT_PATH"])
+	}
+	if got["IS_OPTIMIZE"] != "true" {
+		t.Errorf("IS_OPTIMIZE = %q, want \"true\"; every Optimize spec is guarded on it", got["IS_OPTIMIZE"])
+	}
+}
+
+// The URLs must be absolute: page.goto honours an absolute URL over Playwright's baseURL, which is the
+// orchestration host and therefore the wrong place to look for a separate Optimize release.
+func TestOptimizeEnvOverridesUsesAbsoluteUrls(t *testing.T) {
+	for _, v := range optimizeEnvOverrides("hub.example.com", "/optimize-orcha-ta") {
+		if v == "true" {
+			continue
+		}
+		if !strings.HasPrefix(v, "https://") {
+			t.Errorf("override %q must be an absolute URL", v)
+		}
+	}
+}
