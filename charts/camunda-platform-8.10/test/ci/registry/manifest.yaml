@@ -206,4 +206,4 @@ integration:
     - id: physicaltenants
       shortname: ptnt
       tier: 2
-      enabled: false
+      enabled: true

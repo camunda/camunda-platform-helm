@@ -6,6 +6,7 @@ platforms:
   - gke
 infra-type:
   gke: distroci
+skip-e2e: true
 topology:
   name: hub-1orch-2tenants
   shared-storage: elasticsearch
