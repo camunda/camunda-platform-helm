@@ -433,7 +433,7 @@
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.prefix or orchestration.data.secondaryStorage.elasticsearch) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                            "description": "(DEPRECATED - use orchestration.exporters.zeebe.index.prefix to configure the exporter that writes these indexes, and optimize.database.elasticsearch.prefix to tell Optimize which indexes to read) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -563,7 +563,7 @@
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.prefix or orchestration.data.secondaryStorage.opensearch) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                            "description": "(DEPRECATED - use orchestration.exporters.zeebe.index.prefix to configure the exporter that writes these indexes, and optimize.database.opensearch.prefix to tell Optimize which indexes to read) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -5547,6 +5547,16 @@
                                     "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
                                     "default": false
                                 },
+                                "index": {
+                                    "type": "object",
+                                    "properties": {
+                                        "prefix": {
+                                            "type": "string",
+                                            "description": "defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, \"optimize.database.elasticsearch.prefix\" (or its OpenSearch equivalent, then \"global.elasticsearch.prefix\") is used instead.",
+                                            "default": ""
+                                        }
+                                    }
+                                },
                                 "replicas": {
                                     "type": [
                                         "number",
@@ -5594,7 +5604,7 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
+                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by \"orchestration.exporters.zeebe.index.prefix\", nor to the indices Optimize reads, which are named by \"optimize.database.elasticsearch.prefix\" or the OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {
@@ -5986,7 +5996,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                                    "description": "defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6086,7 +6096,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                                    "description": "defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }

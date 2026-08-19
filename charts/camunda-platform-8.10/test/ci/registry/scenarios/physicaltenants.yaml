@@ -46,8 +46,6 @@ topology:
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
-        ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha-ta
-        ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
     - role: optimize
       namespace-suffix: optta

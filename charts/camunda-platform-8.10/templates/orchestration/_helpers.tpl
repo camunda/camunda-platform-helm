@@ -513,14 +513,31 @@ opensearch
 {{- end -}}
 
 {{/*
+[orchestration] Elasticsearch index prefix written by the legacy exporter.
+Resolution order: orchestration.exporters.zeebe.index.prefix, then the Optimize-side
+spelling, then the deprecated global one.
+*/}}
+{{- define "orchestration.legacyExporterElasticsearchPrefix" -}}
+{{- .Values.orchestration.exporters.zeebe.index.prefix | default .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix -}}
+{{- end -}}
+
+{{/*
+[orchestration] OpenSearch index prefix written by the legacy exporter. Same resolution
+order as the Elasticsearch helper above.
+*/}}
+{{- define "orchestration.legacyExporterOpenSearchPrefix" -}}
+{{- .Values.orchestration.exporters.zeebe.index.prefix | default .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix -}}
+{{- end -}}
+
+{{/*
 [orchestration] Index prefix of the release's root legacy exporter, empty when it runs none.
 */}}
 {{- define "orchestration.legacyExporterPrefix" -}}
 {{- $exporterId := include "orchestration.legacyExporterId" . -}}
 {{- if eq $exporterId "elasticsearch" -}}
-{{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix -}}
+{{- include "orchestration.legacyExporterElasticsearchPrefix" . -}}
 {{- else if eq $exporterId "opensearch" -}}
-{{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix -}}
+{{- include "orchestration.legacyExporterOpenSearchPrefix" . -}}
 {{- end -}}
 {{- end -}}
 
