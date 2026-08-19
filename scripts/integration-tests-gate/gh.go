@@ -102,7 +102,6 @@ func (c *ghCLI) AttemptConclusion(runID string, attempt int) (string, error) {
 
 func (c *ghCLI) Rerun(runID string) error {
 	_, err := c.run("run", "rerun", runID,
-		"--failed",
 		"--repo", c.repo)
 	if err != nil && strings.Contains(err.Error(), "already running") {
 		return ErrRerunAlreadyRunning
