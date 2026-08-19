@@ -317,7 +317,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-rba
-          enabled: true
+          enabled: false
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
