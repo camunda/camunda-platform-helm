@@ -1888,7 +1888,7 @@ integration:
                   - multinamespace-reset-clients
                   - physicaltenants-hub
                 dependencies:
-                  - keycloak
+                  - keycloak-fixed-issuer
                   - postgresql
                   - elasticsearch
               - role: orchestration

@@ -17,7 +17,7 @@ topology:
       namespace-suffix: hub
       identity: keycloak
       dependencies:
-        - keycloak
+        - keycloak-fixed-issuer
         - postgresql
         - elasticsearch
       features:
