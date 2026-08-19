@@ -645,8 +645,12 @@ func (s *CamundaHubShimTemplateTest) TestFalsyServiceAccountEnabledOverrideSuppr
 		"webModeler.serviceAccount.enabled": "true",
 		"camundaHub.serviceAccount.enabled": "false",
 	}
-	_, err := s.renderWebModeler(values, []string{"templates/web-modeler/serviceaccount.yaml"})
-	s.Require().Error(err)
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/serviceaccount.yaml"})
+	if err != nil {
+		s.Require().ErrorContains(err, "could not find template templates/web-modeler/serviceaccount.yaml in chart")
+		return
+	}
+	s.Require().Empty(strings.TrimSpace(output))
 }
 
 func (s *CamundaHubShimTemplateTest) TestCamundaHubFullnameOverrideAppliesToServiceNames() {
