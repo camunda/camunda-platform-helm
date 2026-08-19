@@ -45,8 +45,13 @@ data:
               - {{ include "optimize.authClientId" . | quote }}
               - {{ include "optimize.authAudience" . | quote }}
               - {{ (or .Values.global.identity.auth.camundaHub.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
-            {{- if (include "camundaPlatform.authIssuerUrlWithFallback" .) }}
-            issuer-uri: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+            {{- /* NOTE: the strict issuer, not authIssuerUrlWithFallback: issuer-uri makes CSL run OIDC
+                   discovery over the public URL at startup, which fails wherever the JVM truststore is
+                   replaced for a self-signed database. Falling back to publicIssuerUrl would take that
+                   branch for a plain Keycloak setup, where the orchestration chart uses the in-cluster
+                   back-channel endpoints below instead. */}}
+            {{- if (include "camundaPlatform.authIssuerUrl" .) }}
+            issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
             {{- else }}
             authorization-uri: {{ include "camundaPlatform.authIssuerUrlEndpointAuth" . | quote }}
             jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}

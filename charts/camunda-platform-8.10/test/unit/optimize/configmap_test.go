@@ -381,7 +381,7 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				"optimize.enabled":                          "true",
 				"global.identity.auth.enabled":              "true",
 				"global.identity.auth.optimize.redirectUrl": "https://camunda.example.com/optimize",
-				"global.identity.auth.publicIssuerUrl":      "https://camunda.example.com/auth/realms/camunda-platform",
+				"global.identity.auth.issuer":               "https://camunda.example.com/auth/realms/camunda-platform",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -396,6 +396,29 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				s.Require().Contains(authConfig, `issuer-uri: "https://camunda.example.com/auth/realms/camunda-platform"`)
 				s.Require().Contains(authConfig, `redirect-uri: "{baseUrl}/api/authentication/callback"`,
 					"the listener path CSL derives from this must stay context-relative")
+			},
+		},
+		{
+			Name: "TestKeycloakSetupUsesBackChannelEndpointsInsteadOfDiscovery",
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"optimize.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.auth.publicIssuerUrl":  "https://camunda.example.com/auth/realms/camunda-platform",
+				"global.identity.auth.issuerBackendUrl": "http://keycloak:80/auth/realms/camunda-platform",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				authConfig := configmap.Data["application-ccsm.yaml"]
+				s.Require().NotContains(authConfig, "issuer-uri:",
+					"issuer-uri makes CSL run OIDC discovery over the public URL at startup, which breaks wherever the JVM truststore is replaced for a self-signed database")
+				s.Require().Contains(authConfig, `authorization-uri: "https://camunda.example.com/auth/realms/camunda-platform/protocol/openid-connect/auth"`)
+				s.Require().Contains(authConfig, `jwk-set-uri: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"`)
+				s.Require().Contains(authConfig, `token-uri: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"`)
 			},
 		},
 		{
