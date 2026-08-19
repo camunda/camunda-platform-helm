@@ -131,6 +131,12 @@ type TestFlags struct {
 	OutputTestEnv     bool   // Generate .env file for E2E tests after deployment
 	OutputTestEnvPath string // Path for the test .env file output
 	KubeContext       string
+	// OptimizeNamespace and OptimizeContextPath describe a topology whose Optimize runs as its own
+	// release: the e2e env must then derive CAMUNDA_OPTIMIZE_BASE_URL from that release's namespace
+	// and ingress path rather than from the orchestration namespace being tested. Empty for a
+	// single-release deployment, where Optimize shares the namespace under test.
+	OptimizeNamespace   string
+	OptimizeContextPath string
 }
 
 // SelectionFlags holds selection + composition model flags.

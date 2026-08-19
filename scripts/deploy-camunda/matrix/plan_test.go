@@ -488,3 +488,89 @@ func TestPlanTierFilter(t *testing.T) {
 		t.Errorf("tier-1 entries = %d, all = %d; want 0 < tier1 <= all", len(tier1.Include), len(all.Include))
 	}
 }
+
+// TopologyE2ELegs is the single source of truth for both the CI smoke matrix and the local runner's
+// post-deploy test phase, so these cases pin the leg count and per-leg targeting that both rely on.
+func TestTopologyE2ELegs(t *testing.T) {
+	orchestration := func(suffix string) TopologyRelease {
+		return TopologyRelease{Role: "orchestration", NamespaceSuffix: suffix, ModelerClusterID: suffix}
+	}
+	optimize := func(suffix, serves, path string) TopologyRelease {
+		return TopologyRelease{Role: "optimize", NamespaceSuffix: suffix, Serves: serves, OptimizeContextPath: path}
+	}
+	hub := TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}
+
+	cases := []struct {
+		name     string
+		topology *Topology
+		want     []TopologyE2ELeg
+	}{
+		{
+			name:     "nil topology yields no legs",
+			topology: nil,
+			want:     nil,
+		},
+		{
+			// Optimize runs in-release, so the leg must carry no Optimize fields and the e2e env
+			// keeps deriving its endpoint from the orchestration namespace.
+			name:     "in-release optimize yields one leg per orchestration release",
+			topology: &Topology{Releases: []TopologyRelease{hub, orchestration("orcha"), orchestration("orchb")}},
+			want: []TopologyE2ELeg{
+				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha"},
+				{OrchestrationSuffix: "orchb", ModelerClusterID: "orchb"},
+			},
+		},
+		{
+			name: "one optimize release per orchestration release",
+			topology: &Topology{Releases: []TopologyRelease{
+				hub,
+				orchestration("orcha"), orchestration("orchb"),
+				optimize("opta", "orcha", "/optimize-orcha"),
+				optimize("optb", "orchb", "/optimize-orchb"),
+			}},
+			want: []TopologyE2ELeg{
+				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opta", OptimizeContextPath: "/optimize-orcha"},
+				{OrchestrationSuffix: "orchb", ModelerClusterID: "orchb", OptimizeSuffix: "optb", OptimizeContextPath: "/optimize-orchb"},
+			},
+		},
+		{
+			// The physicaltenants shape: one cluster serving two Physical Tenants. The suite reads a
+			// single CAMUNDA_OPTIMIZE_BASE_URL, so this must fan out to one leg per tenant rather
+			// than one leg carrying both.
+			name: "one orchestration release serving two tenants yields two legs",
+			topology: &Topology{Releases: []TopologyRelease{
+				hub,
+				orchestration("orcha"),
+				optimize("optta", "orcha", "/optimize-orcha-ta"),
+				optimize("opttb", "orcha", "/optimize-orcha-tb"),
+			}},
+			want: []TopologyE2ELeg{
+				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "optta", OptimizeContextPath: "/optimize-orcha-ta"},
+				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opttb", OptimizeContextPath: "/optimize-orcha-tb"},
+			},
+		},
+		{
+			// An optimize release without `serves` cannot be attributed to an orchestration release,
+			// so it must not silently become a leg.
+			name: "optimize release without serves is ignored",
+			topology: &Topology{Releases: []TopologyRelease{
+				hub, orchestration("orcha"), optimize("opta", "", "/optimize"),
+			}},
+			want: []TopologyE2ELeg{{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha"}},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := TopologyE2ELegs(tc.topology)
+			if len(got) != len(tc.want) {
+				t.Fatalf("legs = %d (%+v), want %d (%+v)", len(got), got, len(tc.want), tc.want)
+			}
+			for i := range tc.want {
+				if got[i] != tc.want[i] {
+					t.Errorf("leg[%d] = %+v, want %+v", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
