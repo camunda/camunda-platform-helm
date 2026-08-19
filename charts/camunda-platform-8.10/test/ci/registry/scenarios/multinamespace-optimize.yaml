@@ -34,8 +34,6 @@ topology:
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
-        ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
-        ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
     - role: orchestration
       namespace-suffix: orchb
@@ -50,8 +48,6 @@ topology:
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
-        ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
-        ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
     - role: optimize
       namespace-suffix: opta

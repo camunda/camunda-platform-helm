@@ -16,16 +16,34 @@
 # values below.
 #
 # Orchestration release — Zeebe/Operate/Tasklist,
-# Connectors, and Optimize only. Auth (Identity/Keycloak wiring, pointed at
-# the Hub namespace) is owned entirely by
-# identity/keycloak-external.yaml (this release's `identity` layer selection
-# — see the scenario's topology block) so it is not duplicated here.
+# Connectors, and Optimize only. The Identity/Keycloak wiring pointed at the
+# Hub namespace is owned by identity/keycloak-external.yaml (this release's
+# `identity` layer selection — see the scenario's topology block) so it is not
+# duplicated here.
+#
+# Optimize's own client and the topology mode DO live here rather than in that
+# auth layer, because this topology runs Optimize inside the orchestration
+# release while multinamespace-optimize and physicaltenants give each Optimize
+# its own release. The shared auth layer cannot express both.
 #
 # The secondary storage backend is the Elasticsearch companion deployed once
 # into the Hub namespace (shared-storage: elasticsearch in the
 # scenario's topology block), referenced here by FQDN via the
 # EXTERNAL_ELASTICSEARCH_* env vars, resolved the same way persistence/
 # elasticsearch-external.yaml resolves them for a single-namespace scenario.
+
+global:
+  topology:
+    mode: orchestration
+  identity:
+    auth:
+      optimize:
+        clientId: "${ORCH_OPTIMIZE_CLIENT_ID}"
+        audience: "${ORCH_OPTIMIZE_AUDIENCE}"
+        redirectUrl: "https://${ORCH_HOST}/optimize"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
 
 orchestration:
   env:
@@ -55,11 +73,21 @@ orchestration:
         url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX
+  exporters:
+    zeebe:
+      # Writer side: the indices the legacy exporter creates. Optimize runs in
+      # this same release, so it reads them back via the matching
+      # optimize.database.elasticsearch.prefix below.
+      index:
+        prefix: $ORCHESTRATION_INDEX_PREFIX
 
 optimize:
+  # base.yaml already enables Optimize and sets its contextPath and probes; this
+  # release keeps it in-release, so only the storage and reader prefix are added.
   enabled: true
   database:
     elasticsearch:
+      enabled: true
       prefix: $ORCHESTRATION_INDEX_PREFIX
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX

@@ -21,7 +21,8 @@
 # The Optimize client id, audience, redirect URL, context path, and index
 # prefixes are per release and come from the matching
 # features/multinamespace-optimize-<suffix>.yaml or
-# features/physicaltenants-optimize-<suffix>.yaml layer.
+# features/physicaltenants-optimize-<suffix>.yaml layer, as does
+# global.topology.mode — this layer configures auth only.
 
 global:
   host: "$CAMUNDA_HOSTNAME"
@@ -34,8 +35,6 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-  topology:
-    mode: optimize
 
 optimize:
   identity:
