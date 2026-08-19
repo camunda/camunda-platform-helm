@@ -96,7 +96,9 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # inputs.* are empty on pull_request and merge_group, so only workflow_dispatch
+  # runs are separated by their inputs.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.manual-trigger }}-${{ inputs.platforms }}-${{ inputs.flows }}-${{ inputs.scenario }}
   cancel-in-progress: true
 
 permissions:
