@@ -17,6 +17,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// errNotCollected marks a section whose collector was not wired on the source.
+var errNotCollected = fmt.Errorf("not collected")
+
 // diagnosticsEventsTail bounds the events dump so the in-log output stays readable.
 const diagnosticsEventsTail = 40
 
@@ -28,6 +31,9 @@ type podDiagnosticsSource struct {
 	GetEvents           func(ctx context.Context, kubeContext, namespace string) (string, error)
 	GetPVCs             func(ctx context.Context, kubeContext, namespace string) (string, error)
 	DescribePVCs        func(ctx context.Context, kubeContext, namespace string) (string, error)
+	GetServices         func(ctx context.Context, kubeContext, namespace string) (string, error)
+	GetServicesYAML     func(ctx context.Context, kubeContext, namespace string) (string, error)
+	GetEndpoints        func(ctx context.Context, kubeContext, namespace string) (string, error)
 	GetNonReadyPods     func(ctx context.Context, kubeContext, namespace string) ([]string, error)
 	GetPodNames         func(ctx context.Context, kubeContext, namespace string) ([]string, error)
 	DescribePod         func(ctx context.Context, kubeContext, namespace, pod string) (string, error)
@@ -44,6 +50,9 @@ func defaultPodDiagnosticsSource() podDiagnosticsSource {
 		GetEvents:           kube.GetEvents,
 		GetPVCs:             kube.GetPVCs,
 		DescribePVCs:        kube.DescribePVCs,
+		GetServices:         kube.GetServices,
+		GetServicesYAML:     kube.GetServicesYAML,
+		GetEndpoints:        kube.GetEndpoints,
 		GetNonReadyPods:     kube.GetNonReadyPods,
 		GetPodNames:         kube.GetPodNames,
 		DescribePod:         kube.DescribePod,
@@ -79,7 +88,7 @@ func newDiagnosticsPrintCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "print",
-		Short: "Print namespace diagnostics (pods, events, PVCs, pod describe+logs) to stdout",
+		Short: "Print namespace diagnostics (pods, events, PVCs, Services, endpoints, pod describe+logs) to stdout",
 		Long: `Print a best-effort namespace diagnostics dump for CI logs.
 
 Backs the failed-pods-info GitHub action. Structured diagnostics are also
@@ -156,17 +165,35 @@ func printNamespaceDiagnostics(ctx context.Context, w io.Writer, src podDiagnost
 		}
 	}
 
-	pods, podsErr := src.GetPods(ctx, kubeContext, namespace)
+	// collect tolerates an unset collector so a partially-populated source degrades
+	// to a "(not collected)" section instead of panicking mid-dump.
+	collect := func(fn func(context.Context, string, string) (string, error)) (string, error) {
+		if fn == nil {
+			return "", errNotCollected
+		}
+		return fn(ctx, kubeContext, namespace)
+	}
+
+	pods, podsErr := collect(src.GetPods)
 	emit("Pods", pods, podsErr)
 
-	events, eventsErr := src.GetEvents(ctx, kubeContext, namespace)
+	events, eventsErr := collect(src.GetEvents)
 	emit(fmt.Sprintf("Events (last %d)", diagnosticsEventsTail), lastLines(events, diagnosticsEventsTail), eventsErr)
 
-	pvcs, pvcsErr := src.GetPVCs(ctx, kubeContext, namespace)
+	pvcs, pvcsErr := collect(src.GetPVCs)
 	emit("PersistentVolumeClaims", pvcs, pvcsErr)
 
-	pvcDesc, pvcDescErr := src.DescribePVCs(ctx, kubeContext, namespace)
+	pvcDesc, pvcDescErr := collect(src.DescribePVCs)
 	emit("PVC describe", pvcDesc, pvcDescErr)
+
+	services, servicesErr := collect(src.GetServices)
+	emit("Services", services, servicesErr)
+
+	serviceYAML, serviceYAMLErr := collect(src.GetServicesYAML)
+	emit("Service spec (YAML)", serviceYAML, serviceYAMLErr)
+
+	endpoints, endpointsErr := collect(src.GetEndpoints)
+	emit("Endpoints", endpoints, endpointsErr)
 
 	listPods, listTitle, podLabel := src.GetNonReadyPods, "Non-ready pods", "Non-ready pod: "
 	if includeReady {

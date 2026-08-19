@@ -62,6 +62,12 @@ build.dx-tooling:
 	make build.vault-secret-mapper
 	make build.release-tools
 
+# diagnostics.print: dump namespace state (pods, events, PVCs, Services, endpoints,
+# pod describe+logs) for a failing deploy. namespace= is required.
+.PHONY: diagnostics.print
+diagnostics.print:
+	cd scripts/deploy-camunda && go run . diagnostics print --namespace $(namespace) --include-ready
+
 .PHONY: install.dx-tooling
 install.dx-tooling:
 	make install.prepare-helm-values

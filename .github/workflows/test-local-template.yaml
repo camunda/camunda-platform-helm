@@ -64,6 +64,7 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            golang
             helm
             kind
             kubectl
@@ -159,15 +160,10 @@ jobs:
           # two manifests validating against divergent port allow-lists.
           check camunda-platform-zeebe internal kubernetes.io/h2c
           check camunda-platform-zeebe command kubernetes.io/h2c
-      - name: Get Pods
+      - name: Namespace diagnostics
         if: failure()
-        run: |
-          kubectl get pods --namespace ${{ env.TEST_NAMESPACE }}
-      - name: Debug - Get Pods info
-        if: failure()
-        run: |
-          kubectl get pods --namespace ${{ env.TEST_NAMESPACE }} -o yaml
-          kubectl describe pods --namespace ${{ env.TEST_NAMESPACE }}
+        continue-on-error: true
+        run: make diagnostics.print namespace=${{ env.TEST_NAMESPACE }}
       - name: Observe build status
         if: always()
         continue-on-error: true

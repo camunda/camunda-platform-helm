@@ -353,3 +353,61 @@ func TestLastLines(t *testing.T) {
 		t.Errorf("empty input should stay empty, got %q", got)
 	}
 }
+
+// TestPrintNamespaceDiagnosticsIncludesServiceState covers the shape that pod-only
+// diagnostics cannot explain: every pod is Ready, but a Service selects nothing, so
+// traffic goes nowhere. The dump must carry the Service ports (including
+// appProtocol) and the resolved Endpoints.
+func TestPrintNamespaceDiagnosticsIncludesServiceState(t *testing.T) {
+	src := podDiagnosticsSource{
+		GetPods:   func(_ context.Context, _, _ string) (string, error) { return "pod-a 1/1 Running", nil },
+		GetEvents: func(_ context.Context, _, _ string) (string, error) { return "", nil },
+		GetServices: func(_ context.Context, _, _ string) (string, error) {
+			return "camunda-platform-zeebe-gateway ClusterIP 10.0.0.1 26500/TCP", nil
+		},
+		GetServicesYAML: func(_ context.Context, _, _ string) (string, error) {
+			return "  ports:\n  - appProtocol: kubernetes.io/h2c\n    name: grpc\n    port: 26500\n  selector:\n    app.kubernetes.io/component: postgresql", nil
+		},
+		GetEndpoints: func(_ context.Context, _, _ string) (string, error) {
+			return "camunda-platform-zeebe-gateway <none>", nil
+		},
+		GetNonReadyPods: func(_ context.Context, _, _ string) ([]string, error) { return nil, nil },
+	}
+
+	var buf bytes.Buffer
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "camunda-platform", 10, false)
+	out := buf.String()
+
+	for _, want := range []string{
+		"===== Services =====",
+		"===== Service spec (YAML) =====",
+		"===== Endpoints =====",
+		"appProtocol: kubernetes.io/h2c",
+		"app.kubernetes.io/component: postgresql",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("diagnostics dump missing %q\n---\n%s", want, out)
+		}
+	}
+}
+
+// TestPrintNamespaceDiagnosticsToleratesUnsetCollectors guards the struct-of-funcs
+// source against a caller that has not wired every collector: the dump must degrade
+// to a labelled section rather than panicking part-way through.
+func TestPrintNamespaceDiagnosticsToleratesUnsetCollectors(t *testing.T) {
+	src := podDiagnosticsSource{
+		GetPods:         func(_ context.Context, _, _ string) (string, error) { return "pod-a 1/1 Running", nil },
+		GetNonReadyPods: func(_ context.Context, _, _ string) ([]string, error) { return nil, nil },
+	}
+
+	var buf bytes.Buffer
+	printNamespaceDiagnostics(context.Background(), &buf, src, "", "camunda-platform", 10, false)
+	out := buf.String()
+
+	if !strings.Contains(out, "===== Services =====") {
+		t.Errorf("expected a Services section even when unset\n---\n%s", out)
+	}
+	if !strings.Contains(out, "not collected") {
+		t.Errorf("expected unset collectors to be labelled\n---\n%s", out)
+	}
+}
