@@ -1375,9 +1375,19 @@ func runTopologyE2ELegs(
 	// Namespaces are only knowable per release index, so map each release's suffix to its context.
 	nsBySuffix := map[string]string{}
 	relBySuffix := map[string]matrix.TopologyRelease{}
+	hubNamespace := ""
 	for i, rel := range entry.Topology.Releases {
 		nsBySuffix[rel.NamespaceSuffix] = contexts[i].Namespace
 		relBySuffix[rel.NamespaceSuffix] = rel
+		if rel.Role == "hub" {
+			hubNamespace = contexts[i].Namespace
+		}
+	}
+	// Without the Hub namespace, run-e2e-tests.sh renders the env from the orchestration namespace
+	// alone, so Web Modeler, Management Identity and Keycloak resolve to the orchestration host where
+	// they do not exist and the setup project times out before any test runs.
+	if hubNamespace == "" {
+		return fmt.Errorf("topology %s: no hub release, so the e2e env cannot resolve Identity, Keycloak or Web Modeler", entry.Scenario)
 	}
 
 	var failures []string
@@ -1414,6 +1424,7 @@ func runTopologyE2ELegs(
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		// synthesizeReleaseEntry disables e2e for the deploy loop; re-enable it for this leg only.
 		flags.Test.RunE2ETests = true
+		flags.Test.HubNamespace = hubNamespace
 		flags.Test.OptimizeNamespace = optimizeNamespace
 		flags.Test.OptimizeContextPath = leg.OptimizeContextPath
 

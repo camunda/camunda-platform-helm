@@ -104,9 +104,10 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.Selection.Persistence, optimizeTarget{
-				Namespace:   flags.Test.OptimizeNamespace,
-				ContextPath: flags.Test.OptimizeContextPath,
+			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.Selection.Persistence, topologyTarget{
+				HubNamespace:        flags.Test.HubNamespace,
+				OptimizeNamespace:   flags.Test.OptimizeNamespace,
+				OptimizeContextPath: flags.Test.OptimizeContextPath,
 			}, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
@@ -147,19 +148,23 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 	return nil
 }
 
-// runE2ETests executes the e2e test script.
-// optimizeTarget points the e2e env at an Optimize that runs as its own release, in its own
-// namespace on the Hub host. Zero value means Optimize shares the namespace under test.
-type optimizeTarget struct {
-	Namespace   string
-	ContextPath string
+// topologyTarget points the e2e env at the other namespaces of a multi-namespace topology. Zero value
+// means a single-release deployment, where every app shares the namespace under test.
+type topologyTarget struct {
+	// HubNamespace runs the central Identity, Keycloak and Web Modeler. Setting it is what makes
+	// run-e2e-tests.sh merge the Hub's absolute URLs into the env instead of deriving every app from
+	// the orchestration host.
+	HubNamespace string
+	// OptimizeNamespace and OptimizeContextPath locate an Optimize that runs as its own release.
+	OptimizeNamespace   string
+	OptimizeContextPath string
 }
 
-func (o optimizeTarget) isSet() bool {
-	return o.Namespace != "" || o.ContextPath != ""
+func (o topologyTarget) isSet() bool {
+	return o.HubNamespace != "" || o.OptimizeNamespace != "" || o.OptimizeContextPath != ""
 }
 
-func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude, persistence string, optimize optimizeTarget, outputSink io.Writer) (string, error) {
+func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude, persistence string, topology topologyTarget, outputSink io.Writer) (string, error) {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-e2e-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
@@ -172,13 +177,23 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 		Str("namespace", namespace).
 		Str("kubeContext", kubeContext).
 		Str("persistence", persistence)
-	if optimize.isSet() {
+	if topology.isSet() {
 		event = event.
-			Str("optimizeNamespace", optimize.Namespace).
-			Str("optimizeContextPath", optimize.ContextPath)
+			Str("hubNamespace", topology.HubNamespace).
+			Str("optimizeNamespace", topology.OptimizeNamespace).
+			Str("optimizeContextPath", topology.OptimizeContextPath)
 	}
 	event.Msg("Running e2e tests")
 
+	args := e2eScriptArgs(chartPath, namespace, kubeContext, testExclude, persistence, topology)
+
+	return executeScript(ctx, scriptPath, args, "e2e", outputSink)
+}
+
+// e2eScriptArgs builds the run-e2e-tests.sh argument list. Extracted so the topology arguments are
+// unit-testable: omitting --hub-namespace silently rendered the e2e env from the orchestration
+// namespace alone, which surfaced as a Web Modeler timeout rather than as a missing argument.
+func e2eScriptArgs(chartPath, namespace, kubeContext, testExclude, persistence string, topology topologyTarget) []string {
 	args := []string{
 		"--absolute-chart-path", chartPath,
 		"--namespace", namespace,
@@ -201,14 +216,16 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 	if strings.Contains(persistence, "opensearch") {
 		args = append(args, "--opensearch")
 	}
-	if optimize.Namespace != "" {
-		args = append(args, "--optimize-namespace", optimize.Namespace)
+	if topology.HubNamespace != "" {
+		args = append(args, "--hub-namespace", topology.HubNamespace)
 	}
-	if optimize.ContextPath != "" {
-		args = append(args, "--optimize-context-path", optimize.ContextPath)
+	if topology.OptimizeNamespace != "" {
+		args = append(args, "--optimize-namespace", topology.OptimizeNamespace)
 	}
-
-	return executeScript(ctx, scriptPath, args, "e2e", outputSink)
+	if topology.OptimizeContextPath != "" {
+		args = append(args, "--optimize-context-path", topology.OptimizeContextPath)
+	}
+	return args
 }
 
 // isFullSuiteChart returns true if the chart path indicates version 8.10 or

@@ -261,7 +261,15 @@ if [[ -n "$HUB_NAMESPACE" ]]; then
     --render-script "$SCRIPT_DIR/render-e2e-env.sh" \
     ${OPTIMIZE_NAMESPACE:+--optimize-namespace "$OPTIMIZE_NAMESPACE"} \
     ${OPTIMIZE_CONTEXT_PATH:+--optimize-context-path "$OPTIMIZE_CONTEXT_PATH"} \
-    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"}
+    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"} || {
+    # This script does not run under `set -e`, so without this guard a failed merge falls through and
+    # Playwright runs against a stale or orchestration-only .env: Modeler and Identity point at the
+    # wrong host and the setup project times out, which reads as a product failure rather than a
+    # missing merge. A common cause is `deploy-camunda` not resolving on PATH.
+    echo "Error: 'deploy-camunda e2e-env merge' failed; refusing to run tests against an unmerged env." >&2
+    echo "       Check that deploy-camunda is on PATH: $(command -v deploy-camunda || echo 'not found')" >&2
+    exit 1
+  }
 else
   render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"
 fi
