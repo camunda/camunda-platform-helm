@@ -21,7 +21,7 @@
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.",
+                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, one per Physical Tenant that runs its own Optimize release, so that Optimize gets its own client and its own resource server rather than sharing the cluster's Optimize audience.",
                             "default": [],
                             "items": {
                                 "$ref": "#/$defs/topologyCluster"
@@ -7098,6 +7098,35 @@
                 },
                 "components": {
                     "$ref": "#/$defs/topologyComponents"
+                },
+                "physicalTenants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/topologyPhysicalTenant"
+                    }
+                }
+            }
+        },
+        "topologyPhysicalTenant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "components"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]{1,64}$"
+                },
+                "components": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {
+                            "$ref": "#/$defs/topologyOptimizeComponent"
+                        }
+                    }
                 }
             }
         }

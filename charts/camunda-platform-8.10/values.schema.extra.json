@@ -1561,7 +1561,26 @@
                         "connectors": {"type": "string", "pattern": "^$|^/"}
                     }
                 },
-                "components": {"$ref": "#/$defs/topologyComponents"}
+                "components": {"$ref": "#/$defs/topologyComponents"},
+                "physicalTenants": {
+                    "type": "array",
+                    "items": {"$ref": "#/$defs/topologyPhysicalTenant"}
+                }
+            }
+        },
+        "topologyPhysicalTenant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "components"],
+            "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "components": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"}
+                    }
+                }
             }
         }
     }

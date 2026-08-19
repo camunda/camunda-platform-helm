@@ -80,6 +80,108 @@ func TestHubTopologyOptimizeRedirectUrisIncludesRoot(t *testing.T) {
 	require.Regexp(t, `redirect-uris:\s*\n\s*-\s*"/api/authentication/callback"\s*\n\s*-\s*"/"\s*\n`, output)
 }
 
+// Each Physical Tenant's Optimize gets its own client AND its own resource server, so a client
+// permission can name the tenant's own audience instead of sharing the cluster's Optimize audience.
+func TestHubTopologyRendersPerTenantOptimizeClientsAndApis(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
+
+	require.Contains(t, output, `id: "optimize-east-ta"`)
+	require.Contains(t, output, `id: "optimize-east-tb"`)
+	require.Contains(t, output, `secret: ${VALUES_TOPOLOGY_EAST_TENANT_TENANTA_OPTIMIZE_SECRET:}`)
+	require.Contains(t, output, `secret: ${VALUES_TOPOLOGY_EAST_TENANT_TENANTB_OPTIMIZE_SECRET:}`)
+
+	require.Contains(t, output, `audience: "optimize-east-ta-api"`)
+	require.Contains(t, output, `audience: "optimize-east-tb-api"`)
+	require.Contains(t, output, `- name: "Optimize East tenanta API"`)
+	require.Contains(t, output, `- name: "Optimize East tenantb API"`)
+
+	// the cluster-level Optimize keeps its own client and audience alongside the tenants
+	require.Contains(t, output, `id: "optimize-east"`)
+	require.Contains(t, output, `audience: "optimize-east-api"`)
+}
+
+func TestHubTopologyPerTenantOptimizeRoleFallsBackToSharedRole(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
+
+	// tenantb declares roleName, so it gets a dedicated role
+	require.Regexp(t,
+		`- name: "Optimize East tenantb"\s*\n\s*description: "Grants full access to Optimize East tenantb"(?s).*?audience: "optimize-east-tb-api"`,
+		output)
+
+	// tenanta declares none, so its audience joins the shared Optimize role and tenantb's does not
+	sharedRole := output[strings.Index(output, `- name: "Optimize"`):]
+	sharedRole = sharedRole[:strings.Index(sharedRole, "read:users")]
+	require.Contains(t, sharedRole, `audience: "optimize-east-ta-api"`)
+	require.NotContains(t, sharedRole, `audience: "optimize-east-tb-api"`)
+}
+
+func TestHubTopologyPerTenantOptimizeSecretEnvVars(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/deployment.yaml")
+
+	require.Contains(t, output, "VALUES_TOPOLOGY_EAST_TENANT_TENANTA_OPTIMIZE_SECRET")
+	require.Contains(t, output, "VALUES_TOPOLOGY_EAST_TENANT_TENANTB_OPTIMIZE_SECRET")
+	require.Contains(t, output, "key: optimize-ta-secret")
+	require.Contains(t, output, "key: optimize-tb-secret")
+}
+
+func TestHubTopologyPerTenantOptimizeGrantsAdminTheTenantRole(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.identity.auth.admin.enabled": "true"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+	require.Regexp(t, `roles:\s*\n\s*- ManagementIdentity(?s).*?- "Optimize East tenantb"`, output)
+}
+
+func TestHubTopologyWithoutPhysicalTenantsRendersNoTenantArtifacts(t *testing.T) {
+	output := render(t, "hub-keycloak.yaml", "templates/identity/configmap.yaml", "templates/identity/deployment.yaml")
+
+	require.NotContains(t, output, "_TENANT_")
+	require.NotContains(t, output, "physicalTenants")
+}
+
+func TestHubTopologyPhysicalTenantOptimizeRequiresIdentifiers(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[0].components.optimize.audience": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, "physicalTenants[tenanta].components.optimize requires clientId, audience, and redirectUrl")
+}
+
+func TestHubTopologyPhysicalTenantRejectsAudienceCollisionWithCluster(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[0].components.optimize.audience": "optimize-east-api"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "optimize-east-api"`)
+}
+
+func TestHubTopologyPhysicalTenantRejectsInvalidId(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[0].id": "Tenant_A"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.Error(t, err, "an id that cannot be a runtime tenant id must be rejected")
+}
+
+func TestHubTopologyPhysicalTenantRejectsDuplicateId(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[1].id": "tenanta"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate global.topology.clusters[east].physicalTenants id "tenanta"`)
+}
+
 func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
 	output := render(t, "hub-generic.yaml")
 
