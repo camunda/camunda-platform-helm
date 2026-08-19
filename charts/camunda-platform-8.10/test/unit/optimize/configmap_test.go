@@ -389,7 +389,8 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
 				authConfig := configmap.Data["application-ccsm.yaml"]
-				s.Require().Contains(authConfig, "csl:\n      enabled: true")
+				s.Require().NotContains(authConfig, "csl:",
+					"Optimize defaults to the CSL chains, so the chart no longer opts in explicitly")
 				s.Require().Contains(authConfig, `method: "oidc"`)
 				s.Require().Contains(authConfig, `client-id: "optimize"`)
 				s.Require().Contains(authConfig, "client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}")
@@ -470,7 +471,6 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
 				authConfig := configmap.Data["application-ccsm.yaml"]
-				s.Require().NotContains(authConfig, "csl:")
 				s.Require().NotContains(authConfig, "audiences:")
 				s.Require().Contains(authConfig, `clientId: "optimize"`,
 					"camunda.identity.* is required by both the legacy and the CSL chains")
