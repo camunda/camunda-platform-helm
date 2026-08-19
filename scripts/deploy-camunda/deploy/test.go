@@ -118,7 +118,10 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.Selection.Persistence, flags.E2EOutputWriter)
+			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.Selection.Persistence, optimizeTarget{
+				Namespace:   flags.Test.OptimizeNamespace,
+				ContextPath: flags.Test.OptimizeContextPath,
+			}, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
 	}
@@ -159,20 +162,36 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 }
 
 // runE2ETests executes the e2e test script.
-func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude, persistence string, outputSink io.Writer) (string, error) {
+// optimizeTarget points the e2e env at an Optimize that runs as its own release, in its own
+// namespace on the Hub host. Zero value means Optimize shares the namespace under test.
+type optimizeTarget struct {
+	Namespace   string
+	ContextPath string
+}
+
+func (o optimizeTarget) isSet() bool {
+	return o.Namespace != "" || o.ContextPath != ""
+}
+
+func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude, persistence string, optimize optimizeTarget, outputSink io.Writer) (string, error) {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-e2e-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
 		return "", fmt.Errorf("e2e test script not found at %s: %w", scriptPath, err)
 	}
 
-	logging.Logger.Info().
+	event := logging.Logger.Info().
 		Str("script", scriptPath).
 		Str("chartPath", chartPath).
 		Str("namespace", namespace).
 		Str("kubeContext", kubeContext).
-		Str("persistence", persistence).
-		Msg("Running e2e tests")
+		Str("persistence", persistence)
+	if optimize.isSet() {
+		event = event.
+			Str("optimizeNamespace", optimize.Namespace).
+			Str("optimizeContextPath", optimize.ContextPath)
+	}
+	event.Msg("Running e2e tests")
 
 	args := []string{
 		"--absolute-chart-path", chartPath,
@@ -195,6 +214,12 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 	}
 	if strings.Contains(persistence, "opensearch") {
 		args = append(args, "--opensearch")
+	}
+	if optimize.Namespace != "" {
+		args = append(args, "--optimize-namespace", optimize.Namespace)
+	}
+	if optimize.ContextPath != "" {
+		args = append(args, "--optimize-context-path", optimize.ContextPath)
 	}
 
 	return executeScript(ctx, scriptPath, args, "e2e", outputSink)
