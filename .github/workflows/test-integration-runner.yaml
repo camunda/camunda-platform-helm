@@ -478,6 +478,13 @@ jobs:
               # Remove any stale Helm release left behind by a cancelled/completed previous run.
               # Without this, 'helm install' fails with "cannot re-use a name that is still in use".
               helm uninstall integration --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
+              # Companions are separate releases, so the uninstall above does not touch them.
+              # Kubernetes never garbage-collects PVCs created from volumeClaimTemplates, so the
+              # delete is what stops a new pod binding the previous run's database.
+              helm uninstall postgresql --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
+              helm uninstall keycloak --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
+              kubectl delete pvc -l app.kubernetes.io/component=postgresql \
+                --namespace $TEST_NAMESPACE --ignore-not-found 2>/dev/null || true
             fi
           fi
           kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
