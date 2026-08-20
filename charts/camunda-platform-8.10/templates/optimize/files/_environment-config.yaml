@@ -41,7 +41,7 @@ security:
     cookie:
       same-site:
         enabled: false
-{{- if and .Values.global.identity.auth.enabled (ne (include "optimize.cslEnabled" .) "true") }}
+{{- if .Values.global.identity.auth.enabled }}
     ccsm:
       redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
 api:

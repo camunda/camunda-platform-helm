@@ -456,32 +456,7 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 			},
 		},
 		{
-			Name: "TestExtraConfigurationOptOutRendersLegacySecurityConfig",
-			Values: map[string]string{
-				"identity.enabled":                       "true",
-				"optimize.enabled":                       "true",
-				"global.identity.auth.enabled":           "true",
-				"optimize.extraConfiguration[0].file":    "optimize-legacy-security.yaml",
-				"optimize.extraConfiguration[0].content": "optimize:\n  security:\n    csl:\n      enabled: false\n",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configmap corev1.ConfigMap
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				authConfig := configmap.Data["application-ccsm.yaml"]
-				s.Require().NotContains(authConfig, "audiences:")
-				s.Require().Contains(authConfig, `clientId: "optimize"`,
-					"camunda.identity.* is required by both the legacy and the CSL chains")
-
-				envConfig := configmap.Data["environment-config.yaml"]
-				s.Require().Contains(envConfig, "redirectRootUrl:")
-				s.Require().Contains(envConfig, `audience: "optimize-api"`)
-				s.Require().Contains(envConfig, "jwtSetUri:")
-			},
-		},
-		{
-			Name: "TestLegacyAuthKeysAreNotRendered",
+			Name: "TestBothSecurityConfigShapesAreRendered",
 			Values: map[string]string{
 				"identity.enabled":             "true",
 				"optimize.enabled":             "true",
@@ -492,9 +467,18 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
+				// Optimize picks its stack from optimize.security.csl.enabled, whose default differs
+				// per image and which an operator can still set to false through 8.10. Rendering both
+				// shapes keeps the chart working either way, and lets the escape hatch be the flag
+				// alone rather than a chart change.
+				s.Require().Contains(configmap.Data["application-ccsm.yaml"], `method: "oidc"`,
+					"the CSL chains read camunda.security.*")
+
 				envConfig := configmap.Data["environment-config.yaml"]
-				s.Require().NotContains(envConfig, "redirectRootUrl")
-				s.Require().NotContains(envConfig, "jwtSetUri")
+				s.Require().Contains(envConfig, "redirectRootUrl:",
+					"the legacy chains read environment-config.yaml, which extraConfiguration cannot reach")
+				s.Require().Contains(envConfig, `audience: "optimize-api"`)
+				s.Require().Contains(envConfig, "jwtSetUri:")
 			},
 		},
 	}

@@ -27,8 +27,6 @@ data:
         audience: {{ include "optimize.authAudience" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-      {{- $cslEnabled := eq (include "optimize.cslEnabled" .) "true" }}
-      {{- if $cslEnabled }}
       security:
         authentication:
           method: "oidc"
@@ -47,7 +45,6 @@ data:
             token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
             {{- end }}
             redirect-uri: {{ printf "%s/api/authentication/callback" (tpl .Values.global.identity.auth.optimize.redirectUrl $) | quote }}
-      {{- end }}
     {{- end }}
   {{- end }}
 
