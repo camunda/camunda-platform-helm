@@ -466,6 +466,46 @@ otherwise.
 {{- end -}}
 {{- end -}}
 
+{{/*
+[orchestration] Exporter id of the release's legacy exporter, empty when it runs none.
+*/}}
+{{- /*
+NOTE: matches the nested, dotted and raw-properties forms, as the camunda.secrets check in
+constraints.tpl does: one form alone lets a different YAML style slip past the check.
+*/ -}}
+{{- define "orchestration.physicalTenantsDeclared" -}}
+{{- $args := dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "physical-tenants") -}}
+{{- if or (eq (include "camundaPlatform.extraConfigHasPath" $args) "true") (eq (include "camundaPlatform.extraConfigHasDottedPath" $args) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.legacyExporterId" -}}
+{{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" -}}
+elasticsearch
+{{- else if eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true" -}}
+opensearch
+{{- end -}}
+{{- end -}}
+
+{{/*
+[orchestration] Index prefix of the release's root legacy exporter, empty when it runs none.
+*/}}
+{{- define "orchestration.legacyExporterPrefix" -}}
+{{- $exporterId := include "orchestration.legacyExporterId" . -}}
+{{- if eq $exporterId "elasticsearch" -}}
+{{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix -}}
+{{- else if eq $exporterId "opensearch" -}}
+{{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[orchestration] Render one Physical Tenant's legacy exporter entry, keyed by exporter id.
+Takes a dict of "root" (the root context), "tenantId" and "prefix". Emitted at column 0;
+the caller nindents it under camunda.physical-tenants.<id>.data.exporters.
+*/}}
+
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
