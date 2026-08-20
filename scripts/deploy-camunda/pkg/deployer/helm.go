@@ -190,15 +190,47 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 		args = append(args, o.ExtraArgs...)
 	}
 
-	_, runErr := helmRunWithRetry(ctx, args)
+	runCtx, guard := guardedContext(ctx, o, o.Wait)
+	defer guard.Stop()
+
+	_, runErr := helmRunWithRetry(runCtx, args)
 	if runErr != nil {
 		return &HelmError{
-			Reason:  "helm upgrade --install failed",
+			Reason:  guardedReason("helm upgrade --install failed", guard),
 			Command: "helm " + formatArgs(args),
-			Cause:   runErr,
+			Cause:   guardedCause(runErr, guard),
 		}
 	}
 	return nil
+}
+
+// guardedContext starts the image pull guard for a waiting Helm run, or returns
+// the context untouched with a no-op guard when the run does not wait (nothing
+// to abort) or the guard is disabled.
+func guardedContext(ctx context.Context, o types.Options, waits bool) (context.Context, *imagePullGuard) {
+	if !waits || !imagePullGuardEnabled() {
+		return ctx, noopImagePullGuard()
+	}
+	return startImagePullGuard(ctx, o)
+}
+
+// guardedReason replaces the generic failure reason when the guard is what ended
+// the run, so the error names the actual problem instead of the Helm exit.
+func guardedReason(defaultReason string, guard *imagePullGuard) string {
+	if guard.Stop() != nil {
+		return "helm upgrade --install aborted early: unresolvable container image"
+	}
+	return defaultReason
+}
+
+// guardedCause substitutes the observed image pull failure for the Helm process
+// error. Cancelling the context kills helm, so runErr would otherwise read
+// "signal: killed", which explains nothing.
+func guardedCause(runErr error, guard *imagePullGuard) error {
+	if failure := guard.Stop(); failure != nil {
+		return failure
+	}
+	return runErr
 }
 
 // composeKubeArgs builds kubeconfig and context arguments
@@ -340,13 +372,18 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		args = append(args, "--set", path+"="+o.CompanionStorageClass)
 	}
 
-	_, runErr := helmRunWithRetry(ctx, args)
+	// Companion charts always pass --wait (see the args above), independently of o.Wait.
+	runCtx, guard := guardedContext(ctx, o, true)
+	defer guard.Stop()
+
+	_, runErr := helmRunWithRetry(runCtx, args)
 	if runErr == nil {
 		return nil
 	}
 	return &HelmError{
-		Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
+		Reason: guardedReason(
+			fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName), guard),
 		Command: "helm " + formatArgs(args),
-		Cause:   runErr,
+		Cause:   guardedCause(runErr, guard),
 	}
 }
