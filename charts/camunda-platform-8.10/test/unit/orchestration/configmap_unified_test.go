@@ -1000,6 +1000,73 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestLegacyExporterMultiRegionGate() {
+	verifyExporter := func(exporterKey, exporterClass string, expected bool) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &configmap)
+
+			var applicationYaml map[string]any
+			require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &applicationYaml))
+			require.Contains(t, configmap.Data["application.yaml"], "io.camunda.exporter.CamundaExporter")
+			if expected {
+				require.Contains(t, configmap.Data["application.yaml"], exporterClass)
+			} else {
+				requireNestedKeyAbsent(t, applicationYaml, "zeebe", "broker", "exporters", exporterKey)
+			}
+		}
+	}
+
+	elasticsearchValues := map[string]string{
+		"global.multiregion.regions":               "2",
+		"global.multiregion.regionId":              "0",
+		"orchestration.profiles.broker":            "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.enabled":                         "true",
+		"optimize.database.elasticsearch.enabled":  "true",
+	}
+	openSearchValues := map[string]string{
+		"global.multiregion.regions":               "2",
+		"global.multiregion.regionId":              "0",
+		"orchestration.profiles.broker":            "true",
+		"orchestration.data.secondaryStorage.type": "opensearch",
+		"optimize.enabled":                         "true",
+		"optimize.database.opensearch.enabled":     "true",
+		"optimize.database.opensearch.url.host":    "opensearch.example.com",
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "Multi-region omits the implicit Elasticsearch exporter",
+			Values:   elasticsearchValues,
+			Verifier: verifyExporter("elasticsearch", "io.camunda.zeebe.exporter.ElasticsearchExporter", false),
+		},
+		{
+			Name: "Multi-region keeps the explicitly enabled Elasticsearch exporter",
+			Values: mergeValues(elasticsearchValues, map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+			}),
+			Verifier: verifyExporter("elasticsearch", "io.camunda.zeebe.exporter.ElasticsearchExporter", true),
+		},
+		{
+			Name:     "Multi-region omits the implicit OpenSearch exporter",
+			Values:   openSearchValues,
+			Verifier: verifyExporter("opensearch", "io.camunda.zeebe.exporter.opensearch.OpensearchExporter", false),
+		},
+		{
+			Name: "Multi-region keeps the explicitly enabled OpenSearch exporter",
+			Values: mergeValues(openSearchValues, map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+			}),
+			Verifier: verifyExporter("opensearch", "io.camunda.zeebe.exporter.opensearch.OpensearchExporter", true),
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
 	testCases := []testhelpers.TestCase{
 		{
