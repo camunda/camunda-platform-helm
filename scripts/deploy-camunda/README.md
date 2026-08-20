@@ -720,13 +720,19 @@ available inside the Helm timeout, so waiting the remaining 19 minutes only
 buys a `context deadline exceeded` that names neither the image nor the
 reason. Two guards produce this:
 
-- **Preflight (before any cluster mutation).** Every image that a resolved
-  values layer pins completely (`registry` + `repository` + `tag`) is
-  resolved on `linux/amd64` — the index *and* the per-platform child
-  manifest it references. An index-only probe passes when the child is
-  missing, which is the exact failure mode of
+- **Preflight (before any cluster mutation).** When the resolved values chain
+  includes the enterprise overlay (`values-enterprise.yaml`, reached as
+  `values/features/enterprise.yaml`), every image it pins completely
+  (`registry` + `repository` + `tag`) is resolved on `linux/amd64` — the index
+  *and* the per-platform child manifest it references. An index-only probe
+  passes when the child is missing, which is the exact failure mode of
   [#6804](https://github.com/camunda/camunda-platform-helm/issues/6804).
-  Scenarios that pin no images resolve nothing and pay no cost.
+  Scenarios without the overlay make no registry calls at all.
+
+  Only one condition fails the preflight: the registry serves the index and then
+  denies the child that index advertises. Anything that merely prevents the
+  check from running — no Docker binary, no credentials, no network — is a
+  warning, because it says nothing about the images.
 - **In-flight guard (during `helm --wait`).** Pods are polled every 15s.
   When the same container reports `ErrImagePull`/`ImagePullBackOff` with a
   `not found` / `manifest unknown` registry message on two consecutive
