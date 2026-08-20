@@ -116,7 +116,7 @@ data:
                 - audience: "web-modeler-api"
                   definition: admin:*
             - name: "Analyst"
-              description: "Grants full access to Hub and management access to catalog and business intelligence features"
+              description: "Grants full access to Optimize and to Hub. Additionally, grants management access to Hub's catalog and business intelligence features"
               permissions:
                 - audience: "web-modeler-api"
                   definition: write:*
