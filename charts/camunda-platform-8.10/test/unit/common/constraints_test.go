@@ -485,7 +485,7 @@ func (s *ConstraintTemplateTest) TestGlobalDatastoreTreesRemovedGate() {
 				"global.elasticsearch.enabled":             "false",
 			},
 			Expected: map[string]string{
-				"ERROR": `The Helm values file key "global.elasticsearch" has been removed. Configure this via "optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch; clusterName and the JKS truststore password have no replacement, see the 8.9-to-8.10 upgrade guide" instead.`,
+				"ERROR": `The Helm values file key "global.elasticsearch" has been removed. Configure this via "optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch; clusterName has no replacement (app default is unchanged, set camunda.data.secondary-storage.elasticsearch.cluster-name via orchestration.extraConfiguration if needed); the JKS truststore password injection is removed, use global.tls.caBundle.secret (PEM) or the component's javaOpts" instead.`,
 			},
 		},
 		{
@@ -496,7 +496,7 @@ func (s *ConstraintTemplateTest) TestGlobalDatastoreTreesRemovedGate() {
 				"global.opensearch.url.host":                         "os.example.com",
 			},
 			Expected: map[string]string{
-				"ERROR": `The Helm values file key "global.opensearch" has been removed. Configure this via "optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch; clusterName and the JKS truststore password have no replacement, see the 8.9-to-8.10 upgrade guide" instead.`,
+				"ERROR": `The Helm values file key "global.opensearch" has been removed. Configure this via "optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch; clusterName has no replacement (app default is unchanged, set camunda.data.secondary-storage.opensearch.cluster-name via orchestration.extraConfiguration if needed); the JKS truststore password injection is removed, use global.tls.caBundle.secret (PEM) or the component's javaOpts" instead.`,
 			},
 		},
 		{
