@@ -18,7 +18,8 @@ type DatasourceYAML struct {
 }
 
 type MailYAML struct {
-	Username string `yaml:"username"`
+	Username   string         `yaml:"username"`
+	Properties map[string]any `yaml:"properties"`
 }
 
 type SpringSecurityYAML struct {

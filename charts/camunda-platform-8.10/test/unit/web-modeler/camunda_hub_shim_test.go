@@ -494,6 +494,36 @@ func (s *CamundaHubShimTemplateTest) TestListValuedOverrideReplacesLegacyList() 
 	s.Require().Equal("hub", tolerations[0].Key)
 }
 
+func (s *CamundaHubShimTemplateTest) TestFalsySmtpTlsOverrideReachesTheConfigMap() {
+	values := map[string]string{
+		"camundaHub.enabled":                     "true",
+		"webModeler.enabled":                     "true",
+		"webModeler.restapi.mail.smtpTlsEnabled": "true",
+		"camundaHub.restapi.mail.smtpTlsEnabled": "false",
+	}
+	properties := s.renderRestAPIConfigMap(values).Spring.Mail.Properties
+	s.Require().Equal(false, properties["mail.smtp.starttls.enable"])
+	s.Require().Equal(false, properties["mail.smtp.starttls.required"])
+}
+
+func (s *CamundaHubShimTemplateTest) TestServiceAnnotationsStillReplaceLegacyMap() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"webModeler.enabled": "true",
+		"webModeler.restapi.service.annotations.legacykey": "legacyval",
+		"camundaHub.restapi.service.annotations.hubkey":    "hubval",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/service-restapi.yaml"})
+	s.Require().NoError(err)
+
+	var service corev1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+	annotations := service.Annotations
+	s.Require().Equal("hubval", annotations["hubkey"])
+	s.Require().NotContains(annotations, "legacykey",
+		"services are not on the merged view yet; values.yaml documents this scope boundary")
+}
+
 func (s *CamundaHubShimTemplateTest) TestResourceNamesStableBetweenLegacyAndCamundaHubValues() {
 	legacyValues := map[string]string{
 		"camundaHub.enabled":                  "false",
