@@ -854,7 +854,6 @@ The following values inside your values.yaml need to be set but were not:
   {{ include "camundaPlatform.keyDeprecated" (dict
     "condition" (ne (.Values.global.documentStore.type.inmemory.storeId | toString) "INMEMORY")
     "oldName" "global.documentStore.type.inmemory.storeId" "migration" $componentExtra) }}
-
 {{- end }}
 
 {{/*
