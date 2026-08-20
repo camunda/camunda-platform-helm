@@ -102,6 +102,25 @@
     },
   },
   packageRules: [
+    // Bitnami Premium tags are '<x.y.z>-debian-<n>-rN'. 'docker' versioning does not
+    // move across the '-rN' revision and the customManagers fall back to 'semver',
+    // which rejects the tag outright -- and a rejected tag is not an error: Renovate
+    // drops the dependency with 'skipReason: invalid-value' and it silently stops
+    // being updated. Attaching the versioning to the datasources makes the inline
+    // 'versioning=' in values-enterprise.yaml redundant rather than load-bearing.
+    {
+      description: 'Bitnami Premium tags carry a -rN revision the default versionings cannot move.',
+      matchDatasources: [
+        'custom.bitnami-postgresql-camunda',
+        'custom.bitnami-os-shell-camunda',
+        'custom.bitnami-postgres-exporter-camunda',
+        'custom.bitnami-elasticsearch-camunda',
+        'custom.bitnami-elasticsearch-exporter-camunda',
+        'custom.bitnami-keycloak-config-cli-camunda',
+        'custom.bitnami-keycloak-camunda',
+      ],
+      versioning: 'regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<compatibility>debian-\\d+)-r(?<build>\\d+))?$',
+    },
     // vendor-ee/postgresql in the 8.7/8.8/8.9 enterprise values is sourced from
     // the bitnami-postgresql-camunda custom datasource (see customManagers);
     // disable the docker/helm-values tracking for it so it is not bumped twice.
