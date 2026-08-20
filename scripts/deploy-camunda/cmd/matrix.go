@@ -1427,6 +1427,7 @@ func runTopologyE2ELegs(
 		flags.Test.HubNamespace = hubNamespace
 		flags.Test.OptimizeNamespace = optimizeNamespace
 		flags.Test.OptimizeContextPath = leg.OptimizeContextPath
+		flags.Test.ModelerClusterName = leg.ModelerClusterName
 
 		testErr := deploy.RunTests(ctx, flags, namespace)
 		cleanup()

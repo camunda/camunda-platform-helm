@@ -51,6 +51,7 @@ func TestE2EScriptArgs_ForwardsTopologyNamespaces(t *testing.T) {
 			HubNamespace:        "ns-hub",
 			OptimizeNamespace:   "ns-opta",
 			OptimizeContextPath: "/optimize-orcha",
+			ModelerClusterName:  "Orchestration A",
 		},
 	)
 
@@ -59,6 +60,7 @@ func TestE2EScriptArgs_ForwardsTopologyNamespaces(t *testing.T) {
 		{"--hub-namespace", "ns-hub"},
 		{"--optimize-namespace", "ns-opta"},
 		{"--optimize-context-path", "/optimize-orcha"},
+		{"--modeler-cluster-name", "Orchestration A"},
 		{"--kube-context", "gke-ctx"},
 	} {
 		if !hasFlagValue(args, tc.flag, tc.value) {
@@ -72,7 +74,7 @@ func TestE2EScriptArgs_ForwardsTopologyNamespaces(t *testing.T) {
 func TestE2EScriptArgs_OmitsTopologyFlagsForSingleRelease(t *testing.T) {
 	args := e2eScriptArgs("/repo/charts/camunda-platform-8.10", "ns", "", "", "elasticsearch", topologyTarget{})
 
-	for _, flag := range []string{"--hub-namespace", "--optimize-namespace", "--optimize-context-path"} {
+	for _, flag := range []string{"--hub-namespace", "--optimize-namespace", "--optimize-context-path", "--modeler-cluster-name"} {
 		if hasFlag(args, flag) {
 			t.Errorf("%s must be omitted for a single-release deployment, got %v", flag, args)
 		}

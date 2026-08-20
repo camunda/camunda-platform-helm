@@ -108,6 +108,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 				HubNamespace:        flags.Test.HubNamespace,
 				OptimizeNamespace:   flags.Test.OptimizeNamespace,
 				OptimizeContextPath: flags.Test.OptimizeContextPath,
+				ModelerClusterName:  flags.Test.ModelerClusterName,
 			}, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
@@ -158,10 +159,13 @@ type topologyTarget struct {
 	// OptimizeNamespace and OptimizeContextPath locate an Optimize that runs as its own release.
 	OptimizeNamespace   string
 	OptimizeContextPath string
+	// ModelerClusterName selects this leg's cluster in the Hub's Web Modeler deploy dialog.
+	ModelerClusterName string
 }
 
 func (o topologyTarget) isSet() bool {
-	return o.HubNamespace != "" || o.OptimizeNamespace != "" || o.OptimizeContextPath != ""
+	return o.HubNamespace != "" || o.OptimizeNamespace != "" || o.OptimizeContextPath != "" ||
+		o.ModelerClusterName != ""
 }
 
 func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude, persistence string, topology topologyTarget, outputSink io.Writer) (string, error) {
@@ -181,7 +185,8 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 		event = event.
 			Str("hubNamespace", topology.HubNamespace).
 			Str("optimizeNamespace", topology.OptimizeNamespace).
-			Str("optimizeContextPath", topology.OptimizeContextPath)
+			Str("optimizeContextPath", topology.OptimizeContextPath).
+			Str("modelerClusterName", topology.ModelerClusterName)
 	}
 	event.Msg("Running e2e tests")
 
@@ -224,6 +229,9 @@ func e2eScriptArgs(chartPath, namespace, kubeContext, testExclude, persistence s
 	}
 	if topology.OptimizeContextPath != "" {
 		args = append(args, "--optimize-context-path", topology.OptimizeContextPath)
+	}
+	if topology.ModelerClusterName != "" {
+		args = append(args, "--modeler-cluster-name", topology.ModelerClusterName)
 	}
 	return args
 }
