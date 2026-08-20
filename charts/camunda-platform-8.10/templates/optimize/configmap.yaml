@@ -46,7 +46,7 @@ data:
             jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
             token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
             {{- end }}
-            redirect-uri: "{baseUrl}/api/authentication/callback"
+            redirect-uri: {{ printf "%s/api/authentication/callback" (tpl .Values.global.identity.auth.optimize.redirectUrl $) | quote }}
       {{- end }}
     {{- end }}
   {{- end }}
