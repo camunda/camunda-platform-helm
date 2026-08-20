@@ -1240,6 +1240,10 @@ Behavior:
 - Password-protected truststores are not handled here; pass
   -Djavax.net.ssl.trustStorePassword=... via <component>.javaOpts, or use
   global.tls.caBundle.secret with a PEM CA bundle instead.
+  To keep the password out of the values file, add a <component>.env entry
+  sourcing it from a Secret (e.g. name: TRUSTSTORE_PASSWORD, valueFrom.secretKeyRef)
+  ahead of javaOpts in the same container, then reference it as
+  -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD).
 */}}
 
 {{- /* Internal: unified JAVA_TOOL_OPTIONS emitter */ -}}
