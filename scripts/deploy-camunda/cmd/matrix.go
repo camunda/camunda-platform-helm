@@ -1215,7 +1215,6 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		releases = append(releases, deploy.TopologyRelease{
 			Role:            r.Role,
 			NamespaceSuffix: r.NamespaceSuffix,
-			Values:          r.Values,
 			DependsOn:       r.DependsOn,
 		})
 	}
@@ -1436,29 +1435,11 @@ func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
 // layer selection instead of the scenario-level (uniform) ones — the core of
 // the per-release layer fix. Extracted as a pure function for testability.
 func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
+	// Feature layers go through the same env-var substitution pipeline as the
+	// identity and persistence layers (scenarios.BuildDeploymentConfig →
+	// values.Process), so a release's ${...} placeholders resolve before Helm
+	// sees them.
 	features := append([]string(nil), rel.Features...)
-	var extraValues []string
-
-	// rel.Values is the release's own overlay file. When it lives under
-	// values/features/ (the convention every multinamespace release uses),
-	// resolve it as a Feature layer instead of an ExtraValues file: Feature
-	// layers go through the SAME env-var substitution pipeline as
-	// identity/persistence layers (scenarios.BuildDeploymentConfig →
-	// values.Process), whereas ExtraValues files are passed straight into
-	// BuildValuesChain WITHOUT substitution. Feeding a topology release's
-	// ${...} placeholders (e.g. EXTERNAL_ELASTICSEARCH_HOST) through
-	// ExtraValues was the root cause of the live-GKE "does not exist" failure
-	// this fix addresses — Feature layers close that gap.
-	const featuresPrefix = "features/"
-	if strings.HasPrefix(rel.Values, featuresPrefix) {
-		featureName := strings.TrimSuffix(strings.TrimPrefix(rel.Values, featuresPrefix), ".yaml")
-		features = append(features, featureName)
-	} else if rel.Values != "" {
-		// Fallback for any release values file NOT under values/features/:
-		// still gets deployed, but its placeholders are only substituted if
-		// resolved another way (e.g. no placeholders at all).
-		extraValues = []string{filepath.Join("values", rel.Values)}
-	}
 
 	releaseEntry := matrix.Entry{
 		Version:      entry.Version,
@@ -1474,7 +1455,6 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Persistence:  rel.Persistence,
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
-		ExtraValues:  extraValues,
 	}
 	if rel.Role == "orchestration" {
 		releaseEntry.PostDeploy = entry.PostDeploy

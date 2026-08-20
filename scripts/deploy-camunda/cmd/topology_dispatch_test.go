@@ -76,7 +76,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "hub",
 			NamespaceSuffix: "hub",
-			Values:          "features/multinamespace-hub.yaml",
+			Features:        []string{"multinamespace-hub"},
 			Identity:        "keycloak",
 			Dependencies:    []string{"keycloak", "postgresql", "elasticsearch"},
 			ResolvedDependencies: []matrix.ChartDependency{
@@ -88,7 +88,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "orchestration",
 			NamespaceSuffix: "orcha",
-			Values:          "features/multinamespace-orchestration.yaml",
+			Features:        []string{"multinamespace-orchestration"},
 			Identity:        "keycloak-external",
 			Persistence:     "elasticsearch-external",
 			DependsOn:       "hub",
@@ -96,7 +96,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "orchestration",
 			NamespaceSuffix: "orchb",
-			Values:          "features/multinamespace-orchestration.yaml",
+			Features:        []string{"multinamespace-orchestration"},
 			Identity:        "keycloak-external",
 			Persistence:     "elasticsearch-external",
 			DependsOn:       "hub",
@@ -177,19 +177,6 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
 		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs after orchestration", hubEntry.PostDeploy)
-	}
-}
-
-func TestSynthesizeReleaseEntry_NonFeatureValuesFallsBackToExtraValues(t *testing.T) {
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace"}
-	rel := matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub", Values: "legacy/some-overlay.yaml"}
-
-	got := synthesizeReleaseEntry(baseEntry, rel, "gke")
-	if len(got.Features) != 0 {
-		t.Errorf("Features = %v, want empty for a non-features/ values path", got.Features)
-	}
-	if len(got.ExtraValues) != 1 {
-		t.Fatalf("ExtraValues = %v, want a single fallback entry", got.ExtraValues)
 	}
 }
 

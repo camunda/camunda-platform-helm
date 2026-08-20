@@ -50,9 +50,9 @@ type TopologyRelease struct {
 	// within the Topology.
 	NamespaceSuffix string `yaml:"namespace-suffix" json:"namespaceSuffix"`
 
-	// Values names the values file (relative to the scenario's
-	// chart-full-setup values dir) applied for this release.
-	Values string `yaml:"values" json:"values"`
+	// Values is rejected by Validate. A release's own overlay is a Feature
+	// layer: list it in Features instead.
+	Values string `yaml:"values,omitempty" json:"-"`
 
 	// DependsOn, when set, names the Role of a release that must be deployed
 	// (and, for "hub", ready) before this one.
@@ -192,12 +192,20 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q is too long (max 12 chars, to keep <namespace>-<suffix> well within the 63-char Kubernetes limit)", label, r.NamespaceSuffix))
 		}
 
-		if strings.TrimSpace(r.Values) == "" {
-			problems = append(problems, fmt.Sprintf("%s: values is required", label))
-		} else {
-			valuesPath := filepath.Join(chartFullSetupDir, "values", r.Values)
-			if info, err := os.Stat(valuesPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: values %q: missing values file at %s", label, r.Values, valuesPath))
+		if strings.TrimSpace(r.Values) != "" {
+			problems = append(problems, fmt.Sprintf("%s: values %q is no longer supported: drop the \"features/\" prefix and the \".yaml\" suffix and list it in features instead, so the layer goes through the same env-var substitution as every other feature layer", label, r.Values))
+		}
+		if len(r.Features) == 0 {
+			problems = append(problems, fmt.Sprintf("%s: features is required and must name at least this release's own overlay layer", label))
+		}
+		for _, featureID := range r.Features {
+			if !isPlainFilename(featureID) {
+				problems = append(problems, fmt.Sprintf("%s: feature reference %q must be a plain filename (no path separators)", label, featureID))
+				continue
+			}
+			featurePath := filepath.Join(chartFullSetupDir, "values", "features", featureID+".yaml")
+			if info, err := os.Stat(featurePath); err != nil || info.IsDir() {
+				problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", label, featureID, featurePath))
 			}
 		}
 
