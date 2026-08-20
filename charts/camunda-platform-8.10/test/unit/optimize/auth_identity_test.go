@@ -128,8 +128,9 @@ func (s *AuthIdentityTemplateTest) TestNoComponentConfigMapWithoutOverrides() {
 // optional: true blocks the pod from starting.
 func (s *AuthIdentityTemplateTest) TestComponentAuthReferencesOnlyRenderedConfigMaps() {
 	extra := map[string]string{
-		"global.identity.auth.enabled":            "false",
-		"optimize.security.authentication.method": "oidc",
+		"global.identity.auth.enabled":                 "false",
+		"optimize.security.authentication.method":      "oidc",
+		"optimize.security.authentication.oidc.issuer": "https://tenant-issuer.example.com",
 	}
 	deployment := s.render(extra, []string{"templates/optimize/deployment.yaml"})
 	configMap := s.render(extra, []string{"templates/optimize/configmap-identity-env.yaml"})
@@ -147,4 +148,99 @@ func (s *AuthIdentityTemplateTest) TestGlobalAuthKeepsTheSharedConfigMapAsSoleSo
 
 	s.Require().Contains(deployment, s.release+"-identity-env-vars")
 	s.Require().NotContains(deployment, s.release+"-optimize-identity-env-vars")
+}
+
+// Turning auth on for the component alone leaves no global.identity.auth.issuer to fall back on, so
+// an unset release-scoped issuer renders an empty "iss" and an empty jwtSetUri that Optimize would
+// then check every token against. The constraint is not gated on global.topology.mode=optimize
+// because a combined release reaches the same state through the method override.
+func (s *AuthIdentityTemplateTest) TestComponentAuthWithoutAnIssuerIsRejected() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "false",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.security.authentication.method":  "oidc",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
+}
+
+// A bundled Keycloak leaves global.identity.auth.issuer empty and resolves the provider through the
+// derived issuerBackendUrl. That has always rendered, so the issuer constraint must not reject it.
+func (s *AuthIdentityTemplateTest) TestGlobalAuthWithoutAnIssuerStillRenders() {
+	out := s.render(map[string]string{"identity.enabled": "true"},
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Contains(out, "issuerBackendUrl:")
+}
+
+// method=none must win over global.identity.auth.enabled=true so an Optimize release can opt out of
+// authentication without the whole release doing so; otherwise the global key is the only lever and
+// it is shared with every other component.
+func (s *AuthIdentityTemplateTest) TestComponentMethodNoneOverridesGlobalAuthEnabled() {
+	out := s.render(map[string]string{
+		"optimize.security.authentication.method": "none",
+	}, []string{"templates/optimize/configmap.yaml"})
+
+	s.Require().NotContains(out, "camunda:")
+	s.Require().NotContains(out, "issuerBackendUrl:")
+}
+
+// With auth off for the component the Deployment must not reference the release-shared identity
+// ConfigMap either, or Optimize keeps receiving identity env vars it no longer authenticates with.
+func (s *AuthIdentityTemplateTest) TestComponentMethodNoneDropsTheIdentityEnvFrom() {
+	out := s.render(map[string]string{
+		"optimize.security.authentication.method": "none",
+	}, []string{"templates/optimize/deployment.yaml"})
+
+	s.Require().NotContains(out, s.release+"-identity-env-vars")
+	s.Require().NotContains(out, s.release+"-optimize-identity-env-vars")
+}
+
+// A release-scoped existingSecret replaces the global source outright.
+func (s *AuthIdentityTemplateTest) TestComponentSecretOverridesGlobalSecret() {
+	out := s.render(map[string]string{
+		"global.identity.auth.optimize.secret.existingSecret":            "global-oidc",
+		"global.identity.auth.optimize.secret.existingSecretKey":         "global-key",
+		"optimize.security.authentication.oidc.secret.existingSecret":    "tenant-oidc",
+		"optimize.security.authentication.oidc.secret.existingSecretKey": "tenant-key",
+	}, []string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Contains(out, "tenant-oidc")
+	s.Require().Contains(out, "tenant-key")
+	s.Require().NotContains(out, "global-oidc")
+}
+
+// existingSecretKey on its own renames the key inside the inherited secret. Treating any one field
+// as a whole-block override instead would hand normalizeSecretConfiguration a name-less reference,
+// which matches neither of its branches and drops CAMUNDA_IDENTITY_CLIENT_SECRET from the
+// Deployment entirely - Optimize would then start with no client secret at all.
+func (s *AuthIdentityTemplateTest) TestComponentSecretKeyAloneKeepsTheGlobalSecretName() {
+	out := s.render(map[string]string{
+		"global.identity.auth.optimize.secret.existingSecret":            "global-oidc",
+		"global.identity.auth.optimize.secret.existingSecretKey":         "global-key",
+		"optimize.security.authentication.oidc.secret.existingSecretKey": "tenant-key",
+	}, []string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Contains(out, "CAMUNDA_IDENTITY_CLIENT_SECRET")
+	s.Require().Contains(out, "global-oidc")
+	s.Require().Contains(out, "tenant-key")
+	s.Require().NotContains(out, "global-key")
+}
+
+// A release-scoped inlineSecret must win even when the global block names an existing Secret:
+// normalizeSecretConfiguration checks existingSecret first, so an inherited one would otherwise
+// keep beating the override.
+func (s *AuthIdentityTemplateTest) TestComponentInlineSecretBeatsGlobalExistingSecret() {
+	out := s.render(map[string]string{
+		"global.identity.auth.optimize.secret.existingSecret":       "global-oidc",
+		"global.identity.auth.optimize.secret.existingSecretKey":    "global-key",
+		"optimize.security.authentication.oidc.secret.inlineSecret": "tenant-inline",
+	}, []string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Contains(out, "tenant-inline")
+	s.Require().NotContains(out, "global-oidc")
 }
