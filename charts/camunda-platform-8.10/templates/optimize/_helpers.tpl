@@ -57,45 +57,21 @@ Create a default fully qualified app name.
 {{- end -}}
 
 {{/*
-[optimize] Resolve the effective Elasticsearch TLS config.
-Prefers optimize.database.elasticsearch.tls if it has actual secret config,
-otherwise falls back to global.elasticsearch.tls.
-Note: We cannot use `| default` on maps because a map with empty-string values
-is still "non-empty" in Helm and `default` will never fall through.
+[optimize] Resolve the effective TLS config: Elasticsearch first, OpenSearch
+when only that one carries actual secret config.
 */}}
-{{- define "optimize.effectiveEsTlsConfig" -}}
+{{- define "optimize.effectiveTlsConfig" -}}
 {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.elasticsearch.tls)) "true" -}}
   {{- toYaml .Values.optimize.database.elasticsearch.tls -}}
-{{- else -}}
-  {{- toYaml .Values.global.elasticsearch.tls -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-[optimize] Resolve the effective OpenSearch TLS config.
-*/}}
-{{- define "optimize.effectiveOsTlsConfig" -}}
-{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.tls)) "true" -}}
+{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.tls)) "true" -}}
   {{- toYaml .Values.optimize.database.opensearch.tls -}}
-{{- else -}}
-  {{- toYaml .Values.global.opensearch.tls -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "optimize.effectiveTlsConfig" -}}
-{{- $esTls := include "optimize.effectiveEsTlsConfig" . | fromYaml -}}
-{{- $osTls := include "optimize.effectiveOsTlsConfig" . | fromYaml -}}
-{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esTls)) "true" -}}
-  {{- toYaml $esTls -}}
-{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osTls)) "true" -}}
-  {{- toYaml $osTls -}}
 {{- else -}}
   {{- toYaml (dict) -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
-[optimize] Check if TLS is configured at either the optimize-database or global level
+[optimize] Check if TLS is configured on the optimize database config
 for either Elasticsearch or OpenSearch. Returns "true" or "false".
 */}}
 {{- define "optimize.hasTlsConfig" -}}
@@ -108,29 +84,16 @@ false
 {{- end -}}
 
 {{/*
-[optimize] Resolve the effective Elasticsearch auth config.
-Prefers optimize.database.elasticsearch.auth if it has actual secret config,
-otherwise falls back to global.elasticsearch.auth.
-*/}}
-{{- define "optimize.effectiveEsAuthConfig" -}}
-{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.elasticsearch.auth)) "true" -}}
-  {{- toYaml .Values.optimize.database.elasticsearch.auth -}}
-{{- else -}}
-  {{- toYaml .Values.global.elasticsearch.auth -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
 [optimize] Resolve zeebe prefix.
 Precedence matches optimize.defaultConfig: ES is checked first, OS only when ES is off.
-In 8.10 the global prefix keys are deprecated, so this helper uses the component-specific
-key directly (optimize.database.<backend>.prefix) with a hardcoded "zeebe-record" fallback.
-When neither backend is explicitly enabled, falls back to "zeebe-record".
+Uses the component-specific key (optimize.database.<backend>.prefix) with a hardcoded
+"zeebe-record" fallback. When neither backend is explicitly enabled, falls back to
+"zeebe-record".
 */}}
 {{- define "optimize.indexPrefix" -}}
-{{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
+{{- if .Values.optimize.database.elasticsearch.enabled -}}
   {{- .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" -}}
-{{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
+{{- else if .Values.optimize.database.opensearch.enabled -}}
   {{- .Values.optimize.database.opensearch.prefix | default "zeebe-record" -}}
 {{- else -}}
   {{- "zeebe-record" -}}
@@ -138,49 +101,17 @@ When neither backend is explicitly enabled, falls back to "zeebe-record".
 {{- end -}}
 
 {{/*
-[optimize] Resolve the effective OpenSearch auth config.
-*/}}
-{{- define "optimize.effectiveOsAuthConfig" -}}
-{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.optimize.database.opensearch.auth)) "true" -}}
-  {{- toYaml .Values.optimize.database.opensearch.auth -}}
-{{- else -}}
-  {{- toYaml .Values.global.opensearch.auth -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-[optimize] Resolve the effective OpenSearch AWS mode from the component-first chain.
-*/}}
-{{- define "optimize.effectiveOsAwsEnabled" -}}
-{{- or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
-{{- end -}}
-
-{{/*
-[optimize] Resolve the effective Elasticsearch username from the component-first chain.
-*/}}
-{{- define "optimize.effectiveEsUsername" -}}
-{{- .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username -}}
-{{- end -}}
-
-{{/*
-[optimize] Resolve the effective OpenSearch username from the component-first chain.
-*/}}
-{{- define "optimize.effectiveOsUsername" -}}
-{{- .Values.optimize.database.opensearch.auth.username | default .Values.global.opensearch.auth.username -}}
-{{- end -}}
-
-{{/*
-[optimize] Resolve the effective Elasticsearch URL from the component-first host/port/protocol chain.
+[optimize] Resolve the Elasticsearch URL from the optimize database config.
 */}}
 {{- define "optimize.effectiveEsURL" -}}
-{{- .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . -}}
+{{- .Values.optimize.database.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.optimize.database.elasticsearch.url.port -}}
 {{- end -}}
 
 {{/*
-[optimize] Resolve the effective OpenSearch URL from the component-first host/port/protocol chain.
+[optimize] Resolve the OpenSearch URL from the optimize database config.
 */}}
 {{- define "optimize.effectiveOsURL" -}}
-{{- .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . -}}
+{{- .Values.optimize.database.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.optimize.database.opensearch.url.port -}}
 {{- end -}}
 
 {{/*

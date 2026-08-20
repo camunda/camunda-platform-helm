@@ -132,22 +132,10 @@ spec:
             {{/*
             Variable substitution for passwords.
             */}}
-            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- end }}
             {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ELASTICSEARCH_PASSWORD"
                 "config" .Values.orchestration.data.secondaryStorage.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- end }}
-            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "VALUES_OPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
             {{- $hasOpenSearchConsumer := or
@@ -163,10 +151,10 @@ spec:
                 "config" .Values.orchestration.data.secondaryStorage.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
-            {{- $legacyElasticsearchExporterAuth := include "optimize.effectiveEsAuthConfig" . | fromYaml }}
+            {{- $legacyElasticsearchExporterAuth := .Values.optimize.database.elasticsearch.auth }}
             {{- if and
                 (eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true")
-                (eq (include "orchestration.legacyElasticsearchExporterAuthenticationEnabled" .) "true")
+                .Values.optimize.database.elasticsearch.external
                 (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $legacyElasticsearchExporterAuth)) "true")
             }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -174,7 +162,7 @@ spec:
                 "config" $legacyElasticsearchExporterAuth
             ) | nindent 12 }}
             {{- end }}
-            {{- $legacyOpenSearchExporterAuth := include "optimize.effectiveOsAuthConfig" . | fromYaml }}
+            {{- $legacyOpenSearchExporterAuth := .Values.optimize.database.opensearch.auth }}
             {{- if and
                 (eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true")
                 (eq (include "orchestration.legacyOpenSearchExporterAuthenticationEnabled" .) "true")

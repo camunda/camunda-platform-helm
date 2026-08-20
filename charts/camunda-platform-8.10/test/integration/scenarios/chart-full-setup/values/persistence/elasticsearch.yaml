@@ -7,13 +7,16 @@
 # (security disabled, single node).
 #
 # The companion chart creates a service named "elasticsearch-master" (the
-# elastic/elasticsearch chart's default fullnameOverride). We override the
-# global ES host so all components (Optimize, legacy exporter) connect there.
+# elastic/elasticsearch chart's default fullnameOverride). We point the
+# Optimize datastore host there so Optimize and the legacy exporter connect
+# to the companion release.
 
-global:
-  elasticsearch:
-    url:
-      host: "elasticsearch-master"
+optimize:
+  database:
+    elasticsearch:
+      enabled: true
+      url:
+        host: "elasticsearch-master"
 
 orchestration:
   data:

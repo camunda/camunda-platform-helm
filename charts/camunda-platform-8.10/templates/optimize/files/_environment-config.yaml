@@ -14,17 +14,17 @@ zeebe:
 es:
   connection:
     nodes:
-    {{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled }}
+    {{- if .Values.optimize.database.elasticsearch.enabled }}
       - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
-        httpPort: {{ .Values.optimize.database.elasticsearch.url.port | default .Values.global.elasticsearch.url.port }}
-    {{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled }}
+        httpPort: {{ .Values.optimize.database.elasticsearch.url.port }}
+    {{- else if .Values.optimize.database.opensearch.enabled }}
       - host: {{ include "camundaPlatform.opensearchHost" . | quote }}
-        httpPort: {{ .Values.optimize.database.opensearch.url.port | default .Values.global.opensearch.url.port }}
+        httpPort: {{ .Values.optimize.database.opensearch.url.port }}
     {{- end }}
-  {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
+  {{- if .Values.optimize.database.elasticsearch.external }}
   security:
-    username: {{ include "optimize.effectiveEsUsername" . | quote }}
-    {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
+    username: {{ .Values.optimize.database.elasticsearch.auth.username | quote }}
+    {{- if eq .Values.optimize.database.elasticsearch.url.protocol "https" }}
     ssl:
       enabled: "true"
     {{- end }}

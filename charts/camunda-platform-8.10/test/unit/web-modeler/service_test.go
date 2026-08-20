@@ -90,10 +90,10 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestAppProtocolsDefaultEmpty",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"webModeler.enabled":                  "true",
-				"camundaHub.restapi.mail.fromAddress": "example@example.com",
-				"global.elasticsearch.enabled":        "true",
+				"identity.enabled":                         "true",
+				"webModeler.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -111,7 +111,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                                       "true",
 				"camundaHub.restapi.mail.fromAddress":                      "example@example.com",
 				"camundaHub." + s.component + ".service.appProtocols.http": "http",
-				"global.elasticsearch.enabled":                             "true",
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -134,7 +134,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                                        "true",
 				"camundaHub.restapi.mail.fromAddress":                       "example@example.com",
 				"camundaHub." + s.component + ".service.appProtocols.htttp": "http",
-				"global.elasticsearch.enabled":                              "true",
+				"orchestration.data.secondaryStorage.type":                  "elasticsearch",
 			},
 			Expected: map[string]string{
 				"ERROR": "is not a valid appProtocols key",

@@ -212,20 +212,6 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 {{- end }}
 
 {{/*
-Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
-*/}}
-{{- if .Values.global.noSecondaryStorage }}
-  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
-    {{- $errorMessage := printf "[camunda][error] %s %s %s"
-        "When \"global.noSecondaryStorage\" is enabled, both Elasticsearch and OpenSearch must be disabled."
-        "Please ensure that \"global.elasticsearch.enabled: false\" and \"global.opensearch.enabled: false\""
-        "are set when using \"global.noSecondaryStorage: true\"."
-    -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
-  {{- end }}
-{{- end }}
-
-{{/*
 Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
 {{- if not (has (include "camundaPlatform.authIssuerType" .) (list "KEYCLOAK" "MICROSOFT" "GENERIC")) }}
@@ -410,14 +396,8 @@ The following values inside your values.yaml need to be set but were not:
   {{- /* hasSecretConfig (via normalizeSecretConfiguration) checks
          $config.secret.existingSecret / .inlineSecret — so each "config"
          binding is the PARENT of the .secret block, not the .secret leaf
-         itself. The pre-existing pair on this list (the two
-         `global.<engine>.tls.secret` paths) had the same bug and never
-         fired in production; this fix enables them as well. */ -}}
+         itself. */ -}}
   {{- $deprecatedDatabaseTlsOptions := list
-  (dict "path" "global.elasticsearch.tls.secret" "config" .Values.global.elasticsearch.tls)
-  (dict "path" "global.opensearch.tls.secret" "config" .Values.global.opensearch.tls)
-  (dict "path" "global.elasticsearch.tls.jks.secret" "config" .Values.global.elasticsearch.tls.jks)
-  (dict "path" "global.opensearch.tls.jks.secret" "config" .Values.global.opensearch.tls.jks)
   (dict "path" "orchestration.data.secondaryStorage.elasticsearch.tls.secret" "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)
   (dict "path" "orchestration.data.secondaryStorage.opensearch.tls.secret" "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)
   (dict "path" "optimize.database.elasticsearch.tls.secret" "config" .Values.optimize.database.elasticsearch.tls)
@@ -440,23 +420,6 @@ The following values inside your values.yaml need to be set but were not:
             "This option is deprecated as of chart 15.x and will be removed in a future major release."
             "Please migrate to 'global.tls.caBundle.secret.{existingSecret,existingSecretKey}', supplying a PEM-encoded CA bundle."
             "The chart will build the JVM truststore at pod start (no offline keytool needed). Migration: supply a PEM CA bundle to global.tls.caBundle.secret.existingSecret and remove the legacy tls.secret.existingSecret entries plus any -Djavax.net.ssl.trustStore* flags from javaOpts."
-        -}}
-        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
-
-  {{- $deprecatedDatabaseOptions := list
-  (dict "path" "global.elasticsearch.enabled" "config" .Values.global.elasticsearch.enabled)
-  (dict "path" "global.opensearch.enabled" "config" .Values.global.opensearch.enabled)
-  }}
-  {{- range $deprecatedDatabaseOptions }}
-    {{- if .config }}
-        {{- $warningMessage := printf "%s %s %s %s %s"
-            "[camunda][warning]"
-            (printf "DEPRECATION: values.yaml is using legacy option '%s'." .path)
-            "This option is deprecated and will be removed in a future version."
-            (printf "Please migrate to the new option: 'orchestration.data.secondaryStorage.(elasticsearch|opensearch).enabled'.")
-            (printf "or for optimize: 'optimize.database.(elasticsearch|opensearch).enabled'.")
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
@@ -495,8 +458,6 @@ The following values inside your values.yaml need to be set but were not:
         (dict "comp" "orchestration secondaryStorage.opensearch" "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)
         (dict "comp" "optimize database.elasticsearch" "config" .Values.optimize.database.elasticsearch.tls)
         (dict "comp" "optimize database.opensearch" "config" .Values.optimize.database.opensearch.tls)
-        (dict "comp" "global.elasticsearch" "config" .Values.global.elasticsearch.tls)
-        (dict "comp" "global.opensearch" "config" .Values.global.opensearch.tls)
     }}
     {{- range $jksOverrides }}
       {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true" }}
@@ -525,7 +486,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
     {{- range $db := (list "opensearch" "elasticsearch") }}
       {{- $u := index $.Values.optimize.database $db "url" }}
-      {{- if and $u $u.protocol (eq (lower $u.protocol) "http") }}
+      {{- if and (index $.Values.optimize.database $db "enabled") $u $u.protocol (eq (lower $u.protocol) "http") }}
         {{- $warningMessage := printf "%s %s %s"
             "[camunda][warning]"
             (printf "global.tls.caBundle is set, but optimize.database.%s.url.protocol is plaintext 'http'." $db)
@@ -888,17 +849,24 @@ Usage:
 {{/*
 camundaPlatform.keyRemoved
 Fail with message when the old values file key is used.
+The optional "migration" names the replacement key(s) in the error message.
 Usage:
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (.Values.identity.keycloak)
   "oldName" "identity.keycloak"
+  "migration" "identityKeycloak"
 ) }}
 */}}
 {{- define "camundaPlatform.keyRemoved" }}
   {{- if .condition }}
+    {{- $migration := "" -}}
+    {{- if .migration -}}
+      {{- $migration = printf " Configure this via \"%s\" instead." .migration -}}
+    {{- end -}}
     {{- $errorMessage := printf
-        "[camunda][error] The Helm values file key \"%s\" has been removed. %s %s"
+        "[camunda][error] The Helm values file key \"%s\" has been removed.%s %s %s"
         .oldName
+        $migration
         "For more details, please check Camunda Helm chart documentation."
         "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/"
     -}}
@@ -990,48 +958,6 @@ Global - License
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.global.license "existingSecretKey")
   "oldName" "global.license.existingSecretKey"
-) }}
-
-{{/*
-*******************************************************************************
-Global - Elasticsearch Auth
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.elasticsearch.auth "password")
-  "oldName" "global.elasticsearch.auth.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.elasticsearch.auth "existingSecret")
-  "oldName" "global.elasticsearch.auth.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.elasticsearch.auth "existingSecretKey")
-  "oldName" "global.elasticsearch.auth.existingSecretKey"
-) }}
-
-{{/*
-*******************************************************************************
-Global - OpenSearch Auth
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.opensearch.auth "password")
-  "oldName" "global.opensearch.auth.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.opensearch.auth "existingSecret")
-  "oldName" "global.opensearch.auth.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.opensearch.auth "existingSecretKey")
-  "oldName" "global.opensearch.auth.existingSecretKey"
 ) }}
 
 {{/*
@@ -1501,24 +1427,23 @@ Global - Identity Keycloak Auth
 
 {{/*
 *******************************************************************************
-Global - Elasticsearch TLS
+Global - Elasticsearch / OpenSearch
 *******************************************************************************
+The whole global.elasticsearch / global.opensearch trees were removed in the
+8.10 chart (deprecated during the 8.9 cycle, see docs/adr/0084). A single
+root-level guard per tree subsumes the prior per-leaf guards.
 */}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.elasticsearch.tls "existingSecret")
-  "oldName" "global.elasticsearch.tls.existingSecret"
+  "condition" (hasKey .Values.global "elasticsearch")
+  "oldName" "global.elasticsearch"
+  "migration" "optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch"
 ) }}
 
-{{/*
-*******************************************************************************
-Global - OpenSearch TLS
-*******************************************************************************
-*/}}
-
 {{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.opensearch.tls "existingSecret")
-  "oldName" "global.opensearch.tls.existingSecret"
+  "condition" (hasKey .Values.global "opensearch")
+  "oldName" "global.opensearch"
+  "migration" "optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch"
 ) }}
 
 {{/*

@@ -15,9 +15,9 @@
 #   EXTERNAL_ELASTICSEARCH_PORT   — usually `9200`
 #   EXTERNAL_ELASTICSEARCH_SCHEME — `http` or `https`
 #
-# Note on port: the chart schema types `global.elasticsearch.url.port` as
-# `number`, and layered-values env substitution can only produce strings.
-# We therefore leave the port unset in the global block (chart default is
+# Note on port: the chart schema types `optimize.database.elasticsearch.url.port`
+# as `number`, and layered-values env substitution can only produce strings.
+# We therefore leave the port unset in the optimize block (chart default is
 # 9200 and the vast majority of ES deployments serve there). The port env
 # var is used only in the full URL under
 # `orchestration.data.secondaryStorage.elasticsearch` where it is a string.
@@ -44,11 +44,13 @@ camundaHub:
 webModeler:
   enabled: false
 
-global:
-  elasticsearch:
-    url:
-      host: "${EXTERNAL_ELASTICSEARCH_HOST}"
-      protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
+optimize:
+  database:
+    elasticsearch:
+      enabled: true
+      url:
+        host: "${EXTERNAL_ELASTICSEARCH_HOST}"
+        protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
 
 orchestration:
   data:
