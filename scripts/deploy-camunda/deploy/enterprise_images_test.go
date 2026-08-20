@@ -81,8 +81,6 @@ func TestCollectPinnedImages(t *testing.T) {
 				t.Errorf("image[%d] = %q, want %q", i, got[i].Ref, w)
 			}
 		}
-		// os-shell pins registry+repository but no tag, exactly like the real file;
-		// the bash check skips it and so must we.
 		for _, img := range got {
 			if strings.Contains(img.Ref, "os-shell") {
 				t.Errorf("os-shell has no tag and must not be collected, got %q", img.Ref)
@@ -109,10 +107,6 @@ func TestCollectPinnedImages(t *testing.T) {
 
 	t.Run("unquoted numeric tags are skipped, not guessed", func(t *testing.T) {
 		t.Parallel()
-		// YAML types `tag: 8.10` as float64(8.1): the trailing zero is gone before
-		// this code sees it. Rendering it would assert "repo/img:8.1", a reference
-		// nobody wrote, and fail an image that is fine. Skipping is the safe way to
-		// be wrong.
 		path := writeValuesFile(t, "n.yaml", "c:\n  image:\n    registry: r.io\n    repository: repo/img\n    tag: 8.10\n")
 		if got := collectPinnedImages([]string{path}); len(got) != 0 {
 			t.Fatalf("expected the ambiguous tag to be skipped, got %v", got)
@@ -153,8 +147,6 @@ const multiArchIndex = `{"manifests":[
 
 func TestResolveImageForPlatform(t *testing.T) {
 	t.Run("index resolves but the amd64 child 404s", func(t *testing.T) {
-		// The exact 2026-08-19 shape: index OK, child missing. An index-only probe
-		// calls this healthy; this is the regression the whole check exists for.
 		var calls []string
 		orig := dockerManifestInspect
 		dockerManifestInspect = func(_ context.Context, ref string) ([]byte, error) {
@@ -227,9 +219,6 @@ func TestResolveImageForPlatform(t *testing.T) {
 	})
 
 	t.Run("an unresolvable index is unverified, not a failure", func(t *testing.T) {
-		// Indistinguishable from missing credentials or a network fault without
-		// parsing vendor error text. The in-flight guard catches a genuinely
-		// absent image with the kubelet's own message.
 		orig := dockerManifestInspect
 		dockerManifestInspect = func(_ context.Context, _ string) ([]byte, error) {
 			return nil, errors.New("manifest unknown")
@@ -246,8 +235,6 @@ func TestResolveImageForPlatform(t *testing.T) {
 	})
 
 	t.Run("a missing docker binary is unverified, not a failure", func(t *testing.T) {
-		// The regression that broke 8 CI jobs: the runner container has no docker
-		// binary, and the check reported every image as broken.
 		orig := dockerManifestInspect
 		dockerManifestInspect = func(_ context.Context, _ string) ([]byte, error) {
 			return nil, errors.New(`exec: "docker": executable file not found in $PATH`)
@@ -304,7 +291,6 @@ func TestEnterpriseValuesLayersFollowsSymlink(t *testing.T) {
 	if err := os.WriteFile(target, []byte("{}"), 0o644); err != nil {
 		t.Fatalf("write target: %v", err)
 	}
-	// The chain reaches the overlay through values/features/<name>.yaml.
 	link := filepath.Join(dir, "some-feature-name.yaml")
 	if err := os.Symlink(target, link); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
@@ -316,8 +302,6 @@ func TestEnterpriseValuesLayersFollowsSymlink(t *testing.T) {
 
 func TestCheckPinnedImages(t *testing.T) {
 	t.Run("a non-enterprise chain is OK and makes no registry calls", func(t *testing.T) {
-		// The regression: values/identity/keycloak.yaml pins a full triplet too,
-		// so an unscoped check put registry round-trips on every deploy.
 		orig := dockerManifestInspect
 		dockerManifestInspect = func(_ context.Context, _ string) ([]byte, error) {
 			t.Fatal("must not touch the registry without an enterprise overlay")
@@ -372,7 +356,6 @@ func TestCheckPinnedImages(t *testing.T) {
 		if got.Status != StatusWarn {
 			t.Fatalf("status = %v, want warn; detail = %q", got.Status, got.Detail)
 		}
-		// StatusWarn must not fail Report.OK(), or the deploy is blocked again.
 		r := &Report{Checks: []Check{got}}
 		if !r.OK() {
 			t.Fatal("a warning must not block the deploy")
