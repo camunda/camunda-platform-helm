@@ -52,8 +52,8 @@ func TestTopologyValidate_NilIsNoop(t *testing.T) {
 func TestTopologyValidate_Valid(t *testing.T) {
 	dir := t.TempDir()
 	depsDir := filepath.Join(t.TempDir(), "dependencies")
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeValuesFile(t, dir, "identity/keycloak.yaml")
 	writeValuesFile(t, dir, "identity/keycloak-external.yaml")
 	writeValuesFile(t, dir, "persistence/elasticsearch-external.yaml")
@@ -68,7 +68,7 @@ func TestTopologyValidate_Valid(t *testing.T) {
 			{
 				Role:            "hub",
 				NamespaceSuffix: "hub",
-				Values:          "hub.yaml",
+				Features:        []string{"hub"},
 				Identity:        "keycloak",
 				Dependencies:    []string{"keycloak", "postgresql", "elasticsearch"},
 			},
@@ -77,7 +77,7 @@ func TestTopologyValidate_Valid(t *testing.T) {
 				NamespaceSuffix:    "orcha",
 				ModelerClusterID:   "orcha",
 				ModelerClusterName: "Orchestration A",
-				Values:             "orchestration.yaml",
+				Features:           []string{"orchestration"},
 				Identity:           "keycloak-external",
 				Persistence:        "elasticsearch-external",
 				DependsOn:          "hub",
@@ -88,7 +88,7 @@ func TestTopologyValidate_Valid(t *testing.T) {
 				NamespaceSuffix:    "orchb",
 				ModelerClusterID:   "orchb",
 				ModelerClusterName: "Orchestration B",
-				Values:             "orchestration.yaml",
+				Features:           []string{"orchestration"},
 				Identity:           "keycloak-external",
 				Persistence:        "elasticsearch-external",
 				DependsOn:          "hub",
@@ -106,9 +106,9 @@ func TestTopologyValidate_Valid(t *testing.T) {
 func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 	dir := t.TempDir()
 	depsDir := filepath.Join(t.TempDir(), "dependencies")
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	writeValuesFile(t, dir, "identity/keycloak.yaml")
 	writeValuesFile(t, dir, "identity/keycloak-external.yaml")
 	writeValuesFile(t, dir, "persistence/elasticsearch-external.yaml")
@@ -121,7 +121,7 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 			{
 				Role:            "hub",
 				NamespaceSuffix: "hub",
-				Values:          "hub.yaml",
+				Features:        []string{"hub"},
 				Identity:        "keycloak",
 				Dependencies:    []string{"elasticsearch"},
 			},
@@ -130,7 +130,7 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 				NamespaceSuffix:    "orcha",
 				ModelerClusterID:   "orcha",
 				ModelerClusterName: "Orchestration A",
-				Values:             "orchestration.yaml",
+				Features:           []string{"orchestration"},
 				Identity:           "keycloak-external",
 				Persistence:        "elasticsearch-external",
 				DependsOn:          "hub",
@@ -140,7 +140,7 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 				NamespaceSuffix:     "opta",
 				Serves:              "orcha",
 				OptimizeContextPath: "/optimize-orcha",
-				Values:              "optimize.yaml",
+				Features:            []string{"optimize"},
 				Identity:            "keycloak-external",
 				Persistence:         "elasticsearch-external",
 				DependsOn:           "hub",
@@ -154,15 +154,15 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 
 func TestTopologyValidate_OptimizeRoleNeedsNoModelerCluster(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	top := &Topology{
 		Name: "optimize-no-modeler-cluster",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -173,15 +173,15 @@ func TestTopologyValidate_OptimizeRoleNeedsNoModelerCluster(t *testing.T) {
 
 func TestTopologyValidate_OptimizeRoleRequiresDependsOn(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	top := &Topology{
 		Name: "optimize-without-depends-on",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}},
 		},
 	}
 
@@ -193,15 +193,15 @@ func TestTopologyValidate_OptimizeRoleRequiresDependsOn(t *testing.T) {
 
 func TestTopologyValidate_OptimizeRoleRejectsNonHubDependsOn(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	top := &Topology{
 		Name: "optimize-depends-on-orchestration",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml", DependsOn: "orchestration"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "orchestration"},
 		},
 	}
 
@@ -213,15 +213,15 @@ func TestTopologyValidate_OptimizeRoleRejectsNonHubDependsOn(t *testing.T) {
 
 func TestTopologyValidate_OptimizeRoleRequiresServesAndContextPath(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	top := &Topology{
 		Name: "optimize-missing-mapping",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -233,15 +233,15 @@ func TestTopologyValidate_OptimizeRoleRequiresServesAndContextPath(t *testing.T)
 
 func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	top := &Topology{
 		Name: "optimize-unknown-serves",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "nope", OptimizeContextPath: "/optimize-orcha", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "nope", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -253,13 +253,13 @@ func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.
 
 func TestTopologyValidate_RejectsOptimizeOnlyFieldsOnOtherRoles(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "serves-on-orchestration",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub", Serves: "orcha", OptimizeContextPath: "/optimize"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub", Serves: "orcha", OptimizeContextPath: "/optimize"},
 		},
 	}
 
@@ -271,14 +271,14 @@ func TestTopologyValidate_RejectsOptimizeOnlyFieldsOnOtherRoles(t *testing.T) {
 
 func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "duplicate-modeler-cluster",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "shared", ModelerClusterName: "Shared"},
-			{Role: "orchestration", NamespaceSuffix: "orchb", Values: "orchestration.yaml", ModelerClusterID: "shared", ModelerClusterName: "Shared"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "shared", ModelerClusterName: "Shared"},
+			{Role: "orchestration", NamespaceSuffix: "orchb", Features: []string{"orchestration"}, ModelerClusterID: "shared", ModelerClusterName: "Shared"},
 		},
 	}
 
@@ -290,11 +290,11 @@ func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
 
 func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "hub-only",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 		},
 	}
 
@@ -306,13 +306,13 @@ func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
 
 func TestTopologyValidate_RequiresDNS1123NamespaceSuffix(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "invalid-suffix",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "Hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orch_a", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A"},
+			{Role: "hub", NamespaceSuffix: "Hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orch_a", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A"},
 		},
 	}
 
@@ -327,8 +327,8 @@ func TestTopologyValidate_MissingValuesFile(t *testing.T) {
 	top := &Topology{
 		Name: "hub-1orch",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -338,11 +338,11 @@ func TestTopologyValidate_MissingValuesFile(t *testing.T) {
 
 func TestTopologyValidate_MissingIdentityLayer(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "bad-identity",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml", Identity: "does-not-exist"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}, Identity: "does-not-exist"},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -352,11 +352,11 @@ func TestTopologyValidate_MissingIdentityLayer(t *testing.T) {
 
 func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "bad-persistence",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "orchestration.yaml", Persistence: "does-not-exist"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"orchestration"}, Persistence: "does-not-exist"},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -366,11 +366,11 @@ func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
 
 func TestTopologyValidate_MissingDependency(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "bad-dep",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml", Dependencies: []string{"does-not-exist"}},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}, Dependencies: []string{"does-not-exist"}},
 		},
 	}
 	if err := top.Validate("ctx", dir, filepath.Join(t.TempDir(), "dependencies")); err == nil {
@@ -380,12 +380,12 @@ func TestTopologyValidate_MissingDependency(t *testing.T) {
 
 func TestTopologyValidate_NoHubRole(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "no-hub",
 		Releases: []TopologyRelease{
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orchb", Values: "orchestration.yaml"},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}},
+			{Role: "orchestration", NamespaceSuffix: "orchb", Features: []string{"orchestration"}},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -395,12 +395,12 @@ func TestTopologyValidate_NoHubRole(t *testing.T) {
 
 func TestTopologyValidate_TwoHubRoles(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "two-hub",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "huba", Values: "hub.yaml"},
-			{Role: "hub", NamespaceSuffix: "hubb", Values: "hub.yaml"},
+			{Role: "hub", NamespaceSuffix: "huba", Features: []string{"hub"}},
+			{Role: "hub", NamespaceSuffix: "hubb", Features: []string{"hub"}},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -410,13 +410,13 @@ func TestTopologyValidate_TwoHubRoles(t *testing.T) {
 
 func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "dup-suffix",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "a", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "a", Values: "orchestration.yaml"},
+			{Role: "hub", NamespaceSuffix: "a", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "a", Features: []string{"orchestration"}},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -426,13 +426,13 @@ func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
 
 func TestTopologyValidate_DependsOnUnknownRole(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "bad-depends-on",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", DependsOn: "storage"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, DependsOn: "storage"},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -446,7 +446,7 @@ func TestTopologyValidate_InvalidRole(t *testing.T) {
 	top := &Topology{
 		Name: "bad-role",
 		Releases: []TopologyRelease{
-			{Role: "weird", NamespaceSuffix: "w", Values: "weird.yaml"},
+			{Role: "weird", NamespaceSuffix: "w", Features: []string{"weird"}},
 		},
 	}
 	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
@@ -463,16 +463,16 @@ func TestTopologyValidate_EmptyReleases(t *testing.T) {
 
 func TestTopologyValidate_AllowsSeveralOptimizeReleasesPerOrchestration(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	top := &Topology{
 		Name: "two-tenants-one-cluster",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize-tenanta", Values: "optimize.yaml", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize-tenantb", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize-tenanta", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize-tenantb", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -483,21 +483,73 @@ func TestTopologyValidate_AllowsSeveralOptimizeReleasesPerOrchestration(t *testi
 
 func TestTopologyValidate_RejectsDuplicateOptimizeContextPath(t *testing.T) {
 	dir := t.TempDir()
-	writeValuesFile(t, dir, "hub.yaml")
-	writeValuesFile(t, dir, "orchestration.yaml")
-	writeValuesFile(t, dir, "optimize.yaml")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "features/optimize.yaml")
 	top := &Topology{
 		Name: "colliding-optimize-paths",
 		Releases: []TopologyRelease{
-			{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
-			{Role: "orchestration", NamespaceSuffix: "orcha", Values: "orchestration.yaml", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize", Values: "optimize.yaml", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize", Values: "optimize.yaml", DependsOn: "hub"},
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
 	err := top.Validate("ctx", dir, t.TempDir())
 	if err == nil || !strings.Contains(err.Error(), "share optimize-context-path") {
 		t.Fatalf("expected colliding optimize-context-path to be rejected, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsLegacyValuesKey(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	top := &Topology{
+		Name: "legacy-values-key",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub", Values: "features/orchestration.yaml"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "is no longer supported") {
+		t.Fatalf("expected the legacy values key to be rejected, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RequiresFeatures(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	top := &Topology{
+		Name: "no-features",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "features is required") {
+		t.Fatalf("expected features to be required, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsMissingFeatureFile(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	top := &Topology{
+		Name: "missing-feature-file",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"typo-orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+		},
+	}
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), `feature "typo-orchestration": missing values file`) {
+		t.Fatalf("expected a missing feature layer to be reported, got %v", err)
 	}
 }

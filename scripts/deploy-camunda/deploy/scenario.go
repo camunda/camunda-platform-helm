@@ -306,9 +306,6 @@ type TopologyRelease struct {
 	// NamespaceSuffix is appended to the base namespace to form this
 	// release's namespace (<base>-<namespace-suffix>).
 	NamespaceSuffix string
-	// Values names the values file for this release (relative to the
-	// scenario's chart-full-setup values dir).
-	Values string
 	// DependsOn, when set, names the Role of a release that must be deployed
 	// (and ready) before this one.
 	DependsOn string
