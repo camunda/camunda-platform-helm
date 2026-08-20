@@ -75,9 +75,16 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   {{- if and (empty .Values.optimize.contextPath) (or $rendersIngress $rendersGateway) }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.contextPath when this chart renders the release's own routing: the shared Ingress emits an Optimize rule only when the context path is set, so an empty one leaves Optimize unreachable, and the HTTPRoute would match an empty path prefix. Set it to the sub-path this release is served on, or route to the Optimize Service yourself with global.ingress.enabled=false." }}
   {{- end }}
-  {{- if empty (include "optimize.effectiveAuthIssuer" .) }}
-    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise." }}
-  {{- end }}
+{{- end }}
+{{/*
+Applies beyond global.topology.mode=optimize: optimize.security.authentication.method reaches the
+same empty issuer without the mode to signal it. Releases authenticating through
+global.identity.auth.enabled are exempt because a bundled Keycloak leaves the issuer empty by
+default and resolves the provider through the derived issuerBackendUrl.
+*/}}
+{{- $optimizeOwnsItsAuth := or (eq $topologyMode "optimize") (not .Values.global.identity.auth.enabled) }}
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") $optimizeOwnsItsAuth (empty (include "optimize.effectiveAuthIssuer" .)) }}
+  {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise." }}
 {{- end }}
 {{- if eq $topologyMode "hub" }}
   {{- if ne (include "webModeler.authMethod" .) "oidc" }}
