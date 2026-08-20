@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -106,12 +107,24 @@ func TestCollectPinnedImages(t *testing.T) {
 		}
 	})
 
-	t.Run("numeric tags are accepted", func(t *testing.T) {
+	t.Run("unquoted numeric tags are skipped, not guessed", func(t *testing.T) {
 		t.Parallel()
-		path := writeValuesFile(t, "n.yaml", "c:\n  image:\n    registry: r.io\n    repository: repo/img\n    tag: 8.19\n")
+		// YAML types `tag: 8.10` as float64(8.1): the trailing zero is gone before
+		// this code sees it. Rendering it would assert "repo/img:8.1", a reference
+		// nobody wrote, and fail an image that is fine. Skipping is the safe way to
+		// be wrong.
+		path := writeValuesFile(t, "n.yaml", "c:\n  image:\n    registry: r.io\n    repository: repo/img\n    tag: 8.10\n")
+		if got := collectPinnedImages([]string{path}); len(got) != 0 {
+			t.Fatalf("expected the ambiguous tag to be skipped, got %v", got)
+		}
+	})
+
+	t.Run("quoted tags that look numeric are kept verbatim", func(t *testing.T) {
+		t.Parallel()
+		path := writeValuesFile(t, "q.yaml", "c:\n  image:\n    registry: r.io\n    repository: repo/img\n    tag: \"8.10\"\n")
 		got := collectPinnedImages([]string{path})
-		if len(got) != 1 || got[0].Ref != "r.io/repo/img:8.19" {
-			t.Fatalf("got %v, want r.io/repo/img:8.19", got)
+		if len(got) != 1 || got[0].Ref != "r.io/repo/img:8.10" {
+			t.Fatalf("got %v, want r.io/repo/img:8.10", got)
 		}
 	})
 }
@@ -213,7 +226,10 @@ func TestResolveImageForPlatform(t *testing.T) {
 		}
 	})
 
-	t.Run("unresolvable index is reported", func(t *testing.T) {
+	t.Run("an unresolvable index is unverified, not a failure", func(t *testing.T) {
+		// Indistinguishable from missing credentials or a network fault without
+		// parsing vendor error text. The in-flight guard catches a genuinely
+		// absent image with the kubelet's own message.
 		orig := dockerManifestInspect
 		dockerManifestInspect = func(_ context.Context, _ string) ([]byte, error) {
 			return nil, errors.New("manifest unknown")
@@ -221,23 +237,97 @@ func TestResolveImageForPlatform(t *testing.T) {
 		defer func() { dockerManifestInspect = orig }()
 
 		res := resolveImageForPlatform(context.Background(), "reg/img:nope", "linux/amd64")
-		if res.Err == nil || !strings.Contains(res.Err.Error(), "index does not resolve") {
-			t.Fatalf("expected an index failure, got %v", res.Err)
+		if res.Err != nil {
+			t.Fatalf("must not hard-fail on an unresolvable index, got %v", res.Err)
+		}
+		if res.Unverified == nil {
+			t.Fatal("expected the reason to be recorded as unverified")
+		}
+	})
+
+	t.Run("a missing docker binary is unverified, not a failure", func(t *testing.T) {
+		// The regression that broke 8 CI jobs: the runner container has no docker
+		// binary, and the check reported every image as broken.
+		orig := dockerManifestInspect
+		dockerManifestInspect = func(_ context.Context, _ string) ([]byte, error) {
+			return nil, errors.New(`exec: "docker": executable file not found in $PATH`)
+		}
+		defer func() { dockerManifestInspect = orig }()
+
+		res := resolveImageForPlatform(context.Background(), "reg/img:1", "linux/amd64")
+		if res.Err != nil {
+			t.Fatalf("a missing tool says nothing about the image, got %v", res.Err)
+		}
+		if res.Unverified == nil {
+			t.Fatal("expected the reason to be recorded as unverified")
 		}
 	})
 }
 
+// entLayer writes the enterprise overlay under its real chain name so the
+// scoping filter accepts it.
+func entLayer(t *testing.T, body string) string {
+	t.Helper()
+	return writeValuesFile(t, "values-enterprise.yaml", body)
+}
+
+func TestEnterpriseValuesLayers(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	write := func(name string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte("{}"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+		return p
+	}
+	overlay := write("values-enterprise.yaml")
+	feature := write("enterprise.yaml")
+	base := write("base.yaml")
+	keycloak := write("keycloak.yaml")
+
+	got := enterpriseValuesLayers([]string{base, keycloak, overlay, feature})
+	if len(got) != 2 {
+		t.Fatalf("got %v, want only the two enterprise layers", got)
+	}
+	for _, f := range got {
+		if n := filepath.Base(f); n != "values-enterprise.yaml" && n != "enterprise.yaml" {
+			t.Errorf("unexpected layer kept: %s", f)
+		}
+	}
+}
+
+func TestEnterpriseValuesLayersFollowsSymlink(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	target := filepath.Join(dir, "values-enterprise.yaml")
+	if err := os.WriteFile(target, []byte("{}"), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	// The chain reaches the overlay through values/features/<name>.yaml.
+	link := filepath.Join(dir, "some-feature-name.yaml")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	if got := enterpriseValuesLayers([]string{link}); len(got) != 1 {
+		t.Fatalf("a symlink to the overlay must be kept, got %v", got)
+	}
+}
+
 func TestCheckPinnedImages(t *testing.T) {
-	t.Run("no pinned images is OK and makes no registry calls", func(t *testing.T) {
+	t.Run("a non-enterprise chain is OK and makes no registry calls", func(t *testing.T) {
+		// The regression: values/identity/keycloak.yaml pins a full triplet too,
+		// so an unscoped check put registry round-trips on every deploy.
 		orig := dockerManifestInspect
 		dockerManifestInspect = func(_ context.Context, _ string) ([]byte, error) {
-			t.Fatal("must not touch the registry when nothing is pinned")
+			t.Fatal("must not touch the registry without an enterprise overlay")
 			return nil, nil
 		}
 		defer func() { dockerManifestInspect = orig }()
 
-		path := writeValuesFile(t, "base.yaml", "orchestration:\n  enabled: true\n")
-		got := checkPinnedImages(context.Background(), []string{path}, "linux/amd64")
+		keycloak := writeValuesFile(t, "keycloak.yaml",
+			"identityKeycloak:\n  image:\n    registry: docker.io\n    repository: camunda/keycloak\n    tag: \"26.3.3\"\n")
+		got := checkPinnedImages(context.Background(), []string{keycloak}, "linux/amd64")
 		if got.Status != StatusOK {
 			t.Fatalf("status = %v, detail = %q", got.Status, got.Detail)
 		}
@@ -245,7 +335,10 @@ func TestCheckPinnedImages(t *testing.T) {
 
 	t.Run("a broken child manifest fails the preflight", func(t *testing.T) {
 		orig := dockerManifestInspect
+		var mu sync.Mutex
 		dockerManifestInspect = func(_ context.Context, ref string) ([]byte, error) {
+			mu.Lock()
+			defer mu.Unlock()
 			if strings.Contains(ref, "postgresql@") {
 				return nil, errors.New("manifest unknown")
 			}
@@ -253,23 +346,36 @@ func TestCheckPinnedImages(t *testing.T) {
 		}
 		defer func() { dockerManifestInspect = orig }()
 
-		path := writeValuesFile(t, "values-enterprise.yaml", enterpriseValues)
-		got := checkPinnedImages(context.Background(), []string{path}, "linux/amd64")
+		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)}, "linux/amd64")
 		if got.Status != StatusFail {
 			t.Fatalf("status = %v, want fail; detail = %q", got.Status, got.Detail)
 		}
 		if !strings.Contains(got.Detail, "vendor-ee/postgresql") {
 			t.Errorf("detail should name the broken image, got %q", got.Detail)
 		}
-		if !strings.Contains(got.Detail, "values-enterprise.yaml") {
-			t.Errorf("detail should name the source layer, got %q", got.Detail)
-		}
 		if !strings.Contains(got.Remediation, "6804") {
 			t.Errorf("remediation should point at the tracking issue, got %q", got.Remediation)
 		}
-		// elasticsearch resolves fine; only the two postgresql refs are broken.
 		if !strings.Contains(got.Detail, "2 of 3") {
 			t.Errorf("detail should count the failures, got %q", got.Detail)
+		}
+	})
+
+	t.Run("docker unavailable warns instead of blocking the deploy", func(t *testing.T) {
+		orig := dockerManifestInspect
+		dockerManifestInspect = func(_ context.Context, _ string) ([]byte, error) {
+			return nil, errors.New(`exec: "docker": executable file not found in $PATH`)
+		}
+		defer func() { dockerManifestInspect = orig }()
+
+		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)}, "linux/amd64")
+		if got.Status != StatusWarn {
+			t.Fatalf("status = %v, want warn; detail = %q", got.Status, got.Detail)
+		}
+		// StatusWarn must not fail Report.OK(), or the deploy is blocked again.
+		r := &Report{Checks: []Check{got}}
+		if !r.OK() {
+			t.Fatal("a warning must not block the deploy")
 		}
 	})
 
@@ -280,12 +386,11 @@ func TestCheckPinnedImages(t *testing.T) {
 		}
 		defer func() { dockerManifestInspect = orig }()
 
-		path := writeValuesFile(t, "values-enterprise.yaml", enterpriseValues)
-		got := checkPinnedImages(context.Background(), []string{path}, "linux/amd64")
+		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)}, "linux/amd64")
 		if got.Status != StatusOK {
 			t.Fatalf("status = %v, detail = %q", got.Status, got.Detail)
 		}
-		if !strings.Contains(got.Detail, "3 image(s)") {
+		if !strings.Contains(got.Detail, "3 enterprise image(s)") {
 			t.Errorf("detail should report the count, got %q", got.Detail)
 		}
 	})
