@@ -27,10 +27,12 @@
 #     and run RDBMS as the dual exporter (mirrors `rdbms.yaml`).
 # =============================================================================
 
-global:
-  elasticsearch:
-    url:
-      host: "elasticsearch-master"
+optimize:
+  database:
+    elasticsearch:
+      enabled: true
+      url:
+        host: "elasticsearch-master"
 
 orchestration:
   data:

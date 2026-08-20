@@ -215,20 +215,22 @@ describe('MCP Tools', () => {
       const result = listComponents({});
       
       expect(result.version).toBe('8.10');
-      
+
       // Check descriptions are derived
       const global = result.components.find(c => c.name === 'global');
       expect(global?.description).toContain('Global');
       expect(global?.dependency).toBeUndefined();
-      
-      // Check dependency info for chart dependencies
-      const elasticsearch = result.components.find(c => c.name === 'elasticsearch');
+
+      // Check dependency info for chart dependencies; 8.10 dropped its bundled
+      // subcharts, so assert against 8.9 where local dependencies still exist.
+      const v89 = listComponents({ version: '8.9' });
+      const elasticsearch = v89.components.find(c => c.name === 'elasticsearch');
       expect(elasticsearch?.dependency?.chart).toBe('elasticsearch');
       expect(elasticsearch?.dependency?.source).toBe('local');
       expect(elasticsearch?.dependency?.enableCondition).toBe('elasticsearch.enabled');
-      
+
       // Check local vs external
-      const identityKeycloak = result.components.find(c => c.name === 'identityKeycloak');
+      const identityKeycloak = v89.components.find(c => c.name === 'identityKeycloak');
       expect(identityKeycloak?.dependency?.source).toBe('local');
     });
   });
@@ -265,7 +267,7 @@ describe('MCP Tools', () => {
     });
 
     it('should detect deprecated configs', () => {
-      const result = getConfigInfo({ path: 'global.elasticsearch.enabled' });
+      const result = getConfigInfo({ path: 'orchestration.extraInitContainers' });
       expect(result.deprecated).toBe(true);
     });
 

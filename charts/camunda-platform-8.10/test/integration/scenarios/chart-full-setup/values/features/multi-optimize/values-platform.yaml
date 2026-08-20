@@ -7,8 +7,6 @@ global:
     tls:
       enabled: true
       secretName: camunda-platform-tls
-  elasticsearch:
-    enabled: false
   identity:
     service:
       url: "http://platform-identity:80/identity"

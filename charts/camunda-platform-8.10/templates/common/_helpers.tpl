@@ -353,48 +353,26 @@ Elasticsearch and Opensearch templates.
 */}}
 
 {{- define "camundaPlatform.elasticsearchHost" -}}
-  {{- tpl .Values.optimize.database.elasticsearch.url.host $ | default (tpl .Values.global.elasticsearch.url.host $) -}}
-{{- end -}}
-
-{{/*
-[camunda-platform] Elasticsearch port
-*/}}
-{{- define "camundaPlatform.elasticsearchPort" -}}
-{{- if ne (int .Values.optimize.database.elasticsearch.url.port) 0 -}}
-  {{ .Values.optimize.database.elasticsearch.url.port }}
-{{- else -}}
-  {{ .Values.global.elasticsearch.url.port }}
-{{- end -}}
+  {{- tpl .Values.optimize.database.elasticsearch.url.host $ -}}
 {{- end -}}
 
 {{- define "camundaPlatform.elasticsearchURL" -}}
 {{- if .Values.orchestration.data.secondaryStorage.elasticsearch.url -}}
   {{ .Values.orchestration.data.secondaryStorage.elasticsearch.url }}
 {{- else -}}
-  {{ .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . }}
+  {{ .Values.optimize.database.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.optimize.database.elasticsearch.url.port }}
 {{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.opensearchHost" -}}
-  {{- tpl .Values.optimize.database.opensearch.url.host $ | default (tpl .Values.global.opensearch.url.host $) -}}
-{{- end -}}
-
-{{/*
-[camunda-platform] Opensearch port
-*/}}
-{{- define "camundaPlatform.opensearchPort" -}}
-{{- if ne (int .Values.optimize.database.opensearch.url.port) 0 -}}
-  {{ .Values.optimize.database.opensearch.url.port }}
-{{- else -}}
-  {{ .Values.global.opensearch.url.port }}
-{{- end -}}
+  {{- tpl .Values.optimize.database.opensearch.url.host $ -}}
 {{- end -}}
 
 {{- define "camundaPlatform.opensearchURL" -}}
 {{- if .Values.orchestration.data.secondaryStorage.opensearch.url -}}
   {{ .Values.orchestration.data.secondaryStorage.opensearch.url }}
 {{- else -}}
-  {{ .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . }}
+  {{ .Values.optimize.database.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.optimize.database.opensearch.url.port }}
 {{- end -}}
 {{- end -}}
 
@@ -1214,7 +1192,7 @@ Emits volume definition for TLS secrets.
 Usage:
   {{ include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
       "volumeName" "keystore"
-      "config" .Values.global.elasticsearch.tls
+      "config" .Values.optimize.database.elasticsearch.tls
   ) }}
 */}}
 {{- define "camundaPlatform.emitTlsVolumeFromSecretConfig" -}}
@@ -1231,24 +1209,11 @@ Usage:
 getTlsSecretKey
 Returns the secret key name from TLS config.
 Uses config.secret.existingSecretKey.
-Accepts root context (.) and uses the enabled database type (ES or OS).
 Usage:
-  {{ include "camundaPlatform.getTlsSecretKey" . }}
-  {{ include "camundaPlatform.getTlsSecretKey" (dict "config" .Values.global.elasticsearch.tls) }}
+  {{ include "camundaPlatform.getTlsSecretKey" (dict "config" .Values.optimize.database.elasticsearch.tls) }}
 */}}
 {{- define "camundaPlatform.getTlsSecretKey" -}}
-{{- $config := dict -}}
-
-{{- if .config -}}
-  {{- $config = .config -}}
-{{- else if .Values -}}
-  {{- if .Values.global.opensearch.enabled -}}
-    {{- $config = .Values.global.opensearch.tls -}}
-  {{- else -}}
-    {{- $config = .Values.global.elasticsearch.tls -}}
-  {{- end -}}
-{{- end -}}
-
+{{- $config := .config | default dict -}}
 {{- if and $config.secret $config.secret.existingSecretKey -}}
   {{- $config.secret.existingSecretKey -}}
 {{- end -}}
@@ -1257,117 +1222,41 @@ Usage:
 {{/*
 common.java_tool_options_tls_env
 
-Emits JAVA_TOOL_OPTIONS with truststore flags and emits TRUSTSTORE_PASSWORD using the normalized secret helper.
+Emits JAVA_TOOL_OPTIONS with the truststore flag for the given TLS config.
 
 Usage in a Deployment/StatefulSet env: block:
   {{ include "common.java_tool_options_tls_env" (dict
     "Values" .Values
     "component" "orchestration"            # REQUIRED: values key to read javaOpts from (e.g., orchestration, optimize)
+    "tlsConfig" $tlsConfig
   ) | nindent 12 }}
-
-Prerequisites when TLS is enabled for Elasticsearch/OpenSearch:
-- 8.10 removed the legacy global.<engine>.tls.existingSecret string field; use
-  global.<engine>.tls.secret.existingSecret / existingSecretKey instead. To opt into the
-  password injection, ALSO set the corresponding global.<engine>.tls.jks.secret block:
-
-Example (existing secret, recommended):
-  global:
-    elasticsearch:
-      tls:
-        enabled: true
-        secret:
-          existingSecret: my-es-tls
-          existingSecretKey: externaldb.jks
-        jks:
-          secret:
-            existingSecret: my-truststore-secret
-            existingSecretKey: truststore-password
-
-Example (inline plaintext, testing only):
-  global:
-    opensearch:
-      tls:
-        enabled: true
-        secret:
-          existingSecret: my-os-tls
-          existingSecretKey: externaldb.jks
-        jks:
-          secret:
-            inlineSecret: "changeit"
 
 Behavior:
 - Requires "component" parameter; fails if omitted.
 - Renders JAVA_TOOL_OPTIONS composed of:
   <component>.javaOpts (or provided "javaOpts") plus:
     -Djavax.net.ssl.trustStore=<truststoreDir>/<dynamic-filename>
-    -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)        # only when global.<engine>.tls.jks.secret is configured
 - Truststore filename is resolved via "camundaPlatform.getTlsSecretKey".
-- Emits TRUSTSTORE_PASSWORD via "camundaPlatform.emitEnvVarFromSecretConfig" when one of:
-  - global.elasticsearch.tls.jks (preferred when ES TLS secret is set), or
-  - global.opensearch.tls.jks (preferred when OS TLS secret is set)
-  is configured (existingSecret/existingSecretKey or inlineSecret). Component-level TLS configs
-  (e.g. orchestration.data.secondaryStorage.*.tls, optimize.database.*.tls) do NOT yet carry a jks
-  password block; for those, callers must continue to set the password via JAVA_OPTS manually.
-
-Note: the $(TRUSTSTORE_PASSWORD) placeholder is not resolved during Helm template evaluation.
-It is expanded by Kubernetes env-var substitution when constructing the container environment,
-because TRUSTSTORE_PASSWORD is emitted as an earlier env entry. Java then receives the
-already-expanded JAVA_TOOL_OPTIONS value at runtime.
-
-Reserved env var name: when this helper fires it owns the env var name TRUSTSTORE_PASSWORD.
-Do not set TRUSTSTORE_PASSWORD via <component>.env / extraEnv when using this feature —
-duplicate env names are rejected by some Kubernetes API servers (e.g. AKS) and cause undefined
-last-wins behaviour elsewhere.
-
-Migration note: customers who previously worked around the missing password support by setting
-"-Djavax.net.ssl.trustStorePassword=..." via <component>.javaOpts should remove that flag once
-they adopt global.<engine>.tls.jks.secret.* — otherwise both flags are present and the JVM uses
-the last one, which becomes confusing to debug.
+- Password-protected truststores are not handled here; pass
+  -Djavax.net.ssl.trustStorePassword=... via <component>.javaOpts, or use
+  global.tls.caBundle.secret with a PEM CA bundle instead.
 */}}
 
-{{- /* Internal: resolve JKS config from the selected TLS config, with global fallback for legacy callers */ -}}
-{{- define "camundaPlatform._resolve_tls_jks_config" -}}
-{{- $cfg := dict -}}
-{{- if .tlsConfig -}}
-{{-   $cfg = (.tlsConfig.jks | default dict) -}}
-{{- else if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") -}}
-{{-   $cfg = (.Values.global.elasticsearch.tls.jks | default dict) -}}
-{{- else if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") -}}
-{{-   $cfg = (.Values.global.opensearch.tls.jks | default dict) -}}
-{{- end -}}
-{{- toYaml $cfg -}}
-{{- end -}}
-
-{{- /* Internal: unified JAVA_TOOL_OPTIONS + TRUSTSTORE_PASSWORD emitter */ -}}
+{{- /* Internal: unified JAVA_TOOL_OPTIONS emitter */ -}}
 {{- define "camundaPlatform._java_tool_options_tls_env" -}}
 {{- $vals := .Values -}}
 {{- $comp := required "common.java_tool_options_tls_env: parameter 'component' is required" .component -}}
 {{- $compVals := (get $vals $comp) | default dict -}}
 {{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
 {{- $truststoreDir := required "camundaPlatform._java_tool_options_tls_env: parameter 'truststoreDir' is required" .truststoreDir -}}
-{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "Values" $vals "config" (.tlsConfig | default dict)) -}}
+{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "config" (.tlsConfig | default dict)) -}}
 {{- $truststorePath := printf "%s/%s" $truststoreDir $secretKey -}}
-{{- $jks := ((include "camundaPlatform._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
-{{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-{{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-    "envName" "TRUSTSTORE_PASSWORD"
-    "config" $jks
- ) | nindent 0 }}
-{{- end }}
 - name: JAVA_TOOL_OPTIONS
   value: >-
     {{- if $javaOpts -}}
-    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $javaOpts $truststorePath | nindent 4 }}
-    {{- else -}}
     {{- printf "%s\n-Djavax.net.ssl.trustStore=%s" $javaOpts $truststorePath | nindent 4 }}
-    {{- end -}}
-    {{- else -}}
-    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-    {{- printf "-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $truststorePath | nindent 4 }}
     {{- else -}}
     {{- printf "-Djavax.net.ssl.trustStore=%s" $truststorePath | nindent 4 }}
-    {{- end -}}
     {{- end -}}
 {{- end }}
 

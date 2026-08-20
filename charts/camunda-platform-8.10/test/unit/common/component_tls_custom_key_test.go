@@ -59,12 +59,13 @@ func requireTLSCustomKey(t *testing.T, podSpec corev1.PodSpec, secretName, secre
 
 		javaOptions := ""
 		for _, envVar := range container.Env {
+			require.NotEqual(t, "TRUSTSTORE_PASSWORD", envVar.Name)
 			if envVar.Name == "JAVA_TOOL_OPTIONS" {
 				javaOptions = envVar.Value
-				break
 			}
 		}
 		require.Contains(t, javaOptions, "-Djavax.net.ssl.trustStore="+mountDirectory+"/"+secretKey)
+		require.NotContains(t, javaOptions, "-Djavax.net.ssl.trustStorePassword=")
 	}
 	require.Equal(t, expectedMounts, mounts)
 }
@@ -86,27 +87,6 @@ func verifyOptimizeTLSCustomKey(secretName, secretKey string) func(t *testing.T,
 		var deployment appsv1.Deployment
 		helm.UnmarshalK8SYaml(t, output, &deployment)
 		requireTLSCustomKey(t, deployment.Spec.Template.Spec, secretName, secretKey, "/optimize/certificates", 2)
-	}
-}
-
-func verifyOptimizeTLSCustomKeyWithoutGlobalPassword(secretName, secretKey string) func(t *testing.T, output string, err error) {
-	return func(t *testing.T, output string, err error) {
-		require.NoError(t, err)
-
-		var deployment appsv1.Deployment
-		helm.UnmarshalK8SYaml(t, output, &deployment)
-		requireTLSCustomKey(t, deployment.Spec.Template.Spec, secretName, secretKey, "/optimize/certificates", 2)
-
-		containers := append([]corev1.Container{}, deployment.Spec.Template.Spec.InitContainers...)
-		containers = append(containers, deployment.Spec.Template.Spec.Containers...)
-		for _, container := range containers {
-			for _, envVar := range container.Env {
-				require.NotEqual(t, "TRUSTSTORE_PASSWORD", envVar.Name)
-				if envVar.Name == "JAVA_TOOL_OPTIONS" {
-					require.NotContains(t, envVar.Value, "-Djavax.net.ssl.trustStorePassword=")
-				}
-			}
-		}
 	}
 }
 
@@ -147,26 +127,6 @@ func (s *tlsSecretsTest) TestComponentDatastoreTLSCustomKey() {
 				"optimize.database.opensearch.enabled":                         "false",
 			},
 			Verifier: verifyOptimizeTLSCustomKey("optimize-elasticsearch-tls", "optimize-elasticsearch.jks"),
-		},
-		{
-			Name:     "Optimize component TLS does not inherit global JKS password",
-			Template: "templates/optimize/deployment.yaml",
-			Values: map[string]string{
-				"identity.enabled":                                             "true",
-				"global.identity.auth.enabled":                                 "true",
-				"global.elasticsearch.tls.secret.existingSecret":               "global-elasticsearch-tls",
-				"global.elasticsearch.tls.secret.existingSecretKey":            "global-elasticsearch.jks",
-				"global.elasticsearch.tls.jks.secret.existingSecret":           "global-jks-password",
-				"global.elasticsearch.tls.jks.secret.existingSecretKey":        "password",
-				"optimize.enabled":                                             "true",
-				"optimize.database.elasticsearch.enabled":                      "true",
-				"optimize.database.elasticsearch.external":                     "true",
-				"optimize.database.elasticsearch.tls.enabled":                  "true",
-				"optimize.database.elasticsearch.tls.secret.existingSecret":    "optimize-elasticsearch-tls",
-				"optimize.database.elasticsearch.tls.secret.existingSecretKey": "optimize-elasticsearch.jks",
-				"optimize.database.opensearch.enabled":                         "false",
-			},
-			Verifier: verifyOptimizeTLSCustomKeyWithoutGlobalPassword("optimize-elasticsearch-tls", "optimize-elasticsearch.jks"),
 		},
 		{
 			Name:     "Optimize OpenSearch uses component TLS custom key",

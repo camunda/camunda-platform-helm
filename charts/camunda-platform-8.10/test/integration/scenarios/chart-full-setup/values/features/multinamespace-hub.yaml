@@ -55,8 +55,6 @@ connectors:
   enabled: false
 
 global:
-  elasticsearch:
-    enabled: false
   identity:
     auth:
       orchestration:
