@@ -54,13 +54,29 @@ Create a default fully qualified app name.
   {{- $oidc.redirectUrl | default .Values.global.identity.auth.optimize.redirectUrl -}}
 {{- end -}}
 
+{{/*
+[optimize] Overlay the release-scoped Optimize client secret onto `global.identity.auth.optimize.secret`.
+The overlay is per-field: `existingSecretKey` alone renames the key inside the inherited
+`existingSecret`, while `inlineSecret` or `existingSecret` replaces the global source and drops the
+other form, which `camundaPlatform.normalizeSecretConfiguration` would otherwise still prefer.
+*/}}
 {{- define "optimize.effectiveAuthSecret" -}}
   {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
   {{- $secret := $oidc.secret | default dict -}}
-  {{- if or $secret.inlineSecret $secret.existingSecret $secret.existingSecretKey -}}
-    {{- toYaml $secret -}}
+  {{- $global := .Values.global.identity.auth.optimize.secret | default dict -}}
+  {{- if $secret.inlineSecret -}}
+    {{- toYaml (dict "inlineSecret" $secret.inlineSecret) -}}
+  {{- else if $secret.existingSecret -}}
+    {{- toYaml (dict
+        "existingSecret" $secret.existingSecret
+        "existingSecretKey" ($secret.existingSecretKey | default $global.existingSecretKey | default "")
+    ) -}}
+  {{- else if $secret.existingSecretKey -}}
+    {{- $merged := deepCopy $global -}}
+    {{- $_ := set $merged "existingSecretKey" $secret.existingSecretKey -}}
+    {{- toYaml $merged -}}
   {{- else -}}
-    {{- toYaml (.Values.global.identity.auth.optimize.secret | default dict) -}}
+    {{- toYaml $global -}}
   {{- end -}}
 {{- end -}}
 

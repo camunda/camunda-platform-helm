@@ -63,12 +63,6 @@ spec:
             {{- if $connectors.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict "envName" (printf "VALUES_TOPOLOGY_%s_CONNECTORS_SECRET" $token) "config" $connectors) | nindent 12 }}
             {{- end }}
-            {{- range $tenant := dig "physicalTenants" list $cluster }}
-            {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
-            {{- if $tenantOptimize.enabled }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict "envName" (printf "VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET" $token (include "camundaPlatform.topologyEnvToken" $tenant.id)) "config" $tenantOptimize) | nindent 12 }}
-            {{- end }}
-            {{- end }}
             {{- end }}
             {{- end }}
             {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc")) }}
