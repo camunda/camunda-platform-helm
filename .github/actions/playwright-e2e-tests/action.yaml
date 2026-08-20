@@ -264,7 +264,7 @@ runs:
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
     - name: Capture namespace diagnostics
-      if: ${{ failure() && !cancelled() }}
+      if: ${{ !success() }}
       shell: bash
       env:
         TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
@@ -285,14 +285,14 @@ runs:
 
     - name: Compute diagnostics artifact name
       id: e2e_diag_artifact
-      if: ${{ failure() && !cancelled() }}
+      if: ${{ !success() }}
       shell: bash
       run: |
         raw="diagnostics-e2e-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ github.run_id }}-${{ github.run_attempt }}"
         echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
 
     - name: Upload namespace diagnostics
-      if: ${{ failure() && !cancelled() }}
+      if: ${{ !success() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
         name: ${{ steps.e2e_diag_artifact.outputs.name }}
@@ -301,7 +301,7 @@ runs:
         if-no-files-found: warn
 
     - name: Upload blob report to GitHub Actions Artifacts
-      if: ${{ !cancelled() }}
+      if: ${{ always() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
         name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
@@ -310,12 +310,12 @@ runs:
 
     - name: Set report date
       id: report_date
-      if: ${{ !cancelled() }}
+      if: ${{ always() }}
       shell: bash
       run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_OUTPUT"
 
     - name: Upload Playwright JSON results
-      if: ${{ !cancelled() }}
+      if: ${{ always() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
         name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
@@ -324,7 +324,7 @@ runs:
         retention-days: 5
 
     - name: Upload Playwright traces for failed tests
-      if: ${{ failure() && !cancelled() }}
+      if: ${{ !success() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
         name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}

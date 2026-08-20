@@ -23,7 +23,14 @@ func kubectlBaseArgs(kubeContext string) []string {
 // runKubectl executes a kubectl command with a child timeout context and returns stdout.
 // On error it returns empty string and the error — callers treat diagnostics as best-effort.
 func runKubectl(ctx context.Context, args []string) (string, error) {
-	cmdCtx, cancel := context.WithTimeout(ctx, diagnosticTimeout)
+	return runKubectlTimeout(ctx, args, diagnosticTimeout)
+}
+
+// runKubectlTimeout is runKubectl with an explicit per-command budget, for calls
+// that legitimately outlast diagnosticTimeout such as an in-pod exec that has to
+// negotiate TLS before it can query anything.
+func runKubectlTimeout(ctx context.Context, args []string, timeout time.Duration) (string, error) {
+	cmdCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	output, err := executil.RunCommandBuffered(cmdCtx, "kubectl", args, nil, "")
@@ -116,6 +123,48 @@ func GetPodLogsPrevious(ctx context.Context, kubeContext, namespace, pod string,
 func DescribePod(ctx context.Context, kubeContext, namespace, pod string) (string, error) {
 	args := append(kubectlBaseArgs(kubeContext), "describe", "pod", pod, "-n", namespace)
 	return runKubectl(ctx, args)
+}
+
+// GetPodContainers returns the pod's init containers followed by its regular
+// containers. Init containers come first so a caller iterating the list reaches
+// the one that blocked startup before the containers that never ran.
+func GetPodContainers(ctx context.Context, kubeContext, namespace, pod string) ([]string, error) {
+	args := append(kubectlBaseArgs(kubeContext),
+		"get", "pod", pod, "-n", namespace,
+		"-o", "jsonpath={range .spec.initContainers[*]}{.name}{\"\\n\"}{end}{range .spec.containers[*]}{.name}{\"\\n\"}{end}",
+	)
+	output, err := runKubectl(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+	var containers []string
+	for _, line := range strings.Split(output, "\n") {
+		if name := strings.TrimSpace(line); name != "" {
+			containers = append(containers, name)
+		}
+	}
+	return containers, nil
+}
+
+// GetPodContainerLogs returns the last tailLines of logs from a single container.
+// `kubectl logs --all-containers` fails as a whole when any one container has yet
+// to start, so a pod stuck in Init:Error yields nothing; fetching per container
+// recovers the init container's output.
+func GetPodContainerLogs(ctx context.Context, kubeContext, namespace, pod, container string, tailLines int) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext),
+		"logs", pod, "-n", namespace,
+		"-c", container,
+		"--tail", fmt.Sprintf("%d", tailLines),
+	)
+	return runKubectl(ctx, args)
+}
+
+// ExecInPod runs command in the pod's default container under its own timeout and
+// returns whatever stdout was captured, including on timeout or a non-zero exit.
+func ExecInPod(ctx context.Context, kubeContext, namespace, pod string, command []string, timeout time.Duration) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "exec", pod, "-n", namespace, "--")
+	args = append(args, command...)
+	return runKubectlTimeout(ctx, args, timeout)
 }
 
 // GetNonReadyPods returns the names of pods that are not fully ready.
