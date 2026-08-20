@@ -102,12 +102,13 @@
     },
   },
   packageRules: [
-    // Bitnami Premium tags are '<x.y.z>-debian-<n>-rN'. 'docker' versioning does not
-    // move across the '-rN' revision and the customManagers fall back to 'semver',
-    // which rejects the tag outright -- and a rejected tag is not an error: Renovate
-    // drops the dependency with 'skipReason: invalid-value' and it silently stops
-    // being updated. Attaching the versioning to the datasources makes the inline
-    // 'versioning=' in values-enterprise.yaml redundant rather than load-bearing.
+    // Bitnami Premium tags are '<x.y.z>-debian-<n>-rN'. The values-enterprise.yaml
+    // customManager falls back to 'docker' when an annotation carries no inline
+    // 'versioning=', and 'docker' does not order across the '-rN' revision. That
+    // failure is silent: the dependency resolves, there is no skipReason and no
+    // warning, it is simply never offered an update again. Attaching the versioning
+    // to the datasources makes the inline 'versioning=' in values-enterprise.yaml
+    // redundant rather than load-bearing.
     {
       description: 'Bitnami Premium tags carry a -rN revision the default versionings cannot move.',
       matchDatasources: [
