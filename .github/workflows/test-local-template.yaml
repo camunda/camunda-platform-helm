@@ -152,7 +152,7 @@ jobs:
             echo "OK: $svc port $port appProtocol=$expected"
           }
           check camunda-platform-zeebe-gateway grpc kubernetes.io/h2c
-          check camunda-platform-zeebe-gateway server http
+          check camunda-platform-zeebe-gateway management http
           # camunda-platform-zeebe (headless) shares the same orchestration.service.appProtocols
           # map as camunda-platform-zeebe-gateway above, with a wider knownPorts allow-list
           # (internal/command are headless-only ports) -- exercise both to guard against the

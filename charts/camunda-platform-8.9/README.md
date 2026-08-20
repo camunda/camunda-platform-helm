@@ -27,6 +27,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Web Modeler](#web-modeler)
   - [Elasticsearch](#elasticsearch)
   - [Keycloak](#keycloak)
+  - [Zeebe Message Size](#zeebe-message-size)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
@@ -263,6 +264,14 @@ identity:
       - name: camunda-theme
         mountPath: /opt/bitnami/keycloak/themes/identity
 ```
+
+### Zeebe Message Size
+
+Zeebe now always uses its engine default maximum message size (4MB) and is no longer tied to
+`global.config.requestBodySize`, which governs only HTTP upload and form-post size (e.g. for
+process deployments through REST endpoints). To raise the maximum message size Zeebe accepts,
+configure it directly via the component's `extraConfiguration`, the supported mechanism per
+[ADR 91](../../docs/adr/0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md).
 
 ## Development
 
