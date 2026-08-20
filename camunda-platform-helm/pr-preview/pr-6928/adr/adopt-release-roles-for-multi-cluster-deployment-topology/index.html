@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6928/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6928/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6928/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6928/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6928/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6928/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6928/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6928/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6928/assets/js/runtime~main.4844480b.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6928/assets/js/main.b5cddbd2.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6928/assets/js/runtime~main.92f503dc.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6928/assets/js/main.11482e9a.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -183,12 +183,13 @@ derived from a network route. Detection MUST match every configuration form the 
 accepts, or a differently written file evades the check.</p>
 </li>
 <li class="">
-<p><strong>Per-tenant Optimize identity.</strong> Each Physical Tenant&#x27;s Optimize MUST be able to hold its own
-OIDC client. Per-tenant <em>authorization</em> isolation is NOT part of this contract:
-<code>global.topology.clusters[].components.optimize</code> expresses a single resource server per cluster
-record, so tenants of one cluster share an Optimize audience and are identity-separated but not
-authorization-isolated. Documentation MUST NOT imply otherwise, and any future per-tenant
-audience requires a cluster-record change designed and approved separately.</p>
+<p><strong>Per-tenant Optimize identity.</strong> A Hub cluster record MUST be able to describe one Optimize
+per Physical Tenant, each with its own client id and its own resource server, so that a token
+minted for one tenant&#x27;s Optimize is not valid at another&#x27;s. A deployment MAY still point several
+tenants at one shared audience, in which case those instances are separated by client identity
+only; neither the chart nor the documentation may describe that arrangement as authorization
+isolation. Constraint 9 already separates their storage, and storage isolation MUST NOT be read
+as implying authorization isolation either.</p>
 </li>
 </ol>
 <p>The initial chart implementation is scoped to fresh 8.10 topology deployments. Converting an existing
@@ -213,9 +214,10 @@ them; validation is required to prevent drift and collisions.</li>
 remain operator responsibilities unless separately standardized.</li>
 <li class="">Supporting more clusters increases Identity initialization state and Camunda Hub polling load;
 supported scale limits require operational validation.</li>
-<li class="">Tenants of one Orchestration Cluster share an Optimize audience, so a token minted for one tenant
-is accepted by another tenant&#x27;s Optimize. Separation today is by client identity, not by
-authorization, and nothing in the chart can express the stronger property.</li>
+<li class="">Per-tenant Optimize resource servers add another set of Identity records to reconcile per cluster,
+and a deployment that leaves tenants on one shared audience still gets client-identity separation
+only. That weaker arrangement is easy to reach by omission, so it needs to be visible in
+documentation rather than inferred from the presence of per-tenant records.</li>
 <li class="">A tenant&#x27;s configuration lives in <code>extraConfiguration</code>, so the chart cannot validate it. Declaring
 any tenant also stops the default tenant inheriting the release&#x27;s root exporters, which the chart
 previously hid by generating that block; a hand-written file must supply it, and omitting it stops
