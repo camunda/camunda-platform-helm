@@ -855,26 +855,6 @@ The following values inside your values.yaml need to be set but were not:
     "condition" (ne (.Values.global.documentStore.type.inmemory.storeId | toString) "INMEMORY")
     "oldName" "global.documentStore.type.inmemory.storeId" "migration" $componentExtra) }}
 
-  {{/* optimize.security.csl.enabled only switches the chart's rendered security config when
-       effectiveExtraConfigValue can resolve it: a nested key path in a spring-imported file.
-       A dotted key still reaches Spring through relaxed binding, so the application would drop
-       to the legacy chains while the chart keeps rendering camunda.security.* for them. */}}
-  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
-    {{- if eq (include "optimize.cslEnabled" .) "true" }}
-      {{- range .Values.optimize.extraConfiguration }}
-        {{- $content := .content | default "" }}
-        {{- if or (contains "optimize.security.csl.enabled" $content) (contains "csl:" $content) }}
-          {{- $warningMessage := printf "%s %s %s %s"
-              "[camunda][warning]"
-              (printf "optimize.extraConfiguration file '%s' mentions optimize.security.csl.enabled, but the chart resolved it to true." .file)
-              "The chart therefore still renders camunda.security.* while Spring may read your value, leaving Optimize on the legacy chains without their configuration."
-              "Use the fully nested form (optimize: > security: > csl: > enabled: false) in a file that is not marked springImport: false."
-          -}}
-          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-        {{- end }}
-      {{- end }}
-    {{- end }}
-  {{- end }}
 {{- end }}
 
 {{/*
