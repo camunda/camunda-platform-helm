@@ -1428,13 +1428,13 @@ root-level guard per tree subsumes the prior per-leaf guards.
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.global "elasticsearch")
   "oldName" "global.elasticsearch"
-  "migration" "optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch"
+  "migration" "optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch; clusterName and the JKS truststore password have no replacement, see the 8.9-to-8.10 upgrade guide"
 ) }}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.global "opensearch")
   "oldName" "global.opensearch"
-  "migration" "optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch"
+  "migration" "optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch; clusterName and the JKS truststore password have no replacement, see the 8.9-to-8.10 upgrade guide"
 ) }}
 
 {{/*
