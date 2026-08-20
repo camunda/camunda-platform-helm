@@ -1406,6 +1406,22 @@
                             }
                         }
                     }
+                },
+                "websockets": {
+                    "properties": {
+                        "service": {
+                            "properties": {
+                                "appProtocols": {
+                                    "type": "object",
+                                    "description": "can be used to set the Kubernetes Service appProtocol hint per port (http), e.g. {http: \"kubernetes.io/ws\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
