@@ -282,6 +282,10 @@ data:
                   description: "Admin permission"
                 - definition: admin:clusters
                   description: "Cluster management permission"
+                - definition: admin:catalog
+                  description: "Catalog management permission"
+                - definition: admin:bi
+                  description: "Business intelligence management permission"
             - name: Hub API
               audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
               permissions:
@@ -326,6 +330,17 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
+            - name: "Analyst"
+              description: "Grants full access to Hub and management access to catalog and business intelligence features"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:catalog
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:bi
             - name: "Console"
               description: "Grants access to Hub's cluster management"
               permissions:
