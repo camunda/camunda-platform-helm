@@ -46,8 +46,7 @@ func waitingPod(name, container, image, reason, message string, init bool) corev
 	return pod
 }
 
-// The message containerd emitted during the 2026-08-19 incident: the multi-arch
-// index resolved, its amd64 child did not.
+// Verbatim kubelet message from job 96141556284.
 const childManifest404 = `rpc error: code = NotFound desc = failed to pull and unpack image ` +
 	`"registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r17": failed to copy: ` +
 	`httpReadSeeker: failed open: content at https://registry.camunda.cloud/v2/vendor-ee/postgresql/` +
@@ -81,9 +80,6 @@ func TestTerminalImagePullFailure(t *testing.T) {
 			wantCtr: "wait-for-es",
 		},
 		{
-			// Auth failures are recoverable by fixing a secret and are already
-			// covered by the credential preflight; aborting on them would kill
-			// deploys a retry could save.
 			name:    "unauthorized is not terminal",
 			pod:     waitingPod("p", "c", "reg/i:1", "ErrImagePull", "unauthorized: authentication required", false),
 			wantHit: false,
@@ -214,6 +210,24 @@ func TestWatchTerminalImagePull(t *testing.T) {
 		}
 	})
 
+	t.Run("a listing error breaks the streak", func(t *testing.T) {
+		t.Parallel()
+		calls := 0
+		deps := imagePullWatchDeps{
+			list: func(context.Context, string) (*corev1.PodList, error) {
+				calls++
+				if calls == 2 {
+					return nil, errors.New("api server timeout")
+				}
+				return podList(broken), nil
+			},
+			sleep: noSleep(3), threshold: 2,
+		}
+		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got != nil {
+			t.Fatalf("observations either side of a blind poll are not consecutive, got %v", got)
+		}
+	})
+
 	t.Run("empty namespace is a no-op", func(t *testing.T) {
 		t.Parallel()
 		deps := imagePullWatchDeps{
@@ -231,9 +245,8 @@ type fakeLister struct{ pods *corev1.PodList }
 
 func (f fakeLister) ListPods(context.Context, string) (*corev1.PodList, error) { return f.pods, nil }
 
-// TestUpgradeInstall_AbortsOnTerminalImagePull is the end-to-end assertion: a
-// broken image must end the Helm wait rather than run it to timeout, and the
-// resulting error must name the image instead of reporting "signal: killed".
+// TestUpgradeInstall_AbortsOnTerminalImagePull asserts the wait ends early and
+// the error names the image rather than the killed process.
 func TestUpgradeInstall_AbortsOnTerminalImagePull(t *testing.T) {
 	broken := waitingPod("integration-postgresql-0", "postgresql",
 		"registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r17",
@@ -256,7 +269,6 @@ func TestUpgradeInstall_AbortsOnTerminalImagePull(t *testing.T) {
 	)
 	defer restore()
 
-	// Stand in for `helm --wait` burning its timeout: block until cancelled.
 	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
 		select {
 		case <-ctx.Done():
@@ -297,8 +309,8 @@ func TestUpgradeInstall_AbortsOnTerminalImagePull(t *testing.T) {
 	}
 }
 
-// TestUpgradeInstall_NoGuardWhenNotWaiting proves the guard never runs (and so
-// never builds a client or polls) for a non-waiting install.
+// TestUpgradeInstall_NoGuardWhenNotWaiting asserts no client is built when the
+// install does not wait.
 func TestUpgradeInstall_NoGuardWhenNotWaiting(t *testing.T) {
 	origLister := newPodLister
 	newPodLister = func(string, string) (podLister, error) {
@@ -324,7 +336,6 @@ func TestUpgradeInstall_NoGuardWhenNotWaiting(t *testing.T) {
 	}
 }
 
-// TestImagePullGuardDisabledByEnv covers the escape hatch.
 func TestImagePullGuardDisabledByEnv(t *testing.T) {
 	for _, v := range []string{"off", "false", "0", "no", "OFF"} {
 		t.Setenv(imagePullGuardEnvVar, v)

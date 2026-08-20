@@ -95,14 +95,8 @@ var terminalPullReasons = map[string]bool{
 	"ImagePullBackOff": true,
 }
 
-// terminalPullMessages are the registry responses that no amount of retrying
-// within a Helm timeout will fix: either the tag does not resolve, or — the case
-// that motivated this guard — the multi-arch index resolves but the per-platform
-// child manifest it references is absent.
-//
-// Deliberately narrow. Auth failures ("unauthorized", "pull access denied") are
-// excluded: they are already covered by the credential preflight, and treating
-// them as terminal here would abort deploys that a retry could still save.
+// terminalPullMessages are matched case-insensitively against the kubelet
+// waiting message.
 var terminalPullMessages = []string{
 	"not found",
 	"manifest unknown",
@@ -110,8 +104,7 @@ var terminalPullMessages = []string{
 }
 
 // terminalImagePullFailure reports whether a pod is blocked on an image the
-// registry will not serve. Init containers are inspected as well as app
-// containers: Camunda pods routinely fail in an init container first.
+// registry will not serve. Init and app container statuses are both inspected.
 func terminalImagePullFailure(pod *corev1.Pod) (*ImagePullFailure, bool) {
 	statuses := make([]corev1.ContainerStatus, 0,
 		len(pod.Status.InitContainerStatuses)+len(pod.Status.ContainerStatuses))
@@ -168,19 +161,15 @@ type imagePullGuard struct {
 }
 
 // startImagePullGuard derives a cancellable context for the Helm run and starts
-// watching pods in the release namespace. The returned context is cancelled as
-// soon as a terminal image pull failure is confirmed, which kills the helm child
-// process and ends the wait.
-//
-// The parent context is never cancelled: parallel scenario deploys and matrix
-// entries share one, so cancelling it would take down unrelated work.
+// watching pods in the release namespace. The returned context is cancelled once
+// a terminal image pull failure is confirmed, which kills the helm child process.
+// The parent context is left untouched.
 func startImagePullGuard(ctx context.Context, o types.Options) (context.Context, *imagePullGuard) {
 	guardCtx, cancel := context.WithCancel(ctx)
 	g := &imagePullGuard{cancel: cancel, done: make(chan struct{})}
 
 	lister, err := newPodLister(o.Kubeconfig, o.KubeContext)
 	if err != nil {
-		// Losing the guard must never fail a deploy that would otherwise work.
 		logging.Logger.Debug().Err(err).
 			Msg("Image pull guard disabled: could not build a Kubernetes client")
 		close(g.done)
@@ -215,8 +204,8 @@ func startImagePullGuard(ctx context.Context, o types.Options) (context.Context,
 	return guardCtx, g
 }
 
-// noopImagePullGuard returns a guard that watches nothing, so callers can treat
-// the disabled path exactly like the enabled one.
+// noopImagePullGuard returns a guard that watches nothing and reports no
+// failure.
 func noopImagePullGuard() *imagePullGuard {
 	g := &imagePullGuard{cancel: func() {}, done: make(chan struct{})}
 	close(g.done)
@@ -224,11 +213,8 @@ func noopImagePullGuard() *imagePullGuard {
 }
 
 // Stop shuts the guard down and reports the terminal failure it observed, if
-// any. It is idempotent and safe to call concurrently: context.CancelFunc
-// tolerates repeat calls, and receiving from an already-closed channel returns
-// immediately. Waiting on done unconditionally is what makes the returned value
-// reliable — an early return would let a second caller read failure before the
-// watcher has written it.
+// any. Idempotent and safe to call concurrently: cancel tolerates repeat calls,
+// and the unconditional receive on done orders every caller after the watcher.
 func (g *imagePullGuard) Stop() *ImagePullFailure {
 	g.cancel()
 	<-g.done
@@ -238,8 +224,7 @@ func (g *imagePullGuard) Stop() *ImagePullFailure {
 	return g.failure
 }
 
-// imagePullWatchDeps isolates the watcher from the clock and the cluster so the
-// poll loop is unit-testable without either.
+// imagePullWatchDeps isolates the watcher from the clock and the cluster.
 type imagePullWatchDeps struct {
 	list      func(ctx context.Context, namespace string) (*corev1.PodList, error)
 	sleep     func(ctx context.Context, d time.Duration) error
@@ -248,9 +233,8 @@ type imagePullWatchDeps struct {
 }
 
 // watchTerminalImagePull polls until the same terminal failure has been observed
-// threshold times in a row, or the context ends. Listing errors are ignored: the
-// namespace may not exist yet, and a transient API error must not be mistaken
-// for a healthy cluster or for a broken image.
+// threshold times in a row, or the context ends. A failed list neither confirms
+// nor clears a failure, so it resets the streak.
 func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namespace string) *ImagePullFailure {
 	if namespace == "" {
 		return nil
@@ -270,6 +254,7 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 
 		pods, err := deps.list(ctx, namespace)
 		if err != nil {
+			lastKey, streak = "", 0
 			continue
 		}
 
@@ -291,8 +276,7 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 }
 
 // firstTerminalFailure returns the terminal failure of the alphabetically first
-// affected pod, so repeated polls of the same broken state agree on one pod
-// rather than alternating with map iteration order.
+// affected pod, keeping the streak key stable across polls.
 func firstTerminalFailure(pods *corev1.PodList) *ImagePullFailure {
 	var chosen *ImagePullFailure
 	for i := range pods.Items {
