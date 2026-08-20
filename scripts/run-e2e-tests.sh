@@ -36,7 +36,17 @@ validate_args() {
     exit 1
   fi
 
-  if ! $kubectl_cmd get namespace "$namespace" > /dev/null 2>&1; then
+  local ns_probe_err ns_probe_rc=0
+  # 2>&1 >/dev/null captures stderr while discarding stdout; the order matters.
+  ns_probe_err="$($kubectl_cmd get namespace "$namespace" 2>&1 >/dev/null)" || ns_probe_rc=$?
+  if [[ $ns_probe_rc -ne 0 ]]; then
+    if grep -qiE 'reauthentication|unauthoriz|forbidden|credential|token|unable to connect|dial tcp|connection refused|no such host|certificate|timeout' <<< "$ns_probe_err"; then
+      echo "Error: cannot query the Kubernetes API, so namespace '$namespace' could not be verified." >&2
+      echo "       This is an API/credential failure, not a missing namespace." >&2
+      echo "       kubectl: ${ns_probe_err//$'\n'/ }" >&2
+      echo "       Re-authenticate (e.g. 'gcloud auth login') and retry." >&2
+      exit 1
+    fi
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
     exit 1
   fi
