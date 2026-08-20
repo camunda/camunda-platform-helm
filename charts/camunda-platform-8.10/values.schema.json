@@ -2102,13 +2102,13 @@
                 },
                 "security": {
                     "type": "object",
-                    "description": "override values for the Camunda Hub security section; set values take precedence over the legacy webModeler.security values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value — set those on webModeler.security directly.",
+                    "description": "override values for the Camunda Hub security section; set values are deep-merged over the legacy webModeler.security values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                     "default": {},
                     "additionalProperties": true,
                     "properties": {
                         "authentication": {
                             "type": "object",
-                            "description": "override values for the Camunda Hub authentication section; set values take precedence over the legacy webModeler.security.authentication values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value — set those on webModeler.security.authentication directly.",
+                            "description": "override values for the Camunda Hub authentication section; set values are deep-merged over the legacy webModeler.security.authentication values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                             "default": {},
                             "additionalProperties": true
                         }
@@ -2116,19 +2116,19 @@
                 },
                 "restapi": {
                     "type": "object",
-                    "description": "override values for the Camunda Hub restapi component; set values take precedence over the legacy webModeler.restapi values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value — set those on webModeler.restapi directly. The image and pusher maps are the exception: they are merged over their legacy counterparts, so falsy values do apply there.",
+                    "description": "override values for the Camunda Hub restapi component; set values are deep-merged over the legacy webModeler.restapi values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                     "default": {},
                     "additionalProperties": true
                 },
                 "websockets": {
                     "type": "object",
-                    "description": "override values for the Camunda Hub websockets component; set values take precedence over the legacy webModeler.websockets values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value — set those on webModeler.websockets directly. The image map is the exception: it is merged over its legacy counterpart, so falsy values do apply there.",
+                    "description": "override values for the Camunda Hub websockets component; set values are deep-merged over the legacy webModeler.websockets values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                     "default": {},
                     "additionalProperties": true
                 },
                 "serviceAccount": {
                     "type": "object",
-                    "description": "override values for the Camunda Hub service account; set values take precedence over the legacy webModeler.serviceAccount values. Overrides go through Helm's `or`, so falsy values (false, 0, \"\") do not override the legacy value — set those on webModeler.serviceAccount directly.",
+                    "description": "override values for the Camunda Hub service account; set values are deep-merged over the legacy webModeler.serviceAccount values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                     "default": {},
                     "additionalProperties": true
                 },
