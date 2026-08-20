@@ -2653,6 +2653,8 @@ orchestration:
     ## @param orchestration.index.replicas can be used to specify the number of replicas for Orchestration Cluster indices.
     replicas: 1
 
+  ## @extra orchestration.physicalTenants Physical Tenants are declared under camunda.physical-tenants through orchestration.extraConfiguration per ADR-0091. The chart detects that key to render the issuer-uri form of the OIDC provider, which the Orchestration Cluster requires once tenants exist, and fails the render when this release is not on OIDC or has no resolvable global.identity.auth.issuer. Give every tenant its own secondary-storage index prefix; declaring any tenant also stops the "default" tenant inheriting this release's root exporters, so default needs its own exporter entry.
+
   ## @extra orchestration.retention configuration to enable ILM Policy creation and application for Zeebe record (legacy Elasticsearch/Opensearch exporter) indices; controls their retention.
   retention:
     ## @param orchestration.retention.enabled if true, the ILM Policy is created and applied to the index templates.
