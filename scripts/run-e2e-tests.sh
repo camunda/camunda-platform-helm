@@ -107,6 +107,8 @@ Options:
                                                running it. Without this, Optimize is derived from --namespace and
                                                every Optimize spec is skipped. Requires --hub-namespace.
   --optimize-context-path PATH                 Ingress path that Optimize release is served on, e.g. /optimize-orcha.
+  --modeler-cluster-name NAME                  For a topology with several orchestration releases: the cluster this leg
+                                               must deploy to in the Hub's Web Modeler.
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -139,6 +141,7 @@ LOCAL_TEST_SUITE=""
 HUB_NAMESPACE=""
 OPTIMIZE_NAMESPACE=""
 OPTIMIZE_CONTEXT_PATH=""
+MODELER_CLUSTER_NAME_ARG=""
 
 check_required_cmds
 
@@ -227,6 +230,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --optimize-context-path)
       OPTIMIZE_CONTEXT_PATH="$2"
+      shift 2
+      ;;
+    --modeler-cluster-name)
+      MODELER_CLUSTER_NAME_ARG="$2"
       shift 2
       ;;
     -v | --verbose)
@@ -327,6 +334,7 @@ export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}
 [[ -n "$TRACE_MODE" ]] && export PLAYWRIGHT_E2E_TRACE="$TRACE_MODE"
 [[ -n "$RETRIES" ]] && export PLAYWRIGHT_E2E_RETRIES="$RETRIES"
 [[ -n "$LOCAL_TEST_SUITE" ]] && export PLAYWRIGHT_E2E_LOCAL_TEST_SUITE="$LOCAL_TEST_SUITE"
+[[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && export MODELER_CLUSTER_NAME="$MODELER_CLUSTER_NAME_ARG"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"

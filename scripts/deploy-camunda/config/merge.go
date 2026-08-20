@@ -156,6 +156,11 @@ type TestFlags struct {
 	// single-release deployment, where Optimize shares the namespace under test.
 	OptimizeNamespace   string
 	OptimizeContextPath string
+	// ModelerClusterName names the cluster this leg's tests must deploy to in the Hub's Web Modeler.
+	// One Hub Web Modeler serves every orchestration release in a topology, so without it the suite
+	// deploys to whichever cluster Modeler preselects and a leg targeting any other release asserts
+	// against a cluster that never received the records.
+	ModelerClusterName string
 }
 
 // SelectionFlags holds selection + composition model flags.
