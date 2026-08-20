@@ -25,7 +25,7 @@ topology:
         - elasticsearch
       features:
         - multinamespace-reset-clients
-      values: features/multinamespace-optimize-hub.yaml
+        - multinamespace-optimize-hub
     - role: orchestration
       namespace-suffix: orcha
       modeler-cluster-id: orcha
@@ -33,7 +33,8 @@ topology:
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []
-      values: features/multinamespace-optimize-orchestration.yaml
+      features:
+        - multinamespace-optimize-orchestration
       depends-on: hub
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
@@ -48,7 +49,8 @@ topology:
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []
-      values: features/multinamespace-optimize-orchestration.yaml
+      features:
+        - multinamespace-optimize-orchestration
       depends-on: hub
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
@@ -63,7 +65,8 @@ topology:
       identity: keycloak-external-optimize
       persistence: elasticsearch-external
       dependencies: []
-      values: features/multinamespace-optimize-a.yaml
+      features:
+        - multinamespace-optimize-a
       depends-on: hub
     - role: optimize
       namespace-suffix: optb
@@ -72,5 +75,6 @@ topology:
       identity: keycloak-external-optimize
       persistence: elasticsearch-external
       dependencies: []
-      values: features/multinamespace-optimize-b.yaml
+      features:
+        - multinamespace-optimize-b
       depends-on: hub
