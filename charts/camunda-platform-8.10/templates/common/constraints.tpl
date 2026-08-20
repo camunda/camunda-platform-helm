@@ -76,7 +76,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
     {{- end }}
     {{- $_ := set $seenIds $client.id true }}
   {{- end }}
-  {{- $seenRoles := dict "ManagementIdentity" true "Orchestration" true "Optimize" true "Web Modeler" true "Web Modeler Admin" true }}
+  {{- $seenRoles := dict "ManagementIdentity" true "Orchestration" true "Optimize" true "Web Modeler" true "Web Modeler Admin" true "Hub" true "Hub Admin" true "Console" true "DevOps" true }}
   {{- $legacyIds := list }}
   {{- if .Values.global.identity.auth.connectors.alwaysRegister }}
     {{- $legacyIds = append $legacyIds (include "connectors.authClientId" .) }}
