@@ -506,7 +506,7 @@ func (s *CamundaHubShimTemplateTest) TestFalsySmtpTlsOverrideReachesTheConfigMap
 	s.Require().Equal(false, properties["mail.smtp.starttls.required"])
 }
 
-func (s *CamundaHubShimTemplateTest) TestServiceAnnotationsStillReplaceLegacyMap() {
+func (s *CamundaHubShimTemplateTest) TestServiceAnnotationsMergeWithLegacyMap() {
 	values := map[string]string{
 		"camundaHub.enabled": "true",
 		"webModeler.enabled": "true",
@@ -520,8 +520,8 @@ func (s *CamundaHubShimTemplateTest) TestServiceAnnotationsStillReplaceLegacyMap
 	helm.UnmarshalK8SYaml(s.T(), output, &service)
 	annotations := service.Annotations
 	s.Require().Equal("hubval", annotations["hubkey"])
-	s.Require().NotContains(annotations, "legacykey",
-		"services are not on the merged view yet; values.yaml documents this scope boundary")
+	s.Require().Equal("legacyval", annotations["legacykey"],
+		"services now read the merged view, so a Hub annotations map keeps the legacy keys")
 }
 
 func (s *CamundaHubShimTemplateTest) TestResourceNamesStableBetweenLegacyAndCamundaHubValues() {
