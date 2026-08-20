@@ -165,7 +165,6 @@ type imagePullGuard struct {
 
 	mu      sync.Mutex
 	failure *ImagePullFailure
-	stopped bool
 }
 
 // startImagePullGuard derives a cancellable context for the Helm run and starts
@@ -225,17 +224,14 @@ func noopImagePullGuard() *imagePullGuard {
 }
 
 // Stop shuts the guard down and reports the terminal failure it observed, if
-// any. It is idempotent and safe to call from a defer as well as inline.
+// any. It is idempotent and safe to call concurrently: context.CancelFunc
+// tolerates repeat calls, and receiving from an already-closed channel returns
+// immediately. Waiting on done unconditionally is what makes the returned value
+// reliable — an early return would let a second caller read failure before the
+// watcher has written it.
 func (g *imagePullGuard) Stop() *ImagePullFailure {
-	g.mu.Lock()
-	alreadyStopped := g.stopped
-	g.stopped = true
-	g.mu.Unlock()
-
-	if !alreadyStopped {
-		g.cancel()
-		<-g.done
-	}
+	g.cancel()
+	<-g.done
 
 	g.mu.Lock()
 	defer g.mu.Unlock()
