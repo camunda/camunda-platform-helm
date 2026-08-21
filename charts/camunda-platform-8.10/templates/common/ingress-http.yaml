@@ -1,3 +1,7 @@
+{{- $hub := dict -}}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub = include "camundaHub.values" . | fromYaml -}}
+{{- end -}}
 {{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -46,19 +50,19 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- end }}
-          {{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (include "camundaHub.contextPath" .) }}
+          {{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") $hub.contextPath }}
           - backend:
               service:
                 name: {{ template "webModeler.restapi.fullname" . }}
                 port:
-                  number: {{ (or .Values.camundaHub.restapi.service.port .Values.webModeler.restapi.service.port) }}
-            path: {{ (include "camundaHub.contextPath" .) }}
+                  number: {{ $hub.restapi.service.port }}
+            path: {{ $hub.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           - backend:
               service:
                 name: {{ template "webModeler.websockets.fullname" . }}
                 port:
-                  number:  {{ (or .Values.camundaHub.websockets.service.port .Values.webModeler.websockets.service.port) }}
+                  number:  {{ $hub.websockets.service.port }}
             path: {{ template "webModeler.websocketContextPath" . }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}

@@ -1199,12 +1199,6 @@ camundaHub:
   ## replaces the legacy list. To replace a scheduling map outright, set it on webModeler.* instead.
   ## Setting a key here to a scalar where webModeler.* has a map (or vice versa) is a hard error
   ## rather than a silent subtree replacement.
-  ##
-  ## These rules currently apply to the values read by the Web Modeler restapi and websockets
-  ## workloads, to camundaHub.contextPath, and to camundaHub.restapi.mail. Every other consumer
-  ## (the services, service account, shared secret, the shared and websockets configmaps, the
-  ## HTTPRoute and the service monitor) still takes the first truthy value, so a map set there
-  ## replaces the legacy map rather than merging into it, and a falsy override there is ignored.
   ## @skip camundaHub.image
   image: {}
   ## @skip camundaHub.security
