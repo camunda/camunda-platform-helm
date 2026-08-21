@@ -6080,7 +6080,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.35"
+                            "default": "8.8.36"
                         },
                         "digest": {
                             "type": "string",
@@ -7530,7 +7530,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.35"
+                            "default": "8.8.36"
                         },
                         "digest": {
                             "type": "string",
