@@ -457,3 +457,114 @@ func (s *AuthIdentityTemplateTest) checksumAnnotation(deployment string) string 
 	}
 	return ""
 }
+
+// Identity provisions the Optimize client that Optimize then authenticates with, so both sides must
+// read the same component-scoped values. Rendering only Optimize cannot catch a divergence, so this
+// case sets every Optimize key on both levels with different values and asserts Identity emits the
+// component one for the client id, redirect URL, audience, and secret.
+func (s *AuthIdentityTemplateTest) TestCombinedModeProvisionsTheComponentScopedOptimizeClient() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                           "true",
+		"identity.enabled":                                       "true",
+		"optimize.enabled":                                       "true",
+		"orchestration.data.secondaryStorage.type":               "elasticsearch",
+		"global.identity.keycloak.url.protocol":                  "https",
+		"global.identity.keycloak.url.host":                      "keycloak.example.com",
+		"global.identity.keycloak.url.port":                      "443",
+		"global.identity.keycloak.auth.adminUser":                "admin",
+		"global.identity.keycloak.auth.secret.existingSecret":    "keycloak",
+		"global.identity.keycloak.auth.secret.existingSecretKey": "admin-password",
+
+		"global.identity.auth.optimize.clientId":                 "global-optimize",
+		"global.identity.auth.optimize.audience":                 "global-optimize-api",
+		"global.identity.auth.optimize.redirectUrl":              "https://global.example.com/optimize",
+		"global.identity.auth.optimize.secret.existingSecret":    "global-oidc",
+		"global.identity.auth.optimize.secret.existingSecretKey": "global-key",
+
+		"optimize.security.authentication.oidc.clientId":                 "component-optimize",
+		"optimize.security.authentication.oidc.audience":                 "component-optimize-api",
+		"optimize.security.authentication.oidc.redirectUrl":              "https://component.example.com/optimize",
+		"optimize.security.authentication.oidc.secret.existingSecret":    "component-oidc",
+		"optimize.security.authentication.oidc.secret.existingSecretKey": "component-key",
+	}}
+
+	deployment, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/identity/deployment.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(deployment, `value: "component-optimize"`)
+	s.Require().NotContains(deployment, "global-optimize")
+	s.Require().Contains(deployment, "name: component-oidc")
+	s.Require().Contains(deployment, "key: component-key")
+	s.Require().NotContains(deployment, "global-oidc")
+
+	configmap, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/identity/configmap.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(configmap, "https://component.example.com/optimize")
+	s.Require().Contains(configmap, `audience: "component-optimize-api"`)
+	s.Require().NotContains(configmap, "global.example.com")
+	s.Require().NotContains(configmap, "global-optimize-api")
+
+	// The client secret Optimize sends must be the one Identity registered above.
+	optimizeDeployment, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(optimizeDeployment, "name: component-oidc")
+	s.Require().Contains(optimizeDeployment, "key: component-key")
+	s.Require().NotContains(optimizeDeployment, "global-oidc")
+}
+
+// optimize.envFrom layers after the identity env ConfigMap in the Deployment, so a release already
+// supplying the issuer that way keeps rendering: the guard must not break an upgrade path.
+func (s *AuthIdentityTemplateTest) TestEnvFromSatisfiesTheIssuerConstraint() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"identity.enabled":                         "true",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.envFrom[0].configMapRef.name":    "optimize-identity-overrides",
+	}}
+	out, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().NoError(err)
+	s.Require().Contains(out, "name: optimize-identity-overrides")
+}
+
+// A release-scoped jwksUrl must win over the global one, so an Optimize-only release can point at
+// its own provider.
+func (s *AuthIdentityTemplateTest) TestComponentJwksUrlOverridesGlobal() {
+	out := s.render(map[string]string{
+		"global.identity.auth.jwksUrl":                  "https://global.example.com/certs",
+		"optimize.security.authentication.oidc.jwksUrl": "https://component.example.com/certs",
+	}, []string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Contains(out, `jwtSetUri: "https://component.example.com/certs"`)
+	s.Require().NotContains(out, "global.example.com/certs")
+}
+
+// A non-Keycloak type has no endpoint layout to derive from, so without a jwksUrl at either level
+// api.jwtSetUri renders empty and Optimize has no key source. The component key is the only way to
+// name it per release.
+func (s *AuthIdentityTemplateTest) TestComponentJwksUrlServesANonKeycloakType() {
+	values := map[string]string{
+		"optimize.security.authentication.oidc.type":   "GENERIC",
+		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+	}
+	s.Require().Contains(s.render(values, []string{"templates/optimize/configmap.yaml"}),
+		`jwtSetUri: ""`)
+
+	values["optimize.security.authentication.oidc.jwksUrl"] = "https://issuer.example.com/certs"
+	s.Require().Contains(s.render(values, []string{"templates/optimize/configmap.yaml"}),
+		`jwtSetUri: "https://issuer.example.com/certs"`)
+}
+
+// KEYCLOAK keeps deriving the endpoint, so releases that never set jwksUrl render unchanged.
+func (s *AuthIdentityTemplateTest) TestKeycloakStillDerivesTheJwksUrl() {
+	out := s.render(map[string]string{
+		"optimize.security.authentication.oidc.type": "KEYCLOAK",
+	}, []string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Contains(out,
+		`jwtSetUri: "http://keycloak.example.com/realms/camunda/protocol/openid-connect/certs"`)
+}
