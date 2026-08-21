@@ -78,13 +78,26 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- end }}
 {{/*
 Applies beyond global.topology.mode=optimize: optimize.security.authentication.method reaches the
-same empty issuer without the mode to signal it. Releases authenticating through
-global.identity.auth.enabled are exempt because a bundled Keycloak leaves the issuer empty by
-default and resolves the provider through the derived issuerBackendUrl.
+same empty issuer without the mode to signal it. An empty "iss" is only survivable while an issuer
+backend URL resolves, which is the External Keycloak shape: global.identity.keycloak.url.host
+derives every endpoint and the provider names the claim. This chart bundles no Keycloak, so
+global.identity.auth.enabled on its own resolves nothing and is not an exemption - it renders an
+empty issuer, an empty issuerBackendUrl and a relative jwtSetUri, which is the state this check
+exists to prevent.
 */}}
-{{- $optimizeOwnsItsAuth := or (eq $topologyMode "optimize") (not .Values.global.identity.auth.enabled) }}
-{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") $optimizeOwnsItsAuth (empty (include "optimize.effectiveAuthIssuer" .)) }}
-  {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise." }}
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") }}
+  {{- if and (empty (include "optimize.effectiveAuthIssuer" .)) (empty (include "optimize.effectiveAuthIssuerBackendUrl" .)) }}
+    {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise. An External Keycloak may leave the issuer empty, but then global.identity.keycloak.url.host (or an explicit issuerBackendUrl) must resolve the provider instead." }}
+  {{- end }}
+  {{/*
+  A Secret reference without a key matches neither branch of
+  camundaPlatform.normalizeSecretConfiguration, and the Optimize Deployment passes no
+  defaultSecretName, so the whole env var would be dropped rather than mis-set.
+  */}}
+  {{- $optimizeAuthSecret := include "optimize.effectiveAuthSecret" . | fromYaml }}
+  {{- if and $optimizeAuthSecret.existingSecret (empty $optimizeAuthSecret.existingSecretKey) }}
+    {{- fail "[camunda][error] Optimize with OIDC authentication requires an existingSecretKey alongside its existingSecret; set optimize.security.authentication.oidc.secret.existingSecretKey (or global.identity.auth.optimize.secret.existingSecretKey), naming the key inside the Secret that holds the client secret. Without it CAMUNDA_IDENTITY_CLIENT_SECRET is dropped from the Deployment entirely and Optimize starts with no client secret." }}
+  {{- end }}
 {{- end }}
 {{- if eq $topologyMode "hub" }}
   {{- if ne (include "webModeler.authMethod" .) "oidc" }}
