@@ -668,6 +668,26 @@ func TestTopologyValidate_RejectsOptimizeLayerContextPathFromForeignPlaceholder(
 	}
 }
 
+// A literal that matches the declaration today is still a second copy of it, and
+// the next change to the declaration updates only one of the two. Being in sync
+// right now buys no exemption.
+func TestTopologyValidate_RejectsOptimizeLayerContextPathAsASynchronizedLiteral(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "/optimize-orcha"
+  database:
+    elasticsearch:
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "RELEASE_OPTIMIZE_CONTEXT_PATH") {
+		t.Fatalf("expected a literal matching the declaration to be rejected, got %v", err)
+	}
+}
+
 // The placeholder has to lead the prefix, which is what makes repointing serves
 // repoint the records: a value that only mentions it further along does not.
 func TestTopologyValidate_RejectsOptimizeLayerPrefixNotLedByThePlaceholder(t *testing.T) {

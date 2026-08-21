@@ -389,8 +389,11 @@ func (s *AuthIdentityTemplateTest) TestComponentInlineSecretBeatsGlobalExistingS
 // render is the only way the operator learns of it.
 func (s *AuthIdentityTemplateTest) TestComponentExistingSecretWithoutAKeyIsRejected() {
 	options := &helm.Options{SetValues: map[string]string{
-		"global.identity.auth.enabled":                                "true",
-		"global.identity.auth.issuer":                                 "https://issuer.example.com",
+		"global.identity.auth.enabled": "true",
+		"global.identity.auth.issuer":  "https://issuer.example.com",
+		// No Keycloak host here, so KEYCLOAK derives no JWKS endpoint; answer that separately so the
+		// missing existingSecretKey is what this case reports.
+		"optimize.security.authentication.oidc.jwksUrl": "https://issuer.example.com/certs",
 		"optimize.enabled":                                            "true",
 		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
 		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
@@ -541,9 +544,12 @@ func (s *AuthIdentityTemplateTest) TestUndeclaredEnvFromDoesNotSatisfyTheIssuerC
 // the Deployment, so the value does reach the container.
 func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromSatisfiesTheIssuerConstraint() {
 	options := &helm.Options{SetValues: map[string]string{
-		"global.identity.auth.enabled":                             "true",
-		"identity.enabled":                                         "true",
-		"optimize.enabled":                                         "true",
+		"global.identity.auth.enabled": "true",
+		"identity.enabled":             "true",
+		"optimize.enabled":             "true",
+		// This release names no Keycloak host, so KEYCLOAK derives no JWKS endpoint either. Answer
+		// that requirement the ordinary way, leaving the issuer exemption as the only subject here.
+		"optimize.security.authentication.oidc.jwksUrl":            "https://issuer.example.com/certs",
 		"orchestration.data.secondaryStorage.type":                 "elasticsearch",
 		"optimize.security.authentication.method":                  "oidc",
 		"optimize.envFrom[0].configMapRef.name":                    "optimize-identity-overrides",
@@ -903,4 +909,80 @@ func (s *AuthIdentityTemplateTest) TestEnvFromProvidesWithoutASourceIsRejected()
 		s.Require().Error(err, declared)
 		s.Require().Contains(err.Error(), "but optimize.envFrom is empty")
 	}
+}
+
+// An existingSecret without a key drops CAMUNDA_IDENTITY_CLIENT_SECRET from the Deployment entirely,
+// which is also why a release may answer for it: with nothing of the chart's emitted there, an
+// optimize.env entry naming the key itself is the only client secret the container sees, and such a
+// release authenticates today. Failing it would turn a working deployment into a failed upgrade over
+// a key it does not need.
+func (s *AuthIdentityTemplateTest) TestOptimizeEnvMaySupplyTheClientSecret() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                                "true",
+		"global.identity.auth.issuer":                                 "https://issuer.example.com",
+		"optimize.security.authentication.oidc.jwksUrl":               "https://issuer.example.com/certs",
+		"optimize.enabled":                                            "true",
+		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
+		"optimize.env[0].name":                                        "CAMUNDA_IDENTITY_CLIENT_SECRET",
+		"optimize.env[0].valueFrom.secretKeyRef.name":                 "tenant-oidc",
+		"optimize.env[0].valueFrom.secretKeyRef.key":                  "optimize-secret",
+	}
+	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(out, "optimize-secret")
+}
+
+// The same exemption through a declaration: no container env is rendered for that variable, so an
+// optimize.envFrom source can carry it - and only the declaration says one does.
+func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromMaySupplyTheClientSecret() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                                "true",
+		"global.identity.auth.issuer":                                 "https://issuer.example.com",
+		"optimize.security.authentication.oidc.jwksUrl":               "https://issuer.example.com/certs",
+		"optimize.enabled":                                            "true",
+		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
+		"optimize.envFrom[0].secretRef.name":                          "tenant-oidc-env",
+		"optimize.security.authentication.oidc.envFromProvides[0]":    "CAMUNDA_IDENTITY_CLIENT_SECRET",
+	}
+	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(out, "tenant-oidc-env")
+
+	// The declaration is what exempts it: the same source without one still fails.
+	delete(values, "optimize.security.authentication.oidc.envFromProvides[0]")
+	_, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires an existingSecretKey alongside its existingSecret")
+}
+
+// KEYCLOAK derives the JWKS endpoint only while there is an issuer backend URL to append it to. A
+// configured public issuer answers the issuer guard on its own, so this release reaches the
+// derivation with nothing to derive from - and the relative "/protocol/openid-connect/certs" it used
+// to produce is both unusable and non-empty, which would satisfy the JWKS guard and hide the state
+// that guard reports.
+func (s *AuthIdentityTemplateTest) TestKeycloakWithoutABackendUrlDerivesNoJwksUrl() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                 "true",
+		"identity.enabled":                             "false",
+		"optimize.enabled":                             "true",
+		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"optimize.security.authentication.oidc.type":   "KEYCLOAK",
+		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+	}
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+	s.Require().NotContains(err.Error(), "/protocol/openid-connect/certs")
+
+	values["optimize.security.authentication.oidc.jwksUrl"] = "https://issuer.example.com/certs"
+	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(out, `jwtSetUri: "https://issuer.example.com/certs"`)
 }
