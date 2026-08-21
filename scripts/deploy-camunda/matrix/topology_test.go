@@ -1158,3 +1158,133 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeAudiencedToAnUnpermittedRe
 		t.Fatalf("expected the unpermitted audience to be reported, got %v", err)
 	}
 }
+
+// hubInventoryResetToNoClusters is what a later Hub layer does when it replaces
+// the cluster inventory with an empty list: Helm deploys the empty one, so
+// Identity provisions nothing, however much an earlier layer registered.
+const hubInventoryResetToNoClusters = `global:
+  topology:
+    clusters: []
+`
+
+// Helm replaces a list rather than merging it, so the last Hub layer to state the
+// cluster inventory is the whole inventory. A validator that only replaces its
+// stored copy when the new list has entries keeps checking registrations the
+// deploy no longer makes.
+func TestTopologyValidate_RejectsOptimizeWhoseHubClusterInventoryIsResetToEmpty(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "base.yaml", hubInventoryRegisteringOptimize)
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryResetToNoClusters)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
+		t.Fatalf("expected the emptied cluster inventory to leave the client unprovisioned, got %v", err)
+	}
+}
+
+// The control for the test above: the same two layers, with the later one silent
+// about the inventory rather than emptying it. Presence of the key is what has to
+// decide, not the length of the list it parses to.
+func TestTopologyValidate_AcceptsOptimizeWhoseLaterHubLayerLeavesTheInventoryAlone(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "base.yaml", hubInventoryRegisteringOptimize)
+	writeLayer(t, dir, "features/hub.yaml", "global:\n  topology:\n    mode: hub\n")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("a later layer that states no inventory must leave the registrations standing, got %v", err)
+	}
+}
+
+// identity.clients is replaced the same way, and it is the only place a second
+// tenant's Optimize can be provisioned.
+func TestTopologyValidate_RejectsSecondTenantOptimizeWhoseHubClientListIsResetToEmpty(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "base.yaml", hubInventoryWithSecondOptimizeClient)
+	writeTwoTenantLayers(t, dir, "identity:\n  clients: []\n", optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
+		t.Fatalf("expected the emptied client list to leave tenant B unprovisioned, got %v", err)
+	}
+}
+
+// Both sides also accept an inline client secret, and comparing only the
+// existing-Secret fields never looks at it: two different literals passed, and
+// Optimize authenticated with a secret Identity had not registered.
+func TestTopologyValidate_RejectsOptimizeInlineSecretDifferingFromTheHubInventory(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", inlineSecretOn(hubInventoryRegisteringOptimize, "hub-registered-secret"))
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "release-sent-secret"))
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "are different literals") {
+		t.Fatalf("expected the differing inline secrets to be reported, got %v", err)
+	}
+	if strings.Contains(err.Error(), "release-sent-secret") || strings.Contains(err.Error(), "hub-registered-secret") {
+		t.Fatalf("a client secret must not be quoted into the problem, got %v", err)
+	}
+}
+
+func TestTopologyValidate_AcceptsOptimizeInlineSecretMatchingTheHubInventory(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", inlineSecretOn(hubInventoryRegisteringOptimize, "shared-secret"))
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "shared-secret"))
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("the same inline secret on both sides must validate, got %v", err)
+	}
+}
+
+// An inline literal and a Secret reference cannot be shown to hold the same
+// value, and the Deployment sends only one of them.
+func TestTopologyValidate_RejectsOptimizeInlineSecretAgainstARegisteredSecretReference(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "release-sent-secret"))
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "state it in different forms") {
+		t.Fatalf("expected the mismatched secret forms to be reported, got %v", err)
+	}
+}
+
+// The standalone-client path resolves the secret with inlineSecret first, the
+// order identity.clients[] is rendered in.
+func TestTopologyValidate_RejectsSecondTenantOptimizeInlineSecretDifferingFromItsIdentityClient(t *testing.T) {
+	dir := t.TempDir()
+	hubLayer := hubInventoryRegisteringOptimize + inlineSecretOn(
+		strings.TrimPrefix(hubInventoryWithSecondOptimizeClient, hubInventoryRegisteringOptimize),
+		"hub-registered-secret")
+	writeTwoTenantLayers(t, dir, hubLayer, optimizeLayerMatchingHubInventory,
+		inlineSecretOn(optimizeLayerSecondTenant, "release-sent-secret"))
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "are different literals") {
+		t.Fatalf("expected the differing inline secrets to be reported on the client path, got %v", err)
+	}
+}
+
+// inlineSecretOn rewrites every existing-Secret reference in a layer to the given
+// inline literal, keeping the indentation each reference sits at.
+func inlineSecretOn(layer, value string) string {
+	var out []string
+	for _, line := range strings.Split(layer, "\n") {
+		trimmed := strings.TrimLeft(line, " ")
+		indent := line[:len(line)-len(trimmed)]
+		switch {
+		case strings.HasPrefix(trimmed, "existingSecret:"):
+			out = append(out, indent+"inlineSecret: "+value)
+		case strings.HasPrefix(trimmed, "existingSecretKey:"):
+		default:
+			out = append(out, line)
+		}
+	}
+	return strings.Join(out, "\n")
+}
