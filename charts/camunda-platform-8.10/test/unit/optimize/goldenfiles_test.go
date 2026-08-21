@@ -54,7 +54,10 @@ func TestGoldenDefaultsTemplateOptimize(t *testing.T) {
 
 // The component-scoped identity ConfigMap only renders once Optimize owns its identity, so the
 // default suite above never reaches it. Cover its full rendered shape under a values set that
-// satisfies optimize.needsIdentityConfigMap.
+// satisfies optimize.needsIdentityConfigMap. Identity stays out of this release: it registers
+// clients only under global.identity.auth.enabled, so a local Identity alongside component-scoped
+// Optimize OIDC is the combination constraints.tpl rejects, and the ConfigMap this golden covers
+// exists for the release that points at a Management Identity elsewhere.
 func TestGoldenIdentityEnvTemplateOptimize(t *testing.T) {
 	t.Parallel()
 
@@ -70,7 +73,6 @@ func TestGoldenIdentityEnvTemplateOptimize(t *testing.T) {
 		SetValues: map[string]string{
 			"optimize.enabled":                                               "true",
 			"optimize.database.elasticsearch.enabled":                        "true",
-			"identity.enabled":                                               "true",
 			"optimize.security.authentication.method":                        "oidc",
 			"optimize.security.authentication.oidc.type":                     "KEYCLOAK",
 			"optimize.security.authentication.oidc.issuer":                   "https://tenant-issuer.example.com/realms/camunda",
