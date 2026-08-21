@@ -85,12 +85,12 @@ global.identity.auth.enabled on its own resolves nothing and is not an exemption
 empty issuer, an empty issuerBackendUrl and a relative jwtSetUri, which is the state this check
 exists to prevent.
 
-An explicit optimize.env entry for either variable is exempt: container env supersedes the envFrom
-ConfigMap this check guards, so the empty issuer never reaches the container. See
-optimize.envSetsIdentityIssuer.
+A release that supplies the issuer through optimize.env or optimize.envFrom is exempt: the
+Deployment lists both after the ConfigMap this check guards, so the empty issuer never reaches the
+container. See optimize.identityIssuerMayComeFromEnv for why envFrom counts on presence alone.
 */}}
 {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") }}
-  {{- if and (empty (include "optimize.effectiveAuthIssuer" .)) (empty (include "optimize.effectiveAuthIssuerBackendUrl" .)) (ne (include "optimize.envSetsIdentityIssuer" .) "true") }}
+  {{- if and (empty (include "optimize.effectiveAuthIssuer" .)) (empty (include "optimize.effectiveAuthIssuerBackendUrl" .)) (ne (include "optimize.identityIssuerMayComeFromEnv" .) "true") }}
     {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise. An External Keycloak may leave the issuer empty, but then global.identity.keycloak.url.host (or an explicit issuerBackendUrl) must resolve the provider instead." }}
   {{- end }}
   {{/*
