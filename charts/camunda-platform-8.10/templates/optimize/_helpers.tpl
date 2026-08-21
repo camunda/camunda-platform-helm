@@ -115,6 +115,13 @@ every existing values file rendering unchanged.
 {{/*
 [optimize] Resolve `api.jwtSetUri`. Only KEYCLOAK derives from the issuer backend URL; any other
 type renders empty unless jwksUrl is set on the release or on global.
+
+KEYCLOAK derives it only while that backend URL resolves. Appending the endpoint to an empty one
+yields the relative "/protocol/openid-connect/certs", which is not a URL Optimize can fetch from -
+and being non-empty it would satisfy the JWKS guard, hiding exactly the state that guard reports. A
+KEYCLOAK release may legitimately reach here with nothing to derive from: a configured public issuer
+answers the issuer guard on its own, leaving the backend URL empty. Render nothing then, so the
+guard asks for an explicit jwksUrl.
 */}}
 {{- define "optimize.effectiveAuthJwksUrl" -}}
   {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
@@ -123,7 +130,10 @@ type renders empty unless jwksUrl is set on the release or on global.
   {{- else if .Values.global.identity.auth.jwksUrl -}}
     {{- tpl .Values.global.identity.auth.jwksUrl . -}}
   {{- else if eq (include "optimize.effectiveAuthType" .) "KEYCLOAK" -}}
-    {{- include "optimize.effectiveAuthIssuerBackendUrl" . -}}/protocol/openid-connect/certs
+    {{- $issuerBackendUrl := include "optimize.effectiveAuthIssuerBackendUrl" . -}}
+    {{- if $issuerBackendUrl -}}
+      {{- printf "%s/protocol/openid-connect/certs" $issuerBackendUrl -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 
@@ -163,8 +173,12 @@ CAMUNDA_IDENTITY_ISSUER CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
 SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
 {{- end -}}
 
+{{- define "optimize.clientSecretEnvNames" -}}
+CAMUNDA_IDENTITY_CLIENT_SECRET
+{{- end -}}
+
 {{- define "optimize.declarableEnvNames" -}}
-{{- printf "%s %s" (include "optimize.identityIssuerEnvNames" .) (include "optimize.jwksEnvNames" .) -}}
+{{- printf "%s %s %s" (include "optimize.identityIssuerEnvNames" .) (include "optimize.jwksEnvNames" .) (include "optimize.clientSecretEnvNames" .) -}}
 {{- end -}}
 
 {{/*
@@ -241,6 +255,24 @@ explicit optimize.env entry or a declared envFrom variable both count.
 */}}
 {{- define "optimize.jwksMayComeFromEnv" -}}
   {{- $names := splitList " " (include "optimize.jwksEnvNames" .) -}}
+  {{- if or
+        (eq (include "optimize.envSetsAnyOf" (dict "ctx" . "names" $names)) "true")
+        (eq (include "optimize.envFromDeclaresAnyOf" (dict "ctx" . "names" $names)) "true") -}}
+true
+  {{- else -}}
+false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether the client secret may reach the container without this chart resolving it. With an
+existingSecret and no key the Deployment emits no CAMUNDA_IDENTITY_CLIENT_SECRET at all
+(camundaPlatform.emitEnvVarFromSecretConfig matches neither branch), so nothing of the chart's is
+there to outrank: an optimize.env entry - including a valueFrom secretKeyRef, which is how a release
+names the key itself - and a declared envFrom variable both land it.
+*/}}
+{{- define "optimize.clientSecretMayComeFromEnv" -}}
+  {{- $names := splitList " " (include "optimize.clientSecretEnvNames" .) -}}
   {{- if or
         (eq (include "optimize.envSetsAnyOf" (dict "ctx" . "names" $names)) "true")
         (eq (include "optimize.envFromDeclaresAnyOf" (dict "ctx" . "names" $names)) "true") -}}

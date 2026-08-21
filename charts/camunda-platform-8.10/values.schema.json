@@ -5814,14 +5814,15 @@
                                         },
                                         "envFromProvides": {
                                             "type": "array",
-                                            "description": "names the identity variables this release's `optimize.envFrom` sources supply, so the chart stops requiring them. Their keys are unreadable at render time, so presence alone exempts nothing, and a declaration with no `optimize.envFrom` source is rejected. Supported values are CAMUNDA_IDENTITY_ISSUER, CAMUNDA_IDENTITY_ISSUER_BACKEND_URL, and SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI.",
+                                            "description": "names the identity variables this release's `optimize.envFrom` sources supply, so the chart stops requiring them. Their keys are unreadable at render time, so presence alone exempts nothing, and a declaration with no `optimize.envFrom` source is rejected. Supported values are CAMUNDA_IDENTITY_ISSUER, CAMUNDA_IDENTITY_ISSUER_BACKEND_URL, SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI and CAMUNDA_IDENTITY_CLIENT_SECRET.",
                                             "default": [],
                                             "items": {
                                                 "type": "string",
                                                 "enum": [
                                                     "CAMUNDA_IDENTITY_ISSUER",
                                                     "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
-                                                    "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI"
+                                                    "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+                                                    "CAMUNDA_IDENTITY_CLIENT_SECRET"
                                                 ]
                                             }
                                         },
