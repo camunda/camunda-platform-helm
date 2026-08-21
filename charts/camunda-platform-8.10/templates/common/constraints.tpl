@@ -125,17 +125,23 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
       {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise. An External Keycloak may leave the issuer empty, but then global.identity.keycloak.url.host (or an explicit issuerBackendUrl) must resolve the provider instead." }}
     {{- end }}
     {{- if and (empty (include "optimize.effectiveAuthJwksUrl" .)) (ne (include "optimize.jwksSuppliedByRelease" .) "true") }}
-      {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set a non-empty api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or in an optimize.extraConfiguration file, which Optimize imports after it, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
+      {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, and only while an issuerBackendUrl resolves to append it to, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set a non-empty api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or in an optimize.extraConfiguration file, which Optimize imports after it, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
     {{- end }}
   {{- end }}
   {{/*
   A Secret reference without a key matches neither branch of
   camundaPlatform.normalizeSecretConfiguration, and the Optimize Deployment passes no
   defaultSecretName, so the whole env var would be dropped rather than mis-set.
+
+  Dropped, not mis-set, is also why the release may answer this itself: with nothing of the chart's
+  emitted for that variable, an optimize.env entry - a valueFrom secretKeyRef naming the key
+  directly, say - or a declared envFrom variable is the only CAMUNDA_IDENTITY_CLIENT_SECRET the
+  container sees, and such a release is authenticating today. Failing it unconditionally would turn
+  a working deployment into a failed upgrade over a key it does not need.
   */}}
   {{- $optimizeAuthSecret := include "optimize.effectiveAuthSecret" . | fromYaml }}
-  {{- if and $optimizeAuthSecret.existingSecret (empty $optimizeAuthSecret.existingSecretKey) }}
-    {{- fail "[camunda][error] Optimize with OIDC authentication requires an existingSecretKey alongside its existingSecret; set optimize.security.authentication.oidc.secret.existingSecretKey (or global.identity.auth.optimize.secret.existingSecretKey), naming the key inside the Secret that holds the client secret. Without it CAMUNDA_IDENTITY_CLIENT_SECRET is dropped from the Deployment entirely and Optimize starts with no client secret." }}
+  {{- if and $optimizeAuthSecret.existingSecret (empty $optimizeAuthSecret.existingSecretKey) (ne (include "optimize.clientSecretMayComeFromEnv" .) "true") }}
+    {{- fail (printf "[camunda][error] Optimize with OIDC authentication requires an existingSecretKey alongside its existingSecret; set optimize.security.authentication.oidc.secret.existingSecretKey (or global.identity.auth.optimize.secret.existingSecretKey), naming the key inside the Secret that holds the client secret. Without it %s is dropped from the Deployment entirely and Optimize starts with no client secret. A release that supplies it itself is exempt: name %s in optimize.env, or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.clientSecretEnvNames" .) (include "optimize.clientSecretEnvNames" .)) }}
   {{- end }}
 {{- end }}
 {{- if eq $topologyMode "hub" }}
