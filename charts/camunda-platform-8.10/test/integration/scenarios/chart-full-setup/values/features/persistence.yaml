@@ -3,13 +3,17 @@
 # =============================================================================
 # Layer 4: Optional feature - exercises persistent volume configuration on
 # Camunda components so the chart's PVC/StatefulSet templates are covered by
-# nightly CI. Optimize persistence (SUPPORT-30042) is still deferred here; it
-# double-mounts one claim as both tmp and camunda and is tracked in #6521.
-# The set of components below must stay aligned with the 8.9 fixture, because
-# upgrade-minor installs 8.9 first and StatefulSet volumeClaimTemplates cannot
-# be added or removed by an upgrade.
+# nightly CI. The set of components below must stay aligned with the 8.9
+# fixture, because upgrade-minor installs 8.9 first and StatefulSet
+# volumeClaimTemplates cannot be added or removed by an upgrade.
 # Used with: TEST_VALUES_FEATURES containing "persistence"
 # =============================================================================
+
+optimize:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 1Gi
 
 webModeler:
   persistence:

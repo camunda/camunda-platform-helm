@@ -113,9 +113,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 
 				// then
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
-				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "tmp should use PVC when persistence is enabled")
-				s.Require().Nil(tmpVolume.EmptyDir, "tmp should not use emptyDir when persistence is enabled")
-				s.Require().Equal("camunda-platform-test-optimize-data", tmpVolume.PersistentVolumeClaim.ClaimName)
+				s.Require().NotNil(tmpVolume.EmptyDir, "tmp should use emptyDir when persistence is enabled")
+				s.Require().Nil(tmpVolume.PersistentVolumeClaim, "tmp should not use PVC when persistence is enabled")
 
 				s.Require().NotNil(camundaVolume, "camunda volume should exist")
 				s.Require().NotNil(camundaVolume.PersistentVolumeClaim, "camunda should use PVC when persistence is enabled")
@@ -148,8 +147,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 
 				// then
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
-				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "tmp should use PVC when persistence is enabled")
-				s.Require().Equal("my-existing-pvc", tmpVolume.PersistentVolumeClaim.ClaimName)
+				s.Require().NotNil(tmpVolume.EmptyDir, "tmp should use emptyDir when persistence is enabled")
+				s.Require().Nil(tmpVolume.PersistentVolumeClaim, "tmp should not use PVC when persistence is enabled")
 
 				s.Require().NotNil(camundaVolume, "camunda volume should exist")
 				s.Require().NotNil(camundaVolume.PersistentVolumeClaim, "camunda should use PVC when persistence is enabled")
@@ -221,6 +220,10 @@ func TestPVCManifestCreated(t *testing.T) {
 			require.Equal(t, "camunda-platform-test-optimize-data", pvc.Name)
 			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
 			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
+			require.Equal(t, "optimize", pvc.Labels["app.kubernetes.io/component"])
+			require.NotEmpty(t, pvc.Labels["app.kubernetes.io/version"])
+			require.Equal(t, "camunda-platform", pvc.Labels["app.kubernetes.io/part-of"])
+			require.Equal(t, "camunda-platform-test", pvc.Labels["app.kubernetes.io/instance"])
 		},
 	}
 
