@@ -438,7 +438,12 @@ func validateOptimizeLayerValues(label string, r TopologyRelease, chartFullSetup
 
 		if cp := layer.Optimize.ContextPath; cp != nil && *cp != "" {
 			contextPathSet = true
-			if !isExactPlaceholder(*cp, "RELEASE_OPTIMIZE_CONTEXT_PATH") && *cp != r.OptimizeContextPath {
+			// A literal that happens to match the declaration today is still a
+			// second copy, and the next declaration change updates only one of
+			// them. Nothing about being in sync right now makes it safe, so the
+			// placeholder is required even then - the same standard the index
+			// prefix below is held to.
+			if !isExactPlaceholder(*cp, "RELEASE_OPTIMIZE_CONTEXT_PATH") {
 				problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.contextPath %q but the release declares optimize-context-path %q; set it to exactly %q so the declaration is the only copy", label, featureID, *cp, r.OptimizeContextPath, placeholderForms("RELEASE_OPTIMIZE_CONTEXT_PATH")[0]))
 			}
 		}
