@@ -720,7 +720,7 @@ func TestOptimizeTopologyAcceptsEnvFromDeclaringTheJwksUri(t *testing.T) {
 		SetValues: map[string]string{
 			"global.identity.auth.jwksUrl":                             "",
 			"optimize.envFrom[0].configMapRef.name":                    "optimize-oidc-overrides",
-			"optimize.security.authentication.oidc.envFromProvides[0]": "CAMUNDA_OPTIMIZE_API_JWTSETURI",
+			"optimize.security.authentication.oidc.envFromProvides[0]": "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
 		},
 	}
 

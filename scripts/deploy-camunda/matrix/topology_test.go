@@ -706,6 +706,45 @@ func TestTopologyValidate_AcceptsOptimizeLayerPrefixWithATenantSuffix(t *testing
 	}
 }
 
+// os.Expand ends an unbraced name at the first character that cannot continue
+// one, so "$NAME-ta" substitutes the published variable and must validate the
+// same as "${NAME}-ta". Rejecting it would fail a layer the deploy expands
+// correctly.
+func TestTopologyValidate_AcceptsOptimizeLayerPrefixFromABareTerminatedPlaceholder(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "$RELEASE_OPTIMIZE_CONTEXT_PATH"
+  database:
+    elasticsearch:
+      prefix: "$SERVED_ORCHESTRATION_INDEX_PREFIX-ta"
+`)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("a bare placeholder terminated by a hyphen must validate, got: %v", err)
+	}
+}
+
+// A suffix that keeps the name going names a different variable, which os.Expand
+// resolves to the empty string, so it must not pass as a per-tenant suffix.
+func TestTopologyValidate_RejectsOptimizeLayerPrefixFromABareUnterminatedPlaceholder(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      prefix: "$SERVED_ORCHESTRATION_INDEX_PREFIXta"
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "optimize.database.elasticsearch.prefix") {
+		t.Fatalf("expected an unterminated bare placeholder to be rejected, got %v", err)
+	}
+}
+
 // A layer that states neither value is as wrong as one that hardcodes them: the
 // release inherits whatever a base layer left behind.
 func TestTopologyValidate_RejectsOptimizeLayerStatingNeitherValue(t *testing.T) {
