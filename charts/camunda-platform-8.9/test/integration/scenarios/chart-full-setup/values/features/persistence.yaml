@@ -21,6 +21,16 @@ webModeler:
     enabled: true
     size: 1Gi
 
+connectors:
+  persistence:
+    enabled: true
+    size: 1Gi
+
+identity:
+  persistence:
+    enabled: true
+    size: 1Gi
+
 orchestration:
   extraVolumeClaimTemplates:
     - metadata:

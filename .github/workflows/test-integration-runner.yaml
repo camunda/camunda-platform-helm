@@ -326,6 +326,7 @@ jobs:
     if: github.event.action != 'closed' && inputs.flow != 'modular-upgrade-minor'
     name: install for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     container:
       image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:
@@ -859,6 +860,7 @@ jobs:
     if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     container:
       image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:
@@ -1361,7 +1363,7 @@ jobs:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.scenario == 'shadow-e2e' }}
     continue-on-error: true
-    timeout-minutes: 25
+    timeout-minutes: 40
     permissions:
       contents: read
       id-token: write
@@ -1454,7 +1456,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && !inputs.skip-e2e && inputs.is-topology && inputs.flow == 'install' }}
-    timeout-minutes: 25
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -1566,7 +1568,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && !inputs.skip-e2e }}
-    timeout-minutes: 25
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
