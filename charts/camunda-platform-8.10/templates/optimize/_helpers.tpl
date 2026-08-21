@@ -112,8 +112,15 @@ every existing values file rendering unchanged.
   {{- $oidc.issuerBackendUrl | default (include "camundaPlatform.authIssuerBackendUrl" .) -}}
 {{- end -}}
 
+{{/*
+[optimize] Resolve `api.jwtSetUri`. Only KEYCLOAK derives from the issuer backend URL; any other
+type renders empty unless jwksUrl is set on the release or on global.
+*/}}
 {{- define "optimize.effectiveAuthJwksUrl" -}}
-  {{- if .Values.global.identity.auth.jwksUrl -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- if $oidc.jwksUrl -}}
+    {{- tpl $oidc.jwksUrl . -}}
+  {{- else if .Values.global.identity.auth.jwksUrl -}}
     {{- tpl .Values.global.identity.auth.jwksUrl . -}}
   {{- else if eq (include "optimize.effectiveAuthType" .) "KEYCLOAK" -}}
     {{- include "optimize.effectiveAuthIssuerBackendUrl" . -}}/protocol/openid-connect/certs
