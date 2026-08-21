@@ -1,20 +1,39 @@
 {{/* vim: set filetype=mustache: */}}
 
 {{/*
-********************************************************************************
 Camunda Hub helpers.
 
-The camundaHub component consolidates Console and WebModeler into a single
-logical unit. The backward-compatibility shim helpers that bridge the legacy
-console.* / webModeler.* keys to the new camundaHub.* key live in
-templates/common/_helpers.tpl (see "camundaHub.consoleEnabled",
-"camundaHub.webModelerEnabled").
-
-This file is reserved for any camundaHub-specific helpers that do NOT belong
-in the common shim layer. For now, no additional helpers are needed because:
-  - Console and WebModeler templates continue to use their own _helpers.tpl
-  - Resource names are intentionally preserved for smooth 8.9 → 8.10 upgrade
-  - The shim helpers in common/_helpers.tpl handle the enabled-check and
-    value-merge logic
-********************************************************************************
+Enablement gates live in templates/common/_helpers.tpl ("camundaHub.webModelerEnabled",
+"camundaHub.consoleEnabled") and are driven by global.topology.mode.
 */}}
+
+{{- define "camundaHub.values" -}}
+    {{- $merged := deepCopy (.Values.webModeler | default dict) -}}
+    {{- include "camundaHub.mergeInto" (dict "dst" $merged "src" (.Values.camundaHub | default dict)) -}}
+    {{- toYaml $merged -}}
+{{- end -}}
+
+{{- define "camundaHub.mergeInto" -}}
+    {{- /* NOTE: Mutates .dst in place and emits nothing; callers read the mutated map, not the return value. */ -}}
+    {{- $dst := .dst -}}
+    {{- $path := .path | default "camundaHub" -}}
+    {{- range $key, $srcValue := .src -}}
+        {{- $dstValue := index $dst $key -}}
+        {{- $dstIsMap := and (hasKey $dst $key) (kindIs "map" $dstValue) -}}
+        {{- $dstIsSet := and (hasKey $dst $key) (not (kindIs "invalid" $dstValue)) -}}
+        {{- /* NOTE: A nil value means "not specified" so chart-declared placeholders fall through to webModeler.*; false, 0 and "" are real overrides. */ -}}
+        {{- if kindIs "invalid" $srcValue -}}
+        {{- else if and (kindIs "map" $srcValue) $dstIsMap -}}
+            {{- include "camundaHub.mergeInto" (dict "dst" $dstValue "src" $srcValue "path" (printf "%s.%s" $path $key)) -}}
+        {{- else if and $dstIsSet (ne (kindIs "map" $srcValue) $dstIsMap) -}}
+            {{- fail (printf "[camunda][error] %s.%s is a %s but the corresponding webModeler value is a %s; these types cannot be merged. Set %s.%s to a %s, or set its nested keys individually."
+                $path $key (kindOf $srcValue) (kindOf $dstValue) $path $key (kindOf $dstValue)) -}}
+        {{- else -}}
+            {{- $_ := set $dst $key $srcValue -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+
+{{- define "camundaHub.contextPath" -}}
+    {{- (include "camundaHub.values" . | fromYaml).contextPath -}}
+{{- end -}}

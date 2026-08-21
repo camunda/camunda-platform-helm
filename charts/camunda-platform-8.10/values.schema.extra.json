@@ -1379,6 +1379,11 @@
             "default": {},
             "additionalProperties": true,
             "properties": {
+                "contextPath": {
+                    "type": ["string", "null"],
+                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
+                    "default": null
+                },
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",

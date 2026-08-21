@@ -46,13 +46,13 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- end }}
-          {{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+          {{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (include "camundaHub.contextPath" .) }}
           - backend:
               service:
                 name: {{ template "webModeler.restapi.fullname" . }}
                 port:
                   number: {{ (or .Values.camundaHub.restapi.service.port .Values.webModeler.restapi.service.port) }}
-            path: {{ (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+            path: {{ (include "camundaHub.contextPath" .) }}
             pathType: {{ .Values.global.ingress.pathType }}
           - backend:
               service:

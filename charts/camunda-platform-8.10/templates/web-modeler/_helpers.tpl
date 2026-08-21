@@ -161,9 +161,10 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Check if username and password is provided for the SMTP server
 */}}
 {{- define "webModeler.restapi.mail.authEnabled" -}}
+  {{- $hub := include "camundaHub.values" . | fromYaml -}}
   {{- $authEnabled := false -}}
-  {{- if and (typeIs "string" (or .Values.camundaHub.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser)) (ne (or .Values.camundaHub.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser) "") }}
-    {{- if or (and (typeIs "string" (or .Values.camundaHub.restapi.mail.smtpPassword .Values.webModeler.restapi.mail.smtpPassword)) (ne (or .Values.camundaHub.restapi.mail.smtpPassword .Values.webModeler.restapi.mail.smtpPassword) "")) (or .Values.camundaHub.restapi.mail.existingSecret .Values.webModeler.restapi.mail.existingSecret) }}
+  {{- if and (typeIs "string" $hub.restapi.mail.smtpUser) (ne $hub.restapi.mail.smtpUser "") }}
+    {{- if or (and (typeIs "string" $hub.restapi.mail.smtpPassword) (ne $hub.restapi.mail.smtpPassword "")) $hub.restapi.mail.existingSecret }}
       {{- $authEnabled = true }}
     {{- end }}
   {{- end }}
@@ -174,14 +175,14 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Create the context path for the WebSocket app (= configured context path + suffix "-ws").
 */}}
 {{- define "webModeler.websocketContextPath" -}}
-  {{- (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}-ws
+  {{- (include "camundaHub.contextPath" .) }}-ws
 {{- end -}}
 
 {{/*
 [web-modeler] Get the host name on which the WebSocket server is reachable from the client.
 */}}
 {{- define "webModeler.publicWebsocketHost" -}}
-  {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+  {{- if and .Values.global.ingress.enabled (include "camundaHub.contextPath" .) }}
     {{- tpl .Values.global.host $ }}
   {{- else -}}
     {{- (or .Values.camundaHub.websockets.publicHost .Values.webModeler.websockets.publicHost) }}
@@ -192,7 +193,7 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the port number on which the WebSocket server is reachable from the client.
 */}}
 {{- define "webModeler.publicWebsocketPort" -}}
-  {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+  {{- if and .Values.global.ingress.enabled (include "camundaHub.contextPath" .) }}
     {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
   {{- else }}
     {{- (or .Values.camundaHub.websockets.publicPort .Values.webModeler.websockets.publicPort) }}
@@ -203,7 +204,7 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Check if TLS must be enabled for WebSocket connections from the client.
 */}}
 {{- define "webModeler.websocketTlsEnabled" -}}
-  {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+  {{- if and .Values.global.ingress.enabled (include "camundaHub.contextPath" .) }}
     {{- .Values.global.ingress.tls.enabled }}
   {{- else -}}
     false

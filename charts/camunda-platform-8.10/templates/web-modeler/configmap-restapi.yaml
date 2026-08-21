@@ -1,4 +1,5 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -32,7 +33,7 @@ data:
           client:
             host: {{ include "webModeler.publicWebsocketHost" . | quote }}
             port: {{ include "webModeler.publicWebsocketPort" . | quote }}
-            {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+            {{- if and .Values.global.ingress.enabled (include "camundaHub.contextPath" .) }}
             path: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
             force-tls: {{ include "webModeler.websocketTlsEnabled" . }}
@@ -48,14 +49,14 @@ data:
         {{- end }}
 
         mail:
-          {{- $fromAddress := or .Values.camundaHub.restapi.mail.fromAddress .Values.webModeler.restapi.mail.fromAddress }}
+          {{- $fromAddress := $hub.restapi.mail.fromAddress }}
           {{- $restapiExtraConfig := or .Values.camundaHub.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration }}
           {{- if $fromAddress }}
           from-address: {{ $fromAddress | quote }}
           {{- else if ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" "modeler" "mail" "from-address"))) "true" }}
           from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required (or supply camunda.modeler.mail.from-address via webModeler.restapi.extraConfiguration)" "" | quote }}
           {{- end }}
-          from-name: {{ (or .Values.camundaHub.restapi.mail.fromName .Values.webModeler.restapi.mail.fromName) | quote }}
+          from-name: {{ $hub.restapi.mail.fromName | quote }}
 
         oauth2:
           client-id: {{ include "webModeler.authClientId" . | quote }}
@@ -98,15 +99,15 @@ data:
         username: {{ include "webModeler.restapi.databaseUser" . | quote }}
 
       mail:
-        host: {{ (or .Values.camundaHub.restapi.mail.smtpHost .Values.webModeler.restapi.mail.smtpHost) | quote }}
-        port: {{ (or .Values.camundaHub.restapi.mail.smtpPort .Values.webModeler.restapi.mail.smtpPort) }}
-        {{- if (or .Values.camundaHub.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser) }}
-        username: {{ (or .Values.camundaHub.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser) | quote }}
+        host: {{ $hub.restapi.mail.smtpHost | quote }}
+        port: {{ $hub.restapi.mail.smtpPort }}
+        {{- if $hub.restapi.mail.smtpUser }}
+        username: {{ $hub.restapi.mail.smtpUser | quote }}
         {{- end }}
         properties:
           mail.smtp.auth: {{ include "webModeler.restapi.mail.authEnabled" . }}
-          mail.smtp.starttls.enable: {{ (or .Values.camundaHub.restapi.mail.smtpTlsEnabled .Values.webModeler.restapi.mail.smtpTlsEnabled) }}
-          mail.smtp.starttls.required: {{ (or .Values.camundaHub.restapi.mail.smtpTlsEnabled .Values.webModeler.restapi.mail.smtpTlsEnabled) }}
+          mail.smtp.starttls.enable: {{ $hub.restapi.mail.smtpTlsEnabled }}
+          mail.smtp.starttls.required: {{ $hub.restapi.mail.smtpTlsEnabled }}
 
       security:
         oauth2:
@@ -124,13 +125,13 @@ data:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
 
-    {{- if (or .Values.camundaHub.contextPath .Values.webModeler.contextPath) }}
+    {{- if (include "camundaHub.contextPath" .) }}
     server:
       servlet:
-        context-path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath)) | quote }}
+        context-path: {{ include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .)) | quote }}
     management:
       server:
-        base-path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.contextPath .Values.webModeler.contextPath)) | quote }}
+        base-path: {{ include "camundaPlatform.joinpath" (list (include "camundaHub.contextPath" .)) | quote }}
     {{- end }}
 
     logging:

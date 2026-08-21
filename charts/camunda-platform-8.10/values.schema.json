@@ -2077,9 +2077,13 @@
                     "default": false
                 },
                 "contextPath": {
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
                     "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
-                    "default": ""
+                    "default": null,
+                    "nullable": true
                 },
                 "automountServiceAccountToken": {
                     "type": [
