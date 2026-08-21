@@ -82,9 +82,10 @@ spec:
               value: {{ include "orchestration.authClientId" . | quote }}
             {{- end }}
             {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+            {{- /* NOTE: the effective secret, matching the client id below and the Optimize Deployment. */ -}}
+            {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
-                "config"        .Values.global.identity.auth.optimize
+                "config"        (include "optimize.authSecretConfig" . | fromYaml)
             ) | nindent 12 }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ include "optimize.effectiveAuthClientId" . | quote }}
@@ -114,7 +115,7 @@ spec:
             {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "CAMUNDA_OPTIMIZE_SECRET"
-              "config" .Values.global.identity.auth.optimize
+              "config" (include "optimize.authSecretConfig" . | fromYaml)
             ) | nindent 12 }}
             {{- end }}
             {{- end }}
