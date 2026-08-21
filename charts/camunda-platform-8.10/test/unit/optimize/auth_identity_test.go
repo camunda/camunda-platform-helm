@@ -47,7 +47,11 @@ func TestAuthIdentityTemplate(t *testing.T) {
 
 func (s *AuthIdentityTemplateTest) render(extra map[string]string, templates []string) string {
 	values := map[string]string{
-		"global.identity.auth.enabled":             "true",
+		"global.identity.auth.enabled": "true",
+		// This chart bundles no Keycloak, so global.identity.auth.enabled resolves no issuer on its
+		// own and the issuer constraint rejects the render. Name a backend URL so every case below
+		// exercises its own subject rather than that constraint.
+		"global.identity.auth.issuerBackendUrl":    "http://keycloak.example.com/realms/camunda",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
 	}
@@ -113,6 +117,7 @@ func (s *AuthIdentityTemplateTest) TestIdentityOverridesRenderAComponentScopedCo
 func (s *AuthIdentityTemplateTest) TestNoComponentConfigMapWithoutOverrides() {
 	options := &helm.Options{SetValues: map[string]string{
 		"global.identity.auth.enabled":             "true",
+		"global.identity.auth.issuerBackendUrl":    "http://keycloak.example.com/realms/camunda",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
 		"global.identity.service.url":              "http://identity.hub.svc/identity",
@@ -168,13 +173,53 @@ func (s *AuthIdentityTemplateTest) TestComponentAuthWithoutAnIssuerIsRejected() 
 	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
 }
 
-// A bundled Keycloak leaves global.identity.auth.issuer empty and resolves the provider through the
-// derived issuerBackendUrl. That has always rendered, so the issuer constraint must not reject it.
+// An External Keycloak leaves global.identity.auth.issuer empty and resolves the provider through
+// the issuerBackendUrl derived from global.identity.keycloak.url. That has always rendered, so the
+// issuer constraint must not reject it. Asserting the key alone would also pass on an empty value,
+// which is the very state the constraint exists to prevent, so assert the resolved URL.
 func (s *AuthIdentityTemplateTest) TestGlobalAuthWithoutAnIssuerStillRenders() {
-	out := s.render(map[string]string{"identity.enabled": "true"},
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"identity.enabled":                         "true",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"global.identity.keycloak.url.protocol":    "http",
+		"global.identity.keycloak.url.host":        "keycloak.example.com",
+		"global.identity.keycloak.url.port":        "80",
+	}}
+	out := helm.RenderTemplate(s.T(), options, s.chartPath, s.release,
 		[]string{"templates/optimize/configmap.yaml"})
 
-	s.Require().Contains(out, "issuerBackendUrl:")
+	s.Require().Contains(out, `issuerBackendUrl: "http://keycloak.example.com:80/auth/realms/camunda-platform"`)
+}
+
+// This chart bundles no Keycloak, so global.identity.auth.enabled on its own resolves no issuer at
+// all: it renders an empty issuer, an empty issuerBackendUrl and a relative jwtSetUri that Optimize
+// would check every token against. Exempting the global path would let exactly the state the
+// constraint exists to prevent through, so the exemption is keyed on a resolvable issuer backend
+// URL instead of on which key switched authentication on.
+func (s *AuthIdentityTemplateTest) TestGlobalAuthWithNoResolvableIssuerIsRejected() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"identity.enabled":                         "true",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
+}
+
+// A release-scoped issuerBackendUrl satisfies the constraint on its own: the release names the
+// cluster-internal route even when no global key does.
+func (s *AuthIdentityTemplateTest) TestComponentIssuerBackendUrlSatisfiesTheIssuerConstraint() {
+	out := s.render(map[string]string{
+		"optimize.security.authentication.oidc.issuerBackendUrl": "http://keycloak.tenant.svc:8080/realms/camunda",
+	}, []string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Contains(out, `issuerBackendUrl: "http://keycloak.tenant.svc:8080/realms/camunda"`)
 }
 
 // method=none must win over global.identity.auth.enabled=true so an Optimize release can opt out of
@@ -243,4 +288,82 @@ func (s *AuthIdentityTemplateTest) TestComponentInlineSecretBeatsGlobalExistingS
 
 	s.Require().Contains(out, "tenant-inline")
 	s.Require().NotContains(out, "global-oidc")
+}
+
+// A Secret reference with no key matches neither branch of normalizeSecretConfiguration, and the
+// Optimize Deployment passes no defaultSecretName, so CAMUNDA_IDENTITY_CLIENT_SECRET would be
+// dropped from the Deployment entirely and Optimize would start with no client secret. Failing the
+// render is the only way the operator learns of it.
+func (s *AuthIdentityTemplateTest) TestComponentExistingSecretWithoutAKeyIsRejected() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                                "true",
+		"global.identity.auth.issuer":                                 "https://issuer.example.com",
+		"optimize.enabled":                                            "true",
+		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires an existingSecretKey alongside its existingSecret")
+}
+
+// The same hole reached through the inherited block: the release names no Secret of its own, so the
+// global one without a key is what would silently drop the env var.
+func (s *AuthIdentityTemplateTest) TestGlobalExistingSecretWithoutAKeyIsRejected() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                        "true",
+		"global.identity.auth.issuer":                         "https://issuer.example.com",
+		"global.identity.auth.optimize.secret.existingSecret": "global-oidc",
+		"optimize.enabled":                                    "true",
+		"orchestration.data.secondaryStorage.type":            "elasticsearch",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires an existingSecretKey alongside its existingSecret")
+}
+
+// A release-scoped existingSecretKey renames the key inside an inherited existingSecret. There is
+// nothing to rename when the inherited block carries only an inlineSecret, so the inherited inline
+// value still wins - documented here so the helper's comment and its behaviour cannot drift apart.
+func (s *AuthIdentityTemplateTest) TestComponentSecretKeyAloneOverAnInheritedInlineSecretIsInert() {
+	out := s.render(map[string]string{
+		"global.identity.auth.optimize.secret.inlineSecret":              "global-inline",
+		"optimize.security.authentication.oidc.secret.existingSecretKey": "tenant-key",
+	}, []string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Contains(out, "CAMUNDA_IDENTITY_CLIENT_SECRET")
+	s.Require().Contains(out, "global-inline")
+	s.Require().NotContains(out, "tenant-key")
+}
+
+// The Deployment must carry a checksum of the component-scoped identity ConfigMap, or an upgrade
+// that only changes that ConfigMap leaves the running pod on the old identity values. The golden
+// harness strips checksum lines, so this is the only guard against the annotation being dropped.
+func (s *AuthIdentityTemplateTest) TestIdentityConfigMapChecksumRestartsThePod() {
+	base := map[string]string{
+		"optimize.security.authentication.oidc.issuer": "https://tenant-issuer.example.com",
+	}
+	changed := map[string]string{
+		"optimize.security.authentication.oidc.issuer": "https://other-issuer.example.com",
+	}
+
+	first := s.checksumAnnotation(s.render(base, []string{"templates/optimize/deployment.yaml"}))
+	second := s.checksumAnnotation(s.render(changed, []string{"templates/optimize/deployment.yaml"}))
+
+	s.Require().NotEmpty(first, "the Deployment must annotate the identity ConfigMap checksum")
+	s.Require().NotEqual(first, second, "changing the identity ConfigMap must change the checksum")
+}
+
+func (s *AuthIdentityTemplateTest) checksumAnnotation(deployment string) string {
+	for _, line := range strings.Split(deployment, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "checksum/config-identity-env:") {
+			return strings.TrimSpace(strings.TrimPrefix(trimmed, "checksum/config-identity-env:"))
+		}
+	}
+	return ""
 }

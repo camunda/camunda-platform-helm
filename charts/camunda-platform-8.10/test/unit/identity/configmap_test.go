@@ -445,6 +445,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                      "true",
 				"global.identity.auth.enabled":          "true",
+				"global.identity.auth.issuerBackendUrl": "http://keycloak.example.com/auth/realms/camunda-platform",
 				"global.security.authentication.method": "oidc",
 				"optimize.enabled":                      "true",
 			},
