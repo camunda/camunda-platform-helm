@@ -59,6 +59,9 @@ Create a default fully qualified app name.
 The overlay is per-field: `existingSecretKey` alone renames the key inside the inherited
 `existingSecret`, while `inlineSecret` or `existingSecret` replaces the global source and drops the
 other form, which `camundaPlatform.normalizeSecretConfiguration` would otherwise still prefer.
+A rename needs a name to rename: when the inherited block carries only an `inlineSecret` there is no
+`existingSecret` to point at, so the release-scoped key is inert and the inherited inline value
+still wins. Name the Secret on the release too if it must override the inherited inline value.
 */}}
 {{- define "optimize.effectiveAuthSecret" -}}
   {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
