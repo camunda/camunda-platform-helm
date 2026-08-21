@@ -145,8 +145,9 @@ var reservedTopologyEnvKeys = []string{
 
 // Validate enforces Topology's load-time invariants:
 //   - at least one release is declared;
-//   - every release's Values file resolves on disk under
-//     <chartFullSetupDir>/values/<Values>;
+//   - no release sets Values, which Features replaces;
+//   - every release declares at least one Features layer, and every one of them
+//     resolves on disk under <chartFullSetupDir>/values/features/<id>.yaml;
 //   - every release's Identity/Persistence layer (when set) resolves on disk
 //     under <chartFullSetupDir>/values/identity/ or .../persistence/;
 //   - every release's Dependencies IDs (when set) resolve to a file under
@@ -378,8 +379,32 @@ func isExactPlaceholder(value, name string) bool {
 // published one plus a tenant suffix. The placeholder still has to lead, which
 // is what makes repointing serves repoint the records: "job-orcha-ta" and
 // "wrong-${SERVED_ORCHESTRATION_INDEX_PREFIX}" both fail.
+//
+// The bare "$NAME" form leads only when the suffix starts with a character that
+// ends a shell name, because os.Expand consumes [A-Za-z0-9_] greedily:
+// "$SERVED_ORCHESTRATION_INDEX_PREFIX-ta" substitutes the published variable,
+// while "$SERVED_ORCHESTRATION_INDEX_PREFIXta" substitutes a variable nothing
+// publishes and expands to the empty string.
 func placeholderLeads(value, name string) bool {
-	return isExactPlaceholder(value, name) || strings.HasPrefix(value, "${"+name+"}")
+	if isExactPlaceholder(value, name) {
+		return true
+	}
+	if strings.HasPrefix(value, "${"+name+"}") {
+		return true
+	}
+	if rest, ok := strings.CutPrefix(value, "$"+name); ok && rest != "" {
+		return !isShellNameByte(rest[0])
+	}
+	return false
+}
+
+// isShellNameByte reports whether b can continue an unbraced shell variable
+// name, which is the rule os.Expand applies when it decides where "$NAME" ends.
+func isShellNameByte(b byte) bool {
+	return b == '_' ||
+		(b >= '0' && b <= '9') ||
+		(b >= 'a' && b <= 'z') ||
+		(b >= 'A' && b <= 'Z')
 }
 
 // validateOptimizeLayerValues rejects a values layer that writes its own copy of
@@ -428,7 +453,7 @@ func validateOptimizeLayerValues(label string, r TopologyRelease, chartFullSetup
 			}
 			prefixSet = true
 			if !placeholderLeads(*prefix, "SERVED_ORCHESTRATION_INDEX_PREFIX") {
-				problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.database.%s.prefix to %q, which does not follow serves %q; it must be %q, or lead with it and carry a per-tenant suffix, so repointing serves repoints the records this Optimize reads", label, featureID, backend, *prefix, r.Serves, placeholderForms("SERVED_ORCHESTRATION_INDEX_PREFIX")[0]))
+				problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.database.%s.prefix to %q, which does not follow serves %q; it must be %q, or lead with it and carry a per-tenant suffix (the unbraced $NAME form leads only when the suffix starts with a character that ends a shell name, such as a hyphen), so repointing serves repoints the records this Optimize reads", label, featureID, backend, *prefix, r.Serves, placeholderForms("SERVED_ORCHESTRATION_INDEX_PREFIX")[0]))
 			}
 		}
 	}
