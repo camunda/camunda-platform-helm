@@ -138,6 +138,7 @@ func (s *tlsSecretsTest) TestComponentDatastoreTLSCustomKey() {
 			Values: map[string]string{
 				"identity.enabled":                                             "true",
 				"global.identity.auth.enabled":                                 "true",
+				"global.identity.auth.issuerBackendUrl":                        "http://keycloak.example.com/auth/realms/camunda-platform",
 				"optimize.enabled":                                             "true",
 				"optimize.database.elasticsearch.enabled":                      "true",
 				"optimize.database.elasticsearch.external":                     "true",
@@ -154,6 +155,7 @@ func (s *tlsSecretsTest) TestComponentDatastoreTLSCustomKey() {
 			Values: map[string]string{
 				"identity.enabled":                                             "true",
 				"global.identity.auth.enabled":                                 "true",
+				"global.identity.auth.issuerBackendUrl":                        "http://keycloak.example.com/auth/realms/camunda-platform",
 				"global.elasticsearch.tls.secret.existingSecret":               "global-elasticsearch-tls",
 				"global.elasticsearch.tls.secret.existingSecretKey":            "global-elasticsearch.jks",
 				"global.elasticsearch.tls.jks.secret.existingSecret":           "global-jks-password",
@@ -174,6 +176,7 @@ func (s *tlsSecretsTest) TestComponentDatastoreTLSCustomKey() {
 			Values: map[string]string{
 				"identity.enabled":                                          "true",
 				"global.identity.auth.enabled":                              "true",
+				"global.identity.auth.issuerBackendUrl":                     "http://keycloak.example.com/auth/realms/camunda-platform",
 				"optimize.enabled":                                          "true",
 				"optimize.database.elasticsearch.enabled":                   "false",
 				"optimize.database.opensearch.enabled":                      "true",

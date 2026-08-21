@@ -518,6 +518,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                       "true",
 				"optimize.enabled":                                       "true",
 				"global.identity.auth.enabled":                           "true",
+				"global.identity.auth.issuerBackendUrl":                  "http://keycloak.example.com/auth/realms/camunda-platform",
 				"global.identity.auth.optimize.secret.existingSecret":    "camunda-platform-test-optimize-identity-secret",
 				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
 			},
@@ -545,6 +546,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                       "true",
 				"optimize.enabled":                                       "true",
 				"global.identity.auth.enabled":                           "true",
+				"global.identity.auth.issuerBackendUrl":                  "http://keycloak.example.com/auth/realms/camunda-platform",
 				"global.identity.auth.optimize.secret.existingSecret":    "ownExistingSecret",
 				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
 			},
@@ -747,13 +749,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestOptimizeMultiTenancyEnabled",
 			Values: map[string]string{
-				"identity.enabled":                   "true",
-				"global.identity.auth.enabled":       "true",
-				"optimize.enabled":                   "true",
-				"identity.multitenancy.enabled":      "true",
-				"identity.externalDatabase.enabled":  "true",
-				"identity.externalDatabase.host":     "my-database-host",
-				"identity.externalDatabase.username": "my-database-username",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.identity.auth.issuerBackendUrl": "http://keycloak.example.com/auth/realms/camunda-platform",
+				"optimize.enabled":                      "true",
+				"identity.multitenancy.enabled":         "true",
+				"identity.externalDatabase.enabled":     "true",
+				"identity.externalDatabase.host":        "my-database-host",
+				"identity.externalDatabase.username":    "my-database-username",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
