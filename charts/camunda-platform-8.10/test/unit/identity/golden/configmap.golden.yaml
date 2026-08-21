@@ -84,14 +84,14 @@ data:
                   description: "Allows delete access for all resources"
           roles:
             - name: "Web Modeler"
-              description: "Grants full access to Hub"
+              description: "Grants full access to Web Modeler"
               permissions:
                 - audience: "web-modeler-api"
                   definition: write:*
                 - audience: "camunda-identity-resource-server"
                   definition: read:users
             - name: "Web Modeler Admin"
-              description: "Grants elevated access to Hub"
+              description: "Grants elevated access to Web Modeler"
               permissions:
                 - audience: "web-modeler-api"
                   definition: write:*

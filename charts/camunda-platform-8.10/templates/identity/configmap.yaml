@@ -299,14 +299,14 @@ data:
                   description: "Allows delete access for all resources"
           roles:
             - name: "Web Modeler"
-              description: "Grants full access to Hub"
+              description: "Grants full access to Web Modeler"
               permissions:
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
             - name: "Web Modeler Admin"
-              description: "Grants elevated access to Hub"
+              description: "Grants elevated access to Web Modeler"
               permissions:
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: write:*
