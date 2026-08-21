@@ -2660,6 +2660,8 @@ optimize:
         issuerBackendUrl: ""
         ## @param optimize.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`, the JWKS endpoint this Optimize fetches token signing keys from. Required for a non-Keycloak `type`, which has no endpoint layout to derive it from. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
+        ## @param optimize.security.authentication.oidc.envFromProvides names the identity variables this release's `optimize.envFrom` sources supply, so the chart stops requiring them. An envFrom source's keys are unreadable at render time, so its presence alone exempts nothing. Supported values are CAMUNDA_IDENTITY_ISSUER, CAMUNDA_IDENTITY_ISSUER_BACKEND_URL, and CAMUNDA_OPTIMIZE_API_JWTSETURI.
+        envFromProvides: []
         ## @param optimize.security.authentication.oidc.audience can be used to override `global.identity.auth.optimize.audience`.
         audience: ""
         ## @param optimize.security.authentication.oidc.redirectUrl can be used to override `global.identity.auth.optimize.redirectUrl`. Supports templating (e.g., {{ .Release.Name }}).
