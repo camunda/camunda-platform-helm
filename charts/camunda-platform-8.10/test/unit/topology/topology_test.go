@@ -833,7 +833,13 @@ func TestWithoutPhysicalTenantsIssuerResolutionIsUnchanged(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "orchestration.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
-		SetValues:   map[string]string{"global.identity.auth.issuer": ""},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer": "",
+			// Blanking the global issuer leaves the Optimize this values file keeps enabled with
+			// no issuer of its own, which its own constraint rejects. Pin one so the render
+			// exercises Orchestration's issuer resolution, the subject here.
+			"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+		},
 	}
 
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
@@ -924,6 +930,7 @@ func TestPhysicalTenantsIgnoredWhenNotSpringImported(t *testing.T) {
 		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
 		SetValues: map[string]string{
 			"global.identity.auth.issuer":                      "",
+			"optimize.security.authentication.oidc.issuer":     "https://issuer.example.com",
 			"orchestration.extraConfiguration[0].file":         "tenants.yaml",
 			"orchestration.extraConfiguration[0].springImport": "false",
 			"orchestration.extraConfiguration[0].content":      "camunda:\n  physical-tenants:\n    tenanta: {}\n",
