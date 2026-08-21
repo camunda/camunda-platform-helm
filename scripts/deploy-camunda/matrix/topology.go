@@ -382,6 +382,110 @@ type optimizeOIDCLayer struct {
 type optimizeSecretRef struct {
 	ExistingSecret    *string `yaml:"existingSecret"`
 	ExistingSecretKey *string `yaml:"existingSecretKey"`
+	InlineSecret      *string `yaml:"inlineSecret"`
+}
+
+// secretForm is a client-secret reference resolved to what the chart emits for
+// it, which is what the two sides of a cross-check have to agree on: comparing
+// the raw fields lets an inline literal on one side sit next to a Secret
+// reference on the other, and never looks at two inline literals at all.
+type secretForm struct {
+	// kind is "" when nothing is emitted, "ref" for a Secret reference, or
+	// "inline" for a literal.
+	kind   string
+	name   string
+	key    string
+	inline string
+}
+
+// normalizedSecretForm resolves a reference the way
+// camundaPlatform.normalizeSecretConfiguration does: a complete existing-Secret
+// reference wins, and inlineSecret applies only when there is no complete one.
+// This is the precedence behind global.topology.clusters[].components.optimize,
+// whose secret the Identity Deployment passes straight to that helper.
+//
+// An incomplete reference with no inline literal is still reported as "ref": the
+// helper emits nothing for it, but it is the reference this side states, and
+// comparing it names the half that drifted instead of only the half that is
+// missing.
+func normalizedSecretForm(ref optimizeSecretRef) secretForm {
+	name := stringValue(ref.ExistingSecret)
+	key := stringValue(ref.ExistingSecretKey)
+	inline := stringValue(ref.InlineSecret)
+	switch {
+	case name != "" && key != "":
+		return secretForm{kind: "ref", name: name, key: key}
+	case inline != "":
+		return secretForm{kind: "inline", inline: inline}
+	case name != "" || key != "":
+		return secretForm{kind: "ref", name: name, key: key}
+	}
+	return secretForm{}
+}
+
+// inlineFirstSecretForm resolves a reference the way the two templates that read
+// inlineSecret before existingSecret do: identity.clients[] in the Identity
+// Deployment, and optimize.security.authentication.oidc.secret through
+// optimize.effectiveAuthSecret, which drops the inherited existingSecret entirely
+// once the release states an inline value.
+func inlineFirstSecretForm(ref optimizeSecretRef) secretForm {
+	if inline := stringValue(ref.InlineSecret); inline != "" {
+		return secretForm{kind: "inline", inline: inline}
+	}
+	name := stringValue(ref.ExistingSecret)
+	key := stringValue(ref.ExistingSecretKey)
+	if name == "" && key == "" {
+		return secretForm{}
+	}
+	return secretForm{kind: "ref", name: name, key: key}
+}
+
+// secretFormProblems compares the client secret an optimize release sends against
+// the one the Hub provisions for the same client. hubLocation is the values path
+// the Hub side lives under, so the message names something the reader can look up.
+//
+// Inline literals are compared but never quoted into a problem: these messages
+// reach CI logs.
+func secretFormProblems(label, hubLocation string, hub, release secretForm, hubSubs, releaseSubs map[string]string) []string {
+	releaseKey := "optimize.security.authentication.oidc.secret"
+	if hub.kind == "" {
+		return nil
+	}
+	if release.kind == "" {
+		return []string{fmt.Sprintf("%s: the Hub provisions this client's secret from %s but no layer of this release sets %s, so Optimize sends the chart default instead of the secret Identity registered", label, hubLocation, releaseKey)}
+	}
+	if hub.kind != release.kind {
+		return []string{fmt.Sprintf("%s: this release sends its client secret as %s but the Hub provisions the same client's secret as %s; the value Optimize sends and the value Identity registered have to be the same one, which they cannot be shown to be while the two sides state it in different forms", label, describeSecretForm(release.kind, releaseKey), describeSecretForm(hub.kind, hubLocation))}
+	}
+	if hub.kind == "inline" {
+		if hub.inline == release.inline {
+			return nil
+		}
+		return []string{fmt.Sprintf("%s: %s.inlineSecret and %s.inlineSecret are different literals, so Optimize authenticates with one client secret while Identity registered another; no value is shown here because both are secrets", label, releaseKey, hubLocation)}
+	}
+	var problems []string
+	compare := func(what, field, hubValue, releaseValue string) {
+		if hubValue == "" || releaseValue == "" || expandTopologyPlaceholders(hubValue, hubSubs) == expandTopologyPlaceholders(releaseValue, releaseSubs) {
+			return
+		}
+		problems = append(problems, fmt.Sprintf("%s: %s.%s is %q but the Hub provisions this client's %s as %q (%s.%s); the value Optimize presents and the value Identity provisioned have to be the same one", label, releaseKey, field, releaseValue, what, hubValue, hubLocation, field))
+	}
+	compare("client secret", "existingSecret", hub.name, release.name)
+	compare("client secret key", "existingSecretKey", hub.key, release.key)
+	if hub.name != "" && release.name == "" {
+		problems = append(problems, fmt.Sprintf("%s: the Hub provisions this client's secret from Secret %q (%s.existingSecret) but no layer of this release sets %s.existingSecret", label, hub.name, hubLocation, releaseKey))
+	}
+	if hub.key != "" && release.key == "" {
+		problems = append(problems, fmt.Sprintf("%s: the Hub provisions this client's secret from key %q (%s.existingSecretKey) but no layer of this release sets %s.existingSecretKey", label, hub.key, hubLocation, releaseKey))
+	}
+	return problems
+}
+
+func describeSecretForm(kind, location string) string {
+	if kind == "inline" {
+		return fmt.Sprintf("an inline literal (%s.inlineSecret)", location)
+	}
+	return fmt.Sprintf("a Secret reference (%s.existingSecret)", location)
 }
 
 // hubLayerValues is the Hub release's cluster inventory: the record Identity
@@ -393,12 +497,29 @@ type optimizeSecretRef struct {
 type hubLayerValues struct {
 	Global struct {
 		Topology struct {
-			Clusters []hubClusterValues `yaml:"clusters"`
+			Clusters yaml.Node `yaml:"clusters"`
 		} `yaml:"topology"`
 	} `yaml:"global"`
 	Identity struct {
-		Clients []hubIdentityClient `yaml:"clients"`
+		Clients yaml.Node `yaml:"clients"`
 	} `yaml:"identity"`
+}
+
+// decodeHubList reports whether a values layer stated the list at node, and
+// decodes its entries into out. Presence is read from the parsed node rather than
+// from the length of the result because Helm replaces a list wholesale: a later
+// layer stating `[]` (or null, which merges as a nil list and ranges as empty)
+// deploys no registrations at all, while a length check reads it as a layer that
+// said nothing and leaves the earlier layer's entries in place.
+func decodeHubList[T any](node yaml.Node, out *[]T) bool {
+	if node.Kind == 0 {
+		return false
+	}
+	*out = nil
+	if node.Tag == "!!null" {
+		return true
+	}
+	return node.Decode(out) == nil
 }
 
 // hubIdentityClient is one entry of the Hub's identity.clients list, narrowed to
@@ -419,10 +540,13 @@ type hubIdentityClient struct {
 type hubInventory struct {
 	clusters map[string]hubClusterValues
 	clients  map[string]hubIdentityClient
-}
 
-func (h hubInventory) empty() bool {
-	return len(h.clusters) == 0 && len(h.clients) == 0
+	// read is true once a Hub release's layers have been parsed, whatever they
+	// turned out to register. It is what separates "this topology has no readable
+	// Hub inventory to check against" from "the Hub registers nothing", which an
+	// empty inventory alone cannot say and which are opposite answers: the first
+	// has nothing to report, the second means no Optimize client is provisioned.
+	read bool
 }
 
 // hubClusterValues is one cluster's entry in that inventory, narrowed to what an
@@ -640,6 +764,9 @@ func mergeOptimizeOIDC(into, from optimizeOIDCLayer) optimizeOIDCLayer {
 	if from.Secret.ExistingSecretKey != nil {
 		into.Secret.ExistingSecretKey = from.Secret.ExistingSecretKey
 	}
+	if from.Secret.InlineSecret != nil {
+		into.Secret.InlineSecret = from.Secret.InlineSecret
+	}
 	return into
 }
 
@@ -764,6 +891,7 @@ func hubOptimizeInventory(t *Topology, chartFullSetupDir string) hubInventory {
 	}
 	var clusters []hubClusterValues
 	var clients []hubIdentityClient
+	read := false
 	for _, path := range releaseLayerPaths(*hub, chartFullSetupDir) {
 		content, err := os.ReadFile(path)
 		if err != nil {
@@ -773,16 +901,20 @@ func hubOptimizeInventory(t *Topology, chartFullSetupDir string) hubInventory {
 		if yaml.Unmarshal(content, &layer) != nil {
 			continue
 		}
-		if len(layer.Global.Topology.Clusters) > 0 {
-			clusters = layer.Global.Topology.Clusters
+		read = true
+		var stated []hubClusterValues
+		if decodeHubList(layer.Global.Topology.Clusters, &stated) {
+			clusters = stated
 		}
-		if len(layer.Identity.Clients) > 0 {
-			clients = layer.Identity.Clients
+		var statedClients []hubIdentityClient
+		if decodeHubList(layer.Identity.Clients, &statedClients) {
+			clients = statedClients
 		}
 	}
 	inventory := hubInventory{
 		clusters: make(map[string]hubClusterValues, len(clusters)),
 		clients:  make(map[string]hubIdentityClient, len(clients)),
+		read:     read,
 	}
 	for _, c := range clusters {
 		if c.ID != "" {
@@ -848,7 +980,7 @@ func expandTopologyPlaceholders(value string, subs map[string]string) string {
 // Deciding which is which by client id rather than by declaration order is what
 // keeps the check from blaming whichever release did not win the registration.
 func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRelease, oidc optimizeOIDCLayer, inventory hubInventory) []string {
-	if r.Serves == "" || inventory.empty() {
+	if r.Serves == "" || !inventory.read {
 		return nil
 	}
 
@@ -868,13 +1000,19 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 	if clusterID == "" {
 		return nil
 	}
-	cluster, found := inventory.clusters[clusterID]
-	if !found || !isEnabled(cluster.Components.Optimize.Enabled) {
-		return nil
-	}
-
 	hubSubs := topologyContextPathSubs(t, nil)
 	releaseSubs := topologyContextPathSubs(t, &r)
+
+	// No cluster record with an enabled Optimize leaves a standalone
+	// identity.clients entry as the only thing that can provision this release,
+	// which is the same position an Optimize the record does not name is in. That
+	// is also the state a later Hub layer produces by replacing the inventory with
+	// an empty list, so it is checked rather than passed over.
+	cluster, hasRecord := inventory.clusters[clusterID]
+	if !hasRecord || !isEnabled(cluster.Components.Optimize.Enabled) {
+		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, inventory, clusterID, "", false, hubSubs, releaseSubs)
+	}
+
 	registered := stringValue(cluster.Components.Optimize.ClientID)
 	presented := stringValue(oidc.ClientID)
 
@@ -886,7 +1024,7 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 		(registered != "" && presented != "" &&
 			expandTopologyPlaceholders(registered, hubSubs) == expandTopologyPlaceholders(presented, releaseSubs))
 	if !isRecordRelease {
-		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, inventory, clusterID, registered, hubSubs, releaseSubs)
+		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, inventory, clusterID, registered, true, hubSubs, releaseSubs)
 	}
 
 	var problems []string
@@ -909,8 +1047,13 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 	compare("client id", "clientId", optimizeOIDCKey+"clientId", cluster.Components.Optimize.ClientID, oidc.ClientID)
 	compare("audience", "audience", optimizeOIDCKey+"audience", cluster.Components.Optimize.Audience, oidc.Audience)
 	compare("redirect URL", "redirectUrl", optimizeOIDCKey+"redirectUrl", cluster.Components.Optimize.RedirectURL, oidc.RedirectURL)
-	compare("client secret", "secret.existingSecret", optimizeOIDCKey+"secret.existingSecret", cluster.Components.Optimize.Secret.ExistingSecret, oidc.Secret.ExistingSecret)
-	compare("client secret key", "secret.existingSecretKey", optimizeOIDCKey+"secret.existingSecretKey", cluster.Components.Optimize.Secret.ExistingSecretKey, oidc.Secret.ExistingSecretKey)
+	problems = append(problems, secretFormProblems(
+		label,
+		fmt.Sprintf("global.topology.clusters[id=%q].components.optimize.secret", clusterID),
+		normalizedSecretForm(cluster.Components.Optimize.Secret),
+		inlineFirstSecretForm(oidc.Secret),
+		hubSubs, releaseSubs,
+	)...)
 
 	// The inventory context path is the third copy of optimize-context-path: it is
 	// what the Hub's Console and Web Modeler link to, and a stale one sends users
@@ -930,18 +1073,25 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 // provision it instead. Absent such an entry the release presents a client id
 // Identity never creates, which the deploy cannot see: Optimize starts, reports
 // ready, and only the first login fails.
-func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, oidc optimizeOIDCLayer, inventory hubInventory, clusterID, registered string, hubSubs, releaseSubs map[string]string) []string {
+func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, oidc optimizeOIDCLayer, inventory hubInventory, clusterID, registered string, hasRecord bool, hubSubs, releaseSubs map[string]string) []string {
 	optimizeOIDCKey := "optimize.security.authentication.oidc."
 	presented := stringValue(oidc.ClientID)
 	// The record either names another release's client or names none at all; both
 	// leave this release to a client of its own, and saying which one it is keeps
 	// the message pointing at something the reader can go and look up.
-	recordSays := fmt.Sprintf("this cluster's record registers %q", registered)
+	recordSays := fmt.Sprintf("this cluster's record registers the client id %q", registered)
 	if registered == "" {
-		recordSays = "this cluster's record registers no client id"
+		recordSays = "this cluster's record registers no Optimize client id"
 	}
 	if presented == "" {
-		return []string{fmt.Sprintf("%s: another Optimize release holds this cluster's record (global.topology.clusters[id=%q].components.optimize), so this one has to present a client of its own, but no layer of it sets %sclientId; it would send the chart default, which Identity provisions for nothing", label, clusterID, optimizeOIDCKey)}
+		// Silent unless a record exists to take the registration away from this
+		// release: with no record on either side, neither the Hub nor the release
+		// states a client, and this cross-check compares what the two sides state
+		// rather than requiring them to state anything.
+		if !hasRecord {
+			return nil
+		}
+		return []string{fmt.Sprintf("%s: %s (global.topology.clusters[id=%q].components.optimize), so this release has to present a client of its own, but no layer of it sets %sclientId; it would send the chart default, which Identity provisions for nothing", label, recordSays, clusterID, optimizeOIDCKey)}
 	}
 	var client hubIdentityClient
 	found := false
@@ -970,8 +1120,13 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 	// against it, so an Optimize whose redirectUrl points elsewhere is refused at
 	// the callback.
 	compare("root URL", "rootUrl", optimizeOIDCKey+"redirectUrl", stringValue(client.RootURL), stringValue(oidc.RedirectURL))
-	compare("client secret", "secret.existingSecret", optimizeOIDCKey+"secret.existingSecret", stringValue(client.Secret.ExistingSecret), stringValue(oidc.Secret.ExistingSecret))
-	compare("client secret key", "secret.existingSecretKey", optimizeOIDCKey+"secret.existingSecretKey", stringValue(client.Secret.ExistingSecretKey), stringValue(oidc.Secret.ExistingSecretKey))
+	problems = append(problems, secretFormProblems(
+		label,
+		clientKey+".secret",
+		inlineFirstSecretForm(client.Secret),
+		inlineFirstSecretForm(oidc.Secret),
+		hubSubs, releaseSubs,
+	)...)
 
 	// The audience is the resource server the token is minted for, and Identity
 	// mints one only for a resource server this client is permitted on.
