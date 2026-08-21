@@ -432,7 +432,9 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		PostInfraHooks:        flags.PostInfraHooks,
 		CompanionNodeSelector: compNS,
 		CompanionTolerations:  compTol,
-		CompanionElasticsearchStorageClass: func() string {
+		// ARM nodes (c4a-standard-8) can't attach pd-balanced disks, which is
+		// what the cluster default class provisions; see the arm feature values.
+		CompanionStorageClass: func() string {
 			if flags.Selection.InfraType == "arm" {
 				return "hyperdisk-balanced"
 			}

@@ -217,6 +217,18 @@ func formatArgs(args []string) string {
 // shared repositories.yaml and must not run concurrently.
 var companionRepoMu sync.Mutex
 
+// companionStorageClassPaths maps a companion release name to the Helm value
+// that sets the storage class on its claim template. Only companions whose pods
+// follow CompanionNodeSelector onto the infra pool belong here: the pool's
+// machine type constrains which disk types can attach, so their PVCs must use a
+// compatible class. The keycloak companion's postgresql StatefulSet is
+// deliberately absent — it declares no nodeSelector, so it stays on the default
+// pool where the cluster default class works.
+var companionStorageClassPaths = map[string]string{
+	"elasticsearch": "volumeClaimTemplate.storageClassName",
+	"postgresql":    "persistence.storageClass",
+}
+
 // deployCompanionCharts deploys all configured companion charts concurrently,
 // blocking until every companion is ready or the first failure cancels the rest.
 // Returns the first error encountered; nil means all companions are up.
@@ -310,8 +322,8 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		}
 		args = append(args, "--set-json", "tolerations="+string(b))
 	}
-	if cc.ReleaseName == "elasticsearch" && o.CompanionElasticsearchStorageClass != "" {
-		args = append(args, "--set", "volumeClaimTemplate.storageClassName="+o.CompanionElasticsearchStorageClass)
+	if path, ok := companionStorageClassPaths[cc.ReleaseName]; ok && o.CompanionStorageClass != "" {
+		args = append(args, "--set", path+"="+o.CompanionStorageClass)
 	}
 
 	_, runErr := helmRunWithRetry(ctx, args)
