@@ -11,12 +11,15 @@
 # text instead; the real placeholder syntax appears only in actual values below.
 #
 # Two distinct index prefixes are required, and conflating them would make this
-# Optimize read Orchestration B's records:
-#   ORCHA_ORCHESTRATION_INDEX_PREFIX - Orchestration A's prefix, whose
-#     zeebe-record indices this Optimize reads. Injected per release by the
-#     topology driver from that release's own ScenarioContext.
+# Optimize read the other Orchestration's records:
+#   SERVED_ORCHESTRATION_INDEX_PREFIX - the prefix of the orchestration release
+#     named by this release's topology "serves" key, whose zeebe-record indices
+#     this Optimize reads. Injected per release by the topology driver.
 #   OPTIMIZE_INDEX_PREFIX - this release's own Optimize indices, derived from
 #     this release's namespace so the two Optimizes never share index space.
+#
+# RELEASE_OPTIMIZE_CONTEXT_PATH comes from the same release's "optimize-context-path"
+# key, so the topology declaration is the only place either value is written.
 
 global:
   topology:
@@ -31,11 +34,11 @@ optimize:
       oidc:
         clientId: "optimize-orcha"
         audience: "optimize-orcha-api"
-        redirectUrl: "https://${HUB_HOST}/optimize-orcha"
+        redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
         secret:
           existingSecret: integration-test-credentials
           existingSecretKey: identity-optimize-client-token
-  contextPath: "/optimize-orcha"
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
   database:
     elasticsearch:
       enabled: true
@@ -43,7 +46,7 @@ optimize:
       url:
         protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
         host: "${EXTERNAL_ELASTICSEARCH_HOST}"
-      prefix: "${ORCHA_ORCHESTRATION_INDEX_PREFIX}"
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX
