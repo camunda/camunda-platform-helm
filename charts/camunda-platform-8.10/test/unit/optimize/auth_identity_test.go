@@ -290,6 +290,66 @@ func (s *AuthIdentityTemplateTest) TestUnrelatedEnvEntryIsNotAnIssuerExemption()
 	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
 }
 
+// Identity keeps its whole client-registration block behind global.identity.auth.enabled, so a
+// release that runs Identity itself and switches Optimize's authentication on through the
+// component-scoped method provisions no Optimize client at all. Every workload rolls out ready and
+// only the login callback fails, which is why the render has to refuse it.
+func (s *AuthIdentityTemplateTest) TestLocalIdentityWithoutGlobalAuthCannotProvisionOptimize() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                  "false",
+		"identity.enabled":                              "true",
+		"optimize.enabled":                              "true",
+		"orchestration.data.secondaryStorage.type":      "elasticsearch",
+		"optimize.security.authentication.method":       "oidc",
+		"optimize.security.authentication.oidc.issuer":  "https://keycloak.example.com/realms/camunda",
+		"optimize.security.authentication.oidc.jwksUrl": "https://keycloak.example.com/realms/camunda/protocol/openid-connect/certs",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "Identity registers clients only when global.identity.auth.enabled=true")
+}
+
+// The same release with the global key on is the shape Identity can provision, and it must keep
+// rendering: the guard above has to name the unprovisioned combination, not local Identity as such.
+func (s *AuthIdentityTemplateTest) TestLocalIdentityWithGlobalAuthStillRenders() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                  "true",
+		"identity.enabled":                              "true",
+		"optimize.enabled":                              "true",
+		"orchestration.data.secondaryStorage.type":      "elasticsearch",
+		"optimize.security.authentication.method":       "oidc",
+		"optimize.security.authentication.oidc.issuer":  "https://keycloak.example.com/realms/camunda",
+		"optimize.security.authentication.oidc.jwksUrl": "https://keycloak.example.com/realms/camunda/protocol/openid-connect/certs",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().NoError(err)
+}
+
+// An Optimize-only release leaves Identity to another release, so the guard must not reach it: this
+// is the supported shape the optimize role exists for.
+func (s *AuthIdentityTemplateTest) TestOptimizeRoleWithoutGlobalAuthStillRenders() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.topology.mode":                          "optimize",
+		"global.identity.auth.enabled":                  "false",
+		"optimize.enabled":                              "true",
+		"optimize.contextPath":                          "/optimize-orcha",
+		"optimize.database.elasticsearch.enabled":       "true",
+		"optimize.database.elasticsearch.url.host":      "elasticsearch-master",
+		"global.identity.service.url":                   "http://identity.hub.svc:80",
+		"optimize.security.authentication.method":       "oidc",
+		"optimize.security.authentication.oidc.issuer":  "https://keycloak.example.com/realms/camunda",
+		"optimize.security.authentication.oidc.jwksUrl": "https://keycloak.example.com/realms/camunda/protocol/openid-connect/certs",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().NoError(err)
+}
+
 // optimize.authEnabled reads anything other than "oidc" as not-oidc, so an unconstrained typo would
 // render an Optimize with authentication omitted and no error. The schema enum is what stops it.
 func (s *AuthIdentityTemplateTest) TestUnknownAuthenticationMethodIsRejected() {
