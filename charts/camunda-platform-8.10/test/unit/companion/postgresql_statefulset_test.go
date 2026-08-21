@@ -63,7 +63,8 @@ func (s *PostgresqlStatefulSetTest) TestPersistenceDifferentValuesInputs() {
 				claim := statefulSet.Spec.VolumeClaimTemplates[0]
 				require.Equal(t, "data", claim.Name)
 				require.Equal(t, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, claim.Spec.AccessModes)
-				require.Equal(t, "1Gi", claim.Spec.Resources.Requests.Storage().String())
+				require.Equal(t, "4Gi", claim.Spec.Resources.Requests.Storage().String(),
+					"hyperdisk-balanced, used by the ARM CI pool, rejects disks smaller than 4GB")
 				require.Nil(t, claim.Spec.StorageClassName)
 
 				require.Nil(t, podVolume(statefulSet, "data"),
