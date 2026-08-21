@@ -668,3 +668,46 @@ func splitDocuments(output string) []string {
 func contains(value, substring string) bool {
 	return strings.Contains(value, substring)
 }
+
+// Optimize mode is new, so it can reject the shape that renders an empty api.jwtSetUri outright
+// rather than deploying an Optimize that can validate no token.
+func TestOptimizeTopologyRequiresAResolvableJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.identity.auth.jwksUrl": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// The component key satisfies it without a global one, which is the point of the release-scoped key.
+func TestOptimizeTopologyAcceptsAComponentScopedJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":                  "",
+			"optimize.security.authentication.oidc.jwksUrl": "https://issuer.example.com/certs",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, `jwtSetUri: "https://issuer.example.com/certs"`)
+}
+
+// A release routing the JWKS URL through envFrom is not rejected: its keys are unreadable here.
+func TestOptimizeTopologyAcceptsEnvFromInPlaceOfAJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":          "",
+			"optimize.envFrom[0].configMapRef.name": "optimize-oidc-overrides",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.Contains(t, output, "name: optimize-oidc-overrides")
+}
