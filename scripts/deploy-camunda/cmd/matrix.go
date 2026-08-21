@@ -1126,18 +1126,6 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
-func topologyEnvToken(value string) string {
-	var token strings.Builder
-	for _, r := range strings.ToUpper(value) {
-		if r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
-			token.WriteRune(r)
-		} else {
-			token.WriteByte('_')
-		}
-	}
-	return strings.Trim(token.String(), "_")
-}
-
 // buildTopologyReleaseEnv layers a release's substitution namespace: shared
 // cross-release variables first, then the release's own env, and finally the
 // keys this driver derives from the topology declaration. The derived keys go
@@ -1155,7 +1143,7 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		env[key] = value
 	}
 	if release.Role == "orchestration" {
-		token := topologyEnvToken(release.NamespaceSuffix)
+		token := matrix.TopologyEnvToken(release.NamespaceSuffix)
 		env["ORCH_NAMESPACE"] = env[token+"_NAMESPACE"]
 		env["ORCH_HOST"] = env[token+"_HOST"]
 		env["ORCH_ZEEBE_GRPC"] = env[token+"_ZEEBE_GRPC"]
@@ -1167,7 +1155,7 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
 		env["RELEASE_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
 		if release.Serves != "" {
-			token := topologyEnvToken(release.Serves)
+			token := matrix.TopologyEnvToken(release.Serves)
 			env["SERVED_NAMESPACE"] = env[token+"_NAMESPACE"]
 			env["SERVED_HOST"] = env[token+"_HOST"]
 			env["SERVED_ORCHESTRATION_INDEX_PREFIX"] = env[token+"_ORCHESTRATION_INDEX_PREFIX"]
@@ -1283,7 +1271,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
 	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
 	for _, i := range orchestrationIndices {
-		token := topologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
+		token := matrix.TopologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
 		crossRefEnv[token+"_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
@@ -1292,7 +1280,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 	for _, i := range optimizeIndices {
 		release := entry.Topology.Releases[i]
-		token := topologyEnvToken(release.NamespaceSuffix)
+		token := matrix.TopologyEnvToken(release.NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
 		crossRefEnv[token+"_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
 	}
@@ -1371,7 +1359,7 @@ func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int
 		return ""
 	}
 	if role == "orchestration" {
-		return topologyEnvToken(namespaceSuffix) + "_HOST"
+		return matrix.TopologyEnvToken(namespaceSuffix) + "_HOST"
 	}
 	return "HUB_HOST"
 }
@@ -1387,7 +1375,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
-				crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
+				crossRefEnv[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
 				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
@@ -1410,7 +1398,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 			IngressSubdomain:  contexts[i].Namespace,
 			IngressBaseDomain: baseDomain,
 		}).ResolveIngressHostname()
-		crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = host
+		crossRefEnv[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"] = host
 		if orchestrationCount == 1 {
 			crossRefEnv["ORCH_HOST"] = host
 		}
