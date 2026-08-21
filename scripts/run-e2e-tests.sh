@@ -272,6 +272,11 @@ log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
 trap 'rm -f "$ENV_FILE"' EXIT
 
+# The suite resolves this itself as `process.env.OPTIMIZE_CONTEXT_PATH ?? '/optimize'`, and `??` does
+# not fall back on an empty string. Assigning "" above keeps any inherited export flag, so clear the
+# name outright rather than leaving it exported and empty; the topology path sets it in $ENV_FILE.
+[[ -z "$OPTIMIZE_CONTEXT_PATH" ]] && unset OPTIMIZE_CONTEXT_PATH
+
 if [[ -n "$HUB_NAMESPACE" ]]; then
   log "DEBUG: Multi-namespace topology - merging orchestration ($NAMESPACE) + Hub ($HUB_NAMESPACE) into $ENV_FILE"
   DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || {
