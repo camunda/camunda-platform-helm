@@ -3711,7 +3711,7 @@
                         },
                         "affinity": {
                             "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+                            "description": "can be used to match sibling `podLabels` in pod affinity or anti-affinity",
                             "default": {}
                         },
                         "resources": {
@@ -4106,7 +4106,7 @@
                         },
                         "affinity": {
                             "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+                            "description": "can be used to match sibling `podLabels` in pod affinity or anti-affinity",
                             "default": {}
                         },
                         "resources": {
