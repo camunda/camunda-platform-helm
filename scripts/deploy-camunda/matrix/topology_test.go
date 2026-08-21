@@ -140,7 +140,7 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 	depsDir := filepath.Join(t.TempDir(), "dependencies")
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	writeValuesFile(t, dir, "identity/keycloak.yaml")
 	writeValuesFile(t, dir, "identity/keycloak-external.yaml")
 	writeValuesFile(t, dir, "persistence/elasticsearch-external.yaml")
@@ -188,7 +188,7 @@ func TestTopologyValidate_OptimizeRoleNeedsNoModelerCluster(t *testing.T) {
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	top := &Topology{
 		Name: "optimize-no-modeler-cluster",
 		Releases: []TopologyRelease{
@@ -207,7 +207,7 @@ func TestTopologyValidate_OptimizeRoleRequiresDependsOn(t *testing.T) {
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	top := &Topology{
 		Name: "optimize-without-depends-on",
 		Releases: []TopologyRelease{
@@ -227,7 +227,7 @@ func TestTopologyValidate_OptimizeRoleRejectsNonHubDependsOn(t *testing.T) {
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	top := &Topology{
 		Name: "optimize-depends-on-orchestration",
 		Releases: []TopologyRelease{
@@ -247,7 +247,7 @@ func TestTopologyValidate_OptimizeRoleRequiresServesAndContextPath(t *testing.T)
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	top := &Topology{
 		Name: "optimize-missing-mapping",
 		Releases: []TopologyRelease{
@@ -267,7 +267,7 @@ func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	top := &Topology{
 		Name: "optimize-unknown-serves",
 		Releases: []TopologyRelease{
@@ -560,7 +560,7 @@ func TestTopologyValidate_AllowsSeveralOptimizeReleasesPerOrchestration(t *testi
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	top := &Topology{
 		Name: "two-tenants-one-cluster",
 		Releases: []TopologyRelease{
@@ -580,7 +580,7 @@ func TestTopologyValidate_RejectsDuplicateOptimizeContextPath(t *testing.T) {
 	dir := t.TempDir()
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
-	writeValuesFile(t, dir, "features/optimize.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 	top := &Topology{
 		Name: "colliding-optimize-paths",
 		Releases: []TopologyRelease{
@@ -646,5 +646,117 @@ func TestTopologyValidate_RejectsMissingFeatureFile(t *testing.T) {
 	err := top.Validate("ctx", dir, t.TempDir())
 	if err == nil || !strings.Contains(err.Error(), `feature "typo-orchestration": missing values file`) {
 		t.Fatalf("expected a missing feature layer to be reported, got %v", err)
+	}
+}
+
+// A dollar sign is not a declaration: an optimize layer that substitutes some
+// other variable follows nothing the topology states.
+func TestTopologyValidate_RejectsOptimizeLayerContextPathFromForeignPlaceholder(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${STALE_PATH}"
+  database:
+    elasticsearch:
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "RELEASE_OPTIMIZE_CONTEXT_PATH") {
+		t.Fatalf("expected a foreign placeholder to be rejected, got %v", err)
+	}
+}
+
+// The placeholder has to lead the prefix, which is what makes repointing serves
+// repoint the records: a value that only mentions it further along does not.
+func TestTopologyValidate_RejectsOptimizeLayerPrefixNotLedByThePlaceholder(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      prefix: "wrong-${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "optimize.database.elasticsearch.prefix") {
+		t.Fatalf("expected a prefix not led by the placeholder to be rejected, got %v", err)
+	}
+}
+
+// A Physical Tenant's Optimize reads the tenant's slice of the served
+// orchestration's records, so a suffix after the placeholder is the shape that
+// design needs.
+func TestTopologyValidate_AcceptsOptimizeLayerPrefixWithATenantSuffix(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}-ta"
+`)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("a per-tenant suffix after the placeholder must validate, got: %v", err)
+	}
+}
+
+// A layer that states neither value is as wrong as one that hardcodes them: the
+// release inherits whatever a base layer left behind.
+func TestTopologyValidate_RejectsOptimizeLayerStatingNeitherValue(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  enabled: true
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil {
+		t.Fatal("expected a layer stating neither contextPath nor prefix to be rejected")
+	}
+	for _, want := range []string{"no feature layer sets optimize.contextPath", "no feature layer sets optimize.database.elasticsearch.prefix"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected %q in %v", want, err)
+		}
+	}
+}
+
+// A release env entry may not shadow a variable the driver derives from the
+// declaration: buildTopologyReleaseEnv applies the derived value last, so the
+// entry could only mislead its author.
+func TestTopologyValidate_RejectsReleaseEnvShadowingDerivedKeys(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
+
+	for _, key := range []string{"RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE", "SERVED_HOST", "ORCH_NAMESPACE", "ORCH_HOST", "ORCH_ZEEBE_GRPC", "ORCH_ZEEBE_REST"} {
+		top := optimizeTopology("orcha", "/optimize-orcha")
+		top.Releases[3].Env = map[string]string{key: "hand-written"}
+		err := top.Validate("ctx", dir, t.TempDir())
+		if err == nil || !strings.Contains(err.Error(), "env sets "+key) {
+			t.Fatalf("expected release env %s to be rejected, got %v", key, err)
+		}
+	}
+}
+
+// Every other release env key stays free-form: the reserved list is exactly the
+// derived one.
+func TestTopologyValidate_AcceptsUnreservedReleaseEnv(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
+
+	top := optimizeTopology("orcha", "/optimize-orcha")
+	top.Releases[3].Env = map[string]string{"ORCH_OPTIMIZE_CLIENT_ID": "optimize-orcha"}
+	if err := top.Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("an unreserved release env key must validate, got: %v", err)
 	}
 }
