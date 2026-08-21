@@ -467,10 +467,6 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-				// Optimize picks its stack from optimize.security.csl.enabled, whose default differs
-				// per image and which an operator can still set to false through 8.10. Rendering both
-				// shapes keeps the chart working either way, and lets the escape hatch be the flag
-				// alone rather than a chart change.
 				s.Require().Contains(configmap.Data["application-ccsm.yaml"], `method: "oidc"`,
 					"the CSL chains read camunda.security.*")
 
