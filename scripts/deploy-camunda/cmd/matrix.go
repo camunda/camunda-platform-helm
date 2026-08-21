@@ -1152,9 +1152,20 @@ func topologyEnvToken(value string) string {
 	return strings.Trim(token.String(), "_")
 }
 
+// buildTopologyReleaseEnv layers a release's substitution namespace: shared
+// cross-release variables first, then the release's own env, and finally the
+// keys this driver derives from the topology declaration. The derived keys go
+// last on purpose - they are the declaration's only copy, and a release env
+// entry that shadowed one would deploy a context path or reader prefix that
+// disagrees with optimize-context-path/serves and with the smoke matrix.
+// matrix.Topology.Validate rejects such an entry outright; this ordering keeps
+// the generated value authoritative even so.
 func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRelease) map[string]string {
 	env := make(map[string]string, len(shared)+len(release.Env)+4)
 	for key, value := range shared {
+		env[key] = value
+	}
+	for key, value := range release.Env {
 		env[key] = value
 	}
 	if release.Role == "orchestration" {
@@ -1175,9 +1186,6 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 			env["SERVED_HOST"] = env[token+"_HOST"]
 			env["SERVED_ORCHESTRATION_INDEX_PREFIX"] = env[token+"_ORCHESTRATION_INDEX_PREFIX"]
 		}
-	}
-	for key, value := range release.Env {
-		env[key] = value
 	}
 	return env
 }
