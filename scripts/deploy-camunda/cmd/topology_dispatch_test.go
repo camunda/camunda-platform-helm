@@ -371,6 +371,69 @@ func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.
 	}
 }
 
+func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":                  "ns-orcha",
+		"ORCHA_HOST":                       "orcha.example.com",
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"ORCHB_NAMESPACE":                  "ns-orchb",
+		"ORCHB_HOST":                       "orchb.example.com",
+		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
+	}
+	release := matrix.TopologyRelease{
+		Role:                "optimize",
+		NamespaceSuffix:     "optb",
+		Serves:              "orchb",
+		OptimizeContextPath: "/optimize-orchb",
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	if got := env["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orchb" {
+		t.Errorf("SERVED_ORCHESTRATION_INDEX_PREFIX = %q, want the prefix of the release named by serves", got)
+	}
+	if got := env["SERVED_NAMESPACE"]; got != "ns-orchb" {
+		t.Errorf("SERVED_NAMESPACE = %q", got)
+	}
+	if got := env["RELEASE_OPTIMIZE_CONTEXT_PATH"]; got != "/optimize-orchb" {
+		t.Errorf("RELEASE_OPTIMIZE_CONTEXT_PATH = %q", got)
+	}
+}
+
+// Repointing serves must repoint the records this Optimize reads. The values
+// layer names SERVED_ORCHESTRATION_INDEX_PREFIX rather than a per-release token,
+// so the declaration is the only place the mapping is written.
+func TestBuildTopologyReleaseEnv_ServedPrefixFollowsServes(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
+	}
+	base := matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", OptimizeContextPath: "/optimize-a"}
+
+	servesA := base
+	servesA.Serves = "orcha"
+	servesB := base
+	servesB.Serves = "orchb"
+
+	if got := buildTopologyReleaseEnv(shared, servesA)["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orcha" {
+		t.Errorf("serves=orcha gave prefix %q", got)
+	}
+	if got := buildTopologyReleaseEnv(shared, servesB)["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orchb" {
+		t.Errorf("serves=orchb gave prefix %q", got)
+	}
+}
+
+func TestBuildTopologyReleaseEnv_OmitsOptimizeKeysForOtherRoles(t *testing.T) {
+	env := buildTopologyReleaseEnv(map[string]string{}, matrix.TopologyRelease{
+		Role:            "orchestration",
+		NamespaceSuffix: "orcha",
+	})
+	for _, key := range []string{"RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE"} {
+		if _, exists := env[key]; exists {
+			t.Errorf("%s must not be published for a non-optimize release", key)
+		}
+	}
+}
+
 func TestAddTopologyIngressHosts_UsesExplicitSharedHost(t *testing.T) {
 	env := map[string]string{}
 	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
