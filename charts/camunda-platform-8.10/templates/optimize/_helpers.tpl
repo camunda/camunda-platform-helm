@@ -146,15 +146,21 @@ true
 {{/*
 [optimize] The identity variables a release may declare its optimize.envFrom sources supply, mapped
 to the guard each one exempts. Names are the container env vars the chart itself would otherwise
-have to resolve: the two the identity env ConfigMap carries, and the Optimize config override for
+have to resolve: the two the identity env ConfigMap carries, and the documented override for
 api.jwtSetUri.
+
+The api.jwtSetUri name is the one Optimize documents for that config key
+(self-managed/components/optimize/configuration/system-configuration), not a mapping derived from
+the key path: Optimize's env aliases are not mechanical (es.security.password is
+CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD), so deriving one would name a variable Optimize
+never reads and exempt a guard nothing answered.
 */}}
 {{- define "optimize.identityIssuerEnvNames" -}}
 CAMUNDA_IDENTITY_ISSUER CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
 {{- end -}}
 
 {{- define "optimize.jwksEnvNames" -}}
-CAMUNDA_OPTIMIZE_API_JWTSETURI
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
 {{- end -}}
 
 {{- define "optimize.declarableEnvNames" -}}
@@ -223,6 +229,64 @@ explicit optimize.env entry or a declared envFrom variable both count.
   {{- if or
         (eq (include "optimize.envSetsAnyOf" (dict "ctx" . "names" $names)) "true")
         (eq (include "optimize.envFromDeclaresAnyOf" (dict "ctx" . "names" $names)) "true") -}}
+true
+  {{- else -}}
+false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether the release itself supplies api.jwtSetUri, leaving the chart nothing to resolve.
+Besides container env, optimize.configuration is such a source: it replaces environment-config.yaml
+wholesale (templates/optimize/configmap.yaml), so the chart renders no api.jwtSetUri at all and the
+key the release wrote there is the only one Optimize reads. Unlike an envFrom source, that content is
+readable at render time, so the exemption is the key itself rather than a declaration about it.
+*/}}
+{{- define "optimize.jwksSuppliedByRelease" -}}
+  {{- $configuration := .Values.optimize.configuration | default "" -}}
+  {{- $asExtraConfig := dict "extraConfiguration" (list (dict "file" "environment-config.yaml" "content" $configuration)) "path" (list "api" "jwtSetUri") -}}
+  {{- if or
+        (eq (include "optimize.jwksMayComeFromEnv" .) "true")
+        (and (not (empty $configuration)) (or
+          (eq (include "camundaPlatform.extraConfigHasPath" $asExtraConfig) "true")
+          (eq (include "camundaPlatform.extraConfigHasDottedPath" $asExtraConfig) "true"))) -}}
+true
+  {{- else -}}
+false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] True when any leaf of a values subtree is stated. Recursive, so a subtree of empty
+defaults - which every release carries for optimize.security.authentication - reads as unstated.
+*/}}
+{{- define "optimize._subtreeStatesAnything" -}}
+  {{- $found := "" -}}
+  {{- if kindIs "map" . -}}
+    {{- range $key, $value := . -}}
+      {{- if eq (include "optimize._subtreeStatesAnything" $value) "true" -}}
+        {{- $found = "true" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- else if not (empty .) -}}
+    {{- $found = "true" -}}
+  {{- end -}}
+  {{- $found -}}
+{{- end -}}
+
+{{/*
+[optimize] True when the release configures Optimize's own identity or authentication instead of
+inheriting global.identity.auth wholesale. This is what scopes the Optimize identity guards outside
+global.topology.mode=optimize: a component-scoped OIDC config reaches an empty issuer or an empty
+api.jwtSetUri in combined mode with no mode to signal it, while a release that never mentions
+optimize.security.authentication or optimize.identity renders exactly as it did before these keys
+existed. Widening the guards to every global.identity.auth.enabled release is a chart-wide change,
+tracked separately in issue #6929.
+*/}}
+{{- define "optimize.hasComponentScopedAuth" -}}
+  {{- if or
+        (eq (include "optimize._subtreeStatesAnything" (dig "security" "authentication" dict .Values.optimize)) "true")
+        (eq (include "optimize.hasIdentityOverrides" .) "true") -}}
 true
   {{- else -}}
 false

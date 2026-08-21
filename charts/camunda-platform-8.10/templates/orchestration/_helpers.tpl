@@ -374,12 +374,18 @@ and
 -}}
 {{- end -}}
 
+{{/*
+[orchestration] The backend the legacy exporters key off is the resolved one, via
+orchestration.secondaryStorage: an unset orchestration.data.secondaryStorage.type still resolves to
+elasticsearch or opensearch through global.<backend>.enabled or optimize.database.<backend>.enabled,
+and reading the raw key instead would silently drop an explicit orchestration.exporters.zeebe opt-in.
+*/}}
 {{- define "orchestration.hasLegacyElasticsearchExporter" -}}
 {{- and
       (or
         (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         (or
-          (and (or .Values.global.elasticsearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "elasticsearch")) .Values.orchestration.exporters.zeebe.enabled)
+          (and (or .Values.global.elasticsearch.enabled (eq (include "orchestration.secondaryStorage" .) "elasticsearch")) .Values.orchestration.exporters.zeebe.enabled)
           (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         )
       )
@@ -393,7 +399,7 @@ and
 {{- define "orchestration.hasLegacyOpenSearchExporter" -}}
 {{- and
       (or
-        (and (or .Values.global.opensearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "opensearch")) .Values.orchestration.exporters.zeebe.enabled)
+        (and (or .Values.global.opensearch.enabled (eq (include "orchestration.secondaryStorage" .) "opensearch")) .Values.orchestration.exporters.zeebe.enabled)
         (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
       )
       (or
