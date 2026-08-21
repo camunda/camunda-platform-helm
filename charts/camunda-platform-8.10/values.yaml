@@ -2658,6 +2658,8 @@ optimize:
         issuer: ""
         ## @param optimize.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`, the cluster-internal route this Optimize uses to validate tokens.
         issuerBackendUrl: ""
+        ## @param optimize.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`, the JWKS endpoint this Optimize fetches token signing keys from. Required for a non-Keycloak `type`, which has no endpoint layout to derive it from. Supports templating (e.g., {{ .Release.Name }}).
+        jwksUrl: ""
         ## @param optimize.security.authentication.oidc.audience can be used to override `global.identity.auth.optimize.audience`.
         audience: ""
         ## @param optimize.security.authentication.oidc.redirectUrl can be used to override `global.identity.auth.optimize.redirectUrl`. Supports templating (e.g., {{ .Release.Name }}).
