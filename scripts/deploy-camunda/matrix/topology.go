@@ -111,6 +111,24 @@ type TopologyRelease struct {
 	ResolvedDependencies []ChartDependency `yaml:"-" json:"-"`
 }
 
+// reservedTopologyEnvKeys are the substitution variables the topology driver
+// derives from a release's declaration (see buildTopologyReleaseEnv): the
+// orchestration leg a release is, and the context path and served orchestration
+// an optimize release reads. A release env entry may not name one. The driver
+// applies the derived value last so a stray entry cannot win, and this check
+// makes the attempt an error instead of a silently dropped key, because such an
+// entry means its author expected it to take effect.
+var reservedTopologyEnvKeys = []string{
+	"ORCH_NAMESPACE",
+	"ORCH_HOST",
+	"ORCH_ZEEBE_GRPC",
+	"ORCH_ZEEBE_REST",
+	"RELEASE_OPTIMIZE_CONTEXT_PATH",
+	"SERVED_NAMESPACE",
+	"SERVED_HOST",
+	"SERVED_ORCHESTRATION_INDEX_PREFIX",
+}
+
 // Validate enforces Topology's load-time invariants:
 //   - at least one release is declared;
 //   - every release's Values file resolves on disk under
@@ -122,7 +140,9 @@ type TopologyRelease struct {
 //   - every release's DependsOn (when set) references a declared Role, and is
 //     exactly "hub" for every Role == "optimize" release;
 //   - exactly one release has Role == "hub";
-//   - NamespaceSuffix values are unique and non-empty.
+//   - NamespaceSuffix values are unique and non-empty;
+//   - no release Env entry names a variable the topology driver derives
+//     (reservedTopologyEnvKeys).
 //
 // ctx is prepended to error messages, e.g. `scenario "multinamespace": topology: ...`.
 func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string) error {
@@ -275,6 +295,12 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] serves %q does not reference a declared orchestration release's namespace-suffix", ctx, t.Name, i, r.Serves))
 		}
 
+		for _, key := range reservedTopologyEnvKeys {
+			if _, taken := r.Env[key]; taken {
+				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] env sets %s, which the topology driver derives from this release's declaration; the derived value wins, so the entry would never take effect - remove it and change the declaration instead", ctx, t.Name, i, key))
+			}
+		}
+
 		if r.DependsOn == "" {
 			continue
 		}
@@ -313,14 +339,49 @@ type optimizeLayerValues struct {
 	} `yaml:"optimize"`
 }
 
+// placeholderForms returns the two substitution spellings os.Expand accepts for
+// name, which is what a values layer must contain verbatim for the topology
+// declaration to remain the value's only copy.
+func placeholderForms(name string) []string {
+	return []string{"${" + name + "}", "$" + name}
+}
+
+// isExactPlaceholder reports whether value is nothing but a substitution of
+// name. A value that merely contains the name, or any other dollar sign, is not
+// accepted: "${STALE_PATH}" follows no declaration at all.
+func isExactPlaceholder(value, name string) bool {
+	for _, form := range placeholderForms(name) {
+		if value == form {
+			return true
+		}
+	}
+	return false
+}
+
+// placeholderLeads reports whether value is a substitution of name, optionally
+// carried further by a suffix. A Physical Tenant's Optimize reads the tenant's
+// own slice of the served orchestration's records, so its index prefix is the
+// published one plus a tenant suffix. The placeholder still has to lead, which
+// is what makes repointing serves repoint the records: "job-orcha-ta" and
+// "wrong-${SERVED_ORCHESTRATION_INDEX_PREFIX}" both fail.
+func placeholderLeads(value, name string) bool {
+	return isExactPlaceholder(value, name) || strings.HasPrefix(value, "${"+name+"}")
+}
+
 // validateOptimizeLayerValues rejects a values layer that writes its own copy of
-// what the topology declaration already states. The topology driver publishes
-// optimize-context-path as RELEASE_OPTIMIZE_CONTEXT_PATH and the serves release's index
-// prefix as SERVED_ORCHESTRATION_INDEX_PREFIX, so a layer that hardcodes either
-// keeps deploying the old value after the declaration changes, while the smoke
-// matrix reports the new one.
+// what the topology declaration already states, and a release whose layers never
+// state it at all. The topology driver publishes optimize-context-path as
+// RELEASE_OPTIMIZE_CONTEXT_PATH and the serves release's index prefix as
+// SERVED_ORCHESTRATION_INDEX_PREFIX, so a layer that hardcodes either keeps
+// deploying the old value after the declaration changes, while the smoke matrix
+// reports the new one. A layer that sets neither is just as wrong in the other
+// direction: the release silently inherits whatever a base layer left there,
+// which is some other release's context path or index prefix.
 func validateOptimizeLayerValues(label string, r TopologyRelease, chartFullSetupDir string) []string {
 	var problems []string
+	readAny := false
+	contextPathSet := false
+	prefixSet := false
 	for _, featureID := range r.Features {
 		if !isPlainFilename(featureID) {
 			continue
@@ -334,22 +395,42 @@ func validateOptimizeLayerValues(label string, r TopologyRelease, chartFullSetup
 		if yaml.Unmarshal(content, &layer) != nil {
 			continue
 		}
+		readAny = true
 
-		if cp := layer.Optimize.ContextPath; cp != nil && !strings.Contains(*cp, "$") && *cp != r.OptimizeContextPath {
-			problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.contextPath %q but the release declares optimize-context-path %q; reference RELEASE_OPTIMIZE_CONTEXT_PATH instead so the declaration is the only copy", label, featureID, *cp, r.OptimizeContextPath))
+		if cp := layer.Optimize.ContextPath; cp != nil && *cp != "" {
+			contextPathSet = true
+			if !isExactPlaceholder(*cp, "RELEASE_OPTIMIZE_CONTEXT_PATH") && *cp != r.OptimizeContextPath {
+				problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.contextPath %q but the release declares optimize-context-path %q; set it to exactly %q so the declaration is the only copy", label, featureID, *cp, r.OptimizeContextPath, placeholderForms("RELEASE_OPTIMIZE_CONTEXT_PATH")[0]))
+			}
 		}
 
-		for backend, prefix := range map[string]*string{
-			"elasticsearch": layer.Optimize.Database.Elasticsearch.Prefix,
-			"opensearch":    layer.Optimize.Database.Opensearch.Prefix,
-		} {
+		for _, backend := range []string{"elasticsearch", "opensearch"} {
+			prefix := layer.Optimize.Database.Elasticsearch.Prefix
+			if backend == "opensearch" {
+				prefix = layer.Optimize.Database.Opensearch.Prefix
+			}
 			if prefix == nil || *prefix == "" {
 				continue
 			}
-			if !strings.Contains(*prefix, "SERVED_ORCHESTRATION_INDEX_PREFIX") {
-				problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.database.%s.prefix to %q, which does not follow serves %q; reference SERVED_ORCHESTRATION_INDEX_PREFIX so repointing serves repoints the records this Optimize reads", label, featureID, backend, *prefix, r.Serves))
+			prefixSet = true
+			if !placeholderLeads(*prefix, "SERVED_ORCHESTRATION_INDEX_PREFIX") {
+				problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.database.%s.prefix to %q, which does not follow serves %q; it must be %q, or lead with it and carry a per-tenant suffix, so repointing serves repoints the records this Optimize reads", label, featureID, backend, *prefix, r.Serves, placeholderForms("SERVED_ORCHESTRATION_INDEX_PREFIX")[0]))
 			}
 		}
+	}
+
+	// Presence is asserted only over layers this validator could read and parse:
+	// a release whose feature layers are absent from disk (or unparseable) is
+	// reported by the layer-resolution checks in Validate, not silently blamed
+	// for a missing key here.
+	if !readAny {
+		return problems
+	}
+	if r.OptimizeContextPath != "" && !contextPathSet {
+		problems = append(problems, fmt.Sprintf("%s: no feature layer sets optimize.contextPath, so this release is served on whatever path its base layers left behind rather than on the declared optimize-context-path %q; set optimize.contextPath to %q in one of its feature layers", label, r.OptimizeContextPath, placeholderForms("RELEASE_OPTIMIZE_CONTEXT_PATH")[0]))
+	}
+	if r.Serves != "" && !prefixSet {
+		problems = append(problems, fmt.Sprintf("%s: no feature layer sets optimize.database.elasticsearch.prefix or optimize.database.opensearch.prefix, so this release reads whatever index prefix its base layers left behind rather than the records serves %q writes; set the prefix of the enabled backend to %q in one of its feature layers", label, r.Serves, placeholderForms("SERVED_ORCHESTRATION_INDEX_PREFIX")[0]))
 	}
 	return problems
 }
