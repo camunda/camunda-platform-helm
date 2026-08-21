@@ -121,11 +121,14 @@ as well, otherwise, a login will not be possible. Make sure you use `18080` as a
 
 Now you can point your browser to one of the service's login pages.
 {{ if .Values.identity.firstUser.enabled }}
-{{- if .Values.identity.firstUser.existingSecret }}
-Default user: "{{ .Values.identity.firstUser.username }}", and for password, run:
-> kubectl get secret {{ .Values.identity.firstUser.existingSecret }} -o jsonpath='{.data.identity-firstuser-password}' | base64 -d
+{{- if and .Values.identity.firstUser.secret.existingSecret .Values.identity.firstUser.secret.existingSecretKey }}
+Default user: "{{ .Values.identity.firstUser.username }}". The password is stored in Kubernetes Secret "{{ .Values.identity.firstUser.secret.existingSecret }}" under key "{{ .Values.identity.firstUser.secret.existingSecretKey }}". Retrieve it outside shared or recorded terminals.
+{{- else if .Values.identity.firstUser.secret.inlineSecret }}
+Default user: "{{ .Values.identity.firstUser.username }}". The password is configured via `identity.firstUser.secret.inlineSecret` and is intentionally omitted from this output.
+{{- else if .Values.identity.firstUser.existingSecret }}
+Default user: "{{ .Values.identity.firstUser.username }}". The password is configured via the deprecated `identity.firstUser.existingSecret` value and is intentionally omitted from this output.
 {{- else }}
-Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Values.identity.firstUser.password }}"
+Default user: "{{ .Values.identity.firstUser.username }}". No password is configured. Set both `identity.firstUser.secret.existingSecret` and `identity.firstUser.secret.existingSecretKey`, or set `identity.firstUser.secret.inlineSecret` for non-production use.
 {{- end }}
 {{ end }}
 

@@ -545,14 +545,6 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 			Msg("✅ [executeDeployment] ingress reachable")
 	}
 
-	// Capture credentials from the secrets map prepared in prepareScenarioValues.
-	if prepared.Secrets != nil {
-		result.FirstUserPassword = prepared.Secrets["DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"]
-		result.SecondUserPassword = prepared.Secrets["DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"]
-		result.ThirdUserPassword = prepared.Secrets["DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"]
-		result.KeycloakClientsSecret = prepared.Secrets["DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"]
-	}
-
 	// Generate E2E test env file if requested
 	if flags.Test.OutputTestEnv {
 		envPath, err := renderTestEnvFile(ctx, flags, scenarioCtx.Namespace, scenarioCtx.ScenarioName)
