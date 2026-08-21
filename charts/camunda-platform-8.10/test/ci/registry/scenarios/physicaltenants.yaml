@@ -6,6 +6,16 @@ platforms:
   - gke
 infra-type:
   gke: distroci
+# e2e is blocked on the test suite, not on the chart: the Optimize flows in
+# smoke-tests.spec.ts and optimize-user-flows.spec.ts create their data through
+# Web Modeler, which deploys over the plain /v2 path and so lands records in the
+# default tenant, while a per-tenant Optimize reads its own tenant's prefix and
+# finds nothing. The suite has no concept of a Physical Tenant, and
+# components.orchestration on the cluster record is singular, so one record
+# cannot name a tenant-scoped Modeler target per tenant. Skipping that one
+# dimension keeps the isolation, initialization and per-tenant export coverage
+# below, which the post-deploy hook asserts. Drop this key once the e2e suite can
+# address an Optimize per tenant.
 skip-e2e: true
 post-deploy: physicaltenants-exporters
 topology:
