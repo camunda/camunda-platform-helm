@@ -141,9 +141,6 @@ true
 with a value the container will actually read: a non-empty literal value, or any valueFrom. The
 Deployment renders optimize.env as container env, which the kubelet resolves over every envFrom
 source, so such an entry supersedes the identity env ConfigMap.
-
-optimize.envFrom is deliberately not inspected: it also layers after that ConfigMap, but its keys
-live in a ConfigMap or Secret unreadable at render time, so its presence proves nothing.
 */}}
 {{- define "optimize.envSetsIdentityIssuer" -}}
   {{- $names := list "CAMUNDA_IDENTITY_ISSUER" "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL" -}}
@@ -154,6 +151,15 @@ live in a ConfigMap or Secret unreadable at render time, so its presence proves 
     {{- end -}}
   {{- end -}}
   {{- if $set -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether the issuer may reach the container past the identity env ConfigMap. Both sources
+are listed after it in the Deployment, so either supersedes it. optimize.env is matched by name and
+value; optimize.envFrom only by presence, its keys being unreadable at render time.
+*/}}
+{{- define "optimize.identityIssuerMayComeFromEnv" -}}
+  {{- if or (eq (include "optimize.envSetsIdentityIssuer" .) "true") (not (empty .Values.optimize.envFrom)) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{/*
