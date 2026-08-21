@@ -32,6 +32,38 @@ func writeValuesFile(t *testing.T, dir, name string) {
 	}
 }
 
+func writeLayer(t *testing.T, dir, name, content string) {
+	t.Helper()
+	path := filepath.Join(dir, "values", name)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+}
+
+// optimizeTopology returns a minimal valid hub+orchestration+optimize topology
+// whose optimize release carries the given declaration.
+func optimizeTopology(serves, contextPath string) *Topology {
+	return &Topology{
+		Name: "optimize-layer-crosscheck",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "orchestration", NamespaceSuffix: "orchb", Features: []string{"orchestration"}, ModelerClusterID: "orchb", ModelerClusterName: "Orchestration B", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: serves, OptimizeContextPath: contextPath, Features: []string{"optimize"}, DependsOn: "hub"},
+		},
+	}
+}
+
+const optimizeLayerFollowingDeclaration = `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`
+
 func writeDepFile(t *testing.T, depsDir, id string) {
 	t.Helper()
 	if err := os.MkdirAll(depsDir, 0o755); err != nil {
@@ -248,6 +280,69 @@ func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.
 	err := top.Validate("ctx", dir, t.TempDir())
 	if err == nil || !strings.Contains(err.Error(), "does not reference a declared orchestration release") {
 		t.Fatalf("expected serves cross-check, got %v", err)
+	}
+}
+
+func TestTopologyValidate_AcceptsOptimizeLayerFollowingDeclaration(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("a layer that references the published placeholders must validate, got: %v", err)
+	}
+}
+
+// Repointing serves must not leave the layer reading the old release's records.
+func TestTopologyValidate_RejectsOptimizeLayerPinnedToAnotherServesPrefix(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      prefix: "${ORCHA_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	err := optimizeTopology("orchb", "/optimize-orchb").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "SERVED_ORCHESTRATION_INDEX_PREFIX") {
+		t.Fatalf("expected the prefix to be rejected for not following serves, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsOptimizeLayerContextPathMismatch(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "/optimize-stale"
+  database:
+    elasticsearch:
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "but the release declares optimize-context-path") {
+		t.Fatalf("expected the hardcoded contextPath to be rejected, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsOptimizeLayerOpensearchPrefixNotFollowingServes(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    opensearch:
+      prefix: "job-orcha"
+`)
+
+	err := optimizeTopology("orchb", "/optimize-orchb").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "optimize.database.opensearch.prefix") {
+		t.Fatalf("expected the opensearch prefix to be cross-checked too, got %v", err)
 	}
 }
 
