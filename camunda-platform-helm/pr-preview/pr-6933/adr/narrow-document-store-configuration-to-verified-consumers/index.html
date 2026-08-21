@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-adr/narrow-document-store-configuration-to-verified-consumers" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Narrow document-store configuration to its verified consumers and separate it from ambient cloud credentials | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6933/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6933/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6933/adr/narrow-document-store-configuration-to-verified-consumers"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Narrow document-store configuration to its verified consumers and separate it from ambient cloud credentials | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6933/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6933/adr/narrow-document-store-configuration-to-verified-consumers"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6933/adr/narrow-document-store-configuration-to-verified-consumers" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6933/adr/narrow-document-store-configuration-to-verified-consumers" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6933/assets/css/styles.3f6cd398.css">
+<script src="/camunda-platform-helm/pr-preview/pr-6933/assets/js/runtime~main.b0ff2015.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6933/assets/js/main.f068a0f1.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda-platform-helm/pr-preview/pr-6933/img/camunda-logo.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda-platform-helm/pr-preview/pr-6933/"><div class="navbar__logo"><img src="/camunda-platform-helm/pr-preview/pr-6933/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda-platform-helm/pr-preview/pr-6933/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Helm Charts</b></a><a class="navbar__item navbar__link" href="/camunda-platform-helm/pr-preview/pr-6933/">Docs</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Narrow document-store configuration to its verified consumers and separate it from ambient cloud credentials</h1></header>
+<ul>
+<li class="">Status: proposed</li>
+<li class="">Date: 2026-08-21</li>
+<li class="">Decision-makers: Distribution team</li>
+<li class="">Amends: <a class="" href="/camunda-platform-helm/pr-preview/pr-6933/adr/centralize-document-store-configuration-via-shared">ADR 0052</a>, <a class="" href="/camunda-platform-helm/pr-preview/pr-6933/adr/integrate-azure-blob-storage-as-a-document-handling-backend">ADR 0089</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context-and-problem-statement">Context and Problem Statement<a href="#context-and-problem-statement" class="hash-link" aria-label="Direct link to Context and Problem Statement" title="Direct link to Context and Problem Statement" translate="no">​</a></h2>
+<p>Two accepted ADRs describe a document-store architecture the chart never implemented as written.
+Source-level verification against the images each chart version pins — done for issue #3741 and
+landed in PR #6724 — contradicts a load-bearing claim in each.</p>
+<p><a class="" href="/camunda-platform-helm/pr-preview/pr-6933/adr/centralize-document-store-configuration-via-shared">ADR 0052</a> states that the shared
+<code>-documentstore-env-vars</code> ConfigMap is &quot;consumed uniformly by Connectors, Console, Core/Zeebe,
+Identity, Optimize, and Web Modeler&quot;, and lists &quot;all components receive identical document-store
+configuration&quot; as a positive consequence.
+<a class="" href="/camunda-platform-helm/pr-preview/pr-6933/adr/integrate-azure-blob-storage-as-a-document-handling-backend">ADR 0089</a> requires Azure
+document-store configuration to be &quot;rendered into application config files for both the orchestration
+statefulset and the connectors deployment&quot;.</p>
+<p>Neither claim held. Both ADRs were created in the 91-file bulk commit <code>c53782e82</code> (&quot;docs: add
+architecture decision records derived from git history&quot;, #6075, 2026-05-12) — retroactive
+reconstructions of repository state, not decision-time records. ADR 0052 documents the one-shot
+copy-paste of PR #2836, where the wiring was added to every component because it was not yet known
+which ones would support the feature (per the #3741 discussion); ADR 0089 documents PR #5370. Their
+stated decisions therefore describe implementation accidents, which is why an amendment rather than an
+in-place clarification is warranted.</p>
+<p>Verified consumption, from application source at the pinned image tags plus the component teams&#x27; own
+answers in the #3741 thread:</p>
+<table><thead><tr><th>Component</th><th>Reads <code>DOCUMENT_STORE_*</code></th><th>Reads the injected cloud credentials</th><th>Basis</th></tr></thead><tbody><tr><td>orchestration (8.8+); <code>zeebe</code>, <code>zeebe-gateway</code>, <code>operate</code>, <code>tasklist</code> (8.7)</td><td>Yes</td><td>—</td><td>Serves the REST gateway document API</td></tr><tr><td><code>execution-identity</code> (8.7)</td><td>Potential consumer</td><td>—</td><td>The REST gateway condition defaults on in <code>StandaloneCamunda</code>, so the Document API is genuinely served; wiring kept</td></tr><tr><td><code>console</code> (8.7–8.9), <code>web-modeler-webapp</code> (8.7/8.8)</td><td>No</td><td>No</td><td>Owners confirmed non-use; the pinned images ship no AWS/GCP client, only unreferenced type declarations. Wiring removed in #6724</td></tr><tr><td>management <code>identity</code> (8.7–8.10)</td><td>No</td><td>No</td><td>No reader. The images ship the AWS SDK v2 credential stack plus <code>aws-advanced-jdbc-wrapper</code>/<code>rds</code>/<code>sts</code> for documented Aurora/RDS IAM database auth, but no chart-renderable configuration activates that path — dormant capability. Wiring removed in #6724</td></tr><tr><td><code>connectors</code> (8.7–8.10)</td><td>No — documents are proxied through Orchestration&#x27;s REST API</td><td><strong>Yes</strong></td><td><code>CredentialsProviderSupportV2</code> falls back to <code>DefaultCredentialsProvider</code> for AWS connector tasks. ConfigMap reference removed in #6724; credentials retained</td></tr><tr><td><code>optimize</code> (8.8+)</td><td>No</td><td><strong>Yes</strong></td><td><code>OpenSearchClientBuilder.useAwsCredentials()</code> / <code>getAwsTransport()</code> use the credentials and <code>AWS_REGION</code> to sign AWS OpenSearch requests. ConfigMap reference and credentials retained</td></tr><tr><td><code>web-modeler</code> restapi (8.7–8.10)</td><td>No</td><td><strong>Yes</strong></td><td>The bare credential injection is the sole credential path for its own <code>camunda.modeler.document-storage.*</code> feature, and the ConfigMap is its only source of <code>AWS_REGION</code>. Retained</td></tr></tbody></table>
+<p>The table exposes a distinction ADR 0052 does not make. The ConfigMap and the env block that
+accompanies it carry two unrelated payload classes: the <code>DOCUMENT_*</code> / <code>DOCUMENT_STORE_*</code> keys, and
+ambient cloud credentials (<code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>AWS_REGION</code>,
+<code>GOOGLE_APPLICATION_CREDENTIALS</code> and its GCP volume). An earlier revision of this analysis concluded
+that Optimize and Connectors had &quot;no reader of the injected config&quot;; that is true only of the
+<code>DOCUMENT_STORE_*</code> family. Both read the credentials the same block injects, for purposes unrelated
+to documents. Collapsing the two classes into one unit produced both the original over-wiring and the
+wrong &quot;no reader&quot; conclusion. The residual coupling is tracked in #6778.</p>
+<p>ADR 0089&#x27;s rendering requirement fails on both of its named components:</p>
+<ul>
+<li class="">Connectors never talks to Azure, or any store, directly. Its Azure application-config block was
+non-functional from the start and was removed in #6724.</li>
+<li class="">On 8.9 the rendered property <code>camunda.document.store.azure.connection-string</code> binds to nothing:
+that application line ships no Azure provider at all. The provider landed on <code>camunda/camunda</code>
+<code>main</code> as <code>d8e79996664</code> (2026-03-05) and was never backported to <code>stable/8.9</code> (verification recorded
+in #6735, gap tracked in #6733).</li>
+<li class="">On 8.10 the property path itself was wrong — the application binds the map-keyed
+<code>camunda.document.azure.&lt;storeId&gt;.*</code>, with no legacy alias for the <code>store</code> segment. Fixed in PR
+#6737 (issue #6732), merged 2026-08-05.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
+<p>Verified consumer sets on <code>main</code> after #6724 and #6737:</p>
+<ul>
+<li class=""><strong>8.7</strong> — no unified <code>orchestration</code> component. ConfigMap consumers: <code>zeebe</code> statefulset,
+<code>zeebe-gateway</code>, <code>operate</code>, <code>tasklist</code>, <code>execution-identity</code>, <code>web-modeler</code> restapi. <code>connectors</code>
+carries credentials only; <code>optimize</code> carries neither. <code>console</code> and <code>web-modeler-webapp</code> wiring
+removed in #6724. <code>global.documentStore.type.azure</code> does not exist on this line, so ADR 0089 does
+not apply.</li>
+<li class=""><strong>8.8</strong> — ConfigMap consumers: <code>orchestration</code> statefulset, <code>orchestration</code> importer deployment,
+<code>optimize</code>, <code>web-modeler</code> restapi. <code>connectors</code> carries credentials only. No Azure backend, so
+ADR 0089 does not apply.</li>
+<li class=""><strong>8.9</strong> — ConfigMap consumers: <code>orchestration</code> statefulset, <code>optimize</code>, <code>web-modeler</code> restapi.
+<code>connectors</code> carries credentials only. Azure configuration renders but is inert (#6733).</li>
+<li class=""><strong>8.10</strong> — same consumer set as 8.9. Azure renders at the store-id-keyed path after #6737.
+Additionally, the <code>-documentstore-env-vars</code> <code>envFrom</code> is suppressed per component when that
+component owns <code>camunda.document.*</code> through its <code>extraConfiguration</code>
+(<a class="" href="/camunda-platform-helm/pr-preview/pr-6933/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism">ADR 0091</a>).</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Record fidelity.</strong> An accepted ADR that overstates which components implement a shared contract
+misleads reviewers, and — because <code>docs/adr/</code> is consumed by <code>crev</code> — degrades automated review of
+every subsequent document-store change.</li>
+<li class=""><strong>Honest blast radius.</strong> ADR 0052 sold uniform propagation across seven components as its main
+benefit. The real coupling is narrower for document configuration and wider for credentials, which
+is the opposite shape and a different risk profile.</li>
+<li class=""><strong>Prevent re-expansion by symmetry.</strong> The original wiring spread because components were added by
+analogy rather than verification. Without a normative rule, the next backend repeats it.</li>
+<li class=""><strong>Separate concerns that merely share a transport.</strong> Document configuration and ambient cloud
+credentials travel in one ConfigMap and one env block, but are consumed by different code for
+different reasons and must be reasoned about independently.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="considered-options">Considered Options<a href="#considered-options" class="hash-link" aria-label="Direct link to Considered Options" title="Direct link to Considered Options" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Edit ADR 0052 and ADR 0089 in place.</strong> Rejected — <code>docs/maintainer-guide.md</code> permits in-place
+edits to an accepted ADR only for non-semantic corrections. Narrowing a consumer set and a rendering
+requirement changes normative content in both.</li>
+<li class=""><strong>Two amending ADRs, one per amended ADR.</strong> Rejected — both defects share one root cause
+(retroactive documentation of unverified copy-paste wiring) and one corrective rule. Splitting them
+would duplicate the verification table across two records that are then free to drift.</li>
+<li class=""><strong>Supersede both with a new document-store ADR.</strong> Rejected — the load-bearing decision in each
+still stands: a shared ConfigMap as the single rendering point for document-store configuration
+(0052), and Azure as a first-class backend (0089). Only their consumption and rendering claims are
+wrong.</li>
+<li class=""><strong>One amending ADR that narrows both claims and adds a verification rule (chosen).</strong></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
+<p>The consumption claim in ADR 0052 and the rendering requirement in ADR 0089 are narrowed to the
+verified sets recorded above. The following constraints are normative for all supported chart
+versions:</p>
+<ol>
+<li class="">
+<p><strong>Consumer set.</strong> The <code>-documentstore-env-vars</code> ConfigMap MUST be referenced only by components
+verified to read the <code>DOCUMENT_*</code> / <code>DOCUMENT_STORE_*</code> keys, or verified to read a key that block
+uniquely supplies (<code>web-modeler</code> restapi&#x27;s <code>AWS_REGION</code>, Optimize&#x27;s AWS OpenSearch signing inputs).
+ADR 0052&#x27;s &quot;consumed uniformly by Connectors, Console, Core/Zeebe, Identity, Optimize, and Web
+Modeler&quot; is replaced by the per-version sets under &quot;Applicability by version&quot;.</p>
+</li>
+<li class="">
+<p><strong>Credentials are a separate contract.</strong> <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>,
+<code>AWS_REGION</code>, <code>GOOGLE_APPLICATION_CREDENTIALS</code> and the GCP credentials volume MUST be treated as
+ambient cloud-SDK configuration, not as document-store configuration. They MAY be injected into a
+component that reads no <code>DOCUMENT_STORE_*</code> key, but only when a chart value activates a verified
+consumer path — the credentials are gated on <code>global.documentStore.type.aws.enabled</code>, while the
+consuming feature is gated separately (for Optimize, AWS OpenSearch signing). Any analysis of this
+block MUST evaluate the two payload classes independently: &quot;no <code>DOCUMENT_STORE_*</code> reader&quot; MUST NOT
+be read as &quot;no reader&quot;.</p>
+</li>
+<li class="">
+<p><strong>Verification before wiring.</strong> Adding a component to the document-store wiring, or adding a store
+backend to an already-wired component, MUST be justified by source-level verification against the
+image that chart version pins. Symmetry with an already-wired component is not sufficient
+justification.</p>
+</li>
+<li class="">
+<p><strong>Azure rendering.</strong> Azure document-store configuration MUST be rendered only for components
+verified to bind it, at the property path the pinned application line actually binds — on 8.10,
+<code>camunda.document.azure.&lt;storeId&gt;.connection-string</code>. It MUST NOT be rendered for Connectors.
+ADR 0089&#x27;s &quot;both the orchestration statefulset and the connectors deployment&quot; is replaced by
+orchestration only.</p>
+</li>
+<li class="">
+<p><strong>Inert configuration is a defect, not a decision.</strong> Where a chart renders document-store
+configuration the pinned application cannot bind, the gap MUST be tracked as a bug against the
+chart or the application line, and MUST NOT be recorded as intended architecture.</p>
+</li>
+</ol>
+<p>Applicability: charts 8.7, 8.8, 8.9 and 8.10, with the Azure constraint limited to 8.9 and 8.10.
+First implemented in PR #6724 (the removals, merged 2026-08-05) and PR #6737 (the 8.10 Azure path,
+merged 2026-08-05). Open follow-ups: #6733 (8.9 Azure inert), #6778 (credential coupling), #6779
+(S3-compatible endpoint), #6780 (RWX-backed local document storage).</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">Both ADRs now describe wiring that exists, so reviewers and <code>crev</code> reason about the real consumer
+set instead of an aspirational one.</li>
+<li class="">Constraint 3 closes the mechanism that produced the original over-wiring: the next backend or
+component must be verified against a pinned image rather than copied from a neighbour.</li>
+<li class="">Splitting document configuration from ambient credentials turns #6778 into a scoped follow-up with a
+clear contract, instead of an ambiguous &quot;who reads this ConfigMap&quot; question.</li>
+<li class="">Fewer components carry a <code>secretKeyRef</code> they never read — Console, Web Modeler webapp and management
+Identity no longer receive cloud credentials, reducing needless secret exposure.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative-consequences">Negative Consequences<a href="#negative-consequences" class="hash-link" aria-label="Direct link to Negative Consequences" title="Direct link to Negative Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">The document-store decision record now spans three ADRs (0052, 0089 and this one) that must be read
+together.</li>
+<li class="">Constraint 3 adds a verification step — read the pinned image — to every document-store change,
+which is slower than copying an existing component&#x27;s block.</li>
+<li class="">Per-version consumer sets replace a single uniform claim, so the record is accurate but no longer
+quotable in one line; maintainers must check the version they are editing.</li>
+<li class="">Two inert paths remain in shipped charts until #6733 and #6779 land, so this ADR documents the
+correct model while the 8.9 chart still renders Azure configuration that binds to nothing.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="links">Links<a href="#links" class="hash-link" aria-label="Direct link to Links" title="Direct link to Links" translate="no">​</a></h2>
+<ul>
+<li class="">Builds on <a class="" href="/camunda-platform-helm/pr-preview/pr-6933/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism">ADR 0091</a> — on 8.10 the ConfigMap <code>envFrom</code> is suppressed for a component that owns <code>camunda.document.*</code> via <code>extraConfiguration</code>.</li>
+<li class="">Issue #3741 — per-component consumer verification and the component-team answers this ADR narrows to.</li>
+<li class="">Issue #6735 — the amendment request and the full verification evidence.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda-platform-helm/edit/main/../docs/adr/0096-narrow-document-store-configuration-to-verified-consumers.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context-and-problem-statement" class="table-of-contents__link toc-highlight">Context and Problem Statement</a><ul><li><a href="#applicability-by-version" class="table-of-contents__link toc-highlight">Applicability by version</a></li></ul></li><li><a href="#decision-drivers" class="table-of-contents__link toc-highlight">Decision Drivers</a></li><li><a href="#considered-options" class="table-of-contents__link toc-highlight">Considered Options</a></li><li><a href="#decision-outcome" class="table-of-contents__link toc-highlight">Decision Outcome</a><ul><li><a href="#positive-consequences" class="table-of-contents__link toc-highlight">Positive Consequences</a></li><li><a href="#negative-consequences" class="table-of-contents__link toc-highlight">Negative Consequences</a></li></ul></li><li><a href="#links" class="table-of-contents__link toc-highlight">Links</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6933/reference/release-process">Release Process</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6933/reference/github-actions-workflows">GitHub Actions Workflows</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-6933/contribution-and-collaboration">Contribution &amp; Collaboration</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm/issues" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub Issues<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://docs.camunda.io" target="_blank" rel="noopener noreferrer" class="footer__link-item">Camunda Docs<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://artifacthub.io/packages/helm/camunda/camunda-platform" target="_blank" rel="noopener noreferrer" class="footer__link-item">Artifact Hub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda Services GmbH. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
