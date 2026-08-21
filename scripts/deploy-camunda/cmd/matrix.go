@@ -1150,6 +1150,18 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		env["ORCH_ZEEBE_GRPC"] = env[token+"_ZEEBE_GRPC"]
 		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
 	}
+	if release.Role == "optimize" {
+		// RELEASE_-prefixed: buildScenarioEnv seeds this namespace from the process
+		// environment, where OPTIMIZE_CONTEXT_PATH is a name the Playwright suite reads
+		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
+		env["RELEASE_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
+		if release.Serves != "" {
+			token := topologyEnvToken(release.Serves)
+			env["SERVED_NAMESPACE"] = env[token+"_NAMESPACE"]
+			env["SERVED_HOST"] = env[token+"_HOST"]
+			env["SERVED_ORCHESTRATION_INDEX_PREFIX"] = env[token+"_ORCHESTRATION_INDEX_PREFIX"]
+		}
+	}
 	for key, value := range release.Env {
 		env[key] = value
 	}
@@ -1234,12 +1246,16 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	hubIdx := -1
 	var orchestrationIndices []int
+	var optimizeIndices []int
 	for i, r := range entry.Topology.Releases {
 		if r.Role == "hub" {
 			hubIdx = i
 		}
 		if r.Role == "orchestration" {
 			orchestrationIndices = append(orchestrationIndices, i)
+		}
+		if r.Role == "optimize" {
+			optimizeIndices = append(optimizeIndices, i)
 		}
 	}
 	if hubIdx == -1 {
@@ -1265,6 +1281,12 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
 			crossRefEnv[token+strings.TrimPrefix(key, "ORCH")] = value
 		}
+	}
+	for _, i := range optimizeIndices {
+		release := entry.Topology.Releases[i]
+		token := topologyEnvToken(release.NamespaceSuffix)
+		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv[token+"_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
 	}
 	if len(orchestrationIndices) == 1 {
 		i := orchestrationIndices[0]
