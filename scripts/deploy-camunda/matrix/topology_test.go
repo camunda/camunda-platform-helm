@@ -819,3 +819,342 @@ func TestTopologyValidate_AcceptsUnreservedReleaseEnv(t *testing.T) {
 		t.Fatalf("an unreserved release env key must validate, got: %v", err)
 	}
 }
+
+// hubInventoryRegisteringOptimize is a Hub layer that registers cluster "orcha"'s
+// Optimize, spelling its redirect URL and advertised path through the cross-ref
+// placeholder the topology driver publishes for the "opta" optimize release.
+const hubInventoryRegisteringOptimize = `global:
+  topology:
+    mode: hub
+    clusters:
+      - id: orcha
+        contextPaths:
+          optimize: "${OPTA_OPTIMIZE_CONTEXT_PATH}"
+        components:
+          optimize:
+            enabled: true
+            clientId: optimize-orcha
+            audience: optimize-orcha-api
+            redirectUrl: "https://${HUB_HOST}${OPTA_OPTIMIZE_CONTEXT_PATH}"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+`
+
+// optimizeLayerMatchingHubInventory presents the identity the Hub above
+// registers, reaching the same redirect URL through the release-local
+// placeholder rather than the cross-ref one.
+const optimizeLayerMatchingHubInventory = `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      enabled: true
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+  security:
+    authentication:
+      oidc:
+        clientId: optimize-orcha
+        audience: optimize-orcha-api
+        redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
+`
+
+// Optimize reads only the enabled backend's prefix (optimize.indexPrefix in
+// templates/optimize/_helpers.tpl checks Elasticsearch first), so a layer that
+// sets the placeholder on the other backend leaves the release on the
+// "zeebe-record" fallback while looking correct.
+func TestTopologyValidate_RejectsOptimizePrefixSetOnTheDisabledBackend(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "base.yaml", "global:\n  elasticsearch:\n    enabled: true\n")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    opensearch:
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil {
+		t.Fatal("expected an opensearch prefix to be rejected while elasticsearch is the enabled backend")
+	}
+	for _, want := range []string{"no feature layer sets optimize.database.elasticsearch.prefix", "optimize.indexPrefix never reads it"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected %q in %v", want, err)
+		}
+	}
+}
+
+// The component-level switch enables a backend just as the global one does, and
+// the choice must follow it rather than assume Elasticsearch.
+func TestTopologyValidate_AcceptsOptimizePrefixOnTheEnabledOpensearchBackend(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    opensearch:
+      enabled: true
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("an opensearch prefix must satisfy an opensearch-enabled release, got: %v", err)
+	}
+}
+
+// A later layer turning Elasticsearch off moves the release to OpenSearch, the
+// same way Helm's scalar precedence does, so the required key moves with it.
+func TestTopologyValidate_BackendChoiceFollowsTheLastLayerToStateIt(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "base.yaml", "global:\n  elasticsearch:\n    enabled: true\n")
+	writeLayer(t, dir, "persistence/opensearch.yaml", "global:\n  elasticsearch:\n    enabled: false\n  opensearch:\n    enabled: true\n")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    opensearch:
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	top := optimizeTopology("orcha", "/optimize-orcha")
+	top.Releases[3].Persistence = "opensearch"
+	if err := top.Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("the persistence layer switches the release to opensearch, got: %v", err)
+	}
+}
+
+// The client id Optimize presents and the client id Identity provisions for it
+// live in two layers. Nothing but this cross-check couples them, and every
+// workload still reports ready when they disagree.
+func TestTopologyValidate_RejectsOptimizeClientIdDisagreeingWithTheHubInventory(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize client id as \"optimize-orcha\"") {
+		t.Fatalf("expected the client id mismatch to be reported, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsOptimizeAudienceDisagreeingWithTheHubInventory(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-orcha", 1))
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize audience as \"optimize-orcha-api\"") {
+		t.Fatalf("expected the audience mismatch to be reported, got %v", err)
+	}
+}
+
+// A release that states no client id at all inherits the chart default, which is
+// never the client the Hub registered.
+func TestTopologyValidate_RejectsOptimizeStatingNoneOfTheRegisteredIdentity(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      enabled: true
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "no layer of this release sets optimize.security.authentication.oidc.clientId") {
+		t.Fatalf("expected the missing client id to be reported, got %v", err)
+	}
+}
+
+// The Hub names the optimize release's path through the cross-ref placeholder and
+// the release names its own through the release-local one. Both follow the same
+// declaration, so the cross-check has to resolve them rather than compare the raw
+// strings.
+func TestTopologyValidate_AcceptsOptimizeIdentityReachedThroughDifferentPlaceholders(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("two spellings of the same declared path must agree, got: %v", err)
+	}
+}
+
+// A redirect URL that resolves to a different path than the one Identity
+// registered fails only at login, so it has to fail here.
+func TestTopologyValidate_RejectsOptimizeRedirectUrlResolvingElsewhere(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(
+		optimizeLayerMatchingHubInventory,
+		`redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"`,
+		`redirectUrl: "https://${HUB_HOST}/optimize"`, 1))
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "optimize.security.authentication.oidc.redirectUrl") {
+		t.Fatalf("expected the redirect URL mismatch to be reported, got %v", err)
+	}
+}
+
+// The inventory context path is what the Hub's Console and Web Modeler link to; a
+// stale one sends users to a path no ingress serves.
+func TestTopologyValidate_RejectsHubInventoryPathDisagreeingWithTheDeclaration(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", strings.Replace(
+		hubInventoryRegisteringOptimize,
+		`optimize: "${OPTA_OPTIMIZE_CONTEXT_PATH}"`,
+		`optimize: /optimize-stale`, 1))
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "the Hub advertises this cluster's Optimize at \"/optimize-stale\"") {
+		t.Fatalf("expected the advertised path mismatch to be reported, got %v", err)
+	}
+}
+
+// The driver derives a release's cross-reference variable prefix from its
+// namespace-suffix, and the cross-checks look those variables up, so both sides
+// have to spell them the same way.
+func TestTopologyEnvToken(t *testing.T) {
+	for value, want := range map[string]string{
+		"opta":       "OPTA",
+		"orch-a":     "ORCH_A",
+		"opt.a":      "OPT_A",
+		"-opta-":     "OPTA",
+		"tenant-a-1": "TENANT_A_1",
+	} {
+		if got := TopologyEnvToken(value); got != want {
+			t.Errorf("TopologyEnvToken(%q) = %q, want %q", value, got, want)
+		}
+	}
+}
+
+// twoTenantOptimizeTopology returns a topology whose single orchestration release
+// is served by two optimize releases, the shape a Physical Tenant deployment
+// takes: the cluster record can name only one of them, so the other has to be
+// provisioned as a standalone Identity client.
+func twoTenantOptimizeTopology() *Topology {
+	return &Topology{
+		Name: "optimize-two-tenants",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "optb", Serves: "orcha", OptimizeContextPath: "/optimize-orcha-b", Features: []string{"optimize-b"}, DependsOn: "hub"},
+		},
+	}
+}
+
+// hubInventoryWithSecondOptimizeClient registers tenant A's Optimize on the
+// cluster record and tenant B's as a plain client, which is the only place a
+// second Optimize for one cluster can go.
+const hubInventoryWithSecondOptimizeClient = hubInventoryRegisteringOptimize + `identity:
+  clients:
+    - id: optimize-orcha-b
+      name: Optimize Orchestration A tenant B
+      type: confidential
+      rootUrl: "https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}"
+      redirectUris: /api/authentication/callback
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-optimize-client-token
+      permissions:
+        - resourceServerId: optimize-orcha-api
+          definition: write:*
+`
+
+// optimizeLayerSecondTenant presents the identity the standalone client above
+// provisions.
+const optimizeLayerSecondTenant = `optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      enabled: true
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}-b"
+  security:
+    authentication:
+      oidc:
+        clientId: optimize-orcha-b
+        audience: optimize-orcha-api
+        redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
+`
+
+func writeTwoTenantLayers(t *testing.T, dir, hubLayer, tenantALayer, tenantBLayer string) {
+	t.Helper()
+	writeLayer(t, dir, "features/hub.yaml", hubLayer)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", tenantALayer)
+	writeLayer(t, dir, "features/optimize-b.yaml", tenantBLayer)
+}
+
+func TestTopologyValidate_AcceptsASecondTenantOptimizeProvisionedAsAnIdentityClient(t *testing.T) {
+	dir := t.TempDir()
+	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("expected the two-tenant topology to validate, got %v", err)
+	}
+}
+
+// A second optimize release must not switch the check off for the release the
+// cluster record does name: that release's identity is still duplicated, and a
+// drift in it still fails only at login.
+func TestTopologyValidate_StillChecksTheRecordReleaseWhenASecondTenantServesTheSameOrchestration(t *testing.T) {
+	dir := t.TempDir()
+	drifted := strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-renamed-api", 1)
+	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, drifted, optimizeLayerSecondTenant)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize audience as \"optimize-orcha-api\"") {
+		t.Fatalf("expected the record release's audience drift to still be reported, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsASecondTenantOptimizeNothingProvisions(t *testing.T) {
+	dir := t.TempDir()
+	unprovisioned := strings.Replace(optimizeLayerSecondTenant, "clientId: optimize-orcha-b", "clientId: optimize-orcha-c", 1)
+	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, unprovisioned)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
+		t.Fatalf("expected the unprovisioned client to be reported, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsASecondTenantOptimizeRedirectingOffItsRegisteredRootUrl(t *testing.T) {
+	dir := t.TempDir()
+	drifted := strings.Replace(optimizeLayerSecondTenant, "${RELEASE_OPTIMIZE_CONTEXT_PATH}\"\n        secret", "${OPTA_OPTIMIZE_CONTEXT_PATH}\"\n        secret", 1)
+	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "the Hub provisions this client's root URL") {
+		t.Fatalf("expected the redirect URL to be checked against the registered root URL, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsASecondTenantOptimizeAudiencedToAnUnpermittedResourceServer(t *testing.T) {
+	dir := t.TempDir()
+	drifted := strings.Replace(optimizeLayerSecondTenant, "audience: optimize-orcha-api", "audience: optimize-orcha-b-api", 1)
+	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "the Hub permits this client only on optimize-orcha-api") {
+		t.Fatalf("expected the unpermitted audience to be reported, got %v", err)
+	}
+}
