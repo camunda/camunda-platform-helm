@@ -697,8 +697,24 @@ func TestOptimizeTopologyAcceptsAComponentScopedJwksUrl(t *testing.T) {
 	require.Contains(t, output, `jwtSetUri: "https://issuer.example.com/certs"`)
 }
 
-// A release routing the JWKS URL through envFrom is not rejected: its keys are unreadable here.
-func TestOptimizeTopologyAcceptsEnvFromInPlaceOfAJwksUrl(t *testing.T) {
+// A release routing the JWKS URL through envFrom must say which variable the source carries: its
+// keys are unreadable here, so presence alone would let an unrelated ConfigMap answer the guard.
+func TestOptimizeTopologyAcceptsEnvFromDeclaringTheJwksUri(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":                             "",
+			"optimize.envFrom[0].configMapRef.name":                    "optimize-oidc-overrides",
+			"optimize.security.authentication.oidc.envFromProvides[0]": "CAMUNDA_OPTIMIZE_API_JWTSETURI",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.Contains(t, output, "name: optimize-oidc-overrides")
+}
+
+func TestOptimizeTopologyRejectsAnUndeclaredEnvFromInPlaceOfAJwksUrl(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "optimize.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
@@ -708,6 +724,7 @@ func TestOptimizeTopologyAcceptsEnvFromInPlaceOfAJwksUrl(t *testing.T) {
 		},
 	}
 
-	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
-	require.Contains(t, output, "name: optimize-oidc-overrides")
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
 }

@@ -514,21 +514,59 @@ func (s *AuthIdentityTemplateTest) TestCombinedModeProvisionsTheComponentScopedO
 	s.Require().NotContains(optimizeDeployment, "global-oidc")
 }
 
-// optimize.envFrom layers after the identity env ConfigMap in the Deployment, so a release already
-// supplying the issuer that way keeps rendering: the guard must not break an upgrade path.
-func (s *AuthIdentityTemplateTest) TestEnvFromSatisfiesTheIssuerConstraint() {
+// An envFrom source's keys are unreadable at render time, so its presence proves nothing: an
+// unrelated ConfigMap must not buy an exemption from the issuer guard, or Optimize deploys with an
+// empty issuer and fails every token.
+func (s *AuthIdentityTemplateTest) TestUndeclaredEnvFromDoesNotSatisfyTheIssuerConstraint() {
 	options := &helm.Options{SetValues: map[string]string{
 		"global.identity.auth.enabled":             "true",
 		"identity.enabled":                         "true",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
-		"optimize.envFrom[0].configMapRef.name":    "optimize-identity-overrides",
+		"optimize.envFrom[0].configMapRef.name":    "unrelated-overrides",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
+}
+
+// Naming the variable is the release's own statement that one of its sources carries it, and that
+// statement is what exempts the guard: optimize.envFrom layers after the identity env ConfigMap in
+// the Deployment, so the value does reach the container.
+func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromSatisfiesTheIssuerConstraint() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                             "true",
+		"identity.enabled":                                         "true",
+		"optimize.enabled":                                         "true",
+		"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+		"optimize.envFrom[0].configMapRef.name":                    "optimize-identity-overrides",
+		"optimize.security.authentication.oidc.envFromProvides[0]": "CAMUNDA_IDENTITY_ISSUER",
 	}}
 	out, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
 		[]string{"templates/optimize/deployment.yaml"})
 
 	s.Require().NoError(err)
 	s.Require().Contains(out, "name: optimize-identity-overrides")
+}
+
+// A declaration naming a variable no guard reads exempts nothing, and silently accepting it would
+// leave its author believing a guard had been answered.
+func (s *AuthIdentityTemplateTest) TestEnvFromProvidesRejectsAVariableItCannotExempt() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                             "true",
+		"identity.enabled":                                         "true",
+		"optimize.enabled":                                         "true",
+		"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+		"optimize.envFrom[0].configMapRef.name":                    "optimize-identity-overrides",
+		"optimize.security.authentication.oidc.envFromProvides[0]": "CAMUNDA_IDENTITY_ISSUER_TYPO",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "which exempts nothing")
 }
 
 // A release-scoped jwksUrl must win over the global one, so an Optimize-only release can point at
@@ -544,19 +582,42 @@ func (s *AuthIdentityTemplateTest) TestComponentJwksUrlOverridesGlobal() {
 }
 
 // A non-Keycloak type has no endpoint layout to derive from, so without a jwksUrl at either level
-// api.jwtSetUri renders empty and Optimize has no key source. The component key is the only way to
-// name it per release.
+// api.jwtSetUri would render empty and Optimize could validate no token. That state is rejected
+// wherever Optimize authenticates - combined mode included, since a component-scoped OIDC config
+// reaches it with no topology mode to signal it. The component key is the only way to name the
+// endpoint per release.
 func (s *AuthIdentityTemplateTest) TestComponentJwksUrlServesANonKeycloakType() {
 	values := map[string]string{
+		"global.identity.auth.enabled":                 "true",
+		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
+		"optimize.enabled":                             "true",
+		"orchestration.data.secondaryStorage.type":     "elasticsearch",
 		"optimize.security.authentication.oidc.type":   "GENERIC",
 		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
 	}
-	s.Require().Contains(s.render(values, []string{"templates/optimize/configmap.yaml"}),
-		`jwtSetUri: ""`)
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
 
 	values["optimize.security.authentication.oidc.jwksUrl"] = "https://issuer.example.com/certs"
-	s.Require().Contains(s.render(values, []string{"templates/optimize/configmap.yaml"}),
-		`jwtSetUri: "https://issuer.example.com/certs"`)
+	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(out, `jwtSetUri: "https://issuer.example.com/certs"`)
+}
+
+// api.jwtSetUri is one config key an explicit optimize.env entry overrides in the container, so
+// naming it there answers the JWKS requirement the same way the values key does.
+func (s *AuthIdentityTemplateTest) TestOptimizeEnvMaySupplyTheJwksUri() {
+	out := s.render(map[string]string{
+		"optimize.security.authentication.oidc.type":   "GENERIC",
+		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+		"optimize.env[0].name":                         "CAMUNDA_OPTIMIZE_API_JWTSETURI",
+		"optimize.env[0].value":                        "https://issuer.example.com/certs",
+	}, []string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Contains(out, "CAMUNDA_OPTIMIZE_API_JWTSETURI")
 }
 
 // KEYCLOAK keeps deriving the endpoint, so releases that never set jwksUrl render unchanged.

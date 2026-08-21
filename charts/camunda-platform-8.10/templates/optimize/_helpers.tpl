@@ -144,15 +144,34 @@ true
 {{- end -}}
 
 {{/*
-[optimize] Whether optimize.env names CAMUNDA_IDENTITY_ISSUER or CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
-with a value the container will actually read: a non-empty literal value, or any valueFrom. The
-Deployment renders optimize.env as container env, which the kubelet resolves over every envFrom
-source, so such an entry supersedes the identity env ConfigMap.
+[optimize] The identity variables a release may declare its optimize.envFrom sources supply, mapped
+to the guard each one exempts. Names are the container env vars the chart itself would otherwise
+have to resolve: the two the identity env ConfigMap carries, and the Optimize config override for
+api.jwtSetUri.
 */}}
-{{- define "optimize.envSetsIdentityIssuer" -}}
-  {{- $names := list "CAMUNDA_IDENTITY_ISSUER" "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL" -}}
+{{- define "optimize.identityIssuerEnvNames" -}}
+CAMUNDA_IDENTITY_ISSUER CAMUNDA_IDENTITY_ISSUER_BACKEND_URL
+{{- end -}}
+
+{{- define "optimize.jwksEnvNames" -}}
+CAMUNDA_OPTIMIZE_API_JWTSETURI
+{{- end -}}
+
+{{- define "optimize.declarableEnvNames" -}}
+{{- printf "%s %s" (include "optimize.identityIssuerEnvNames" .) (include "optimize.jwksEnvNames" .) -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether optimize.env names any of `names` with a value the container will actually read:
+a non-empty literal value, or any valueFrom. The Deployment renders optimize.env as container env,
+which the kubelet resolves over every envFrom source, so such an entry supersedes both the identity
+env ConfigMap and the rendered config file.
+Call with (dict "ctx" $ "names" (list "NAME" ...)).
+*/}}
+{{- define "optimize.envSetsAnyOf" -}}
+  {{- $names := .names -}}
   {{- $set := false -}}
-  {{- range $entry := (.Values.optimize.env | default list) -}}
+  {{- range $entry := (.ctx.Values.optimize.env | default list) -}}
     {{- if and (has $entry.name $names) (or (not (empty $entry.value)) (not (empty $entry.valueFrom))) -}}
       {{- $set = true -}}
     {{- end -}}
@@ -161,12 +180,53 @@ source, so such an entry supersedes the identity env ConfigMap.
 {{- end -}}
 
 {{/*
-[optimize] Whether the issuer may reach the container past the identity env ConfigMap. Both sources
-are listed after it in the Deployment, so either supersedes it. optimize.env is matched by name and
-value; optimize.envFrom only by presence, its keys being unreadable at render time.
+[optimize] Whether optimize.security.authentication.oidc.envFromProvides declares any of `names`.
+An envFrom source's keys are unreadable at render time, so its presence proves nothing - naming a
+variable here is the release's own statement that one of its sources carries it, and that statement
+is what exempts the matching guard. An unrelated ConfigMap or Secret exempts nothing.
+Call with (dict "ctx" $ "names" (list "NAME" ...)).
+*/}}
+{{- define "optimize.envFromDeclaresAnyOf" -}}
+  {{- $declared := (dig "security" "authentication" "oidc" "envFromProvides" list .ctx.Values.optimize) | default list -}}
+  {{- $found := false -}}
+  {{- range $name := $declared -}}
+    {{- if has $name $.names -}}
+      {{- $found = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if $found -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether the issuer may reach the container past the identity env ConfigMap. Both
+optimize.env and optimize.envFrom are listed after it in the Deployment, so either supersedes it -
+but only a declared envFrom variable counts, never mere presence of a source.
 */}}
 {{- define "optimize.identityIssuerMayComeFromEnv" -}}
-  {{- if or (eq (include "optimize.envSetsIdentityIssuer" .) "true") (not (empty .Values.optimize.envFrom)) -}}true{{- else -}}false{{- end -}}
+  {{- $names := splitList " " (include "optimize.identityIssuerEnvNames" .) -}}
+  {{- if or
+        (eq (include "optimize.envSetsAnyOf" (dict "ctx" . "names" $names)) "true")
+        (eq (include "optimize.envFromDeclaresAnyOf" (dict "ctx" . "names" $names)) "true") -}}
+true
+  {{- else -}}
+false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether api.jwtSetUri may be supplied as container env instead of by this chart. The
+Optimize config file the chart renders is overridden by the env var for the same config path, so an
+explicit optimize.env entry or a declared envFrom variable both count.
+*/}}
+{{- define "optimize.jwksMayComeFromEnv" -}}
+  {{- $names := splitList " " (include "optimize.jwksEnvNames" .) -}}
+  {{- if or
+        (eq (include "optimize.envSetsAnyOf" (dict "ctx" . "names" $names)) "true")
+        (eq (include "optimize.envFromDeclaresAnyOf" (dict "ctx" . "names" $names)) "true") -}}
+true
+  {{- else -}}
+false
+  {{- end -}}
 {{- end -}}
 
 {{/*
