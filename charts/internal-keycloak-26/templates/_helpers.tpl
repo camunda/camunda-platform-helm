@@ -67,6 +67,14 @@ app.kubernetes.io/component: postgresql
 {{- end }}
 
 {{/*
+PostgreSQL pod selector labels. Superset of keycloak.postgresql.selectorLabels.
+*/}}
+{{- define "keycloak.postgresql.podSelectorLabels" -}}
+{{ include "keycloak.postgresql.selectorLabels" . }}
+camunda.io/controller: statefulset
+{{- end }}
+
+{{/*
 Keycloak admin password secret name.
 */}}
 {{- define "keycloak.secretName" -}}

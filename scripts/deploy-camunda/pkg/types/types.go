@@ -92,8 +92,11 @@ type Options struct {
 	CompanionNodeSelector map[string]string
 	// CompanionTolerations is node scheduling applied to companion chart installs so they run on the same infra pool as the main chart.
 	CompanionTolerations []map[string]interface{}
-	// CompanionElasticsearchStorageClass overrides the Elastic companion PVC storage class.
-	CompanionElasticsearchStorageClass string
+	// CompanionStorageClass overrides the PVC storage class for companion
+	// charts that provision persistent volumes. Applied per release via
+	// companionStorageClassPaths, which maps a release name to the value key
+	// that chart exposes for its claim template.
+	CompanionStorageClass string
 }
 
 // CompanionChart represents a Helm chart that should be deployed as a

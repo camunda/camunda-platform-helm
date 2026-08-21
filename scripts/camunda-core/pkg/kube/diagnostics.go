@@ -88,6 +88,28 @@ func GetPVCs(ctx context.Context, kubeContext, namespace string) (string, error)
 	return runKubectl(ctx, args)
 }
 
+// GetServices returns the output of `kubectl get svc -n <namespace> -o wide`.
+func GetServices(ctx context.Context, kubeContext, namespace string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "get", "svc", "-n", namespace, "-o", "wide")
+	return runKubectl(ctx, args)
+}
+
+// GetServicesYAML returns `kubectl get svc -n <namespace> -o yaml`. YAML is used
+// rather than describe because describe omits appProtocol; the YAML carries both
+// the per-port appProtocol and the selector, which together explain a Service that
+// resolves to no backends.
+func GetServicesYAML(ctx context.Context, kubeContext, namespace string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "get", "svc", "-n", namespace, "-o", "yaml")
+	return runKubectl(ctx, args)
+}
+
+// GetEndpoints returns the output of `kubectl get endpoints -n <namespace>`, which
+// shows which pods actually back each Service.
+func GetEndpoints(ctx context.Context, kubeContext, namespace string) (string, error) {
+	args := append(kubectlBaseArgs(kubeContext), "get", "endpoints", "-n", namespace)
+	return runKubectl(ctx, args)
+}
+
 // DescribePVCs returns the output of `kubectl describe pvc -n <namespace>`, which
 // includes the events explaining why a claim is stuck (e.g., waiting for a consumer,
 // provisioning errors, multi-attach conflicts).

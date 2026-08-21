@@ -119,7 +119,10 @@ postgresql:
     limits:
       cpu: 500m
       memory: 256Mi
-  ## @param postgresql.storage.size PVC size for PostgreSQL data.
   storage:
+    ## @param postgresql.storage.enabled Back the data directory with a PersistentVolumeClaim.
+    enabled: true
+    ## @param postgresql.storage.size PVC size for PostgreSQL data.
     size: 2Gi
+    ## @param postgresql.storage.storageClassName StorageClass for the PVC ("" uses the cluster default).
     storageClassName: ""

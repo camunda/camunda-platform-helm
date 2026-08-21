@@ -1,0 +1,96 @@
+---
+# Source: internal-keycloak/templates/postgresql-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: camunda-platform-test-internal-keycloak-postgresql
+  labels:
+    app.kubernetes.io/name: internal-keycloak
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/component: postgresql
+    app.kubernetes.io/version: "16-alpine"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  serviceName: camunda-platform-test-internal-keycloak-postgresql
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: internal-keycloak
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/component: postgresql
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: internal-keycloak
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/component: postgresql
+        camunda.io/controller: statefulset
+    spec:
+      containers:
+        - name: postgresql
+          image: docker.io/postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_DB
+              value: "keycloak"
+            - name: POSTGRES_USER
+              value: "keycloak"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-internal-keycloak-postgresql
+                  key: postgresql-password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - "keycloak"
+                - -d
+                - "keycloak"
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - "keycloak"
+                - -d
+                - "keycloak"
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: internal-keycloak
+          app.kubernetes.io/instance: camunda-platform-test
+          app.kubernetes.io/component: postgresql
+          app.kubernetes.io/version: "16-alpine"
+          app.kubernetes.io/managed-by: Helm
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "2Gi"

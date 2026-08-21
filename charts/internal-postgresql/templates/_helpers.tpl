@@ -41,6 +41,14 @@ app.kubernetes.io/component: postgresql
 {{- end }}
 
 {{/*
+Pod selector labels. Superset of postgresql.selectorLabels.
+*/}}
+{{- define "postgresql.podSelectorLabels" -}}
+{{ include "postgresql.selectorLabels" . }}
+camunda.io/controller: statefulset
+{{- end }}
+
+{{/*
 PostgreSQL password secret name.
 */}}
 {{- define "postgresql.secretName" -}}

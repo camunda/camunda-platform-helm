@@ -1,21 +1,21 @@
 {{- if .Values.postgresql.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "keycloak.postgresql.fullname" . }}
   labels:
     {{- include "keycloak.postgresql.labels" . | nindent 4 }}
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
+  serviceName: {{ include "keycloak.postgresql.fullname" . }}
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       {{- include "keycloak.postgresql.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "keycloak.postgresql.selectorLabels" . | nindent 8 }}
+        {{- include "keycloak.postgresql.podSelectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -72,7 +72,25 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+      {{- if not .Values.postgresql.storage.enabled }}
       volumes:
         - name: data
           emptyDir: {}
+      {{- end }}
+  {{- if .Values.postgresql.storage.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "keycloak.postgresql.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.postgresql.storage.storageClassName }}
+        storageClassName: {{ .Values.postgresql.storage.storageClassName | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgresql.storage.size | quote }}
+  {{- end }}
 {{- end }}

@@ -286,10 +286,34 @@ func TestDeployCompanionChart(t *testing.T) {
 				ReleaseName: "elasticsearch",
 			},
 			opts: types.Options{
-				Namespace:                          "ns",
-				CompanionElasticsearchStorageClass: "hyperdisk-balanced",
+				Namespace:             "ns",
+				CompanionStorageClass: "hyperdisk-balanced",
 			},
 			wantArgs: []string{"--set", "volumeClaimTemplate.storageClassName=hyperdisk-balanced"},
+		},
+		{
+			name: "postgresql companion storage class override",
+			cc: types.CompanionChart{
+				ChartRef:    "internal-postgresql",
+				ReleaseName: "postgresql",
+			},
+			opts: types.Options{
+				Namespace:             "ns",
+				CompanionStorageClass: "hyperdisk-balanced",
+			},
+			wantArgs: []string{"--set", "persistence.storageClass=hyperdisk-balanced"},
+		},
+		{
+			name: "keycloak companion is excluded from the storage class override",
+			cc: types.CompanionChart{
+				ChartRef:    "internal-keycloak-26",
+				ReleaseName: "keycloak",
+			},
+			opts: types.Options{
+				Namespace:             "ns",
+				CompanionStorageClass: "hyperdisk-balanced",
+			},
+			notWantArgs: []string{"hyperdisk-balanced"},
 		},
 		{
 			name: "unmarshalable tolerations value propagates as HelmError",
