@@ -195,15 +195,16 @@ func (s *AuthIdentityTemplateTest) TestGlobalAuthWithoutAnIssuerStillRenders() {
 
 // This chart bundles no Keycloak, so global.identity.auth.enabled on its own resolves no issuer at
 // all: it renders an empty issuer, an empty issuerBackendUrl and a relative jwtSetUri that Optimize
-// would check every token against. Exempting the global path would let exactly the state the
-// constraint exists to prevent through, so the exemption is keyed on a resolvable issuer backend
-// URL instead of on which key switched authentication on.
+// would check every token against. Once the release configures Optimize's own authentication, being
+// switched on by the global key is no exemption from that - the exemption is keyed on a resolvable
+// issuer backend URL, not on which key switched authentication on.
 func (s *AuthIdentityTemplateTest) TestGlobalAuthWithNoResolvableIssuerIsRejected() {
 	options := &helm.Options{SetValues: map[string]string{
 		"global.identity.auth.enabled":             "true",
 		"identity.enabled":                         "true",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.security.authentication.method":  "oidc",
 	}}
 	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
 		[]string{"templates/optimize/configmap.yaml"})
@@ -260,6 +261,7 @@ func (s *AuthIdentityTemplateTest) TestEnvIssuerOverrideWithoutAValueIsNotAnExem
 		"identity.enabled":                         "true",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.security.authentication.method":  "oidc",
 		"optimize.env[0].name":                     "CAMUNDA_IDENTITY_ISSUER",
 		"optimize.env[0].value":                    "",
 	}}
@@ -277,6 +279,7 @@ func (s *AuthIdentityTemplateTest) TestUnrelatedEnvEntryIsNotAnIssuerExemption()
 		"identity.enabled":                         "true",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.security.authentication.method":  "oidc",
 		"optimize.env[0].name":                     "HTTP_PROXY",
 		"optimize.env[0].value":                    "http://proxy.svc:3128",
 	}}
@@ -523,6 +526,7 @@ func (s *AuthIdentityTemplateTest) TestUndeclaredEnvFromDoesNotSatisfyTheIssuerC
 		"identity.enabled":                         "true",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.security.authentication.method":  "oidc",
 		"optimize.envFrom[0].configMapRef.name":    "unrelated-overrides",
 	}}
 	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
@@ -541,6 +545,7 @@ func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromSatisfiesTheIssuerConstrai
 		"identity.enabled":                                         "true",
 		"optimize.enabled":                                         "true",
 		"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+		"optimize.security.authentication.method":                  "oidc",
 		"optimize.envFrom[0].configMapRef.name":                    "optimize-identity-overrides",
 		"optimize.security.authentication.oidc.envFromProvides[0]": "CAMUNDA_IDENTITY_ISSUER",
 	}}
@@ -552,13 +557,16 @@ func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromSatisfiesTheIssuerConstrai
 }
 
 // A declaration naming a variable no guard reads exempts nothing, and silently accepting it would
-// leave its author believing a guard had been answered.
+// leave its author believing a guard had been answered. The schema enum catches a typo before any
+// template runs, which is where a closed set of three names belongs; the render-time check behind it
+// stays as the backstop for a schema-validation-skipping install.
 func (s *AuthIdentityTemplateTest) TestEnvFromProvidesRejectsAVariableItCannotExempt() {
 	options := &helm.Options{SetValues: map[string]string{
 		"global.identity.auth.enabled":                             "true",
 		"identity.enabled":                                         "true",
 		"optimize.enabled":                                         "true",
 		"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+		"optimize.security.authentication.method":                  "oidc",
 		"optimize.envFrom[0].configMapRef.name":                    "optimize-identity-overrides",
 		"optimize.security.authentication.oidc.envFromProvides[0]": "CAMUNDA_IDENTITY_ISSUER_TYPO",
 	}}
@@ -566,7 +574,7 @@ func (s *AuthIdentityTemplateTest) TestEnvFromProvidesRejectsAVariableItCannotEx
 		[]string{"templates/optimize/deployment.yaml"})
 
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "which exempts nothing")
+	s.Require().Contains(err.Error(), "value must be one of")
 }
 
 // A release-scoped jwksUrl must win over the global one, so an Optimize-only release can point at
@@ -613,11 +621,124 @@ func (s *AuthIdentityTemplateTest) TestOptimizeEnvMaySupplyTheJwksUri() {
 	out := s.render(map[string]string{
 		"optimize.security.authentication.oidc.type":   "GENERIC",
 		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
-		"optimize.env[0].name":                         "CAMUNDA_OPTIMIZE_API_JWTSETURI",
+		"optimize.env[0].name":                         "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
 		"optimize.env[0].value":                        "https://issuer.example.com/certs",
 	}, []string{"templates/optimize/deployment.yaml"})
 
-	s.Require().Contains(out, "CAMUNDA_OPTIMIZE_API_JWTSETURI")
+	s.Require().Contains(out, "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI")
+}
+
+// The chart can resolve api.jwtSetUri only for KEYCLOAK, but optimize.configuration replaces
+// environment-config.yaml wholesale, so a release that writes the key there leaves the chart nothing
+// to resolve and nothing to warn about. Unlike an envFrom source, that content is readable at render
+// time, so the key itself is the exemption.
+func (s *AuthIdentityTemplateTest) TestOptimizeConfigurationMaySupplyTheJwksUri() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                 "true",
+		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
+		"optimize.enabled":                             "true",
+		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"optimize.security.authentication.oidc.type":   "GENERIC",
+		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+	}
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+	s.Require().Error(err)
+
+	for _, configuration := range []string{
+		`"api:\n  jwtSetUri: https://issuer.example.com/certs\n"`,
+		`"api.jwtSetUri: https://issuer.example.com/certs\n"`,
+	} {
+		options := &helm.Options{
+			SetValues:     values,
+			SetJSONValues: map[string]string{"optimize.configuration": configuration},
+		}
+		out, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+			[]string{"templates/optimize/configmap.yaml"})
+		s.Require().NoError(err, configuration)
+		s.Require().Contains(out, "jwtSetUri: https://issuer.example.com/certs")
+	}
+}
+
+// A release-supplied configuration that never names the key is no exemption: the chart still renders
+// no api.jwtSetUri, which is exactly the state the guard exists to report.
+func (s *AuthIdentityTemplateTest) TestOptimizeConfigurationWithoutTheJwksUriStillFails() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.enabled":                 "true",
+			"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
+			"optimize.enabled":                             "true",
+			"orchestration.data.secondaryStorage.type":     "elasticsearch",
+			"optimize.security.authentication.oidc.type":   "GENERIC",
+			"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+		},
+		SetJSONValues: map[string]string{"optimize.configuration": `"api:\n  audience: optimize\n"`},
+	}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// optimize.extraConfiguration is no issuer exemption, unlike optimize.configuration for the JWKS
+// endpoint: the identity env ConfigMap sets CAMUNDA_IDENTITY_ISSUER as container env, empty value
+// included, and container env outranks every config file the release imports.
+func (s *AuthIdentityTemplateTest) TestExtraConfigurationDoesNotSatisfyTheIssuerConstraint() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.enabled":               "true",
+			"identity.enabled":                           "true",
+			"optimize.enabled":                           "true",
+			"orchestration.data.secondaryStorage.type":   "elasticsearch",
+			"optimize.security.authentication.oidc.type": "GENERIC",
+			"optimize.extraConfiguration[0].file":        "identity-overrides.yaml",
+		},
+		SetJSONValues: map[string]string{
+			"optimize.extraConfiguration[0].content": `"camunda:\n  identity:\n    issuer: https://issuer.example.com\n"`,
+		},
+	}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
+}
+
+// These guards are new, so they apply only where this chart's Optimize identity keys are used: to a
+// global.topology.mode=optimize release, or to one that configures Optimize's own authentication. A
+// release that never mentions optimize.security.authentication or optimize.identity renders exactly
+// as it did before those keys existed, empty issuer included; widening the guards chart-wide is
+// tracked in issue #6929.
+func (s *AuthIdentityTemplateTest) TestPlainCombinedModeIsLeftAlone() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"identity.enabled":                         "true",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	}}
+	out, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().NoError(err)
+	s.Require().Contains(out, `issuer: ""`)
+}
+
+// A single component-scoped key is enough to opt the release into the guards, because that key is
+// what reaches the empty issuer with no topology mode to signal it.
+func (s *AuthIdentityTemplateTest) TestOneComponentScopedKeyOptsIntoTheGuards() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                   "true",
+		"identity.enabled":                               "true",
+		"optimize.enabled":                               "true",
+		"orchestration.data.secondaryStorage.type":       "elasticsearch",
+		"optimize.security.authentication.oidc.audience": "optimize-api",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
 }
 
 // KEYCLOAK keeps deriving the endpoint, so releases that never set jwksUrl render unchanged.
