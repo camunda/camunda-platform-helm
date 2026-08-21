@@ -19,6 +19,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Topology describes a multi-namespace deployment shape for a scenario: one
@@ -295,10 +297,75 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		}
 	}
 
+	for _, r := range t.Releases {
+		if r.Role != "optimize" {
+			continue
+		}
+		label := fmt.Sprintf("%s: topology %q: release (role %q, namespace-suffix %q)", ctx, t.Name, r.Role, r.NamespaceSuffix)
+		problems = append(problems, validateOptimizeLayerValues(label, r, chartFullSetupDir)...)
+	}
+
 	if len(problems) == 0 {
 		return nil
 	}
 	return fmt.Errorf("%s", strings.Join(problems, "\n  - "))
+}
+
+// optimizeLayerValues is the subset of a values layer that must agree with an
+// optimize release's topology declaration.
+type optimizeLayerValues struct {
+	Optimize struct {
+		ContextPath *string `yaml:"contextPath"`
+		Database    struct {
+			Elasticsearch struct {
+				Prefix *string `yaml:"prefix"`
+			} `yaml:"elasticsearch"`
+			Opensearch struct {
+				Prefix *string `yaml:"prefix"`
+			} `yaml:"opensearch"`
+		} `yaml:"database"`
+	} `yaml:"optimize"`
+}
+
+// validateOptimizeLayerValues rejects a values layer that writes its own copy of
+// what the topology declaration already states. The topology driver publishes
+// optimize-context-path as RELEASE_OPTIMIZE_CONTEXT_PATH and the serves release's index
+// prefix as SERVED_ORCHESTRATION_INDEX_PREFIX, so a layer that hardcodes either
+// keeps deploying the old value after the declaration changes, while the smoke
+// matrix reports the new one.
+func validateOptimizeLayerValues(label string, r TopologyRelease, chartFullSetupDir string) []string {
+	var problems []string
+	for _, featureID := range r.Features {
+		if !isPlainFilename(featureID) {
+			continue
+		}
+		path := filepath.Join(chartFullSetupDir, "values", "features", featureID+".yaml")
+		content, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var layer optimizeLayerValues
+		if yaml.Unmarshal(content, &layer) != nil {
+			continue
+		}
+
+		if cp := layer.Optimize.ContextPath; cp != nil && !strings.Contains(*cp, "$") && *cp != r.OptimizeContextPath {
+			problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.contextPath %q but the release declares optimize-context-path %q; reference RELEASE_OPTIMIZE_CONTEXT_PATH instead so the declaration is the only copy", label, featureID, *cp, r.OptimizeContextPath))
+		}
+
+		for backend, prefix := range map[string]*string{
+			"elasticsearch": layer.Optimize.Database.Elasticsearch.Prefix,
+			"opensearch":    layer.Optimize.Database.Opensearch.Prefix,
+		} {
+			if prefix == nil || *prefix == "" {
+				continue
+			}
+			if !strings.Contains(*prefix, "SERVED_ORCHESTRATION_INDEX_PREFIX") {
+				problems = append(problems, fmt.Sprintf("%s: feature %q sets optimize.database.%s.prefix to %q, which does not follow serves %q; reference SERVED_ORCHESTRATION_INDEX_PREFIX so repointing serves repoints the records this Optimize reads", label, featureID, backend, *prefix, r.Serves))
+			}
+		}
+	}
+	return problems
 }
 
 func isDNS1123Label(value string) bool {
