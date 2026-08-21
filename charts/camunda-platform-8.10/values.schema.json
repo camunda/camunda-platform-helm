@@ -5807,6 +5807,11 @@
                                             "description": "can be used to override `global.identity.auth.issuerBackendUrl`, the cluster-internal route this Optimize uses to validate tokens.",
                                             "default": ""
                                         },
+                                        "jwksUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`, the JWKS endpoint this Optimize fetches token signing keys from. Required for a non-Keycloak `type`, which has no endpoint layout to derive it from. Supports templating (e.g., {{ .Release.Name }}).",
+                                            "default": ""
+                                        },
                                         "audience": {
                                             "type": "string",
                                             "description": "can be used to override `global.identity.auth.optimize.audience`.",

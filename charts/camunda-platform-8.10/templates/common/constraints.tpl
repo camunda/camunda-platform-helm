@@ -70,6 +70,9 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   {{- if and (empty (dig "identity" "service" "url" "" .Values.optimize)) (empty .Values.global.identity.service.url) }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.identity.service.url or global.identity.service.url to reach Management Identity; this release runs no Identity of its own, so the in-release default cannot apply." }}
   {{- end }}
+  {{- if and (empty (include "optimize.effectiveAuthJwksUrl" .)) (empty .Values.optimize.envFrom) }}
+    {{- fail (printf "[camunda][error] global.topology.mode=optimize with optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, so this release renders an empty api.jwtSetUri and can validate no token." (include "optimize.effectiveAuthType" .)) }}
+  {{- end }}
   {{- $rendersIngress := and .Values.global.ingress.enabled (not .Values.global.ingress.external) }}
   {{- $rendersGateway := and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
   {{- if and (empty .Values.optimize.contextPath) (or $rendersIngress $rendersGateway) }}

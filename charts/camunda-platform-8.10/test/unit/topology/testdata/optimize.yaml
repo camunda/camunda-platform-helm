@@ -9,6 +9,8 @@ global:
       enabled: true
       type: GENERIC
       issuer: https://issuer.example.com
+      # Required: a non-Keycloak type derives no JWKS endpoint.
+      jwksUrl: https://issuer.example.com/protocol/openid-connect/certs
       optimize:
         clientId: optimize-east-tenanta
         audience: optimize-east-tenanta-api
