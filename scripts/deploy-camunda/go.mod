@@ -3,7 +3,7 @@ module scripts/deploy-camunda
 go 1.25.0
 
 require (
-	charm.land/bubbletea/v2 v2.0.8
+	charm.land/bubbletea/v2 v2.0.9
 	charm.land/lipgloss/v2 v2.0.6
 	github.com/jwalton/gchalk v1.3.0
 	github.com/mattn/go-runewidth v0.0.28
