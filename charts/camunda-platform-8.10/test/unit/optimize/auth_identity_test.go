@@ -212,6 +212,96 @@ func (s *AuthIdentityTemplateTest) TestGlobalAuthWithNoResolvableIssuerIsRejecte
 	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
 }
 
+// An explicit optimize.env entry for the issuer is a supported override: the Deployment renders
+// optimize.env as container env, which the kubelet resolves over the identity env ConfigMap, so the
+// container never reads the empty issuer the constraint guards against. Failing the render here
+// would make the generic extension path unusable for the one variable it is most needed for.
+func (s *AuthIdentityTemplateTest) TestEnvIssuerOverrideSatisfiesTheIssuerConstraint() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"identity.enabled":                         "true",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.env[0].name":                     "CAMUNDA_IDENTITY_ISSUER",
+		"optimize.env[0].value":                    "https://keycloak.example.com/realms/camunda",
+		"optimize.env[1].name":                     "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+		"optimize.env[1].value":                    "http://keycloak.svc:8080/realms/camunda",
+	}}
+	out, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().NoError(err)
+	s.Require().Contains(out, "value: https://keycloak.example.com/realms/camunda")
+	s.Require().Contains(out, "value: http://keycloak.svc:8080/realms/camunda")
+}
+
+// Either variable alone is enough, and a valueFrom counts as much as a literal: both shapes reach
+// the container the same way.
+func (s *AuthIdentityTemplateTest) TestEnvIssuerOverrideFromSecretSatisfiesTheIssuerConstraint() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":                "true",
+		"identity.enabled":                            "true",
+		"optimize.enabled":                            "true",
+		"orchestration.data.secondaryStorage.type":    "elasticsearch",
+		"optimize.env[0].name":                        "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+		"optimize.env[0].valueFrom.secretKeyRef.name": "issuer",
+		"optimize.env[0].valueFrom.secretKeyRef.key":  "backend-url",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().NoError(err)
+}
+
+// A bare name with neither value nor valueFrom sets nothing, so it must not buy an exemption.
+func (s *AuthIdentityTemplateTest) TestEnvIssuerOverrideWithoutAValueIsNotAnExemption() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"identity.enabled":                         "true",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.env[0].name":                     "CAMUNDA_IDENTITY_ISSUER",
+		"optimize.env[0].value":                    "",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
+}
+
+// An unrelated optimize.env entry must not buy an exemption either.
+func (s *AuthIdentityTemplateTest) TestUnrelatedEnvEntryIsNotAnIssuerExemption() {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"identity.enabled":                         "true",
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.env[0].name":                     "HTTP_PROXY",
+		"optimize.env[0].value":                    "http://proxy.svc:3128",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
+}
+
+// optimize.authEnabled reads anything other than "oidc" as not-oidc, so an unconstrained typo would
+// render an Optimize with authentication omitted and no error. The schema enum is what stops it.
+func (s *AuthIdentityTemplateTest) TestUnknownAuthenticationMethodIsRejected() {
+	options := &helm.Options{SetValues: map[string]string{
+		"optimize.enabled":                         "true",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"optimize.security.authentication.method":  "oidcc",
+	}}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "/optimize/security/authentication/method")
+}
+
 // A release-scoped issuerBackendUrl satisfies the constraint on its own: the release names the
 // cluster-internal route even when no global key does.
 func (s *AuthIdentityTemplateTest) TestComponentIssuerBackendUrlSatisfiesTheIssuerConstraint() {
