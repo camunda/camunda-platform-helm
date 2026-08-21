@@ -104,6 +104,21 @@ environment-config.yaml wholesale, and optimize.extraConfiguration, which Optimi
 Either must bind the key to a non-empty value - the key alone leaves the same missing endpoint.
 */}}
 {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") }}
+  {{/*
+  A component-scoped method=oidc switches Optimize's authentication on without
+  switching Identity's provisioning on with it: templates/identity/deployment.yaml
+  and templates/identity/configmap.yaml keep every client, secret and permission
+  they register behind global.identity.auth.enabled. A release that runs Identity
+  itself therefore starts an Identity that provisions nothing while Optimize
+  presents a client to it, and only the first login fails.
+
+  Scoped to a release that runs its own Identity: an Optimize release pointed at a
+  Management Identity elsewhere is the supported shape, and that Identity's own
+  release is where global.identity.auth.enabled has to be true.
+  */}}
+  {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true") (not .Values.global.identity.auth.enabled) }}
+    {{- fail "[camunda][error] Optimize authenticates with OIDC (optimize.security.authentication.method=oidc) while global.identity.auth.enabled=false, and this release runs Management Identity itself (identity.enabled=true). Identity registers clients only when global.identity.auth.enabled=true, so the Optimize client this release presents is never provisioned and Optimize starts ready but cannot complete a login. Set global.identity.auth.enabled=true so this Identity provisions it, or deploy Optimize as its own release (global.topology.mode=optimize) against a Management Identity that already provisions its client." }}
+  {{- end }}
   {{- $declarableEnvNames := splitList " " (include "optimize.declarableEnvNames" .) }}
   {{- range $declared := ((dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize) | default list) }}
     {{- if not (has $declared $declarableEnvNames) }}
