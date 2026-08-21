@@ -5521,7 +5521,12 @@
                                 "method": {
                                     "type": "string",
                                     "description": "can be used to override whether this Optimize release authenticates, independently of `global.identity.auth.enabled`. Supported values are oidc and none. Empty follows `global.identity.auth.enabled`.",
-                                    "default": ""
+                                    "default": "",
+                                    "enum": [
+                                        "",
+                                        "oidc",
+                                        "none"
+                                    ]
                                 },
                                 "oidc": {
                                     "type": "object",
