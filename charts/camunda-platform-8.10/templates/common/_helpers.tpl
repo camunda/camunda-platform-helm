@@ -1848,6 +1848,54 @@ Usage:
 {{- end -}}
 
 {{- /*
+NOTE: exact-leaf companion to extraConfigHasPath, for guards that need the value rather than
+the key: reports "true" only when a spring-imported <component>.extraConfiguration file binds
+the given path to a non-empty scalar. Presence is not enough where a guard exists because the
+value must reach the component - "api.jwtSetUri:" with no value parses as null, so the key is
+there and the endpoint still is not. Both YAML forms Spring accepts are matched by trying each
+split between nested keys and one dotted remainder, but the remainder must match the leaf
+exactly: unlike extraConfigHasPath, a subkey is a different key, not this value. Any entry
+carrying a usable value is enough, so no last-entry-wins ordering applies.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasNonEmptyValueAtPath" (dict
+  "extraConfiguration" .Values.optimize.extraConfiguration
+  "path" (list "api" "jwtSetUri"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasNonEmptyValueAtPath" -}}
+{{- $found := "" -}}
+{{- $path := .path -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- range $split := until (len $path) -}}
+        {{- $node := $parsed -}}
+        {{- $ok := true -}}
+        {{- range $i := until $split -}}
+          {{- $step := index $path $i -}}
+          {{- if and $ok (kindIs "map" $node) (hasKey $node $step) -}}
+            {{- $node = index $node $step -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $dotted := join "." (slice $path $split) -}}
+          {{- if hasKey $node $dotted -}}
+            {{- $leaf := index $node $dotted -}}
+            {{- if and (not (kindIs "map" $leaf)) (not (kindIs "slice" $leaf)) (not (empty $leaf)) -}}
+              {{- $found = "true" -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
 NOTE: raw-text companion to extraConfigHasPath and extraConfigHasDottedPath, for content
 those two cannot parse: spring.config.import resolves an imported file by extension, so a
 ".properties" entry binds "camunda.secrets.x=v" without ever being valid YAML, and content

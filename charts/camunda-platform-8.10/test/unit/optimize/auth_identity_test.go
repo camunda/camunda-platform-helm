@@ -750,3 +750,157 @@ func (s *AuthIdentityTemplateTest) TestKeycloakStillDerivesTheJwksUrl() {
 	s.Require().Contains(out,
 		`jwtSetUri: "http://keycloak.example.com/realms/camunda/protocol/openid-connect/certs"`)
 }
+
+// Since 8.9 Optimize's own configuration loader also applies the files spring.config.import brings
+// in, after environment-config.yaml, so an optimize.extraConfiguration file that names api.jwtSetUri
+// overrides the empty one this chart renders and answers the requirement. Both YAML forms Spring
+// accepts count, and a springImport: false file does not - it is never imported.
+func (s *AuthIdentityTemplateTest) TestExtraConfigurationMaySupplyTheJwksUri() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                 "true",
+		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
+		"optimize.enabled":                             "true",
+		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"optimize.security.authentication.oidc.type":   "GENERIC",
+		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+		"optimize.extraConfiguration[0].file":          "jwks-overrides.yaml",
+	}
+	for _, content := range []string{
+		`"api:\n  jwtSetUri: https://issuer.example.com/certs\n"`,
+		`"api.jwtSetUri: https://issuer.example.com/certs\n"`,
+	} {
+		options := &helm.Options{
+			SetValues:     values,
+			SetJSONValues: map[string]string{"optimize.extraConfiguration[0].content": content},
+		}
+		out, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+			[]string{"templates/optimize/configmap.yaml"})
+		s.Require().NoError(err, content)
+		s.Require().Contains(out, "jwtSetUri: https://issuer.example.com/certs")
+	}
+
+	notImported := &helm.Options{
+		SetValues: values,
+		SetJSONValues: map[string]string{
+			"optimize.extraConfiguration[0].content":      `"api:\n  jwtSetUri: https://issuer.example.com/certs\n"`,
+			"optimize.extraConfiguration[0].springImport": "false",
+		},
+	}
+	_, err := helm.RenderTemplateE(s.T(), notImported, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// The key alone is no exemption: "api.jwtSetUri:" with no value parses as null, and a config source
+// binding it to an empty string is the same missing endpoint the guard exists to report. Reading the
+// value, not just walking to it, is what tells the two apart from a real endpoint.
+func (s *AuthIdentityTemplateTest) TestAnEmptyJwksUriValueIsNoExemption() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                 "true",
+		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
+		"optimize.enabled":                             "true",
+		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"optimize.security.authentication.oidc.type":   "GENERIC",
+		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+	}
+	for _, empty := range []string{
+		`"api:\n  jwtSetUri:\n"`,
+		`"api:\n  jwtSetUri: \"\"\n"`,
+		`"api.jwtSetUri:\n"`,
+	} {
+		configuration := &helm.Options{
+			SetValues:     values,
+			SetJSONValues: map[string]string{"optimize.configuration": empty},
+		}
+		_, err := helm.RenderTemplateE(s.T(), configuration, s.chartPath, s.release,
+			[]string{"templates/optimize/configmap.yaml"})
+		s.Require().Error(err, empty)
+		s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+
+		importedValues := map[string]string{"optimize.extraConfiguration[0].file": "jwks-overrides.yaml"}
+		for key, value := range values {
+			importedValues[key] = value
+		}
+		imported := &helm.Options{
+			SetValues:     importedValues,
+			SetJSONValues: map[string]string{"optimize.extraConfiguration[0].content": empty},
+		}
+		_, err = helm.RenderTemplateE(s.T(), imported, s.chartPath, s.release,
+			[]string{"templates/optimize/configmap.yaml"})
+		s.Require().Error(err, empty)
+		s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+	}
+}
+
+// A subkey of api.jwtSetUri is a different key, not this value, so the exact-leaf match must not
+// accept it the way the any-subkey helpers do.
+func (s *AuthIdentityTemplateTest) TestASubkeyOfTheJwksUriIsNoExemption() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.identity.auth.enabled":                 "true",
+			"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
+			"optimize.enabled":                             "true",
+			"orchestration.data.secondaryStorage.type":     "elasticsearch",
+			"optimize.security.authentication.oidc.type":   "GENERIC",
+			"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+			"optimize.extraConfiguration[0].file":          "jwks-overrides.yaml",
+		},
+		SetJSONValues: map[string]string{
+			"optimize.extraConfiguration[0].content": `"api.jwtSetUri.timeout: 5s\n"`,
+		},
+	}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// The Deployment renders optimize.env through tpl, so an entry whose template resolves to nothing
+// reaches the container as an empty variable. Comparing the pre-tpl string would read that as an
+// answered guard while Optimize still has no endpoint.
+func (s *AuthIdentityTemplateTest) TestAnOptimizeEnvTemplateResolvingEmptyIsNoExemption() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                 "true",
+		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
+		"optimize.enabled":                             "true",
+		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"optimize.security.authentication.oidc.type":   "GENERIC",
+		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+		"optimize.env[0].name":                         "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+	}
+	options := &helm.Options{
+		SetValues:     values,
+		SetJSONValues: map[string]string{"optimize.env[0].value": `"{{ .Values.optimize.security.authentication.oidc.jwksUrl }}"`},
+	}
+	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// envFromProvides is a statement about optimize.envFrom, so without a source it describes nothing:
+// the named variable has nowhere to arrive from and the container would read the empty value this
+// chart rendered. Rejected rather than silently ignored, for both the issuer and the JWKS endpoint.
+func (s *AuthIdentityTemplateTest) TestEnvFromProvidesWithoutASourceIsRejected() {
+	for _, declared := range []string{
+		"CAMUNDA_IDENTITY_ISSUER",
+		"SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+	} {
+		options := &helm.Options{SetValues: map[string]string{
+			"global.identity.auth.enabled":                             "true",
+			"identity.enabled":                                         "true",
+			"optimize.enabled":                                         "true",
+			"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+			"optimize.security.authentication.method":                  "oidc",
+			"optimize.security.authentication.oidc.envFromProvides[0]": declared,
+		}}
+		_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
+			[]string{"templates/optimize/deployment.yaml"})
+
+		s.Require().Error(err, declared)
+		s.Require().Contains(err.Error(), "but optimize.envFrom is empty")
+	}
+}

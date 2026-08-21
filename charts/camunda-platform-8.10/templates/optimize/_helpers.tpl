@@ -172,14 +172,21 @@ SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
 a non-empty literal value, or any valueFrom. The Deployment renders optimize.env as container env,
 which the kubelet resolves over every envFrom source, so such an entry supersedes both the identity
 env ConfigMap and the rendered config file.
+
+The Deployment passes optimize.env through tpl, so the value is compared after rendering: an entry
+whose template resolves to nothing reaches the container as an empty variable and answers no guard,
+which the pre-tpl string cannot tell apart from a real endpoint.
 Call with (dict "ctx" $ "names" (list "NAME" ...)).
 */}}
 {{- define "optimize.envSetsAnyOf" -}}
   {{- $names := .names -}}
   {{- $set := false -}}
   {{- range $entry := (.ctx.Values.optimize.env | default list) -}}
-    {{- if and (has $entry.name $names) (or (not (empty $entry.value)) (not (empty $entry.valueFrom))) -}}
-      {{- $set = true -}}
+    {{- if has $entry.name $names -}}
+      {{- $value := tpl (toString ($entry.value | default "")) $.ctx -}}
+      {{- if or (not (empty $value)) (not (empty $entry.valueFrom)) -}}
+        {{- $set = true -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
   {{- if $set -}}true{{- else -}}false{{- end -}}
@@ -190,14 +197,22 @@ Call with (dict "ctx" $ "names" (list "NAME" ...)).
 An envFrom source's keys are unreadable at render time, so its presence proves nothing - naming a
 variable here is the release's own statement that one of its sources carries it, and that statement
 is what exempts the matching guard. An unrelated ConfigMap or Secret exempts nothing.
+
+The declaration is a statement *about* optimize.envFrom, so it holds only while there is a source
+for it to describe: with optimize.envFrom empty there is nothing the named variable could arrive
+from, and the exemption would leave the container with the empty value this chart rendered.
+Presence of a source is necessary here and still never sufficient - constraints.tpl rejects the
+declaration outright in that state, and this keeps the helper honest on its own.
 Call with (dict "ctx" $ "names" (list "NAME" ...)).
 */}}
 {{- define "optimize.envFromDeclaresAnyOf" -}}
   {{- $declared := (dig "security" "authentication" "oidc" "envFromProvides" list .ctx.Values.optimize) | default list -}}
   {{- $found := false -}}
-  {{- range $name := $declared -}}
-    {{- if has $name $.names -}}
-      {{- $found = true -}}
+  {{- if not (empty .ctx.Values.optimize.envFrom) -}}
+    {{- range $name := $declared -}}
+      {{- if has $name $.names -}}
+        {{- $found = true -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
   {{- if $found -}}true{{- else -}}false{{- end -}}
@@ -237,19 +252,36 @@ false
 
 {{/*
 [optimize] Whether the release itself supplies api.jwtSetUri, leaving the chart nothing to resolve.
-Besides container env, optimize.configuration is such a source: it replaces environment-config.yaml
-wholesale (templates/optimize/configmap.yaml), so the chart renders no api.jwtSetUri at all and the
-key the release wrote there is the only one Optimize reads. Unlike an envFrom source, that content is
-readable at render time, so the exemption is the key itself rather than a declaration about it.
+Two config sources count besides container env, and both are readable at render time, so for them
+the exemption is the value itself rather than a declaration about it:
+
+  - optimize.configuration replaces environment-config.yaml wholesale
+    (templates/optimize/configmap.yaml), so the chart renders no api.jwtSetUri at all and the key the
+    release wrote there is the only one Optimize reads.
+  - optimize.extraConfiguration is imported through spring.config.import
+    (optimize.springConfigImport). Since 8.9 Optimize's own configuration loader applies those files
+    too, in import order and after environment-config.yaml, so a later file overrides the empty
+    api.jwtSetUri this chart would render
+    (camunda-docs self-managed/deployment/helm/configure/application-configs, "Optimize").
+
+This is where api.jwtSetUri parts company with the issuer: the identity env ConfigMap sets
+CAMUNDA_IDENTITY_ISSUER as container env, empty value included, and container env outranks every
+imported file - so extraConfiguration can never be an issuer exemption. api.jwtSetUri has no
+chart-rendered env var, so file order is what decides it.
+
+Either source must bind the key to a non-empty scalar. "api.jwtSetUri:" with no value parses as null
+and leaves Optimize with no endpoint to fetch signing keys from, which is the state the guard exists
+to report - the key being present says nothing about that.
 */}}
 {{- define "optimize.jwksSuppliedByRelease" -}}
   {{- $configuration := .Values.optimize.configuration | default "" -}}
   {{- $asExtraConfig := dict "extraConfiguration" (list (dict "file" "environment-config.yaml" "content" $configuration)) "path" (list "api" "jwtSetUri") -}}
+  {{- $imported := dict "extraConfiguration" (.Values.optimize.extraConfiguration | default list) "path" (list "api" "jwtSetUri") -}}
   {{- if or
         (eq (include "optimize.jwksMayComeFromEnv" .) "true")
-        (and (not (empty $configuration)) (or
-          (eq (include "camundaPlatform.extraConfigHasPath" $asExtraConfig) "true")
-          (eq (include "camundaPlatform.extraConfigHasDottedPath" $asExtraConfig) "true"))) -}}
+        (and (not (empty $configuration))
+          (eq (include "camundaPlatform.extraConfigHasNonEmptyValueAtPath" $asExtraConfig) "true"))
+        (eq (include "camundaPlatform.extraConfigHasNonEmptyValueAtPath" $imported) "true") -}}
 true
   {{- else -}}
 false

@@ -98,9 +98,10 @@ must not buy an exemption from a check this load-bearing.
 
 optimize.extraConfiguration is not an issuer exemption: the identity env ConfigMap sets
 CAMUNDA_IDENTITY_ISSUER as container env, empty value included, and container env outranks every
-config file the release imports. api.jwtSetUri has no such env var, so there
-optimize.configuration - which replaces environment-config.yaml wholesale - is an exemption, and a
-readable one.
+config file the release imports. api.jwtSetUri has no such env var, so file order decides it and
+both readable config sources are exemptions there: optimize.configuration, which replaces
+environment-config.yaml wholesale, and optimize.extraConfiguration, which Optimize imports after it.
+Either must bind the key to a non-empty value - the key alone leaves the same missing endpoint.
 */}}
 {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") }}
   {{- $declarableEnvNames := splitList " " (include "optimize.declarableEnvNames" .) }}
@@ -109,13 +110,22 @@ readable one.
       {{- fail (printf "[camunda][error] optimize.security.authentication.oidc.envFromProvides names %q, which exempts nothing: only %s are variables this chart would otherwise have to resolve. Remove it, or correct it to the variable your optimize.envFrom source actually carries." $declared (join ", " $declarableEnvNames)) }}
     {{- end }}
   {{- end }}
+  {{/*
+  The declaration describes optimize.envFrom, so it means nothing without one: with no source the
+  named variable has nowhere to arrive from, and taking the declaration at face value would exempt
+  the guards while the container still reads the empty value this chart rendered. Rejected here
+  rather than silently ignored, so its author is not left believing a guard was answered.
+  */}}
+  {{- if and (not (empty (dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize))) (empty .Values.optimize.envFrom) }}
+    {{- fail (printf "[camunda][error] optimize.security.authentication.oidc.envFromProvides names %s, but optimize.envFrom is empty, so no source can carry it and Optimize would read the empty value this chart renders. Add the ConfigMap or Secret reference to optimize.envFrom, or drop the declaration and set the value through this chart's own keys." (join ", " (dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize))) }}
+  {{- end }}
   {{/* Scoped to releases that configure Optimize's own identity, per the block comment above. */}}
   {{- if or (eq $topologyMode "optimize") (eq (include "optimize.hasComponentScopedAuth" .) "true") }}
     {{- if and (empty (include "optimize.effectiveAuthIssuer" .)) (empty (include "optimize.effectiveAuthIssuerBackendUrl" .)) (ne (include "optimize.identityIssuerMayComeFromEnv" .) "true") }}
       {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise. An External Keycloak may leave the issuer empty, but then global.identity.keycloak.url.host (or an explicit issuerBackendUrl) must resolve the provider instead." }}
     {{- end }}
     {{- if and (empty (include "optimize.effectiveAuthJwksUrl" .)) (ne (include "optimize.jwksSuppliedByRelease" .) "true") }}
-      {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
+      {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set a non-empty api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or in an optimize.extraConfiguration file, which Optimize imports after it, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
     {{- end }}
   {{- end }}
   {{/*
