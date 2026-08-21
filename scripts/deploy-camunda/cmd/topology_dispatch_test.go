@@ -434,6 +434,75 @@ func TestBuildTopologyReleaseEnv_OmitsOptimizeKeysForOtherRoles(t *testing.T) {
 	}
 }
 
+// The keys derived from the declaration are authoritative: a release env entry
+// naming one is applied first and overwritten, so a topology author cannot
+// deploy a context path or reader prefix that disagrees with
+// optimize-context-path/serves and with the smoke matrix.
+// matrix.Topology.Validate rejects the entry outright; this covers the ordering
+// that makes the rejection safe to rely on.
+func TestBuildTopologyReleaseEnv_DerivedKeysOutrankReleaseEnv(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":                  "ns-orcha",
+		"ORCHA_HOST":                       "orcha.example.com",
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+	}
+	release := matrix.TopologyRelease{
+		Role:                "optimize",
+		NamespaceSuffix:     "opta",
+		Serves:              "orcha",
+		OptimizeContextPath: "/optimize-orcha",
+		Env: map[string]string{
+			"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-stale",
+			"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-somewhere-else",
+			"SERVED_NAMESPACE":                  "ns-somewhere-else",
+			"SERVED_HOST":                       "somewhere.example.com",
+		},
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	for key, want := range map[string]string{
+		"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-orcha",
+		"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"SERVED_NAMESPACE":                  "ns-orcha",
+		"SERVED_HOST":                       "orcha.example.com",
+	} {
+		if got := env[key]; got != want {
+			t.Errorf("%s = %q, want the derived %q", key, got, want)
+		}
+	}
+}
+
+func TestBuildTopologyReleaseEnv_DerivedOrchestrationKeysOutrankReleaseEnv(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":  "ns-orcha",
+		"ORCHA_HOST":       "orcha.example.com",
+		"ORCHA_ZEEBE_GRPC": "grpc://orcha:26500",
+		"ORCHA_ZEEBE_REST": "http://orcha:8080",
+	}
+	release := matrix.TopologyRelease{
+		Role:            "orchestration",
+		NamespaceSuffix: "orcha",
+		Env: map[string]string{
+			"ORCH_NAMESPACE":  "ns-stale",
+			"ORCH_HOST":       "stale.example.com",
+			"ORCH_ZEEBE_GRPC": "grpc://stale:26500",
+			"ORCH_ZEEBE_REST": "http://stale:8080",
+		},
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	for key, want := range map[string]string{
+		"ORCH_NAMESPACE":  "ns-orcha",
+		"ORCH_HOST":       "orcha.example.com",
+		"ORCH_ZEEBE_GRPC": "grpc://orcha:26500",
+		"ORCH_ZEEBE_REST": "http://orcha:8080",
+	} {
+		if got := env[key]; got != want {
+			t.Errorf("%s = %q, want the derived %q", key, got, want)
+		}
+	}
+}
+
 func TestAddTopologyIngressHosts_UsesExplicitSharedHost(t *testing.T) {
 	env := map[string]string{}
 	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
