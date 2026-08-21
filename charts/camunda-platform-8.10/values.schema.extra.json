@@ -641,6 +641,20 @@
                             "properties": {
                                 "method": {
                                     "enum": ["", "oidc", "none"]
+                                },
+                                "oidc": {
+                                    "properties": {
+                                        "envFromProvides": {
+                                            "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "CAMUNDA_IDENTITY_ISSUER",
+                                                    "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+                                                    "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI"
+                                                ]
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
