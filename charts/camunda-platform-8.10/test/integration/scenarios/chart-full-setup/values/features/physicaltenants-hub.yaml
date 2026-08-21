@@ -31,7 +31,7 @@ global:
         version: "8.10.0-alpha3"
         contextPaths:
           orchestration: /orchestration
-          optimize: /optimize-orcha-ta
+          optimize: "${OPTTA_OPTIMIZE_CONTEXT_PATH}"
           connectors: /connectors
         components:
           orchestration:
@@ -46,7 +46,7 @@ global:
             enabled: true
             clientId: optimize-orcha-ta
             audience: optimize-orcha-api
-            redirectUrl: "https://${HUB_HOST}/optimize-orcha-ta"
+            redirectUrl: "https://${HUB_HOST}${OPTTA_OPTIMIZE_CONTEXT_PATH}"
             secret:
               existingSecret: integration-test-credentials
               existingSecretKey: identity-optimize-client-token
@@ -65,7 +65,7 @@ identity:
       secret:
         existingSecret: integration-test-credentials
         existingSecretKey: identity-optimize-client-token
-      rootUrl: "https://${HUB_HOST}/optimize-orcha-tb"
+      rootUrl: "https://${HUB_HOST}${OPTTB_OPTIMIZE_CONTEXT_PATH}"
       redirectUris: /api/authentication/callback
       permissions:
         - resourceServerId: optimize-orcha-api

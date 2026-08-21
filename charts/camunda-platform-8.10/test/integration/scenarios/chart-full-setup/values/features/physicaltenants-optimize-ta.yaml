@@ -34,11 +34,11 @@ optimize:
       oidc:
         clientId: "optimize-orcha-ta"
         audience: "optimize-orcha-api"
-        redirectUrl: "https://${HUB_HOST}/optimize-orcha-ta"
+        redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
         secret:
           existingSecret: integration-test-credentials
           existingSecretKey: identity-optimize-client-token
-  contextPath: "/optimize-orcha-ta"
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
   database:
     elasticsearch:
       enabled: true
@@ -46,7 +46,7 @@ optimize:
       url:
         protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
         host: "${EXTERNAL_ELASTICSEARCH_HOST}"
-      prefix: "${ORCHA_ORCHESTRATION_INDEX_PREFIX}-ta"
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}-ta"
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX
