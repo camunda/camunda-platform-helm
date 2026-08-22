@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: false
   identity:
     auth:
       orchestration:

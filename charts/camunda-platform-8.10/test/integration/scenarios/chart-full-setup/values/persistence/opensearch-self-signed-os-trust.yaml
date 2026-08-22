@@ -19,8 +19,6 @@
 # =============================================================================
 
 global:
-  elasticsearch:
-    enabled: false
   tls:
     caBundle:
       secret:

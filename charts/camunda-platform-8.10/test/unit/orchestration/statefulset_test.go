@@ -109,7 +109,6 @@ func TestGoldenStatefulSetWithRDBMSEnabled(t *testing.T) {
 		GoldenFileName: "statefulset-rdbms",
 		Templates:      []string{"templates/orchestration/statefulset.yaml"},
 		SetValues: map[string]string{
-			"global.elasticsearch.enabled":                                       "false",
 			"orchestration.exporters.rdbms.enabled":                              "true",
 			"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://rdbms:5432/camunda",
 			"orchestration.data.secondaryStorage.rdbms.username":                 "camunda",

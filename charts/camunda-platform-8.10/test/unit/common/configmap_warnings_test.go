@@ -87,6 +87,74 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestOptimizeCaBundlePlaintextWarning() {
+	warningAnchorValues := map[string]string{
+		"identity.enabled":                                              "true",
+		"global.identity.auth.enabled":                                  "true",
+		"global.security.authentication.method":                         "oidc",
+		"connectors.security.authentication.oidc.secret.existingSecret": "foo",
+		"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
+		"global.testDeprecationFlags.existingSecretsMustBeSet":          "warning",
+		"global.tls.caBundle.secret.existingSecret":                     "ca-bundle",
+	}
+
+	verifyWarning := func(warning string, expected bool) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			s.Require().NoError(err)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &configmap)
+			s.Require().Contains(configmap.Data["warnings"], "DEPRECATION NOTICE")
+			if expected {
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			} else {
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			}
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Enabled Optimize Elasticsearch with HTTP warns",
+			Values: mergeMaps(warningAnchorValues, map[string]string{
+				"orchestration.data.secondaryStorage.type":     "elasticsearch",
+				"optimize.database.elasticsearch.enabled":      "true",
+				"optimize.database.elasticsearch.url.protocol": "http",
+			}),
+			Verifier: verifyWarning("optimize.database.elasticsearch.url.protocol is plaintext 'http'", true),
+		},
+		{
+			Name: "Disabled Optimize Elasticsearch with HTTP does not warn",
+			Values: mergeMaps(warningAnchorValues, map[string]string{
+				"orchestration.data.secondaryStorage.type":     "opensearch",
+				"optimize.database.elasticsearch.enabled":      "false",
+				"optimize.database.elasticsearch.url.protocol": "http",
+			}),
+			Verifier: verifyWarning("optimize.database.elasticsearch.url.protocol is plaintext 'http'", false),
+		},
+		{
+			Name: "Enabled Optimize OpenSearch with HTTP warns",
+			Values: mergeMaps(warningAnchorValues, map[string]string{
+				"orchestration.data.secondaryStorage.type":  "opensearch",
+				"optimize.database.opensearch.enabled":      "true",
+				"optimize.database.opensearch.url.protocol": "http",
+				"optimize.database.opensearch.url.host":     "opensearch.example.com",
+			}),
+			Verifier: verifyWarning("optimize.database.opensearch.url.protocol is plaintext 'http'", true),
+		},
+		{
+			Name: "Disabled Optimize OpenSearch with HTTP does not warn",
+			Values: mergeMaps(warningAnchorValues, map[string]string{
+				"orchestration.data.secondaryStorage.type":  "elasticsearch",
+				"optimize.database.opensearch.enabled":      "false",
+				"optimize.database.opensearch.url.protocol": "http",
+			}),
+			Verifier: verifyWarning("optimize.database.opensearch.url.protocol is plaintext 'http'", false),
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestLegacyExporterTruststoreConflict() {
 	conflictingTruststores := map[string]string{
 		"optimize.enabled":                                                            "true",

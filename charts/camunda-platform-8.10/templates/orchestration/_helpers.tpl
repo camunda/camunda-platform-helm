@@ -288,9 +288,9 @@ Authentication.
             none
         {{- else if .Values.orchestration.exporters.rdbms.enabled -}}
             rdbms
-        {{- else if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
+        {{- else if .Values.optimize.database.elasticsearch.enabled -}}
             elasticsearch
-        {{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
+        {{- else if .Values.optimize.database.opensearch.enabled -}}
             opensearch
         {{- else -}}
             unset
@@ -300,11 +300,7 @@ Authentication.
 
 {{- define "orchestration.sharedTlsConfig" -}}
 {{- $config := dict -}}
-{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true" -}}
-    {{- $config = .Values.global.elasticsearch.tls -}}
-{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true" -}}
-    {{- $config = .Values.global.opensearch.tls -}}
-{{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true" -}}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true" -}}
     {{- $config = .Values.orchestration.data.secondaryStorage.elasticsearch.tls -}}
 {{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)) "true" -}}
     {{- $config = .Values.orchestration.data.secondaryStorage.opensearch.tls -}}
@@ -331,7 +327,7 @@ Authentication.
 {{- /*
 NOTE: the Orchestration JVM mounts a single truststore, so the first matching source wins for the
 whole pod. An Optimize-owned legacy exporter contributes its component TLS secret first; the chain
-falls through to the shared global/secondary-storage sources otherwise.
+falls through to the shared secondary-storage sources otherwise.
 */ -}}
 {{- define "orchestration.effectiveTlsConfig" -}}
 {{- $exporterTls := include "orchestration.legacyExporterTlsConfig" . | fromYaml -}}
@@ -376,13 +372,8 @@ and
 
 {{- define "orchestration.hasLegacyElasticsearchExporter" -}}
 {{- and
-      (or
-        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
-        (or
-          (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
-        )
-      )
+      .Values.optimize.database.elasticsearch.enabled
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
@@ -392,10 +383,8 @@ and
 
 {{- define "orchestration.hasLegacyOpenSearchExporter" -}}
 {{- and
-      (or
-        (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
-      )
+      .Values.optimize.database.opensearch.enabled
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
@@ -449,22 +438,18 @@ ${VALUES_OPENSEARCH_PASSWORD:}
 
 {{- define "orchestration.legacyElasticsearchExporterUsername" -}}
 {{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
-{{- include "optimize.effectiveEsUsername" . -}}
+{{- .Values.optimize.database.elasticsearch.auth.username -}}
 {{- else -}}
-{{- .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username -}}
+{{- .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.legacyOpenSearchExporterUsername" -}}
 {{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
-{{- include "optimize.effectiveOsUsername" . -}}
+{{- .Values.optimize.database.opensearch.auth.username -}}
 {{- else -}}
-{{- .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username -}}
+{{- .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username -}}
 {{- end -}}
-{{- end -}}
-
-{{- define "orchestration.legacyElasticsearchExporterAuthenticationEnabled" -}}
-{{- or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external -}}
 {{- end -}}
 
 {{- define "orchestration.legacyOpenSearchExporterAuthenticationEnabled" -}}
@@ -478,9 +463,9 @@ otherwise.
 */}}
 {{- define "orchestration.legacyOpenSearchExporterAwsEnabled" -}}
 {{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
-{{- include "optimize.effectiveOsAwsEnabled" . -}}
+{{- .Values.optimize.database.opensearch.aws.enabled -}}
 {{- else -}}
-{{- or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
+{{- .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled -}}
 {{- end -}}
 {{- end -}}
 
