@@ -1,5 +1,6 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 {{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- $upgradePhase := include "camundaHub.upgradePhase" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,7 +10,7 @@ metadata:
 spec:
   strategy:
     type: Recreate
-  replicas: 1
+  replicas: {{ ternary 1 0 (eq $upgradePhase "normal") }}
   selector:
     matchLabels: {{- include "webModeler.websockets.matchLabels" . | nindent 6 }}
   template:
@@ -18,6 +19,7 @@ spec:
       {{- if $hub.websockets.podLabels }}
       {{- tpl (toYaml $hub.websockets.podLabels) $ | nindent 8 }}
       {{- end }}
+        camunda.io/upgrade-phase: {{ $upgradePhase | quote }}
       {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) $hub.websockets.podAnnotations }}
       annotations:
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}

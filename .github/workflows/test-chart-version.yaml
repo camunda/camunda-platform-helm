@@ -271,6 +271,16 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
+  gitops-phase-testing:
+    if: ${{ contains(needs.init.outputs.camunda-versions, '8.10') }}
+    name: 8.10 - Camunda Hub GitOps phases
+    needs: [init, validation]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/test-gitops-phase.yaml
+    with:
+      camunda-helm-git-ref: "${{ github.event_name == 'merge_group' && github.sha || needs.init.outputs.pr-head-sha }}"
+
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
     # validated by AlwaysGreen before publishing. Only golden file updates are needed.
@@ -333,7 +343,7 @@ jobs:
   ci-gate:
     name: "CI Gate"
     if: always()
-    needs: [init, unit-testing, validation, kind-testing, integration-tests]
+    needs: [init, unit-testing, validation, kind-testing, gitops-phase-testing, integration-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
@@ -347,6 +357,7 @@ jobs:
             "${{ needs.unit-testing.result }}"
             "${{ needs.validation.result }}"
             "${{ needs.kind-testing.result }}"
+            "${{ needs.gitops-phase-testing.result }}"
             "${{ needs.integration-tests.result }}"
           )
           for result in "${results[@]}"; do

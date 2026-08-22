@@ -1,5 +1,6 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 {{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- $upgradePhase := include "camundaHub.upgradePhase" . -}}
 {{- $deploymentStrategy := $hub.persistence.deploymentStrategy | default "RollingUpdate" -}}
 {{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
 {{- fail "webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy) value must be one of 'RollingUpdate', 'Recreate'" -}}
@@ -16,7 +17,12 @@ metadata:
 spec:
   strategy:
     type: {{ $deploymentStrategy }}
-  replicas: {{ $hub.restapi.replicas }}
+    {{- if and (eq $deploymentStrategy "RollingUpdate") (eq $upgradePhase "migrate") }}
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 100%
+    {{- end }}
+  replicas: {{ ternary 0 (ternary 1 $hub.restapi.replicas (eq $upgradePhase "migrate")) (eq $upgradePhase "quiesce") }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
   template:
@@ -25,6 +31,7 @@ spec:
       {{- if $hub.restapi.podLabels }}
       {{- tpl (toYaml $hub.restapi.podLabels) $ | nindent 8 }}
       {{- end }}
+        camunda.io/upgrade-phase: {{ $upgradePhase | quote }}
       {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) $hub.restapi.podAnnotations }}
       annotations:
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
