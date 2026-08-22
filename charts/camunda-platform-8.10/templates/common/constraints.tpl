@@ -363,6 +363,35 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
 {{- end }}
 
+{{/* Optimize server TLS requires chart-managed or explicitly hand-wired cert material.
+     Governs the SERVER-side identity only; the client-side ES/OS truststore
+     (`optimize.database.*.tls.secret.existingSecret`) is a separate surface. */}}
+{{- if .Values.optimize.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.optimize.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
+    {{- $chartMountsCert := and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret -}}
+    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{- if not (or $chartMountsCert $handWiredCert) }}
+      {{- $errorMessage := printf "%s %s %s"
+          "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
+          "Set global.tls.optimize.enabled: true together with global.tls.optimize.cert.secret.existingSecret (recommended) so the chart mounts the cert -- note that existingSecret alone is NOT mounted unless global.tls.optimize.enabled is also true (e.g. when TLS is enabled only via optimize.env's SERVER_SSL_ENABLED=true),"
+          "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") .Values.global.tls.optimize.cert.secret.existingSecret }}
+    {{- $t := .Values.global.tls.optimize.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.optimize.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
 {{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
@@ -551,6 +580,16 @@ The following values inside your values.yaml need to be set but were not:
         (printf "SECURITY: inlineSecret is set in: [%s]." (join ", " $inlineSecretSections))
         "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
         "For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (ne (include "camundaPlatform.hasCaBundle" .) "true") -}}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "Optimize server TLS is enabled but global.tls.caBundle is not set."
+        "If the Optimize cert is self-signed or from a private/internal CA, in-cluster Java callers will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -747,6 +786,17 @@ The following values inside your values.yaml need to be set but were not:
           "[camunda][warning]"
           "Connectors TLS is enabled (the Connectors pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Connectors Service's serverPort."
           "Inbound routing to Connectors (e.g. external webhooks) will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Connectors Service, so the gateway re-encrypts traffic to the TLS-only pod."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+    {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "Optimize TLS is enabled (the Optimize pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Optimize Service's port."
+          "Inbound routing to the Optimize UI and REST API will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Optimize Service, so the gateway re-encrypts traffic to the TLS-only pod."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
