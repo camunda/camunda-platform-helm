@@ -1,0 +1,70 @@
+global:
+  security:
+    authentication:
+      method: oidc
+  identity:
+    keycloak:
+      url:
+        protocol: https
+        host: keycloak.example.com
+        port: "443"
+      contextPath: /
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: keycloak-admin
+          existingSecretKey: password
+    auth:
+      enabled: true
+      type: KEYCLOAK
+  topology:
+    mode: hub
+    clusters:
+      - id: east
+        name: East
+        namespace: camunda-east
+        releaseName: camunda
+        host: east.example.com
+        version: 8.10.0
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-east
+            audience: orchestration-east-api
+            redirectUrl: https://east.example.com/orchestration
+            secret:
+              existingSecret: east-oidc
+              existingSecretKey: orchestration-secret
+          optimize:
+            enabled: true
+            clientId: optimize-east
+            audience: optimize-east-api
+            redirectUrl: https://east.example.com/optimize
+            secret:
+              existingSecret: east-oidc
+              existingSecretKey: optimize-secret
+        physicalTenants:
+          - id: tenanta
+            components:
+              optimize:
+                enabled: true
+                clientId: optimize-east-ta
+                audience: optimize-east-ta-api
+                redirectUrl: https://east.example.com/optimize-ta
+                secret:
+                  existingSecret: east-oidc
+                  existingSecretKey: optimize-ta-secret
+          - id: tenantb
+            components:
+              optimize:
+                enabled: true
+                clientId: optimize-east-tb
+                audience: optimize-east-tb-api
+                redirectUrl: https://east.example.com/optimize-tb
+                roleName: Optimize East tenantb
+                secret:
+                  existingSecret: east-oidc
+                  existingSecretKey: optimize-tb-secret
+
+identity:
+  enabled: true

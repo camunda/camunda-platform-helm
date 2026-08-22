@@ -249,6 +249,40 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
         {{- end }}
       {{- end }}
     {{- end }}
+    {{- $seenTenantIds := dict }}
+    {{- range $tenant := dig "physicalTenants" list $cluster }}
+      {{- if empty $tenant.id }}
+        {{- fail (printf "[camunda][error] every global.topology.clusters[%s].physicalTenants entry requires id." $cluster.id) }}
+      {{- end }}
+      {{- if not (regexMatch "^[a-z0-9]{1,64}$" ($tenant.id | toString)) }}
+        {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants id %q must be lowercase alphanumeric with a maximum length of 64, matching the runtime tenant id." $cluster.id $tenant.id) }}
+      {{- end }}
+      {{- if hasKey $seenTenantIds ($tenant.id | toString) }}
+        {{- fail (printf "[camunda][error] duplicate global.topology.clusters[%s].physicalTenants id %q." $cluster.id $tenant.id) }}
+      {{- end }}
+      {{- $_ := set $seenTenantIds ($tenant.id | toString) true }}
+      {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+      {{- if $tenantOptimize.enabled }}
+        {{- if or (empty $tenantOptimize.clientId) (empty $tenantOptimize.audience) (empty $tenantOptimize.redirectUrl) }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants[%s].components.optimize requires clientId, audience, and redirectUrl when enabled." $cluster.id $tenant.id) }}
+        {{- end }}
+        {{- range $id := list $tenantOptimize.clientId $tenantOptimize.audience }}
+          {{- if hasKey $seenIds $id }}
+            {{- fail (printf "[camunda][error] duplicate topology client or audience id %q." $id) }}
+          {{- end }}
+          {{- $_ := set $seenIds $id true }}
+        {{- end }}
+        {{- if and (eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK") (ne (include "camundaPlatform.hasSecretConfig" (dict "config" $tenantOptimize)) "true") }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants[%s].components.optimize requires a complete secret configuration when Management Identity administers Keycloak." $cluster.id $tenant.id) }}
+        {{- end }}
+        {{- if $tenantOptimize.roleName }}
+          {{- if hasKey $seenRoles $tenantOptimize.roleName }}
+            {{- fail (printf "[camunda][error] duplicate or reserved topology role name %q." $tenantOptimize.roleName) }}
+          {{- end }}
+          {{- $_ := set $seenRoles $tenantOptimize.roleName true }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
     {{- if and (dig "components" "connectors" "enabled" false $cluster) (not (dig "components" "orchestration" "enabled" false $cluster)) }}
       {{- fail (printf "[camunda][error] global.topology.clusters[%s] enables Connectors without Orchestration." $cluster.id) }}
     {{- end }}

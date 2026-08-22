@@ -14,12 +14,13 @@
 # per release namespace, so the two Optimizes never share index space.
 #
 # NOTE ON AUTHORIZATION: both tenants' Optimize clients share the audience
-# optimize-orcha-api. global.topology.clusters[].components.optimize is singular,
-# so the hub can register a second client for tenant B via identity.clients[] but
-# cannot register a second resource server, and a client permission must name an
-# existing one. Per-tenant Optimize audiences therefore are not expressible in
-# the cluster record today: the two instances are identity-separated but not
-# authorization-isolated.
+# optimize-orcha-api, so these two instances are separated by client identity but
+# are not authorization-isolated — a token minted for one is accepted by the other.
+# That is a property of this scenario, not of the chart: a cluster record can give
+# each tenant its own resource server through
+# global.topology.clusters[].physicalTenants[].components.optimize. This scenario
+# has not been migrated to it, and it is skip-e2e, so nothing here exercises the
+# per-tenant audience path or asserts a cross-tenant rejection.
 
 global:
   topology:
