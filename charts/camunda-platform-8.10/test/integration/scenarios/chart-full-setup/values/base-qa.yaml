@@ -100,8 +100,8 @@ identity:
       roles:
         - ManagementIdentity
         - Optimize
-        - Web Modeler
-        - Web Modeler Admin
+        - Hub
+        - Hub Admin
         - Orchestration
     - username: bart
       secret:
@@ -113,8 +113,8 @@ identity:
       roles:
         - ManagementIdentity
         - Optimize
-        - Web Modeler
-        - Web Modeler Admin
+        - Hub
+        - Hub Admin
         - Orchestration
 
 connectors:
