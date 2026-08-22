@@ -146,15 +146,36 @@ go.fmt:
 go.addlicense-install:
 	go install github.com/google/addlicense@v1.0.0
 
+# go.addlicense-files: lists the go files the license targets operate on.
+# Fails when the set is empty, so a bad chartPath or a moved test tree
+# surfaces as an error instead of a vacuous pass.
+.PHONY: go.addlicense-files
+go.addlicense-files:
+	@files=$$(find $(chartPath)/test -name '*.go' 2>/dev/null); \
+	if [ -z "$$files" ]; then \
+		echo "ERROR: no .go files under '$(chartPath)/test' - refusing to report success." >&2; \
+		exit 1; \
+	fi; \
+	echo "$$files"
+
 # go.addlicense-run: adds license headers to go files
 .PHONY: go.addlicense-run
 go.addlicense-run:
-	addlicense -c 'Camunda Services GmbH' -l apache charts/$(chartPath)/test/**/*.go
+	@files=$$($(MAKE) --no-print-directory go.addlicense-files chartPath='$(chartPath)') || exit 1; \
+	echo "$$files" | tr '\n' '\0' | xargs -0 addlicense -c 'Camunda Services GmbH' -l apache
 
 # go.addlicense-check: checks that the go files contain license header
 .PHONY: go.addlicense-check
 go.addlicense-check:
-	addlicense -check -l apache charts/$(chartPath)/test/**/*.go
+	@files=$$($(MAKE) --no-print-directory go.addlicense-files chartPath='$(chartPath)') || exit 1; \
+	echo "$$files" | tr '\n' '\0' | xargs -0 addlicense -check -l apache
+
+# go.license-verify: verifies every tracked .go and .sh file carries an Apache 2.0
+# header. addlicense -check only detects an absent header and accepts any license
+# text that is present, so this covers the license type it cannot.
+.PHONY: go.license-verify
+go.license-verify:
+	@cd scripts/license-check && go run . --repo-root ../..
 
 #########################################################
 ######### Tools

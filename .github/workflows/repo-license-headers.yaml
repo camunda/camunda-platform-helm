@@ -1,0 +1,37 @@
+name: Repo - License Headers
+
+# Repo-wide, always-run licence-header gate. Deliberately NOT path-filtered and
+# NOT scoped to a chart-version matrix: `test-chart-version.yaml` gates its jobs
+# behind a charts-relevance filter that omits paths this verifier covers (for
+# example `.github/workflows/*.sh`), so a PR touching only those files would
+# produce an empty matrix and skip verification entirely. Mirrors the reasoning
+# in `repo-go-format.yaml`.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  license-headers:
+    name: license-headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Go (from .tool-versions)
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+      - name: Test license-check tool
+        run: |
+          cd scripts/license-check && go test ./...
+      - name: Verify license headers across all tracked source files
+        run: |
+          make go.license-verify
