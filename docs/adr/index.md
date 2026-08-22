@@ -97,3 +97,4 @@
 | 93 | [Adopt a composable CI scenario registry for the per-version integration test matrix](0093-adopt-composable-ci-scenario-registry-for-per-version-test-matrix.md) |
 | 94 | [Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts](0094-remove-bundled-bitnami-subcharts-from-the-8-10-chart.md) |
 | 95 | [Adopt release roles for multi-cluster deployment topology](0095-adopt-release-roles-for-multi-cluster-deployment-topology.md) |
+| 96 | [Narrow document-store configuration to its verified consumers and separate it from ambient cloud credentials](0096-narrow-document-store-configuration-to-verified-consumers.md) |
