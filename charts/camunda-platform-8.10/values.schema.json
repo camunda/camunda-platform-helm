@@ -4134,7 +4134,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.",
+                    "description": "if true, deploys the capacity manager.",
                     "default": false
                 },
                 "replicaOwnership": {
