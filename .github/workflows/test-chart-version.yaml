@@ -104,10 +104,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: read
-  id-token: write
-  deployments: write
   packages: read
-  statuses: write
 
 jobs:
   init:
@@ -254,7 +251,15 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   kind-testing:
-    if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
+    if: >-
+      ${{
+        needs.init.outputs.camunda-versions != '[]' &&
+        !contains(github.head_ref, 'release-please--branches--') &&
+        (github.event_name != 'pull_request' || (
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        ))
+      }}
     name: Local cluster - KIND ${{ matrix.version }}
     needs: [init, validation]
     strategy:
@@ -280,6 +285,10 @@ jobs:
       ${{
         needs.init.outputs.camunda-versions != '[]' &&
         !contains(github.head_ref, 'release-please--branches--') &&
+        (github.event_name != 'pull_request' || (
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        )) &&
         !(startsWith(github.head_ref, 'renovate/') && (
           contains(github.head_ref, 'camunda-platform-images') ||
           contains(github.head_ref, 'camunda-platform-digests')
@@ -291,6 +300,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
     uses: ./.github/workflows/test-chart-version-template.yaml
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+      statuses: write
     secrets: inherit
     with:
       pr-number: ${{ github.event.pull_request.number || matrix.flow }}
@@ -365,6 +380,9 @@ jobs:
     name: "Report CLA status"
     if: ${{ github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
     steps:
       - name: Report license/cla status
         env:
@@ -385,9 +403,15 @@ jobs:
     if: >-
       ${{
         github.event_name == 'merge_group' ||
-        (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--'))
+        (github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
+          !startsWith(github.head_ref, 'release-please--'))
       }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
     steps:
       - name: Report release-chores as not applicable
         env:
