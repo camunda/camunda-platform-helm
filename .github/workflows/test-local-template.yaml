@@ -126,7 +126,7 @@ jobs:
         run: |
           test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
             TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
-          if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" ]]; then
+          if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.8" ]]; then
             TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} \
               --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c \
               --set orchestration.service.appProtocols.management=http \
@@ -138,8 +138,8 @@ jobs:
             --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
             --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
             ${TEST_HELM_EXTRA_ARGS}
-      - name: Verify appProtocol is set on live Service objects (8.10)
-        if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.10' }}
+      - name: Verify appProtocol is set on live Service objects (8.10, 8.8)
+        if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.10' || inputs.camunda-helm-dir == 'camunda-platform-8.8' }}
         run: |
           set -euo pipefail
           check() {
