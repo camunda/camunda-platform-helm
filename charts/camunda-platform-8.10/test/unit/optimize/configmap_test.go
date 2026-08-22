@@ -371,3 +371,113 @@ func (s *ConfigMapTemplateTest) TestOptimizeNativeConfigHonorsExtraConfiguration
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestOidcConfigurationIsRendered",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"optimize.enabled":                          "true",
+				"global.identity.auth.enabled":              "true",
+				"global.identity.auth.optimize.redirectUrl": "https://camunda.example.com/optimize",
+				"global.identity.auth.issuer":               "https://camunda.example.com/auth/realms/camunda-platform",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				authConfig := configmap.Data["application-ccsm.yaml"]
+				s.Require().NotContains(authConfig, "csl:",
+					"Optimize defaults to the CSL chains, so the chart no longer opts in explicitly")
+				s.Require().Contains(authConfig, `method: "oidc"`)
+				s.Require().Contains(authConfig, `client-id: "optimize"`)
+				s.Require().Contains(authConfig, "client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}")
+				s.Require().Contains(authConfig, `issuer-uri: "https://camunda.example.com/auth/realms/camunda-platform"`)
+				s.Require().Contains(authConfig, `redirect-uri: "https://camunda.example.com/optimize/api/authentication/callback"`)
+			},
+		},
+		{
+			Name: "TestKeycloakSetupUsesBackChannelEndpointsInsteadOfDiscovery",
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"optimize.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.auth.publicIssuerUrl":  "https://camunda.example.com/auth/realms/camunda-platform",
+				"global.identity.auth.issuerBackendUrl": "http://keycloak:80/auth/realms/camunda-platform",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				authConfig := configmap.Data["application-ccsm.yaml"]
+				s.Require().NotContains(authConfig, "issuer-uri:",
+					"issuer-uri makes CSL run OIDC discovery over the public URL at startup, which breaks wherever the JVM truststore is replaced for a self-signed database")
+				s.Require().Contains(authConfig, `authorization-uri: "https://camunda.example.com/auth/realms/camunda-platform/protocol/openid-connect/auth"`)
+				s.Require().Contains(authConfig, `jwk-set-uri: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"`)
+				s.Require().Contains(authConfig, `token-uri: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"`)
+			},
+		},
+		{
+			Name: "TestAudiencesCoverLoginClientApiAndHub",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				authConfig := configmap.Data["application-ccsm.yaml"]
+				s.Require().Contains(authConfig, "audiences:\n          - \"optimize\"\n          - \"optimize-api\"\n          - \"web-modeler-api\"")
+			},
+		},
+		{
+			Name: "TestCamundaHubAudienceOverridesWebModeler",
+			Values: map[string]string{
+				"identity.enabled":                                  "true",
+				"optimize.enabled":                                  "true",
+				"global.identity.auth.enabled":                      "true",
+				"global.identity.auth.camundaHub.clientApiAudience": "camunda-hub-api",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				authConfig := configmap.Data["application-ccsm.yaml"]
+				s.Require().Contains(authConfig, `- "camunda-hub-api"`)
+				s.Require().NotContains(authConfig, `- "web-modeler-api"`)
+			},
+		},
+		{
+			Name: "TestBothSecurityConfigShapesAreRendered",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				s.Require().Contains(configmap.Data["application-ccsm.yaml"], `method: "oidc"`,
+					"the CSL chains read camunda.security.*")
+
+				envConfig := configmap.Data["environment-config.yaml"]
+				s.Require().Contains(envConfig, "redirectRootUrl:",
+					"the legacy chains read environment-config.yaml, which extraConfiguration cannot reach")
+				s.Require().Contains(envConfig, `audience: "optimize-api"`)
+				s.Require().Contains(envConfig, "jwtSetUri:")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
