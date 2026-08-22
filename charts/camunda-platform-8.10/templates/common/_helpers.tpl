@@ -485,7 +485,7 @@ Connectors templates.
 [camunda-platform] Connectors external URL.
 */}}
 {{- define "camundaPlatform.connectorsExternalURL" }}
-  {{- $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
+  {{- $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace -}}
   {{- printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath "")) | trimSuffix "/" -}}
 {{- end -}}
@@ -952,6 +952,70 @@ ingress-orchestration-http.yaml serves that route with an HTTPS backend.
   {{- end }}
 {{- end -}}
 
+{{/*
+[camunda-platform] Returns "true" when Connectors TLS is enabled. An explicit
+connectors.env entry for SERVER_SSL_ENABLED wins over
+global.tls.connectors.enabled, because Kubernetes keeps the LAST duplicate env
+var and the chart must report the same TLS state the running container actually
+ends up with — probe schemes and the in-cluster Connectors URL are derived from
+this helper. A "valueFrom"-sourced entry (no literal value) resolves to
+"unknown" from connectorsEnvLastValue and is treated the same as "unset" here,
+mirroring camundaPlatform.orchestrationRESTTLSEnabled.
+*/}}
+{{- define "camundaPlatform.connectorsTLSEnabled" -}}
+  {{- $envValue := include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- if eq $envValue "true" -}}
+    true
+  {{- else if eq $envValue "false" -}}
+    false
+  {{- else if .Values.global.tls.connectors.enabled -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Resolves the LAST connectors.env entry for name to one of
+"true" / "false" / "unset" / "unknown", mirroring
+camundaPlatform.orchestrationEnvLastValue. "unset" means no matching entry
+exists at all. "unknown" means the last matching entry carries no literal value
+but does carry a valueFrom (e.g. a Secret/ConfigMap key) — the chart cannot read
+that value at render time, so callers must fall back to the global TLS flag
+rather than treat it as "false".
+
+Unlike camundaPlatform.orchestrationEnvLastValue this deliberately does NOT
+run the value through `tpl`: templates/connectors/deployment.yaml renders
+connectors.env with `toYaml` alone, whereas the Orchestration StatefulSet
+renders orchestration.env with `tpl (toYaml .)`. Evaluating a template here
+that the container never sees would make this helper disagree with the
+running container — a "{{ eq 1 1 }}" value would flip probes to HTTPS while
+the container receives the literal string and keeps serving plaintext.
+Usage:
+  {{ include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") }}
+*/}}
+{{- define "camundaPlatform.connectorsEnvLastValue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $result := "unset" -}}
+  {{- range $env := $ctx.Values.connectors.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- if $env.value -}}
+        {{- if eq (lower (toString $env.value)) "true" -}}
+          {{- $result = "true" -}}
+        {{- else -}}
+          {{- $result = "false" -}}
+        {{- end -}}
+      {{- else if $env.valueFrom -}}
+        {{- $result = "unknown" -}}
+      {{- else -}}
+        {{- $result = "false" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $result -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -1010,7 +1074,7 @@ Release templates.
   {{- end }}
 
   {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
-  {{-  $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
+  {{-  $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
     id: connectors
@@ -1123,7 +1187,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) | quote }}
   {{- end }}
   {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
-  {{- $proto := (lower .Values.connectors.readinessProbe.scheme) }}
+  {{- $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) }}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
     type: connectors
@@ -1821,6 +1885,7 @@ Usage (inside the Orchestration pod template's metadata.annotations):
   {{- $data := ($s | default dict).data | default dict -}}
   {{- $hashes = append $hashes (get $data $certRef.key) -}}
 {{- end -}}
+
 {{- if $tls.privateKey.secret.inlineSecret -}}
   {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
 {{- else if $keyRef.name -}}
@@ -1832,6 +1897,49 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- printf "\nchecksum/orchestration-tls-%s: %s" $proto (join "" $hashes | sha256sum) -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* Returns the Secret data key that holds the Connectors server certificate. */}}
+{{- define "camundaPlatform.connectorsSecretCertKey" -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- $type := $c.type | default "pkcs12" -}}
+{{- $key := $c.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+Emits a checksum annotation for the configured Connectors TLS material.
+
+In PEM mode the cert and private key live in the SAME Secret but under
+separate keys, and the key can rotate without the cert changing. Hashing the
+cert key alone would leave such a rotation invisible to autoRollout, so the
+private key is folded into the same hash — mirroring
+camundaPlatform.orchestrationTLSChecksumAnnotations. PKCS12 mode keeps a
+single keystore key, so nothing extra is hashed there. The keystore password
+is deliberately excluded for the same reason as the Orchestration helper:
+hashing a password-only value would turn the pod annotation into a
+sha256(password) oracle readable with Pod-get access alone.
+*/}}
+{{- define "camundaPlatform.connectorsTLSChecksumAnnotation" -}}
+{{- if .Values.global.tls.connectors.autoRollout -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- if and $c.enabled $c.cert.secret.existingSecret -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $c.cert.secret.existingSecret -}}
+{{- $data := ($secret | default dict).data | default dict -}}
+{{- $hashes := list (get $data (include "camundaPlatform.connectorsSecretCertKey" .)) -}}
+{{- if eq ($c.type | default "pkcs12") "pem" -}}
+{{- $keyKey := $c.privateKey.secret.existingSecretKey | default "tls.key" -}}
+{{- $hashes = append $hashes (get $data $keyKey) -}}
+{{- end -}}
+checksum/connectors-tls: {{ join "" $hashes | sha256sum }}
 {{- end -}}
 {{- end -}}
 {{- end -}}

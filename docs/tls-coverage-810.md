@@ -68,6 +68,7 @@ Status legend:
 | Browser → Operate / Tasklist / Modeler / Console / Identity / Optimize UI | ✅ | Per-component `*.ingress.tls` or `global.gateway.tls` | Standard K8s ingress TLS termination |
 | External gRPC client → Zeebe gateway | ✅ | `orchestration.ingress.grpc.tls.{enabled,secretName}` | Configured at the ingress, not the pod |
 | GatewayAPI deployments | ✅ | `global.gateway.tls.{enabled,secretName}` | When using the GatewayAPI controller path |
+| External webhook / HTTP client → Connectors HTTP (inbound) | 🟢 | `global.tls.connectors` (PKCS12 or PEM); TLS terminates at the Connectors Spring Boot pod on `connectors.service.serverPort` | New in this PR. Under the Gateway API `HTTPRoute` used in 8.10, a `BackendTLSPolicy` (Gateway API v1.0+) targeting the Connectors Service is required so the gateway re-encrypts to the TLS-only pod. |
 
 ### 3. Component → identity / OIDC issuer
 
