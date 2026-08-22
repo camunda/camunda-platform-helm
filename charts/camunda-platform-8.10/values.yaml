@@ -285,7 +285,7 @@ global:
       port: 9200
     ## @param global.elasticsearch.clusterName (DEPRECATED - use component-specific options instead, e.g., orchestration.data.secondaryStorage.elasticsearch) defines the name of the Elasticsearch cluster.
     clusterName: "elasticsearch"
-    ## @param global.elasticsearch.prefix (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.prefix or orchestration.data.secondaryStorage.elasticsearch) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
+    ## @param global.elasticsearch.prefix (DEPRECATED - use orchestration.exporters.zeebe.index.prefix to configure the exporter that writes these indexes, and optimize.database.elasticsearch.prefix to tell Optimize which indexes to read) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
     prefix: zeebe-record
   # DEPRECATED - Global OpenSearch configuration is deprecated.
   # Use component-specific options instead (e.g., optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch).
@@ -337,7 +337,7 @@ global:
       port: 443
     ## @param global.opensearch.clusterName (DEPRECATED - use component-specific options instead, e.g., orchestration.data.secondaryStorage.opensearch) defines the name of the OpenSearch cluster.
     clusterName: "opensearch"
-    ## @param global.opensearch.prefix (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.prefix or orchestration.data.secondaryStorage.opensearch) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
+    ## @param global.opensearch.prefix (DEPRECATED - use orchestration.exporters.zeebe.index.prefix to configure the exporter that writes these indexes, and optimize.database.opensearch.prefix to tell Optimize which indexes to read) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
     prefix: zeebe-record
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
@@ -2652,6 +2652,10 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
+      ## @extra orchestration.exporters.zeebe.index configuration of the indices the legacy Zeebe exporter writes.
+      index:
+        ## @param orchestration.exporters.zeebe.index.prefix defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, "optimize.database.elasticsearch.prefix" (or its OpenSearch equivalent, then "global.elasticsearch.prefix") is used instead.
+        prefix: ""
     appIntegrations:
       apiKey:
         secret:
@@ -2662,7 +2666,7 @@ orchestration:
           ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret.
           existingSecretKey: ""
   index:
-    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the "global.elasticsearch.prefix" or OpenSearch equivalent.
+    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by "orchestration.exporters.zeebe.index.prefix", nor to the indices Optimize reads, which are named by "optimize.database.elasticsearch.prefix" or the OpenSearch equivalent.
     prefix: ""
     ## @param orchestration.index.replicas can be used to specify the number of replicas for Orchestration Cluster indices.
     replicas: 1
@@ -2835,7 +2839,7 @@ optimize:
         protocol: ""
         host: ""
         port: 0
-      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
+      ## @param optimize.database.elasticsearch.prefix defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
@@ -2875,7 +2879,7 @@ optimize:
         protocol: ""
         host: ""
         port: 0
-      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
+      ## @param optimize.database.opensearch.prefix defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
 
 
