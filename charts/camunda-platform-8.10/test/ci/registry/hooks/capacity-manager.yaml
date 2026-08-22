@@ -1,0 +1,5 @@
+script: verify-capacity-manager.sh
+description: |
+  Waits for process load to trigger scale-up from one to two brokers, deletes
+  the load generator, then verifies idle traffic triggers topology evacuation
+  before the orchestration StatefulSet contracts.
