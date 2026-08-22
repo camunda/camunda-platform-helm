@@ -154,6 +154,22 @@ func (c *Client) ListNamespacedResources(
 	return resources, nil
 }
 
+// ListPods returns every pod in a namespace using the typed client. Callers that
+// need container-level state (waiting reasons, image-pull messages) should use
+// this rather than ListNamespacedResources, which hands back unstructured data
+// that has to be traversed by hand.
+func (c *Client) ListPods(ctx context.Context, namespace string) (*corev1.PodList, error) {
+	if namespace == "" {
+		return nil, errors.New("namespace must not be empty")
+	}
+
+	pods, err := c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pods in namespace %q: %w", namespace, err)
+	}
+	return pods, nil
+}
+
 func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 	if namespace == "" {
 		return errors.New("namespace must not be empty")
