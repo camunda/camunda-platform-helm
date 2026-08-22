@@ -69,6 +69,20 @@ inputs:
       TEST_NAMESPACE resolves to the orchestration namespace.
     required: false
     default: ""
+  optimize-namespace:
+    description: >-
+      For a topology whose Optimize runs as its own release: the namespace
+      running the Optimize instance that serves this leg. render-e2e-env.sh
+      derives Optimize from the orchestration namespace and sets
+      IS_OPTIMIZE=false when it finds none there, which skips every Optimize
+      spec while still reporting success. Requires hub-namespace.
+    required: false
+    default: ""
+  optimize-context-path:
+    description: >-
+      Ingress path that Optimize release is served on, e.g. /optimize-orcha.
+    required: false
+    default: ""
   namespace-override:
     description: >-
       Overrides the namespace workflow-vars would otherwise compute from
@@ -232,6 +246,12 @@ runs:
         TEST_EXCLUDE: ${{ inputs.exclude }}
         TEST_AUTH_TYPE: ${{ inputs.auth }}
         HUB_NAMESPACE: ${{ inputs.hub-namespace }}
+        # E2E_ARG_-prefixed because these only build the argument list below. The Playwright suite
+        # reads OPTIMIZE_CONTEXT_PATH itself as `process.env.OPTIMIZE_CONTEXT_PATH ?? '/optimize'`,
+        # and `??` does not fall back on an empty string: exporting the bare name here made every
+        # non-topology leg navigate to the ingress root instead of /optimize.
+        E2E_ARG_OPTIMIZE_NAMESPACE: ${{ inputs.optimize-namespace }}
+        E2E_ARG_OPTIMIZE_CONTEXT_PATH: ${{ inputs.optimize-context-path }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
@@ -260,6 +280,8 @@ runs:
         E2E_ARGS+=(--trace retain-on-failure --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
+        [[ -n "$E2E_ARG_OPTIMIZE_NAMESPACE" ]] && E2E_ARGS+=(--optimize-namespace "${E2E_ARG_OPTIMIZE_NAMESPACE}")
+        [[ -n "$E2E_ARG_OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 

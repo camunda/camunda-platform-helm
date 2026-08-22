@@ -29,6 +29,8 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	var (
 		orchestrationNamespace string
 		hubNamespace           string
+		optimizeNamespace      string
+		optimizeContextPath    string
 		chartPath              string
 		output                 string
 		renderScript           string
@@ -99,11 +101,29 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":     clientSecret,
 			}
 
+			if optimizeNamespace != "" {
+				if err := assertOptimizeDeployed(kubeContext, optimizeNamespace); err != nil {
+					return err
+				}
+				optimizeHost, err := resolveIngressHost(kubeContext, optimizeNamespace)
+				if err != nil {
+					return fmt.Errorf("optimize namespace %q: %w", optimizeNamespace, err)
+				}
+				for k, v := range optimizeEnvOverrides(optimizeHost, optimizeContextPath) {
+					overrides[k] = v
+				}
+			}
+
 			content, err := os.ReadFile(output)
 			if err != nil {
 				return err
 			}
 			merged := mergeEnvOverrides(string(content), overrides)
+			if optimizeNamespace != "" {
+				if err := assertOptimizeEnabled(merged, optimizeNamespace); err != nil {
+					return err
+				}
+			}
 			if err := os.WriteFile(output, []byte(merged), 0o600); err != nil {
 				return err
 			}
@@ -118,6 +138,8 @@ func newE2EEnvMergeCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&orchestrationNamespace, "orchestration-namespace", "", "orchestration release namespace")
 	cmd.Flags().StringVar(&hubNamespace, "hub-namespace", "", "Hub release namespace")
+	cmd.Flags().StringVar(&optimizeNamespace, "optimize-namespace", "", "namespace of the Optimize-only release serving this leg; render-e2e-env.sh derives Optimize from the orchestration namespace, which is not where Optimize runs in a topology using the optimize release role")
+	cmd.Flags().StringVar(&optimizeContextPath, "optimize-context-path", "", "ingress path the Optimize-only release is served on, e.g. /optimize-orcha")
 	cmd.Flags().StringVar(&chartPath, "absolute-chart-path", "", "absolute chart path")
 	cmd.Flags().StringVar(&output, "output", ".env", "output .env path")
 	cmd.Flags().StringVar(&renderScript, "render-script", "scripts/render-e2e-env.sh", "path to render-e2e-env.sh")
@@ -129,6 +151,59 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	_ = cmd.MarkFlagRequired("absolute-chart-path")
 
 	return cmd
+}
+
+// optimizeEnvOverrides points the e2e env at an Optimize running as its own release, in its own
+// namespace on the Hub host.
+//
+// Both URL keys are required and must agree. 32 call sites read CAMUNDA_OPTIMIZE_BASE_URL, but
+// NavigationPage.goToOptimize and goToOptimizeWithoutAccess navigate with OPTIMIZE_CONTEXT_PATH, whose
+// default "/optimize" resolves against Playwright's baseURL — the orchestration host — and lands on an
+// nginx 404. Setting only the first made the Optimize specs pass while Basic Navigation and the
+// all-apps smoke flow failed on a 404 page. Absolute URLs, like MODELER_CONTEXT_PATH, because
+// page.goto honours an absolute URL over baseURL.
+func optimizeEnvOverrides(optimizeHost, optimizeContextPath string) map[string]string {
+	url := "https://" + optimizeHost + optimizeContextPath
+	return map[string]string{
+		"CAMUNDA_OPTIMIZE_BASE_URL": url,
+		"OPTIMIZE_CONTEXT_PATH":     url,
+		"IS_OPTIMIZE":               "true",
+	}
+}
+
+// assertOptimizeDeployed fails when a leg declares an Optimize namespace that
+// runs no Optimize workload. Without it the merged env would point at nothing
+// and, because render-e2e-env.sh only sets IS_OPTIMIZE from the orchestration
+// namespace and every Optimize spec is guarded on that variable, the suite
+// would report success having silently skipped Optimize entirely.
+func assertOptimizeDeployed(kubeContext, namespace string) error {
+	args := []string{}
+	if kubeContext != "" {
+		args = append(args, "--context", kubeContext)
+	}
+	args = append(args, "-n", namespace, "get", "deployment",
+		"-l", "app.kubernetes.io/component=optimize",
+		"-o", "jsonpath={.items[*].metadata.name}")
+	out, err := exec.Command("kubectl", args...).Output()
+	if err != nil {
+		return fmt.Errorf("look for an Optimize deployment in namespace %q: %w", namespace, err)
+	}
+	if len(strings.Fields(string(out))) == 0 {
+		return fmt.Errorf("no Optimize deployment found in namespace %q; every Optimize spec is guarded on IS_OPTIMIZE, so continuing would skip Optimize coverage and still report success", namespace)
+	}
+	return nil
+}
+
+// assertOptimizeEnabled guards the merge itself: the rendered env carries
+// IS_OPTIMIZE=false for a topology whose Optimize runs outside the
+// orchestration namespace, and that value must have been overridden.
+func assertOptimizeEnabled(merged, namespace string) error {
+	for _, line := range strings.Split(merged, "\n") {
+		if strings.TrimSpace(line) == "IS_OPTIMIZE=false" {
+			return fmt.Errorf("merged env still sets IS_OPTIMIZE=false while Optimize runs in namespace %q; Optimize specs would be skipped", namespace)
+		}
+	}
+	return nil
 }
 
 // resolveSecretKey reads and base64-decodes one key from the Hub

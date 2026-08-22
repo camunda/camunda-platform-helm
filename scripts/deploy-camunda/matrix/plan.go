@@ -79,18 +79,16 @@ type topologySmokeEntry struct {
 	ModelerClusterID    string `json:"modeler_cluster_id"`
 	ModelerClusterName  string `json:"modeler_cluster_name"`
 	ShardIndex          string `json:"shard_index"`
-	// Optimize is empty unless role "optimize" releases declare
-	// `serves: <orchestration_suffix>`. When populated, this leg's Optimize
-	// instances run in their own namespaces on the Hub host rather than in the
-	// orchestration namespace, so an e2e run must not derive an Optimize
-	// endpoint from OrchestrationSuffix. One entry per Physical Tenant served by
-	// this orchestration release, in declaration order.
-	Optimize []topologySmokeOptimize `json:"optimize,omitempty"`
-}
-
-type topologySmokeOptimize struct {
-	Suffix      string `json:"suffix"`
-	ContextPath string `json:"context_path"`
+	// OptimizeSuffix and OptimizeContextPath are empty unless a role "optimize"
+	// release declares `serves: <orchestration_suffix>`. When set, this leg's
+	// Optimize runs in its own namespace on the Hub host rather than in the
+	// orchestration namespace, so the e2e env must not derive its Optimize
+	// endpoint from OrchestrationSuffix. The e2e suite reads a single
+	// CAMUNDA_OPTIMIZE_BASE_URL, so an orchestration release serving several
+	// Physical Tenants produces one leg per tenant rather than one leg carrying
+	// a list.
+	OptimizeSuffix      string `json:"optimize_suffix,omitempty"`
+	OptimizeContextPath string `json:"optimize_context_path,omitempty"`
 }
 
 // PlanResult is the computed build matrix.
@@ -389,36 +387,82 @@ func groupPlanEntries(version string, entries []Entry) []PlanEntry {
 	return out
 }
 
+// TopologyE2ELeg is one e2e invocation for a topology: an orchestration release to test against,
+// plus the Optimize release serving it when Optimize runs as its own release. It is the shared
+// source of truth for both the CI smoke matrix (marshalled by planTopologyMetadata) and the local
+// runner's post-deploy test phase, so the two cannot disagree about how many legs a topology has or
+// which namespaces each one targets.
+//
+// An orchestration release serving several Physical Tenants yields one leg per tenant rather than
+// one leg carrying a list, because the e2e suite reads a single CAMUNDA_OPTIMIZE_BASE_URL.
+type TopologyE2ELeg struct {
+	OrchestrationSuffix string
+	// OptimizeSuffix and OptimizeContextPath are empty unless a role "optimize" release declares
+	// `serves: <OrchestrationSuffix>`, in which case Optimize lives in its own namespace on the Hub
+	// host and the e2e env must not derive its endpoint from OrchestrationSuffix.
+	OptimizeSuffix      string
+	OptimizeContextPath string
+	ModelerClusterID    string
+	ModelerClusterName  string
+}
+
+// TopologyE2ELegs computes the e2e legs for a topology. A nil topology yields no legs.
+func TopologyE2ELegs(topology *Topology) []TopologyE2ELeg {
+	if topology == nil {
+		return nil
+	}
+	optimizeByServed := map[string][]TopologyRelease{}
+	for _, release := range topology.Releases {
+		if release.Role == "optimize" && release.Serves != "" {
+			optimizeByServed[release.Serves] = append(optimizeByServed[release.Serves], release)
+		}
+	}
+	legs := []TopologyE2ELeg{}
+	for _, release := range topology.Releases {
+		if release.Role != "orchestration" {
+			continue
+		}
+		base := TopologyE2ELeg{
+			OrchestrationSuffix: release.NamespaceSuffix,
+			ModelerClusterID:    release.ModelerClusterID,
+			ModelerClusterName:  release.ModelerClusterName,
+		}
+		served := optimizeByServed[release.NamespaceSuffix]
+		if len(served) == 0 {
+			legs = append(legs, base)
+			continue
+		}
+		for _, optimize := range served {
+			leg := base
+			leg.OptimizeSuffix = optimize.NamespaceSuffix
+			leg.OptimizeContextPath = optimize.OptimizeContextPath
+			legs = append(legs, leg)
+		}
+	}
+	return legs
+}
+
 func planTopologyMetadata(topology *Topology) (string, string, string) {
 	suffixes := []string{}
-	smoke := []topologySmokeEntry{}
 	hubSuffix := ""
 	if topology != nil {
-		optimizeByServed := map[string][]topologySmokeOptimize{}
-		for _, release := range topology.Releases {
-			if release.Role == "optimize" && release.Serves != "" {
-				optimizeByServed[release.Serves] = append(optimizeByServed[release.Serves], topologySmokeOptimize{
-					Suffix:      release.NamespaceSuffix,
-					ContextPath: release.OptimizeContextPath,
-				})
-			}
-		}
 		for _, release := range topology.Releases {
 			suffixes = append(suffixes, release.NamespaceSuffix)
 			if release.Role == "hub" {
 				hubSuffix = release.NamespaceSuffix
 			}
-			if release.Role == "orchestration" {
-				entry := topologySmokeEntry{
-					OrchestrationSuffix: release.NamespaceSuffix,
-					ModelerClusterID:    release.ModelerClusterID,
-					ModelerClusterName:  release.ModelerClusterName,
-					ShardIndex:          strconv.Itoa(len(smoke) + 1),
-				}
-				entry.Optimize = optimizeByServed[release.NamespaceSuffix]
-				smoke = append(smoke, entry)
-			}
 		}
+	}
+	smoke := []topologySmokeEntry{}
+	for i, leg := range TopologyE2ELegs(topology) {
+		smoke = append(smoke, topologySmokeEntry{
+			OrchestrationSuffix: leg.OrchestrationSuffix,
+			ModelerClusterID:    leg.ModelerClusterID,
+			ModelerClusterName:  leg.ModelerClusterName,
+			ShardIndex:          strconv.Itoa(i + 1),
+			OptimizeSuffix:      leg.OptimizeSuffix,
+			OptimizeContextPath: leg.OptimizeContextPath,
+		})
 	}
 	suffixesJSON, _ := json.Marshal(suffixes)
 	smokeJSON, _ := json.Marshal(smoke)
