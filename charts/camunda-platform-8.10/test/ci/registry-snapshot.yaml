@@ -1899,6 +1899,75 @@ integration:
                 optimize-context-path: /optimize-orchb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
+        - name: physicaltenants
+          enabled: true
+          shortname: ptnt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          skip-e2e: true
+          post-deploy:
+            script: post-deploy-physical-tenant-exporters.sh
+            description: |
+              Asserts that every Physical Tenant, including default, opened the legacy
+              Zeebe exporter and is exporting. Fails if any tenant fell back to a
+              BlockingExporter or its exported position is stuck at -1, and fails if fewer
+              than two tenants report partitions. Stands in for the per-tenant Optimize
+              coverage the e2e suite cannot express yet, because Optimize reads the legacy
+              exporter and its records are the only thing a per-tenant Optimize can import.
+          topology:
+            name: hub-1orch-2tenants
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - physicaltenants-hub
+                dependencies:
+                  - keycloak-fixed-issuer
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha-ta
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+              - role: optimize
+                namespace-suffix: optta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-ta
+                serves: orcha
+                optimize-context-path: /optimize-orcha-ta
+              - role: optimize
+                namespace-suffix: opttb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-tb
+                serves: orcha
+                optimize-context-path: /optimize-orcha-tb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
     nightly:
       scenario: []
   flows:

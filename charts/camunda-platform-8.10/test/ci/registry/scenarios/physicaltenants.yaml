@@ -1,0 +1,71 @@
+name: physicaltenants
+auth: keycloak
+flows:
+  - install
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+# e2e is blocked on the test suite, not on the chart: the Optimize flows in
+# smoke-tests.spec.ts and optimize-user-flows.spec.ts create their data through
+# Web Modeler, which deploys over the plain /v2 path and so lands records in the
+# default tenant, while a per-tenant Optimize reads its own tenant's prefix and
+# finds nothing. The suite has no concept of a Physical Tenant, and
+# components.orchestration on the cluster record is singular, so one record
+# cannot name a tenant-scoped Modeler target per tenant. Skipping that one
+# dimension keeps the isolation, initialization and per-tenant export coverage
+# below, which the post-deploy hook asserts. Drop this key once the e2e suite can
+# address an Optimize per tenant.
+skip-e2e: true
+post-deploy: physicaltenants-exporters
+topology:
+  name: hub-1orch-2tenants
+  shared-storage: elasticsearch
+  shared-storage-service: elasticsearch-master
+  releases:
+    - role: hub
+      namespace-suffix: hub
+      identity: keycloak
+      dependencies:
+        - keycloak-fixed-issuer
+        - postgresql
+        - elasticsearch
+      features:
+        - multinamespace-reset-clients
+        - physicaltenants-hub
+    - role: orchestration
+      namespace-suffix: orcha
+      modeler-cluster-id: orcha
+      modeler-cluster-name: Orchestration A
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - physicaltenants-orchestration
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha-ta
+        ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+    - role: optimize
+      namespace-suffix: optta
+      serves: orcha
+      optimize-context-path: /optimize-orcha-ta
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - physicaltenants-optimize-ta
+      depends-on: hub
+    - role: optimize
+      namespace-suffix: opttb
+      serves: orcha
+      optimize-context-path: /optimize-orcha-tb
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - physicaltenants-optimize-tb
+      depends-on: hub
