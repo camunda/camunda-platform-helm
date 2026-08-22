@@ -140,3 +140,98 @@ func mergeMaps(base map[string]string, overrides map[string]string) map[string]s
 	}
 	return merged
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestConsoleConfigKeysWarningRendersInConfigMap() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConsoleNonEnabledKeyTriggersConsolidationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"console.someUnusedKey":                    "someValue",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				s.Require().Contains(configmap.Data["warnings"],
+					"console.* configuration keys have no effect in 8.10")
+				s.Require().Contains(configmap.Data["warnings"],
+					"consolidated into Camunda Hub")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestConsoleEnabledOnlyKeepsConsolidationWarningSilent() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConsoleEnabledAloneDoesNotTriggerConsolidationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"console.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				s.Require().Contains(configmap.Data["warnings"],
+					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11).`)
+				s.Require().NotContains(configmap.Data["warnings"],
+					"console.* configuration keys have no effect in 8.10")
+			},
+		},
+		{
+			Name: "TestConsoleEnabledWithRemovedOverrideGivesConsistentGuidance",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"console.enabled":                          "true",
+				"console.nodeEnv":                          "someValue",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings,
+					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11).`)
+				s.Require().Contains(warnings,
+					"console.* configuration keys have no effect in 8.10")
+				s.Require().NotContains(warnings,
+					`Any console-specific overrides should use the top-level "console.*" keys.`)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecationWarningRendersInConfigMap() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGlobalIdentityAuthConsoleKeyTriggersDeprecationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				s.Require().Contains(configmap.Data["warnings"],
+					`DEPRECATION: "global.identity.auth.console.*" is no longer used in Camunda 8.10.`)
+				s.Require().Contains(configmap.Data["warnings"],
+					"this key has no replacement")
+				s.Require().NotContains(configmap.Data["warnings"],
+					"global.identity.auth.camundaHub.webModeler.*")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
