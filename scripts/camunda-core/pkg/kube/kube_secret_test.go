@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -246,5 +247,82 @@ func TestBuildDockerConfigJSON(t *testing.T) {
 	}
 	if _, ok := reg["auth"]; !ok {
 		t.Error("expected auth field")
+	}
+}
+
+func TestWaitForSecret_AlreadyPresent(t *testing.T) {
+	existing := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "aws-camunda-cloud-tls", Namespace: "ns"},
+		Data: map[string][]byte{
+			"tls.crt": []byte("cert"),
+			"tls.key": []byte("key"),
+		},
+	}
+	client := newTestClient(existing)
+
+	err := waitForSecret(context.Background(), client, "ns", "aws-camunda-cloud-tls", []string{"tls.crt", "tls.key"}, time.Second)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+}
+
+func TestWaitForSecret_MissingKeysTimesOut(t *testing.T) {
+	existing := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "aws-camunda-cloud-tls", Namespace: "ns"},
+		Data: map[string][]byte{
+			"tls.crt": []byte("cert"),
+		},
+	}
+	client := newTestClient(existing)
+
+	err := waitForSecret(context.Background(), client, "ns", "aws-camunda-cloud-tls", []string{"tls.crt", "tls.key"}, 200*time.Millisecond)
+	if err == nil {
+		t.Fatal("expected error due to missing tls.key, got nil")
+	}
+}
+
+func TestWaitForSecret_EmptyValuesTimesOut(t *testing.T) {
+	existing := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "aws-camunda-cloud-tls", Namespace: "ns"},
+		Data: map[string][]byte{
+			"tls.crt": {},
+			"tls.key": {},
+		},
+	}
+	client := newTestClient(existing)
+
+	err := waitForSecret(context.Background(), client, "ns", "aws-camunda-cloud-tls", []string{"tls.crt", "tls.key"}, 200*time.Millisecond)
+	if err == nil {
+		t.Fatal("expected error due to empty tls.crt/tls.key values, got nil")
+	}
+}
+
+func TestWaitForSecret_AbsentTimesOut(t *testing.T) {
+	client := newTestClient()
+
+	err := waitForSecret(context.Background(), client, "ns", "aws-camunda-cloud-tls", []string{"tls.crt", "tls.key"}, 200*time.Millisecond)
+	if err == nil {
+		t.Fatal("expected error for absent secret, got nil")
+	}
+}
+
+func TestWaitForSecret_NonNotFoundErrorPropagates(t *testing.T) {
+	client := newTestClient()
+	client.clientset.(*fake.Clientset).PrependReactor("get", "secrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "secrets"}, "aws-camunda-cloud-tls", nil)
+	})
+
+	start := time.Now()
+	err := waitForSecret(context.Background(), client, "ns", "aws-camunda-cloud-tls", []string{"tls.crt", "tls.key"}, 10*time.Second)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("expected error for forbidden get, got nil")
+	}
+	if !apierrors.IsForbidden(err) {
+		t.Errorf("expected underlying error to be a forbidden error, got: %v", err)
+	}
+	if elapsed >= 10*time.Second {
+		t.Errorf("expected waitForSecret to return quickly, took %s", elapsed)
 	}
 }
