@@ -1114,7 +1114,9 @@ integration:
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
-              values-file: test/integration/companion-values/keycloak.yaml
+              values-file: test/integration/companion-values/keycloak-fixed-issuer.yaml
+              env-vars:
+                - CAMUNDA_HOSTNAME
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
