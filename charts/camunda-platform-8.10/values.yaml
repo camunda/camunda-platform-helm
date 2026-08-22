@@ -44,7 +44,7 @@
 global:
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
-    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, and orchestration.
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
     mode: combined
     ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
     clusters: []
@@ -2728,6 +2728,46 @@ orchestration:
 optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
   enabled: false
+
+  ## @extra optimize.identity configuration of the Management Identity this Optimize release calls.
+  identity:
+    ## @extra optimize.identity.service
+    service:
+      ## @param optimize.identity.service.url can be used to override `global.identity.service.url`, the Management Identity this Optimize release reaches. Useful when an Optimize-only release targets a different Identity than the rest of a topology.
+      url: ""
+
+  ## @extra optimize.security configuration of how this Optimize release authenticates.
+  security:
+    ## @extra optimize.security.authentication
+    authentication:
+      ## @param optimize.security.authentication.method can be used to override whether this Optimize release authenticates, independently of `global.identity.auth.enabled`. Supported values are oidc and none. Empty follows `global.identity.auth.enabled`.
+      method: ""
+      ## @extra optimize.security.authentication.oidc
+      oidc:
+        ## @param optimize.security.authentication.oidc.clientId can be used to override `global.identity.auth.optimize.clientId`. Set it on the release running Optimize so an Optimize-only release owns its own client without the shared global key.
+        clientId: ""
+        ## @param optimize.security.authentication.oidc.type can be used to override `global.identity.auth.type` for this Optimize release.
+        type: ""
+        ## @param optimize.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer` (or `global.identity.auth.publicIssuerUrl`) for this Optimize release. Set it to the exact "iss" claim the provider mints.
+        issuer: ""
+        ## @param optimize.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`, the cluster-internal route this Optimize uses to validate tokens.
+        issuerBackendUrl: ""
+        ## @param optimize.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`, the JWKS endpoint this Optimize fetches token signing keys from. Required for a non-Keycloak `type`, which has no endpoint layout to derive it from. Supports templating (e.g., {{ .Release.Name }}).
+        jwksUrl: ""
+        ## @param optimize.security.authentication.oidc.envFromProvides names the identity variables this release's `optimize.envFrom` sources supply, so the chart stops requiring them. Their keys are unreadable at render time, so presence alone exempts nothing, and a declaration with no `optimize.envFrom` source is rejected. Supported values are CAMUNDA_IDENTITY_ISSUER, CAMUNDA_IDENTITY_ISSUER_BACKEND_URL, SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI and CAMUNDA_IDENTITY_CLIENT_SECRET.
+        envFromProvides: []
+        ## @param optimize.security.authentication.oidc.audience can be used to override `global.identity.auth.optimize.audience`.
+        audience: ""
+        ## @param optimize.security.authentication.oidc.redirectUrl can be used to override `global.identity.auth.optimize.redirectUrl`. Supports templating (e.g., {{ .Release.Name }}).
+        redirectUrl: ""
+        ## @extra optimize.security.authentication.oidc.secret configuration to provide this release's Optimize client secret, overriding `global.identity.auth.optimize.secret`.
+        secret:
+          ## @param optimize.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param optimize.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param optimize.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
   ## @extra optimize.image configuration to configure the Optimize image specifics
   # https://hub.docker.com/r/camunda/optimize/tags

@@ -1,4 +1,4 @@
-name: multinamespace-2orch
+name: multinamespace-optimize
 auth: keycloak
 flows:
   - install
@@ -6,8 +6,16 @@ platforms:
   - gke
 infra-type:
   gke: distroci
+# The topology smoke matrix carries each leg's optimize-suffix and context path
+# (see matrix/plan.go's planTopologyMetadata), but the e2e runner still derives
+# its Optimize endpoint from the orchestration namespace, which is not where
+# Optimize runs here. Until the runner consumes that mapping this scenario
+# asserts deploy-time coverage only: both Optimize releases render their own
+# OIDC client and audience and reach readiness against the Orchestration they
+# serve. Drop this key in the same change that teaches the runner the mapping.
+skip-e2e: true
 topology:
-  name: hub-2orch
+  name: hub-2orch-2optimize
   shared-storage: elasticsearch
   shared-storage-service: elasticsearch-master
   releases:
@@ -20,7 +28,7 @@ topology:
         - elasticsearch
       features:
         - multinamespace-reset-clients
-        - multinamespace-2orch-hub
+        - multinamespace-optimize-hub
     - role: orchestration
       namespace-suffix: orcha
       modeler-cluster-id: orcha
@@ -29,7 +37,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
-        - multinamespace-orchestration
+        - multinamespace-optimize-orchestration
       depends-on: hub
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
@@ -45,7 +53,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
-        - multinamespace-orchestration
+        - multinamespace-optimize-orchestration
       depends-on: hub
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
@@ -53,3 +61,23 @@ topology:
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
         ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
+    - role: optimize
+      namespace-suffix: opta
+      serves: orcha
+      optimize-context-path: /optimize-orcha
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - multinamespace-optimize-a
+      depends-on: hub
+    - role: optimize
+      namespace-suffix: optb
+      serves: orchb
+      optimize-context-path: /optimize-orchb
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - multinamespace-optimize-b
+      depends-on: hub

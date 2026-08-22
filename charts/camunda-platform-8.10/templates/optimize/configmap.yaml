@@ -12,7 +12,7 @@ data:
   {{- else }}
     {{- include "optimize.defaultConfig" . | trim | nindent 4 }}
   {{- end }}
-  {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
+  {{- if or (eq (include "optimize.authEnabled" .) "true") .Values.optimize.extraConfiguration }}
   application-ccsm.yaml: |
     {{- $springImport := include "optimize.springConfigImport" . }}
     {{- if $springImport }}
@@ -20,13 +20,13 @@ data:
       config:
         import: {{ $springImport }}
     {{- end }}
-    {{- if .Values.global.identity.auth.enabled }}
+    {{- if (eq (include "optimize.authEnabled" .) "true") }}
     camunda:
       identity:
         clientId: {{ include "optimize.authClientId" . | quote }}
         audience: {{ include "optimize.authAudience" . | quote }}
-        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
-        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        issuer: {{ include "optimize.effectiveAuthIssuer" . | quote }}
+        issuerBackendUrl: {{ include "optimize.effectiveAuthIssuerBackendUrl" . | quote }}
     {{- end }}
   {{- end }}
 

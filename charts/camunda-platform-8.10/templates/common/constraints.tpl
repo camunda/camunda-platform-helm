@@ -34,8 +34,8 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
-{{- if not (has $topologyMode (list "combined" "hub" "orchestration")) }}
-  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, or orchestration; got %q." $topologyMode) }}
+{{- if not (has $topologyMode (list "combined" "hub" "orchestration" "optimize")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, orchestration, or optimize; got %q." $topologyMode) }}
 {{- end }}
 {{- if and (eq $topologyMode "hub") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=hub requires identity.enabled=true." }}
@@ -51,6 +51,113 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
+{{- end }}
+{{- if eq $topologyMode "optimize" }}
+  {{- if not .Values.optimize.enabled }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.enabled=true." }}
+  {{- end }}
+  {{- if .Values.global.noSecondaryStorage }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires global.noSecondaryStorage=false; Optimize reads exported records from secondary storage." }}
+  {{- end }}
+  {{- $esEnabled := or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled }}
+  {{- $osEnabled := or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled }}
+  {{- if not (or $esEnabled $osEnabled) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled, with url.host addressing the secondary storage the Orchestration Cluster exports to. This chart bundles no Elasticsearch, and with neither backend enabled Optimize renders an empty connection node list and reaches no storage at all." }}
+  {{- end }}
+  {{- if ne (include "optimize.authEnabled" .) "true" }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true." }}
+  {{- end }}
+  {{- if and (empty (dig "identity" "service" "url" "" .Values.optimize)) (empty .Values.global.identity.service.url) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.identity.service.url or global.identity.service.url to reach Management Identity; this release runs no Identity of its own, so the in-release default cannot apply." }}
+  {{- end }}
+  {{- $rendersIngress := and .Values.global.ingress.enabled (not .Values.global.ingress.external) }}
+  {{- $rendersGateway := and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+  {{- if and (empty .Values.optimize.contextPath) (or $rendersIngress $rendersGateway) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.contextPath when this chart renders the release's own routing: the shared Ingress emits an Optimize rule only when the context path is set, so an empty one leaves Optimize unreachable, and the HTTPRoute would match an empty path prefix. Set it to the sub-path this release is served on, or route to the Optimize Service yourself with global.ingress.enabled=false." }}
+  {{- end }}
+{{- end }}
+{{/*
+Applies beyond global.topology.mode=optimize, but only to a release that configures Optimize's own
+identity or authentication: such a config reaches the same empty issuer, and the same empty
+api.jwtSetUri, with no mode to signal it. A release that merely sets global.identity.auth.enabled is
+left alone - these checks are new, and turning an existing combined-mode render into a failed
+upgrade is a chart-wide change, tracked separately in issue #6929.
+
+An empty "iss" is only survivable while an issuer backend URL resolves, which is the External
+Keycloak shape: global.identity.keycloak.url.host derives every endpoint and the provider names the
+claim. This chart bundles no Keycloak, so global.identity.auth.enabled on its own resolves nothing
+and is not an exemption - it renders an empty issuer, an empty issuerBackendUrl and a relative
+jwtSetUri, which is the state this check exists to prevent.
+
+A release that supplies the issuer as container env is exempt: the Deployment lists optimize.env and
+optimize.envFrom after the ConfigMap this check guards, so the empty issuer never reaches the
+container. optimize.env is matched by name and value. An optimize.envFrom source only counts once
+the release names the variable in optimize.security.authentication.oidc.envFromProvides - its keys
+are unreadable at render time, so presence of a source proves nothing, and an unrelated ConfigMap
+must not buy an exemption from a check this load-bearing.
+
+optimize.extraConfiguration is not an issuer exemption: the identity env ConfigMap sets
+CAMUNDA_IDENTITY_ISSUER as container env, empty value included, and container env outranks every
+config file the release imports. api.jwtSetUri has no such env var, so file order decides it and
+both readable config sources are exemptions there: optimize.configuration, which replaces
+environment-config.yaml wholesale, and optimize.extraConfiguration, which Optimize imports after it.
+Either must bind the key to a non-empty value - the key alone leaves the same missing endpoint.
+*/}}
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") }}
+  {{/*
+  A component-scoped method=oidc switches Optimize's authentication on without
+  switching Identity's provisioning on with it: templates/identity/deployment.yaml
+  and templates/identity/configmap.yaml keep every client, secret and permission
+  they register behind global.identity.auth.enabled. A release that runs Identity
+  itself therefore starts an Identity that provisions nothing while Optimize
+  presents a client to it, and only the first login fails.
+
+  Scoped to a release that runs its own Identity: an Optimize release pointed at a
+  Management Identity elsewhere is the supported shape, and that Identity's own
+  release is where global.identity.auth.enabled has to be true.
+  */}}
+  {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true") (not .Values.global.identity.auth.enabled) }}
+    {{- fail "[camunda][error] Optimize authenticates with OIDC (optimize.security.authentication.method=oidc) while global.identity.auth.enabled=false, and this release runs Management Identity itself (identity.enabled=true). Identity registers clients only when global.identity.auth.enabled=true, so the Optimize client this release presents is never provisioned and Optimize starts ready but cannot complete a login. Set global.identity.auth.enabled=true so this Identity provisions it, or deploy Optimize as its own release (global.topology.mode=optimize) against a Management Identity that already provisions its client." }}
+  {{- end }}
+  {{- $declarableEnvNames := splitList " " (include "optimize.declarableEnvNames" .) }}
+  {{- range $declared := ((dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize) | default list) }}
+    {{- if not (has $declared $declarableEnvNames) }}
+      {{- fail (printf "[camunda][error] optimize.security.authentication.oidc.envFromProvides names %q, which exempts nothing: only %s are variables this chart would otherwise have to resolve. Remove it, or correct it to the variable your optimize.envFrom source actually carries." $declared (join ", " $declarableEnvNames)) }}
+    {{- end }}
+  {{- end }}
+  {{/*
+  The declaration describes optimize.envFrom, so it means nothing without one: with no source the
+  named variable has nowhere to arrive from, and taking the declaration at face value would exempt
+  the guards while the container still reads the empty value this chart rendered. Rejected here
+  rather than silently ignored, so its author is not left believing a guard was answered.
+  */}}
+  {{- if and (not (empty (dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize))) (empty .Values.optimize.envFrom) }}
+    {{- fail (printf "[camunda][error] optimize.security.authentication.oidc.envFromProvides names %s, but optimize.envFrom is empty, so no source can carry it and Optimize would read the empty value this chart renders. Add the ConfigMap or Secret reference to optimize.envFrom, or drop the declaration and set the value through this chart's own keys." (join ", " (dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize))) }}
+  {{- end }}
+  {{/* Scoped to releases that configure Optimize's own identity, per the block comment above. */}}
+  {{- if or (eq $topologyMode "optimize") (eq (include "optimize.hasComponentScopedAuth" .) "true") }}
+    {{- if and (empty (include "optimize.effectiveAuthIssuer" .)) (empty (include "optimize.effectiveAuthIssuerBackendUrl" .)) (ne (include "optimize.identityIssuerMayComeFromEnv" .) "true") }}
+      {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise. An External Keycloak may leave the issuer empty, but then global.identity.keycloak.url.host (or an explicit issuerBackendUrl) must resolve the provider instead." }}
+    {{- end }}
+    {{- if and (empty (include "optimize.effectiveAuthJwksUrl" .)) (ne (include "optimize.jwksSuppliedByRelease" .) "true") }}
+      {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, and only while an issuerBackendUrl resolves to append it to, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set a non-empty api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or in an optimize.extraConfiguration file, which Optimize imports after it, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
+    {{- end }}
+  {{- end }}
+  {{/*
+  A Secret reference without a key matches neither branch of
+  camundaPlatform.normalizeSecretConfiguration, and the Optimize Deployment passes no
+  defaultSecretName, so the whole env var would be dropped rather than mis-set.
+
+  Dropped, not mis-set, is also why the release may answer this itself: with nothing of the chart's
+  emitted for that variable, an optimize.env entry - a valueFrom secretKeyRef naming the key
+  directly, say - or a declared envFrom variable is the only CAMUNDA_IDENTITY_CLIENT_SECRET the
+  container sees, and such a release is authenticating today. Failing it unconditionally would turn
+  a working deployment into a failed upgrade over a key it does not need.
+  */}}
+  {{- $optimizeAuthSecret := include "optimize.effectiveAuthSecret" . | fromYaml }}
+  {{- if and $optimizeAuthSecret.existingSecret (empty $optimizeAuthSecret.existingSecretKey) (ne (include "optimize.clientSecretMayComeFromEnv" .) "true") }}
+    {{- fail (printf "[camunda][error] Optimize with OIDC authentication requires an existingSecretKey alongside its existingSecret; set optimize.security.authentication.oidc.secret.existingSecretKey (or global.identity.auth.optimize.secret.existingSecretKey), naming the key inside the Secret that holds the client secret. Without it %s is dropped from the Deployment entirely and Optimize starts with no client secret. A release that supplies it itself is exempt: name %s in optimize.env, or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.clientSecretEnvNames" .) (include "optimize.clientSecretEnvNames" .)) }}
+  {{- end }}
 {{- end }}
 {{- if eq $topologyMode "hub" }}
   {{- if ne (include "webModeler.authMethod" .) "oidc" }}

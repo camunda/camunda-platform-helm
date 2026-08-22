@@ -41,11 +41,11 @@ security:
     cookie:
       same-site:
         enabled: false
-{{- if .Values.global.identity.auth.enabled }}
+{{- if (eq (include "optimize.authEnabled" .) "true") }}
     ccsm:
-      redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+      redirectRootUrl: {{ tpl (include "optimize.effectiveAuthRedirectUrl" $) $ | quote }}
 api:
   audience: {{ include "optimize.authAudience" . | quote }}
-  jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+  jwtSetUri: {{ include "optimize.effectiveAuthJwksUrl" . | quote }}
 {{- end }}
 {{- end -}}

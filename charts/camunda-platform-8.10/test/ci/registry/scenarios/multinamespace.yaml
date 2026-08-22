@@ -19,7 +19,8 @@ topology:
         - keycloak
         - postgresql
         - elasticsearch
-      values: features/multinamespace-hub.yaml
+      features:
+        - multinamespace-hub
     - role: orchestration
       namespace-suffix: orcha
       modeler-cluster-id: orchestration
@@ -27,7 +28,8 @@ topology:
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []
-      values: features/multinamespace-orchestration.yaml
+      features:
+        - multinamespace-orchestration
       depends-on: hub
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration

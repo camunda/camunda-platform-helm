@@ -287,14 +287,11 @@ func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
 // multi-namespace topology (matrix.TopologyRelease, mirrored here to avoid an
 // import cycle — the matrix package already imports deploy).
 type TopologyRelease struct {
-	// Role is either "hub" or "orchestration".
+	// Role is "hub", "orchestration", or "optimize".
 	Role string
 	// NamespaceSuffix is appended to the base namespace to form this
 	// release's namespace (<base>-<namespace-suffix>).
 	NamespaceSuffix string
-	// Values names the values file for this release (relative to the
-	// scenario's chart-full-setup values dir).
-	Values string
 	// DependsOn, when set, names the Role of a release that must be deployed
 	// (and ready) before this one.
 	DependsOn string
