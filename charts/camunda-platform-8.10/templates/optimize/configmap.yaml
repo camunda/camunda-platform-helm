@@ -37,14 +37,14 @@ data:
               - {{ include "optimize.authClientId" . | quote }}
               - {{ include "optimize.authAudience" . | quote }}
               - {{ (or .Values.global.identity.auth.camundaHub.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
-            {{- if (include "camundaPlatform.authIssuerUrl" .) }}
-            issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            {{- if (include "optimize.effectiveAuthIssuerUrl" .) }}
+            issuer-uri: {{ include "optimize.effectiveAuthIssuerUrl" . | quote }}
             {{- else }}
-            authorization-uri: {{ include "camundaPlatform.authIssuerUrlEndpointAuth" . | quote }}
-            jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
-            token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
+            authorization-uri: {{ include "optimize.effectiveAuthUrlEndpointAuth" . | quote }}
+            jwk-set-uri: {{ include "optimize.effectiveAuthJwksUrl" . | quote }}
+            token-uri: {{ include "optimize.effectiveAuthBackendUrlEndpointToken" . | quote }}
             {{- end }}
-            redirect-uri: {{ printf "%s/api/authentication/callback" (tpl .Values.global.identity.auth.optimize.redirectUrl $) | quote }}
+            redirect-uri: {{ printf "%s/api/authentication/callback" (tpl (include "optimize.effectiveAuthRedirectUrl" .) $) | quote }}
     {{- end }}
   {{- end }}
 

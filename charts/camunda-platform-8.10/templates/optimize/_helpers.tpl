@@ -137,6 +137,39 @@ guard asks for an explicit jwksUrl.
   {{- end -}}
 {{- end -}}
 
+{{/*
+[optimize] Release-scoped counterparts of the `camundaPlatform.authIssuer*` endpoint helpers, for the
+`camunda.security.authentication.oidc` block. That block is the config Optimize actually authenticates
+with, so it has to read the same release-scoped overrides as `camunda.identity` above it; left on the
+global helpers, a Physical Tenant's Optimize would authenticate against the shared release provider it
+was configured away from. Each one keeps the global helper's shape and falls back to it, so a release
+that overrides nothing renders exactly as before.
+*/}}
+{{- define "optimize.effectiveAuthIssuerUrl" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
+  {{- if $oidc.issuer -}}
+    {{- tpl $oidc.issuer . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerUrl" . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthUrlEndpointAuth" -}}
+  {{- if .Values.global.identity.auth.authUrl -}}
+    {{- tpl .Values.global.identity.auth.authUrl . -}}
+  {{- else if eq (include "optimize.effectiveAuthType" .) "KEYCLOAK" -}}
+    {{- include "optimize.effectiveAuthIssuer" . -}}/protocol/openid-connect/auth
+  {{- end -}}
+{{- end -}}
+
+{{- define "optimize.effectiveAuthBackendUrlEndpointToken" -}}
+  {{- if .Values.global.identity.auth.tokenUrl -}}
+    {{- tpl .Values.global.identity.auth.tokenUrl . -}}
+  {{- else if eq (include "optimize.effectiveAuthType" .) "KEYCLOAK" -}}
+    {{- include "optimize.effectiveAuthIssuerBackendUrl" . -}}/protocol/openid-connect/token
+  {{- end -}}
+{{- end -}}
+
 {{- define "optimize.effectiveIdentityUrl" -}}
   {{- $url := dig "identity" "service" "url" "" .Values.optimize -}}
   {{- $url | default (include "camundaPlatform.identityURL" .) -}}
