@@ -9,8 +9,7 @@ on:
       - "charts/**"
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   chores:
@@ -23,6 +22,9 @@ jobs:
       }}
     name: Chart chores
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Import Vault secrets for Harbor
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
