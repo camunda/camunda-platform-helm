@@ -225,6 +225,9 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
+    permissions:
+      contents: read
+      id-token: write
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
