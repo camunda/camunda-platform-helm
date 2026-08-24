@@ -338,10 +338,6 @@ data:
             - name: "Analyst"
               description: "Grants full access to Optimize and to Hub. Additionally, grants management access to Hub's catalog and business intelligence features"
               permissions:
-                {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
-                - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
-                  definition: write:*
-                {{- end }}
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
