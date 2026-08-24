@@ -226,6 +226,11 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
+            - name: "Analyst"
+              description: "Grants full access to Optimize and to Hub. Additionally, grants management access to Hub's catalog and business intelligence features"
+              permissions:
+                - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+                  definition: write:*
         {{- end }}
         {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
         orchestration:
