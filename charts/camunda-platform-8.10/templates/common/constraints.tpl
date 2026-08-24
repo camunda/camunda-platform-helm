@@ -603,9 +603,18 @@ The following values inside your values.yaml need to be set but were not:
   {{- if $console.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
-        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in a future version."
+        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
         "Console has been consolidated into Camunda Hub as an in-Modeler feature. Please use \"camundaHub.enabled: true\" instead."
-        "Any console-specific overrides should use the top-level \"console.*\" keys."
+        "It is the only console.* key still honored; the other console.* keys have no effect in 8.10."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+  {{- if gt (len (keys (omit $console "enabled"))) 0 }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: console.* configuration keys have no effect in 8.10 — Console has been consolidated into Camunda Hub."
+        "Only \"console.enabled\" is still honored, as a compatibility shim; it is deprecated too and will be removed in chart v16 (Camunda 8.11)."
+        "The remaining console.* keys have no replacement and can be removed from values.yaml."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
