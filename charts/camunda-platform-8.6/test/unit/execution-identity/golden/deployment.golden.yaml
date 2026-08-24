@@ -96,3 +96,4 @@ spec:
         - name: execution-identity-configuration
           configMap:
             name: camunda-platform-test-execution-identity-configuration
+
