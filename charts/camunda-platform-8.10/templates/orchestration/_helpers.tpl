@@ -489,6 +489,9 @@ true
 {{- end -}}
 {{- end -}}
 
+{{/*
+[orchestration] Exporter id of the release's legacy exporter, empty when it runs none.
+*/}}
 {{- define "orchestration.legacyExporterId" -}}
 {{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" -}}
 elasticsearch
@@ -508,12 +511,6 @@ opensearch
 {{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix -}}
 {{- end -}}
 {{- end -}}
-
-{{/*
-[orchestration] Render one Physical Tenant's legacy exporter entry, keyed by exporter id.
-Takes a dict of "root" (the root context), "tenantId" and "prefix". Emitted at column 0;
-the caller nindents it under camunda.physical-tenants.<id>.data.exporters.
-*/}}
 
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
