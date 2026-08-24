@@ -861,6 +861,106 @@ const optimizeLayerMatchingHubInventory = `optimize:
           existingSecretKey: identity-optimize-client-token
 `
 
+// optimizeLayerMatchingHubInventoryViaGlobal presents exactly the identity the
+// Hub registers, but through the chart-wide fallback the Optimize helpers resolve
+// when the component-scoped block leaves a field unset
+// (optimize.effectiveAuthClientId, optimize.effectiveAuthRedirectUrl,
+// camundaPlatform.authAudienceOptimize and optimize.effectiveAuthSecret all
+// default to global.identity.auth.optimize). This is a supported way to configure
+// the release, so the cross-check has to read it.
+const optimizeLayerMatchingHubInventoryViaGlobal = `global:
+  identity:
+    auth:
+      optimize:
+        clientId: optimize-orcha
+        audience: optimize-orcha-api
+        redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
+optimize:
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  database:
+    elasticsearch:
+      enabled: true
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+`
+
+// The documented global fallback configures the same identity the component-scoped
+// block does, so a release using it must be accepted rather than reported as
+// setting nothing.
+func TestTopologyValidate_AcceptsOptimizeIdentityFromTheGlobalFallback(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventoryViaGlobal)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("the global.identity.auth.optimize fallback configures this release, got: %v", err)
+	}
+}
+
+// Reading the fallback must not make the cross-check toothless there: a global
+// client id that disagrees with the Hub is exactly as broken as a component-scoped
+// one, and the message has to name the key that actually holds the wrong value.
+func TestTopologyValidate_RejectsOptimizeGlobalFallbackClientIdDisagreeingWithTheHub(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventoryViaGlobal, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
+
+	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize client id as \"optimize-orcha\"") {
+		t.Fatalf("expected the client id mismatch to be reported, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "global.identity.auth.optimize.clientId is \"optimize-renamed\"") {
+		t.Fatalf("the message must name the global key that holds the value, got %v", err)
+	}
+}
+
+// The component-scoped value wins over the fallback, the way `|default` does in
+// optimize.effectiveAuthClientId, so a correct override must not be judged against
+// the stale global value it replaces.
+func TestTopologyValidate_OptimizeComponentIdentityOverridesTheGlobalFallback(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(
+		optimizeLayerMatchingHubInventoryViaGlobal,
+		"        clientId: optimize-orcha\n",
+		"        clientId: optimize-stale\n",
+		1,
+	)+`  security:
+    authentication:
+      oidc:
+        clientId: optimize-orcha
+`)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("the component-scoped client id wins over the fallback, got: %v", err)
+	}
+}
+
+// A release-scoped existingSecretKey on its own only renames the key inside the
+// inherited existingSecret (optimize.effectiveAuthSecret), so resolving it as a
+// standalone reference with no Secret name would report a secret the release never
+// sends.
+func TestTopologyValidate_OptimizeSecretKeyAloneRenamesTheInheritedSecret(t *testing.T) {
+	dir := t.TempDir()
+	writeLayer(t, dir, "features/hub.yaml", strings.Replace(hubInventoryRegisteringOptimize, "identity-optimize-client-token", "renamed-optimize-key", 1))
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventoryViaGlobal+`  security:
+    authentication:
+      oidc:
+        secret:
+          existingSecretKey: renamed-optimize-key
+`)
+
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("the release-scoped key renames the inherited Secret's key, got: %v", err)
+	}
+}
+
 // Optimize reads only the enabled backend's prefix (optimize.indexPrefix in
 // templates/optimize/_helpers.tpl checks Elasticsearch first), so a layer that
 // sets the placeholder on the other backend leaves the release on the
