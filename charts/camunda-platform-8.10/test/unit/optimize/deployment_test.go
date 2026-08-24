@@ -527,16 +527,16 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
+				secretRef := &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
+						Key:                  "identity-optimize-client-token",
+					},
+				}
 				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
-								Key:                  "identity-optimize-client-token",
-							},
-						},
-					})
+					corev1.EnvVar{Name: "CAMUNDA_IDENTITY_CLIENT_SECRET", ValueFrom: secretRef})
+				s.Require().Contains(env,
+					corev1.EnvVar{Name: "VALUES_OPTIMIZE_CLIENT_SECRET", ValueFrom: secretRef})
 			},
 		}, {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretViaReference",
@@ -554,16 +554,16 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
+				secretRef := &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
+						Key:                  "identity-optimize-client-token",
+					},
+				}
 				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
-								Key:                  "identity-optimize-client-token",
-							},
-						},
-					})
+					corev1.EnvVar{Name: "CAMUNDA_IDENTITY_CLIENT_SECRET", ValueFrom: secretRef})
+				s.Require().Contains(env,
+					corev1.EnvVar{Name: "VALUES_OPTIMIZE_CLIENT_SECRET", ValueFrom: secretRef})
 			},
 		}, {
 			Name: "TestContainerShouldOverwriteGlobalImagePullPolicy",
@@ -1386,6 +1386,45 @@ func (s *DeploymentTemplateTest) TestOptimizeEnvGuardsNonScalarExtraConfiguratio
 					"a list node must not render as Go slice syntax; fall back to the deprecated default")
 				s.Require().Contains(env, corev1.EnvVar{Name: "OPTIMIZE_LOG_LEVEL", Value: "mylevel"},
 					"a null leaf must not render as an empty string; fall back to the deprecated default")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *DeploymentTemplateTest) TestContextPathIsAlsoExposedAsSpringProperty() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestServerServletContextPathRendersAlongsideOptimizeContextPath",
+			Values: map[string]string{
+				"optimize.enabled":     "true",
+				"optimize.contextPath": "/optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CONTEXT_PATH", Value: "/optimize"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_SERVLET_CONTEXT_PATH", Value: "/optimize"},
+					"CSL reads server.servlet.context-path to keep the OIDC callback listener path context-relative")
+			},
+		},
+		{
+			Name: "TestNeitherIsRenderedWithoutAContextPath",
+			Values: map[string]string{
+				"optimize.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+					s.Require().NotEqual("SERVER_SERVLET_CONTEXT_PATH", e.Name)
+				}
 			},
 		},
 	}

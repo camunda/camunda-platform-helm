@@ -201,6 +201,8 @@ spec:
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
               value: {{ .Values.optimize.contextPath | quote }}
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.optimize.contextPath | quote }}
             {{- end }}
             {{- if (include "camundaPlatform.elasticsearchHost" . ) }}
               {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
@@ -222,6 +224,10 @@ spec:
             {{- $optimizeAuthSecret := include "optimize.authSecretConfig" . | fromYaml }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" $optimizeAuthSecret
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPTIMIZE_CLIENT_SECRET"
                 "config" $optimizeAuthSecret
             ) | nindent 12 }}
             {{- end }}
