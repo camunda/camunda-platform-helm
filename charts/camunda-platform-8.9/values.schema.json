@@ -2757,6 +2757,14 @@
                             "type": "number",
                             "description": "defines the management port used to access metrics and app status",
                             "default": 9100
+                        },
+                        "appProtocols": {
+                            "type": "object",
+                            "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
