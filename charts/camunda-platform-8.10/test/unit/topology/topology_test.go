@@ -860,6 +860,42 @@ func TestPhysicalTenantsRequireExplicitIssuer(t *testing.T) {
 	require.ErrorContains(t, err, "network routes")
 }
 
+// A release that carries a shared orchestration.extraConfiguration but deploys no Orchestration
+// Cluster has no tenants to configure, so the tenant constraints must not reach it. Shared-values
+// workflows apply one values file across several releases and vary only global.topology.mode, and
+// gating this on the declaration alone failed the render for every release in the topology that is
+// not the Orchestration one.
+func TestPhysicalTenantsConstraintsSkipReleasesWithoutOrchestration(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		setValues map[string]string
+	}{
+		{"orchestration disabled", map[string]string{
+			"global.identity.auth.issuer": "",
+			"orchestration.enabled":       "false",
+		}},
+		{"hub role", map[string]string{
+			"global.identity.auth.issuer": "",
+			"global.topology.mode":        "hub",
+			"identity.enabled":            "true",
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			options := &helm.Options{
+				ValuesFiles: []string{filepath.Join("testdata", "physical-tenants.yaml")},
+				SetValues:   tc.setValues,
+			}
+
+			_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+			if err != nil {
+				require.NotContains(t, err.Error(), "camunda.physical-tenants in orchestration.extraConfiguration",
+					"the tenant constraints must not fire on a release that deploys no Orchestration Cluster")
+			}
+		})
+	}
+}
+
 // publicIssuerUrl must not stand in for the issuer: it is still set in the testdata, so a
 // render that succeeds without an explicit issuer would mean the fallback came back.
 func TestPhysicalTenantsDoNotInferIssuerFromPublicIssuerUrl(t *testing.T) {

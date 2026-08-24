@@ -52,7 +52,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
 {{- end }}
-{{- if eq (include "orchestration.physicalTenantsDeclared" .) "true" }}
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.physicalTenantsDeclared" .) "true") }}
   {{- if ne (include "orchestration.authMethod" .) "oidc" }}
     {{- fail "[camunda][error] camunda.physical-tenants in orchestration.extraConfiguration requires OIDC authentication; each tenant is assigned an OIDC provider." }}
   {{- end }}
