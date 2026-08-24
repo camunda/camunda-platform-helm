@@ -1213,18 +1213,21 @@ func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterIndexPrefix() {
 			},
 		},
 		{
-			Name: "ESPrefixFallsBackToDeprecatedGlobalAsLastResort",
+			// The Elasticsearch cases above cover the writer key and Optimize fallback; these are
+			// their OpenSearch counterparts.
+			Name: "OSPrefixDefaultsToOptimizeSpelling",
 			Values: map[string]string{
-				"orchestration.exporters.zeebe.enabled":   "true",
-				"optimize.enabled":                        "true",
-				"optimize.database.elasticsearch.enabled": "true",
-				"optimize.database.elasticsearch.prefix":  "",
-				"global.elasticsearch.prefix":             "global-records",
+				"orchestration.exporters.zeebe.enabled": "true",
+				"optimize.enabled":                      "true",
+				"optimize.database.opensearch.enabled":  "true",
+				"optimize.database.opensearch.url.host": "opensearch.example.com",
+				"optimize.database.opensearch.prefix":   "optimize-os-records",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "prefix: \"global-records\"",
-					"the deprecated global.elasticsearch.prefix must remain the last resort")
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+				require.Contains(t, output, "prefix: \"optimize-os-records\"",
+					"an unset orchestration.exporters.zeebe.index.prefix must fall back to optimize.database.opensearch.prefix")
 			},
 		},
 		{
