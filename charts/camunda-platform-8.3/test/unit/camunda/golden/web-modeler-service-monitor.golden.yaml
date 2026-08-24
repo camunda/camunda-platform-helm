@@ -22,3 +22,4 @@ spec:
       path: /metrics
       port: http-management
       interval: 10s
+
