@@ -1225,3 +1225,42 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *configmapRestAPITemplateTest) TestTestModeEnabledByStorageMode() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestTestModeEnabledWithSecondaryStorage",
+			Values: maps.Clone(requiredValues),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				require.NoError(t, e)
+				s.Require().Equal("true", configmapApplication.Camunda.Modeler.Feature.TestModeEnabled,
+					"test-mode-enabled must be true when secondary storage is active")
+			},
+		},
+		{
+			Name: "TestTestModeDisabledWithNoSecondaryStorage",
+			Values: func() map[string]string {
+				v := maps.Clone(requiredValues)
+				v["global.noSecondaryStorage"] = "true"
+				return v
+			}(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				require.NoError(t, e)
+				s.Require().Equal("false", configmapApplication.Camunda.Modeler.Feature.TestModeEnabled,
+					"test-mode-enabled must be false in engine-only mode")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
