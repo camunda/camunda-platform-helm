@@ -338,7 +338,7 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		label := fmt.Sprintf("%s: topology %q: release (role %q, namespace-suffix %q)", ctx, t.Name, r.Role, r.NamespaceSuffix)
 		view := buildOptimizeReleaseView(r, chartFullSetupDir)
 		problems = append(problems, validateOptimizeLayerValues(label, r, chartFullSetupDir, view.switches.choice())...)
-		problems = append(problems, validateOptimizeIdentityAgainstHub(label, t, r, view.oidc, hubInventory)...)
+		problems = append(problems, validateOptimizeIdentityAgainstHub(label, t, r, view.oidc, view.keys, hubInventory)...)
 	}
 
 	if len(problems) == 0 {
@@ -359,6 +359,16 @@ type optimizeLayerValues struct {
 		Opensearch struct {
 			Enabled *bool `yaml:"enabled"`
 		} `yaml:"opensearch"`
+		// Identity.Auth.Optimize is the chart-wide fallback every Optimize
+		// identity field resolves through when the component-scoped block
+		// leaves it unset. It is a supported way to configure a release, so a
+		// cross-check that read only the component block would reject a valid
+		// topology for "not setting" what it does set here.
+		Identity struct {
+			Auth struct {
+				Optimize optimizeOIDCLayer `yaml:"optimize"`
+			} `yaml:"auth"`
+		} `yaml:"identity"`
 	} `yaml:"global"`
 	Optimize struct {
 		ContextPath *string `yaml:"contextPath"`
@@ -460,8 +470,7 @@ func inlineFirstSecretForm(ref optimizeSecretRef) secretForm {
 //
 // Inline literals are compared but never quoted into a problem: these messages
 // reach CI logs.
-func secretFormProblems(label, hubLocation string, hub, release secretForm, hubSubs, releaseSubs map[string]string) []string {
-	releaseKey := "optimize.security.authentication.oidc.secret"
+func secretFormProblems(label, hubLocation, releaseKey string, hub, release secretForm, hubSubs, releaseSubs map[string]string) []string {
 	if hub.kind == "" {
 		return nil
 	}
@@ -746,20 +755,119 @@ func readOptimizeLayer(path string) (optimizeLayerValues, bool) {
 // layer is required to state either.
 type optimizeReleaseView struct {
 	switches optimizeBackendSwitches
-	oidc     optimizeOIDCLayer
+	// oidc is the identity the release effectively presents, resolved from the
+	// component-scoped block over the global fallback in the same precedence the
+	// chart applies. It is not what any single values key says.
+	oidc optimizeOIDCLayer
+	// keys names the values path that supplied each field of oidc, so a problem
+	// message points at the key the reader actually has to edit.
+	keys optimizeOIDCKeys
+}
+
+// optimizeOIDCKeys is the values path behind each resolved identity field. A
+// field no layer sets names both candidates: either one fixes it.
+type optimizeOIDCKeys struct {
+	ClientID    string
+	Audience    string
+	RedirectURL string
+	Secret      string
+}
+
+const (
+	optimizeComponentOIDCKey = "optimize.security.authentication.oidc."
+	optimizeGlobalOIDCKey    = "global.identity.auth.optimize."
+)
+
+// optimizeIdentityKey names the values path a resolved field came from. Both
+// paths are named when neither side sets it, since the message is then telling
+// the reader to add the value rather than to correct one.
+func optimizeIdentityKey(field string, componentSet, globalSet bool) string {
+	switch {
+	case componentSet:
+		return optimizeComponentOIDCKey + field
+	case globalSet:
+		return optimizeGlobalOIDCKey + field
+	default:
+		return optimizeComponentOIDCKey + field + " (nor " + optimizeGlobalOIDCKey + field + ")"
+	}
 }
 
 func buildOptimizeReleaseView(r TopologyRelease, chartFullSetupDir string) optimizeReleaseView {
 	var view optimizeReleaseView
+	var component, global optimizeOIDCLayer
 	for _, path := range releaseLayerPaths(r, chartFullSetupDir) {
 		layer, ok := readOptimizeLayer(path)
 		if !ok {
 			continue
 		}
 		view.switches = view.switches.merge(layer)
-		view.oidc = mergeOptimizeOIDC(view.oidc, layer.Optimize.Security.Authentication.OIDC)
+		component = mergeOptimizeOIDC(component, layer.Optimize.Security.Authentication.OIDC)
+		global = mergeOptimizeOIDC(global, layer.Global.Identity.Auth.Optimize)
 	}
+	view.oidc, view.keys = resolveOptimizeIdentity(component, global)
 	return view
+}
+
+// resolveOptimizeIdentity resolves the identity an Optimize release presents the
+// way the chart does: `optimize.effectiveAuthClientId` and
+// `optimize.effectiveAuthRedirectUrl` take the component-scoped value and fall
+// back to `global.identity.auth.optimize`, `camundaPlatform.authAudienceOptimize`
+// does the same for the audience, and `optimize.effectiveAuthSecret` overlays the
+// secret per field. The chart tests each with template truthiness, so an empty
+// string falls through to the fallback rather than overriding it with nothing.
+func resolveOptimizeIdentity(component, global optimizeOIDCLayer) (optimizeOIDCLayer, optimizeOIDCKeys) {
+	var effective optimizeOIDCLayer
+	var keys optimizeOIDCKeys
+
+	pick := func(field string, componentValue, globalValue *string) (*string, string) {
+		componentSet := stringValue(componentValue) != ""
+		globalSet := stringValue(globalValue) != ""
+		value := componentValue
+		if !componentSet {
+			value = globalValue
+		}
+		if !componentSet && !globalSet {
+			value = nil
+		}
+		return value, optimizeIdentityKey(field, componentSet, globalSet)
+	}
+
+	effective.ClientID, keys.ClientID = pick("clientId", component.ClientID, global.ClientID)
+	effective.Audience, keys.Audience = pick("audience", component.Audience, global.Audience)
+	effective.RedirectURL, keys.RedirectURL = pick("redirectUrl", component.RedirectURL, global.RedirectURL)
+	effective.Secret, keys.Secret = resolveOptimizeSecret(component.Secret, global.Secret)
+	return effective, keys
+}
+
+// resolveOptimizeSecret mirrors `optimize.effectiveAuthSecret`: a component-scoped
+// inlineSecret or existingSecret replaces the inherited source outright, a
+// component-scoped existingSecretKey on its own only renames the key inside the
+// inherited existingSecret, and a component block that sets nothing inherits
+// `global.identity.auth.optimize.secret` whole.
+func resolveOptimizeSecret(component, global optimizeSecretRef) (optimizeSecretRef, string) {
+	componentKey := optimizeComponentOIDCKey + "secret"
+	globalKey := optimizeGlobalOIDCKey + "secret"
+	switch {
+	case stringValue(component.InlineSecret) != "":
+		return optimizeSecretRef{InlineSecret: component.InlineSecret}, componentKey
+	case stringValue(component.ExistingSecret) != "":
+		key := component.ExistingSecretKey
+		if stringValue(key) == "" {
+			key = global.ExistingSecretKey
+		}
+		return optimizeSecretRef{ExistingSecret: component.ExistingSecret, ExistingSecretKey: key}, componentKey
+	case stringValue(component.ExistingSecretKey) != "":
+		// The name is the inherited one and only the key is the release's, so
+		// naming either path alone would send the reader to half the value.
+		merged := global
+		merged.ExistingSecretKey = component.ExistingSecretKey
+		return merged, componentKey + " over " + globalKey
+	default:
+		if inlineFirstSecretForm(global).kind != "" {
+			return global, globalKey
+		}
+		return global, componentKey + " (nor " + globalKey + ")"
+	}
 }
 
 func mergeOptimizeOIDC(into, from optimizeOIDCLayer) optimizeOIDCLayer {
@@ -993,7 +1101,7 @@ func expandTopologyPlaceholders(value string, subs map[string]string) string {
 // provisioned as standalone identity.clients entries and are checked against those.
 // Deciding which is which by client id rather than by declaration order is what
 // keeps the check from blaming whichever release did not win the registration.
-func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRelease, oidc optimizeOIDCLayer, inventory hubInventory) []string {
+func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRelease, oidc optimizeOIDCLayer, keys optimizeOIDCKeys, inventory hubInventory) []string {
 	if r.Serves == "" || !inventory.read {
 		return nil
 	}
@@ -1024,7 +1132,7 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 	// an empty list, so it is checked rather than passed over.
 	cluster, hasRecord := inventory.clusters[clusterID]
 	if !hasRecord || !isEnabled(cluster.Components.Optimize.Enabled) {
-		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, inventory, clusterID, "", false, hubSubs, releaseSubs)
+		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, keys, inventory, clusterID, "", false, hubSubs, releaseSubs)
 	}
 
 	registered := stringValue(cluster.Components.Optimize.ClientID)
@@ -1038,7 +1146,7 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 		(registered != "" && presented != "" &&
 			expandTopologyPlaceholders(registered, hubSubs) == expandTopologyPlaceholders(presented, releaseSubs))
 	if !isRecordRelease {
-		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, inventory, clusterID, registered, true, hubSubs, releaseSubs)
+		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, keys, inventory, clusterID, registered, true, hubSubs, releaseSubs)
 	}
 
 	var problems []string
@@ -1057,13 +1165,13 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 		}
 		problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub registers this cluster's Optimize %s as %q (global.topology.clusters[id=%q].components.optimize.%s); the value Optimize presents and the value Identity provisioned have to be the same one", label, releaseKey, release, what, hub, clusterID, hubKey))
 	}
-	optimizeOIDCKey := "optimize.security.authentication.oidc."
-	compare("client id", "clientId", optimizeOIDCKey+"clientId", cluster.Components.Optimize.ClientID, oidc.ClientID)
-	compare("audience", "audience", optimizeOIDCKey+"audience", cluster.Components.Optimize.Audience, oidc.Audience)
-	compare("redirect URL", "redirectUrl", optimizeOIDCKey+"redirectUrl", cluster.Components.Optimize.RedirectURL, oidc.RedirectURL)
+	compare("client id", "clientId", keys.ClientID, cluster.Components.Optimize.ClientID, oidc.ClientID)
+	compare("audience", "audience", keys.Audience, cluster.Components.Optimize.Audience, oidc.Audience)
+	compare("redirect URL", "redirectUrl", keys.RedirectURL, cluster.Components.Optimize.RedirectURL, oidc.RedirectURL)
 	problems = append(problems, secretFormProblems(
 		label,
 		fmt.Sprintf("global.topology.clusters[id=%q].components.optimize.secret", clusterID),
+		keys.Secret,
 		normalizedSecretForm(cluster.Components.Optimize.Secret),
 		inlineFirstSecretForm(oidc.Secret),
 		hubSubs, releaseSubs,
@@ -1087,8 +1195,7 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 // provision it instead. Absent such an entry the release presents a client id
 // Identity never creates, which the deploy cannot see: Optimize starts, reports
 // ready, and only the first login fails.
-func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, oidc optimizeOIDCLayer, inventory hubInventory, clusterID, registered string, hasRecord bool, hubSubs, releaseSubs map[string]string) []string {
-	optimizeOIDCKey := "optimize.security.authentication.oidc."
+func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, oidc optimizeOIDCLayer, keys optimizeOIDCKeys, inventory hubInventory, clusterID, registered string, hasRecord bool, hubSubs, releaseSubs map[string]string) []string {
 	presented := stringValue(oidc.ClientID)
 	// The record either names another release's client or names none at all; both
 	// leave this release to a client of its own, and saying which one it is keeps
@@ -1105,7 +1212,7 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 		if !hasRecord {
 			return nil
 		}
-		return []string{fmt.Sprintf("%s: %s (global.topology.clusters[id=%q].components.optimize), so this release has to present a client of its own, but no layer of it sets %sclientId; it would send the chart default, which Identity provisions for nothing", label, recordSays, clusterID, optimizeOIDCKey)}
+		return []string{fmt.Sprintf("%s: %s (global.topology.clusters[id=%q].components.optimize), so this release has to present a client of its own, but no layer of it sets %s; it would send the chart default, which Identity provisions for nothing", label, recordSays, clusterID, keys.ClientID)}
 	}
 	var client hubIdentityClient
 	found := false
@@ -1116,7 +1223,7 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 		}
 	}
 	if !found {
-		return []string{fmt.Sprintf("%s: %sclientId is %q and %s, so nothing provisions this release's client; add it to the Hub release's identity.clients so Identity creates it", label, optimizeOIDCKey, presented, recordSays)}
+		return []string{fmt.Sprintf("%s: %s is %q and %s, so nothing provisions this release's client; add it to the Hub release's identity.clients so Identity creates it", label, keys.ClientID, presented, recordSays)}
 	}
 
 	var problems []string
@@ -1133,10 +1240,11 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 	// rootUrl is the redirect target Identity registers: redirectUris are resolved
 	// against it, so an Optimize whose redirectUrl points elsewhere is refused at
 	// the callback.
-	compare("root URL", "rootUrl", optimizeOIDCKey+"redirectUrl", stringValue(client.RootURL), stringValue(oidc.RedirectURL))
+	compare("root URL", "rootUrl", keys.RedirectURL, stringValue(client.RootURL), stringValue(oidc.RedirectURL))
 	problems = append(problems, secretFormProblems(
 		label,
 		clientKey+".secret",
+		keys.Secret,
 		inlineFirstSecretForm(client.Secret),
 		inlineFirstSecretForm(oidc.Secret),
 		hubSubs, releaseSubs,
@@ -1157,7 +1265,7 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 			}
 		}
 		if !permitted && len(servers) > 0 {
-			problems = append(problems, fmt.Sprintf("%s: %saudience is %q but the Hub permits this client only on %s (%s.permissions[].resourceServerId), so Identity mints no token Optimize will accept", label, optimizeOIDCKey, audience, strings.Join(servers, ", "), clientKey))
+			problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub permits this client only on %s (%s.permissions[].resourceServerId), so Identity mints no token Optimize will accept", label, keys.Audience, audience, strings.Join(servers, ", "), clientKey))
 		}
 	}
 	return problems
