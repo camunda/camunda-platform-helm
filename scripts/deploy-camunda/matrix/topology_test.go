@@ -1237,14 +1237,104 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeNothingProvisions(t *testi
 	}
 }
 
+// hubWithNonKeycloakIssuer rewrites the Hub layer to a non-Keycloak issuer.
+// templates/identity/configmap.yaml renders the whole identity.clients block only
+// under authIssuerType KEYCLOAK, so under this issuer those entries provision
+// nothing and the operator creates the client in their own IdP.
+func hubWithNonKeycloakIssuer(layer string) string {
+	return strings.Replace(layer, "global:\n  topology:", "global:\n  identity:\n    auth:\n      type: MICROSOFT\n  topology:", 1)
+}
+
+// A client with no rootUrl and no absolute redirectUris registers no callback at
+// all, so Identity has nowhere to send Optimize back to. The deploy cannot see it:
+// every workload reports ready and only the login fails.
+func TestTopologyValidate_RejectsASecondTenantOptimizeClientRegisteringNoRedirect(t *testing.T) {
+	dir := t.TempDir()
+	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n", "", 1)
+	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "no rootUrl and no absolute redirectUris") {
+		t.Fatalf("expected the missing redirect registration to be reported, got %v", err)
+	}
+}
+
+// A client with no permissions is minted no token for any resource server, so the
+// audience the release declares is unreachable rather than merely unmatched.
+func TestTopologyValidate_RejectsASecondTenantOptimizeClientWithNoPermissions(t *testing.T) {
+	dir := t.TempDir()
+	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
+	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "no permission naming a resource server") {
+		t.Fatalf("expected the missing permissions to be reported, got %v", err)
+	}
+}
+
+// A permissions list whose entries name no resource server is non-empty and still
+// grants access to nothing, so counting entries rather than usable servers would
+// let it through as a permission that merely fails to match.
+func TestTopologyValidate_RejectsASecondTenantOptimizeClientWhosePermissionsNameNoResourceServer(t *testing.T) {
+	dir := t.TempDir()
+	hub := strings.Replace(
+		hubInventoryWithSecondOptimizeClient,
+		"      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n",
+		"      permissions:\n        - definition: write:*\n",
+		1,
+	)
+	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "no permission naming a resource server") {
+		t.Fatalf("expected a permissions list naming no resource server to be reported, got %v", err)
+	}
+}
+
+// Under a non-Keycloak issuer identity.clients provisions nothing, so the same
+// incomplete entry is not a defect: the real client lives in the operator's IdP
+// and the chart cannot see it. Requiring these fields here would fail a supported
+// topology, which is why both requirements above are scoped to Keycloak.
+func TestTopologyValidate_AcceptsAnIncompleteClientUnderANonKeycloakIssuer(t *testing.T) {
+	dir := t.TempDir()
+	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n", "", 1)
+	hub = strings.Replace(hub, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
+	writeTwoTenantLayers(t, dir, hubWithNonKeycloakIssuer(hub), optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("a non-Keycloak issuer provisions no identity.clients, so nothing here is required: %v", err)
+	}
+}
+
+// Keycloak honours an absolute redirectUris entry as it stands and resolves only
+// relative ones against rootUrl, so an absolute entry is a complete registration
+// and an empty rootUrl beside one is correct rather than broken.
+func TestTopologyValidate_AcceptsASecondTenantOptimizeRedirectFromAnAbsoluteRedirectUri(t *testing.T) {
+	dir := t.TempDir()
+	hub := strings.Replace(
+		hubInventoryWithSecondOptimizeClient,
+		"      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n      redirectUris: /api/authentication/callback\n",
+		"      redirectUris:\n        - \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n",
+		1,
+	)
+	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("an absolute redirectUri registers the callback on its own: %v", err)
+	}
+}
+
 func TestTopologyValidate_RejectsASecondTenantOptimizeRedirectingOffItsRegisteredRootUrl(t *testing.T) {
 	dir := t.TempDir()
 	drifted := strings.Replace(optimizeLayerSecondTenant, "${RELEASE_OPTIMIZE_CONTEXT_PATH}\"\n        secret", "${OPTA_OPTIMIZE_CONTEXT_PATH}\"\n        secret", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
 
 	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "the Hub provisions this client's root URL") {
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this client's redirect as") {
 		t.Fatalf("expected the redirect URL to be checked against the registered root URL, got %v", err)
+	}
+	if !strings.Contains(err.Error(), `.rootUrl)`) {
+		t.Fatalf("the message must name rootUrl as the registered source, got %v", err)
 	}
 }
 
