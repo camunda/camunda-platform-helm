@@ -108,9 +108,15 @@ func TestHubTopologyPerTenantOptimizeRoleFallsBackToSharedRole(t *testing.T) {
 		`- name: "Optimize East tenantb"\s*\n\s*description: "Grants full access to Optimize East tenantb"(?s).*?audience: "optimize-east-tb-api"`,
 		output)
 
-	// tenanta declares none, so its audience joins the shared Optimize role and tenantb's does not
-	sharedRole := output[strings.Index(output, `- name: "Optimize"`):]
-	sharedRole = sharedRole[:strings.Index(sharedRole, "read:users")]
+	// tenanta declares none, so its audience joins the shared Optimize role and tenantb's does not.
+	// Both markers are located before slicing: a renamed or removed shared role would otherwise
+	// slice on -1 and panic, reporting a range error instead of the section that went missing.
+	start := strings.Index(output, `- name: "Optimize"`)
+	require.NotEqual(t, -1, start, `the shared "Optimize" role is missing from the rendered ConfigMap`)
+	sharedRole := output[start:]
+	end := strings.Index(sharedRole, "read:users")
+	require.NotEqual(t, -1, end, `the shared "Optimize" role has no read:users permission to bound it`)
+	sharedRole = sharedRole[:end]
 	require.Contains(t, sharedRole, `audience: "optimize-east-ta-api"`)
 	require.NotContains(t, sharedRole, `audience: "optimize-east-tb-api"`)
 }
