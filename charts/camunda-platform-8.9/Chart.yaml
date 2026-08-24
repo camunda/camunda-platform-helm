@@ -71,4 +71,8 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Align legacy exporter with its component datastore source"
+    - kind: fixed
+      description: "Stop exposing credentials in deployment output"
