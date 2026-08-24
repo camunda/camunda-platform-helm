@@ -188,4 +188,3 @@ spec:
         - emptyDir:
             sizeLimit: 10Mi
           name: camunda-theme
-

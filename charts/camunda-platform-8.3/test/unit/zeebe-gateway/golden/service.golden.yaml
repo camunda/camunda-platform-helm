@@ -29,4 +29,3 @@ spec:
     - port: 26500
       protocol: TCP
       name: gateway
-

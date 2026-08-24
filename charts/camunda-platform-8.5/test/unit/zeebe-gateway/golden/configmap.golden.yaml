@@ -41,4 +41,3 @@ data:
         cluster:
           clusterName: camunda-platform-test-zeebe
           port: "26502"
-

@@ -133,4 +133,3 @@ spec:
       securityContext:
         fsGroup: 1002
         runAsNonRoot: true
-

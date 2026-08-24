@@ -133,4 +133,3 @@ spec:
                 - zeebe-gateway
             topologyKey: kubernetes.io/hostname
   # yamllint enable
-

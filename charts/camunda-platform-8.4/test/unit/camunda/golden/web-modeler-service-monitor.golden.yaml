@@ -22,8 +22,6 @@ spec:
       path: /metrics
       port: http-management
       interval: 10s
-
-
 ---
 # Source: camunda-platform/templates/service-monitor/web-modeler-service-monitor.yaml
 apiVersion: monitoring.coreos.com/v1
@@ -48,4 +46,3 @@ spec:
       path: /metrics
       port: http-management
       interval: 10s
-

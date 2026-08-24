@@ -112,4 +112,3 @@ spec:
           emptyDir: {}
       securityContext:
         fsGroup: 1003
-

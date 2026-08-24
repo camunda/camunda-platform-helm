@@ -190,4 +190,3 @@ spec:
           emptyDir: {}
       securityContext:
         fsGroup: 1005
-
