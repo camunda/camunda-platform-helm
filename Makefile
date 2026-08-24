@@ -141,6 +141,22 @@ go.fmt:
 #
 # Helpers.
 
+# licenseExcludePaths: chart versions held out of the licence gate, so that
+# editing them does not pull the chart into `ct list-changed` and trigger a
+# golden regeneration. Space-separated; both forms below derive from it.
+licenseExcludePaths := \
+	charts/camunda-platform-8.3 \
+	charts/camunda-platform-8.4 \
+	charts/camunda-platform-8.5
+
+# licenseExcludeArg: comma-separated, for license-check --exclude.
+# licenseExcludeGrep: anchored alternation, for filtering find(1) output.
+empty :=
+space := $(empty) $(empty)
+comma := ,
+licenseExcludeArg  := $(subst $(space),$(comma),$(strip $(licenseExcludePaths)))
+licenseExcludeGrep := ^($(subst $(space),|,$(strip $(licenseExcludePaths))))/
+
 # go.addlicense-install: installs the addlicense tool
 .PHONY: go.addlicense-install
 go.addlicense-install:
@@ -151,9 +167,10 @@ go.addlicense-install:
 # surfaces as an error instead of a vacuous pass.
 .PHONY: go.addlicense-files
 go.addlicense-files:
-	@files=$$(find $(chartPath)/test -name '*.go' 2>/dev/null); \
+	@files=$$(find $(chartPath)/test -name '*.go' 2>/dev/null | grep -Ev '$(licenseExcludeGrep)'); \
 	if [ -z "$$files" ]; then \
-		echo "ERROR: no .go files under '$(chartPath)/test' - refusing to report success." >&2; \
+		echo "ERROR: no in-scope .go files under '$(chartPath)/test' - refusing to report success." >&2; \
+		echo "       (excluded from the licence gate: $(licenseExcludePaths))" >&2; \
 		exit 1; \
 	fi; \
 	echo "$$files"
@@ -175,7 +192,8 @@ go.addlicense-check:
 # text that is present, so this covers the license type it cannot.
 .PHONY: go.license-verify
 go.license-verify:
-	@cd scripts/license-check && go run . --repo-root ../..
+	@cd scripts/license-check && go run . --repo-root ../.. \
+		--exclude '$(licenseExcludeArg)'
 
 #########################################################
 ######### Tools

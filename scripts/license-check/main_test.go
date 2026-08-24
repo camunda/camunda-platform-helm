@@ -67,7 +67,7 @@ func TestPassesWhenEveryFileIsApache(t *testing.T) {
 	})
 
 	var out bytes.Buffer
-	require.NoError(t, run(root, ".go,.sh", &out))
+	require.NoError(t, run(root, ".go,.sh", "", &out))
 	assert.Contains(t, out.String(), "2 files verified")
 }
 
@@ -78,7 +78,7 @@ func TestFailsOnMissingHeader(t *testing.T) {
 	})
 
 	var out bytes.Buffer
-	err := run(root, ".go", &out)
+	err := run(root, ".go", "", &out)
 
 	require.Error(t, err)
 	assert.Contains(t, out.String(), reasonMissing)
@@ -97,7 +97,7 @@ func TestFailsOnNonApacheHeader(t *testing.T) {
 			root := newRepo(t, map[string]string{"scripts/thing.sh": content})
 
 			var out bytes.Buffer
-			err := run(root, ".sh", &out)
+			err := run(root, ".sh", "", &out)
 
 			require.Error(t, err)
 			assert.Contains(t, out.String(), reasonNonApache)
@@ -118,7 +118,7 @@ func TestAcceptsSpdxIdentifier(t *testing.T) {
 			root := newRepo(t, map[string]string{"scripts/tool.go": header + "\npackage main\n"})
 
 			var out bytes.Buffer
-			assert.NoError(t, run(root, ".go", &out))
+			assert.NoError(t, run(root, ".go", "", &out))
 		})
 	}
 }
@@ -132,7 +132,7 @@ func TestFindsHeaderBelowShebang(t *testing.T) {
 	})
 
 	var out bytes.Buffer
-	assert.NoError(t, run(root, ".sh", &out))
+	assert.NoError(t, run(root, ".sh", "", &out))
 }
 
 // A header pushed past the scan window must not count, otherwise an unrelated
@@ -144,7 +144,7 @@ func TestIgnoresHeaderBeyondScanWindow(t *testing.T) {
 	})
 
 	var out bytes.Buffer
-	err := run(root, ".sh", &out)
+	err := run(root, ".sh", "", &out)
 
 	require.Error(t, err)
 	assert.Contains(t, out.String(), reasonMissing)
@@ -157,7 +157,7 @@ func TestReportsBothReasonsSeparately(t *testing.T) {
 	})
 
 	var out bytes.Buffer
-	err := run(root, ".go,.sh", &out)
+	err := run(root, ".go,.sh", "", &out)
 
 	require.Error(t, err)
 	assert.Contains(t, out.String(), reasonMissing)
@@ -174,7 +174,7 @@ func TestIgnoresUntrackedAndOtherExtensions(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(root, "scratch.go"), []byte("package main\n"), 0o644))
 
 	var out bytes.Buffer
-	require.NoError(t, run(root, ".go", &out))
+	require.NoError(t, run(root, ".go", "", &out))
 	assert.Contains(t, out.String(), "1 files verified")
 }
 
@@ -184,7 +184,7 @@ func TestFailsWhenNoFilesMatch(t *testing.T) {
 	root := newRepo(t, map[string]string{"README.md": "hello\n"})
 
 	var out bytes.Buffer
-	err := run(root, ".go", &out)
+	err := run(root, ".go", "", &out)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "refusing to report success")
@@ -210,7 +210,7 @@ func TestIgnoresMarkersOutsideComments(t *testing.T) {
 			root := newRepo(t, map[string]string{"scripts/thing" + ext: content})
 
 			var out bytes.Buffer
-			err := run(root, ext, &out)
+			err := run(root, ext, "", &out)
 
 			require.Error(t, err)
 			assert.Contains(t, out.String(), reasonMissing)
@@ -226,8 +226,53 @@ func TestRejectsNegatedApacheClaim(t *testing.T) {
 	})
 
 	var out bytes.Buffer
-	err := run(root, ".sh", &out)
+	err := run(root, ".sh", "", &out)
 
 	require.Error(t, err)
 	assert.Contains(t, out.String(), reasonNonApache)
+}
+
+func TestExcludesPathPrefixFromVerification(t *testing.T) {
+	root := newRepo(t, map[string]string{
+		"scripts/tool/main.go":                 apacheGoHeader + "\npackage main\n",
+		"charts/camunda-platform-8.3/test.go":  "package main\n",
+		"charts/camunda-platform-8.30/test.go": "package main\n",
+	})
+
+	var out bytes.Buffer
+	err := run(root, ".go", "charts/camunda-platform-8.3", &out)
+
+	// 8.30 shares the 8.3 prefix but is a separate chart, so it stays in scope.
+	require.Error(t, err)
+	assert.Contains(t, out.String(), "charts/camunda-platform-8.30/test.go")
+	assert.NotContains(t, out.String(), "charts/camunda-platform-8.3/test.go\n")
+}
+
+func TestExcludedFilesAreReportedNotSilentlyDropped(t *testing.T) {
+	root := newRepo(t, map[string]string{
+		"scripts/tool/main.go":                apacheGoHeader + "\npackage main\n",
+		"charts/camunda-platform-8.3/test.go": "package main\n",
+	})
+
+	var out bytes.Buffer
+	require.NoError(t, run(root, ".go", "charts/camunda-platform-8.3/", &out))
+	assert.Contains(t, out.String(), "1 file(s) excluded")
+	assert.Contains(t, out.String(), "1 files verified")
+}
+
+func TestFailsOnExcludeThatMatchesNothing(t *testing.T) {
+	root := newRepo(t, map[string]string{
+		"scripts/tool/main.go": apacheGoHeader + "\npackage main\n",
+	})
+
+	var out bytes.Buffer
+	err := run(root, ".go", "charts/camunda-platform-9.9", &out)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "matched no tracked file")
+}
+
+func TestParseExcludesTrimsAndDropsEmpty(t *testing.T) {
+	assert.Equal(t, []string{"a/b", "c"}, parseExcludes(" a/b/ , , c "))
+	assert.Nil(t, parseExcludes(""))
 }

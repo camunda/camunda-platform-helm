@@ -99,6 +99,24 @@ STUBEOF
   [ "$versions" -gt 1 ]
 }
 
+@test "unmaintained chart versions stay out of scope" {
+  install_addlicense_stub 0
+
+  # 8.3-8.5 are excluded on purpose: touching a file inside them puts the
+  # chart back into `ct list-changed`, which makes chart-chores regenerate
+  # hundreds of goldens nobody maintains. Both targets read the same list,
+  # so a drift here would silently reintroduce that churn.
+  run make -C "$ROOT" go.addlicense-check
+  [ "$status" -eq 0 ]
+
+  run grep -Ec 'camunda-platform-8\.[345]/' "$ARGV_LOG"
+  [ "$output" -eq 0 ]
+
+  # ...and the exclusion must not have swallowed the maintained versions.
+  run grep -Ec 'camunda-platform-8\.(6|7|8|9|10)/' "$ARGV_LOG"
+  [ "$output" -gt 0 ]
+}
+
 @test "check fails when addlicense reports a missing header" {
   install_addlicense_stub 1
 
@@ -122,7 +140,7 @@ STUBEOF
   # this reports success while checking nothing.
   run make -C "$ROOT" go.addlicense-check chartPath=charts/does-not-exist
   [ "$status" -ne 0 ]
-  [[ "$output" == *"no .go files under"* ]]
+  [[ "$output" == *"no in-scope .go files under"* ]]
 
   # addlicense must never have been reached.
   [ ! -s "$ARGV_LOG" ] || [ ! -f "$ARGV_LOG" ]
@@ -133,7 +151,7 @@ STUBEOF
 
   run make -C "$ROOT" go.addlicense-run chartPath=charts/does-not-exist
   [ "$status" -ne 0 ]
-  [[ "$output" == *"no .go files under"* ]]
+  [[ "$output" == *"no in-scope .go files under"* ]]
 }
 
 @test "run operates on the same real file set as check" {

@@ -19,7 +19,7 @@
 //
 // Usage:
 //
-//	license-check [--repo-root <path>] [--ext .go,.sh]
+//	license-check [--repo-root <path>] [--ext .go,.sh] [--exclude <paths>]
 //
 // Exits 1 and lists every offending file, one per line, grouped by reason.
 package main
@@ -88,15 +88,16 @@ const (
 func main() {
 	repoRoot := flag.String("repo-root", ".", "path to the camunda-platform-helm repo root")
 	extList := flag.String("ext", ".go,.sh", "comma-separated file extensions to verify")
+	excludeList := flag.String("exclude", "", "comma-separated repo-relative path prefixes to leave unverified")
 	flag.Parse()
 
-	if err := run(*repoRoot, *extList, os.Stdout); err != nil {
+	if err := run(*repoRoot, *extList, *excludeList, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
 	}
 }
 
-func run(repoRoot, extList string, out io.Writer) error {
+func run(repoRoot, extList, excludeList string, out io.Writer) error {
 	exts := parseExts(extList)
 	if len(exts) == 0 {
 		return fmt.Errorf("no extensions given via --ext")
@@ -106,6 +107,17 @@ func run(repoRoot, extList string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+
+	excludes := parseExcludes(excludeList)
+	files, skipped, err := applyExcludes(files, excludes)
+	if err != nil {
+		return err
+	}
+	if len(skipped) > 0 {
+		fmt.Fprintf(out, "license-check: %d file(s) excluded via --exclude: %s\n",
+			len(skipped), strings.Join(excludes, ", "))
+	}
+
 	if len(files) == 0 {
 		return fmt.Errorf("no tracked %s files found under %s - refusing to report success",
 			extList, repoRoot)
@@ -175,6 +187,58 @@ func parseExts(extList string) []string {
 		exts = append(exts, e)
 	}
 	return exts
+}
+
+// parseExcludes splits a comma-separated list into repo-relative path prefixes,
+// normalised to forward slashes and without a trailing separator.
+func parseExcludes(excludeList string) []string {
+	var excludes []string
+	for _, e := range strings.Split(excludeList, ",") {
+		e = strings.TrimSpace(filepath.ToSlash(strings.TrimSpace(e)))
+		e = strings.TrimSuffix(e, "/")
+		if e == "" {
+			continue
+		}
+		excludes = append(excludes, e)
+	}
+	return excludes
+}
+
+// applyExcludes partitions files into kept and skipped. A prefix that matches
+// nothing is an error rather than a no-op: a stale exclude left behind after a
+// tree moves would otherwise silently keep shrinking the verified set.
+func applyExcludes(files, excludes []string) (kept, skipped []string, err error) {
+	if len(excludes) == 0 {
+		return files, nil, nil
+	}
+
+	matched := make(map[string]bool, len(excludes))
+	for _, rel := range files {
+		if e, ok := matchExclude(rel, excludes); ok {
+			matched[e] = true
+			skipped = append(skipped, rel)
+			continue
+		}
+		kept = append(kept, rel)
+	}
+
+	for _, e := range excludes {
+		if !matched[e] {
+			return nil, nil, fmt.Errorf("--exclude %q matched no tracked file - remove it or fix the path", e)
+		}
+	}
+	return kept, skipped, nil
+}
+
+// matchExclude reports whether rel sits at or under one of the prefixes.
+func matchExclude(rel string, excludes []string) (string, bool) {
+	rel = filepath.ToSlash(rel)
+	for _, e := range excludes {
+		if rel == e || strings.HasPrefix(rel, e+"/") {
+			return e, true
+		}
+	}
+	return "", false
 }
 
 // trackedFiles lists git-tracked files matching exts. Using git rather than a
