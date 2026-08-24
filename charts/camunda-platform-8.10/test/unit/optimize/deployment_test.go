@@ -527,16 +527,16 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
+				secretRef := &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
+						Key:                  "identity-optimize-client-token",
+					},
+				}
 				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-optimize-identity-secret"},
-								Key:                  "identity-optimize-client-token",
-							},
-						},
-					})
+					corev1.EnvVar{Name: "CAMUNDA_IDENTITY_CLIENT_SECRET", ValueFrom: secretRef})
+				s.Require().Contains(env,
+					corev1.EnvVar{Name: "VALUES_OPTIMIZE_CLIENT_SECRET", ValueFrom: secretRef})
 			},
 		}, {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretViaReference",
@@ -554,16 +554,16 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
+				secretRef := &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
+						Key:                  "identity-optimize-client-token",
+					},
+				}
 				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecret"},
-								Key:                  "identity-optimize-client-token",
-							},
-						},
-					})
+					corev1.EnvVar{Name: "CAMUNDA_IDENTITY_CLIENT_SECRET", ValueFrom: secretRef})
+				s.Require().Contains(env,
+					corev1.EnvVar{Name: "VALUES_OPTIMIZE_CLIENT_SECRET", ValueFrom: secretRef})
 			},
 		}, {
 			Name: "TestContainerShouldOverwriteGlobalImagePullPolicy",
