@@ -59,6 +59,14 @@ fi
 # exported position stays at -1, which also stops log compaction for those entries.
 partitions=""
 for attempt in {1..60}; do
+  # kubectl port-forward exits with its target pod; without this the remaining attempts curl
+  # a dead local port and the diagnostics blame the tenant exporters.
+  kill -0 "${PORT_FORWARD_PID}" 2>/dev/null || {
+    echo "Port-forward to ${RELEASE}-zeebe died before every physical tenant reported exporting." >&2
+    cat "${PORT_FORWARD_LOG}" >&2
+    fail "Lost the management port while waiting for physical tenants to export."
+  }
+
   partitions="$(curl --silent --show-error --max-time 10 \
     "http://127.0.0.1:${LOCAL_PORT}${ACTUATOR}/partitions" 2>/dev/null)" || true
 
