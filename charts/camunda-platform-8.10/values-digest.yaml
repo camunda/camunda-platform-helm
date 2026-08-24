@@ -21,7 +21,7 @@ optimize:
   image:
     repository: camunda/optimize
     tag: 8.10-SNAPSHOT
-    digest: "sha256:4ccf99141322af4ddaccf9035b6974f3d06e8e1e2759cb9e9269540296cf861e"
+    digest: "sha256:64b74e0f985ed780bae7a6af7d9842160f27b8461ea2330bb7a04501c07a3121"
 
 #
 # Web Modeler
