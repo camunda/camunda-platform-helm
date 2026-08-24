@@ -168,5 +168,4 @@ jobs:
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           OVERRIDE_SHA: ${{ inputs.sha }}
           OVERRIDE_EVENT: ${{ inputs.event }}
-          IS_FORK: false
         run: go run .
