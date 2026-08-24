@@ -522,6 +522,14 @@ type hubLayerValues struct {
 		Topology struct {
 			Clusters yaml.Node `yaml:"clusters"`
 		} `yaml:"topology"`
+		// Identity.Auth.Type decides whether identity.clients is provisioning at
+		// all: templates/identity/configmap.yaml renders the whole clients block
+		// only under authIssuerType KEYCLOAK.
+		Identity struct {
+			Auth struct {
+				Type *string `yaml:"type"`
+			} `yaml:"auth"`
+		} `yaml:"identity"`
 	} `yaml:"global"`
 	Identity struct {
 		Clients yaml.Node `yaml:"clients"`
@@ -546,16 +554,50 @@ func decodeHubList[T any](node yaml.Node, out *[]T) bool {
 }
 
 // hubIdentityClient is one entry of the Hub's identity.clients list, narrowed to
-// what an optimize release duplicates. RootURL carries the redirect target
-// (redirectUris is appended to it), and Permissions name the resource servers
-// tokens minted for this client may be audienced to.
+// what an optimize release duplicates. RootURL carries the redirect target that
+// relative RedirectUris are resolved against, and Permissions name the resource
+// servers tokens minted for this client may be audienced to.
+//
+// RedirectUris is kept as a node because a values file may write it either as a
+// list or as a single scalar, and reading only one form would silently see no
+// redirect where the release states one.
 type hubIdentityClient struct {
-	ID          string            `yaml:"id"`
-	RootURL     *string           `yaml:"rootUrl"`
-	Secret      optimizeSecretRef `yaml:"secret"`
-	Permissions []struct {
+	ID           string            `yaml:"id"`
+	RootURL      *string           `yaml:"rootUrl"`
+	RedirectUris yaml.Node         `yaml:"redirectUris"`
+	Secret       optimizeSecretRef `yaml:"secret"`
+	Permissions  []struct {
 		ResourceServerID string `yaml:"resourceServerId"`
 	} `yaml:"permissions"`
+}
+
+// absoluteRedirectUris returns the client's redirectUris that are already
+// absolute. Keycloak honours those as they stand and resolves only relative
+// entries against rootUrl, so an absolute entry is a complete redirect
+// registration on its own and an empty rootUrl alongside one is not a defect.
+func absoluteRedirectUris(node yaml.Node) []string {
+	var raw []string
+	switch node.Kind {
+	case 0:
+		return nil
+	case yaml.ScalarNode:
+		var one string
+		if node.Decode(&one) != nil {
+			return nil
+		}
+		raw = []string{one}
+	default:
+		if node.Decode(&raw) != nil {
+			return nil
+		}
+	}
+	var absolute []string
+	for _, uri := range raw {
+		if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+			absolute = append(absolute, uri)
+		}
+	}
+	return absolute
 }
 
 // hubInventory is everything the Hub release registers that an optimize release
@@ -563,6 +605,13 @@ type hubIdentityClient struct {
 type hubInventory struct {
 	clusters map[string]hubClusterValues
 	clients  map[string]hubIdentityClient
+
+	// authIssuerType is the Hub release's global.identity.auth.type, upper-cased,
+	// defaulting to the chart's own default when no layer states one. Only
+	// KEYCLOAK makes identity.clients a provisioning instruction; under any other
+	// issuer the operator creates clients in their own IdP and the chart can see
+	// nothing, so requirements on these entries would fail a valid topology.
+	authIssuerType string
 
 	// read is true once a Hub release's layers have been parsed, whatever they
 	// turned out to register. It is what separates "this topology has no readable
@@ -1013,6 +1062,9 @@ func hubOptimizeInventory(t *Topology, chartFullSetupDir string) hubInventory {
 	}
 	var clusters []hubClusterValues
 	var clients []hubIdentityClient
+	// The chart's own default for global.identity.auth.type, so a topology that
+	// never states one is treated as Keycloak-provisioned - which is what it is.
+	authIssuerType := "KEYCLOAK"
 	read := false
 	for _, path := range releaseLayerPaths(*hub, chartFullSetupDir) {
 		content, err := os.ReadFile(path)
@@ -1032,11 +1084,15 @@ func hubOptimizeInventory(t *Topology, chartFullSetupDir string) hubInventory {
 		if decodeHubList(layer.Identity.Clients, &statedClients) {
 			clients = statedClients
 		}
+		if t := layer.Global.Identity.Auth.Type; t != nil && *t != "" {
+			authIssuerType = strings.ToUpper(*t)
+		}
 	}
 	inventory := hubInventory{
-		clusters: make(map[string]hubClusterValues, len(clusters)),
-		clients:  make(map[string]hubIdentityClient, len(clients)),
-		read:     read,
+		clusters:       make(map[string]hubClusterValues, len(clusters)),
+		clients:        make(map[string]hubIdentityClient, len(clients)),
+		authIssuerType: authIssuerType,
+		read:           read,
 	}
 	for _, c := range clusters {
 		if c.ID != "" {
@@ -1190,6 +1246,16 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 	return problems
 }
 
+// quoteAll quotes each value so a list of registered redirects reads as distinct
+// values in a problem message rather than as one run-together string.
+func quoteAll(values []string) []string {
+	quoted := make([]string, 0, len(values))
+	for _, v := range values {
+		quoted = append(quoted, fmt.Sprintf("%q", v))
+	}
+	return quoted
+}
+
 // validateOptimizeIdentityAgainstHubClients cross-checks an optimize release the
 // cluster record does not name against the standalone Identity client that has to
 // provision it instead. Absent such an entry the release presents a client id
@@ -1228,19 +1294,46 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 
 	var problems []string
 	clientKey := fmt.Sprintf("identity.clients[id=%q]", client.ID)
-	compare := func(what, hubKey, releaseKey, hubValue, releaseValue string) {
-		if hubValue == "" || releaseValue == "" {
-			return
-		}
-		if expandTopologyPlaceholders(hubValue, hubSubs) == expandTopologyPlaceholders(releaseValue, releaseSubs) {
-			return
-		}
-		problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub provisions this client's %s as %q (%s.%s); the value Optimize presents and the value Identity provisioned have to be the same one", label, releaseKey, releaseValue, what, hubValue, clientKey, hubKey))
+	// rootUrl is the redirect target Identity registers, and relative redirectUris
+	// are resolved against it, so an Optimize whose redirectUrl points elsewhere is
+	// refused at the callback. An absolute redirectUris entry is a complete
+	// registration on its own, so either one matching is enough.
+	//
+	// keycloakProvisioned is what makes a missing registration reportable. These
+	// entries render into Identity's provisioning only under authIssuerType
+	// KEYCLOAK (templates/identity/configmap.yaml gates the whole identity.clients
+	// block on it). Under any other issuer the operator creates the client in their
+	// own IdP, the chart cannot see it, and demanding a rootUrl or a permission
+	// here would reject a valid topology - so those requirements stay scoped to the
+	// mode that can actually satisfy them, while the comparisons below still run
+	// wherever both sides state a value.
+	keycloakProvisioned := inventory.authIssuerType == "KEYCLOAK"
+	releaseRedirect := stringValue(oidc.RedirectURL)
+	rootURL := stringValue(client.RootURL)
+	registeredRedirects := absoluteRedirectUris(client.RedirectUris)
+	registeredKey := clientKey + ".redirectUris"
+	if rootURL != "" {
+		registeredRedirects = append(registeredRedirects, rootURL)
+		registeredKey = clientKey + ".rootUrl"
 	}
-	// rootUrl is the redirect target Identity registers: redirectUris are resolved
-	// against it, so an Optimize whose redirectUrl points elsewhere is refused at
-	// the callback.
-	compare("root URL", "rootUrl", keys.RedirectURL, stringValue(client.RootURL), stringValue(oidc.RedirectURL))
+	switch {
+	case releaseRedirect == "":
+	case len(registeredRedirects) == 0:
+		if keycloakProvisioned {
+			problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub registers this client with no rootUrl and no absolute redirectUris (%s.rootUrl), so Identity has no callback to send Optimize back to and the login cannot complete", label, keys.RedirectURL, releaseRedirect, clientKey))
+		}
+	default:
+		matched := false
+		for _, candidate := range registeredRedirects {
+			if expandTopologyPlaceholders(candidate, hubSubs) == expandTopologyPlaceholders(releaseRedirect, releaseSubs) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub registers this client's redirect as %s (%s); the value Optimize presents and the value Identity provisioned have to be the same one", label, keys.RedirectURL, releaseRedirect, strings.Join(quoteAll(registeredRedirects), ", "), registeredKey))
+		}
+	}
 	problems = append(problems, secretFormProblems(
 		label,
 		clientKey+".secret",
@@ -1252,10 +1345,15 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 
 	// The audience is the resource server the token is minted for, and Identity
 	// mints one only for a resource server this client is permitted on.
-	if audience := stringValue(oidc.Audience); audience != "" && len(client.Permissions) > 0 {
+	if audience := stringValue(oidc.Audience); audience != "" {
 		permitted := false
 		var servers []string
 		for _, permission := range client.Permissions {
+			// An entry naming no resource server permits nothing, so it counts as
+			// absent rather than as a permission that merely fails to match. A list
+			// made only of those is why this is measured on servers and not on
+			// len(client.Permissions): the list is non-empty and still grants
+			// access to nothing.
 			if permission.ResourceServerID == "" {
 				continue
 			}
@@ -1264,7 +1362,15 @@ func validateOptimizeIdentityAgainstHubClients(label string, r TopologyRelease, 
 				permitted = true
 			}
 		}
-		if !permitted && len(servers) > 0 {
+		switch {
+		case permitted:
+		case len(servers) == 0:
+			// Identity mints this client no token for any resource server, so the
+			// declared audience is unreachable rather than merely unmatched.
+			if keycloakProvisioned {
+				problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub registers this client with no permission naming a resource server (%s.permissions), so Identity mints it no token for that audience and Optimize rejects every request", label, keys.Audience, audience, clientKey))
+			}
+		default:
 			problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub permits this client only on %s (%s.permissions[].resourceServerId), so Identity mints no token Optimize will accept", label, keys.Audience, audience, strings.Join(servers, ", "), clientKey))
 		}
 	}
