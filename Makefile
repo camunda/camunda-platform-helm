@@ -183,6 +183,24 @@ tools.zbctl-topology:
 	kubectl exec svc/$(releaseName)-zeebe-gateway -- zbctl --insecure status
 
 #########################################################
+######### MCP
+#########################################################
+
+mcpPath := helm-values-mcp
+
+.PHONY: mcp.deps
+mcp.deps:
+	cd $(mcpPath) && npm ci
+
+.PHONY: mcp.build
+mcp.build:
+	cd $(mcpPath) && npm run build
+
+.PHONY: mcp.test
+mcp.test:
+	cd $(mcpPath) && npm test
+
+#########################################################
 ######### HELM
 #########################################################
 
