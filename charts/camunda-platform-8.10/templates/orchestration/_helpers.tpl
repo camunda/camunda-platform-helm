@@ -387,7 +387,7 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 */}}
 {{- define "orchestration.legacyElasticsearchExporterUsesOptimizeSource" -}}
 {{- and
-      (eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasElasticsearchExporter" .) "true")
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.elasticsearchHost" .) "")
 -}}
@@ -395,8 +395,8 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 
 {{- define "orchestration.legacyOpenSearchExporterUsesOptimizeSource" -}}
 {{- and
-      (ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
-      (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+      (ne (include "orchestration.hasElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasOpenSearchExporter" .) "true")
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.opensearchHost" .) "")
 -}}
