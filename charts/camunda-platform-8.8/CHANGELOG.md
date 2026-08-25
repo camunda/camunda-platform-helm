@@ -1,5 +1,21 @@
 # Changelog
 
+## [13.12.8](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.7...camunda-platform-8.8-13.12.8) (2026-08-24)
+
+
+### Bug Fixes
+
+* stop exposing credentials in deployment output ([#6796](https://github.com/camunda/camunda-platform-helm/issues/6796)) ([df46015](https://github.com/camunda/camunda-platform-helm/commit/df460152d7606161360becd97e6265be9d26e295))
+
+
+### Dependencies
+
+* update camunda-platform-images to v8.8.36 ([#6935](https://github.com/camunda/camunda-platform-helm/issues/6935)) ([b3b772a](https://github.com/camunda/camunda-platform-helm/commit/b3b772a5716e94c3ff0c3be80b64ed08df802b8a))
+* update minor-updates (minor) ([#6936](https://github.com/camunda/camunda-platform-helm/issues/6936)) ([d9a1bfe](https://github.com/camunda/camunda-platform-helm/commit/d9a1bfe638bc454d75478bd49389ade83291a594))
+* update patch-updates (patch) ([#6923](https://github.com/camunda/camunda-platform-helm/issues/6923)) ([c9e6e67](https://github.com/camunda/camunda-platform-helm/commit/c9e6e6774fe84a904e87c249cf31db7c3d690b90))
+* update patch-updates (patch) ([#6937](https://github.com/camunda/camunda-platform-helm/issues/6937)) ([91cda07](https://github.com/camunda/camunda-platform-helm/commit/91cda07d924f88447639513a40f6e6622a28a984))
+* update registry.camunda.cloud/keycloak-ee/keycloak docker tag to v26.7.2 ([#6930](https://github.com/camunda/camunda-platform-helm/issues/6930)) ([e9c539c](https://github.com/camunda/camunda-platform-helm/commit/e9c539c30c1d4d4affdccb4ccae953a990364b54))
+
 ## [13.12.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.6...camunda-platform-8.8-13.12.7) (2026-08-19)
 
 
