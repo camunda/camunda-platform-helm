@@ -7,8 +7,11 @@
 ## Context and Problem Statement
 
 Chart 15.x (Camunda 8.10) already ships a top-of-render guard
-(`charts/camunda-platform-8.10/templates/common/constraints.tpl:9-10`) that fails
-`helm template`/`helm install` when `.Capabilities.HelmVersion.Version` is below `4.0.0`.
+(`charts/camunda-platform-8.10/templates/common/constraints.tpl:9-10`) intended to fail
+`helm template`/`helm install` when `.Capabilities.HelmVersion.Version` is below `4.0.0`. This
+guard only runs if the chart parses at all; chart 8.10 separately calls the Helm 3.17.0+ built-in
+`toYamlPretty` directly with no version guard, so on Helm CLIs older than 3.17.0 parsing fails
+before the guard executes (see Decision Outcome item 1 for the current-behavior gap this leaves).
 This was implemented in [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156)
 (issue [#6137](https://github.com/camunda/camunda-platform-helm/issues/6137)) as part of the
 product-hub epic [camunda/product-hub#3555](https://github.com/camunda/product-hub/issues/3555)
@@ -32,8 +35,10 @@ user on an older-but-still-supported Helm CLI hits a parse error.
 
 ### Applicability by version
 
-- Chart 15.x (8.10) and later: Helm CLI **must** be v4.0.0 or later. Enforced today via the
-  `constraints.tpl` guard.
+- Chart 15.x (8.10) and later: Helm CLI **must** be v4.0.0 or later. The `constraints.tpl` guard
+  enforces this today, verified against the supported predecessor CLI, Helm 3.20.2; it does not
+  reach CLIs older than 3.17.0, which fail earlier at template-parse time (Decision Outcome
+  item 1).
 - Chart 14.x (8.9) and earlier: existing Helm v3 support continues per the epic's stated
   deprecation window (v3 bug fixes end 2026-07-08, security fixes end 2026-11-11). Per
   [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921), 8.8 and earlier test
@@ -112,6 +117,11 @@ rule for all chart lines from this ADR's acceptance date.
 - Item 3 is a review-time policy, not a tooling-enforced one today — no lint step currently flags
   a newly introduced Helm built-in against the chart's declared floor. Reviewers must know the
   floor and check new template code against it manually until such tooling exists.
+- Chart 8.10's own `toYamlPretty` call is itself an unguarded instance of the pattern item 3
+  restricts: on Helm CLIs older than 3.17.0, `helm template`/`helm install` fails at parse time
+  with `function "toYamlPretty" not defined` instead of the `constraints.tpl` guard's intended v4
+  message. No fix is scoped in this ADR; it is recorded here as a known gap in the current
+  implementation.
 
 ## Links
 
