@@ -74,6 +74,33 @@ resolve_deploy_camunda() {
   return 1
 }
 
+build_rerun_cmd() {
+  # Reconstructs the invocation from the parsed arguments so a failing run prints a
+  # command that reproduces it. Reads the same globals the run itself used; the
+  # topology arguments come from the *_ARG snapshots taken before "$ENV_FILE" was
+  # sourced, since that file replaces OPTIMIZE_CONTEXT_PATH with an absolute URL.
+  local cmd="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
+  [[ -n "$KUBE_CONTEXT" ]] && cmd+=" --kube-context ${KUBE_CONTEXT}"
+  [[ -n "$TEST_EXCLUDE" ]] && cmd+=" --test-exclude \"${TEST_EXCLUDE}\""
+  [[ "$RUN_SMOKE_TESTS" == "true" ]] && cmd+=" --run-smoke-tests"
+  [[ "$IS_OPENSEARCH" == "true" ]] && cmd+=" --opensearch"
+  [[ "$IS_RBA" == "true" ]] && cmd+=" --rba"
+  [[ "$IS_MT" == "true" ]] && cmd+=" --mt"
+  [[ "$IS_AUTH0" == "true" ]] && cmd+=" --auth0"
+  [[ -n "$VIDEO_MODE" ]] && cmd+=" --video ${VIDEO_MODE}"
+  [[ -n "$TRACE_MODE" ]] && cmd+=" --trace ${TRACE_MODE}"
+  [[ -n "$RETRIES" ]] && cmd+=" --retries ${RETRIES}"
+  [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=" --local-test-suite ${LOCAL_TEST_SUITE}"
+  # Without these a failing topology leg prints a rerun command that targets an
+  # orchestration-only environment: it cannot reproduce the failure, and it would skip
+  # Optimize again rather than reporting it.
+  [[ -n "$HUB_NAMESPACE_ARG" ]] && cmd+=" --hub-namespace ${HUB_NAMESPACE_ARG}"
+  [[ -n "$OPTIMIZE_NAMESPACE_ARG" ]] && cmd+=" --optimize-namespace ${OPTIMIZE_NAMESPACE_ARG}"
+  [[ -n "$OPTIMIZE_CONTEXT_PATH_ARG" ]] && cmd+=" --optimize-context-path ${OPTIMIZE_CONTEXT_PATH_ARG}"
+  [[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && cmd+=" --modeler-cluster-name ${MODELER_CLUSTER_NAME_ARG}"
+  echo "$cmd"
+}
+
 usage() {
   cat << EOF
 This script runs the integration tests for the Camunda Platform Helm chart.
@@ -366,25 +393,7 @@ log "DEBUG: ENV_FILE='${ENV_FILE}'"
 log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
-RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
-[[ -n "$KUBE_CONTEXT" ]] && RERUN_CMD+=" --kube-context ${KUBE_CONTEXT}"
-[[ -n "$TEST_EXCLUDE" ]] && RERUN_CMD+=" --test-exclude \"${TEST_EXCLUDE}\""
-[[ "$RUN_SMOKE_TESTS" == "true" ]] && RERUN_CMD+=" --run-smoke-tests"
-[[ "$IS_OPENSEARCH" == "true" ]] && RERUN_CMD+=" --opensearch"
-[[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
-[[ "$IS_MT" == "true" ]] && RERUN_CMD+=" --mt"
-[[ "$IS_AUTH0" == "true" ]] && RERUN_CMD+=" --auth0"
-[[ -n "$VIDEO_MODE" ]] && RERUN_CMD+=" --video ${VIDEO_MODE}"
-[[ -n "$TRACE_MODE" ]] && RERUN_CMD+=" --trace ${TRACE_MODE}"
-[[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
-[[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
-# Without these a failing topology leg prints a rerun command that targets an
-# orchestration-only environment: it cannot reproduce the failure, and it would skip
-# Optimize again rather than reporting it.
-[[ -n "$HUB_NAMESPACE_ARG" ]] && RERUN_CMD+=" --hub-namespace ${HUB_NAMESPACE_ARG}"
-[[ -n "$OPTIMIZE_NAMESPACE_ARG" ]] && RERUN_CMD+=" --optimize-namespace ${OPTIMIZE_NAMESPACE_ARG}"
-[[ -n "$OPTIMIZE_CONTEXT_PATH_ARG" ]] && RERUN_CMD+=" --optimize-context-path ${OPTIMIZE_CONTEXT_PATH_ARG}"
-[[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && RERUN_CMD+=" --modeler-cluster-name ${MODELER_CLUSTER_NAME_ARG}"
+RERUN_CMD="$(build_rerun_cmd)"
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
 
