@@ -284,3 +284,65 @@ func TestOptimizeEnvOverridesUsesAbsoluteUrls(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateOptimizeFlagsRejectsNamespaceWithoutContextPath(t *testing.T) {
+	err := validateOptimizeFlags("matrix-810-mns-opt-orcha", "")
+	if err == nil {
+		t.Fatal("expected an error when --optimize-namespace is set without --optimize-context-path")
+	}
+	if !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected error to say the flags pair, got: %v", err)
+	}
+}
+
+func TestValidateOptimizeFlagsRejectsContextPathWithoutNamespace(t *testing.T) {
+	err := validateOptimizeFlags("", "/optimize-orcha")
+	if err == nil {
+		t.Fatal("expected an error when --optimize-context-path is set without --optimize-namespace")
+	}
+	if !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected error to say the flags pair, got: %v", err)
+	}
+}
+
+func TestValidateOptimizeFlagsRejectsContextPathWithoutLeadingSlash(t *testing.T) {
+	err := validateOptimizeFlags("matrix-810-mns-opt-orcha", "optimize-orcha")
+	if err == nil {
+		t.Fatal("expected an error when --optimize-context-path has no leading slash")
+	}
+	if !strings.Contains(err.Error(), "must start with") {
+		t.Fatalf("expected error to name the missing leading slash, got: %v", err)
+	}
+}
+
+func TestValidateOptimizeFlagsAcceptsBothSetAndBothOmitted(t *testing.T) {
+	if err := validateOptimizeFlags("matrix-810-mns-opt-orcha", "/optimize-orcha"); err != nil {
+		t.Fatalf("expected a paired namespace and context path to validate, got: %v", err)
+	}
+	if err := validateOptimizeFlags("", ""); err != nil {
+		t.Fatalf("expected both flags omitted to validate, got: %v", err)
+	}
+}
+
+func TestE2EEnvMergeRejectsHalfConfiguredOptimizeBeforeRendering(t *testing.T) {
+	cmd := newE2EEnvMergeCommand()
+	cmd.SetArgs([]string{
+		"--orchestration-namespace", "matrix-810-mns-orcha",
+		"--hub-namespace", "matrix-810-mns-hub",
+		"--absolute-chart-path", "/workspace/charts/camunda-platform-8.10",
+		"--render-script", "/nonexistent/render-e2e-env.sh",
+		"--optimize-namespace", "matrix-810-mns-opt-orcha",
+	})
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected an error when only --optimize-namespace is supplied")
+	}
+	// The render script is deliberately bogus: the flag check must fail first,
+	// proving it runs before any cluster or filesystem work.
+	if !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected the flag pairing error ahead of the render step, got: %v", err)
+	}
+}

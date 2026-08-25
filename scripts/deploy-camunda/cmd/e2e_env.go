@@ -57,6 +57,9 @@ func newE2EEnvMergeCommand() *cobra.Command {
 		Use:   "merge",
 		Short: "Merge orchestration endpoints with Hub auth into one .env",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateOptimizeFlags(optimizeNamespace, optimizeContextPath); err != nil {
+				return err
+			}
 			renderArgs := []string{
 				renderScript,
 				"--absolute-chart-path", chartPath,
@@ -165,6 +168,22 @@ func newE2EEnvMergeCommand() *cobra.Command {
 	_ = cmd.MarkFlagRequired("absolute-chart-path")
 
 	return cmd
+}
+
+// validateOptimizeFlags rejects the half-configured Optimize targeting that
+// optimizeEnvOverrides cannot turn into a usable endpoint. A namespace without a
+// path builds https://<host>, the ingress root rather than Optimize; a path
+// without a namespace is never read at all; and a path missing its leading
+// slash concatenates into a malformed URL. Each one lands the leg on something
+// that is not Optimize, so refuse before any cluster lookup happens.
+func validateOptimizeFlags(optimizeNamespace, optimizeContextPath string) error {
+	if (optimizeNamespace == "") != (optimizeContextPath == "") {
+		return fmt.Errorf("--optimize-namespace and --optimize-context-path must be set together (got namespace %q, context path %q); one without the other cannot address the Optimize release", optimizeNamespace, optimizeContextPath)
+	}
+	if optimizeContextPath != "" && !strings.HasPrefix(optimizeContextPath, "/") {
+		return fmt.Errorf("--optimize-context-path %q must start with %q; it is joined onto the ingress host and would otherwise build a malformed URL", optimizeContextPath, "/")
+	}
+	return nil
 }
 
 // optimizeEnvOverrides points the e2e env at an Optimize running as its own release, in its own

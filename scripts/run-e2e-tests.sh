@@ -257,6 +257,24 @@ log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, KubeContext: $KU
 
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 
+# The Optimize flags are only read on the topology path below, which is selected by
+# --hub-namespace. Without this guard they are silently dropped, render-e2e-env.sh sets
+# IS_OPTIMIZE=false, and the suite reports success having skipped every Optimize spec --
+# precisely the silent gap the flags exist to close.
+if [[ -z "$HUB_NAMESPACE" ]] && { [[ -n "$OPTIMIZE_NAMESPACE" ]] || [[ -n "$OPTIMIZE_CONTEXT_PATH" ]]; }; then
+  echo "Error: --optimize-namespace/--optimize-context-path require --hub-namespace." >&2
+  echo "       They are read only on the multi-namespace topology path; without it they would be" >&2
+  echo "       ignored and the run would silently skip Optimize coverage while still passing." >&2
+  exit 1
+fi
+
+# Snapshot the topology targeting args before "$ENV_FILE" is sourced below. That file sets
+# OPTIMIZE_CONTEXT_PATH to an absolute URL, which would otherwise replace the ingress path the
+# caller passed in the rerun command printed on failure.
+HUB_NAMESPACE_ARG="$HUB_NAMESPACE"
+OPTIMIZE_NAMESPACE_ARG="$OPTIMIZE_NAMESPACE"
+OPTIMIZE_CONTEXT_PATH_ARG="$OPTIMIZE_CONTEXT_PATH"
+
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
@@ -360,6 +378,13 @@ RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PAT
 [[ -n "$TRACE_MODE" ]] && RERUN_CMD+=" --trace ${TRACE_MODE}"
 [[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
 [[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
+# Without these a failing topology leg prints a rerun command that targets an
+# orchestration-only environment: it cannot reproduce the failure, and it would skip
+# Optimize again rather than reporting it.
+[[ -n "$HUB_NAMESPACE_ARG" ]] && RERUN_CMD+=" --hub-namespace ${HUB_NAMESPACE_ARG}"
+[[ -n "$OPTIMIZE_NAMESPACE_ARG" ]] && RERUN_CMD+=" --optimize-namespace ${OPTIMIZE_NAMESPACE_ARG}"
+[[ -n "$OPTIMIZE_CONTEXT_PATH_ARG" ]] && RERUN_CMD+=" --optimize-context-path ${OPTIMIZE_CONTEXT_PATH_ARG}"
+[[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && RERUN_CMD+=" --modeler-cluster-name ${MODELER_CLUSTER_NAME_ARG}"
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
 
