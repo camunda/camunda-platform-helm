@@ -1319,6 +1319,8 @@ console:
     serverName: http
     ## @param console.service.managementPort defines the management port used to access metrics and app status
     managementPort: 9100
+    ## @param console.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param console.resources.requests.cpu
