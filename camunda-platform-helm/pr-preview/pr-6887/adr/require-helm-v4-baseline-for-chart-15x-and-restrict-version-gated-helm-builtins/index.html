@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Require Helm v4 baseline for chart 15.x (8.10) and later, and restrict version-gated Helm built-ins | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Require Helm v4 baseline for chart 15.x (8.10) and later, and restrict version-gated Helm built-ins | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6887/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6887/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/runtime~main.b965ec43.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/main.2800c9ff.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/runtime~main.946b39a6.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/main.3cf1cefb.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -19,8 +19,11 @@
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context-and-problem-statement">Context and Problem Statement<a href="#context-and-problem-statement" class="hash-link" aria-label="Direct link to Context and Problem Statement" title="Direct link to Context and Problem Statement" translate="no">​</a></h2>
 <p>Chart 15.x (Camunda 8.10) already ships a top-of-render guard
-(<code>charts/camunda-platform-8.10/templates/common/constraints.tpl:9-10</code>) that fails
-<code>helm template</code>/<code>helm install</code> when <code>.Capabilities.HelmVersion.Version</code> is below <code>4.0.0</code>.
+(<code>charts/camunda-platform-8.10/templates/common/constraints.tpl:9-10</code>) intended to fail
+<code>helm template</code>/<code>helm install</code> when <code>.Capabilities.HelmVersion.Version</code> is below <code>4.0.0</code>. This
+guard only runs if the chart parses at all; chart 8.10 separately calls the Helm 3.17.0+ built-in
+<code>toYamlPretty</code> directly with no version guard, so on Helm CLIs older than 3.17.0 parsing fails
+before the guard executes (see Decision Outcome item 1 for the current-behavior gap this leaves).
 This was implemented in <a href="https://github.com/camunda/camunda-platform-helm/pull/6156" target="_blank" rel="noopener noreferrer" class="">#6156</a>
 (issue <a href="https://github.com/camunda/camunda-platform-helm/issues/6137" target="_blank" rel="noopener noreferrer" class="">#6137</a>) as part of the
 product-hub epic <a href="https://github.com/camunda/product-hub/issues/3555" target="_blank" rel="noopener noreferrer" class="">camunda/product-hub#3555</a>
@@ -41,8 +44,10 @@ unknowingly introduce a floor higher than the chart&#x27;s declared minimum — 
 user on an older-but-still-supported Helm CLI hits a parse error.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
 <ul>
-<li class="">Chart 15.x (8.10) and later: Helm CLI <strong>must</strong> be v4.0.0 or later. Enforced today via the
-<code>constraints.tpl</code> guard.</li>
+<li class="">Chart 15.x (8.10) and later: Helm CLI <strong>must</strong> be v4.0.0 or later. The <code>constraints.tpl</code> guard
+enforces this today, verified against the supported predecessor CLI, Helm 3.20.2; it does not
+reach CLIs older than 3.17.0, which fail earlier at template-parse time (Decision Outcome
+item 1).</li>
 <li class="">Chart 14.x (8.9) and earlier: existing Helm v3 support continues per the epic&#x27;s stated
 deprecation window (v3 bug fixes end 2026-07-08, security fixes end 2026-11-11). Per
 <a href="https://github.com/camunda/camunda-platform-helm/issues/5921" target="_blank" rel="noopener noreferrer" class="">#5921</a>, 8.8 and earlier test
@@ -120,6 +125,11 @@ the epic&#x27;s release-notes/blog-post commitments.</li>
 <li class="">Item 3 is a review-time policy, not a tooling-enforced one today — no lint step currently flags
 a newly introduced Helm built-in against the chart&#x27;s declared floor. Reviewers must know the
 floor and check new template code against it manually until such tooling exists.</li>
+<li class="">Chart 8.10&#x27;s own <code>toYamlPretty</code> call is itself an unguarded instance of the pattern item 3
+restricts: on Helm CLIs older than 3.17.0, <code>helm template</code>/<code>helm install</code> fails at parse time
+with <code>function &quot;toYamlPretty&quot; not defined</code> instead of the <code>constraints.tpl</code> guard&#x27;s intended v4
+message. No fix is scoped in this ADR; it is recorded here as a known gap in the current
+implementation.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="links">Links<a href="#links" class="hash-link" aria-label="Direct link to Links" title="Direct link to Links" translate="no">​</a></h2>
 <ul>
