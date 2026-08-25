@@ -444,6 +444,34 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
   {{- fail "[camunda][error] The pod label camunda.io/upgrade-phase is reserved for Camunda Hub upgrade lifecycle traffic isolation and cannot be overridden." }}
 {{- end }}
 
+{{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") (eq (include "connectors.hasAppIntegrations" .) "true") }}
+  {{- $appIntegrations := .Values.connectors.appIntegrations }}
+  {{- $oauthParts := list }}
+  {{- if $appIntegrations.oauth.tokenEndpoint }}
+    {{- $oauthParts = append $oauthParts "tokenEndpoint" }}
+  {{- end }}
+  {{- if $appIntegrations.oauth.clientId }}
+    {{- $oauthParts = append $oauthParts "clientId" }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $appIntegrations.oauth)) "true" }}
+    {{- $oauthParts = append $oauthParts "secret" }}
+  {{- end }}
+  {{- if and (gt (len $oauthParts) 0) (lt (len $oauthParts) 3) }}
+    {{- $errorMessage := printf "[camunda][error] %s %s"
+        "The App Integrations connector OAuth configuration is incomplete."
+        "Set \"connectors.appIntegrations.oauth.tokenEndpoint\", \"connectors.appIntegrations.oauth.clientId\", and \"connectors.appIntegrations.oauth.secret\" together, or remove all of them to authenticate with \"connectors.appIntegrations.apiKey\" instead."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+  {{- if and (eq (len $oauthParts) 3) (not $appIntegrations.clusterId) }}
+    {{- $errorMessage := printf "[camunda][error] %s %s"
+        "The App Integrations connector is configured to authenticate with OAuth but no cluster id is set."
+        "Set \"connectors.appIntegrations.clusterId\" to the UUID of this orchestration cluster as registered in the App Integrations backend."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end }}
+
 {{/*
 camunda.constraints.warnings
 Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgrade) and by

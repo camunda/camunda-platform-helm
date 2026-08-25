@@ -58,6 +58,14 @@ If release name contains chart name it will be used as a full name.
   {{ include "connectors.fullname" . }}-headless
 {{- end }}
 
+{{- define "connectors.hasAppIntegrations" -}}
+{{- if .Values.connectors.appIntegrations.baseUrl -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
