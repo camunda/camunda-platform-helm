@@ -1395,7 +1395,7 @@ webModeler:
     nodeSelector: {}
     ## @param webModeler.restapi.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
     tolerations: []
-    ## @param webModeler.restapi.affinity can be used to match sibling `podLabels` in pod affinity or anti-affinity
+    ## @param webModeler.restapi.affinity can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.
     affinity: {}
 
     ## @extra webModeler.restapi.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -1576,7 +1576,7 @@ webModeler:
     nodeSelector: {}
     ## @param webModeler.websockets.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
     tolerations: []
-    ## @param webModeler.websockets.affinity can be used to match sibling `podLabels` in pod affinity or anti-affinity
+    ## @param webModeler.websockets.affinity can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.
     affinity: {}
 
     ## @extra webModeler.websockets.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
