@@ -64,9 +64,6 @@ func TestNotesTemplate(t *testing.T) {
 				"install", "credential-output-test", chartPath,
 				"--dry-run=client",
 				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
-				"--set", "global.elasticsearch.enabled=true",
-				"--set", "global.elasticsearch.external=true",
-				"--set", "global.elasticsearch.url.host=elasticsearch",
 			}
 			for _, value := range testCase.values {
 				args = append(args, "--set", value)
