@@ -1346,9 +1346,36 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				require.Contains(t, output, "scheme: ZONE_AWARE")
 				require.Contains(t, output, "name: \"region-a\"")
 				require.Contains(t, output, "name: \"region-b\"")
-				require.NotContains(t, output, "node-id:")
-				require.NotContains(t, output, "VALUES_ORCHESTRATION_NODE_ID")
+				require.Contains(t, output, "VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
 				require.NotContains(t, output, "initial-contact-points:")
+			},
+		},
+		{
+			Name: "TestZonedNodeIdIsTheIndexInsideTheZone",
+			Values: map[string]string{
+				"global.multiregion.mode":                      "zoned",
+				"global.multiregion.zone":                      "region-b",
+				"global.multiregion.zones[0].name":             "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":  "2",
+				"global.multiregion.zones[0].numberOfReplicas": "2",
+				"global.multiregion.zones[0].priority":         "100",
+				"global.multiregion.zones[1].name":             "region-b",
+				"global.multiregion.zones[1].numberOfBrokers":  "3",
+				"global.multiregion.zones[1].numberOfReplicas": "3",
+				"global.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Brokers are addressed as "<zone>_<node-id>", so region-b's three
+				// Pods are region-b_0, region-b_1 and region-b_2 whatever region-a
+				// declares before it. No cluster-wide offset applies.
+				require.Contains(t, output, "VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}")
+				require.NotContains(t, output, "${K8S_NAME##*-} +")
+				require.NotContains(t, output, "${K8S_NAME##*-} *")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "size: \"5\"")
 			},
 		},
 		{
@@ -1387,6 +1414,35 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsLegacyRegionSettings() {
 			},
 			Expected: map[string]string{
 				"ERROR": "global.multiregion.regions and global.multiregion.regionId cannot be used with zoned mode",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsAnUndeclaredZone",
+			Values: map[string]string{
+				"global.multiregion.mode":                      "zoned",
+				"global.multiregion.zone":                      "region-c",
+				"global.multiregion.zones[0].name":             "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":  "2",
+				"global.multiregion.zones[0].numberOfReplicas": "2",
+				"global.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.zone \"region-c\" is not declared in global.multiregion.zones",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsAnEmptyZone",
+			Values: map[string]string{
+				"global.multiregion.mode":                      "zoned",
+				"global.multiregion.zones[0].name":             "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":  "2",
+				"global.multiregion.zones[0].numberOfReplicas": "2",
+				"global.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.zone must name the zone this release is deployed to",
 			},
 		},
 	}

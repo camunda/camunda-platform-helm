@@ -390,6 +390,25 @@ Fail if zoned mode is combined with the region-based multiregion settings it rep
 {{- end }}
 
 {{/*
+Fail if zoned mode does not describe the zone this release belongs to. The zone list
+is what assigns broker node IDs and partition replicas, so a release whose own zone is
+missing from it would take the IDs of the first zone and collide with it.
+*/}}
+{{- if eq .Values.global.multiregion.mode "zoned" }}
+  {{- $zone := .Values.global.multiregion.zone -}}
+  {{- if not $zone }}
+    {{- fail "[camunda][error] global.multiregion.zone must name the zone this release is deployed to when using zoned mode." -}}
+  {{- end }}
+  {{- $names := list -}}
+  {{- range .Values.global.multiregion.zones -}}
+    {{- $names = append $names .name -}}
+  {{- end -}}
+  {{- if not (has $zone $names) }}
+    {{- fail (printf "[camunda][error] global.multiregion.zone %q is not declared in global.multiregion.zones (%s)." $zone (join ", " $names)) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
 {{- if not (has (include "camundaPlatform.authIssuerType" .) (list "KEYCLOAK" "MICROSOFT" "GENERIC")) }}
