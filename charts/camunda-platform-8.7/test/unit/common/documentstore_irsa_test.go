@@ -78,14 +78,16 @@ func hasAwsSecretAccessKeyEnvVar(containers []corev1.Container) bool {
 
 func requireNoGcpCredentialWiring(t *testing.T, podSpec corev1.PodSpec) {
 	t.Helper()
-	for _, container := range podSpec.Containers {
-		for _, env := range container.Env {
-			require.NotEqual(t, "GOOGLE_APPLICATION_CREDENTIALS", env.Name,
-				"GOOGLE_APPLICATION_CREDENTIALS should never be present")
-		}
-		for _, volumeMount := range container.VolumeMounts {
-			require.NotEqual(t, "gcp-credentials-volume", volumeMount.Name,
-				"gcp-credentials-volume should never be mounted")
+	for _, containers := range [][]corev1.Container{podSpec.InitContainers, podSpec.Containers} {
+		for _, container := range containers {
+			for _, env := range container.Env {
+				require.NotEqual(t, "GOOGLE_APPLICATION_CREDENTIALS", env.Name,
+					"GOOGLE_APPLICATION_CREDENTIALS should never be present")
+			}
+			for _, volumeMount := range container.VolumeMounts {
+				require.NotEqual(t, "gcp-credentials-volume", volumeMount.Name,
+					"gcp-credentials-volume should never be mounted")
+			}
 		}
 	}
 	for _, volume := range podSpec.Volumes {
