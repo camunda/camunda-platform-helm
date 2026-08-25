@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Require Helm v4 baseline for chart 15.x (8.10) and later, and restrict version-gated Helm built-ins | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Require Helm v4 baseline for chart 15.x (8.10) and later, and restrict version-gated Helm built-ins | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6887/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6887/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6887/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/runtime~main.ba8ac148.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/main.f5ccd926.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/runtime~main.b965ec43.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6887/assets/js/main.2800c9ff.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -27,8 +27,9 @@ product-hub epic <a href="https://github.com/camunda/product-hub/issues/3555" ta
 (&quot;Self-Managed: Helm 4&quot;), which sets 8.9 (chart 14.x) as the last Helm-v3-supported minor and
 8.10+ as Helm-v4-only. That epic records the product/business decision and customer-facing
 commitments; no repo-level ADR captures the chart-engineering decision or the precedent it sets.</p>
-<p>Separately, charts 8.8 and 8.9 carry a helper,
-<code>camundaPlatform.toYamlPretty</code> (<code>templates/common/_utilz.tpl:24-30</code>), that exists only because
+<p>Separately, charts 8.8 and 8.9 carry a helper, <code>camundaPlatform.toYamlPretty</code>
+(<code>charts/camunda-platform-8.8/templates/common/_utilz.tpl:24-30</code> and
+<code>charts/camunda-platform-8.9/templates/common/_utilz.tpl:24-30</code>), that exists only because
 Helm&#x27;s own built-in <code>toYamlPretty</code> function was introduced in Helm 3.17.0 — calling it directly
 on an older 3.x CLI is a parse-time &quot;function not defined&quot; error, not a graceful runtime
 fallback. The helper works around this with <code>tpl</code> (to defer evaluation past parse time) plus
@@ -76,17 +77,26 @@ the function-availability problem from &quot;wrap it&quot; to &quot;don&#x27;t i
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
 <ol>
-<li class="">Chart 15.x (8.10) and later MUST require Helm CLI &gt;= 4.0.0, enforced by a top-of-render <code>fail</code>
-guard (already implemented in <code>constraints.tpl</code>, covered by
-<code>charts/camunda-platform-8.10/test/unit/common/constraints_test.go</code>).</li>
+<li class="">Chart 15.x (8.10) and later MUST require Helm CLI &gt;= 4.0.0. A top-of-render <code>fail</code> guard for
+this is already implemented in <code>constraints.tpl</code> and covered by
+<code>charts/camunda-platform-8.10/test/unit/common/constraints_test.go</code>, verified against the
+supported predecessor CLI, Helm 3.20.2. Chart 8.10 also calls the built-in <code>toYamlPretty</code>
+directly (<code>templates/orchestration/statefulset.yaml</code>) with no version guard; on a Helm CLI
+older than 3.17.0 this fails at template-parse time with <code>function &quot;toYamlPretty&quot; not defined</code>
+before the guard ever executes, not with the guard&#x27;s intended v4 message. This is a known gap
+in the current implementation, not a claim that the guard covers the full <code>&lt;4.0.0</code> range.</li>
 <li class="">Chart 14.x (8.9) and earlier MAY continue to support Helm v3 for the remainder of its
 documented support window; no retroactive floor change.</li>
 <li class="">New template code MUST NOT depend on a Helm built-in function or behavior introduced later
 than the oldest Helm version the chart line currently claims to support. If no alternative
 exists, the usage MUST be wrapped so the unsupported-version path either fails with a clear
 <code>fail</code> message (preferred, matching the <code>constraints.tpl</code> pattern) or falls back correctly, and
-the wrapper MUST have a unit test exercising both the supported and unsupported paths (see
-<code>constraints_test.go</code> for the pattern this repo already uses).</li>
+the wrapper MUST have a unit test exercising both the supported and unsupported paths against a
+deterministic Helm-version matrix (one CLI at or above the floor, one below the relevant
+function/floor boundary) rather than whichever Helm binary happens to be on <code>PATH</code> in CI.
+<code>constraints_test.go</code> does not yet demonstrate this end-to-end — CI currently runs it only
+against the repository&#x27;s pinned Helm 4 CLI — so it is cited here as the guard-pattern precedent
+to follow, not as an existing both-path test.</li>
 <li class="">When a chart line&#x27;s CLI floor rises enough to make a version-gated wrapper&#x27;s fallback branch
 unreachable, the wrapper MUST be removed rather than kept for symmetry (as done for
 <code>toYamlPretty</code> in 8.10 — <a href="https://github.com/camunda/camunda-platform-helm/issues/6139" target="_blank" rel="noopener noreferrer" class="">#6139</a>).</li>
