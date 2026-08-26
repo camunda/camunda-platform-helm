@@ -1814,7 +1814,7 @@ connectors:
     ## @param connectors.appIntegrations.clusterId can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Required when authenticating with OAuth, optional when authenticating with an API key.
     clusterId: ""
 
-    ## @extra connectors.appIntegrations.apiKey configuration to authenticate against the App Integrations backend with an API key. Ignored when OAuth is configured.
+    ## @extra connectors.appIntegrations.apiKey configuration to authenticate against the App Integrations backend with an API key. Omitted from the runtime when `connectors.appIntegrations.oauth` is fully configured, since OAuth takes precedence.
     apiKey:
       ## @extra connectors.appIntegrations.apiKey.secret configuration to provide the App Integrations API key.
       secret:

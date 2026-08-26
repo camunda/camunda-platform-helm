@@ -64,10 +64,12 @@ spec:
             - name: APP_INTEGRATIONS_CLUSTER_ID
               value: {{ . | quote }}
             {{- end }}
+            {{- if ne (include "connectors.hasAppIntegrationsOauth" .) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "APP_INTEGRATIONS_API_KEY"
                 "config" .Values.connectors.appIntegrations.apiKey
             ) | nindent 12 }}
+            {{- end }}
             {{- with .Values.connectors.appIntegrations.oauth.tokenEndpoint }}
             - name: APP_INTEGRATIONS_OAUTH_TOKEN_ENDPOINT
               value: {{ . | quote }}

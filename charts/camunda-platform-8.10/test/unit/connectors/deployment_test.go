@@ -848,7 +848,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				})
 			},
 		}, {
-			Name: "TestAppIntegrationsOauthAndApiKeyAreBothEmitted",
+			Name: "TestAppIntegrationsCompleteOauthSuppressesApiKey",
 			Values: map[string]string{
 				"connectors.enabled":                                    "true",
 				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
@@ -862,10 +862,26 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
+				// then - the runtime would ignore the API key, so it is not placed in the pod environment
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET", Value: "client-secret-value"})
+				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_API_KEY")
+			},
+		}, {
+			Name: "TestAppIntegrationsIncompleteOauthKeepsApiKey",
+			Values: map[string]string{
+				"connectors.enabled":                                    "true",
+				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
+				"connectors.appIntegrations.apiKey.secret.inlineSecret": "api-key-value",
+				"connectors.appIntegrations.oauth.audience":             "app-integrations-api",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_API_KEY", Value: "api-key-value"})
-				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET", Value: "client-secret-value"})
 			},
 		}, {
 			Name: "TestAppIntegrationsEmptyOauthOptionalsAreOmitted",

@@ -66,6 +66,18 @@ false
 {{- end -}}
 {{- end -}}
 
+{{- define "connectors.hasAppIntegrationsOauth" -}}
+{{- $oauth := .Values.connectors.appIntegrations.oauth -}}
+{{- if and
+    $oauth.tokenEndpoint
+    $oauth.clientId
+    (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $oauth)) "true") -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************

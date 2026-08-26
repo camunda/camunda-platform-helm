@@ -463,7 +463,7 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
-  {{- if and (eq (len $oauthParts) 3) (not $appIntegrations.clusterId) }}
+  {{- if and (eq (include "connectors.hasAppIntegrationsOauth" .) "true") (not $appIntegrations.clusterId) }}
     {{- $errorMessage := printf "[camunda][error] %s %s"
         "The App Integrations connector is configured to authenticate with OAuth but no cluster id is set."
         "Set \"connectors.appIntegrations.clusterId\" to the UUID of this orchestration cluster as registered in the App Integrations backend."
