@@ -210,8 +210,12 @@ SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
 CAMUNDA_IDENTITY_CLIENT_SECRET
 {{- end -}}
 
+{{- define "optimize.identityUrlEnvNames" -}}
+CAMUNDA_IDENTITY_BASEURL
+{{- end -}}
+
 {{- define "optimize.declarableEnvNames" -}}
-{{- printf "%s %s %s" (include "optimize.identityIssuerEnvNames" .) (include "optimize.jwksEnvNames" .) (include "optimize.clientSecretEnvNames" .) -}}
+{{- printf "%s %s %s %s" (include "optimize.identityIssuerEnvNames" .) (include "optimize.jwksEnvNames" .) (include "optimize.clientSecretEnvNames" .) (include "optimize.identityUrlEnvNames" .) -}}
 {{- end -}}
 
 {{/*
@@ -272,6 +276,24 @@ but only a declared envFrom variable counts, never mere presence of a source.
 */}}
 {{- define "optimize.identityIssuerMayComeFromEnv" -}}
   {{- $names := splitList " " (include "optimize.identityIssuerEnvNames" .) -}}
+  {{- if or
+        (eq (include "optimize.envSetsAnyOf" (dict "ctx" . "names" $names)) "true")
+        (eq (include "optimize.envFromDeclaresAnyOf" (dict "ctx" . "names" $names)) "true") -}}
+true
+  {{- else -}}
+false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Whether the Identity base URL may reach the container without this chart resolving it.
+The identity env ConfigMap always states CAMUNDA_IDENTITY_BASEURL, but the Deployment lists
+optimize.env and optimize.envFrom after it, so either supersedes what the chart resolved - and as
+everywhere else here, an envFrom source counts only once the release declares the variable it
+carries.
+*/}}
+{{- define "optimize.identityUrlMayComeFromEnv" -}}
+  {{- $names := splitList " " (include "optimize.identityUrlEnvNames" .) -}}
   {{- if or
         (eq (include "optimize.envSetsAnyOf" (dict "ctx" . "names" $names)) "true")
         (eq (include "optimize.envFromDeclaresAnyOf" (dict "ctx" . "names" $names)) "true") -}}
