@@ -539,7 +539,7 @@
                                                         },
                                                         "namespace": {
                                                             "type": "string",
-                                                            "description": "can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.",
+                                                            "description": "can be used when the CA Secret lives in a different namespace; ingress-nginx must be configured with `allow-cross-namespace-resources=true`.",
                                                             "default": ""
                                                         }
                                                     }
