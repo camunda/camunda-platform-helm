@@ -359,7 +359,7 @@ global:
               inlineSecret: ""
               ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle under the fixed "ca.crt" key required by nginx.ingress.kubernetes.io/proxy-ssl-secret.
               existingSecret: ""
-            ## @param global.tls.orchestration.rest.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; NGINX must be configured with --watch-namespaces.
+            ## @param global.tls.orchestration.rest.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; ingress-nginx must be configured with `allow-cross-namespace-resources=true`.
             namespace: ""
       ## @extra global.tls.orchestration.grpc configuration of TLS for the Orchestration gRPC server.
       grpc:

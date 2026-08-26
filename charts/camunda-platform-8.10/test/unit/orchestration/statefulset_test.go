@@ -1868,6 +1868,48 @@ func (s *StatefulSetTest) TestOrchestrationTLSInlineSecret() {
 			},
 		},
 		{
+			Name: "inline material does not render when TLS is disabled",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/orchestration/tls-secret.yaml"},
+			},
+			Values: map[string]string{
+				"global.tls.orchestration.grpc.cert.secret.inlineSecret":       "GRPCCERTPEM",
+				"global.tls.orchestration.grpc.privateKey.secret.inlineSecret": "GRPCKEYPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.NotContains(t, output, "kind: Secret")
+			},
+		},
+		{
+			Name:          "existing Secret takes precedence over inline material",
+			CaseTemplates: &testhelpers.CaseTemplate{Templates: nil},
+			Values: map[string]string{
+				"global.tls.orchestration.grpc.enabled":                        "true",
+				"global.tls.orchestration.grpc.cert.secret.inlineSecret":       "GRPCCERTPEM",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret":     "grpc-tls",
+				"global.tls.orchestration.grpc.privateKey.secret.inlineSecret": "GRPCKEYPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "kind: Secret")
+				require.Contains(t, output, "secretName: grpc-tls")
+			},
+		},
+		{
+			Name: "proxy verification inline CA renders only when enabled",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/orchestration/tls-secret.yaml"},
+			},
+			Values: map[string]string{
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.inlineSecret": "CAPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.NotContains(t, output, "kind: Secret")
+			},
+		},
+		{
 			Name: "REST PKCS12 rejects inline certificate material",
 			CaseTemplates: &testhelpers.CaseTemplate{Templates: []string{
 				"templates/orchestration/tls-secret.yaml",

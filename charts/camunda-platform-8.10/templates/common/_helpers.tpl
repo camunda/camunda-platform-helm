@@ -1863,7 +1863,7 @@ Usage (inside the Orchestration pod template's metadata.annotations):
 {{- $certRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" $ "proto" $proto) | fromYaml -}}
 {{- $keyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" $ "proto" $proto) | fromYaml -}}
 {{- $hashes := list -}}
-{{- $certInline := ternary $tls.cert.secret.inlineSecret "" $isPem -}}
+{{- $certInline := ternary $tls.cert.secret.inlineSecret "" (and $isPem (not $tls.cert.secret.existingSecret)) -}}
 {{- if $certInline -}}
   {{- $hashes = append $hashes $certInline -}}
 {{- else if $certRef.name -}}
@@ -1871,7 +1871,7 @@ Usage (inside the Orchestration pod template's metadata.annotations):
   {{- $data := ($s | default dict).data | default dict -}}
   {{- $hashes = append $hashes (get $data $certRef.key) -}}
 {{- end -}}
-{{- if $tls.privateKey.secret.inlineSecret -}}
+{{- if and (not $tls.privateKey.secret.existingSecret) $tls.privateKey.secret.inlineSecret -}}
   {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
 {{- else if $keyRef.name -}}
   {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}
