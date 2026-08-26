@@ -19,7 +19,11 @@ spec:
       port: {{ .Values.connectors.service.serverPort }}
       targetPort: {{ .Values.connectors.service.serverPort }}
       protocol: TCP
-      {{- with include "camundaPlatform.appProtocol" (dict "portName" "server" "knownPorts" (list "server") "appProtocols" .Values.connectors.service.appProtocols) }}
+      {{- $appProtocols := .Values.connectors.service.appProtocols -}}
+      {{- if and (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") (not (hasKey $appProtocols "server")) -}}
+      {{- $appProtocols = merge (dict "server" "https") $appProtocols -}}
+      {{- end -}}
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "server" "knownPorts" (list "server") "appProtocols" $appProtocols) }}
       appProtocol: {{ . | quote }}
       {{- end }}
   selector:

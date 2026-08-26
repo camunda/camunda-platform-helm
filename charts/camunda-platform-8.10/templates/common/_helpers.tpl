@@ -463,7 +463,7 @@ Connectors templates.
 [camunda-platform] Connectors external URL.
 */}}
 {{- define "camundaPlatform.connectorsExternalURL" }}
-  {{- $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) -}}
+  {{- $proto := ternary "https" "http" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace -}}
   {{- printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath "")) | trimSuffix "/" -}}
 {{- end -}}
@@ -1076,7 +1076,7 @@ ingress-orchestration-http.yaml serves that route with an HTTPS backend.
   path: {{ .Values.optimize.contextPath }}
   pathType: {{ .Values.global.ingress.pathType }}
   {{- end }}
-  {{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath }}
+  {{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath (ne (include "camundaPlatform.connectorsTLSEnabled" .) "true") }}
 # Connectors.
 - backend:
     service:
@@ -1946,21 +1946,6 @@ Usage (inside the Orchestration pod template's metadata.annotations):
   {{- $hashes = append $hashes (get $data $certRef.key) -}}
 {{- end -}}
 {{- if and (not $tls.privateKey.secret.existingSecret) $tls.privateKey.secret.inlineSecret -}}
-  {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
-{{- else if $keyRef.name -}}
-  {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}
-  {{- $data := ($s | default dict).data | default dict -}}
-  {{- $hashes = append $hashes (get $data $keyRef.key) -}}
-{{- end -}}
-{{- if $hashes -}}
-{{- printf "\nchecksum/orchestration-tls-%s: %s" $proto (join "" $hashes | sha256sum) -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{- if $tls.privateKey.secret.inlineSecret -}}
   {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
 {{- else if $keyRef.name -}}
   {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}

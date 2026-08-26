@@ -68,6 +68,7 @@ func (s *ConnectorsTLSTest) TestTLSEnvAndVolumeWiring() {
 			Name: "TLS enabled via global.tls.connectors.enabled (PKCS12 defaults)",
 			Values: map[string]string{
 				"connectors.enabled":                               "true",
+				"connectors.contextPath":                           "/connectors",
 				"global.tls.connectors.enabled":                    "true",
 				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
 			},
@@ -442,6 +443,52 @@ func (s *ConnectorsTLSTest) TestTLSEnvAndVolumeWiring() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "global.tls.connectors.type=\"jks\" is not supported")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConnectorsTLSTest) TestTLSRoutesUseHTTPS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:          "NGINX ingress uses an HTTPS backend",
+			CaseTemplates: &testhelpers.CaseTemplate{Templates: []string{"templates/common/ingress-connectors-http.yaml"}},
+			Values: map[string]string{
+				"connectors.enabled":                               "true",
+				"connectors.contextPath":                           "/connectors",
+				"global.ingress.enabled":                           "true",
+				"global.host":                                      "camunda.example.com",
+				"global.tls.connectors.enabled":                    "true",
+				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
+				"orchestration.enabled":                            "false",
+				"optimize.enabled":                                 "false",
+				"webModeler.enabled":                               "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "nginx.ingress.kubernetes.io/backend-protocol: HTTPS")
+				require.Equal(t, 1, strings.Count(output, "path: /connectors"))
+			},
+		},
+		{
+			Name: "Gateway Service advertises HTTPS appProtocol",
+			CaseTemplates: &testhelpers.CaseTemplate{Templates: []string{
+				"templates/connectors/service.yaml",
+				"templates/connectors/httproute.yaml",
+			}},
+			Values: map[string]string{
+				"connectors.enabled":                               "true",
+				"global.gateway.enabled":                           "true",
+				"global.host":                                      "camunda.example.com",
+				"global.tls.connectors.enabled":                    "true",
+				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, `appProtocol: "https"`)
+				require.Contains(t, output, "kind: HTTPRoute")
 			},
 		},
 	}
