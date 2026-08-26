@@ -407,6 +407,25 @@ func (s *OptimizeHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				require.NotContains(t, output, "name: camunda-platform-test-optimize-http")
 			},
 		},
+		{
+			Name: "TestOptimizeHttpIngressTLSWithoutHostOmitsHosts",
+			Values: map[string]string{
+				"global.ingress.enabled":                         "true",
+				"global.ingress.tls.enabled":                     "true",
+				"global.ingress.tls.secretName":                  "public-tls",
+				"optimize.enabled":                               "true",
+				"optimize.contextPath":                           "/optimize",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Empty(t, ingress.Spec.TLS[0].Hosts)
+				require.Equal(t, "public-tls", ingress.Spec.TLS[0].SecretName)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

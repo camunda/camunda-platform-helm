@@ -492,6 +492,28 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *OptimizeTLSTest) TestTLSAutoRollout() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "autoRollout emits a stable checksum without cluster access",
+			Values: map[string]string{
+				"optimize.enabled":                               "true",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.autoRollout":                "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				require.NotEmpty(t, deployment.Spec.Template.Annotations["checksum/optimize-tls"])
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 // TestTLSDetectionFromConfigSources covers the config sources Optimize server
 // TLS state is resolved from beyond optimize.env, plus the form the chart cannot
 // read at render time.
