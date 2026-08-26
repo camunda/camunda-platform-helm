@@ -959,6 +959,20 @@ func TestPhysicalTenantsDetectedInEveryConfigurationForm(t *testing.T) {
 	}
 }
 
+func TestPhysicalTenantsDetectedInLaterYamlDocument(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":                 "",
+			"orchestration.extraConfiguration[0].file":    "tenants.yaml",
+			"orchestration.extraConfiguration[0].content": "logging:\n  level:\n    root: INFO\n---\ncamunda:\n  physical-tenants:\n    tenanta: {}\n",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "requires global.identity.auth.issuer")
+}
+
 // A file excluded from spring.config.import never reaches the application, so it must not trigger
 // the tenant checks either.
 func TestPhysicalTenantsIgnoredWhenNotSpringImported(t *testing.T) {
