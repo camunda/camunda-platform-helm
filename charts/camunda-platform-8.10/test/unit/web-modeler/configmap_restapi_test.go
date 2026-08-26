@@ -16,6 +16,7 @@ package web_modeler
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"camunda-platform/test/unit/utils"
 	"maps"
 	"path/filepath"
 	"strings"
@@ -39,8 +40,9 @@ type configmapRestAPITemplateTest struct {
 }
 
 var requiredValues = map[string]string{
-	"webModeler.enabled":                                               "true",
-	"webModeler.restapi.mail.fromAddress":                              "example@example.com",
+	"identity.enabled":                    "true",
+	"webModeler.enabled":                  "true",
+	"webModeler.restapi.mail.fromAddress": "example@example.com",
 	"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
 	"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
 	"orchestration.data.secondaryStorage.type":                         "elasticsearch",
@@ -66,7 +68,6 @@ func TestRestAPIConfigmapTemplate(t *testing.T) {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                  "true",
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
 	}
@@ -94,7 +95,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectCamundaHubAuthValues() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                  "true",
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.camundaHub.clientApiAudience": "custom-hub-audience",
 		"global.identity.auth.camundaHub.clientId":          "custom-hub-clientId",
@@ -129,7 +129,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectCamundaHubAu
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                  "true",
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
 	}
@@ -157,7 +156,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                         "true",
 		"global.identity.auth.enabled":             "true",
 		"global.identity.auth.webModeler.clientId": "custom-clientId",
 	}
@@ -185,7 +183,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUsernameClaim() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                         "true",
 		"global.identity.auth.enabled":                             "true",
 		"orchestration.security.authentication.oidc.usernameClaim": "example-claim",
 	}
@@ -214,7 +211,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	// given
 	values := map[string]string{
 		"global.identity.auth.enabled": "true",
-		"identity.enabled":             "true",
 		"identity.fullnameOverride":    "custom-identity-fullname",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -242,7 +238,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	// given
 	values := map[string]string{
 		"global.identity.auth.enabled": "true",
-		"identity.enabled":             "true",
 		"identity.nameOverride":        "custom-identity",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -269,7 +264,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                    "true",
 		"global.identity.auth.enabled":                        "true",
 		"global.identity.auth.type":                           "MICROSOFT",
 		"global.identity.auth.identity.secret.existingSecret": "foo",
@@ -303,7 +297,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
@@ -333,7 +326,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrlWithCustomPort() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
@@ -363,7 +355,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                 "true",
 		"webModeler.restapi.mail.smtpUser": "modeler-user",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -390,7 +381,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                             "true",
 		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 		"webModeler.restapi.externalDatabase.username": "modeler-user",
 	}
@@ -419,7 +409,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfigurationWithUsername() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                        "true",
 		"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 		"webModeler.restapi.externalDatabase.username":            "modeler-user-new",
 		"webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
@@ -477,7 +466,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			values := map[string]string{
-				"identity.enabled":                              "true",
 				"global.zeebeClusterName":                       "test-zeebe",
 				"global.identity.auth.enabled":                  tc.authEnabled,
 				"global.ingress.enabled":                        "true",
@@ -546,7 +534,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUrlWithoutTrailingSlashWhenContextPathIsRoot() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                              "true",
 		"global.zeebeClusterName":                       "test-zeebe",
 		"global.ingress.enabled":                        "true",
 		"global.ingress.tls.enabled":                    "true",
@@ -590,7 +577,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUr
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOrchestrationGrpcTlsIsEnabled() {
 	values := map[string]string{
-		"identity.enabled":                              "true",
 		"global.zeebeClusterName":                       "test-zeebe",
 		"global.ingress.enabled":                        "true",
 		"global.ingress.tls.enabled":                    "true",
@@ -635,7 +621,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOr
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                              "true",
 		"webModeler.restapi.clusters[0].id":             "test-cluster-1",
 		"webModeler.restapi.clusters[0].name":           "test cluster 1",
 		"webModeler.restapi.clusters[0].version":        "8.6.0",
@@ -704,7 +689,6 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 	// management-cluster must include both identity and hub so that WebModeler
 	// can reach Identity and register itself as a known component.
 	values := map[string]string{
-		"identity.enabled":       "true",
 		"global.ingress.enabled": "true",
 		"global.host":            "example.com",
 		"orchestration.security.authorizations.enabled": "false",
@@ -747,7 +731,6 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
 	// given
 	values := map[string]string{
-		"identity.enabled":      "true",
 		"orchestration.enabled": "false",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -774,7 +757,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
 	// given
 	values := map[string]string{
-		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
 	}
@@ -802,7 +784,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuerBackendUrlProperty() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
 	}
@@ -830,7 +811,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeycloakUrlProperties() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "https",
 		"global.identity.keycloak.url.host":     "example.com",
@@ -862,7 +842,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                             "true",
 		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
 		"webModeler.restapi.externalDatabase.port":     "65432",
 		"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
@@ -891,7 +870,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPort
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAndHttpsOnly() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                            "true",
 		"global.identity.auth.enabled":                "true",
 		"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
 	}
@@ -920,7 +898,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAnd
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath() {
 	// given
 	values := map[string]string{
-		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"webModeler.contextPath":       "/modeler",
 	}
@@ -949,7 +926,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath(
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherPort() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                 "true",
 		"global.identity.auth.enabled":     "true",
 		"webModeler.websockets.publicPort": "8082",
 	}
@@ -977,7 +953,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsDisabled() {
 	// given
 	values := map[string]string{
-		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
@@ -1011,7 +986,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsEnabled() {
 	// given
 	values := map[string]string{
-		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
@@ -1064,15 +1038,15 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 		},
 		{
 			Name: "TestWebModelerURLsWithLiteralIngressHost",
-			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"webModeler.contextPath":              "/modeler",
-				"global.ingress.enabled":              "true",
-				"global.host":                         "literal.example.com",
-				"global.ingress.tls.enabled":          "true",
-			},
+			Values: utils.MergeMaps(
+				map[string]string{
+					"webModeler.contextPath":     "/modeler",
+					"global.ingress.enabled":     "true",
+					"global.host":                "literal.example.com",
+					"global.ingress.tls.enabled": "true",
+				},
+				requiredValues,
+			),
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				var configmapApplication WebModelerRestAPIApplicationYAML
@@ -1096,13 +1070,13 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "TestExtraConfigWithSpringImportDefault",
-			Values: map[string]string{
-				"identity.enabled":                                 "true",
-				"webModeler.enabled":                               "true",
-				"webModeler.restapi.mail.fromAddress":              "example@example.com",
-				"webModeler.restapi.extraConfiguration[0].file":    "custom-spring.yaml",
-				"webModeler.restapi.extraConfiguration[0].content": "some: config",
-			},
+			Values: utils.MergeMaps(
+				map[string]string{
+					"webModeler.restapi.extraConfiguration[0].file":    "custom-spring.yaml",
+					"webModeler.restapi.extraConfiguration[0].content": "some: config",
+				},
+				requiredValues,
+			),
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
@@ -1118,14 +1092,14 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 		},
 		{
 			Name: "TestExtraConfigWithSpringImportFalse",
-			Values: map[string]string{
-				"identity.enabled":                                      "true",
-				"webModeler.enabled":                                    "true",
-				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
-				"webModeler.restapi.extraConfiguration[0].file":         "log4j2-spring.xml",
-				"webModeler.restapi.extraConfiguration[0].springImport": "false",
-				"webModeler.restapi.extraConfiguration[0].content":      "<Configuration/>",
-			},
+			Values: utils.MergeMaps(
+				map[string]string{
+					"webModeler.restapi.extraConfiguration[0].file":         "log4j2-spring.xml",
+					"webModeler.restapi.extraConfiguration[0].springImport": "false",
+					"webModeler.restapi.extraConfiguration[0].content":      "<Configuration/>",
+				},
+				requiredValues,
+			),
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
@@ -1144,16 +1118,16 @@ func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
 		},
 		{
 			Name: "TestExtraConfigMixedSpringImport",
-			Values: map[string]string{
-				"identity.enabled":                                      "true",
-				"webModeler.enabled":                                    "true",
-				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
-				"webModeler.restapi.extraConfiguration[0].file":         "custom-spring.yaml",
-				"webModeler.restapi.extraConfiguration[0].content":      "some: config",
-				"webModeler.restapi.extraConfiguration[1].file":         "log4j2-spring.xml",
-				"webModeler.restapi.extraConfiguration[1].springImport": "false",
-				"webModeler.restapi.extraConfiguration[1].content":      "<Configuration/>",
-			},
+			Values: utils.MergeMaps(
+				map[string]string{
+					"webModeler.restapi.extraConfiguration[0].file":         "custom-spring.yaml",
+					"webModeler.restapi.extraConfiguration[0].content":      "some: config",
+					"webModeler.restapi.extraConfiguration[1].file":         "log4j2-spring.xml",
+					"webModeler.restapi.extraConfiguration[1].springImport": "false",
+					"webModeler.restapi.extraConfiguration[1].content":      "<Configuration/>",
+				},
+				requiredValues,
+			),
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
@@ -1180,10 +1154,12 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "TestFromAddressRequiredWhenUnsetAndNotMigrated",
-			Values: map[string]string{
-				"identity.enabled":   "true",
-				"webModeler.enabled": "true",
-			},
+			Values: utils.MergeMaps(
+				map[string]string{
+					"webModeler.enabled": "true",
+				},
+				requiredValues,
+			),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().ErrorContains(err, "webModeler.restapi.mail.fromAddress' is required",
 					"a fresh install with no from-address anywhere must fail fast, not render an incomplete config")
@@ -1206,12 +1182,8 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 			},
 		},
 		{
-			Name: "TestDeprecatedFromAddressStillRenders",
-			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "deprecated@example.com",
-			},
+			Name:   "TestDeprecatedFromAddressStillRenders",
+			Values: requiredValues,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var configmap corev1.ConfigMap
@@ -1226,29 +1198,16 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *configmapRestAPITemplateTest) TestTestModeEnabledByStorageMode() {
+func (s *configmapRestAPITemplateTest) TestTestMode() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:   "TestTestModeEnabledWithSecondaryStorage",
-			Values: maps.Clone(requiredValues),
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configmap corev1.ConfigMap
-				var configmapApplication WebModelerRestAPIApplicationYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				require.NoError(t, e)
-				s.Require().Equal("true", configmapApplication.Camunda.Modeler.Feature.TestModeEnabled,
-					"test-mode-enabled must be true when secondary storage is active")
-			},
-		},
-		{
-			Name: "TestTestModeDisabledWithNoSecondaryStorage",
-			Values: func() map[string]string {
-				v := maps.Clone(requiredValues)
-				v["global.noSecondaryStorage"] = "true"
-				return v
-			}(),
+			Name: "TestTestModeWithNoSecondaryStorage",
+			Values: utils.MergeMaps(
+				map[string]string{
+					"global.noSecondaryStorage": "true",
+				},
+				requiredValues,
+			),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var configmap corev1.ConfigMap
@@ -1257,7 +1216,7 @@ func (s *configmapRestAPITemplateTest) TestTestModeEnabledByStorageMode() {
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				require.NoError(t, e)
 				s.Require().Equal("false", configmapApplication.Camunda.Modeler.Feature.TestModeEnabled,
-					"test-mode-enabled must be false in engine-only mode")
+					"test-mode-enabled must be false  in engine-only mode (when there is no secondary storage)")
 			},
 		},
 	}
